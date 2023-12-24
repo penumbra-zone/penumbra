@@ -35,8 +35,9 @@ impl std::fmt::Debug for Storage {
 // A private inner element to prevent the `TreeWriter` implementation
 // from leaking outside of this crate.
 struct Inner {
-    tx_dispatcher: watch::Sender<Snapshot>,
-    tx_state: Arc<watch::Sender<Snapshot>>,
+    dispatcher_tx: watch::Sender<(Snapshot, (jmt::Version, Arc<Cache>))>,
+    snapshot_rx: watch::Receiver<Snapshot>,
+    changes_rx: watch::Receiver<(jmt::Version, Arc<Cache>)>,
     snapshots: RwLock<SnapshotCache>,
     multistore_config: MultistoreConfig,
     #[allow(dead_code)]
@@ -187,29 +188,32 @@ impl Storage {
                     // Setup a dispatcher task that acts as an intermediary between the storage
                     // and the rest of the system. Its purpose is to forward new snapshots to
                     // subscribers.
+                    //
                     // If we were to send snapshots directly to subscribers, a slow subscriber could
                     // hold a lock on the watch channel for too long, and block the consensus-critical
                     // commit logic, which needs to acquire a write lock on the watch channel.
-                    // dispatcher channel (internal):
-                    // - `tx_dispatcher` is used by storage to signal that a new snapshot is available.
-                    // - `rx_dispatcher` is used by the dispatcher to receive new snapshots.
-                    // snapshot channel (external):
-                    // - `tx_state` is used by the dispatcher to signal new snapshots to the rest of the system.
-                    // - `rx_state` is used by various components to subscribe to new snapshots.
-                    let (tx_state, _) = watch::channel(latest_snapshot.clone());
-                    let (tx_dispatcher, mut rx_dispatcher) = watch::channel(latest_snapshot);
+                    //
+                    // Instead, we "proxy" through a dispatcher task that copies values from one 
+                    // channel to the other, ensuring that if an API consumer misuses the watch 
+                    // channels, it will only affect other subscribers, not the commit logic.
 
-                    let tx_state = Arc::new(tx_state);
-                    let tx_state2 = tx_state.clone();
+                    let (snapshot_tx, snapshot_rx) = watch::channel(latest_snapshot.clone());
+                    // Note: this will never be seen by consumers, since we mark the current value as seen
+                    // before returning the receiver.
+                    let dummy_cache = (u64::MAX, Arc::new(Cache::default()));
+                    let (changes_tx, changes_rx) = watch::channel(dummy_cache.clone());
+                    let (tx_dispatcher, mut rx_dispatcher) = watch::channel((latest_snapshot, dummy_cache));
+
                     let jh_dispatcher = tokio::spawn(async move {
                         tracing::info!("snapshot dispatcher task has started");
                         // If the sender is dropped, the task will terminate.
                         while rx_dispatcher.changed().await.is_ok() {
                             tracing::debug!("dispatcher has received a new snapshot");
-                            let snapshot = rx_dispatcher.borrow_and_update().clone();
+                            let (snapshot, changes) = rx_dispatcher.borrow_and_update().clone();
                             // [`watch::Sender<T>::send`] only returns an error if there are no
                             // receivers, so we can safely ignore the result here.
-                            let _ = tx_state2.send(snapshot);
+                            let _ = snapshot_tx.send(snapshot);
+                            let _ = changes_tx.send(changes);
                         }
                         tracing::info!("dispatcher task has terminated")
                     });
@@ -219,8 +223,9 @@ impl Storage {
                         // the task will stop when the sender is dropped. However, certain
                         // test scenarios require us to wait that all resources are released.
                         jh_dispatcher: Some(jh_dispatcher),
-                        tx_dispatcher,
-                        tx_state,
+                        dispatcher_tx: tx_dispatcher,
+                        snapshot_rx,
+                        changes_rx,
                         multistore_config,
                         snapshots,
                         db: shared_db,
@@ -240,10 +245,20 @@ impl Storage {
 
     /// Returns a [`watch::Receiver`] that can be used to subscribe to new state versions.
     pub fn subscribe(&self) -> watch::Receiver<Snapshot> {
-        // Calling subscribe() here to create a new receiver ensures
-        // that all previous values are marked as seen, and the user
-        // of the receiver will only be notified of *subsequent* values.
-        self.0.tx_state.subscribe()
+        let mut rx = self.0.snapshot_rx.clone();
+        // Mark the current value as seen, so that the user of the receiver
+        // will only be notified of *subsequent* values.
+        rx.borrow_and_update();
+        rx
+    }
+
+    /// Returns a [`watch::Receiver`] that can be used to subscribe to state changes.
+    pub fn subscribe_changes(&self) -> watch::Receiver<(jmt::Version, Arc<Cache>)> {
+        let mut rx = self.0.changes_rx.clone();
+        // Mark the current value as seen, so that the user of the receiver
+        // will only be notified of *subsequent* values.
+        rx.borrow_and_update();
+        rx
     }
 
     /// Returns a new [`Snapshot`] on top of the latest version of the tree.
@@ -291,6 +306,9 @@ impl Storage {
         perform_migration: bool,
     ) -> Result<crate::RootHash> {
         tracing::debug!(new_jmt_version = ?version, "committing state delta");
+        // Save a copy of the changes to send to subscribers later.
+        let changes = Arc::new(cache.clone_changes());
+
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
         let mut substore_roots = Vec::new();
         let mut multistore_versions =
@@ -443,7 +461,10 @@ impl Storage {
 
         // Send fails if the channel is closed (i.e., if there are no receivers);
         // in this case, we should ignore the error, we have no one to notify.
-        let _ = self.0.tx_dispatcher.send(latest_snapshot);
+        let _ = self
+            .0
+            .dispatcher_tx
+            .send((latest_snapshot, (version, changes)));
 
         Ok(global_root_hash)
     }

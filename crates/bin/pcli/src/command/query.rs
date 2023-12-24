@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 
 mod shielded_pool;
 use shielded_pool::ShieldedPool;
@@ -61,10 +61,31 @@ pub enum QueryCmd {
     /// Queries information about IBC.
     #[clap(subcommand)]
     Ibc(IbcCmd),
+    /// Subscribes to a filtered stream of state changes.
+    Watch {
+        /// The regex to filter keys in verifiable storage.
+        ///
+        /// The empty string matches all keys; the pattern $^ matches no keys.
+        #[clap(long, default_value = "")]
+        key_regex: String,
+        /// The regex to filter keys in nonverifiable storage.
+        ///
+        /// The empty string matches all keys; the pattern $^ matches no keys.
+        #[clap(long, default_value = "")]
+        nv_key_regex: String,
+    },
 }
 
 impl QueryCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
+        if let QueryCmd::Watch {
+            key_regex,
+            nv_key_regex,
+        } = self
+        {
+            return watch(key_regex.clone(), nv_key_regex.clone(), app).await;
+        }
+
         // Special-case: this is a Tendermint query
         if let QueryCmd::Tx(tx) = self {
             return tx.exec(app).await;
@@ -101,6 +122,7 @@ impl QueryCmd {
             | QueryCmd::Dex(_)
             | QueryCmd::Governance(_)
             | QueryCmd::Dao(_)
+            | QueryCmd::Watch { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
@@ -138,6 +160,7 @@ impl QueryCmd {
             | QueryCmd::ShieldedPool { .. }
             | QueryCmd::Governance { .. }
             | QueryCmd::Key { .. }
+            | QueryCmd::Watch { .. }
             | QueryCmd::Ibc(_) => true,
         }
     }
@@ -154,6 +177,7 @@ impl QueryCmd {
             | QueryCmd::Dex { .. }
             | QueryCmd::Governance { .. }
             | QueryCmd::Dao { .. }
+            | QueryCmd::Watch { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")
             }
@@ -161,4 +185,58 @@ impl QueryCmd {
 
         Ok(())
     }
+}
+
+// this code (not just this function, the whole module) is pretty shitty,
+// but that's maybe okay for the moment. it exists to consume the rpc.
+async fn watch(key_regex: String, nv_key_regex: String, app: &mut App) -> Result<()> {
+    use penumbra_proto::cnidarium::v1alpha1::{
+        query_service_client::QueryServiceClient, watch_response as wr,
+    };
+    let mut client = QueryServiceClient::new(app.pd_channel().await?);
+
+    let req = penumbra_proto::cnidarium::v1alpha1::WatchRequest {
+        key_regex,
+        nv_key_regex,
+    };
+
+    tracing::debug!(?req);
+
+    let mut stream = client.watch(req).await?.into_inner();
+
+    while let Some(rsp) = stream.message().await? {
+        match rsp.entry {
+            Some(wr::Entry::Kv(kv)) => {
+                if kv.deleted {
+                    println!("{} KV {} -> DELETED", rsp.version, kv.key);
+                } else {
+                    println!(
+                        "{} KV {} -> {}",
+                        rsp.version,
+                        kv.key,
+                        simple_base64::encode(&kv.value)
+                    );
+                }
+            }
+            Some(wr::Entry::NvKv(nv_kv)) => {
+                let key = simple_base64::encode(&nv_kv.key);
+
+                if nv_kv.deleted {
+                    println!("{} NVKV {} -> DELETED", rsp.version, key);
+                } else {
+                    println!(
+                        "{} NVKV {} -> {}",
+                        rsp.version,
+                        key,
+                        simple_base64::encode(&nv_kv.value)
+                    );
+                }
+            }
+            None => {
+                return Err(anyhow!("server returned None event"));
+            }
+        }
+    }
+
+    Ok(())
 }

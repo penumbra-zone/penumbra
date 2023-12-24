@@ -11,8 +11,10 @@ service QueryService {
 
   // General-purpose prefixed key-value state query API, that can be used to query
   // arbitrary prefixes in the JMT storage.
-  // Returns a stream of `PrefixValueResponse`s.
   rpc PrefixValue(PrefixValueRequest) returns (stream PrefixValueResponse);
+
+  // Subscribes to a stream of key-value updates, with regex filtering on keys.
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
 }
 
 // Performs a key-value query, either by key or by key hash.
@@ -48,4 +50,49 @@ message PrefixValueRequest {
 message PrefixValueResponse {
   string key = 1;
   bytes value = 2;
+}
+
+// Requests a stream of new key-value pairs that have been committed to the state.
+message WatchRequest {
+  // A regex for keys in the verifiable storage.
+  //
+  // Only key-value updates whose keys match this regex will be returned.
+  // Note that the empty string matches all keys.
+  // To exclude all keys, use the regex "$^", which matches no strings.
+  string key_regex = 1;
+  // A regex for keys in the nonverifiable storage.
+  //
+  // Only key-value updates whose keys match this regex will be returned.
+  // Note that the empty string matches all keys.
+  // To exclude all keys, use the regex "$^", which matches no strings.
+  string nv_key_regex = 2;
+}
+
+// A key-value pair that has been committed to the state.
+message WatchResponse {
+  // Elements of the verifiable storage have string keys.
+  message KeyValue {
+    string key = 1;
+    bytes value = 2;
+    // If set to true, the key-value pair was deleted.
+    // This allows distinguishing a deleted key-value pair from a key-value pair whose value is empty.
+    bool deleted = 3;
+  }
+  // Elements of the nonverifiable storage have byte keys.
+  message NvKeyValue {
+    bytes key = 1;
+    bytes value = 2;
+    // If set to true, the key-value pair was deleted.
+    // This allows distinguishing a deleted key-value pair from a key-value pair whose value is empty.
+    bool deleted = 3;
+  }
+
+  // The state version the key-value pair was committed at.
+  uint64 version = 1;
+
+  // The entry that was committed.
+  oneof entry {
+    KeyValue kv = 5;
+    NvKeyValue nv_kv = 6;
+  }
 }

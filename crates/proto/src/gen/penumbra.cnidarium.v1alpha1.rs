@@ -91,6 +91,106 @@ impl ::prost::Name for PrefixValueResponse {
         ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
     }
 }
+/// Requests a stream of new key-value pairs that have been committed to the state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WatchRequest {
+    /// A regex for keys in the verifiable storage.
+    ///
+    /// Only key-value updates whose keys match this regex will be returned.
+    /// Note that the empty string matches all keys.
+    /// To exclude all keys, use the regex "$^", which matches no strings.
+    #[prost(string, tag = "1")]
+    pub key_regex: ::prost::alloc::string::String,
+    /// A regex for keys in the nonverifiable storage.
+    ///
+    /// Only key-value updates whose keys match this regex will be returned.
+    /// Note that the empty string matches all keys.
+    /// To exclude all keys, use the regex "$^", which matches no strings.
+    #[prost(string, tag = "2")]
+    pub nv_key_regex: ::prost::alloc::string::String,
+}
+impl ::prost::Name for WatchRequest {
+    const NAME: &'static str = "WatchRequest";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+    }
+}
+/// A key-value pair that has been committed to the state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct WatchResponse {
+    /// The state version the key-value pair was committed at.
+    #[prost(uint64, tag = "1")]
+    pub version: u64,
+    /// The entry that was committed.
+    #[prost(oneof = "watch_response::Entry", tags = "5, 6")]
+    pub entry: ::core::option::Option<watch_response::Entry>,
+}
+/// Nested message and enum types in `WatchResponse`.
+pub mod watch_response {
+    /// Elements of the verifiable storage have string keys.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct KeyValue {
+        #[prost(string, tag = "1")]
+        pub key: ::prost::alloc::string::String,
+        #[prost(bytes = "vec", tag = "2")]
+        pub value: ::prost::alloc::vec::Vec<u8>,
+        /// If set to true, the key-value pair was deleted.
+        /// This allows distinguishing a deleted key-value pair from a key-value pair whose value is empty.
+        #[prost(bool, tag = "3")]
+        pub deleted: bool,
+    }
+    impl ::prost::Name for KeyValue {
+        const NAME: &'static str = "KeyValue";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.cnidarium.v1alpha1.WatchResponse.{}", Self::NAME
+            )
+        }
+    }
+    /// Elements of the nonverifiable storage have byte keys.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct NvKeyValue {
+        #[prost(bytes = "vec", tag = "1")]
+        pub key: ::prost::alloc::vec::Vec<u8>,
+        #[prost(bytes = "vec", tag = "2")]
+        pub value: ::prost::alloc::vec::Vec<u8>,
+        /// If set to true, the key-value pair was deleted.
+        /// This allows distinguishing a deleted key-value pair from a key-value pair whose value is empty.
+        #[prost(bool, tag = "3")]
+        pub deleted: bool,
+    }
+    impl ::prost::Name for NvKeyValue {
+        const NAME: &'static str = "NvKeyValue";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.cnidarium.v1alpha1.WatchResponse.{}", Self::NAME
+            )
+        }
+    }
+    /// The entry that was committed.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Entry {
+        #[prost(message, tag = "5")]
+        Kv(KeyValue),
+        #[prost(message, tag = "6")]
+        NvKv(NvKeyValue),
+    }
+}
+impl ::prost::Name for WatchResponse {
+    const NAME: &'static str = "WatchResponse";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -211,7 +311,6 @@ pub mod query_service_client {
         }
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
-        /// Returns a stream of `PrefixValueResponse`s.
         pub async fn prefix_value(
             &mut self,
             request: impl tonic::IntoRequest<super::PrefixValueRequest>,
@@ -242,6 +341,34 @@ pub mod query_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Subscribes to a stream of key-value updates, with regex filtering on keys.
+        pub async fn watch(
+            &mut self,
+            request: impl tonic::IntoRequest<super::WatchRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::WatchResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.cnidarium.v1alpha1.QueryService/Watch",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("penumbra.cnidarium.v1alpha1.QueryService", "Watch"),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -269,7 +396,6 @@ pub mod query_service_server {
             + 'static;
         /// General-purpose prefixed key-value state query API, that can be used to query
         /// arbitrary prefixes in the JMT storage.
-        /// Returns a stream of `PrefixValueResponse`s.
         async fn prefix_value(
             &self,
             request: tonic::Request<super::PrefixValueRequest>,
@@ -277,6 +403,17 @@ pub mod query_service_server {
             tonic::Response<Self::PrefixValueStream>,
             tonic::Status,
         >;
+        /// Server streaming response type for the Watch method.
+        type WatchStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::WatchResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Subscribes to a stream of key-value updates, with regex filtering on keys.
+        async fn watch(
+            &self,
+            request: tonic::Request<super::WatchRequest>,
+        ) -> std::result::Result<tonic::Response<Self::WatchStream>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct QueryServiceServer<T: QueryService> {
@@ -435,6 +572,53 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = PrefixValueSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.cnidarium.v1alpha1.QueryService/Watch" => {
+                    #[allow(non_camel_case_types)]
+                    struct WatchSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<super::WatchRequest>
+                    for WatchSvc<T> {
+                        type Response = super::WatchResponse;
+                        type ResponseStream = T::WatchStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::WatchRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::watch(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = WatchSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
