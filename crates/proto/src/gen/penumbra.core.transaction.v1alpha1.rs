@@ -5,13 +5,9 @@ pub struct Transaction {
     #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<TransactionBody>,
     /// The binding signature is stored separately from the transaction body that it signs.
-    #[prost(bytes = "vec", tag = "2")]
-    pub binding_sig: ::prost::alloc::vec::Vec<u8>,
-    /// The root of some previous state of the state commitment tree, used as an anchor for all
-    /// ZK state transition proofs.
-    #[prost(message, optional, tag = "3")]
-    pub anchor: ::core::option::Option<
-        super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    #[prost(message, optional, tag = "2")]
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1alpha1::BindingSignature,
     >,
 }
 impl ::prost::Name for Transaction {
@@ -45,9 +41,6 @@ pub struct TransactionBody {
     /// Parameters determining if a transaction should be accepted by this chain.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
     pub detection_data: ::core::option::Option<DetectionData>,
@@ -91,6 +84,15 @@ pub struct TransactionParameters {
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
+    /// The root of some previous state of the state commitment tree, used as an anchor for all
+    /// ZK state transition proofs.
+    #[prost(message, optional, tag = "3")]
+    pub anchor: ::core::option::Option<
+        super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+    /// The transaction fee.
+    #[prost(message, optional, tag = "4")]
+    pub fee: ::core::option::Option<super::super::asset::v1alpha1::Value>,
 }
 impl ::prost::Name for TransactionParameters {
     const NAME: &'static str = "TransactionParameters";
@@ -111,6 +113,20 @@ pub struct DetectionData {
 }
 impl ::prost::Name for DetectionData {
     const NAME: &'static str = "DetectionData";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DetectionDataPlan {
+    /// A list of clues for use with Fuzzy Message Detection.
+    #[prost(message, repeated, tag = "1")]
+    pub fmd_clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
+}
+impl ::prost::Name for DetectionDataPlan {
+    const NAME: &'static str = "DetectionDataPlan";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -310,9 +326,6 @@ pub struct TransactionBodyView {
     /// Transaction parameters.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// The detection data in this transaction, only populated if
     /// there are outputs in the actions of this transaction.
     #[prost(message, optional, tag = "4")]
@@ -495,18 +508,14 @@ pub struct TransactionPlan {
     /// or Delegation. See the ActionPlan docs for a full list of options.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<ActionPlan>,
-    /// Time, as block height, after which TransactionPlan should be considered invalid.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
-    /// The name of the network for which this TransactionPlan was built.
-    #[prost(string, tag = "3")]
-    pub chain_id: ::prost::alloc::string::String,
+    /// Parameters determining if a transaction should be accepted by this chain.
+    #[prost(message, optional, tag = "2")]
+    pub transaction_parameters: ::core::option::Option<TransactionParameters>,
+    /// The planned DetectionData for the transaction.
     #[prost(message, optional, tag = "4")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
-    #[prost(message, repeated, tag = "5")]
-    pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
-    /// Planning interface for constructing an optional Memo for the Transaction.
-    #[prost(message, optional, tag = "6")]
+    pub detection_data_plan: ::core::option::Option<DetectionDataPlan>,
+    /// A plan for the transaction memo.
+    #[prost(message, optional, tag = "5")]
     pub memo_plan: ::core::option::Option<MemoPlan>,
 }
 impl ::prost::Name for TransactionPlan {

@@ -77,7 +77,7 @@ pub struct SwapClaimBody {
     pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The fee allows `SwapClaim` without an additional `Spend`.
     #[prost(message, optional, tag = "2")]
-    pub fee: ::core::option::Option<super::super::fee::v1alpha1::Fee>,
+    pub fee: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
     /// Note output for asset 1.
     #[prost(message, optional, tag = "3")]
     pub output_1_commitment: ::core::option::Option<
@@ -162,7 +162,7 @@ pub struct SwapPlaintext {
     pub delta_2_i: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     /// Pre-paid fee to claim the swap
     #[prost(message, optional, tag = "4")]
-    pub claim_fee: ::core::option::Option<super::super::fee::v1alpha1::Fee>,
+    pub claim_fee: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
     /// Address that will claim the swap outputs via SwapClaim.
     #[prost(message, optional, tag = "5")]
     pub claim_address: ::core::option::Option<

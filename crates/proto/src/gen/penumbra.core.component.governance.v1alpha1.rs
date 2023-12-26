@@ -191,8 +191,8 @@ pub struct DelegatorVoteBody {
         super::super::super::num::v1alpha1::Amount,
     >,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "6")]
-    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The randomized validating key for the spend authorization signature.
     #[prost(bytes = "vec", tag = "7")]
     pub rk: ::prost::alloc::vec::Vec<u8>,

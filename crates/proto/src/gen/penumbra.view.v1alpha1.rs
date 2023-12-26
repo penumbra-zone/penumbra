@@ -79,8 +79,9 @@ pub struct TransactionPlannerRequest {
     #[prost(uint64, tag = "1")]
     pub expiry_height: u64,
     /// The fee for the requested TransactionPlan, if any.
+    /// If the fee is unset, requests the planner to compute the fee.
     #[prost(message, optional, tag = "2")]
-    pub fee: ::core::option::Option<super::super::core::component::fee::v1alpha1::Fee>,
+    pub fee: ::core::option::Option<super::super::core::asset::v1alpha1::Value>,
     /// The memo for the requested TransactionPlan.
     /// The memo must be unspecified unless `outputs` is nonempty.
     #[prost(message, optional, tag = "3")]
@@ -167,7 +168,7 @@ pub mod transaction_planner_request {
         /// The pre-paid fee to be paid for claiming the Swap outputs.
         #[prost(message, optional, tag = "3")]
         pub fee: ::core::option::Option<
-            super::super::super::core::component::fee::v1alpha1::Fee,
+            super::super::super::core::asset::v1alpha1::Value,
         >,
         /// The address to which swap claim output will be sent.
         #[prost(message, optional, tag = "4")]

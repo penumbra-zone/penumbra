@@ -45,7 +45,7 @@ message SwapClaimBody {
   // The nullifier for the Swap commitment to be consumed.
   component.sct.v1alpha1.Nullifier nullifier = 1;
   // The fee allows `SwapClaim` without an additional `Spend`.
-  component.fee.v1alpha1.Fee fee = 2;
+  asset.v1alpha1.Value fee = 2;
   // Note output for asset 1.
   crypto.tct.v1alpha1.StateCommitment output_1_commitment = 3;
   // Note output for asset 2.
@@ -84,7 +84,7 @@ message SwapPlaintext {
   // Input amount of asset 2
   num.v1alpha1.Amount delta_2_i = 3;
   // Pre-paid fee to claim the swap
-  fee.v1alpha1.Fee claim_fee = 4;
+  asset.v1alpha1.Value claim_fee = 4;
   // Address that will claim the swap outputs via SwapClaim.
   keys.v1alpha1.Address claim_address = 5;
   // Swap rseed (blinding factors are derived from this)

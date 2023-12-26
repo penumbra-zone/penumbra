@@ -8,3 +8,7 @@ message SpendAuthSignature {
 message BindingSignature {
   bytes inner = 1;
 }
+
+message SpendVerificationKey {
+  bytes inner = 1;
+}

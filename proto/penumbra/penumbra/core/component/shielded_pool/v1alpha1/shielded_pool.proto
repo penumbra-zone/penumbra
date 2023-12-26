@@ -80,9 +80,9 @@ message SpendBody {
   // A commitment to the value of the input note.
   asset.v1alpha1.BalanceCommitment balance_commitment = 1;
   // The nullifier of the input note.
-  bytes nullifier = 3;
+  component.sct.v1alpha1.Nullifier nullifier = 3;
   // The randomized validating key for the spend authorization signature.
-  bytes rk = 4;
+  crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey rk = 4;
 }
 message SpendView {
   message Visible {
