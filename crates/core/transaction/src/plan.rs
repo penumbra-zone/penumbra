@@ -42,7 +42,7 @@ pub struct TransactionPlan {
     pub actions: Vec<ActionPlan>,
     pub transaction_parameters: TransactionParameters,
     pub detection_data: DetectionDataPlan,
-    pub memo_data: Option<MemoPlan>,
+    pub memo: Option<MemoPlan>,
 }
 
 impl TransactionPlan {
@@ -292,9 +292,7 @@ impl TransactionPlan {
 
     /// Convenience method to grab the `MemoKey` from the plan.
     pub fn memo_key(&self) -> Option<PayloadKey> {
-        self.memo_data
-            .as_ref()
-            .map(|memo_plan| memo_plan.key.clone())
+        self.memo.as_ref().map(|memo_plan| memo_plan.key.clone())
     }
 }
 
@@ -308,7 +306,7 @@ impl From<TransactionPlan> for pb::TransactionPlan {
             actions: msg.actions.into_iter().map(Into::into).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
             detection_data: Some(msg.detection_data.into()),
-            memo_data: msg.memo_data.map(Into::into),
+            memo: msg.memo.map(Into::into),
         }
     }
 }
@@ -330,7 +328,7 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .detection_data
                 .ok_or_else(|| anyhow::anyhow!("transaction plan missing detection data"))?
                 .try_into()?,
-            memo_data: value.memo_data.map(TryInto::try_into).transpose()?,
+            memo: value.memo.map(TryInto::try_into).transpose()?,
         })
     }
 }

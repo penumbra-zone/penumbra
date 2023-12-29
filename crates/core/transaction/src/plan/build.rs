@@ -25,7 +25,7 @@ impl TransactionPlan {
     ) -> Result<Transaction> {
         // Add the memo if it is planned.
         let memo = self
-            .memo_data
+            .memo
             .as_ref()
             .map(|memo_data| memo_data.memo())
             .transpose()?;

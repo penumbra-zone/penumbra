@@ -50,28 +50,14 @@ pub struct TransactionBody {
     /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
     pub detection_data: ::core::option::Option<DetectionData>,
-    /// Sub-message containing memo ciphertext if a memo was added to the transaction.
+    /// The encrypted memo for this transaction.
+    ///
+    /// This field will be present if and only if the transaction has outputs.
     #[prost(message, optional, tag = "5")]
-    pub memo_data: ::core::option::Option<MemoData>,
+    pub memo: ::core::option::Option<MemoCiphertext>,
 }
 impl ::prost::Name for TransactionBody {
     const NAME: &'static str = "TransactionBody";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
-/// Represents the encrypted memo data.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MemoData {
-    /// The encrypted data. It will only be populated if there are
-    /// outputs in the actions of the transaction. 528 bytes.
-    #[prost(bytes = "vec", tag = "1")]
-    pub encrypted_memo: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MemoData {
-    const NAME: &'static str = "MemoData";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -506,7 +492,7 @@ pub struct TransactionPlan {
     pub detection_data: ::core::option::Option<DetectionDataPlan>,
     /// The memo plan for this transaction.
     #[prost(message, optional, tag = "5")]
-    pub memo_data: ::core::option::Option<MemoDataPlan>,
+    pub memo: ::core::option::Option<MemoPlan>,
 }
 impl ::prost::Name for TransactionPlan {
     const NAME: &'static str = "TransactionPlan";
@@ -647,10 +633,10 @@ impl ::prost::Name for CluePlan {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// Describes a plan for forming a `MemoData`.
+/// Describes a plan for forming the transaction memo.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MemoDataPlan {
+pub struct MemoPlan {
     /// The plaintext.
     #[prost(message, optional, tag = "1")]
     pub plaintext: ::core::option::Option<MemoPlaintext>,
@@ -658,16 +644,18 @@ pub struct MemoDataPlan {
     #[prost(bytes = "vec", tag = "2")]
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for MemoDataPlan {
-    const NAME: &'static str = "MemoDataPlan";
+impl ::prost::Name for MemoPlan {
+    const NAME: &'static str = "MemoPlan";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
+/// The encrypted memo data describing information about the purpose of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoCiphertext {
+    /// The encrypted data. 528 bytes.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
@@ -678,11 +666,17 @@ impl ::prost::Name for MemoCiphertext {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
+/// The plaintext describing information about the purpose of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlaintext {
+    /// The sender's return address.
+    ///
+    /// This should always be a valid address; the sender is responsible for ensuring
+    /// that if the receiver returns funds to this address, they will not be lost.
     #[prost(message, optional, tag = "1")]
     pub return_address: ::core::option::Option<super::super::keys::v1alpha1::Address>,
+    /// Free-form text, up to 432 bytes long.
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
 }

@@ -185,7 +185,7 @@ where
                 ..Default::default()
             },
             // The transaction doesn't need a memo, because it's to ourselves.
-            memo_data: None,
+            memo: None,
             ..Default::default()
         };
 
