@@ -6,7 +6,6 @@ use std::{
 use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
-use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
 use penumbra_chain::TransactionContext;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
@@ -14,7 +13,6 @@ use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
-use penumbra_fee::Fee;
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
@@ -32,31 +30,16 @@ use serde::{Deserialize, Serialize};
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
-    Action, ActionView, Id, IsAction, MemoPlaintextView, TransactionPerspective, TransactionView,
+    Action, ActionView, DetectionData, Id, IsAction, MemoPlaintextView, TransactionParameters,
+    TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub transaction_parameters: TransactionParameters,
-    pub fee: Fee,
     pub detection_data: Option<DetectionData>,
     pub memo: Option<MemoCiphertext>,
-}
-
-#[derive(Clone, Debug, Default)]
-/// Parameters determining when the transaction should be accepted to the chain.
-pub struct TransactionParameters {
-    pub expiry_height: u64,
-    pub chain_id: String,
-}
-
-#[derive(Clone, Debug, Default)]
-/// Detection data used by a detection server using Fuzzy Message Detection.
-///
-/// Only present if outputs are present.
-pub struct DetectionData {
-    pub fmd_clues: Vec<Clue>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -279,7 +262,6 @@ impl Transaction {
             body_view: TransactionBodyView {
                 action_views,
                 transaction_parameters: self.transaction_parameters(),
-                fee: self.transaction_body().fee,
                 detection_data,
                 memo_view,
             },
@@ -527,7 +509,11 @@ impl Transaction {
 
         // Add fee into binding verification key computation.
         let fee_v_blinding = Fr::zero();
-        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
+        let fee_value_commitment = self
+            .transaction_body
+            .transaction_parameters
+            .fee
+            .commit(fee_v_blinding);
         balance_commitments += fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
@@ -539,68 +525,22 @@ impl Transaction {
     }
 }
 
+/*
 impl From<TransactionBody> for Vec<u8> {
     fn from(transaction_body: TransactionBody) -> Vec<u8> {
         let protobuf_serialized: pbt::TransactionBody = transaction_body.into();
         protobuf_serialized.encode_to_vec()
     }
 }
-
-impl DomainType for TransactionParameters {
-    type Proto = pbt::TransactionParameters;
-}
-
-impl TryFrom<pbt::TransactionParameters> for TransactionParameters {
-    type Error = Error;
-
-    fn try_from(proto: pbt::TransactionParameters) -> anyhow::Result<Self, Self::Error> {
-        Ok(TransactionParameters {
-            expiry_height: proto.expiry_height,
-            chain_id: proto.chain_id,
-        })
-    }
-}
-
-impl From<TransactionParameters> for pbt::TransactionParameters {
-    fn from(msg: TransactionParameters) -> Self {
-        pbt::TransactionParameters {
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
-        }
-    }
-}
-
-impl DomainType for DetectionData {
-    type Proto = pbt::DetectionData;
-}
-
-impl TryFrom<pbt::DetectionData> for DetectionData {
-    type Error = Error;
-
-    fn try_from(proto: pbt::DetectionData) -> anyhow::Result<Self, Self::Error> {
-        let fmd_clues = proto
-            .fmd_clues
-            .into_iter()
-            .map(|x| x.try_into())
-            .collect::<Result<Vec<Clue>, Error>>()?;
-        Ok(DetectionData { fmd_clues })
-    }
-}
-
-impl From<DetectionData> for pbt::DetectionData {
-    fn from(msg: DetectionData) -> Self {
-        let fmd_clues = msg.fmd_clues.into_iter().map(|x| x.into()).collect();
-
-        pbt::DetectionData { fmd_clues }
-    }
-}
-
+ */
 impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
+        // TODO: this doesn't seem right, why do we have so many different memo handling types
+        // and behaviors? why are we encoding Some(encrypted_memo) of a possibly-empty byte vector?
         let encrypted_memo: pbt::MemoData = match msg.memo {
             Some(memo) => pbt::MemoData {
                 encrypted_memo: memo.0.to_vec(),
@@ -613,7 +553,6 @@ impl From<TransactionBody> for pbt::TransactionBody {
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
-            fee: Some(msg.fee.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
             memo_data: Some(encrypted_memo),
         }
@@ -632,12 +571,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
                     .context("action malformed while parsing transaction body")?,
             );
         }
-
-        let fee: Fee = proto
-            .fee
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing fee"))?
-            .try_into()
-            .context("fee malformed")?;
 
         let encrypted_memo = proto
             .memo_data
@@ -671,7 +604,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         Ok(TransactionBody {
             actions,
             transaction_parameters,
-            fee,
             detection_data,
             memo,
         })

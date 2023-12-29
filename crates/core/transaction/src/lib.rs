@@ -17,10 +17,12 @@
 
 mod auth_data;
 mod auth_hash;
+mod detection_data;
 mod effect_hash;
 mod error;
 mod id;
 mod is_action;
+mod parameters;
 mod transaction;
 mod witness_data;
 
@@ -33,12 +35,14 @@ pub mod view;
 pub use action::Action;
 pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
+pub use detection_data::DetectionData;
 pub use effect_hash::EffectingData;
 pub use error::Error;
 pub use id::Id;
 pub use is_action::IsAction;
+pub use parameters::TransactionParameters;
 pub use plan::ActionPlan;
-pub use transaction::{Transaction, TransactionBody, TransactionParameters};
+pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;
 

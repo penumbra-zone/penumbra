@@ -7,7 +7,6 @@ use decaf377_rdsa::SigningKey;
 use penumbra_asset::Value;
 use penumbra_chain::{component::StateWriteExt, EffectHash, TransactionContext};
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_fee::Fee;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
 use penumbra_sct::component::SourceContext;
@@ -249,7 +248,6 @@ async fn spend_duplicate_nullifier_same_transaction() {
             penumbra_transaction::Action::Output(output),
         ],
         transaction_parameters: TransactionParameters::default(),
-        fee: Fee::from_staking_token_amount(0u64.into()),
         detection_data: None,
         memo: None,
     };

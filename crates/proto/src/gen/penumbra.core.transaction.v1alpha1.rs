@@ -45,9 +45,6 @@ pub struct TransactionBody {
     /// Parameters determining if a transaction should be accepted by this chain.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
     pub detection_data: ::core::option::Option<DetectionData>,
@@ -91,6 +88,9 @@ pub struct TransactionParameters {
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
+    /// The transaction fee.
+    #[prost(message, optional, tag = "3")]
+    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
 }
 impl ::prost::Name for TransactionParameters {
     const NAME: &'static str = "TransactionParameters";
@@ -310,9 +310,6 @@ pub struct TransactionBodyView {
     /// Transaction parameters.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// The detection data in this transaction, only populated if
     /// there are outputs in the actions of this transaction.
     #[prost(message, optional, tag = "4")]
@@ -488,29 +485,40 @@ impl ::prost::Name for WitnessData {
 }
 /// Describes a planned transaction. Permits clients to prepare a transaction
 /// prior submission, so that a user can review it prior to authorizing its execution.
+///
+/// The `TransactionPlan` is a fully determined bundle binding all of a transaction's effects.
+/// The only thing it does not include is the witness data used for proving.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlan {
-    /// The planner interface(s) for Actions to be performed, such as a Spend, Swap,
-    /// or Delegation. See the ActionPlan docs for a full list of options.
+    /// The sequence of actions planned for this transaction.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<ActionPlan>,
-    /// Time, as block height, after which TransactionPlan should be considered invalid.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
-    /// The name of the network for which this TransactionPlan was built.
-    #[prost(string, tag = "3")]
-    pub chain_id: ::prost::alloc::string::String,
+    /// Parameters determining if a transaction should be accepted by this chain.
+    #[prost(message, optional, tag = "2")]
+    pub transaction_parameters: ::core::option::Option<TransactionParameters>,
+    /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
-    #[prost(message, repeated, tag = "5")]
-    pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
-    /// Planning interface for constructing an optional Memo for the Transaction.
-    #[prost(message, optional, tag = "6")]
-    pub memo_plan: ::core::option::Option<MemoPlan>,
+    pub detection_data: ::core::option::Option<DetectionDataPlan>,
+    /// The memo plan for this transaction.
+    #[prost(message, optional, tag = "5")]
+    pub memo_data: ::core::option::Option<MemoDataPlan>,
 }
 impl ::prost::Name for TransactionPlan {
     const NAME: &'static str = "TransactionPlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DetectionDataPlan {
+    #[prost(message, repeated, tag = "5")]
+    pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
+}
+impl ::prost::Name for DetectionDataPlan {
+    const NAME: &'static str = "DetectionDataPlan";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -635,10 +643,10 @@ impl ::prost::Name for CluePlan {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// Describes a plan for forming a `Memo`.
+/// Describes a plan for forming a `MemoData`.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MemoPlan {
+pub struct MemoDataPlan {
     /// The plaintext.
     #[prost(message, optional, tag = "1")]
     pub plaintext: ::core::option::Option<MemoPlaintext>,
@@ -646,8 +654,8 @@ pub struct MemoPlan {
     #[prost(bytes = "vec", tag = "2")]
     pub key: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for MemoPlan {
-    const NAME: &'static str = "MemoPlan";
+impl ::prost::Name for MemoDataPlan {
+    const NAME: &'static str = "MemoDataPlan";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)

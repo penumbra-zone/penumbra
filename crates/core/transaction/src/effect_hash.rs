@@ -22,7 +22,7 @@ use penumbra_shielded_pool::{output, spend, Ics20Withdrawal};
 use penumbra_stake::{validator, Delegate, Undelegate, UndelegateClaimBody};
 
 use crate::{
-    memo::MemoCiphertext, plan::TransactionPlan, transaction::DetectionData, Action, Transaction,
+    memo::MemoCiphertext, plan::TransactionPlan, Action, DetectionData, Transaction,
     TransactionBody, TransactionParameters,
 };
 
@@ -57,7 +57,6 @@ impl TransactionBody {
 
         // Hash the fixed data of the transaction body.
         state.update(self.transaction_parameters.effect_hash().as_bytes());
-        state.update(self.fee.effect_hash().as_bytes());
         if self.memo.is_some() {
             let memo_ciphertext = self.memo.clone();
             state.update(
@@ -104,18 +103,13 @@ impl TransactionPlan {
         let mut state = create_personalized_state(&pbt::TransactionBody::type_url());
 
         // Hash the fixed data of the transaction body.
-        let tx_params = TransactionParameters {
-            chain_id: self.chain_id.clone(),
-            expiry_height: self.expiry_height,
-        };
-        state.update(tx_params.effect_hash().as_bytes());
-        state.update(self.fee.effect_hash().as_bytes());
+        state.update(self.transaction_parameters.effect_hash().as_bytes());
 
         // Hash the memo and save the memo key for use with outputs later.
         let mut memo_key: Option<PayloadKey> = None;
-        if self.memo_plan.is_some() {
+        if self.memo_data.is_some() {
             let memo_plan = self
-                .memo_plan
+                .memo_data
                 .clone()
                 .expect("memo_plan must be present in TransactionPlan");
             let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
@@ -124,14 +118,8 @@ impl TransactionPlan {
         }
 
         // Hash the detection data.
-        if !self.clue_plans.is_empty() {
-            let detection_data = DetectionData {
-                fmd_clues: self
-                    .clue_plans
-                    .iter()
-                    .map(|clue_plan| clue_plan.clue())
-                    .collect(),
-            };
+        if !self.detection_data.clue_plans.is_empty() {
+            let detection_data = self.detection_data.detection_data();
             state.update(detection_data.effect_hash().as_bytes());
         }
 
@@ -453,8 +441,8 @@ mod tests {
 
     use crate::{
         memo::MemoPlaintext,
-        plan::{CluePlan, MemoPlan, TransactionPlan},
-        WitnessData,
+        plan::{CluePlan, DetectionDataPlan, MemoPlan, TransactionPlan},
+        TransactionParameters, WitnessData,
     };
 
     /// This isn't an exhaustive test, but we don't currently have a
@@ -525,9 +513,6 @@ mod tests {
             text: "".to_string(),
         };
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "penumbra-test".to_string(),
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
@@ -544,8 +529,15 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
                 SwapPlan::new(&mut OsRng, swap_plaintext).into(),
             ],
-            clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
-            memo_plan: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "penumbra-test".to_string(),
+            },
+            detection_data: DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
+            },
+            memo_data: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
