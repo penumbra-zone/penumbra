@@ -72,11 +72,10 @@ impl DomainType for Body {
 
 impl From<Body> for pb::SpendBody {
     fn from(msg: Body) -> Self {
-        let nullifier_bytes: [u8; 32] = msg.nullifier.into();
         let rk_bytes: [u8; 32] = msg.rk.into();
         pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
-            nullifier: nullifier_bytes.to_vec(),
+            nullifier: Some(msg.nullifier.into()),
             rk: rk_bytes.to_vec(),
         }
     }
@@ -92,7 +91,9 @@ impl TryFrom<pb::SpendBody> for Body {
             .try_into()
             .context("malformed balance commitment")?;
 
-        let nullifier = (proto.nullifier[..])
+        let nullifier = proto
+            .nullifier
+            .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
             .try_into()
             .context("malformed nullifier")?;
 

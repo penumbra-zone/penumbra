@@ -967,7 +967,7 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.unbonded_amount.is_some() {
             len += 1;
         }
-        if !self.nullifier.is_empty() {
+        if self.nullifier.is_some() {
             len += 1;
         }
         if !self.rk.is_empty() {
@@ -991,9 +991,8 @@ impl serde::Serialize for DelegatorVoteBody {
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
         }
-        if !self.nullifier.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
+        if let Some(v) = self.nullifier.as_ref() {
+            struct_ser.serialize_field("nullifier", v)?;
         }
         if !self.rk.is_empty() {
             #[allow(clippy::needless_borrow)]
@@ -1123,9 +1122,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            nullifier__ = map_.next_value()?;
                         }
                         GeneratedField::Rk => {
                             if rk__.is_some() {
@@ -1143,7 +1140,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     vote: vote__,
                     value: value__,
                     unbonded_amount: unbonded_amount__,
-                    nullifier: nullifier__.unwrap_or_default(),
+                    nullifier: nullifier__,
                     rk: rk__.unwrap_or_default(),
                 })
             }
