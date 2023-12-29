@@ -80,7 +80,7 @@ message SpendBody {
   // A commitment to the value of the input note.
   asset.v1alpha1.BalanceCommitment balance_commitment = 1;
   // The nullifier of the input note.
-  bytes nullifier = 3;
+  sct.v1alpha1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
   bytes rk = 4;
 }

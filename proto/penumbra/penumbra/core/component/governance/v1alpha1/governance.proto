@@ -8,6 +8,7 @@ import "penumbra/core/component/dao/v1alpha1/dao.proto";
 import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
+import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
@@ -87,7 +88,7 @@ message DelegatorVoteBody {
   // The amount of the delegation note, in unbonded penumbra.
   num.v1alpha1.Amount unbonded_amount = 5;
   // The nullifier of the input note.
-  bytes nullifier = 6;
+  sct.v1alpha1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
   bytes rk = 7;
 }
