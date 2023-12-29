@@ -525,14 +525,6 @@ impl Transaction {
     }
 }
 
-/*
-impl From<TransactionBody> for Vec<u8> {
-    fn from(transaction_body: TransactionBody) -> Vec<u8> {
-        let protobuf_serialized: pbt::TransactionBody = transaction_body.into();
-        protobuf_serialized.encode_to_vec()
-    }
-}
- */
 impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
