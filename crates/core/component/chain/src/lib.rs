@@ -1,7 +1,6 @@
 #![deny(clippy::unwrap_used)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-pub use effect_hash::{EffectHash, EffectingData};
 pub use epoch::Epoch;
 pub use transaction::TransactionContext;
 

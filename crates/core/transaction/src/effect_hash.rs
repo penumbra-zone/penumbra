@@ -1,10 +1,10 @@
 use decaf377_fmd::Clue;
-use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
     swap, swap_claim,
 };
+use penumbra_effecthash::EffectHash;
 use penumbra_fee::Fee;
 use penumbra_governance::{
     DelegatorVote, DelegatorVoteBody, Proposal, ProposalDepositClaim, ProposalSubmit,
@@ -31,7 +31,7 @@ pub trait EffectingData {
     fn effect_hash(&self) -> EffectHash;
 }
 
-impl<'a, T: penumbra_chain::EffectingData> EffectingData for crate::Compat<'a, T> {
+impl<'a, T: penumbra_effecthash::EffectingData> EffectingData for crate::Compat<'a, T> {
     fn effect_hash(&self) -> EffectHash {
         self.0.effect_hash()
     }

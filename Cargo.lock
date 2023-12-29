@@ -4927,6 +4927,7 @@ dependencies = [
  "penumbra-dao",
  "penumbra-dex",
  "penumbra-distributions",
+ "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",
@@ -5066,6 +5067,7 @@ dependencies = [
  "ics23",
  "once_cell",
  "penumbra-asset",
+ "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
@@ -5134,6 +5136,7 @@ dependencies = [
  "futures",
  "hex",
  "penumbra-chain",
+ "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-proto",
  "penumbra-transaction",
@@ -5272,6 +5275,15 @@ dependencies = [
  "rand_core 0.6.4",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "penumbra-effecthash"
+version = "0.64.1"
+dependencies = [
+ "anyhow",
+ "hex",
+ "penumbra-proto",
 ]
 
 [[package]]
@@ -5883,6 +5895,7 @@ dependencies = [
  "penumbra-chain",
  "penumbra-dao",
  "penumbra-dex",
+ "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",
