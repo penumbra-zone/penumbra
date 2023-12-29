@@ -10,8 +10,7 @@ use std::fmt::Debug;
 use super::TransactionPlan;
 use crate::ActionPlan;
 use crate::{
-    action::Action, AuthorizationData, AuthorizingData, DetectionData, Transaction,
-    TransactionBody, WitnessData,
+    action::Action, AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
 };
 
 impl TransactionPlan {
@@ -30,16 +29,7 @@ impl TransactionPlan {
             .map(|memo_data| memo_data.memo())
             .transpose()?;
 
-        // Add detection data when there are outputs.
-        let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
-            None
-        } else {
-            let mut fmd_clues = Vec::new();
-            for clue_plan in self.clue_plans() {
-                fmd_clues.push(clue_plan.clue());
-            }
-            Some(DetectionData { fmd_clues })
-        };
+        let detection_data = self.detection_data.as_ref().map(|x| x.detection_data());
 
         let transaction_body = TransactionBody {
             actions,
