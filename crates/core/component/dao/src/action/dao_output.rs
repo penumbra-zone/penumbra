@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
@@ -17,6 +18,12 @@ impl DaoOutput {
     pub fn balance(&self) -> Balance {
         // Outputs from the DAO require value
         -Balance::from(self.value)
+    }
+}
+
+impl EffectingData for DaoOutput {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

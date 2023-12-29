@@ -8,3 +8,4 @@ edition = "2021"
 penumbra-proto = { path = "../../proto", default-features = false }
 anyhow = "1"
 hex = "0.4"
+blake2b_simd = "0.5"

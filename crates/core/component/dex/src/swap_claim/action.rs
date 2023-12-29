@@ -1,5 +1,6 @@
 use anyhow::Context;
 use penumbra_asset::Balance;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_fee::Fee;
 use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
 use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
@@ -23,6 +24,14 @@ impl SwapClaim {
     /// Will add (f,fee_token) representing the pre-paid fee
     pub fn balance(&self) -> Balance {
         self.body.fee.value().into()
+    }
+}
+
+impl EffectingData for SwapClaim {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the swap claim, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
     }
 }
 
@@ -70,6 +79,12 @@ pub struct Body {
     pub output_1_commitment: tct::StateCommitment,
     pub output_2_commitment: tct::StateCommitment,
     pub output_data: BatchSwapOutputData,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for Body {

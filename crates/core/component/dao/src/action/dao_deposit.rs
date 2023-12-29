@@ -1,4 +1,5 @@
 use anyhow::{Context, Error};
+use penumbra_effecthash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
@@ -16,6 +17,12 @@ impl DaoDeposit {
     pub fn balance(&self) -> Balance {
         // Deposits into the DAO require value
         -Balance::from(self.value)
+    }
+}
+
+impl EffectingData for DaoDeposit {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

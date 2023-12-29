@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
@@ -38,6 +39,35 @@ pub enum Action {
     DaoSpend(penumbra_dao::DaoSpend),
     DaoOutput(penumbra_dao::DaoOutput),
     DaoDeposit(penumbra_dao::DaoDeposit),
+}
+
+impl EffectingData for Action {
+    fn effect_hash(&self) -> EffectHash {
+        match self {
+            Action::Output(output) => output.effect_hash(),
+            Action::Spend(spend) => spend.effect_hash(),
+            Action::Delegate(delegate) => delegate.effect_hash(),
+            Action::Undelegate(undelegate) => undelegate.effect_hash(),
+            Action::UndelegateClaim(claim) => claim.effect_hash(),
+            Action::ProposalSubmit(submit) => submit.effect_hash(),
+            Action::ProposalWithdraw(withdraw) => withdraw.effect_hash(),
+            Action::ProposalDepositClaim(claim) => claim.effect_hash(),
+            Action::DelegatorVote(vote) => vote.effect_hash(),
+            Action::ValidatorVote(vote) => vote.effect_hash(),
+            Action::SwapClaim(swap_claim) => swap_claim.effect_hash(),
+            Action::Swap(swap) => swap.effect_hash(),
+            Action::ValidatorDefinition(defn) => defn.effect_hash(),
+            Action::IbcRelay(payload) => payload.effect_hash(),
+            Action::PositionOpen(p) => p.effect_hash(),
+            Action::PositionClose(p) => p.effect_hash(),
+            Action::PositionWithdraw(p) => p.effect_hash(),
+            Action::PositionRewardClaim(p) => p.effect_hash(),
+            Action::Ics20Withdrawal(w) => w.effect_hash(),
+            Action::DaoSpend(d) => d.effect_hash(),
+            Action::DaoOutput(d) => d.effect_hash(),
+            Action::DaoDeposit(d) => d.effect_hash(),
+        }
+    }
 }
 
 impl Action {

@@ -18,7 +18,6 @@
 mod auth_data;
 mod auth_hash;
 mod detection_data;
-mod effect_hash;
 mod error;
 mod id;
 mod is_action;
@@ -36,7 +35,6 @@ pub use action::Action;
 pub use auth_data::AuthorizationData;
 pub use auth_hash::{AuthHash, AuthorizingData};
 pub use detection_data::DetectionData;
-pub use effect_hash::EffectingData;
 pub use error::Error;
 pub use id::Id;
 pub use is_action::IsAction;

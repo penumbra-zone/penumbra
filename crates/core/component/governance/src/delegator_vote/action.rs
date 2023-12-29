@@ -3,6 +3,7 @@ use anyhow::Context;
 use crate::{vote::Vote, DelegatorVoteProof};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::Value;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
@@ -13,6 +14,12 @@ pub struct DelegatorVote {
     pub body: DelegatorVoteBody,
     pub auth_sig: Signature<SpendAuth>,
     pub proof: DelegatorVoteProof,
+}
+
+impl EffectingData for DelegatorVote {
+    fn effect_hash(&self) -> EffectHash {
+        self.body.effect_hash()
+    }
 }
 
 /// The body of a delegator vote.
@@ -32,6 +39,12 @@ pub struct DelegatorVoteBody {
     pub nullifier: Nullifier,
     /// The randomized validating key for the spend authorization signature.
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl EffectingData for DelegatorVoteBody {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {

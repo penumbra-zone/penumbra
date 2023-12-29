@@ -13,6 +13,7 @@ use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
@@ -40,6 +41,50 @@ pub struct TransactionBody {
     pub transaction_parameters: TransactionParameters,
     pub detection_data: Option<DetectionData>,
     pub memo: Option<MemoCiphertext>,
+}
+
+impl EffectingData for TransactionBody {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::new()
+            .personal(b"PenumbraEfHs")
+            .to_state();
+
+        let parameters_hash = self.transaction_parameters.effect_hash();
+        let memo_hash = self
+            .memo
+            .as_ref()
+            .map(|memo| memo.effect_hash())
+            // If the memo is not present, use the all-zero hash to record its absence in
+            // the overall effect hash.
+            .unwrap_or_default();
+        let detection_data_hash = self
+            .detection_data
+            .as_ref()
+            .map(|detection_data| detection_data.effect_hash())
+            // If the detection data is not present, use the all-zero hash to
+            // record its absence in the overall effect hash.
+            .unwrap_or_default();
+
+        // Hash the fixed data of the transaction body.
+        state.update(parameters_hash.as_bytes());
+        state.update(memo_hash.as_bytes());
+        state.update(detection_data_hash.as_bytes());
+
+        // Hash the number of actions, then each action.
+        let num_actions = self.actions.len() as u32;
+        state.update(&num_actions.to_le_bytes());
+        for action in &self.actions {
+            state.update(action.effect_hash().as_bytes());
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+}
+
+impl EffectingData for Transaction {
+    fn effect_hash(&self) -> EffectHash {
+        self.transaction_body.effect_hash()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

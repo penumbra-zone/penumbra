@@ -1,5 +1,6 @@
 use anyhow::Error;
 use decaf377_fmd::Clue;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
 use penumbra_proto::DomainType;
 
@@ -9,6 +10,12 @@ use penumbra_proto::DomainType;
 #[derive(Clone, Debug, Default)]
 pub struct DetectionData {
     pub fmd_clues: Vec<Clue>,
+}
+
+impl EffectingData for DetectionData {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for DetectionData {

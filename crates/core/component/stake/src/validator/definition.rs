@@ -1,4 +1,5 @@
 use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -35,5 +36,11 @@ impl TryFrom<pb::ValidatorDefinition> for Definition {
                 .try_into()?,
             auth_sig: v.auth_sig.as_slice().try_into()?,
         })
+    }
+}
+
+impl EffectingData for Definition {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }

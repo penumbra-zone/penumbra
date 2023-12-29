@@ -3,12 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 use penumbra_asset::{Balance, Value};
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(try_from = "pb::DaoSpend", into = "pb::DaoSpend")]
 pub struct DaoSpend {
     pub value: Value,
+}
+
+impl EffectingData for DaoSpend {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DaoSpend {

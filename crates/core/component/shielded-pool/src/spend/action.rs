@@ -3,6 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::{Context, Error};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,20 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
+impl EffectingData for Spend {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the spend, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
+    }
 }
 
 impl DomainType for Spend {
