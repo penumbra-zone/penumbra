@@ -43,7 +43,7 @@ impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
             value: Some(value.value.into()),
             unbonded_amount: Some(value.unbonded_amount.into()),
             nullifier: Some(value.nullifier.into()),
-            rk: value.rk.to_bytes().into(),
+            rk: Some(value.rk.into()),
         }
     }
 }
@@ -75,14 +75,11 @@ impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
                 .ok_or_else(|| anyhow::anyhow!("missing nullifier in `DelegatorVote`"))?
                 .try_into()
                 .context("invalid nullifier in `DelegatorVote`")?,
-            rk: {
-                let rk_bytes: [u8; 32] = (msg.rk[..])
-                    .try_into()
-                    .context("expected 32-byte rk in `DelegatorVote`")?;
-                rk_bytes
-                    .try_into()
-                    .context("invalid  rk in `DelegatorVote`")?
-            },
+            rk: msg
+                .rk
+                .ok_or_else(|| anyhow::anyhow!("missing rk in `DelegatorVote`"))?
+                .try_into()
+                .context("invalid rk in `DelegatorVote`")?,
         })
     }
 }

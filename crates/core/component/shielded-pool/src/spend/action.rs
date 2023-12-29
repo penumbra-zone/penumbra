@@ -72,11 +72,10 @@ impl DomainType for Body {
 
 impl From<Body> for pb::SpendBody {
     fn from(msg: Body) -> Self {
-        let rk_bytes: [u8; 32] = msg.rk.into();
         pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
             nullifier: Some(msg.nullifier.into()),
-            rk: rk_bytes.to_vec(),
+            rk: Some(msg.rk.into()),
         }
     }
 }
@@ -97,10 +96,11 @@ impl TryFrom<pb::SpendBody> for Body {
             .try_into()
             .context("malformed nullifier")?;
 
-        let rk_bytes: [u8; 32] = (proto.rk[..])
+        let rk = proto
+            .rk
+            .ok_or_else(|| anyhow::anyhow!("missing rk"))?
             .try_into()
-            .map_err(|_| anyhow::anyhow!("expected 32-byte rk"))?;
-        let rk = rk_bytes.try_into().context("malformed rk")?;
+            .context("malformed rk")?;
 
         Ok(Body {
             balance_commitment,

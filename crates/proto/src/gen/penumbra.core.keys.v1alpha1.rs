@@ -110,19 +110,6 @@ impl ::prost::Name for SpendKey {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SpendVerificationKey {
-    #[prost(bytes = "vec", tag = "1")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for SpendVerificationKey {
-    const NAME: &'static str = "SpendVerificationKey";
-    const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.keys.v1alpha1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FullViewingKey {
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,

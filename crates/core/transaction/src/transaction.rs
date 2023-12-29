@@ -616,11 +616,10 @@ impl DomainType for Transaction {
 
 impl From<Transaction> for pbt::Transaction {
     fn from(msg: Transaction) -> Self {
-        let sig_bytes: [u8; 64] = msg.binding_sig.into();
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
             anchor: Some(msg.anchor.into()),
-            binding_sig: sig_bytes.to_vec(),
+            binding_sig: Some(msg.binding_sig.into()),
         }
     }
 }
@@ -641,7 +640,9 @@ impl TryFrom<pbt::Transaction> for Transaction {
             .try_into()
             .context("transaction body malformed")?;
 
-        let sig_bytes: [u8; 64] = proto.binding_sig[..]
+        let binding_sig = proto
+            .binding_sig
+            .ok_or_else(|| anyhow::anyhow!("transaction missing binding signature"))?
             .try_into()
             .context("transaction binding signature malformed")?;
 
@@ -653,7 +654,7 @@ impl TryFrom<pbt::Transaction> for Transaction {
 
         Ok(Transaction {
             transaction_body,
-            binding_sig: sig_bytes.into(),
+            binding_sig,
             anchor,
         })
     }
