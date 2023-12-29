@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 use decaf377_frost as frost;
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
 use frost::round1::SigningCommitments;
-use penumbra_chain::EffectHash;
+use penumbra_effecthash::EffectHash;
 use penumbra_proto::{penumbra::custody::threshold::v1alpha1 as pb, DomainType, Message};
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
 use rand_core::CryptoRngCore;

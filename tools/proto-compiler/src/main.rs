@@ -89,6 +89,7 @@ fn main() -> anyhow::Result<()> {
             &[
                 "../../proto/penumbra/penumbra/core/app/v1alpha1/app.proto",
                 "../../proto/penumbra/penumbra/core/asset/v1alpha1/asset.proto",
+                "../../proto/penumbra/penumbra/core/effecthash/v1alpha1/effecthash.proto",
                 "../../proto/penumbra/penumbra/core/component/chain/v1alpha1/chain.proto",
                 "../../proto/penumbra/penumbra/core/component/compact_block/v1alpha1/compact_block.proto",
                 "../../proto/penumbra/penumbra/core/component/dao/v1alpha1/dao.proto",

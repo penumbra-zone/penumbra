@@ -5,8 +5,8 @@ use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::Balance;
-use penumbra_chain::EffectHash;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_effecthash::EffectHash;
 
 use penumbra_dex::{
     lp::{

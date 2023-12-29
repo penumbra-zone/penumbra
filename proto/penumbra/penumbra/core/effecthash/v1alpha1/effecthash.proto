@@ -1,0 +1,8 @@
+syntax = "proto3";
+package penumbra.core.effecthash.v1alpha1;
+
+// The hash of a Penumbra transaction's _effecting data_, describing the effects
+// of the transaction on the chain state.
+message EffectHash {
+  bytes inner = 1;
+}
