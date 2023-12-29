@@ -18,7 +18,7 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 message Transaction {
   TransactionBody body = 1;
   // The binding signature is stored separately from the transaction body that it signs.
-  bytes binding_sig = 2;
+  crypto.decaf377_rdsa.v1alpha1.BindingSignature binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.tct.v1alpha1.MerkleRoot anchor = 3;
@@ -139,7 +139,7 @@ message TransactionView {
   // View of the transaction body
   TransactionBodyView body_view = 1;
   // The binding signature is stored separately from the transaction body that it signs.
-  bytes binding_sig = 2;
+  crypto.decaf377_rdsa.v1alpha1.BindingSignature binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.tct.v1alpha1.MerkleRoot anchor = 3;

@@ -970,7 +970,7 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.nullifier.is_some() {
             len += 1;
         }
-        if !self.rk.is_empty() {
+        if self.rk.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DelegatorVoteBody", len)?;
@@ -994,9 +994,8 @@ impl serde::Serialize for DelegatorVoteBody {
         if let Some(v) = self.nullifier.as_ref() {
             struct_ser.serialize_field("nullifier", v)?;
         }
-        if !self.rk.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("rk", pbjson::private::base64::encode(&self.rk).as_str())?;
+        if let Some(v) = self.rk.as_ref() {
+            struct_ser.serialize_field("rk", v)?;
         }
         struct_ser.end()
     }
@@ -1128,9 +1127,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             if rk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rk"));
                             }
-                            rk__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            rk__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1141,7 +1138,7 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     value: value__,
                     unbonded_amount: unbonded_amount__,
                     nullifier: nullifier__,
-                    rk: rk__.unwrap_or_default(),
+                    rk: rk__,
                 })
             }
         }

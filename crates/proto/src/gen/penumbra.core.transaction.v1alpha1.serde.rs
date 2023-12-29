@@ -2841,7 +2841,7 @@ impl serde::Serialize for Transaction {
         if self.body.is_some() {
             len += 1;
         }
-        if !self.binding_sig.is_empty() {
+        if self.binding_sig.is_some() {
             len += 1;
         }
         if self.anchor.is_some() {
@@ -2851,9 +2851,8 @@ impl serde::Serialize for Transaction {
         if let Some(v) = self.body.as_ref() {
             struct_ser.serialize_field("body", v)?;
         }
-        if !self.binding_sig.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("bindingSig", pbjson::private::base64::encode(&self.binding_sig).as_str())?;
+        if let Some(v) = self.binding_sig.as_ref() {
+            struct_ser.serialize_field("bindingSig", v)?;
         }
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
@@ -2937,9 +2936,7 @@ impl<'de> serde::Deserialize<'de> for Transaction {
                             if binding_sig__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("bindingSig"));
                             }
-                            binding_sig__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            binding_sig__ = map_.next_value()?;
                         }
                         GeneratedField::Anchor => {
                             if anchor__.is_some() {
@@ -2951,7 +2948,7 @@ impl<'de> serde::Deserialize<'de> for Transaction {
                 }
                 Ok(Transaction {
                     body: body__,
-                    binding_sig: binding_sig__.unwrap_or_default(),
+                    binding_sig: binding_sig__,
                     anchor: anchor__,
                 })
             }
@@ -3717,7 +3714,7 @@ impl serde::Serialize for TransactionView {
         if self.body_view.is_some() {
             len += 1;
         }
-        if !self.binding_sig.is_empty() {
+        if self.binding_sig.is_some() {
             len += 1;
         }
         if self.anchor.is_some() {
@@ -3727,9 +3724,8 @@ impl serde::Serialize for TransactionView {
         if let Some(v) = self.body_view.as_ref() {
             struct_ser.serialize_field("bodyView", v)?;
         }
-        if !self.binding_sig.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("bindingSig", pbjson::private::base64::encode(&self.binding_sig).as_str())?;
+        if let Some(v) = self.binding_sig.as_ref() {
+            struct_ser.serialize_field("bindingSig", v)?;
         }
         if let Some(v) = self.anchor.as_ref() {
             struct_ser.serialize_field("anchor", v)?;
@@ -3814,9 +3810,7 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                             if binding_sig__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("bindingSig"));
                             }
-                            binding_sig__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            binding_sig__ = map_.next_value()?;
                         }
                         GeneratedField::Anchor => {
                             if anchor__.is_some() {
@@ -3828,7 +3822,7 @@ impl<'de> serde::Deserialize<'de> for TransactionView {
                 }
                 Ok(TransactionView {
                     body_view: body_view__,
-                    binding_sig: binding_sig__.unwrap_or_default(),
+                    binding_sig: binding_sig__,
                     anchor: anchor__,
                 })
             }

@@ -104,11 +104,11 @@ impl TryFrom<pbt::TransactionView> for TransactionView {
     type Error = anyhow::Error;
 
     fn try_from(v: pbt::TransactionView) -> Result<Self, Self::Error> {
-        let sig_bytes: [u8; 64] = v.binding_sig[..]
+        let binding_sig = v
+            .binding_sig
+            .ok_or_else(|| anyhow::anyhow!("transaction view missing binding signature"))?
             .try_into()
             .context("transaction binding signature malformed")?;
-
-        let binding_sig = sig_bytes.into();
 
         let anchor = v
             .anchor
@@ -202,7 +202,7 @@ impl From<TransactionView> for pbt::TransactionView {
         Self {
             body_view: Some(v.body_view.into()),
             anchor: Some(v.anchor.into()),
-            binding_sig: v.binding_sig.to_bytes().to_vec(),
+            binding_sig: Some(v.binding_sig.into()),
         }
     }
 }

@@ -194,8 +194,10 @@ pub struct DelegatorVoteBody {
     #[prost(message, optional, tag = "6")]
     pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "7")]
-    pub rk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "7")]
+    pub rk: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendVerificationKey,
+    >,
 }
 impl ::prost::Name for DelegatorVoteBody {
     const NAME: &'static str = "DelegatorVoteBody";

@@ -5,8 +5,10 @@ pub struct Transaction {
     #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<TransactionBody>,
     /// The binding signature is stored separately from the transaction body that it signs.
-    #[prost(bytes = "vec", tag = "2")]
-    pub binding_sig: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1alpha1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
@@ -285,8 +287,10 @@ pub struct TransactionView {
     #[prost(message, optional, tag = "1")]
     pub body_view: ::core::option::Option<TransactionBodyView>,
     /// The binding signature is stored separately from the transaction body that it signs.
-    #[prost(bytes = "vec", tag = "2")]
-    pub binding_sig: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1alpha1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
