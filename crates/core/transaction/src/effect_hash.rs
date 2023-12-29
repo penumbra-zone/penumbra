@@ -11,7 +11,7 @@ use penumbra_governance::{
     ProposalWithdraw, ValidatorVote, ValidatorVoteBody, Vote,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::{FullViewingKey, PayloadKey};
+use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     core::component::dex::v1alpha1 as pbd, core::component::fee::v1alpha1 as pbf,
     core::component::governance::v1alpha1 as pbg, core::component::ibc::v1alpha1 as pbi,
@@ -55,26 +55,26 @@ impl TransactionBody {
     pub fn effect_hash(&self) -> EffectHash {
         let mut state = create_personalized_state(&pbt::TransactionBody::type_url());
 
+        let parameters_hash = self.transaction_parameters.effect_hash();
+        let memo_hash = self
+            .memo
+            .as_ref()
+            .map(|memo| memo.effect_hash())
+            // If the memo is not present, use the all-zero hash to record its absence in
+            // the overall effect hash.
+            .unwrap_or_default();
+        let detection_data_hash = self
+            .detection_data
+            .as_ref()
+            .map(|detection_data| detection_data.effect_hash())
+            // If the detection data is not present, use the all-zero hash to
+            // record its absence in the overall effect hash.
+            .unwrap_or_default();
+
         // Hash the fixed data of the transaction body.
-        state.update(self.transaction_parameters.effect_hash().as_bytes());
-        if self.memo.is_some() {
-            let memo_ciphertext = self.memo.clone();
-            state.update(
-                memo_ciphertext
-                    .expect("memo is some")
-                    .effect_hash()
-                    .as_bytes(),
-            );
-        }
-        if self.detection_data.is_some() {
-            let detection_data = self.detection_data.clone();
-            state.update(
-                detection_data
-                    .expect("detection data is some")
-                    .effect_hash()
-                    .as_bytes(),
-            );
-        }
+        state.update(parameters_hash.as_bytes());
+        state.update(memo_hash.as_bytes());
+        state.update(detection_data_hash.as_bytes());
 
         // Hash the number of actions, then each action.
         let num_actions = self.actions.len() as u32;
@@ -102,42 +102,46 @@ impl TransactionPlan {
 
         let mut state = create_personalized_state(&pbt::TransactionBody::type_url());
 
+        let parameters_hash = self.transaction_parameters.effect_hash();
+
+        let memo_hash = self
+            .memo
+            .as_ref()
+            .map(|memo_plan| {
+                memo_plan
+                    .memo()
+                    .expect("can compute memo ciphertext")
+                    .effect_hash()
+            })
+            // If the memo is not present, use the all-zero hash to record its absence in
+            // the overall effect hash.
+            .unwrap_or_default();
+
+        let detection_data_hash = self
+            .detection_data
+            .as_ref()
+            .map(|plan| plan.detection_data().effect_hash())
+            // If the detection data is not present, use the all-zero hash to
+            // record its absence in the overall effect hash.
+            .unwrap_or_default();
+
         // Hash the fixed data of the transaction body.
-        state.update(self.transaction_parameters.effect_hash().as_bytes());
+        state.update(parameters_hash.as_bytes());
+        state.update(memo_hash.as_bytes());
+        state.update(detection_data_hash.as_bytes());
 
-        // Hash the memo and save the memo key for use with outputs later.
-        let mut memo_key: Option<PayloadKey> = None;
-        if self.memo.is_some() {
-            let memo_plan = self
-                .memo
-                .clone()
-                .expect("memo_plan must be present in TransactionPlan");
-            let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
-            state.update(memo_ciphertext.effect_hash().as_bytes());
-            memo_key = Some(memo_plan.key);
-        }
-
-        // Hash the detection data.
-        if !self.detection_data.clue_plans.is_empty() {
-            let detection_data = self.detection_data.detection_data();
-            state.update(detection_data.effect_hash().as_bytes());
-        }
-
+        // Hash the number of actions, then each action.
         let num_actions = self.actions.len() as u32;
         state.update(&num_actions.to_le_bytes());
 
-        // If the memo_key is None, then there is no memo, and we populate the memo key
-        // field with a dummy key.
-        let dummy_payload_key: PayloadKey = [0u8; 32].into();
+        // If the memo_key is None, then there is no memo, so there will be no
+        // outputs that the memo key is passed to, so we can fill in a dummy key.
+        let memo_key = self.memo_key().unwrap_or([0u8; 32].into());
 
         // Hash the effecting data of each action, in the order it appears in the plan,
         // which will be the order it appears in the transaction.
         for action_plan in &self.actions {
-            state.update(
-                action_plan
-                    .effect_hash(fvk, memo_key.as_ref().unwrap_or(&dummy_payload_key))
-                    .as_bytes(),
-            );
+            state.update(action_plan.effect_hash(fvk, &memo_key).as_bytes());
         }
 
         EffectHash(state.finalize().as_array().clone())
@@ -534,9 +538,9 @@ mod tests {
                 fee: Fee::default(),
                 chain_id: "penumbra-test".to_string(),
             },
-            detection_data: DetectionDataPlan {
+            detection_data: Some(DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
-            },
+            }),
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
 

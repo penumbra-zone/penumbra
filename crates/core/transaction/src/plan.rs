@@ -41,7 +41,7 @@ use crate::TransactionParameters;
 pub struct TransactionPlan {
     pub actions: Vec<ActionPlan>,
     pub transaction_parameters: TransactionParameters,
-    pub detection_data: DetectionDataPlan,
+    pub detection_data: Option<DetectionDataPlan>,
     pub memo: Option<MemoPlan>,
 }
 
@@ -64,10 +64,6 @@ impl TransactionPlan {
                 None
             }
         })
-    }
-
-    pub fn clue_plans(&self) -> impl Iterator<Item = &CluePlan> {
-        self.detection_data.clue_plans.iter()
     }
 
     pub fn delegations(&self) -> impl Iterator<Item = &Delegate> {
@@ -272,8 +268,12 @@ impl TransactionPlan {
         self.output_plans().count()
     }
 
-    /// Method to add `CluePlan`s to a `TransactionPlan`.
-    pub fn add_all_clue_plans<R: CryptoRng + Rng>(&mut self, mut rng: R, precision_bits: usize) {
+    /// Method to populate the detection data for this transaction plan.
+    pub fn populate_detection_data<R: CryptoRng + Rng>(
+        &mut self,
+        mut rng: R,
+        precision_bits: usize,
+    ) {
         // Add one clue per recipient.
         let mut clue_plans = vec![];
         for dest_address in self.dest_addresses() {
@@ -287,7 +287,13 @@ impl TransactionPlan {
             clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision_bits));
         }
 
-        self.detection_data.clue_plans = clue_plans;
+        if !clue_plans.is_empty() {
+            self.detection_data = Some(DetectionDataPlan {
+                clue_plans: clue_plans,
+            });
+        } else {
+            self.detection_data = None;
+        }
     }
 
     /// Convenience method to grab the `MemoKey` from the plan.
@@ -305,7 +311,7 @@ impl From<TransactionPlan> for pb::TransactionPlan {
         Self {
             actions: msg.actions.into_iter().map(Into::into).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
-            detection_data: Some(msg.detection_data.into()),
+            detection_data: msg.detection_data.map(Into::into),
             memo: msg.memo.map(Into::into),
         }
     }
@@ -324,10 +330,7 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
                 .transaction_parameters
                 .ok_or_else(|| anyhow::anyhow!("transaction plan missing transaction parameters"))?
                 .try_into()?,
-            detection_data: value
-                .detection_data
-                .ok_or_else(|| anyhow::anyhow!("transaction plan missing detection data"))?
-                .try_into()?,
+            detection_data: value.detection_data.map(TryInto::try_into).transpose()?,
             memo: value.memo.map(TryInto::try_into).transpose()?,
         })
     }

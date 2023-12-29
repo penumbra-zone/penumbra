@@ -161,9 +161,9 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            detection_data: DetectionDataPlan {
+            detection_data: Some(DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
-            },
+            }),
             memo: None,
         };
 
@@ -226,7 +226,7 @@ mod tests {
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            detection_data: DetectionDataPlan { clue_plans: vec![] },
+            detection_data: None,
             memo: None,
         };
 

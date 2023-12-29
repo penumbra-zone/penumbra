@@ -632,7 +632,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Add clue plans for `Output`s.
         let precision_bits = fmd_params.precision_bits;
         self.plan
-            .add_all_clue_plans(&mut self.rng, precision_bits.into());
+            .populate_detection_data(&mut self.rng, precision_bits.into());
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
