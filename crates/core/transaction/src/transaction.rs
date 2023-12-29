@@ -539,22 +539,11 @@ impl DomainType for TransactionBody {
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        // TODO: this doesn't seem right, why do we have so many different memo handling types
-        // and behaviors? why are we encoding Some(encrypted_memo) of a possibly-empty byte vector?
-        let encrypted_memo: pbt::MemoData = match msg.memo {
-            Some(memo) => pbt::MemoData {
-                encrypted_memo: memo.0.to_vec(),
-            },
-            None => pbt::MemoData {
-                encrypted_memo: Default::default(),
-            },
-        };
-
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
-            memo_data: Some(encrypted_memo),
+            memo: msg.memo.map(Into::into),
         }
     }
 }
@@ -572,28 +561,17 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
-        let encrypted_memo = proto
-            .memo_data
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
-            .encrypted_memo;
+        let memo = proto
+            .memo
+            .map(TryFrom::try_from)
+            .transpose()
+            .context("encrypted memo malformed while parsing transaction body")?;
 
-        let memo: Option<MemoCiphertext> = if encrypted_memo.is_empty() {
-            None
-        } else {
-            Some(
-                encrypted_memo[..]
-                    .try_into()
-                    .context("encrypted memo malformed while parsing transaction body")?,
-            )
-        };
-
-        let detection_data = match proto.detection_data {
-            Some(data) => Some(
-                data.try_into()
-                    .context("detection data malformed while parsing transaction body")?,
-            ),
-            None => None,
-        };
+        let detection_data = proto
+            .detection_data
+            .map(TryFrom::try_from)
+            .transpose()
+            .context("detection data malformed while parsing transaction body")?;
 
         let transaction_parameters = proto
             .transaction_parameters

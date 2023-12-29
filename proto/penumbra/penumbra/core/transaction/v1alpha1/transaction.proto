@@ -37,15 +37,10 @@ message TransactionBody {
   TransactionParameters transaction_parameters = 2;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
-  // Sub-message containing memo ciphertext if a memo was added to the transaction.
-  MemoData memo_data = 5;
-}
-
-// Represents the encrypted memo data.
-message MemoData {
-  // The encrypted data. It will only be populated if there are
-  // outputs in the actions of the transaction. 528 bytes.
-  bytes encrypted_memo = 1;
+  // The encrypted memo for this transaction.
+  //
+  // This field will be present if and only if the transaction has outputs.
+  MemoCiphertext memo = 5;
 }
 
 // The parameters determining if a transaction should be accepted by the chain.
@@ -237,7 +232,7 @@ message TransactionPlan {
   // Detection data for use with Fuzzy Message Detection
   DetectionDataPlan detection_data = 4;
   // The memo plan for this transaction.
-  MemoDataPlan memo_data = 5;
+  MemoPlan memo = 5;
 }
 
 message DetectionDataPlan {
@@ -300,20 +295,28 @@ message CluePlan {
   uint64 precision_bits = 3;
 }
 
-// Describes a plan for forming a `MemoData`.
-message MemoDataPlan {
+// Describes a plan for forming the transaction memo.
+message MemoPlan {
   // The plaintext.
   MemoPlaintext plaintext = 1;
   // The key to use to encrypt the memo.
   bytes key = 2;
 }
 
+// The encrypted memo data describing information about the purpose of a transaction.
 message MemoCiphertext {
+  // The encrypted data. 528 bytes.
   bytes inner = 1;
 }
 
+// The plaintext describing information about the purpose of a transaction.
 message MemoPlaintext {
+  // The sender's return address.
+  //
+  // This should always be a valid address; the sender is responsible for ensuring
+  // that if the receiver returns funds to this address, they will not be lost.
   keys.v1alpha1.Address return_address = 1;
+  // Free-form text, up to 432 bytes long.
   string text = 2;
 }
 

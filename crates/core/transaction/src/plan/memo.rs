@@ -29,10 +29,10 @@ impl MemoPlan {
 }
 
 impl DomainType for MemoPlan {
-    type Proto = pb::MemoDataPlan;
+    type Proto = pb::MemoPlan;
 }
 
-impl From<MemoPlan> for pb::MemoDataPlan {
+impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
         let return_address = Some(msg.plaintext.return_address.into());
         let text = msg.plaintext.text;
@@ -46,10 +46,10 @@ impl From<MemoPlan> for pb::MemoDataPlan {
     }
 }
 
-impl TryFrom<pb::MemoDataPlan> for MemoPlan {
+impl TryFrom<pb::MemoPlan> for MemoPlan {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::MemoDataPlan) -> Result<Self, Self::Error> {
+    fn try_from(msg: pb::MemoPlan) -> Result<Self, Self::Error> {
         let sender: Address = msg
             .plaintext
             .clone()

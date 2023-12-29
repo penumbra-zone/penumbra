@@ -107,9 +107,9 @@ impl TransactionPlan {
 
         // Hash the memo and save the memo key for use with outputs later.
         let mut memo_key: Option<PayloadKey> = None;
-        if self.memo_data.is_some() {
+        if self.memo.is_some() {
             let memo_plan = self
-                .memo_data
+                .memo
                 .clone()
                 .expect("memo_plan must be present in TransactionPlan");
             let memo_ciphertext = memo_plan.memo().expect("can compute ciphertext");
@@ -537,7 +537,7 @@ mod tests {
             detection_data: DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
             },
-            memo_data: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
+            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

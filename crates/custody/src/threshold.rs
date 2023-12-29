@@ -547,7 +547,7 @@ mod test {
             }
         ]
     },
-    "memoData": {
+    "memo": {
         "plaintext": {
             "returnAddress": {
                 "inner": "OB8AEHEehWo0o0/Dn7JtNmgdDX1VRPaDgn6MLl6n41hVjI3llljrTDCFRRjN5mkNwVwsAyJ/UdfjNIFzbGV62YVXfBJ/IMVTq2CNAHwR8Qo="

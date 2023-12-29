@@ -164,7 +164,7 @@ mod tests {
             detection_data: DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
             },
-            memo_data: None,
+            memo: None,
         };
 
         // Build the transaction.
@@ -227,7 +227,7 @@ mod tests {
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
             detection_data: DetectionDataPlan { clue_plans: vec![] },
-            memo_data: None,
+            memo: None,
         };
 
         // Build the transaction.

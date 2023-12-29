@@ -146,7 +146,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Errors if the memo is too long.
     #[instrument(skip(self))]
     pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
-        self.plan.memo_data = Some(MemoPlan::new(&mut self.rng, memo)?);
+        self.plan.memo = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
 
@@ -622,10 +622,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
-        if self.plan.num_outputs() > 0 && self.plan.memo_data.is_none() {
+        if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
             self.memo(MemoPlaintext::blank_memo(self_address.clone()))
                 .expect("empty string is a valid memo");
-        } else if self.plan.num_outputs() == 0 && self.plan.memo_data.is_some() {
+        } else if self.plan.num_outputs() == 0 && self.plan.memo.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");
         }
 

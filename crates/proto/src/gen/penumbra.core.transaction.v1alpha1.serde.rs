@@ -1881,212 +1881,6 @@ impl<'de> serde::Deserialize<'de> for MemoCiphertext {
         deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.MemoCiphertext", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for MemoData {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.encrypted_memo.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.MemoData", len)?;
-        if !self.encrypted_memo.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("encryptedMemo", pbjson::private::base64::encode(&self.encrypted_memo).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for MemoData {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "encrypted_memo",
-            "encryptedMemo",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            EncryptedMemo,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "encryptedMemo" | "encrypted_memo" => Ok(GeneratedField::EncryptedMemo),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = MemoData;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.transaction.v1alpha1.MemoData")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<MemoData, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut encrypted_memo__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::EncryptedMemo => {
-                            if encrypted_memo__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("encryptedMemo"));
-                            }
-                            encrypted_memo__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(MemoData {
-                    encrypted_memo: encrypted_memo__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.MemoData", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for MemoDataPlan {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.plaintext.is_some() {
-            len += 1;
-        }
-        if !self.key.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.MemoDataPlan", len)?;
-        if let Some(v) = self.plaintext.as_ref() {
-            struct_ser.serialize_field("plaintext", v)?;
-        }
-        if !self.key.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for MemoDataPlan {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "plaintext",
-            "key",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Plaintext,
-            Key,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "plaintext" => Ok(GeneratedField::Plaintext),
-                            "key" => Ok(GeneratedField::Key),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = MemoDataPlan;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.transaction.v1alpha1.MemoDataPlan")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<MemoDataPlan, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut plaintext__ = None;
-                let mut key__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Plaintext => {
-                            if plaintext__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("plaintext"));
-                            }
-                            plaintext__ = map_.next_value()?;
-                        }
-                        GeneratedField::Key => {
-                            if key__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("key"));
-                            }
-                            key__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(MemoDataPlan {
-                    plaintext: plaintext__,
-                    key: key__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.MemoDataPlan", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for MemoPlaintext {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2303,6 +2097,117 @@ impl<'de> serde::Deserialize<'de> for MemoPlaintextView {
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.MemoPlaintextView", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for MemoPlan {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.plaintext.is_some() {
+            len += 1;
+        }
+        if !self.key.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.MemoPlan", len)?;
+        if let Some(v) = self.plaintext.as_ref() {
+            struct_ser.serialize_field("plaintext", v)?;
+        }
+        if !self.key.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("key", pbjson::private::base64::encode(&self.key).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for MemoPlan {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "plaintext",
+            "key",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Plaintext,
+            Key,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "plaintext" => Ok(GeneratedField::Plaintext),
+                            "key" => Ok(GeneratedField::Key),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = MemoPlan;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1alpha1.MemoPlan")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<MemoPlan, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut plaintext__ = None;
+                let mut key__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Plaintext => {
+                            if plaintext__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("plaintext"));
+                            }
+                            plaintext__ = map_.next_value()?;
+                        }
+                        GeneratedField::Key => {
+                            if key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("key"));
+                            }
+                            key__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(MemoPlan {
+                    plaintext: plaintext__,
+                    key: key__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1alpha1.MemoPlan", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for MemoView {
@@ -2973,7 +2878,7 @@ impl serde::Serialize for TransactionBody {
         if self.detection_data.is_some() {
             len += 1;
         }
-        if self.memo_data.is_some() {
+        if self.memo.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionBody", len)?;
@@ -2986,8 +2891,8 @@ impl serde::Serialize for TransactionBody {
         if let Some(v) = self.detection_data.as_ref() {
             struct_ser.serialize_field("detectionData", v)?;
         }
-        if let Some(v) = self.memo_data.as_ref() {
-            struct_ser.serialize_field("memoData", v)?;
+        if let Some(v) = self.memo.as_ref() {
+            struct_ser.serialize_field("memo", v)?;
         }
         struct_ser.end()
     }
@@ -3004,8 +2909,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
             "transactionParameters",
             "detection_data",
             "detectionData",
-            "memo_data",
-            "memoData",
+            "memo",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3013,7 +2917,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
             Actions,
             TransactionParameters,
             DetectionData,
-            MemoData,
+            Memo,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3038,7 +2942,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                             "actions" => Ok(GeneratedField::Actions),
                             "transactionParameters" | "transaction_parameters" => Ok(GeneratedField::TransactionParameters),
                             "detectionData" | "detection_data" => Ok(GeneratedField::DetectionData),
-                            "memoData" | "memo_data" => Ok(GeneratedField::MemoData),
+                            "memo" => Ok(GeneratedField::Memo),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3061,7 +2965,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                 let mut actions__ = None;
                 let mut transaction_parameters__ = None;
                 let mut detection_data__ = None;
-                let mut memo_data__ = None;
+                let mut memo__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Actions => {
@@ -3082,11 +2986,11 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                             }
                             detection_data__ = map_.next_value()?;
                         }
-                        GeneratedField::MemoData => {
-                            if memo_data__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("memoData"));
+                        GeneratedField::Memo => {
+                            if memo__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("memo"));
                             }
-                            memo_data__ = map_.next_value()?;
+                            memo__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3094,7 +2998,7 @@ impl<'de> serde::Deserialize<'de> for TransactionBody {
                     actions: actions__.unwrap_or_default(),
                     transaction_parameters: transaction_parameters__,
                     detection_data: detection_data__,
-                    memo_data: memo_data__,
+                    memo: memo__,
                 })
             }
         }
@@ -3575,7 +3479,7 @@ impl serde::Serialize for TransactionPlan {
         if self.detection_data.is_some() {
             len += 1;
         }
-        if self.memo_data.is_some() {
+        if self.memo.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1alpha1.TransactionPlan", len)?;
@@ -3588,8 +3492,8 @@ impl serde::Serialize for TransactionPlan {
         if let Some(v) = self.detection_data.as_ref() {
             struct_ser.serialize_field("detectionData", v)?;
         }
-        if let Some(v) = self.memo_data.as_ref() {
-            struct_ser.serialize_field("memoData", v)?;
+        if let Some(v) = self.memo.as_ref() {
+            struct_ser.serialize_field("memo", v)?;
         }
         struct_ser.end()
     }
@@ -3606,8 +3510,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
             "transactionParameters",
             "detection_data",
             "detectionData",
-            "memo_data",
-            "memoData",
+            "memo",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3615,7 +3518,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
             Actions,
             TransactionParameters,
             DetectionData,
-            MemoData,
+            Memo,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3640,7 +3543,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                             "actions" => Ok(GeneratedField::Actions),
                             "transactionParameters" | "transaction_parameters" => Ok(GeneratedField::TransactionParameters),
                             "detectionData" | "detection_data" => Ok(GeneratedField::DetectionData),
-                            "memoData" | "memo_data" => Ok(GeneratedField::MemoData),
+                            "memo" => Ok(GeneratedField::Memo),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3663,7 +3566,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                 let mut actions__ = None;
                 let mut transaction_parameters__ = None;
                 let mut detection_data__ = None;
-                let mut memo_data__ = None;
+                let mut memo__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Actions => {
@@ -3684,11 +3587,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                             }
                             detection_data__ = map_.next_value()?;
                         }
-                        GeneratedField::MemoData => {
-                            if memo_data__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("memoData"));
+                        GeneratedField::Memo => {
+                            if memo__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("memo"));
                             }
-                            memo_data__ = map_.next_value()?;
+                            memo__ = map_.next_value()?;
                         }
                     }
                 }
@@ -3696,7 +3599,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlan {
                     actions: actions__.unwrap_or_default(),
                     transaction_parameters: transaction_parameters__,
                     detection_data: detection_data__,
-                    memo_data: memo_data__,
+                    memo: memo__,
                 })
             }
         }
