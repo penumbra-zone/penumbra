@@ -1,4 +1,5 @@
 use penumbra_asset::balance;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +23,19 @@ pub struct UndelegateClaimBody {
 pub struct UndelegateClaim {
     pub body: UndelegateClaimBody,
     pub proof: UndelegateClaimProof,
+}
+
+impl EffectingData for UndelegateClaimBody {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+impl EffectingData for UndelegateClaim {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the undelegate claim, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
+    }
 }
 
 impl DomainType for UndelegateClaimBody {

@@ -31,6 +31,7 @@ use ibc_types::core::{
 
 use ibc_types::DomainType as IbcTypesDomainType;
 
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::penumbra::core::component::ibc::v1alpha1::{self as pb};
 use penumbra_proto::{DomainType, Name};
 use serde::{Deserialize, Serialize};
@@ -128,6 +129,12 @@ impl IbcRelay {
                 tracing::info_span!(parent: parent, "Unknown")
             }
         }
+    }
+}
+
+impl EffectingData for IbcRelay {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

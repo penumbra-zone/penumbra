@@ -9,11 +9,12 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::{Address, PayloadKey};
+use penumbra_keys::{Address, FullViewingKey, PayloadKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
@@ -46,6 +47,70 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    /// Computes the [`EffectHash`] for the [`Transaction`] described by this
+    /// [`TransactionPlan`].
+    ///
+    /// This method does not require constructing the entire [`Transaction`],
+    /// but it does require the associated [`FullViewingKey`] to derive
+    /// effecting data that will be fed into the [`EffectHash`].
+    ///
+    /// This method is not an [`EffectingData`] impl because it needs an extra input,
+    /// the FVK, to partially construct the transaction.
+    pub fn effect_hash(&self, fvk: &FullViewingKey) -> EffectHash {
+        // This implementation is identical to the one for Transaction, except that we
+        // don't need to actually construct the entire `TransactionBody` with
+        // complete `Action`s, we just need to construct the bodies of the
+        // actions the transaction will have when constructed.
+
+        let mut state = blake2b_simd::Params::new()
+            .personal(b"PenumbraEfHs")
+            .to_state();
+
+        let parameters_hash = self.transaction_parameters.effect_hash();
+
+        let memo_hash = self
+            .memo
+            .as_ref()
+            .map(|memo_plan| {
+                memo_plan
+                    .memo()
+                    .expect("can compute memo ciphertext")
+                    .effect_hash()
+            })
+            // If the memo is not present, use the all-zero hash to record its absence in
+            // the overall effect hash.
+            .unwrap_or_default();
+
+        let detection_data_hash = self
+            .detection_data
+            .as_ref()
+            .map(|plan| plan.detection_data().effect_hash())
+            // If the detection data is not present, use the all-zero hash to
+            // record its absence in the overall effect hash.
+            .unwrap_or_default();
+
+        // Hash the fixed data of the transaction body.
+        state.update(parameters_hash.as_bytes());
+        state.update(memo_hash.as_bytes());
+        state.update(detection_data_hash.as_bytes());
+
+        // Hash the number of actions, then each action.
+        let num_actions = self.actions.len() as u32;
+        state.update(&num_actions.to_le_bytes());
+
+        // If the memo_key is None, then there is no memo, so there will be no
+        // outputs that the memo key is passed to, so we can fill in a dummy key.
+        let memo_key = self.memo_key().unwrap_or([0u8; 32].into());
+
+        // Hash the effecting data of each action, in the order it appears in the plan,
+        // which will be the order it appears in the transaction.
+        for action_plan in &self.actions {
+            state.update(action_plan.effect_hash(fvk, &memo_key).as_bytes());
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
+
     pub fn spend_plans(&self) -> impl Iterator<Item = &SpendPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::Spend(s) = action {
@@ -333,5 +398,160 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
             detection_data: value.detection_data.map(TryInto::try_into).transpose()?,
             memo: value.memo.map(TryInto::try_into).transpose()?,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+    use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
+    use penumbra_effecthash::EffectingData as _;
+    use penumbra_fee::Fee;
+    use penumbra_keys::{
+        keys::{Bip44Path, SeedPhrase, SpendKey},
+        Address,
+    };
+    use penumbra_shielded_pool::Note;
+    use penumbra_shielded_pool::{OutputPlan, SpendPlan};
+    use penumbra_tct as tct;
+    use rand_core::OsRng;
+
+    use crate::{
+        memo::MemoPlaintext,
+        plan::{CluePlan, DetectionDataPlan, MemoPlan, TransactionPlan},
+        TransactionParameters, WitnessData,
+    };
+
+    /// This isn't an exhaustive test, but we don't currently have a
+    /// great way to generate actions for randomized testing.
+    ///
+    /// All we hope to check here is that, for a basic transaction plan,
+    /// we compute the same auth hash for the plan and for the transaction.
+    #[test]
+    fn plan_effect_hash_matches_transaction_effect_hash() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let (addr, _dtk) = fvk.incoming().payment_address(0u32.into());
+
+        let mut sct = tct::Tree::new();
+
+        let note0 = Note::generate(
+            &mut OsRng,
+            &addr,
+            Value {
+                amount: 10000u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+        let note1 = Note::generate(
+            &mut OsRng,
+            &addr,
+            Value {
+                amount: 20000u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+
+        sct.insert(tct::Witness::Keep, note0.commit()).unwrap();
+        sct.insert(tct::Witness::Keep, note1.commit()).unwrap();
+
+        let trading_pair = TradingPair::new(
+            asset::Cache::with_known_assets()
+                .get_unit("nala")
+                .unwrap()
+                .id(),
+            asset::Cache::with_known_assets()
+                .get_unit("upenumbra")
+                .unwrap()
+                .id(),
+        );
+
+        let swap_plaintext = SwapPlaintext::new(
+            &mut OsRng,
+            trading_pair,
+            100000u64.into(),
+            1u64.into(),
+            Fee(Value {
+                amount: 3u64.into(),
+                asset_id: asset::Cache::with_known_assets()
+                    .get_unit("upenumbra")
+                    .unwrap()
+                    .id(),
+            }),
+            addr,
+        );
+
+        let mut rng = OsRng;
+
+        let memo_plaintext = MemoPlaintext {
+            return_address: Address::dummy(&mut rng),
+            text: "".to_string(),
+        };
+        let plan = TransactionPlan {
+            // Put outputs first to check that the auth hash
+            // computation is not affected by plan ordering.
+            actions: vec![
+                OutputPlan::new(
+                    &mut OsRng,
+                    Value {
+                        amount: 30000u64.into(),
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
+                    },
+                    addr.clone(),
+                )
+                .into(),
+                SpendPlan::new(&mut OsRng, note0, 0u64.into()).into(),
+                SpendPlan::new(&mut OsRng, note1, 1u64.into()).into(),
+                SwapPlan::new(&mut OsRng, swap_plaintext).into(),
+            ],
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "penumbra-test".to_string(),
+            },
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
+            }),
+            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
+        };
+
+        println!("{}", serde_json::to_string_pretty(&plan).unwrap());
+
+        let plan_effect_hash = plan.effect_hash(fvk);
+
+        let auth_data = plan.authorize(rng, &sk);
+        let witness_data = WitnessData {
+            anchor: sct.root(),
+            state_commitment_proofs: plan
+                .spend_plans()
+                .map(|spend: &SpendPlan| {
+                    (
+                        spend.note.commit(),
+                        sct.witness(spend.note.commit()).unwrap(),
+                    )
+                })
+                .collect(),
+        };
+        let transaction = plan.build(fvk, &witness_data, &auth_data).unwrap();
+
+        let transaction_effect_hash = transaction.effect_hash();
+
+        assert_eq!(plan_effect_hash, transaction_effect_hash);
+
+        let decrypted_memo = transaction.decrypt_memo(fvk).expect("can decrypt memo");
+        assert_eq!(decrypted_memo, memo_plaintext);
+
+        // TODO: fix this and move into its own test?
+        // // Also check the concurrent build results in the same effect hash.
+        // let rt = Runtime::new().unwrap();
+        // let transaction = rt
+        //     .block_on(async move {
+        //         plan.build_concurrent(&mut OsRng, fvk, auth_data, witness_data)
+        //             .await
+        //     })
+        //     .expect("can build");
+        // assert_eq!(plan_effect_hash, transaction.effect_hash());
     }
 }

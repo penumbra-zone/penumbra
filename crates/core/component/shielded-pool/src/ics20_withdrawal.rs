@@ -3,6 +3,7 @@ use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
 };
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -80,6 +81,12 @@ impl Ics20Withdrawal {
         // addresses, but this would preclude sending to chains that don't use bech32 addresses.
 
         Ok(())
+    }
+}
+
+impl EffectingData for Ics20Withdrawal {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

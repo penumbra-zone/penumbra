@@ -1,4 +1,5 @@
 use anyhow::Error;
+use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_fee::Fee;
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
 use penumbra_proto::DomainType;
@@ -9,6 +10,12 @@ pub struct TransactionParameters {
     pub expiry_height: u64,
     pub chain_id: String,
     pub fee: Fee,
+}
+
+impl EffectingData for TransactionParameters {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for TransactionParameters {
