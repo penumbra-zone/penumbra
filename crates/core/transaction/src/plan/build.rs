@@ -10,9 +10,8 @@ use std::fmt::Debug;
 use super::TransactionPlan;
 use crate::ActionPlan;
 use crate::{
-    action::Action,
-    transaction::{DetectionData, TransactionParameters},
-    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
+    action::Action, AuthorizationData, AuthorizingData, DetectionData, Transaction,
+    TransactionBody, WitnessData,
 };
 
 impl TransactionPlan {
@@ -26,9 +25,9 @@ impl TransactionPlan {
     ) -> Result<Transaction> {
         // Add the memo if it is planned.
         let memo = self
-            .memo_plan
+            .memo_data
             .as_ref()
-            .map(|memo_plan| memo_plan.memo())
+            .map(|memo_data| memo_data.memo())
             .transpose()?;
 
         // Add detection data when there are outputs.
@@ -44,11 +43,7 @@ impl TransactionPlan {
 
         let transaction_body = TransactionBody {
             actions,
-            transaction_parameters: TransactionParameters {
-                expiry_height: self.expiry_height,
-                chain_id: self.chain_id,
-            },
-            fee: self.fee,
+            transaction_parameters: self.transaction_parameters,
             detection_data,
             memo,
         };

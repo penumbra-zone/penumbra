@@ -35,8 +35,6 @@ message TransactionBody {
   repeated Action actions = 1;
   // Parameters determining if a transaction should be accepted by this chain.
   TransactionParameters transaction_parameters = 2;
-  // The transaction fee.
-  component.fee.v1alpha1.Fee fee = 3;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
   // Sub-message containing memo ciphertext if a memo was added to the transaction.
@@ -59,6 +57,8 @@ message TransactionParameters {
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 2;
+  // The transaction fee.
+  component.fee.v1alpha1.Fee fee = 3;
 }
 
 // Detection data used by a detection server performing Fuzzy Message Detection.
@@ -150,8 +150,6 @@ message TransactionBodyView {
   repeated ActionView action_views = 1;
   // Transaction parameters.
   TransactionParameters transaction_parameters = 2;
-  // The transaction fee.
-  component.fee.v1alpha1.Fee fee = 3;
   // The detection data in this transaction, only populated if
   // there are outputs in the actions of this transaction.
   DetectionData detection_data = 4;
@@ -228,18 +226,22 @@ message WitnessData {
 
 // Describes a planned transaction. Permits clients to prepare a transaction
 // prior submission, so that a user can review it prior to authorizing its execution.
+//
+// The `TransactionPlan` is a fully determined bundle binding all of a transaction's effects.
+// The only thing it does not include is the witness data used for proving.
 message TransactionPlan {
-  // The planner interface(s) for Actions to be performed, such as a Spend, Swap,
-  // or Delegation. See the ActionPlan docs for a full list of options.
+  // The sequence of actions planned for this transaction.
   repeated ActionPlan actions = 1;
-  // Time, as block height, after which TransactionPlan should be considered invalid.
-  uint64 expiry_height = 2;
-  // The name of the network for which this TransactionPlan was built.
-  string chain_id = 3;
-  component.fee.v1alpha1.Fee fee = 4;
+  // Parameters determining if a transaction should be accepted by this chain.
+  TransactionParameters transaction_parameters = 2;
+  // Detection data for use with Fuzzy Message Detection
+  DetectionDataPlan detection_data = 4;
+  // The memo plan for this transaction.
+  MemoDataPlan memo_data = 5;
+}
+
+message DetectionDataPlan {
   repeated CluePlan clue_plans = 5;
-  // Planning interface for constructing an optional Memo for the Transaction.
-  MemoPlan memo_plan = 6;
 }
 
 // Describes a planned transaction action.
@@ -298,8 +300,8 @@ message CluePlan {
   uint64 precision_bits = 3;
 }
 
-// Describes a plan for forming a `Memo`.
-message MemoPlan {
+// Describes a plan for forming a `MemoData`.
+message MemoDataPlan {
   // The plaintext.
   MemoPlaintext plaintext = 1;
   // The key to use to encrypt the memo.

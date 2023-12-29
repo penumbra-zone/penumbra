@@ -9,7 +9,6 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
-use penumbra_fee::Fee;
 use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
@@ -25,24 +24,25 @@ mod action;
 mod auth;
 mod build;
 mod clue;
+mod detection_data;
 mod memo;
 
 pub use action::ActionPlan;
 pub use clue::CluePlan;
+pub use detection_data::DetectionDataPlan;
 pub use memo::MemoPlan;
+
+use crate::TransactionParameters;
 
 /// A declaration of a planned [`Transaction`](crate::Transaction),
 /// for use in transaction authorization and creation.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(try_from = "pb::TransactionPlan", into = "pb::TransactionPlan")]
 pub struct TransactionPlan {
-    /// A list of this transaction's actions.
     pub actions: Vec<ActionPlan>,
-    pub expiry_height: u64,
-    pub chain_id: String,
-    pub fee: Fee,
-    pub clue_plans: Vec<CluePlan>,
-    pub memo_plan: Option<MemoPlan>,
+    pub transaction_parameters: TransactionParameters,
+    pub detection_data: DetectionDataPlan,
+    pub memo_data: Option<MemoPlan>,
 }
 
 impl TransactionPlan {
@@ -67,7 +67,7 @@ impl TransactionPlan {
     }
 
     pub fn clue_plans(&self) -> impl Iterator<Item = &CluePlan> {
-        self.clue_plans.iter()
+        self.detection_data.clue_plans.iter()
     }
 
     pub fn delegations(&self) -> impl Iterator<Item = &Delegate> {
@@ -287,12 +287,12 @@ impl TransactionPlan {
             clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision_bits));
         }
 
-        self.clue_plans = clue_plans;
+        self.detection_data.clue_plans = clue_plans;
     }
 
     /// Convenience method to grab the `MemoKey` from the plan.
     pub fn memo_key(&self) -> Option<PayloadKey> {
-        self.memo_plan
+        self.memo_data
             .as_ref()
             .map(|memo_plan| memo_plan.key.clone())
     }
@@ -306,11 +306,9 @@ impl From<TransactionPlan> for pb::TransactionPlan {
     fn from(msg: TransactionPlan) -> Self {
         Self {
             actions: msg.actions.into_iter().map(Into::into).collect(),
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
-            fee: Some(msg.fee.into()),
-            clue_plans: msg.clue_plans.into_iter().map(Into::into).collect(),
-            memo_plan: msg.memo_plan.map(Into::into),
+            transaction_parameters: Some(msg.transaction_parameters.into()),
+            detection_data: Some(msg.detection_data.into()),
+            memo_data: msg.memo_data.map(Into::into),
         }
     }
 }
@@ -318,29 +316,21 @@ impl From<TransactionPlan> for pb::TransactionPlan {
 impl TryFrom<pb::TransactionPlan> for TransactionPlan {
     type Error = anyhow::Error;
     fn try_from(value: pb::TransactionPlan) -> Result<Self, Self::Error> {
-        let memo_plan = match value.memo_plan {
-            Some(plan) => Some(plan.try_into()?),
-            None => None,
-        };
-
         Ok(Self {
             actions: value
                 .actions
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
-            expiry_height: value.expiry_height,
-            chain_id: value.chain_id,
-            fee: value
-                .fee
-                .ok_or_else(|| anyhow::anyhow!("missing fee"))?
+            transaction_parameters: value
+                .transaction_parameters
+                .ok_or_else(|| anyhow::anyhow!("transaction plan missing transaction parameters"))?
                 .try_into()?,
-            clue_plans: value
-                .clue_plans
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<Result<_, _>>()?,
-            memo_plan,
+            detection_data: value
+                .detection_data
+                .ok_or_else(|| anyhow::anyhow!("transaction plan missing detection data"))?
+                .try_into()?,
+            memo_data: value.memo_data.map(TryInto::try_into).transpose()?,
         })
     }
 }

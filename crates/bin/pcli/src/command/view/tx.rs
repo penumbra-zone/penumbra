@@ -433,7 +433,13 @@ impl TxCmd {
 
             metadata_table.add_row(vec![
                 "Transaction Fee",
-                &tx_info.view.body_view.fee.value().format(&asset_cache),
+                &tx_info
+                    .view
+                    .body_view
+                    .transaction_parameters
+                    .fee
+                    .value()
+                    .format(&asset_cache),
             ]);
 
             let memo_view = tx_info.view.body_view.memo_view;

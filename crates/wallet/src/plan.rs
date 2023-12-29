@@ -15,7 +15,7 @@ use penumbra_keys::{
 use penumbra_num::Amount;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
-use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan};
+use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan, TransactionParameters};
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
@@ -179,10 +179,13 @@ where
         let output_data = swap.output_data;
 
         let mut plan = TransactionPlan {
-            chain_id: chain_params.clone().chain_id,
-            fee: swap_plaintext.claim_fee.clone(),
+            transaction_parameters: TransactionParameters {
+                chain_id: chain_params.clone().chain_id,
+                fee: swap_plaintext.claim_fee.clone(),
+                ..Default::default()
+            },
             // The transaction doesn't need a memo, because it's to ourselves.
-            memo_plan: None,
+            memo_data: None,
             ..Default::default()
         };
 
