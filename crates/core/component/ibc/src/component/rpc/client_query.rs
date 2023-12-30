@@ -2,21 +2,23 @@ use async_trait::async_trait;
 
 use ibc_proto::ibc::core::client::v1::query_server::Query as ClientQuery;
 use ibc_proto::ibc::core::client::v1::{
-    Height, IdentifiedClientState, QueryClientParamsRequest, QueryClientParamsResponse,
-    QueryClientStateRequest, QueryClientStateResponse, QueryClientStatesRequest,
-    QueryClientStatesResponse, QueryClientStatusRequest, QueryClientStatusResponse,
-    QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse,
-    QueryConsensusStateRequest, QueryConsensusStateResponse, QueryConsensusStatesRequest,
-    QueryConsensusStatesResponse, QueryUpgradedClientStateRequest,
+    ConsensusStateWithHeight, IdentifiedClientState, QueryClientParamsRequest,
+    QueryClientParamsResponse, QueryClientStateRequest, QueryClientStateResponse,
+    QueryClientStatesRequest, QueryClientStatesResponse, QueryClientStatusRequest,
+    QueryClientStatusResponse, QueryConsensusStateHeightsRequest,
+    QueryConsensusStateHeightsResponse, QueryConsensusStateRequest, QueryConsensusStateResponse,
+    QueryConsensusStatesRequest, QueryConsensusStatesResponse, QueryUpgradedClientStateRequest,
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
 
 use ibc_types::core::client::ClientId;
+use ibc_types::core::client::Height;
 use ibc_types::lightclients::tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
+use ibc_types::lightclients::tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
+use ibc_types::path::ClientConsensusStatePath;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
-use penumbra_chain::component::StateReadExt;
 
 use std::str::FromStr;
 use tonic::{Response, Status};
@@ -24,6 +26,7 @@ use tonic::{Response, Status};
 use crate::component::ClientStateReadExt;
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
+use penumbra_chain::component::StateReadExt as _;
 
 use super::IbcQuery;
 
@@ -58,7 +61,7 @@ impl ClientQuery for IbcQuery {
         // Client state may be None, which we'll convert to a NotFound response.
         let client_state = match cs_opt {
             // If found, convert to a suitable type to match
-            // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
+            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
             Some(c) => ibc_proto::google::protobuf::Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: c,
@@ -73,11 +76,12 @@ impl ClientQuery for IbcQuery {
         let res = QueryClientStateResponse {
             client_state: Some(client_state),
             proof: proof.encode_to_vec(),
-            proof_height: Some(height),
+            proof_height: Some(height.into()),
         };
 
         Ok(tonic::Response::new(res))
     }
+
     /// ClientStates queries all the IBC light clients of a chain.
     async fn client_states(
         &self,
@@ -111,30 +115,127 @@ impl ClientQuery for IbcQuery {
 
         Ok(tonic::Response::new(res))
     }
+
     /// ConsensusState queries a consensus state associated with a client state at
     /// a given height.
     async fn consensus_state(
         &self,
-        _request: tonic::Request<QueryConsensusStateRequest>,
+        request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let client_id = ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
+        let height = get_latest_verified_height(&snapshot, &client_id).await?;
+
+        let (cs_opt, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
+
+        // if state is None, convert to a NotFound response.
+        let consensus_state = match cs_opt {
+            // If found, convert to a suitable type to match
+            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryConsensusStateResponse.html
+            Some(c) => ibc_proto::google::protobuf::Any {
+                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
+                value: c,
+            },
+            None => {
+                return Err(tonic::Status::not_found(format!(
+                    "couldn't find client: {client_id}"
+                )))
+            }
+        };
+
+        let res = QueryConsensusStateResponse {
+            consensus_state: Some(consensus_state),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(height.into()),
+        };
+
+        Ok(tonic::Response::new(res))
     }
+
     /// ConsensusStates queries all the consensus state associated with a given
     /// client.
     async fn consensus_states(
         &self,
-        _request: tonic::Request<QueryConsensusStatesRequest>,
+        request: tonic::Request<QueryConsensusStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStatesResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let client_id = ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
+
+        let verified_heights = snapshot
+            .get_verified_heights(&client_id)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+        let resp = if let Some(verified_heights) = verified_heights {
+            let mut consensus_states = Vec::with_capacity(verified_heights.heights.len());
+            for height in verified_heights.heights {
+                let consensus_state = snapshot
+                    .get_verified_consensus_state(&height, &client_id)
+                    .await
+                    .map_err(|e| {
+                        tonic::Status::aborted(format!("couldn't get consensus state: {e}"))
+                    })?;
+                consensus_states.push(ConsensusStateWithHeight {
+                    height: Some(height.into()),
+                    consensus_state: Some(consensus_state.into()),
+                });
+            }
+            QueryConsensusStatesResponse {
+                consensus_states,
+                pagination: None,
+            }
+        } else {
+            QueryConsensusStatesResponse {
+                consensus_states: vec![],
+                pagination: None,
+            }
+        };
+
+        Ok(tonic::Response::new(resp))
     }
+
     /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
     async fn consensus_state_heights(
         &self,
-        _request: tonic::Request<QueryConsensusStateHeightsRequest>,
+        request: tonic::Request<QueryConsensusStateHeightsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateHeightsResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let client_id = ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
+
+        let verified_heights = snapshot
+            .get_verified_heights(&client_id)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+        let resp = if let Some(verified_heights) = verified_heights {
+            QueryConsensusStateHeightsResponse {
+                consensus_state_heights: verified_heights
+                    .heights
+                    .into_iter()
+                    .map(|h| h.into())
+                    .collect(),
+                pagination: None,
+            }
+        } else {
+            QueryConsensusStateHeightsResponse {
+                consensus_state_heights: vec![],
+                pagination: None,
+            }
+        };
+
+        Ok(tonic::Response::new(resp))
     }
+
     /// Status queries the status of an IBC client.
     async fn client_status(
         &self,
@@ -164,4 +265,29 @@ impl ClientQuery for IbcQuery {
     {
         Err(tonic::Status::unimplemented("not implemented"))
     }
+}
+
+async fn get_latest_verified_height(
+    snapshot: &cnidarium::Snapshot,
+    client_id: &ClientId,
+) -> Result<Height, tonic::Status> {
+    let verified_heights = snapshot
+        .get_verified_heights(&client_id)
+        .await
+        .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
+
+    let Some(mut verified_heights) = verified_heights else {
+        return Err(tonic::Status::not_found(
+            "couldn't find verified heights for client: {client_id}",
+        ));
+    };
+
+    verified_heights.heights.sort();
+    if verified_heights.heights.is_empty() {
+        return Err(tonic::Status::not_found(
+            "verified heights for client were empty: {client_id}",
+        ));
+    }
+
+    Ok(verified_heights.heights.pop().expect("must be non-empty"))
 }
