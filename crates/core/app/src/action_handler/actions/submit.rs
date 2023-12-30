@@ -289,10 +289,10 @@ impl ActionHandler for ProposalSubmit {
 ///
 /// This full viewing key does not correspond to any known spend key; it is constructed from the
 /// hashes of two arbitrary strings.
-static community_pool_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
+static COMMUNITY_POOL_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
     // We start with two different personalization strings for the hash function:
-    let ak_personalization = b"Penumbra_community_pool_ak";
-    let nk_personalization = b"Penumbra_community_pool_nk";
+    let ak_personalization = b"Penumbra_CP_ak";
+    let nk_personalization = b"Penumbra_CP_nk";
 
     // We pick two different arbitrary strings to hash:
     let ak_hash_input =
@@ -326,9 +326,9 @@ static community_pool_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
 async fn build_community_pool_transaction(
     transaction_plan: TransactionPlan,
 ) -> Result<Transaction> {
-    let effect_hash = transaction_plan.effect_hash(&community_pool_FULL_VIEWING_KEY);
+    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY);
     transaction_plan.build(
-        &community_pool_FULL_VIEWING_KEY,
+        &COMMUNITY_POOL_FULL_VIEWING_KEY,
         &WitnessData {
             anchor: penumbra_tct::Tree::new().root(),
             state_commitment_proofs: Default::default(),
@@ -346,6 +346,6 @@ mod test {
     /// Ensure that the Community Pool full viewing key can be constructed and does not panic when referenced.
     #[test]
     fn community_pool_fvk_can_be_constructed() {
-        let _ = *super::community_pool_FULL_VIEWING_KEY;
+        let _ = *super::COMMUNITY_POOL_FULL_VIEWING_KEY;
     }
 }
