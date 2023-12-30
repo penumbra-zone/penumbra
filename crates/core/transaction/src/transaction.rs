@@ -8,7 +8,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
 use penumbra_chain::TransactionContext;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
@@ -237,9 +237,9 @@ impl Transaction {
                 | Action::PositionWithdraw(_)
                 | Action::PositionRewardClaim(_)
                 | Action::Ics20Withdrawal(_)
-                | Action::DaoSpend(_)
-                | Action::DaoOutput(_)
-                | Action::DaoDeposit(_) => {}
+                | Action::CommunityPoolSpend(_)
+                | Action::CommunityPoolOutput(_)
+                | Action::CommunityPoolDeposit(_) => {}
             }
         }
 
@@ -463,9 +463,9 @@ impl Transaction {
             .filter_map(|x| x)
     }
 
-    pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+    pub fn community_pool_deposits(&self) -> impl Iterator<Item = &CommunityPoolDeposit> {
         self.actions().filter_map(|action| {
-            if let Action::DaoDeposit(d) = action {
+            if let Action::CommunityPoolDeposit(d) = action {
                 Some(d)
             } else {
                 None
@@ -473,9 +473,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+    pub fn community_pool_spends(&self) -> impl Iterator<Item = &CommunityPoolSpend> {
         self.actions().filter_map(|action| {
-            if let Action::DaoSpend(s) = action {
+            if let Action::CommunityPoolSpend(s) = action {
                 Some(s)
             } else {
                 None
@@ -493,9 +493,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+    pub fn community_pool_outputs(&self) -> impl Iterator<Item = &CommunityPoolOutput> {
         self.actions().filter_map(|action| {
-            if let Action::DaoOutput(o) = action {
+            if let Action::CommunityPoolOutput(o) = action {
                 Some(o)
             } else {
                 None

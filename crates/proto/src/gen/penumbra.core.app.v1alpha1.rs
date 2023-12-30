@@ -22,9 +22,7 @@ impl ::prost::Name for TransactionsByHeightRequest {
 pub struct TransactionsByHeightResponse {
     /// The transactions.
     #[prost(message, repeated, tag = "1")]
-    pub transactions: ::prost::alloc::vec::Vec<
-        super::super::transaction::v1alpha1::Transaction,
-    >,
+    pub transactions: ::prost::alloc::vec::Vec<super::super::transaction::v1alpha1::Transaction>,
     /// The block height.
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
@@ -41,34 +39,27 @@ impl ::prost::Name for TransactionsByHeightResponse {
 pub struct AppParameters {
     /// Chain module parameters.
     #[prost(message, optional, tag = "1")]
-    pub chain_params: ::core::option::Option<
-        super::super::component::chain::v1alpha1::ChainParameters,
-    >,
-    /// DAO module parameters.
+    pub chain_params:
+        ::core::option::Option<super::super::component::chain::v1alpha1::ChainParameters>,
+    /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
-    pub dao_params: ::core::option::Option<
-        super::super::component::dao::v1alpha1::DaoParameters,
+    pub community_pool_params: ::core::option::Option<
+        super::super::component::community_pool::v1alpha1::CommunityPoolParameters,
     >,
     /// Governance module parameters.
     #[prost(message, optional, tag = "3")]
-    pub governance_params: ::core::option::Option<
-        super::super::component::governance::v1alpha1::GovernanceParameters,
-    >,
+    pub governance_params:
+        ::core::option::Option<super::super::component::governance::v1alpha1::GovernanceParameters>,
     /// IBC module parameters.
     #[prost(message, optional, tag = "4")]
-    pub ibc_params: ::core::option::Option<
-        super::super::component::ibc::v1alpha1::IbcParameters,
-    >,
+    pub ibc_params: ::core::option::Option<super::super::component::ibc::v1alpha1::IbcParameters>,
     /// Stake module parameters.
     #[prost(message, optional, tag = "5")]
-    pub stake_params: ::core::option::Option<
-        super::super::component::stake::v1alpha1::StakeParameters,
-    >,
+    pub stake_params:
+        ::core::option::Option<super::super::component::stake::v1alpha1::StakeParameters>,
     /// Fee module parameters.
     #[prost(message, optional, tag = "6")]
-    pub fee_params: ::core::option::Option<
-        super::super::component::fee::v1alpha1::FeeParameters,
-    >,
+    pub fee_params: ::core::option::Option<super::super::component::fee::v1alpha1::FeeParameters>,
     /// Distributions module parameters.
     #[prost(message, optional, tag = "7")]
     pub distributions_params: ::core::option::Option<
@@ -139,44 +130,34 @@ impl ::prost::Name for GenesisAppState {
 pub struct GenesisContent {
     /// Stake module genesis state.
     #[prost(message, optional, tag = "1")]
-    pub stake_content: ::core::option::Option<
-        super::super::component::stake::v1alpha1::GenesisContent,
-    >,
+    pub stake_content:
+        ::core::option::Option<super::super::component::stake::v1alpha1::GenesisContent>,
     /// Shielded pool module genesis state.
     #[prost(message, optional, tag = "2")]
-    pub shielded_pool_content: ::core::option::Option<
-        super::super::component::shielded_pool::v1alpha1::GenesisContent,
-    >,
+    pub shielded_pool_content:
+        ::core::option::Option<super::super::component::shielded_pool::v1alpha1::GenesisContent>,
     /// Governance module genesis state.
     #[prost(message, optional, tag = "3")]
-    pub governance_content: ::core::option::Option<
-        super::super::component::governance::v1alpha1::GenesisContent,
-    >,
+    pub governance_content:
+        ::core::option::Option<super::super::component::governance::v1alpha1::GenesisContent>,
     /// IBC module genesis state.
     #[prost(message, optional, tag = "4")]
-    pub ibc_content: ::core::option::Option<
-        super::super::component::ibc::v1alpha1::GenesisContent,
-    >,
+    pub ibc_content: ::core::option::Option<super::super::component::ibc::v1alpha1::GenesisContent>,
     /// Chain module genesis state.
     #[prost(message, optional, tag = "5")]
-    pub chain_content: ::core::option::Option<
-        super::super::component::chain::v1alpha1::GenesisContent,
-    >,
-    /// DAO module genesis state.
+    pub chain_content:
+        ::core::option::Option<super::super::component::chain::v1alpha1::GenesisContent>,
+    /// Community Pool module genesis state.
     #[prost(message, optional, tag = "6")]
-    pub dao_content: ::core::option::Option<
-        super::super::component::dao::v1alpha1::GenesisContent,
-    >,
+    pub community_pool_content:
+        ::core::option::Option<super::super::component::community_pool::v1alpha1::GenesisContent>,
     /// Fee module genesis state.
     #[prost(message, optional, tag = "7")]
-    pub fee_content: ::core::option::Option<
-        super::super::component::fee::v1alpha1::GenesisContent,
-    >,
+    pub fee_content: ::core::option::Option<super::super::component::fee::v1alpha1::GenesisContent>,
     /// Distributions module genesis state.
     #[prost(message, optional, tag = "8")]
-    pub distributions_content: ::core::option::Option<
-        super::super::component::distributions::v1alpha1::GenesisContent,
-    >,
+    pub distributions_content:
+        ::core::option::Option<super::super::component::distributions::v1alpha1::GenesisContent>,
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
@@ -189,8 +170,8 @@ impl ::prost::Name for GenesisContent {
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     /// Query operations for the overall Penumbra application.
     #[derive(Debug, Clone)]
     pub struct QueryServiceClient<T> {
@@ -235,9 +216,8 @@ pub mod query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -276,62 +256,46 @@ pub mod query_service_client {
         pub async fn app_parameters(
             &mut self,
             request: impl tonic::IntoRequest<super::AppParametersRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::AppParametersResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::AppParametersResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.app.v1alpha1.QueryService/AppParameters",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.app.v1alpha1.QueryService",
-                        "AppParameters",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.app.v1alpha1.QueryService",
+                "AppParameters",
+            ));
             self.inner.unary(req, path, codec).await
         }
         /// Returns the CometBFT transactions that occurred during a given block.
         pub async fn transactions_by_height(
             &mut self,
             request: impl tonic::IntoRequest<super::TransactionsByHeightRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionsByHeightResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::TransactionsByHeightResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.app.v1alpha1.QueryService/TransactionsByHeight",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.app.v1alpha1.QueryService",
-                        "TransactionsByHeight",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.app.v1alpha1.QueryService",
+                "TransactionsByHeight",
+            ));
             self.inner.unary(req, path, codec).await
         }
     }
@@ -348,18 +312,12 @@ pub mod query_service_server {
         async fn app_parameters(
             &self,
             request: tonic::Request<super::AppParametersRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::AppParametersResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::AppParametersResponse>, tonic::Status>;
         /// Returns the CometBFT transactions that occurred during a given block.
         async fn transactions_by_height(
             &self,
             request: tonic::Request<super::TransactionsByHeightRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionsByHeightResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::TransactionsByHeightResponse>, tonic::Status>;
     }
     /// Query operations for the overall Penumbra application.
     #[derive(Debug)]
@@ -385,10 +343,7 @@ pub mod query_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -444,15 +399,11 @@ pub mod query_service_server {
                 "/penumbra.core.app.v1alpha1.QueryService/AppParameters" => {
                     #[allow(non_camel_case_types)]
                     struct AppParametersSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::UnaryService<super::AppParametersRequest>
-                    for AppParametersSvc<T> {
+                    impl<T: QueryService> tonic::server::UnaryService<super::AppParametersRequest>
+                        for AppParametersSvc<T>
+                    {
                         type Response = super::AppParametersResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::AppParametersRequest>,
@@ -490,23 +441,19 @@ pub mod query_service_server {
                 "/penumbra.core.app.v1alpha1.QueryService/TransactionsByHeight" => {
                     #[allow(non_camel_case_types)]
                     struct TransactionsByHeightSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::UnaryService<super::TransactionsByHeightRequest>
-                    for TransactionsByHeightSvc<T> {
+                    impl<T: QueryService>
+                        tonic::server::UnaryService<super::TransactionsByHeightRequest>
+                        for TransactionsByHeightSvc<T>
+                    {
                         type Response = super::TransactionsByHeightResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::TransactionsByHeightRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as QueryService>::transactions_by_height(&inner, request)
-                                    .await
+                                <T as QueryService>::transactions_by_height(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -534,18 +481,14 @@ pub mod query_service_server {
                     };
                     Box::pin(fut)
                 }
-                _ => {
-                    Box::pin(async move {
-                        Ok(
-                            http::Response::builder()
-                                .status(200)
-                                .header("grpc-status", "12")
-                                .header("content-type", "application/grpc")
-                                .body(empty_body())
-                                .unwrap(),
-                        )
-                    })
-                }
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(empty_body())
+                        .unwrap())
+                }),
             }
         }
     }

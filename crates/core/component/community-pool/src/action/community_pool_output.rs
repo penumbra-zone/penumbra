@@ -8,42 +8,42 @@ use penumbra_keys::Address;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::DaoOutput", into = "pb::DaoOutput")]
-pub struct DaoOutput {
+#[serde(try_from = "pb::CommunityPoolOutput", into = "pb::CommunityPoolOutput")]
+pub struct CommunityPoolOutput {
     pub value: Value,
     pub address: Address,
 }
 
-impl DaoOutput {
+impl CommunityPoolOutput {
     pub fn balance(&self) -> Balance {
-        // Outputs from the DAO require value
+        // Outputs from the Community Pool require value
         -Balance::from(self.value)
     }
 }
 
-impl EffectingData for DaoOutput {
+impl EffectingData for CommunityPoolOutput {
     fn effect_hash(&self) -> EffectHash {
         EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 
-impl DomainType for DaoOutput {
-    type Proto = pb::DaoOutput;
+impl DomainType for CommunityPoolOutput {
+    type Proto = pb::CommunityPoolOutput;
 }
 
-impl From<DaoOutput> for pb::DaoOutput {
-    fn from(msg: DaoOutput) -> Self {
-        pb::DaoOutput {
+impl From<CommunityPoolOutput> for pb::CommunityPoolOutput {
+    fn from(msg: CommunityPoolOutput) -> Self {
+        pb::CommunityPoolOutput {
             value: Some(msg.value.into()),
             address: Some(msg.address.into()),
         }
     }
 }
 
-impl TryFrom<pb::DaoOutput> for DaoOutput {
+impl TryFrom<pb::CommunityPoolOutput> for CommunityPoolOutput {
     type Error = Error;
 
-    fn try_from(proto: pb::DaoOutput) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pb::CommunityPoolOutput) -> anyhow::Result<Self, Self::Error> {
         let value = proto
             .value
             .ok_or_else(|| anyhow::anyhow!("missing value"))?
@@ -55,6 +55,6 @@ impl TryFrom<pb::DaoOutput> for DaoOutput {
             .try_into()
             .context("malformed address")?;
 
-        Ok(DaoOutput { value, address })
+        Ok(CommunityPoolOutput { value, address })
     }
 }

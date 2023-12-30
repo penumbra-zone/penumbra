@@ -9,9 +9,7 @@ impl ::prost::Name for ZkDelegatorVoteProof {
     const NAME: &'static str = "ZKDelegatorVoteProof";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -22,17 +20,13 @@ pub struct ProposalSubmit {
     pub proposal: ::core::option::Option<Proposal>,
     /// The amount of the proposal deposit.
     #[prost(message, optional, tag = "3")]
-    pub deposit_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub deposit_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
 }
 impl ::prost::Name for ProposalSubmit {
     const NAME: &'static str = "ProposalSubmit";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -49,9 +43,7 @@ impl ::prost::Name for ProposalWithdraw {
     const NAME: &'static str = "ProposalWithdraw";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -62,9 +54,7 @@ pub struct ProposalDepositClaim {
     pub proposal: u64,
     /// The expected deposit amount.
     #[prost(message, optional, tag = "2")]
-    pub deposit_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub deposit_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     /// The outcome of the proposal.
     #[prost(message, optional, tag = "3")]
     pub outcome: ::core::option::Option<ProposalOutcome>,
@@ -73,9 +63,7 @@ impl ::prost::Name for ProposalDepositClaim {
     const NAME: &'static str = "ProposalDepositClaim";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -94,9 +82,7 @@ impl ::prost::Name for ValidatorVote {
     const NAME: &'static str = "ValidatorVote";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -109,9 +95,7 @@ impl ::prost::Name for ValidatorVoteReason {
     const NAME: &'static str = "ValidatorVoteReason";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -125,14 +109,10 @@ pub struct ValidatorVoteBody {
     pub vote: ::core::option::Option<Vote>,
     /// The validator identity.
     #[prost(message, optional, tag = "3")]
-    pub identity_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1alpha1::IdentityKey>,
     /// The validator governance key.
     #[prost(message, optional, tag = "4")]
-    pub governance_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::GovernanceKey,
-    >,
+    pub governance_key: ::core::option::Option<super::super::super::keys::v1alpha1::GovernanceKey>,
     /// A justification of the vote.
     #[prost(message, optional, tag = "5")]
     pub reason: ::core::option::Option<ValidatorVoteReason>,
@@ -141,9 +121,7 @@ impl ::prost::Name for ValidatorVoteBody {
     const NAME: &'static str = "ValidatorVoteBody";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -165,9 +143,7 @@ impl ::prost::Name for DelegatorVote {
     const NAME: &'static str = "DelegatorVote";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -187,9 +163,7 @@ pub struct DelegatorVoteBody {
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
     /// The amount of the delegation note, in unbonded penumbra.
     #[prost(message, optional, tag = "5")]
-    pub unbonded_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub unbonded_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     /// The nullifier of the input note.
     #[prost(message, optional, tag = "6")]
     pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
@@ -203,9 +177,7 @@ impl ::prost::Name for DelegatorVoteBody {
     const NAME: &'static str = "DelegatorVoteBody";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -222,9 +194,7 @@ pub mod delegator_vote_view {
         #[prost(message, optional, tag = "1")]
         pub delegator_vote: ::core::option::Option<super::DelegatorVote>,
         #[prost(message, optional, tag = "2")]
-        pub note: ::core::option::Option<
-            super::super::super::shielded_pool::v1alpha1::NoteView,
-        >,
+        pub note: ::core::option::Option<super::super::super::shielded_pool::v1alpha1::NoteView>,
     }
     impl ::prost::Name for Visible {
         const NAME: &'static str = "Visible";
@@ -265,9 +235,7 @@ impl ::prost::Name for DelegatorVoteView {
     const NAME: &'static str = "DelegatorVoteView";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -290,9 +258,7 @@ pub struct DelegatorVotePlan {
     pub staked_note_position: u64,
     /// The unbonded amount equivalent to the delegation note.
     #[prost(message, optional, tag = "6")]
-    pub unbonded_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub unbonded_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     /// The randomizer to use for the proof of spend capability.
     #[prost(bytes = "vec", tag = "7")]
     pub randomizer: ::prost::alloc::vec::Vec<u8>,
@@ -307,60 +273,52 @@ impl ::prost::Name for DelegatorVotePlan {
     const NAME: &'static str = "DelegatorVotePlan";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoDeposit {
-    /// The value to deposit into the DAO.
+pub struct CommunityPoolDeposit {
+    /// The value to deposit into the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
-impl ::prost::Name for DaoDeposit {
-    const NAME: &'static str = "DaoDeposit";
+impl ::prost::Name for CommunityPoolDeposit {
+    const NAME: &'static str = "CommunityPoolDeposit";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoSpend {
-    /// The value to spend from the DAO.
+pub struct CommunityPoolSpend {
+    /// The value to spend from the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
-impl ::prost::Name for DaoSpend {
-    const NAME: &'static str = "DaoSpend";
+impl ::prost::Name for CommunityPoolSpend {
+    const NAME: &'static str = "CommunityPoolSpend";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoOutput {
-    /// The value to output from the DAO.
+pub struct CommunityPoolOutput {
+    /// The value to output from the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
     /// The address to send the output to.
     #[prost(message, optional, tag = "2")]
     pub address: ::core::option::Option<super::super::super::keys::v1alpha1::Address>,
 }
-impl ::prost::Name for DaoOutput {
-    const NAME: &'static str = "DaoOutput";
+impl ::prost::Name for CommunityPoolOutput {
+    const NAME: &'static str = "CommunityPoolOutput";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// A vote on a proposal.
@@ -374,17 +332,7 @@ pub struct Vote {
 /// Nested message and enum types in `Vote`.
 pub mod vote {
     /// A vote.
-    #[derive(
-        Clone,
-        Copy,
-        Debug,
-        PartialEq,
-        Eq,
-        Hash,
-        PartialOrd,
-        Ord,
-        ::prost::Enumeration
-    )]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Vote {
         Unspecified = 0,
@@ -421,9 +369,7 @@ impl ::prost::Name for Vote {
     const NAME: &'static str = "Vote";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// The current state of a proposal.
@@ -520,9 +466,7 @@ impl ::prost::Name for ProposalState {
     const NAME: &'static str = "ProposalState";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// The outcome of a concluded proposal.
@@ -617,9 +561,7 @@ impl ::prost::Name for ProposalOutcome {
     const NAME: &'static str = "ProposalOutcome";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// A tally of votes on a proposal.
@@ -640,9 +582,7 @@ impl ::prost::Name for Tally {
     const NAME: &'static str = "Tally";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// A proposal to be voted upon.
@@ -666,7 +606,7 @@ pub struct Proposal {
     #[prost(message, optional, tag = "7")]
     pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
     #[prost(message, optional, tag = "8")]
-    pub dao_spend: ::core::option::Option<proposal::DaoSpend>,
+    pub community_pool_spend: ::core::option::Option<proposal::CommunityPoolSpend>,
     #[prost(message, optional, tag = "9")]
     pub upgrade_plan: ::core::option::Option<proposal::UpgradePlan>,
 }
@@ -688,7 +628,8 @@ pub mod proposal {
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}",
+                Self::NAME
             )
         }
     }
@@ -709,7 +650,8 @@ pub mod proposal {
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}",
+                Self::NAME
             )
         }
     }
@@ -734,28 +676,30 @@ pub mod proposal {
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}",
+                Self::NAME
             )
         }
     }
-    /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
+    /// A Community Pool spend proposal describes zero or more transactions to execute on behalf of the Community Pool, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
     /// cancel.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct DaoSpend {
+    pub struct CommunityPoolSpend {
         /// The transaction plan to be executed at the time the proposal is passed. This must be a
-        /// transaction plan which can be executed by the DAO, which means it can't require any witness
-        /// data or authorization signatures, but it may use the `DaoSpend` action.
+        /// transaction plan which can be executed by the Community Pool, which means it can't require any witness
+        /// data or authorization signatures, but it may use the `CommunityPoolSpend` action.
         #[prost(message, optional, tag = "2")]
         pub transaction_plan: ::core::option::Option<::pbjson_types::Any>,
     }
-    impl ::prost::Name for DaoSpend {
-        const NAME: &'static str = "DaoSpend";
+    impl ::prost::Name for CommunityPoolSpend {
+        const NAME: &'static str = "CommunityPoolSpend";
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}",
+                Self::NAME
             )
         }
     }
@@ -772,7 +716,8 @@ pub mod proposal {
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}",
+                Self::NAME
             )
         }
     }
@@ -781,9 +726,7 @@ impl ::prost::Name for Proposal {
     const NAME: &'static str = "Proposal";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -800,9 +743,7 @@ impl ::prost::Name for ProposalInfoRequest {
     const NAME: &'static str = "ProposalInfoRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -819,9 +760,7 @@ impl ::prost::Name for ProposalInfoResponse {
     const NAME: &'static str = "ProposalInfoResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -838,9 +777,7 @@ impl ::prost::Name for ProposalDataRequest {
     const NAME: &'static str = "ProposalDataRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -863,17 +800,13 @@ pub struct ProposalDataResponse {
     pub state: ::core::option::Option<ProposalState>,
     /// The deposit amount paid for the proposal.
     #[prost(message, optional, tag = "6")]
-    pub proposal_deposit_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub proposal_deposit_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
 }
 impl ::prost::Name for ProposalDataResponse {
     const NAME: &'static str = "ProposalDataResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Requests the validator rate data for a proposal.
@@ -891,9 +824,7 @@ impl ::prost::Name for ProposalRateDataRequest {
     const NAME: &'static str = "ProposalRateDataRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// The rate data for a single validator.
@@ -907,9 +838,7 @@ impl ::prost::Name for ProposalRateDataResponse {
     const NAME: &'static str = "ProposalRateDataResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Requests the list of all proposals.
@@ -929,9 +858,7 @@ impl ::prost::Name for ProposalListRequest {
     const NAME: &'static str = "ProposalListRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// The data for a single proposal.
@@ -958,9 +885,7 @@ impl ::prost::Name for ProposalListResponse {
     const NAME: &'static str = "ProposalListResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Requests the list of all validator votes for a given proposal.
@@ -978,9 +903,7 @@ impl ::prost::Name for ValidatorVotesRequest {
     const NAME: &'static str = "ValidatorVotesRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// The data for a single validator vote.
@@ -992,17 +915,13 @@ pub struct ValidatorVotesResponse {
     pub vote: ::core::option::Option<Vote>,
     /// The validator identity.
     #[prost(message, optional, tag = "2")]
-    pub identity_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1alpha1::IdentityKey>,
 }
 impl ::prost::Name for ValidatorVotesResponse {
     const NAME: &'static str = "ValidatorVotesResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Governance configuration data.
@@ -1014,9 +933,7 @@ pub struct GovernanceParameters {
     pub proposal_voting_blocks: u64,
     /// The deposit required to create a proposal.
     #[prost(message, optional, tag = "2")]
-    pub proposal_deposit_amount: ::core::option::Option<
-        super::super::super::num::v1alpha1::Amount,
-    >,
+    pub proposal_deposit_amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     /// The quorum required for a proposal to be considered valid, as a fraction of the total stake
     /// weight of the network.
     #[prost(string, tag = "3")]
@@ -1033,9 +950,7 @@ impl ::prost::Name for GovernanceParameters {
     const NAME: &'static str = "GovernanceParameters";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Governance genesis state.
@@ -1050,9 +965,7 @@ impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Note: must be kept in sync with AppParameters.
@@ -1062,12 +975,11 @@ impl ::prost::Name for GenesisContent {
 pub struct ChangedAppParameters {
     /// Chain module parameters.
     #[prost(message, optional, tag = "1")]
-    pub chain_params: ::core::option::Option<
-        super::super::chain::v1alpha1::ChainParameters,
-    >,
-    /// DAO module parameters.
+    pub chain_params: ::core::option::Option<super::super::chain::v1alpha1::ChainParameters>,
+    /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
-    pub dao_params: ::core::option::Option<super::super::dao::v1alpha1::DaoParameters>,
+    pub community_pool_params:
+        ::core::option::Option<super::super::community_pool::v1alpha1::CommunityPoolParameters>,
     /// Governance module parameters.
     #[prost(message, optional, tag = "3")]
     pub governance_params: ::core::option::Option<GovernanceParameters>,
@@ -1076,25 +988,20 @@ pub struct ChangedAppParameters {
     pub ibc_params: ::core::option::Option<super::super::ibc::v1alpha1::IbcParameters>,
     /// Stake module parameters.
     #[prost(message, optional, tag = "5")]
-    pub stake_params: ::core::option::Option<
-        super::super::stake::v1alpha1::StakeParameters,
-    >,
+    pub stake_params: ::core::option::Option<super::super::stake::v1alpha1::StakeParameters>,
     /// Fee module parameters.
     #[prost(message, optional, tag = "6")]
     pub fee_params: ::core::option::Option<super::super::fee::v1alpha1::FeeParameters>,
     /// Distributions module parameters.
     #[prost(message, optional, tag = "7")]
-    pub distributions_params: ::core::option::Option<
-        super::super::distributions::v1alpha1::DistributionsParameters,
-    >,
+    pub distributions_params:
+        ::core::option::Option<super::super::distributions::v1alpha1::DistributionsParameters>,
 }
 impl ::prost::Name for ChangedAppParameters {
     const NAME: &'static str = "ChangedAppParameters";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1111,9 +1018,7 @@ impl ::prost::Name for ChangedAppParametersSet {
     const NAME: &'static str = "ChangedAppParametersSet";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1127,17 +1032,13 @@ pub struct VotingPowerAtProposalStartRequest {
     pub proposal_id: u64,
     /// The validator identity key to request information on.
     #[prost(message, optional, tag = "3")]
-    pub identity_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1alpha1::IdentityKey>,
 }
 impl ::prost::Name for VotingPowerAtProposalStartRequest {
     const NAME: &'static str = "VotingPowerAtProposalStartRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1154,9 +1055,7 @@ impl ::prost::Name for VotingPowerAtProposalStartResponse {
     const NAME: &'static str = "VotingPowerAtProposalStartResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1173,9 +1072,7 @@ impl ::prost::Name for AllTalliedDelegatorVotesForProposalRequest {
     const NAME: &'static str = "AllTalliedDelegatorVotesForProposalRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1186,17 +1083,13 @@ pub struct AllTalliedDelegatorVotesForProposalResponse {
     pub tally: ::core::option::Option<Tally>,
     /// The validator identity associated with the tally.
     #[prost(message, optional, tag = "2")]
-    pub identity_key: ::core::option::Option<
-        super::super::super::keys::v1alpha1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1alpha1::IdentityKey>,
 }
 impl ::prost::Name for AllTalliedDelegatorVotesForProposalResponse {
     const NAME: &'static str = "AllTalliedDelegatorVotesForProposalResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1210,9 +1103,7 @@ impl ::prost::Name for NextProposalIdRequest {
     const NAME: &'static str = "NextProposalIdRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -1226,17 +1117,15 @@ impl ::prost::Name for NextProposalIdResponse {
     const NAME: &'static str = "NextProposalIdResponse";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
-        )
+        ::prost::alloc::format!("penumbra.core.component.governance.v1alpha1.{}", Self::NAME)
     }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
+    use tonic::codegen::*;
     /// Query operations for the governance component.
     #[derive(Debug, Clone)]
     pub struct QueryServiceClient<T> {
@@ -1281,9 +1170,8 @@ pub mod query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -1321,31 +1209,23 @@ pub mod query_service_client {
         pub async fn proposal_info(
             &mut self,
             request: impl tonic::IntoRequest<super::ProposalInfoRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::ProposalInfoResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::ProposalInfoResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalInfo",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "ProposalInfo",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "ProposalInfo",
+            ));
             self.inner.unary(req, path, codec).await
         }
         pub async fn proposal_list(
@@ -1355,87 +1235,65 @@ pub mod query_service_client {
             tonic::Response<tonic::codec::Streaming<super::ProposalListResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalList",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "ProposalList",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "ProposalList",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
         pub async fn proposal_data(
             &mut self,
             request: impl tonic::IntoRequest<super::ProposalDataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::ProposalDataResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::ProposalDataResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalData",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "ProposalData",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "ProposalData",
+            ));
             self.inner.unary(req, path, codec).await
         }
         pub async fn next_proposal_id(
             &mut self,
             request: impl tonic::IntoRequest<super::NextProposalIdRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::NextProposalIdResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+        ) -> std::result::Result<tonic::Response<super::NextProposalIdResponse>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/NextProposalId",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "NextProposalId",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "NextProposalId",
+            ));
             self.inner.unary(req, path, codec).await
         }
         pub async fn validator_votes(
@@ -1445,27 +1303,21 @@ pub mod query_service_client {
             tonic::Response<tonic::codec::Streaming<super::ValidatorVotesResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ValidatorVotes",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "ValidatorVotes",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "ValidatorVotes",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
         pub async fn voting_power_at_proposal_start(
@@ -1475,63 +1327,47 @@ pub mod query_service_client {
             tonic::Response<super::VotingPowerAtProposalStartResponse>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/VotingPowerAtProposalStart",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "VotingPowerAtProposalStart",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "VotingPowerAtProposalStart",
+            ));
             self.inner.unary(req, path, codec).await
         }
         pub async fn all_tallied_delegator_votes_for_proposal(
             &mut self,
-            request: impl tonic::IntoRequest<
-                super::AllTalliedDelegatorVotesForProposalRequest,
-            >,
+            request: impl tonic::IntoRequest<super::AllTalliedDelegatorVotesForProposalRequest>,
         ) -> std::result::Result<
             tonic::Response<
-                tonic::codec::Streaming<
-                    super::AllTalliedDelegatorVotesForProposalResponse,
-                >,
+                tonic::codec::Streaming<super::AllTalliedDelegatorVotesForProposalResponse>,
             >,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/AllTalliedDelegatorVotesForProposal",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "AllTalliedDelegatorVotesForProposal",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "AllTalliedDelegatorVotesForProposal",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
         /// Used for computing voting power ?
@@ -1542,27 +1378,21 @@ pub mod query_service_client {
             tonic::Response<tonic::codec::Streaming<super::ProposalRateDataResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.governance.v1alpha1.QueryService/ProposalRateData",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.governance.v1alpha1.QueryService",
-                        "ProposalRateData",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.governance.v1alpha1.QueryService",
+                "ProposalRateData",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -1578,50 +1408,33 @@ pub mod query_service_server {
         async fn proposal_info(
             &self,
             request: tonic::Request<super::ProposalInfoRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::ProposalInfoResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::ProposalInfoResponse>, tonic::Status>;
         /// Server streaming response type for the ProposalList method.
         type ProposalListStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ProposalListResponse, tonic::Status>,
-            >
-            + Send
+            > + Send
             + 'static;
         async fn proposal_list(
             &self,
             request: tonic::Request<super::ProposalListRequest>,
-        ) -> std::result::Result<
-            tonic::Response<Self::ProposalListStream>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<Self::ProposalListStream>, tonic::Status>;
         async fn proposal_data(
             &self,
             request: tonic::Request<super::ProposalDataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::ProposalDataResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::ProposalDataResponse>, tonic::Status>;
         async fn next_proposal_id(
             &self,
             request: tonic::Request<super::NextProposalIdRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::NextProposalIdResponse>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<super::NextProposalIdResponse>, tonic::Status>;
         /// Server streaming response type for the ValidatorVotes method.
         type ValidatorVotesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ValidatorVotesResponse, tonic::Status>,
-            >
-            + Send
+            > + Send
             + 'static;
         async fn validator_votes(
             &self,
             request: tonic::Request<super::ValidatorVotesRequest>,
-        ) -> std::result::Result<
-            tonic::Response<Self::ValidatorVotesStream>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<Self::ValidatorVotesStream>, tonic::Status>;
         async fn voting_power_at_proposal_start(
             &self,
             request: tonic::Request<super::VotingPowerAtProposalStartRequest>,
@@ -1635,8 +1448,7 @@ pub mod query_service_server {
                     super::AllTalliedDelegatorVotesForProposalResponse,
                     tonic::Status,
                 >,
-            >
-            + Send
+            > + Send
             + 'static;
         async fn all_tallied_delegator_votes_for_proposal(
             &self,
@@ -1647,21 +1459,14 @@ pub mod query_service_server {
         >;
         /// Server streaming response type for the ProposalRateData method.
         type ProposalRateDataStream: tonic::codegen::tokio_stream::Stream<
-                Item = std::result::Result<
-                    super::ProposalRateDataResponse,
-                    tonic::Status,
-                >,
-            >
-            + Send
+                Item = std::result::Result<super::ProposalRateDataResponse, tonic::Status>,
+            > + Send
             + 'static;
         /// Used for computing voting power ?
         async fn proposal_rate_data(
             &self,
             request: tonic::Request<super::ProposalRateDataRequest>,
-        ) -> std::result::Result<
-            tonic::Response<Self::ProposalRateDataStream>,
-            tonic::Status,
-        >;
+        ) -> std::result::Result<tonic::Response<Self::ProposalRateDataStream>, tonic::Status>;
     }
     /// Query operations for the governance component.
     #[derive(Debug)]
@@ -1687,10 +1492,7 @@ pub mod query_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {

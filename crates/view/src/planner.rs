@@ -8,7 +8,7 @@ use anyhow::Result;
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::DaoDeposit;
+use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -357,10 +357,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Deposit a value into the DAO.
+    /// Deposit a value into the Community Pool.
     #[instrument(skip(self))]
-    pub fn dao_deposit(&mut self, value: Value) -> &mut Self {
-        self.action(ActionPlan::DaoDeposit(DaoDeposit { value }));
+    pub fn community_pool_deposit(&mut self, value: Value) -> &mut Self {
+        self.action(ActionPlan::CommunityPoolDeposit(CommunityPoolDeposit {
+            value,
+        }));
         self
     }
 

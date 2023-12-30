@@ -64,12 +64,12 @@ pub mod commitment_source {
             )
         }
     }
-    /// The commitment was created through a `DaoOutput` in a governance-initated transaction.
+    /// The commitment was created through a `CommunityPoolOutput` in a governance-initated transaction.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct DaoOutput {}
-    impl ::prost::Name for DaoOutput {
-        const NAME: &'static str = "DaoOutput";
+    pub struct CommunityPoolOutput {}
+    impl ::prost::Name for CommunityPoolOutput {
+        const NAME: &'static str = "CommunityPoolOutput";
         const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -110,7 +110,7 @@ pub mod commitment_source {
         #[prost(message, tag = "20")]
         FundingStreamReward(FundingStreamReward),
         #[prost(message, tag = "30")]
-        DaoOutput(DaoOutput),
+        CommunityPoolOutput(CommunityPoolOutput),
         #[prost(message, tag = "40")]
         Genesis(Genesis),
     }

@@ -1,0 +1,35 @@
+syntax = "proto3";
+package penumbra.core.component.community_pool.v1alpha1;
+
+import "penumbra/core/asset/v1alpha1/asset.proto";
+
+// CommunityPool parameter data.
+message CommunityPoolParameters {
+  // Whether Community Pool spend proposals are enabled.
+  bool community_pool_spend_proposals_enabled = 1;
+}
+
+// CommunityPool genesis state.
+message GenesisContent {
+  // CommunityPool parameters.
+  CommunityPoolParameters community_pool_params = 1;
+}
+
+// Query operations for the community_pool component.
+service QueryService {
+  rpc CommunityPoolAssetBalances(CommunityPoolAssetBalancesRequest) returns (stream CommunityPoolAssetBalancesResponse);
+}
+
+// Requests the list of all asset balances associated with the Community Pool.
+message CommunityPoolAssetBalancesRequest {
+  // The expected chain id (empty string if no expectation).
+  string chain_id = 1;
+  // (Optional): The specific asset balances to retrieve, if excluded all will be returned.
+  repeated asset.v1alpha1.AssetId asset_ids = 2;
+}
+
+// The Community Pool's balance of a single asset.
+message CommunityPoolAssetBalancesResponse {
+  // The balance for a single asset.
+  core.asset.v1alpha1.Value balance = 1;
+}

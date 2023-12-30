@@ -7,46 +7,46 @@ use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb::DaoSpend", into = "pb::DaoSpend")]
-pub struct DaoSpend {
+#[serde(try_from = "pb::CommunityPoolSpend", into = "pb::CommunityPoolSpend")]
+pub struct CommunityPoolSpend {
     pub value: Value,
 }
 
-impl EffectingData for DaoSpend {
+impl EffectingData for CommunityPoolSpend {
     fn effect_hash(&self) -> EffectHash {
         EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 
-impl DaoSpend {
+impl CommunityPoolSpend {
     pub fn balance(&self) -> Balance {
-        // Spends from the DAO produce value
+        // Spends from the Community Pool produce value
         Balance::from(self.value)
     }
 }
 
-impl DomainType for DaoSpend {
-    type Proto = pb::DaoSpend;
+impl DomainType for CommunityPoolSpend {
+    type Proto = pb::CommunityPoolSpend;
 }
 
-impl From<DaoSpend> for pb::DaoSpend {
-    fn from(msg: DaoSpend) -> Self {
-        pb::DaoSpend {
+impl From<CommunityPoolSpend> for pb::CommunityPoolSpend {
+    fn from(msg: CommunityPoolSpend) -> Self {
+        pb::CommunityPoolSpend {
             value: Some(msg.value.into()),
         }
     }
 }
 
-impl TryFrom<pb::DaoSpend> for DaoSpend {
+impl TryFrom<pb::CommunityPoolSpend> for CommunityPoolSpend {
     type Error = Error;
 
-    fn try_from(proto: pb::DaoSpend) -> anyhow::Result<Self, Self::Error> {
+    fn try_from(proto: pb::CommunityPoolSpend) -> anyhow::Result<Self, Self::Error> {
         let value = proto
             .value
             .ok_or_else(|| anyhow::anyhow!("missing value"))?
             .try_into()
             .context("malformed value")?;
 
-        Ok(DaoSpend { value })
+        Ok(CommunityPoolSpend { value })
     }
 }

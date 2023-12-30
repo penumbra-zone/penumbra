@@ -10,8 +10,8 @@ mod dex;
 use dex::DexCmd;
 mod governance;
 use governance::GovernanceCmd;
-mod dao;
-use dao::DaoCmd;
+mod community_pool;
+use community_pool::CommunityPoolCmd;
 mod validator;
 pub(super) use validator::ValidatorCmd;
 mod ibc_query;
@@ -52,9 +52,9 @@ pub enum QueryCmd {
     /// Queries information about governance proposals.
     #[clap(subcommand)]
     Governance(GovernanceCmd),
-    /// Queries information about the DAO.
+    /// Queries information about the Community Pool.
     #[clap(subcommand)]
-    Dao(DaoCmd),
+    CommunityPool(CommunityPoolCmd),
     /// Queries information about the decentralized exchange.
     #[clap(subcommand)]
     Dex(DexCmd),
@@ -107,8 +107,8 @@ impl QueryCmd {
             return governance.exec(app).await;
         }
 
-        if let QueryCmd::Dao(dao) = self {
-            return dao.exec(app).await;
+        if let QueryCmd::CommunityPool(cp) = self {
+            return cp.exec(app).await;
         }
 
         if let QueryCmd::Ibc(ibc) = self {
@@ -121,7 +121,7 @@ impl QueryCmd {
             | QueryCmd::Validator(_)
             | QueryCmd::Dex(_)
             | QueryCmd::Governance(_)
-            | QueryCmd::Dao(_)
+            | QueryCmd::CommunityPool(_)
             | QueryCmd::Watch { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
@@ -153,7 +153,7 @@ impl QueryCmd {
 
     pub fn offline(&self) -> bool {
         match self {
-            QueryCmd::Dex { .. } | QueryCmd::Dao { .. } => false,
+            QueryCmd::Dex { .. } | QueryCmd::CommunityPool { .. } => false,
             QueryCmd::Tx { .. }
             | QueryCmd::Chain { .. }
             | QueryCmd::Validator { .. }
@@ -176,7 +176,7 @@ impl QueryCmd {
             | QueryCmd::Validator { .. }
             | QueryCmd::Dex { .. }
             | QueryCmd::Governance { .. }
-            | QueryCmd::Dao { .. }
+            | QueryCmd::CommunityPool { .. }
             | QueryCmd::Watch { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")

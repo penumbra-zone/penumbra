@@ -100,7 +100,7 @@ fn format_source(source: &CommitmentSource) -> String {
         CommitmentSource::FundingStreamReward { epoch_index } => {
             format!("Funding Stream (Epoch {})", epoch_index)
         }
-        CommitmentSource::DaoOutput => format!("DaoOutput"),
+        CommitmentSource::CommunityPoolOutput => format!("CommunityPoolOutput"),
         CommitmentSource::Ics20Transfer {
             packet_seq,
             channel_id,

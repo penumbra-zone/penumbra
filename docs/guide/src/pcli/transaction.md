@@ -50,7 +50,7 @@ later to add the previously delegated funds to your wallet.
 
 Penumbra features on-chain governance similar to Cosmos Hub where anyone can submit proposals and
 both validators and delegators to vote on them. Penumbra's governance model incorporates a single
-DAO account, into which anyone can freely deposit, but from which only a successful governance vote
+Community Pool account, into which anyone can freely deposit, but from which only a successful governance vote
 can spend. For details on using governance, see the [governance section](./governance.md).
 
 ## Managing Liquidity Positions
@@ -159,6 +159,7 @@ Penumbra's constant-price pool is a versatile market primitive, allowing users e
 ```bash
 pcli tx lp replicate xyk <TRADING_PAIR> <QUANTITY> [--current-price AMT] [--fee-bps AMT]
 ```
+
 For instance, to provide ~100penumbra and ~100test_usd liquidity on the `penumbra:test_usd` pair with a pool fee of `33bps`, run:
 
 ```bash

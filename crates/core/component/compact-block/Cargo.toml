@@ -31,7 +31,7 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-dex = { path = "../dex", default-features = false }
 penumbra-ibc = { path = "../ibc", default-features = false }
-penumbra-dao = { path = "../dao", default-features = false }
+penumbra-community-pool = { path = "../community-pool", default-features = false }
 penumbra-governance = { path = "../governance", default-features = false }
 penumbra-stake = { path = "../stake", default-features = false }
 penumbra-fee = { path = "../fee", default-features = false }

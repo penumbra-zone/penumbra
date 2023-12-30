@@ -6,12 +6,20 @@ publish = false
 
 [dependencies]
 penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup", features = ["parallel"] }
+penumbra-proof-setup = { path = "../../crates/crypto/proof-setup", features = [
+    "parallel",
+] }
 penumbra-dex = { path = "../../crates/core/component/dex/" }
-penumbra-dao = { path = "../../crates/core/component/dao/", features = ["component"] }
+penumbra-community-pool = { path = "../../crates/core/component/community-pool/", features = [
+    "component",
+] }
 penumbra-governance = { path = "../../crates/core/component/governance/" }
-penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/", features = ["parallel"] }
-penumbra-stake = { path = "../../crates/core/component/stake/", features = ["component"] }
+penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/", features = [
+    "parallel",
+] }
+penumbra-stake = { path = "../../crates/core/component/stake/", features = [
+    "component",
+] }
 ark-groth16 = "0.4"
 ark-serialize = "0.4"
 decaf377 = { version = "0.5", features = ["r1cs"] }

@@ -419,14 +419,14 @@ impl TxCmd {
                             ),
                         ]
                     }
-                    penumbra_transaction::ActionView::DaoDeposit(_) => {
-                        ["Dao Deposit".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolDeposit(_) => {
+                        ["CommunityPool Deposit".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::DaoSpend(_) => {
-                        ["Dao Spend".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolSpend(_) => {
+                        ["CommunityPool Spend".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::DaoOutput(_) => {
-                        ["Dao Output".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolOutput(_) => {
+                        ["CommunityPool Output".to_string(), "".to_string()]
                     }
                 });
             }

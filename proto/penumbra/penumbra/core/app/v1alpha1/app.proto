@@ -2,7 +2,7 @@ syntax = "proto3";
 package penumbra.core.app.v1alpha1;
 
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
-import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/community_pool/v1alpha1/community_pool.proto";
 import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/governance/v1alpha1/governance.proto";
@@ -38,8 +38,8 @@ message TransactionsByHeightResponse {
 message AppParameters {
   // Chain module parameters.
   core.component.chain.v1alpha1.ChainParameters chain_params = 1;
-  // DAO module parameters.
-  core.component.dao.v1alpha1.DaoParameters dao_params = 2;
+  // Community Pool module parameters.
+  core.component.community_pool.v1alpha1.CommunityPoolParameters community_pool_params = 2;
   // Governance module parameters.
   core.component.governance.v1alpha1.GovernanceParameters governance_params = 3;
   // IBC module parameters.
@@ -80,8 +80,8 @@ message GenesisContent {
   core.component.ibc.v1alpha1.GenesisContent ibc_content = 4;
   // Chain module genesis state.
   core.component.chain.v1alpha1.GenesisContent chain_content = 5;
-  // DAO module genesis state.
-  core.component.dao.v1alpha1.GenesisContent dao_content = 6;
+  // Community Pool module genesis state.
+  core.component.community_pool.v1alpha1.GenesisContent community_pool_content = 6;
   // Fee module genesis state.
   core.component.fee.v1alpha1.GenesisContent fee_content = 7;
   // Distributions module genesis state.
