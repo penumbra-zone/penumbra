@@ -3,10 +3,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::TransactionContext;
 use penumbra_ibc::component::StateReadExt as _;
 use penumbra_shielded_pool::component::Ics20Transfer;
 use penumbra_transaction::Action;
+use penumbra_txhash::TransactionContext;
 
 mod submit;
 

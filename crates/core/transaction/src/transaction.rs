@@ -7,7 +7,6 @@ use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
-use penumbra_chain::TransactionContext;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -25,7 +24,9 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
-use penumbra_txhash::{AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionId};
+use penumbra_txhash::{
+    AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionContext, TransactionId,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{

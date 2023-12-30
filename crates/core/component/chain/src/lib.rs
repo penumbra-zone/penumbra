@@ -2,7 +2,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub use epoch::Epoch;
-pub use transaction::TransactionContext;
 
 mod epoch;
 
@@ -16,7 +15,3 @@ pub mod component;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
-
-// Located here at the bottom of the dep tree for convenience
-mod effect_hash;
-mod transaction;
