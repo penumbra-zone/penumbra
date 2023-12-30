@@ -13,7 +13,6 @@ use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
@@ -26,6 +25,7 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{

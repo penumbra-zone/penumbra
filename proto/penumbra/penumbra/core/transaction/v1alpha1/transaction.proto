@@ -2,7 +2,7 @@ syntax = "proto3";
 package penumbra.core.transaction.v1alpha1;
 
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/effecthash/v1alpha1/effecthash.proto";
+import "penumbra/core/txhash/v1alpha1/txhash.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/governance/v1alpha1/governance.proto";
@@ -197,7 +197,7 @@ message ActionView {
 // The data required to authorize a transaction plan.
 message AuthorizationData {
   // The computed auth hash for the approved transaction plan.
-  core.effecthash.v1alpha1.EffectHash effect_hash = 1;
+  core.txhash.v1alpha1.EffectHash effect_hash = 1;
   // The required spend authorizations, returned in the same order as the
   // Spend actions in the original request.
   repeated crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature spend_auths = 2;

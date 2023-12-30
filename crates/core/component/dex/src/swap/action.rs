@@ -2,12 +2,12 @@ use anyhow::Context;
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::dex::v1alpha1 as pbc, penumbra::core::component::dex::v1alpha1 as pb,
     DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::TradingPair;

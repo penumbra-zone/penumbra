@@ -27,7 +27,7 @@ penumbra-sct = { path = "../sct", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
-penumbra-effecthash = { path = "../../../core/effecthash", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }

@@ -44,7 +44,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \
-  -p penumbra-effecthash \
+  -p penumbra-txhash \
   -p penumbra-measure \
   -p penumbra-num \
   -p penumbra-proof-params \

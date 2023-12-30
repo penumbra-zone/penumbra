@@ -1,5 +1,5 @@
 use anyhow::{Context, Error};
-use penumbra_effecthash::{EffectHash, EffectingData};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 

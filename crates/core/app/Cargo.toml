@@ -14,7 +14,7 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
 penumbra-asset = { path = "../asset" }
 penumbra-keys = { path = "../keys" }
-penumbra-effecthash = { path = "../effecthash" }
+penumbra-txhash = { path = "../txhash" }
 penumbra-num = { path = "../num" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = [

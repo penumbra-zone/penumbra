@@ -8,8 +8,8 @@ pub struct EffectHash {
 }
 impl ::prost::Name for EffectHash {
     const NAME: &'static str = "EffectHash";
-    const PACKAGE: &'static str = "penumbra.core.effecthash.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.core.txhash.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.effecthash.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.core.txhash.v1alpha1.{}", Self::NAME)
     }
 }

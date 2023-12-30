@@ -1,11 +1,11 @@
 use anyhow::Context;
 use penumbra_asset::Balance;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_fee::Fee;
 use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
 use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::BatchSwapOutputData;

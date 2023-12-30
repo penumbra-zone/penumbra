@@ -20,7 +20,7 @@ members = [
   "crates/core/num",
   "crates/core/keys",
   "crates/core/asset",
-  "crates/core/effecthash",
+  "crates/core/txhash",
   "crates/core/component/chain",
   "crates/core/component/shielded-pool",
   "crates/core/component/governance",
