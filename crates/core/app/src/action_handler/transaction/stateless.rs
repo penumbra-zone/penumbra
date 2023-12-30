@@ -1,7 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Result};
-use penumbra_transaction::{AuthorizingData, Transaction};
+use penumbra_transaction::Transaction;
+use penumbra_txhash::AuthorizingData;
 
 #[tracing::instrument(skip(tx))]
 pub(super) fn valid_binding_signature(tx: &Transaction) -> Result<()> {

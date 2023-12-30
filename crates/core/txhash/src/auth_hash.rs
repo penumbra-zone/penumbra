@@ -1,7 +1,5 @@
 use penumbra_proto::DomainType;
 
-use crate::{Transaction, TransactionBody};
-
 /// A hash of a transaction's _authorizing data_, describing both its effects on
 /// the chain state as well as the cryptographic authorization of those effects.
 ///
@@ -32,22 +30,4 @@ impl AuthHash {
 
 pub trait AuthorizingData {
     fn auth_hash(&self) -> AuthHash;
-}
-
-impl AuthorizingData for TransactionBody {
-    fn auth_hash(&self) -> AuthHash {
-        AuthHash(
-            blake2b_simd::Params::default()
-                .hash(&self.encode_to_vec())
-                .as_bytes()[0..32]
-                .try_into()
-                .expect("blake2b output is always 32 bytes long"),
-        )
-    }
-}
-
-impl AuthorizingData for Transaction {
-    fn auth_hash(&self) -> AuthHash {
-        self.transaction_body.auth_hash()
-    }
 }

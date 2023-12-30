@@ -16,7 +16,6 @@
 #![allow(clippy::clone_on_copy)]
 
 mod auth_data;
-mod auth_hash;
 mod detection_data;
 mod error;
 mod id;
@@ -33,7 +32,6 @@ pub mod view;
 
 pub use action::Action;
 pub use auth_data::AuthorizationData;
-pub use auth_hash::{AuthHash, AuthorizingData};
 pub use detection_data::DetectionData;
 pub use error::Error;
 pub use id::Id;

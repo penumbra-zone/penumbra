@@ -11,8 +11,8 @@ use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
 use penumbra_sct::component::SourceContext;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
-use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody, TransactionParameters};
-use penumbra_txhash::EffectHash;
+use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
+use penumbra_txhash::{AuthorizingData, EffectHash};
 use rand_core::SeedableRng;
 use tendermint::abci;
 

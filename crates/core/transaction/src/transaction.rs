@@ -25,7 +25,7 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
-use penumbra_txhash::{EffectHash, EffectingData};
+use penumbra_txhash::{AuthHash, AuthorizingData, EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -84,6 +84,24 @@ impl EffectingData for TransactionBody {
 impl EffectingData for Transaction {
     fn effect_hash(&self) -> EffectHash {
         self.transaction_body.effect_hash()
+    }
+}
+
+impl AuthorizingData for TransactionBody {
+    fn auth_hash(&self) -> AuthHash {
+        AuthHash(
+            blake2b_simd::Params::default()
+                .hash(&self.encode_to_vec())
+                .as_bytes()[0..32]
+                .try_into()
+                .expect("blake2b output is always 32 bytes long"),
+        )
+    }
+}
+
+impl AuthorizingData for Transaction {
+    fn auth_hash(&self) -> AuthHash {
+        self.transaction_body.auth_hash()
     }
 }
 

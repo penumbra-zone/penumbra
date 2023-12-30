@@ -3,15 +3,14 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
 use penumbra_keys::FullViewingKey;
+use penumbra_txhash::AuthorizingData;
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
 
 use super::TransactionPlan;
 use crate::ActionPlan;
-use crate::{
-    action::Action, AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
-};
+use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
