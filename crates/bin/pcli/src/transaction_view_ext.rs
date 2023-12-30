@@ -83,11 +83,16 @@ fn format_address_view(address_view: &AddressView) -> String {
             index,
             wallet_id: _,
         } => {
-            format!("[address {:?}]", index.account)
+            if !index.is_ephemeral() {
+                format!("[account {:?}]", index.account)
+            } else {
+                format!("[account {:?} (one-time address)]", index.account)
+            }
         }
         AddressView::Opaque { address } => {
-            // slicing off the first 8 chars to match the plaintext length for aesthetics
-            format!("{}", format_opaque_bytes(&address.to_vec()[..8]))
+            // The address being opaque just means we can't see the internal structure,
+            // we should render the content so it can be copy-pasted.
+            format!("{}", address)
         }
     }
 }
@@ -97,11 +102,11 @@ fn format_address_view(address_view: &AddressView) -> String {
 fn format_value_view(value_view: &ValueView) -> String {
     match value_view {
         ValueView::KnownDenom { amount, denom } => {
-            // TODO: This can be further tweaked depending on what DenomMetadata units should be shown. Leaving as base units for now.
-            format!("{} {}", amount, denom)
+            let unit = denom.default_unit();
+            format!("{}{}", unit.format_value(*amount), unit)
         }
         ValueView::UnknownDenom { amount, asset_id } => {
-            format!("{} {}", amount, format_opaque_bytes(&asset_id.to_bytes()))
+            format!("{}{}", amount, asset_id)
         }
     }
 }
