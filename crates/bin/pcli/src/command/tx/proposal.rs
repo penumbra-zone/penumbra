@@ -12,7 +12,7 @@ pub enum ProposalCmd {
         /// The file to output the template to.
         #[clap(long, global = true)]
         file: Option<camino::Utf8PathBuf>,
-        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or Community Pool-spend].
+        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or community-pool-spend].
         #[clap(subcommand)]
         kind: ProposalKindCmd,
     },
