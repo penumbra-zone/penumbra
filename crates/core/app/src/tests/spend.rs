@@ -5,14 +5,14 @@ use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;
 use penumbra_asset::Value;
-use penumbra_chain::{component::StateWriteExt, TransactionContext};
+use penumbra_chain::component::StateWriteExt;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
 use penumbra_sct::component::SourceContext;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
-use penumbra_txhash::{AuthorizingData, EffectHash};
+use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
 use rand_core::SeedableRng;
 use tendermint::abci;
 

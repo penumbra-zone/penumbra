@@ -4,10 +4,10 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
-use penumbra_chain::TransactionContext;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::{SctManager, SourceContext, StateReadExt as _};
+use penumbra_txhash::TransactionContext;
 
 use crate::{event, Spend};
 

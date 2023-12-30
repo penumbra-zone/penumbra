@@ -5,8 +5,8 @@ use ark_ff::Zero;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use decaf377::Fr;
-use penumbra_chain::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_txhash::TransactionContext;
 
 use crate::{
     DelegatorVote, DelegatorVoteBody,

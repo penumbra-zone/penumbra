@@ -1,5 +1,5 @@
+use crate::EffectHash;
 use penumbra_tct as tct;
-use penumbra_txhash::EffectHash;
 
 /// Stateless verification context for a transaction.
 ///
