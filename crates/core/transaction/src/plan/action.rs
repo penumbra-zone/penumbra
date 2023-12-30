@@ -5,7 +5,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::Balance;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_effecthash::{EffectHash, EffectingData};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use penumbra_dex::{
     lp::{

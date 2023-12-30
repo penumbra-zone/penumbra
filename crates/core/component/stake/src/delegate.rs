@@ -1,7 +1,7 @@
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{DelegationToken, IdentityKey};

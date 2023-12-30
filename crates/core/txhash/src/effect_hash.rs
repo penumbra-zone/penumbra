@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::effecthash::v1alpha1 as pb, DomainType, Message, Name};
+use penumbra_proto::{penumbra::core::txhash::v1alpha1 as pb, DomainType, Message, Name};
 
 /// A hash of a transaction's _effecting data_, describing its effects on the
 /// chain state.

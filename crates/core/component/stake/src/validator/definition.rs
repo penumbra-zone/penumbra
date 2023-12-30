@@ -1,6 +1,6 @@
 use decaf377_rdsa::{Signature, SpendAuth};
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::validator::Validator;

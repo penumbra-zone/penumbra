@@ -1,8 +1,8 @@
 use anyhow::Error;
 use decaf377_fmd::Clue;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
 use penumbra_proto::DomainType;
+use penumbra_txhash::{EffectHash, EffectingData};
 
 /// Detection data used by a detection server using Fuzzy Message Detection.
 ///

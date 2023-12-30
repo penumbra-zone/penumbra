@@ -7,12 +7,12 @@ use decaf377_rdsa::SigningKey;
 use penumbra_asset::Value;
 use penumbra_chain::{component::StateWriteExt, TransactionContext};
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_effecthash::EffectHash;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
 use penumbra_sct::component::SourceContext;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody, TransactionParameters};
+use penumbra_txhash::EffectHash;
 use rand_core::SeedableRng;
 use tendermint::abci;
 

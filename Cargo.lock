@@ -4927,7 +4927,6 @@ dependencies = [
  "penumbra-compact-block",
  "penumbra-dex",
  "penumbra-distributions",
- "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",
@@ -4940,6 +4939,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
+ "penumbra-txhash",
  "prost",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
@@ -5067,11 +5067,11 @@ dependencies = [
  "ics23",
  "once_cell",
  "penumbra-asset",
- "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
  "penumbra-tct",
+ "penumbra-txhash",
  "serde",
  "sha2 0.9.9",
  "tendermint",
@@ -5098,12 +5098,12 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-txhash",
  "prost",
  "serde",
  "sha2 0.10.8",
@@ -5169,10 +5169,10 @@ dependencies = [
  "futures",
  "hex",
  "penumbra-chain",
- "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-proto",
  "penumbra-transaction",
+ "penumbra-txhash",
  "prost",
  "rand_core 0.6.4",
  "serde",
@@ -5215,7 +5215,6 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-keys",
  "penumbra-num",
@@ -5224,6 +5223,7 @@ dependencies = [
  "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-tct",
+ "penumbra-txhash",
  "poseidon377",
  "proptest",
  "prost",
@@ -5280,16 +5280,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "penumbra-effecthash"
-version = "0.64.1"
-dependencies = [
- "anyhow",
- "blake2b_simd 0.5.11",
- "hex",
- "penumbra-proto",
-]
-
-[[package]]
 name = "penumbra-fee"
 version = "0.64.1"
 dependencies = [
@@ -5343,7 +5333,6 @@ dependencies = [
  "penumbra-chain",
  "penumbra-community-pool",
  "penumbra-distributions",
- "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-ibc",
  "penumbra-keys",
@@ -5354,6 +5343,7 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tct",
+ "penumbra-txhash",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -5388,10 +5378,10 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
+ "penumbra-txhash",
  "prost",
  "serde",
  "serde_json",
@@ -5673,7 +5663,6 @@ dependencies = [
  "once_cell",
  "penumbra-asset",
  "penumbra-chain",
- "penumbra-effecthash",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-num",
@@ -5681,6 +5670,7 @@ dependencies = [
  "penumbra-proto",
  "penumbra-sct",
  "penumbra-tct",
+ "penumbra-txhash",
  "poseidon377",
  "proptest",
  "prost",
@@ -5724,7 +5714,6 @@ dependencies = [
  "penumbra-chain",
  "penumbra-community-pool",
  "penumbra-distributions",
- "penumbra-effecthash",
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proof-params",
@@ -5732,6 +5721,7 @@ dependencies = [
  "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-tct",
+ "penumbra-txhash",
  "proptest",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
@@ -5902,7 +5892,6 @@ dependencies = [
  "penumbra-chain",
  "penumbra-community-pool",
  "penumbra-dex",
- "penumbra-effecthash",
  "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",
@@ -5914,6 +5903,7 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tct",
+ "penumbra-txhash",
  "poseidon377",
  "proptest",
  "proptest-derive",
@@ -5927,6 +5917,16 @@ dependencies = [
  "tokio",
  "tracing",
  "wasm-bindgen-test",
+]
+
+[[package]]
+name = "penumbra-txhash"
+version = "0.64.1"
+dependencies = [
+ "anyhow",
+ "blake2b_simd 0.5.11",
+ "hex",
+ "penumbra-proto",
 ]
 
 [[package]]

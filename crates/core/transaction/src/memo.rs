@@ -7,7 +7,6 @@ use anyhow::anyhow;
 
 use decaf377_ka as ka;
 use penumbra_asset::balance;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_keys::{
     keys::OutgoingViewingKey,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
@@ -15,6 +14,7 @@ use penumbra_keys::{
 };
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use penumbra_shielded_pool::{note, Note};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 

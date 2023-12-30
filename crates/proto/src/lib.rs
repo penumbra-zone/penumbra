@@ -61,10 +61,10 @@ pub mod penumbra {
             }
         }
 
-        pub mod effecthash {
+        pub mod txhash {
             pub mod v1alpha1 {
-                include!("gen/penumbra.core.effecthash.v1alpha1.rs");
-                include!("gen/penumbra.core.effecthash.v1alpha1.serde.rs");
+                include!("gen/penumbra.core.txhash.v1alpha1.rs");
+                include!("gen/penumbra.core.txhash.v1alpha1.serde.rs");
             }
         }
 

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_effecthash::{EffectHash, EffectingData};
+use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;

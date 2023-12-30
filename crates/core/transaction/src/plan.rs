@@ -9,7 +9,6 @@ use penumbra_dex::{
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
 };
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_governance::{
     DelegatorVotePlan, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
@@ -18,6 +17,7 @@ use penumbra_keys::{Address, FullViewingKey, PayloadKey};
 use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
+use penumbra_txhash::{EffectHash, EffectingData};
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -405,7 +405,6 @@ impl TryFrom<pb::TransactionPlan> for TransactionPlan {
 mod tests {
     use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_dex::{swap::SwapPlaintext, swap::SwapPlan, TradingPair};
-    use penumbra_effecthash::EffectingData as _;
     use penumbra_fee::Fee;
     use penumbra_keys::{
         keys::{Bip44Path, SeedPhrase, SpendKey},
@@ -414,6 +413,7 @@ mod tests {
     use penumbra_shielded_pool::Note;
     use penumbra_shielded_pool::{OutputPlan, SpendPlan};
     use penumbra_tct as tct;
+    use penumbra_txhash::EffectingData as _;
     use rand_core::OsRng;
 
     use crate::{

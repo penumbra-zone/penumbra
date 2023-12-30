@@ -1,8 +1,8 @@
 use anyhow::Error;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_fee::Fee;
 use penumbra_proto::core::transaction::v1alpha1 as pbt;
 use penumbra_proto::DomainType;
+use penumbra_txhash::{EffectHash, EffectingData};
 
 /// Parameters determining when the transaction should be accepted to the chain.
 #[derive(Clone, Debug, Default)]

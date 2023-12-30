@@ -11,8 +11,7 @@ impl ::prost::Name for CommunityPoolParameters {
     const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
-            "penumbra.core.component.community_pool.v1alpha1.{}",
-            Self::NAME
+            "penumbra.core.component.community_pool.v1alpha1.{}", Self::NAME
         )
     }
 }
@@ -29,8 +28,7 @@ impl ::prost::Name for GenesisContent {
     const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
-            "penumbra.core.component.community_pool.v1alpha1.{}",
-            Self::NAME
+            "penumbra.core.component.community_pool.v1alpha1.{}", Self::NAME
         )
     }
 }
@@ -43,15 +41,16 @@ pub struct CommunityPoolAssetBalancesRequest {
     pub chain_id: ::prost::alloc::string::String,
     /// (Optional): The specific asset balances to retrieve, if excluded all will be returned.
     #[prost(message, repeated, tag = "2")]
-    pub asset_ids: ::prost::alloc::vec::Vec<super::super::super::asset::v1alpha1::AssetId>,
+    pub asset_ids: ::prost::alloc::vec::Vec<
+        super::super::super::asset::v1alpha1::AssetId,
+    >,
 }
 impl ::prost::Name for CommunityPoolAssetBalancesRequest {
     const NAME: &'static str = "CommunityPoolAssetBalancesRequest";
     const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
-            "penumbra.core.component.community_pool.v1alpha1.{}",
-            Self::NAME
+            "penumbra.core.component.community_pool.v1alpha1.{}", Self::NAME
         )
     }
 }
@@ -68,8 +67,7 @@ impl ::prost::Name for CommunityPoolAssetBalancesResponse {
     const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
-            "penumbra.core.component.community_pool.v1alpha1.{}",
-            Self::NAME
+            "penumbra.core.component.community_pool.v1alpha1.{}", Self::NAME
         )
     }
 }
@@ -77,8 +75,8 @@ impl ::prost::Name for CommunityPoolAssetBalancesResponse {
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// Query operations for the community_pool component.
     #[derive(Debug, Clone)]
     pub struct QueryServiceClient<T> {
@@ -123,8 +121,9 @@ pub mod query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
         {
             QueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -163,24 +162,32 @@ pub mod query_service_client {
             &mut self,
             request: impl tonic::IntoRequest<super::CommunityPoolAssetBalancesRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::CommunityPoolAssetBalancesResponse>>,
+            tonic::Response<
+                tonic::codec::Streaming<super::CommunityPoolAssetBalancesResponse>,
+            >,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/penumbra.core.component.community_pool.v1alpha1.QueryService/CommunityPoolAssetBalances",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "penumbra.core.component.community_pool.v1alpha1.QueryService",
-                "CommunityPoolAssetBalances",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.community_pool.v1alpha1.QueryService",
+                        "CommunityPoolAssetBalances",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -199,7 +206,8 @@ pub mod query_service_server {
                     super::CommunityPoolAssetBalancesResponse,
                     tonic::Status,
                 >,
-            > + Send
+            >
+            + Send
             + 'static;
         async fn community_pool_asset_balances(
             &self,
@@ -233,7 +241,10 @@ pub mod query_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {

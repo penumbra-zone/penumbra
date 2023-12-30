@@ -12,7 +12,9 @@ pub struct Transaction {
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
-    pub anchor: ::core::option::Option<super::super::super::crypto::tct::v1alpha1::MerkleRoot>,
+    pub anchor: ::core::option::Option<
+        super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
 }
 impl ::prost::Name for Transaction {
     const NAME: &'static str = "Transaction";
@@ -91,8 +93,9 @@ impl ::prost::Name for TransactionParameters {
 pub struct DetectionData {
     /// A list of clues for use with Fuzzy Message Detection.
     #[prost(message, repeated, tag = "4")]
-    pub fmd_clues:
-        ::prost::alloc::vec::Vec<super::super::super::crypto::decaf377_fmd::v1alpha1::Clue>,
+    pub fmd_clues: ::prost::alloc::vec::Vec<
+        super::super::super::crypto::decaf377_fmd::v1alpha1::Clue,
+    >,
 }
 impl ::prost::Name for DetectionData {
     const NAME: &'static str = "DetectionData";
@@ -126,18 +129,28 @@ pub mod action {
         #[prost(message, tag = "4")]
         SwapClaim(super::super::super::component::dex::v1alpha1::SwapClaim),
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1alpha1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1alpha1::ValidatorDefinition,
+        ),
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::super::super::component::governance::v1alpha1::ProposalSubmit),
+        ProposalSubmit(
+            super::super::super::component::governance::v1alpha1::ProposalSubmit,
+        ),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1alpha1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1alpha1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::super::super::component::governance::v1alpha1::ValidatorVote),
+        ValidatorVote(
+            super::super::super::component::governance::v1alpha1::ValidatorVote,
+        ),
         #[prost(message, tag = "21")]
-        DelegatorVote(super::super::super::component::governance::v1alpha1::DelegatorVote),
+        DelegatorVote(
+            super::super::super::component::governance::v1alpha1::DelegatorVote,
+        ),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::component::governance::v1alpha1::ProposalDepositClaim,
@@ -148,16 +161,22 @@ pub mod action {
         #[prost(message, tag = "31")]
         PositionClose(super::super::super::component::dex::v1alpha1::PositionClose),
         #[prost(message, tag = "32")]
-        PositionWithdraw(super::super::super::component::dex::v1alpha1::PositionWithdraw),
+        PositionWithdraw(
+            super::super::super::component::dex::v1alpha1::PositionWithdraw,
+        ),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1alpha1::PositionRewardClaim),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1alpha1::PositionRewardClaim,
+        ),
         /// (un)delegation
         #[prost(message, tag = "40")]
         Delegate(super::super::super::component::stake::v1alpha1::Delegate),
         #[prost(message, tag = "41")]
         Undelegate(super::super::super::component::stake::v1alpha1::Undelegate),
         #[prost(message, tag = "42")]
-        UndelegateClaim(super::super::super::component::stake::v1alpha1::UndelegateClaim),
+        UndelegateClaim(
+            super::super::super::component::stake::v1alpha1::UndelegateClaim,
+        ),
         /// Community Pool
         #[prost(message, tag = "50")]
         CommunityPoolSpend(
@@ -194,11 +213,14 @@ pub struct TransactionPerspective {
     /// The openings of note commitments referred to in the transaction
     /// but not included in the transaction.
     #[prost(message, repeated, tag = "3")]
-    pub advice_notes:
-        ::prost::alloc::vec::Vec<super::super::component::shielded_pool::v1alpha1::Note>,
+    pub advice_notes: ::prost::alloc::vec::Vec<
+        super::super::component::shielded_pool::v1alpha1::Note,
+    >,
     /// Any relevant address views.
     #[prost(message, repeated, tag = "4")]
-    pub address_views: ::prost::alloc::vec::Vec<super::super::keys::v1alpha1::AddressView>,
+    pub address_views: ::prost::alloc::vec::Vec<
+        super::super::keys::v1alpha1::AddressView,
+    >,
     /// Any relevant denoms for viewed assets.
     #[prost(message, repeated, tag = "5")]
     pub denoms: ::prost::alloc::vec::Vec<super::super::asset::v1alpha1::DenomMetadata>,
@@ -219,8 +241,9 @@ pub struct PayloadKeyWithCommitment {
     #[prost(message, optional, tag = "1")]
     pub payload_key: ::core::option::Option<super::super::keys::v1alpha1::PayloadKey>,
     #[prost(message, optional, tag = "2")]
-    pub commitment:
-        ::core::option::Option<super::super::super::crypto::tct::v1alpha1::StateCommitment>,
+    pub commitment: ::core::option::Option<
+        super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
 }
 impl ::prost::Name for PayloadKeyWithCommitment {
     const NAME: &'static str = "PayloadKeyWithCommitment";
@@ -233,9 +256,13 @@ impl ::prost::Name for PayloadKeyWithCommitment {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NullifierWithNote {
     #[prost(message, optional, tag = "1")]
-    pub nullifier: ::core::option::Option<super::super::component::sct::v1alpha1::Nullifier>,
+    pub nullifier: ::core::option::Option<
+        super::super::component::sct::v1alpha1::Nullifier,
+    >,
     #[prost(message, optional, tag = "2")]
-    pub note: ::core::option::Option<super::super::component::shielded_pool::v1alpha1::Note>,
+    pub note: ::core::option::Option<
+        super::super::component::shielded_pool::v1alpha1::Note,
+    >,
 }
 impl ::prost::Name for NullifierWithNote {
     const NAME: &'static str = "NullifierWithNote";
@@ -259,7 +286,9 @@ pub struct TransactionView {
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
-    pub anchor: ::core::option::Option<super::super::super::crypto::tct::v1alpha1::MerkleRoot>,
+    pub anchor: ::core::option::Option<
+        super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
 }
 impl ::prost::Name for TransactionView {
     const NAME: &'static str = "TransactionView";
@@ -319,18 +348,28 @@ pub mod action_view {
         SwapClaim(super::super::super::component::dex::v1alpha1::SwapClaimView),
         /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1alpha1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1alpha1::ValidatorDefinition,
+        ),
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::super::super::component::governance::v1alpha1::ProposalSubmit),
+        ProposalSubmit(
+            super::super::super::component::governance::v1alpha1::ProposalSubmit,
+        ),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1alpha1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1alpha1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::super::super::component::governance::v1alpha1::ValidatorVote),
+        ValidatorVote(
+            super::super::super::component::governance::v1alpha1::ValidatorVote,
+        ),
         #[prost(message, tag = "21")]
-        DelegatorVote(super::super::super::component::governance::v1alpha1::DelegatorVoteView),
+        DelegatorVote(
+            super::super::super::component::governance::v1alpha1::DelegatorVoteView,
+        ),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::component::governance::v1alpha1::ProposalDepositClaim,
@@ -340,9 +379,13 @@ pub mod action_view {
         #[prost(message, tag = "31")]
         PositionClose(super::super::super::component::dex::v1alpha1::PositionClose),
         #[prost(message, tag = "32")]
-        PositionWithdraw(super::super::super::component::dex::v1alpha1::PositionWithdraw),
+        PositionWithdraw(
+            super::super::super::component::dex::v1alpha1::PositionWithdraw,
+        ),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1alpha1::PositionRewardClaim),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1alpha1::PositionRewardClaim,
+        ),
         #[prost(message, tag = "41")]
         Delegate(super::super::super::component::stake::v1alpha1::Delegate),
         #[prost(message, tag = "42")]
@@ -364,7 +407,9 @@ pub mod action_view {
         /// balance commitment, and can only infer the value from looking at the rest
         /// of the transaction. is that fine?
         #[prost(message, tag = "43")]
-        UndelegateClaim(super::super::super::component::stake::v1alpha1::UndelegateClaim),
+        UndelegateClaim(
+            super::super::super::component::stake::v1alpha1::UndelegateClaim,
+        ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1alpha1::Ics20Withdrawal),
     }
@@ -382,7 +427,7 @@ impl ::prost::Name for ActionView {
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag = "1")]
-    pub effect_hash: ::core::option::Option<super::super::effecthash::v1alpha1::EffectHash>,
+    pub effect_hash: ::core::option::Option<super::super::txhash::v1alpha1::EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]
@@ -409,12 +454,15 @@ impl ::prost::Name for AuthorizationData {
 pub struct WitnessData {
     /// The anchor for the state transition proofs.
     #[prost(message, optional, tag = "1")]
-    pub anchor: ::core::option::Option<super::super::super::crypto::tct::v1alpha1::MerkleRoot>,
+    pub anchor: ::core::option::Option<
+        super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
     /// The auth paths for the notes the transaction spends, in the
     /// same order as the spends in the transaction plan.
     #[prost(message, repeated, tag = "2")]
-    pub state_commitment_proofs:
-        ::prost::alloc::vec::Vec<super::super::super::crypto::tct::v1alpha1::StateCommitmentProof>,
+    pub state_commitment_proofs: ::prost::alloc::vec::Vec<
+        super::super::super::crypto::tct::v1alpha1::StateCommitmentProof,
+    >,
 }
 impl ::prost::Name for WitnessData {
     const NAME: &'static str = "WitnessData";
@@ -492,19 +540,29 @@ pub mod action_plan {
         SwapClaim(super::super::super::component::dex::v1alpha1::SwapClaimPlan),
         /// This is just a message relayed to the chain.
         #[prost(message, tag = "16")]
-        ValidatorDefinition(super::super::super::component::stake::v1alpha1::ValidatorDefinition),
+        ValidatorDefinition(
+            super::super::super::component::stake::v1alpha1::ValidatorDefinition,
+        ),
         /// This is just a message relayed to the chain.
         #[prost(message, tag = "17")]
         IbcRelayAction(super::super::super::component::ibc::v1alpha1::IbcRelay),
         /// Governance:
         #[prost(message, tag = "18")]
-        ProposalSubmit(super::super::super::component::governance::v1alpha1::ProposalSubmit),
+        ProposalSubmit(
+            super::super::super::component::governance::v1alpha1::ProposalSubmit,
+        ),
         #[prost(message, tag = "19")]
-        ProposalWithdraw(super::super::super::component::governance::v1alpha1::ProposalWithdraw),
+        ProposalWithdraw(
+            super::super::super::component::governance::v1alpha1::ProposalWithdraw,
+        ),
         #[prost(message, tag = "20")]
-        ValidatorVote(super::super::super::component::governance::v1alpha1::ValidatorVote),
+        ValidatorVote(
+            super::super::super::component::governance::v1alpha1::ValidatorVote,
+        ),
         #[prost(message, tag = "21")]
-        DelegatorVote(super::super::super::component::governance::v1alpha1::DelegatorVotePlan),
+        DelegatorVote(
+            super::super::super::component::governance::v1alpha1::DelegatorVotePlan,
+        ),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::component::governance::v1alpha1::ProposalDepositClaim,
@@ -517,9 +575,13 @@ pub mod action_plan {
         PositionClose(super::super::super::component::dex::v1alpha1::PositionClose),
         /// The position withdraw/reward claim actions require balance information so they have Plan types.
         #[prost(message, tag = "32")]
-        PositionWithdraw(super::super::super::component::dex::v1alpha1::PositionWithdrawPlan),
+        PositionWithdraw(
+            super::super::super::component::dex::v1alpha1::PositionWithdrawPlan,
+        ),
         #[prost(message, tag = "34")]
-        PositionRewardClaim(super::super::super::component::dex::v1alpha1::PositionRewardClaimPlan),
+        PositionRewardClaim(
+            super::super::super::component::dex::v1alpha1::PositionRewardClaimPlan,
+        ),
         /// We don't need any extra information (yet) to understand delegations,
         /// because we don't yet use flow encryption.
         #[prost(message, tag = "40")]
@@ -529,7 +591,9 @@ pub mod action_plan {
         #[prost(message, tag = "41")]
         Undelegate(super::super::super::component::stake::v1alpha1::Undelegate),
         #[prost(message, tag = "42")]
-        UndelegateClaim(super::super::super::component::stake::v1alpha1::UndelegateClaimPlan),
+        UndelegateClaim(
+            super::super::super::component::stake::v1alpha1::UndelegateClaimPlan,
+        ),
         /// Community Pool
         #[prost(message, tag = "50")]
         CommunityPoolSpend(
@@ -631,7 +695,9 @@ impl ::prost::Name for MemoPlaintext {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlaintextView {
     #[prost(message, optional, tag = "1")]
-    pub return_address: ::core::option::Option<super::super::keys::v1alpha1::AddressView>,
+    pub return_address: ::core::option::Option<
+        super::super::keys::v1alpha1::AddressView,
+    >,
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
 }
@@ -662,7 +728,9 @@ pub mod memo_view {
         const NAME: &'static str = "Visible";
         const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME)
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME
+            )
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -675,7 +743,9 @@ pub mod memo_view {
         const NAME: &'static str = "Opaque";
         const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME)
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1alpha1.MemoView.{}", Self::NAME
+            )
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]

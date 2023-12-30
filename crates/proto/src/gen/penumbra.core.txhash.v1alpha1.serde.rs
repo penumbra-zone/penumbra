@@ -9,7 +9,7 @@ impl serde::Serialize for EffectHash {
         if !self.inner.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.effecthash.v1alpha1.EffectHash", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.txhash.v1alpha1.EffectHash", len)?;
         if !self.inner.is_empty() {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
@@ -64,7 +64,7 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
             type Value = EffectHash;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.effecthash.v1alpha1.EffectHash")
+                formatter.write_str("struct penumbra.core.txhash.v1alpha1.EffectHash")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<EffectHash, V::Error>
@@ -89,6 +89,6 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.effecthash.v1alpha1.EffectHash", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.txhash.v1alpha1.EffectHash", FIELDS, GeneratedVisitor)
     }
 }
