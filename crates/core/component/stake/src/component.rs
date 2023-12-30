@@ -21,7 +21,7 @@ use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     Epoch,
 };
-use penumbra_dao::component::StateWriteExt as _;
+use penumbra_community_pool::component::StateWriteExt as _;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
@@ -508,9 +508,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                             )
                             .await?;
                         }
-                        // If the recipient is the DAO, deposit the funds into the DAO
-                        Recipient::Dao => {
-                            self.dao_deposit(Value {
+                        // If the recipient is the Community Pool, deposit the funds into the Community Pool
+                        Recipient::CommunityPool => {
+                            self.community_pool_deposit(Value {
                                 amount: commission_reward_amount.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })

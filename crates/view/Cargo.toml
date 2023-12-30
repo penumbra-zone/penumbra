@@ -31,7 +31,7 @@ penumbra-governance = { path = "../core/component/governance", default-features 
 penumbra-stake = { path = "../core/component/stake", default-features = false }
 penumbra-ibc = { path = "../core/component/ibc", default-features = false }
 penumbra-distributions = { path = "../core/component/distributions", default-features = false }
-penumbra-dao = { path = "../core/component/dao", default-features = false }
+penumbra-community-pool = { path = "../core/component/community-pool", default-features = false }
 penumbra-dex = { path = "../core/component/dex", default-features = false }
 penumbra-sct = { path = "../core/component/sct", default-features = false }
 penumbra-fee = { path = "../core/component/fee", default-features = false }

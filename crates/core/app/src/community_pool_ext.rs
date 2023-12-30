@@ -14,11 +14,13 @@ use penumbra_transaction::Transaction;
 // dependency.
 
 #[async_trait]
-pub trait DaoStateReadExt: StateRead + penumbra_stake::StateReadExt {
+pub trait CommunityPoolStateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Get all the transactions set to be delivered in this block (scheduled in last block).
-    async fn pending_dao_transactions(&self) -> Result<Vec<Transaction>> {
-        // Get the proposal IDs of the DAO transactions we are about to deliver.
-        let prefix = state_key::deliver_dao_transactions_at_height(self.get_block_height().await?);
+    async fn pending_community_pool_transactions(&self) -> Result<Vec<Transaction>> {
+        // Get the proposal IDs of the Community Pool transactions we are about to deliver.
+        let prefix = state_key::deliver_community_pool_transactions_at_height(
+            self.get_block_height().await?,
+        );
         let proposals: Vec<u64> = self
             .prefix_proto::<u64>(&prefix)
             .map(|result| anyhow::Ok(result?.1))
@@ -29,7 +31,7 @@ pub trait DaoStateReadExt: StateRead + penumbra_stake::StateReadExt {
         let mut transactions = Vec::new();
         for proposal in proposals {
             transactions.push(
-                self.get(&state_key::dao_transaction(proposal))
+                self.get(&state_key::community_pool_transaction(proposal))
                     .await?
                     .ok_or_else(|| {
                         anyhow::anyhow!("no transaction found for proposal {}", proposal)
@@ -40,14 +42,14 @@ pub trait DaoStateReadExt: StateRead + penumbra_stake::StateReadExt {
     }
 }
 
-impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> DaoStateReadExt for T {}
+impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> CommunityPoolStateReadExt for T {}
 
 #[async_trait]
-pub trait DaoStateWriteExt: StateWrite {
+pub trait CommunityPoolStateWriteExt: StateWrite {
     /// Get all the transactions set to be delivered in this block (scheduled in last block).
-    fn put_dao_transaction(&mut self, proposal: u64, transaction: Transaction) {
-        self.put(state_key::dao_transaction(proposal), transaction);
+    fn put_community_pool_transaction(&mut self, proposal: u64, transaction: Transaction) {
+        self.put(state_key::community_pool_transaction(proposal), transaction);
     }
 }
 
-impl<T: StateWrite + ?Sized> DaoStateWriteExt for T {}
+impl<T: StateWrite + ?Sized> CommunityPoolStateWriteExt for T {}

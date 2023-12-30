@@ -9,7 +9,7 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_dao::component::StateReadExt as _;
+use penumbra_community_pool::component::StateReadExt as _;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
@@ -20,7 +20,7 @@ use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
 
 use crate::action_handler::ActionHandler;
-use crate::dao_ext::DaoStateWriteExt;
+use crate::community_pool_ext::CommunityPoolStateWriteExt;
 use crate::params::AppParameters;
 use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
@@ -86,9 +86,9 @@ impl ActionHandler for ProposalSubmit {
                     .check_valid_update(&new_app_params)
                     .context("invalid change to app parameters")?;
             }
-            DaoSpend { transaction_plan } => {
+            CommunityPoolSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the
-                // DAO (none of them should require proving to build):
+                // Community Pool (none of them should require proving to build):
                 use penumbra_transaction::plan::ActionPlan::*;
 
                 let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
@@ -98,22 +98,22 @@ impl ActionHandler for ProposalSubmit {
                     match action {
                         Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_)
                         | UndelegateClaim(_) => {
-                            // These actions all require proving, so they are banned from DAO spend
+                            // These actions all require proving, so they are banned from Community Pool spend
                             // proposals to prevent DoS attacks.
                             anyhow::bail!(
-                                "invalid action in DAO spend proposal (would require proving)"
+                                "invalid action in Community Pool spend proposal (would require proving)"
                             )
                         }
                         Delegate(_) | Undelegate(_) => {
                             // Delegation and undelegation is disallowed due to Undelegateclaim requiring proving.
                             anyhow::bail!(
-                                "invalid action in DAO spend proposal (can't claim outputs of undelegation)"
+                                "invalid action in Community Pool spend proposal (can't claim outputs of undelegation)"
                             )
                         }
                         ProposalSubmit(_) | ProposalWithdraw(_) | ProposalDepositClaim(_) => {
-                            // These actions manipulate proposals, so they are banned from DAO spend
+                            // These actions manipulate proposals, so they are banned from Community Pool spend
                             // actions because they could cause recursion.
-                            anyhow::bail!("invalid action in DAO spend proposal (not allowed to manipulate proposals from within proposals)")
+                            anyhow::bail!("invalid action in Community Pool spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
                         ValidatorDefinition(_)
                         | IbcAction(_)
@@ -122,11 +122,11 @@ impl ActionHandler for ProposalSubmit {
                         | PositionClose(_)
                         | PositionWithdraw(_)
                         | PositionRewardClaim(_)
-                        | DaoSpend(_)
-                        | DaoOutput(_)
+                        | CommunityPoolSpend(_)
+                        | CommunityPoolOutput(_)
                         | Withdrawal(_)
-                        | DaoDeposit(_) => {
-                            // These actions are all valid for DAO spend proposals, because they
+                        | CommunityPoolDeposit(_) => {
+                            // These actions are all valid for Community Pool spend proposals, because they
                             // don't require proving, so they don't represent a DoS vector.
                         }
                     }
@@ -172,12 +172,12 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::ParameterChange { .. } => {
                 /* no stateful checks for parameter change (checks are applied when proposal finishes) */
             }
-            ProposalPayload::DaoSpend { transaction_plan } => {
-                // If DAO spend proposals aren't enabled, then we can't allow them to be submitted
-                let dao_parameters = state.get_dao_params().await?;
+            ProposalPayload::CommunityPoolSpend { transaction_plan } => {
+                // If Community Pool spend proposals aren't enabled, then we can't allow them to be submitted
+                let community_pool_parameters = state.get_community_pool_params().await?;
                 anyhow::ensure!(
-                    dao_parameters.dao_spend_proposals_enabled,
-                    "DAO spend proposals are not enabled",
+                    community_pool_parameters.community_pool_spend_proposals_enabled,
+                    "Community Pool spend proposals are not enabled",
                 );
 
                 // Check that the transaction plan can be built without any witness or auth data and
@@ -187,17 +187,17 @@ impl ActionHandler for ProposalSubmit {
                 // obviously going to fail to execute.
                 let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
                     .context("transaction plan was malformed")?;
-                let tx = build_dao_transaction(parsed_transaction_plan.clone())
+                let tx = build_community_pool_transaction(parsed_transaction_plan.clone())
                     .await
-                    .context("failed to build submitted DAO spend transaction plan")?;
-                tx.check_stateless(())
-                    .await
-                    .context("submitted DAO spend transaction failed stateless checks")?;
+                    .context("failed to build submitted Community Pool spend transaction plan")?;
+                tx.check_stateless(()).await.context(
+                    "submitted Community Pool spend transaction failed stateless checks",
+                )?;
                 tx.check_stateful(state.clone())
                     .await
-                    .context("submitted DAO spend transaction failed stateful checks")?;
+                    .context("submitted Community Pool spend transaction failed stateful checks")?;
                 tx.execute(StateDelta::new(state)).await.context(
-                    "submitted DAO spend transaction failed to execute in current chain state",
+                    "submitted Community Pool spend transaction failed to execute in current chain state",
                 )?;
             }
             ProposalPayload::UpgradePlan { .. } => {
@@ -214,19 +214,19 @@ impl ActionHandler for ProposalSubmit {
             deposit_amount,
         } = self;
 
-        // If the proposal is a DAO spend proposal, we've already built it, but we need to build it
+        // If the proposal is a Community Pool spend proposal, we've already built it, but we need to build it
         // again because we can't remember anything from `check_tx_stateful` to `execute`:
-        if let ProposalPayload::DaoSpend { transaction_plan } = &proposal.payload {
+        if let ProposalPayload::CommunityPoolSpend { transaction_plan } = &proposal.payload {
             // Build the transaction again (this time we know it will succeed because it built and
             // passed all checks in `check_tx_stateful`):
             let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
                 .context("transaction plan was malformed")?;
-            let tx = build_dao_transaction(parsed_transaction_plan.clone())
+            let tx = build_community_pool_transaction(parsed_transaction_plan.clone())
                 .await
-                .context("failed to build submitted DAO spend transaction plan in execute step")?;
+                .context("failed to build submitted Community Pool spend transaction plan in execute step")?;
 
             // Cache the built transaction in the state so we can use it later, without rebuilding:
-            state.put_dao_transaction(proposal.id, tx);
+            state.put_community_pool_transaction(proposal.id, tx);
         }
 
         // Store the contents of the proposal and generate a fresh proposal id for it
@@ -285,20 +285,20 @@ impl ActionHandler for ProposalSubmit {
     }
 }
 
-/// The full viewing key used to construct transactions made by the Penumbra DAO.
+/// The full viewing key used to construct transactions made by the Penumbra Community Pool.
 ///
 /// This full viewing key does not correspond to any known spend key; it is constructed from the
 /// hashes of two arbitrary strings.
-static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
+static COMMUNITY_POOL_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
     // We start with two different personalization strings for the hash function:
-    let ak_personalization = b"Penumbra_DAO_ak";
-    let nk_personalization = b"Penumbra_DAO_nk";
+    let ak_personalization = b"Penumbra_CP_ak";
+    let nk_personalization = b"Penumbra_CP_nk";
 
     // We pick two different arbitrary strings to hash:
     let ak_hash_input =
-        b"This hash input is used to form the `ak` component of the Penumbra DAO's full viewing key.";
+        b"This hash input is used to form the `ak` component of the Penumbra Community Pool's full viewing key.";
     let nk_hash_input =
-        b"This hash input is used to form the `nk` component of the Penumbra DAO's full viewing key.";
+        b"This hash input is used to form the `nk` component of the Penumbra Community Pool's full viewing key.";
 
     // We hash the two strings using their respective personalizations:
     let ak_hash = blake2b_simd::Params::new()
@@ -314,7 +314,7 @@ static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
             .vartime_compress()
             .0,
     ))
-    .expect("penumbra DAO FVK's `ak` must be a valid verification key by construction");
+    .expect("penumbra Community Pool FVK's `ak` must be a valid verification key by construction");
 
     // We construct the `nk` component of the full viewing key from the hash of the second string:
     let nk = NullifierKey(Fq::from_le_bytes_mod_order(nk_hash.as_bytes()));
@@ -323,10 +323,12 @@ static DAO_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
     FullViewingKey::from_components(ak, nk)
 });
 
-async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Transaction> {
-    let effect_hash = transaction_plan.effect_hash(&DAO_FULL_VIEWING_KEY);
+async fn build_community_pool_transaction(
+    transaction_plan: TransactionPlan,
+) -> Result<Transaction> {
+    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY);
     transaction_plan.build(
-        &DAO_FULL_VIEWING_KEY,
+        &COMMUNITY_POOL_FULL_VIEWING_KEY,
         &WitnessData {
             anchor: penumbra_tct::Tree::new().root(),
             state_commitment_proofs: Default::default(),
@@ -341,9 +343,9 @@ async fn build_dao_transaction(transaction_plan: TransactionPlan) -> Result<Tran
 
 #[cfg(test)]
 mod test {
-    /// Ensure that the DAO full viewing key can be constructed and does not panic when referenced.
+    /// Ensure that the Community Pool full viewing key can be constructed and does not panic when referenced.
     #[test]
-    fn dao_fvk_can_be_constructed() {
-        let _ = *super::DAO_FULL_VIEWING_KEY;
+    fn community_pool_fvk_can_be_constructed() {
+        let _ = *super::COMMUNITY_POOL_FULL_VIEWING_KEY;
     }
 }

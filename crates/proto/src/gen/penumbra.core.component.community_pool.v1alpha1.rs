@@ -1,75 +1,85 @@
-/// Dao parameter data.
+/// CommunityPool parameter data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoParameters {
-    /// Whether DAO spend proposals are enabled.
+pub struct CommunityPoolParameters {
+    /// Whether Community Pool spend proposals are enabled.
     #[prost(bool, tag = "1")]
-    pub dao_spend_proposals_enabled: bool,
+    pub community_pool_spend_proposals_enabled: bool,
 }
-impl ::prost::Name for DaoParameters {
-    const NAME: &'static str = "DaoParameters";
-    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+impl ::prost::Name for CommunityPoolParameters {
+    const NAME: &'static str = "CommunityPoolParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!(
+            "penumbra.core.component.community_pool.v1alpha1.{}",
+            Self::NAME
+        )
     }
 }
-/// Dao genesis state.
+/// CommunityPool genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisContent {
-    /// Dao parameters.
+    /// CommunityPool parameters.
     #[prost(message, optional, tag = "1")]
-    pub dao_params: ::core::option::Option<DaoParameters>,
+    pub community_pool_params: ::core::option::Option<CommunityPoolParameters>,
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
-    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!(
+            "penumbra.core.component.community_pool.v1alpha1.{}",
+            Self::NAME
+        )
     }
 }
-/// Requests the list of all asset balances associated with the DAO.
+/// Requests the list of all asset balances associated with the Community Pool.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoAssetBalancesRequest {
+pub struct CommunityPoolAssetBalancesRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
     /// (Optional): The specific asset balances to retrieve, if excluded all will be returned.
     #[prost(message, repeated, tag = "2")]
-    pub asset_ids: ::prost::alloc::vec::Vec<
-        super::super::super::asset::v1alpha1::AssetId,
-    >,
+    pub asset_ids: ::prost::alloc::vec::Vec<super::super::super::asset::v1alpha1::AssetId>,
 }
-impl ::prost::Name for DaoAssetBalancesRequest {
-    const NAME: &'static str = "DaoAssetBalancesRequest";
-    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+impl ::prost::Name for CommunityPoolAssetBalancesRequest {
+    const NAME: &'static str = "CommunityPoolAssetBalancesRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!(
+            "penumbra.core.component.community_pool.v1alpha1.{}",
+            Self::NAME
+        )
     }
 }
-/// The DAO's balance of a single asset.
+/// The Community Pool's balance of a single asset.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoAssetBalancesResponse {
+pub struct CommunityPoolAssetBalancesResponse {
     /// The balance for a single asset.
     #[prost(message, optional, tag = "1")]
     pub balance: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
-impl ::prost::Name for DaoAssetBalancesResponse {
-    const NAME: &'static str = "DaoAssetBalancesResponse";
-    const PACKAGE: &'static str = "penumbra.core.component.dao.v1alpha1";
+impl ::prost::Name for CommunityPoolAssetBalancesResponse {
+    const NAME: &'static str = "CommunityPoolAssetBalancesResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.community_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.dao.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!(
+            "penumbra.core.component.community_pool.v1alpha1.{}",
+            Self::NAME
+        )
     }
 }
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
-    use tonic::codegen::*;
     use tonic::codegen::http::Uri;
-    /// Query operations for the dao component.
+    use tonic::codegen::*;
+    /// Query operations for the community_pool component.
     #[derive(Debug, Clone)]
     pub struct QueryServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -113,9 +123,8 @@ pub mod query_service_client {
                     <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
                 >,
             >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
+                Into<StdError> + Send + Sync,
         {
             QueryServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -150,34 +159,28 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn dao_asset_balances(
+        pub async fn community_pool_asset_balances(
             &mut self,
-            request: impl tonic::IntoRequest<super::DaoAssetBalancesRequest>,
+            request: impl tonic::IntoRequest<super::CommunityPoolAssetBalancesRequest>,
         ) -> std::result::Result<
-            tonic::Response<tonic::codec::Streaming<super::DaoAssetBalancesResponse>>,
+            tonic::Response<tonic::codec::Streaming<super::CommunityPoolAssetBalancesResponse>>,
             tonic::Status,
         > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.component.dao.v1alpha1.QueryService/DaoAssetBalances",
+                "/penumbra.core.component.community_pool.v1alpha1.QueryService/CommunityPoolAssetBalances",
             );
             let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.dao.v1alpha1.QueryService",
-                        "DaoAssetBalances",
-                    ),
-                );
+            req.extensions_mut().insert(GrpcMethod::new(
+                "penumbra.core.component.community_pool.v1alpha1.QueryService",
+                "CommunityPoolAssetBalances",
+            ));
             self.inner.server_streaming(req, path, codec).await
         }
     }
@@ -190,24 +193,23 @@ pub mod query_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
-        /// Server streaming response type for the DaoAssetBalances method.
-        type DaoAssetBalancesStream: tonic::codegen::tokio_stream::Stream<
+        /// Server streaming response type for the CommunityPoolAssetBalances method.
+        type CommunityPoolAssetBalancesStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
-                    super::DaoAssetBalancesResponse,
+                    super::CommunityPoolAssetBalancesResponse,
                     tonic::Status,
                 >,
-            >
-            + Send
+            > + Send
             + 'static;
-        async fn dao_asset_balances(
+        async fn community_pool_asset_balances(
             &self,
-            request: tonic::Request<super::DaoAssetBalancesRequest>,
+            request: tonic::Request<super::CommunityPoolAssetBalancesRequest>,
         ) -> std::result::Result<
-            tonic::Response<Self::DaoAssetBalancesStream>,
+            tonic::Response<Self::CommunityPoolAssetBalancesStream>,
             tonic::Status,
         >;
     }
-    /// Query operations for the dao component.
+    /// Query operations for the community_pool component.
     #[derive(Debug)]
     pub struct QueryServiceServer<T: QueryService> {
         inner: _Inner<T>,
@@ -231,10 +233,7 @@ pub mod query_service_server {
                 max_encoding_message_size: None,
             }
         }
-        pub fn with_interceptor<F>(
-            inner: T,
-            interceptor: F,
-        ) -> InterceptedService<Self, F>
+        pub fn with_interceptor<F>(inner: T, interceptor: F) -> InterceptedService<Self, F>
         where
             F: tonic::service::Interceptor,
         {
@@ -287,27 +286,32 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.core.component.dao.v1alpha1.QueryService/DaoAssetBalances" => {
+                "/penumbra.core.component.community_pool.v1alpha1.QueryService/CommunityPoolAssetBalances" => {
                     #[allow(non_camel_case_types)]
-                    struct DaoAssetBalancesSvc<T: QueryService>(pub Arc<T>);
+                    struct CommunityPoolAssetBalancesSvc<T: QueryService>(pub Arc<T>);
                     impl<
                         T: QueryService,
                     > tonic::server::ServerStreamingService<
-                        super::DaoAssetBalancesRequest,
-                    > for DaoAssetBalancesSvc<T> {
-                        type Response = super::DaoAssetBalancesResponse;
-                        type ResponseStream = T::DaoAssetBalancesStream;
+                        super::CommunityPoolAssetBalancesRequest,
+                    > for CommunityPoolAssetBalancesSvc<T> {
+                        type Response = super::CommunityPoolAssetBalancesResponse;
+                        type ResponseStream = T::CommunityPoolAssetBalancesStream;
                         type Future = BoxFuture<
                             tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DaoAssetBalancesRequest>,
+                            request: tonic::Request<
+                                super::CommunityPoolAssetBalancesRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as QueryService>::dao_asset_balances(&inner, request)
+                                <T as QueryService>::community_pool_asset_balances(
+                                        &inner,
+                                        request,
+                                    )
                                     .await
                             };
                             Box::pin(fut)
@@ -320,7 +324,7 @@ pub mod query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = DaoAssetBalancesSvc(inner);
+                        let method = CommunityPoolAssetBalancesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -374,6 +378,6 @@ pub mod query_service_server {
         }
     }
     impl<T: QueryService> tonic::server::NamedService for QueryServiceServer<T> {
-        const NAME: &'static str = "penumbra.core.component.dao.v1alpha1.QueryService";
+        const NAME: &'static str = "penumbra.core.component.community_pool.v1alpha1.QueryService";
     }
 }

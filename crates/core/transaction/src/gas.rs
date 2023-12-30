@@ -1,5 +1,5 @@
 use penumbra_chain::params::ChainParameters;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, Swap, SwapClaim,
 };
@@ -260,9 +260,9 @@ impl GasCost for ActionPlan {
             ActionPlan::PositionClose(pc) => pc.gas_cost(),
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
             ActionPlan::PositionRewardClaim(_) => position_reward_claim_gas_cost(),
-            ActionPlan::DaoSpend(ds) => ds.gas_cost(),
-            ActionPlan::DaoOutput(d) => d.gas_cost(),
-            ActionPlan::DaoDeposit(dd) => dd.gas_cost(),
+            ActionPlan::CommunityPoolSpend(ds) => ds.gas_cost(),
+            ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
+            ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
             ActionPlan::Withdrawal(w) => w.gas_cost(),
         }
     }
@@ -288,9 +288,9 @@ impl GasCost for Action {
             Action::PositionWithdraw(p) => p.gas_cost(),
             Action::PositionRewardClaim(p) => p.gas_cost(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.gas_cost(),
-            Action::DaoDeposit(deposit) => deposit.gas_cost(),
-            Action::DaoSpend(spend) => spend.gas_cost(),
-            Action::DaoOutput(output) => output.gas_cost(),
+            Action::CommunityPoolDeposit(deposit) => deposit.gas_cost(),
+            Action::CommunityPoolSpend(spend) => spend.gas_cost(),
+            Action::CommunityPoolOutput(output) => output.gas_cost(),
             Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
         }
@@ -487,7 +487,7 @@ impl GasCost for Ics20Withdrawal {
     }
 }
 
-impl GasCost for DaoDeposit {
+impl GasCost for CommunityPoolDeposit {
     fn gas_cost(&self) -> Gas {
         Gas {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
@@ -495,7 +495,7 @@ impl GasCost for DaoDeposit {
             block_space: 0,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
-            // For a DaoDeposit the compact block is not modified.
+            // For a CommunityPoolDeposit the compact block is not modified.
             compact_block_space: 0u64,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
@@ -505,7 +505,7 @@ impl GasCost for DaoDeposit {
     }
 }
 
-impl GasCost for DaoSpend {
+impl GasCost for CommunityPoolSpend {
     fn gas_cost(&self) -> Gas {
         Gas {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
@@ -513,7 +513,7 @@ impl GasCost for DaoSpend {
             block_space: 0,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
-            // For a DaoSpend the compact block is not modified.
+            // For a CommunityPoolSpend the compact block is not modified.
             compact_block_space: 0u64,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
@@ -523,9 +523,9 @@ impl GasCost for DaoSpend {
     }
 }
 
-impl GasCost for DaoOutput {
+impl GasCost for CommunityPoolOutput {
     fn gas_cost(&self) -> Gas {
-        // We hardcode the gas costs of a `DaoOutput` to 0, since it's a protocol action.
+        // We hardcode the gas costs of a `CommunityPoolOutput` to 0, since it's a protocol action.
         Gas {
             block_space: 0,
             compact_block_space: 0,

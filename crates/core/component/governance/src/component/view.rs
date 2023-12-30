@@ -864,12 +864,12 @@ pub trait StateWriteExt: StateWrite {
 
                 tracing::info!("app parameters update scheduled successfully");
             }
-            ProposalPayload::DaoSpend {
+            ProposalPayload::CommunityPoolSpend {
                 transaction_plan: _,
             } => {
                 // All we need to do here is signal to the `App` that we'd like this transaction to
                 // be slotted in at the end of the block:
-                self.deliver_dao_transaction(proposal_id).await?;
+                self.deliver_community_pool_transaction(proposal_id).await?;
             }
             ProposalPayload::UpgradePlan { height } => {
                 tracing::info!(target_height = height, "upgrade plan proposal passed");
@@ -880,14 +880,17 @@ pub trait StateWriteExt: StateWrite {
         Ok(Ok(()))
     }
 
-    async fn deliver_dao_transaction(&mut self, proposal: u64) -> Result<()> {
+    async fn deliver_community_pool_transaction(&mut self, proposal: u64) -> Result<()> {
         // Schedule for beginning of next block
         let delivery_height = self.get_block_height().await? + 1;
 
-        tracing::info!(%proposal, %delivery_height, "scheduling DAO transaction for delivery at next block");
+        tracing::info!(%proposal, %delivery_height, "scheduling Community Pool transaction for delivery at next block");
 
         self.put_proto(
-            state_key::deliver_single_dao_transaction_at_height(delivery_height, proposal),
+            state_key::deliver_single_community_pool_transaction_at_height(
+                delivery_height,
+                proposal,
+            ),
             proposal,
         );
         Ok(())

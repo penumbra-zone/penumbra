@@ -893,8 +893,8 @@ impl serde::Serialize for FundingStream {
                 funding_stream::Recipient::ToAddress(v) => {
                     struct_ser.serialize_field("toAddress", v)?;
                 }
-                funding_stream::Recipient::ToDao(v) => {
-                    struct_ser.serialize_field("toDao", v)?;
+                funding_stream::Recipient::ToCommunityPool(v) => {
+                    struct_ser.serialize_field("toCommunityPool", v)?;
                 }
             }
         }
@@ -910,14 +910,14 @@ impl<'de> serde::Deserialize<'de> for FundingStream {
         const FIELDS: &[&str] = &[
             "to_address",
             "toAddress",
-            "to_dao",
-            "toDao",
+            "to_community_pool",
+            "toCommunityPool",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ToAddress,
-            ToDao,
+            ToCommunityPool,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -940,7 +940,7 @@ impl<'de> serde::Deserialize<'de> for FundingStream {
                     {
                         match value {
                             "toAddress" | "to_address" => Ok(GeneratedField::ToAddress),
-                            "toDao" | "to_dao" => Ok(GeneratedField::ToDao),
+                            "toCommunityPool" | "to_community_pool" => Ok(GeneratedField::ToCommunityPool),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -970,11 +970,11 @@ impl<'de> serde::Deserialize<'de> for FundingStream {
                             recipient__ = map_.next_value::<::std::option::Option<_>>()?.map(funding_stream::Recipient::ToAddress)
 ;
                         }
-                        GeneratedField::ToDao => {
+                        GeneratedField::ToCommunityPool => {
                             if recipient__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("toDao"));
+                                return Err(serde::de::Error::duplicate_field("toCommunityPool"));
                             }
-                            recipient__ = map_.next_value::<::std::option::Option<_>>()?.map(funding_stream::Recipient::ToDao)
+                            recipient__ = map_.next_value::<::std::option::Option<_>>()?.map(funding_stream::Recipient::ToCommunityPool)
 ;
                         }
                     }
@@ -1098,7 +1098,7 @@ impl<'de> serde::Deserialize<'de> for funding_stream::ToAddress {
         deserializer.deserialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToAddress", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for funding_stream::ToDao {
+impl serde::Serialize for funding_stream::ToCommunityPool {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1109,14 +1109,14 @@ impl serde::Serialize for funding_stream::ToDao {
         if self.rate_bps != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToDao", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToCommunityPool", len)?;
         if self.rate_bps != 0 {
             struct_ser.serialize_field("rateBps", &self.rate_bps)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for funding_stream::ToDao {
+impl<'de> serde::Deserialize<'de> for funding_stream::ToCommunityPool {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1161,13 +1161,13 @@ impl<'de> serde::Deserialize<'de> for funding_stream::ToDao {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = funding_stream::ToDao;
+            type Value = funding_stream::ToCommunityPool;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.stake.v1alpha1.FundingStream.ToDao")
+                formatter.write_str("struct penumbra.core.component.stake.v1alpha1.FundingStream.ToCommunityPool")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<funding_stream::ToDao, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<funding_stream::ToCommunityPool, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1184,12 +1184,12 @@ impl<'de> serde::Deserialize<'de> for funding_stream::ToDao {
                         }
                     }
                 }
-                Ok(funding_stream::ToDao {
+                Ok(funding_stream::ToCommunityPool {
                     rate_bps: rate_bps__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToDao", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1alpha1.FundingStream.ToCommunityPool", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GenesisContent {

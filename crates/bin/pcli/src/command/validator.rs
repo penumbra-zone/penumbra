@@ -286,7 +286,7 @@ impl ValidatorCmd {
                             address,
                             rate_bps: 100,
                         },
-                        FundingStream::ToDao { rate_bps: 100 },
+                        FundingStream::ToCommunityPool { rate_bps: 100 },
                     ])?,
                     sequence_number: 0,
                 }

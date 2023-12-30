@@ -1,4 +1,4 @@
-impl serde::Serialize for DaoAssetBalancesRequest {
+impl serde::Serialize for CommunityPoolAssetBalancesRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -12,7 +12,7 @@ impl serde::Serialize for DaoAssetBalancesRequest {
         if !self.asset_ids.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dao.v1alpha1.DaoAssetBalancesRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesRequest", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
@@ -22,7 +22,7 @@ impl serde::Serialize for DaoAssetBalancesRequest {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoAssetBalancesRequest {
+impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -71,13 +71,13 @@ impl<'de> serde::Deserialize<'de> for DaoAssetBalancesRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoAssetBalancesRequest;
+            type Value = CommunityPoolAssetBalancesRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dao.v1alpha1.DaoAssetBalancesRequest")
+                formatter.write_str("struct penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesRequest")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoAssetBalancesRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolAssetBalancesRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -99,16 +99,16 @@ impl<'de> serde::Deserialize<'de> for DaoAssetBalancesRequest {
                         }
                     }
                 }
-                Ok(DaoAssetBalancesRequest {
+                Ok(CommunityPoolAssetBalancesRequest {
                     chain_id: chain_id__.unwrap_or_default(),
                     asset_ids: asset_ids__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dao.v1alpha1.DaoAssetBalancesRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DaoAssetBalancesResponse {
+impl serde::Serialize for CommunityPoolAssetBalancesResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -119,14 +119,14 @@ impl serde::Serialize for DaoAssetBalancesResponse {
         if self.balance.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dao.v1alpha1.DaoAssetBalancesResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesResponse", len)?;
         if let Some(v) = self.balance.as_ref() {
             struct_ser.serialize_field("balance", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoAssetBalancesResponse {
+impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -170,13 +170,13 @@ impl<'de> serde::Deserialize<'de> for DaoAssetBalancesResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoAssetBalancesResponse;
+            type Value = CommunityPoolAssetBalancesResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dao.v1alpha1.DaoAssetBalancesResponse")
+                formatter.write_str("struct penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesResponse")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoAssetBalancesResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolAssetBalancesResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -191,15 +191,15 @@ impl<'de> serde::Deserialize<'de> for DaoAssetBalancesResponse {
                         }
                     }
                 }
-                Ok(DaoAssetBalancesResponse {
+                Ok(CommunityPoolAssetBalancesResponse {
                     balance: balance__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dao.v1alpha1.DaoAssetBalancesResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DaoParameters {
+impl serde::Serialize for CommunityPoolParameters {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -207,30 +207,30 @@ impl serde::Serialize for DaoParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.dao_spend_proposals_enabled {
+        if self.community_pool_spend_proposals_enabled {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dao.v1alpha1.DaoParameters", len)?;
-        if self.dao_spend_proposals_enabled {
-            struct_ser.serialize_field("daoSpendProposalsEnabled", &self.dao_spend_proposals_enabled)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters", len)?;
+        if self.community_pool_spend_proposals_enabled {
+            struct_ser.serialize_field("communityPoolSpendProposalsEnabled", &self.community_pool_spend_proposals_enabled)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoParameters {
+impl<'de> serde::Deserialize<'de> for CommunityPoolParameters {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "dao_spend_proposals_enabled",
-            "daoSpendProposalsEnabled",
+            "community_pool_spend_proposals_enabled",
+            "communityPoolSpendProposalsEnabled",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            DaoSpendProposalsEnabled,
+            CommunityPoolSpendProposalsEnabled,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -252,7 +252,7 @@ impl<'de> serde::Deserialize<'de> for DaoParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "daoSpendProposalsEnabled" | "dao_spend_proposals_enabled" => Ok(GeneratedField::DaoSpendProposalsEnabled),
+                            "communityPoolSpendProposalsEnabled" | "community_pool_spend_proposals_enabled" => Ok(GeneratedField::CommunityPoolSpendProposalsEnabled),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -262,33 +262,33 @@ impl<'de> serde::Deserialize<'de> for DaoParameters {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoParameters;
+            type Value = CommunityPoolParameters;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dao.v1alpha1.DaoParameters")
+                formatter.write_str("struct penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoParameters, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolParameters, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut dao_spend_proposals_enabled__ = None;
+                let mut community_pool_spend_proposals_enabled__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::DaoSpendProposalsEnabled => {
-                            if dao_spend_proposals_enabled__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("daoSpendProposalsEnabled"));
+                        GeneratedField::CommunityPoolSpendProposalsEnabled => {
+                            if community_pool_spend_proposals_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("communityPoolSpendProposalsEnabled"));
                             }
-                            dao_spend_proposals_enabled__ = Some(map_.next_value()?);
+                            community_pool_spend_proposals_enabled__ = Some(map_.next_value()?);
                         }
                     }
                 }
-                Ok(DaoParameters {
-                    dao_spend_proposals_enabled: dao_spend_proposals_enabled__.unwrap_or_default(),
+                Ok(CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: community_pool_spend_proposals_enabled__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dao.v1alpha1.DaoParameters", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GenesisContent {
@@ -299,12 +299,12 @@ impl serde::Serialize for GenesisContent {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.dao_params.is_some() {
+        if self.community_pool_params.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dao.v1alpha1.GenesisContent", len)?;
-        if let Some(v) = self.dao_params.as_ref() {
-            struct_ser.serialize_field("daoParams", v)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1alpha1.GenesisContent", len)?;
+        if let Some(v) = self.community_pool_params.as_ref() {
+            struct_ser.serialize_field("communityPoolParams", v)?;
         }
         struct_ser.end()
     }
@@ -316,13 +316,13 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "dao_params",
-            "daoParams",
+            "community_pool_params",
+            "communityPoolParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            DaoParams,
+            CommunityPoolParams,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -344,7 +344,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                         E: serde::de::Error,
                     {
                         match value {
-                            "daoParams" | "dao_params" => Ok(GeneratedField::DaoParams),
+                            "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -357,29 +357,29 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             type Value = GenesisContent;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dao.v1alpha1.GenesisContent")
+                formatter.write_str("struct penumbra.core.component.community_pool.v1alpha1.GenesisContent")
             }
 
             fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut dao_params__ = None;
+                let mut community_pool_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::DaoParams => {
-                            if dao_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("daoParams"));
+                        GeneratedField::CommunityPoolParams => {
+                            if community_pool_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("communityPoolParams"));
                             }
-                            dao_params__ = map_.next_value()?;
+                            community_pool_params__ = map_.next_value()?;
                         }
                     }
                 }
                 Ok(GenesisContent {
-                    dao_params: dao_params__,
+                    community_pool_params: community_pool_params__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dao.v1alpha1.GenesisContent", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.community_pool.v1alpha1.GenesisContent", FIELDS, GeneratedVisitor)
     }
 }

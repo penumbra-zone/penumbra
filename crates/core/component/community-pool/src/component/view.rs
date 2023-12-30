@@ -9,33 +9,33 @@ use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::params::DaoParameters;
+use crate::params::CommunityPoolParameters;
 
 use super::state_key;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the DAO parameters have been updated in this block.
-    fn dao_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::dao_params_updated())
+    /// Indicates if the Community Pool parameters have been updated in this block.
+    fn community_pool_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::community_pool_params_updated())
             .is_some()
     }
 
-    /// Gets the DAO parameters from the JMT.
-    async fn get_dao_params(&self) -> Result<DaoParameters> {
-        self.get(state_key::dao_params())
+    /// Gets the Community Pool parameters from the JMT.
+    async fn get_community_pool_params(&self) -> Result<CommunityPoolParameters> {
+        self.get(state_key::community_pool_params())
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Missing DaoParameters"))
+            .ok_or_else(|| anyhow::anyhow!("Missing CommunityPoolParameters"))
     }
 
-    async fn dao_asset_balance(&self, asset_id: asset::Id) -> Result<Amount> {
+    async fn community_pool_asset_balance(&self, asset_id: asset::Id) -> Result<Amount> {
         Ok(self
             .get(&state_key::balance_for_asset(asset_id))
             .await?
             .unwrap_or_else(|| Amount::from(0u64)))
     }
 
-    async fn dao_balance(&self) -> Result<BTreeMap<asset::Id, Amount>> {
+    async fn community_pool_balance(&self) -> Result<BTreeMap<asset::Id, Amount>> {
         let prefix = state_key::all_assets_balance();
         self.prefix(prefix)
             .map(|result| {
@@ -53,23 +53,23 @@ impl<T> StateReadExt for T where T: StateRead + ?Sized {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    /// Writes the provided DAO parameters to the JMT.
-    fn put_dao_params(&mut self, params: DaoParameters) {
-        // Note that the dao params have been updated:
-        self.object_put(state_key::dao_params_updated(), ());
+    /// Writes the provided Community Pool parameters to the JMT.
+    fn put_community_pool_params(&mut self, params: CommunityPoolParameters) {
+        // Note that the Community Pool params have been updated:
+        self.object_put(state_key::community_pool_params_updated(), ());
 
-        // Change the DAO parameters:
-        self.put(state_key::dao_params().into(), params)
+        // Change the Community Pool parameters:
+        self.put(state_key::community_pool_params().into(), params)
     }
 
-    async fn dao_deposit(&mut self, value: Value) -> Result<()> {
+    async fn community_pool_deposit(&mut self, value: Value) -> Result<()> {
         let key = state_key::balance_for_asset(value.asset_id);
         let current = self.get(&key).await?.unwrap_or_else(|| Amount::from(0u64));
         self.put(key, current + value.amount);
         Ok(())
     }
 
-    async fn dao_withdraw(&mut self, value: Value) -> Result<()> {
+    async fn community_pool_withdraw(&mut self, value: Value) -> Result<()> {
         let key = state_key::balance_for_asset(value.asset_id);
         let current = self.get(&key).await?.unwrap_or_else(|| Amount::from(0u64));
         if let Some(remaining) = u128::from(current).checked_sub(u128::from(value.amount)) {
@@ -80,7 +80,7 @@ pub trait StateWriteExt: StateWrite {
             }
         } else {
             anyhow::bail!(
-                "insufficient balance to withdraw {} of asset ID {} from the DAO",
+                "insufficient balance to withdraw {} of asset ID {} from the Community Pool",
                 value.amount,
                 value.asset_id
             );

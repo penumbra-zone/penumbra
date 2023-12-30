@@ -25,7 +25,7 @@ members = [
   "crates/core/component/shielded-pool",
   "crates/core/component/governance",
   "crates/core/component/ibc",
-  "crates/core/component/dao",
+  "crates/core/component/community-pool",
   "crates/core/component/dex",
   "crates/core/component/sct",
   "crates/core/component/fee",

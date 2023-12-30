@@ -38,7 +38,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-asset \
   -p penumbra-chain \
   -p penumbra-custody \
-  -p penumbra-dao \
+  -p penumbra-community-pool \
   -p penumbra-dex \
   -p penumbra-distributions \
   -p penumbra-governance \

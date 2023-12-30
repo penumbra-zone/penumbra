@@ -9,7 +9,7 @@ CREATE TABLE stake_params (bytes BLOB NOT NULL);
 CREATE TABLE ibc_params (bytes BLOB NOT NULL);
 CREATE TABLE governance_params (bytes BLOB NOT NULL);
 CREATE TABLE chain_params (bytes BLOB NOT NULL);
-CREATE TABLE dao_params (bytes BLOB NOT NULL);
+CREATE TABLE community_pool_params (bytes BLOB NOT NULL);
 CREATE TABLE fee_params (bytes BLOB NOT NULL);
 CREATE TABLE distributions_params (bytes BLOB NOT NULL);
 CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);

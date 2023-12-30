@@ -2,7 +2,7 @@
 //! creation.
 
 use anyhow::Result;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -253,9 +253,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+    pub fn community_pool_spends(&self) -> impl Iterator<Item = &CommunityPoolSpend> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::DaoSpend(v) = action {
+            if let ActionPlan::CommunityPoolSpend(v) = action {
                 Some(v)
             } else {
                 None
@@ -263,9 +263,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+    pub fn community_pool_deposits(&self) -> impl Iterator<Item = &CommunityPoolDeposit> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::DaoDeposit(v) = action {
+            if let ActionPlan::CommunityPoolDeposit(v) = action {
                 Some(v)
             } else {
                 None
@@ -273,9 +273,9 @@ impl TransactionPlan {
         })
     }
 
-    pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+    pub fn community_pool_outputs(&self) -> impl Iterator<Item = &CommunityPoolOutput> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::DaoOutput(v) = action {
+            if let ActionPlan::CommunityPoolOutput(v) = action {
                 Some(v)
             } else {
                 None

@@ -15,12 +15,16 @@ blake2b_simd = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 decaf377 = { version = "0.5", default_features = false }
 penumbra-dex = { path = "../../core/component/dex/" }
-penumbra-dao = { path = "../../core/component/dao/", features = ["component"] }
+penumbra-community-pool = { path = "../../core/component/community-pool/", features = [
+    "component",
+] }
 penumbra-governance = { path = "../../core/component/governance/" }
 penumbra-proof-params = { path = "../proof-params" }
 penumbra-proto = { path = "../../proto" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
-penumbra-stake = { path = "../../core/component/stake/", features = ["component"] }
+penumbra-stake = { path = "../../core/component/stake/", features = [
+    "component",
+] }
 rayon = { version = "1.8.0", optional = true }
 
 [dev-dependencies]
@@ -37,4 +41,11 @@ harness = false
 
 [features]
 default = []
-parallel = ["ark-ec/parallel", "ark-ff/parallel", "ark-groth16/parallel", "decaf377/parallel", "rayon", "penumbra-shielded-pool/parallel"]
+parallel = [
+    "ark-ec/parallel",
+    "ark-ff/parallel",
+    "ark-groth16/parallel",
+    "decaf377/parallel",
+    "rayon",
+    "penumbra-shielded-pool/parallel",
+]

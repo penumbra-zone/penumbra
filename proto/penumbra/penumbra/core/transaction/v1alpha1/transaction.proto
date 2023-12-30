@@ -95,10 +95,10 @@ message Action {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -181,10 +181,10 @@ message ActionView {
 
     component.stake.v1alpha1.Delegate delegate = 41;
     component.stake.v1alpha1.Undelegate undelegate = 42;
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
@@ -274,10 +274,10 @@ message ActionPlan {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
   }
 }
 

@@ -1,5 +1,5 @@
 use penumbra_chain::params::ChainParameters;
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_governance::params::GovernanceParameters;
@@ -16,7 +16,7 @@ pub mod change;
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_params: ChainParameters,
-    pub dao_params: DaoParameters,
+    pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
     pub fee_params: FeeParameters,
     pub governance_params: GovernanceParameters,
@@ -37,9 +37,9 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .chain_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing chain params"))?
                 .try_into()?,
-            dao_params: msg
-                .dao_params
-                .ok_or_else(|| anyhow::anyhow!("proto response missing dao params"))?
+            community_pool_params: msg
+                .community_pool_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool params"))?
                 .try_into()?,
             distributions_params: msg
                 .distributions_params
@@ -69,7 +69,7 @@ impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
             chain_params: Some(params.chain_params.into()),
-            dao_params: Some(params.dao_params.into()),
+            community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),

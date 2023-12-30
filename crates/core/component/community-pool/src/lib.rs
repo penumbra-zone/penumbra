@@ -8,7 +8,7 @@ pub mod component;
 pub mod event;
 
 mod action;
-pub use action::{DaoDeposit, DaoOutput, DaoSpend};
+pub use action::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 
 pub mod genesis;
 pub mod params;

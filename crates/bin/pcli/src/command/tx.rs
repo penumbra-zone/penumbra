@@ -129,9 +129,9 @@ pub enum TxCmd {
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
-    /// Deposit funds into the DAO.
+    /// Deposit funds into the Community Pool.
     #[clap(display_order = 600)]
-    DaoDeposit {
+    CommunityPoolDeposit {
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// Only spend funds originally received by the given account.
@@ -240,7 +240,7 @@ impl TxCmd {
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
-            TxCmd::DaoDeposit { .. } => false,
+            TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
         }
@@ -303,7 +303,7 @@ impl TxCmd {
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::DaoDeposit { values, source } => {
+            TxCmd::CommunityPoolDeposit { values, source } => {
                 let values = values
                     .iter()
                     .map(|v| v.parse())
@@ -312,7 +312,7 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 for value in values {
-                    planner.dao_deposit(value);
+                    planner.community_pool_deposit(value);
                 }
                 let plan = planner
                     .plan(

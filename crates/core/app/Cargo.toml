@@ -24,7 +24,7 @@ penumbra-stake = { path = "../component/stake" }
 penumbra-governance = { path = "../component/governance" }
 penumbra-sct = { path = "../component/sct" }
 penumbra-fee = { path = "../component/fee" }
-penumbra-dao = { path = "../component/dao" }
+penumbra-community-pool = { path = "../component/community-pool" }
 penumbra-dex = { path = "../component/dex" }
 penumbra-ibc = { path = "../component/ibc", features = ["component"] }
 penumbra-distributions = { path = "../component/distributions" }
