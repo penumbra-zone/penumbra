@@ -1,7 +1,9 @@
+mod auth_hash;
 mod effect_hash;
 mod effecting_data;
-mod auth_hash;
+mod transaction_id;
 
+pub use auth_hash::{AuthHash, AuthorizingData};
 pub use effect_hash::EffectHash;
 pub use effecting_data::EffectingData;
-pub use auth_hash::{AuthHash, AuthorizingData};
+pub use transaction_id::TransactionId;

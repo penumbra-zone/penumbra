@@ -21,9 +21,10 @@ use penumbra_proto::view::v1alpha1::{
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::note;
 use penumbra_stake::IdentityKey;
-
 use penumbra_transaction::AuthorizationData;
-use penumbra_transaction::{plan::TransactionPlan, Transaction, WitnessData};
+use penumbra_transaction::{
+    plan::TransactionPlan, txhash::TransactionId, Transaction, WitnessData,
+};
 
 use tonic::codegen::Bytes;
 use tracing::instrument;
@@ -169,7 +170,7 @@ pub trait ViewClient {
     /// Generates a full perspective for a selected transaction using a full viewing key
     fn transaction_info_by_hash(
         &mut self,
-        id: penumbra_transaction::Id,
+        id: TransactionId,
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>>;
 
     /// Queries for transactions in a range of block heights
@@ -183,7 +184,7 @@ pub trait ViewClient {
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>>;
 
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self, wallet_id))]
@@ -753,7 +754,7 @@ where
 
     fn transaction_info_by_hash(
         &mut self,
-        id: penumbra_transaction::Id,
+        id: TransactionId,
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
@@ -861,8 +862,7 @@ where
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>
-    {
+    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
             let rsp = ViewProtocolServiceClient::broadcast_transaction(

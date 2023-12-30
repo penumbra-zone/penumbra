@@ -3,7 +3,7 @@ use penumbra_proto::{
     util::tendermint_proxy::v1alpha1::tendermint_proxy_service_client::TendermintProxyServiceClient,
     DomainType,
 };
-use penumbra_transaction::{plan::TransactionPlan, Id as TransactionId, Transaction};
+use penumbra_transaction::{plan::TransactionPlan, txhash::TransactionId, Transaction};
 use penumbra_view::ViewClient;
 use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
