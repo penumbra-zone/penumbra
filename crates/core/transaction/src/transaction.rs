@@ -25,13 +25,13 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
-use penumbra_txhash::{AuthHash, AuthorizingData, EffectHash, EffectingData};
+use penumbra_txhash::{AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionId};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
-    Action, ActionView, DetectionData, Id, IsAction, MemoPlaintextView, TransactionParameters,
+    Action, ActionView, DetectionData, IsAction, MemoPlaintextView, TransactionParameters,
     TransactionPerspective, TransactionView,
 };
 
@@ -553,14 +553,14 @@ impl Transaction {
         &self.binding_sig
     }
 
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> TransactionId {
         use sha2::{Digest, Sha256};
 
         let tx_bytes: Vec<u8> = self.clone().try_into().expect("can serialize transaction");
         let mut id_bytes = [0; 32];
         id_bytes[..].copy_from_slice(Sha256::digest(&tx_bytes).as_slice());
 
-        Id(id_bytes)
+        TransactionId(id_bytes)
     }
 
     /// Compute the binding verification key from the transaction data.

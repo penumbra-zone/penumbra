@@ -5927,6 +5927,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "hex",
  "penumbra-proto",
+ "serde",
 ]
 
 [[package]]

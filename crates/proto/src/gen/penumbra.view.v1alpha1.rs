@@ -59,7 +59,7 @@ impl ::prost::Name for BroadcastTransactionRequest {
 pub struct BroadcastTransactionResponse {
     /// The hash of the transaction that was broadcast.
     #[prost(message, optional, tag = "1")]
-    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+    pub id: ::core::option::Option<super::super::core::txhash::v1alpha1::TransactionId>,
     /// The height in which the transaction was detected as included in the chain, if any.
     /// Will not be included unless await_detection was true.
     #[prost(uint64, tag = "2")]
@@ -991,7 +991,7 @@ impl ::prost::Name for NullifierStatusResponse {
 pub struct TransactionInfoByHashRequest {
     /// The transaction hash to query for.
     #[prost(message, optional, tag = "2")]
-    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+    pub id: ::core::option::Option<super::super::core::txhash::v1alpha1::TransactionId>,
 }
 impl ::prost::Name for TransactionInfoByHashRequest {
     const NAME: &'static str = "TransactionInfoByHashRequest";
@@ -1025,7 +1025,7 @@ pub struct TransactionInfo {
     pub height: u64,
     /// The hash of the transaction.
     #[prost(message, optional, tag = "2")]
-    pub id: ::core::option::Option<super::super::core::transaction::v1alpha1::Id>,
+    pub id: ::core::option::Option<super::super::core::txhash::v1alpha1::TransactionId>,
     /// The transaction data itself.
     #[prost(message, optional, tag = "3")]
     pub transaction: ::core::option::Option<

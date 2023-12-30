@@ -13,3 +13,19 @@ impl ::prost::Name for EffectHash {
         ::prost::alloc::format!("penumbra.core.txhash.v1alpha1.{}", Self::NAME)
     }
 }
+/// A transaction ID, the Sha256 hash of a transaction.
+///
+/// This is the hash of the plain byte encoding, used by Tendermint.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TransactionId {
+    #[prost(bytes = "vec", tag = "1")]
+    pub inner: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for TransactionId {
+    const NAME: &'static str = "TransactionId";
+    const PACKAGE: &'static str = "penumbra.core.txhash.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.txhash.v1alpha1.{}", Self::NAME)
+    }
+}

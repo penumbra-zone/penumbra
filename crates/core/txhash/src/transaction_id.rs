@@ -1,32 +1,32 @@
 use std::str::FromStr;
 
-use penumbra_proto::{penumbra::core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::txhash::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A transaction ID (hash), the Sha256 hash used by Tendermint to identify transactions.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
-#[serde(try_from = "pb::Id", into = "pb::Id")]
-pub struct Id(pub [u8; 32]);
+#[serde(try_from = "pb::TransactionId", into = "pb::TransactionId")]
+pub struct TransactionId(pub [u8; 32]);
 
-impl AsRef<[u8]> for Id {
+impl AsRef<[u8]> for TransactionId {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl std::fmt::Debug for Id {
+impl std::fmt::Debug for TransactionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }
 
-impl std::fmt::Display for Id {
+impl std::fmt::Display for TransactionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
     }
 }
 
-impl FromStr for Id {
+impl FromStr for TransactionId {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -36,32 +36,32 @@ impl FromStr for Id {
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&bytes);
-        Ok(Id(id))
+        Ok(TransactionId(id))
     }
 }
 
-impl DomainType for Id {
-    type Proto = pb::Id;
+impl DomainType for TransactionId {
+    type Proto = pb::TransactionId;
 }
 
-impl From<Id> for pb::Id {
-    fn from(id: Id) -> pb::Id {
-        pb::Id {
-            hash: id.0.to_vec(),
+impl From<TransactionId> for pb::TransactionId {
+    fn from(id: TransactionId) -> pb::TransactionId {
+        pb::TransactionId {
+            inner: id.0.to_vec(),
         }
     }
 }
 
-impl TryFrom<pb::Id> for Id {
+impl TryFrom<pb::TransactionId> for TransactionId {
     type Error = anyhow::Error;
 
-    fn try_from(proto: pb::Id) -> anyhow::Result<Id> {
-        let hash = proto.hash;
+    fn try_from(proto: pb::TransactionId) -> anyhow::Result<TransactionId> {
+        let hash = proto.inner;
         if hash.len() != 32 {
             anyhow::bail!("invalid transaction ID length");
         }
         let mut id = [0u8; 32];
         id.copy_from_slice(&hash);
-        Ok(Id(id))
+        Ok(TransactionId(id))
     }
 }

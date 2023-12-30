@@ -23,20 +23,6 @@ impl ::prost::Name for Transaction {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// A transaction ID, the Sha256 hash of a transaction.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Id {
-    #[prost(bytes = "vec", tag = "1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for Id {
-    const NAME: &'static str = "Id";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
 /// The body of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -226,7 +212,9 @@ pub struct TransactionPerspective {
     pub denoms: ::prost::alloc::vec::Vec<super::super::asset::v1alpha1::DenomMetadata>,
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
-    pub transaction_id: ::core::option::Option<Id>,
+    pub transaction_id: ::core::option::Option<
+        super::super::txhash::v1alpha1::TransactionId,
+    >,
 }
 impl ::prost::Name for TransactionPerspective {
     const NAME: &'static str = "TransactionPerspective";

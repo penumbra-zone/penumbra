@@ -52,7 +52,8 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    plan::TransactionPlan, txhash::TransactionId, AuthorizationData, Transaction,
+    TransactionPerspective, WitnessData,
 };
 
 use crate::{Planner, Storage, Worker};
@@ -173,7 +174,7 @@ impl ViewService {
         &self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> anyhow::Result<penumbra_transaction::Id> {
+    ) -> anyhow::Result<TransactionId> {
         use penumbra_app::ActionHandler;
 
         // 1. Pre-check the transaction for (stateless) validity.
@@ -718,13 +719,13 @@ impl ViewProtocolService for ViewService {
                             "missing transaction ID in TransactionInfoByHashRequest",
                         )
                     })?
-                    .hash,
+                    .inner,
             )
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(
                     "Error retrieving transaction by hash {}",
-                    hex::encode(request.id.expect("transaction id is present").hash)
+                    hex::encode(request.id.expect("transaction id is present").inner)
                 ))
             })?;
 

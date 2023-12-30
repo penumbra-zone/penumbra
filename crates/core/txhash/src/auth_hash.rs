@@ -1,5 +1,3 @@
-use penumbra_proto::DomainType;
-
 /// A hash of a transaction's _authorizing data_, describing both its effects on
 /// the chain state as well as the cryptographic authorization of those effects.
 ///

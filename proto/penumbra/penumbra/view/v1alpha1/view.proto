@@ -14,6 +14,7 @@ import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/core/transaction/v1alpha1/transaction.proto";
+import "penumbra/core/txhash/v1alpha1/txhash.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
 // The view protocol is used by a view client, who wants to do some
@@ -130,7 +131,7 @@ message BroadcastTransactionRequest {
 
 message BroadcastTransactionResponse {
   // The hash of the transaction that was broadcast.
-  core.transaction.v1alpha1.Id id = 1;
+  core.txhash.v1alpha1.TransactionId id = 1;
   // The height in which the transaction was detected as included in the chain, if any.
   // Will not be included unless await_detection was true.
   uint64 detection_height = 2;
@@ -461,7 +462,7 @@ message NullifierStatusResponse {
 
 message TransactionInfoByHashRequest {
   // The transaction hash to query for.
-  core.transaction.v1alpha1.Id id = 2;
+  core.txhash.v1alpha1.TransactionId id = 2;
 }
 
 message TransactionInfoRequest {
@@ -475,7 +476,7 @@ message TransactionInfo {
   // The height the transaction was included in a block, if known.
   uint64 height = 1;
   // The hash of the transaction.
-  core.transaction.v1alpha1.Id id = 2;
+  core.txhash.v1alpha1.TransactionId id = 2;
   // The transaction data itself.
   core.transaction.v1alpha1.Transaction transaction = 3;
   // The transaction perspective, as seen by this view server.
