@@ -1,5 +1,12 @@
+use anyhow::{anyhow, Result};
+use ark_ff::ToConstraintField;
+use ark_groth16::{
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
+};
 use ark_relations::r1cs;
-use decaf377::{FieldExt, Fq, Fr};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_snark::SNARK;
+use decaf377::{Bls12_377, FieldExt, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},
@@ -9,7 +16,68 @@ use penumbra_num::{
     fixpoint::{U128x128, U128x128Var},
     Amount, AmountVar,
 };
-use penumbra_proof_params::DummyWitness;
+use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+
+/// The public input for a [`ConvertProof`].
+#[derive(Clone, Debug)]
+pub struct ConvertProofPublic {
+    /// The source asset being consumed.
+    pub from: asset::Id,
+    /// The destination asset being produced.
+    pub to: asset::Id,
+    /// The exchange rate: how many units of `to` we get for each unit of `from`.
+    pub rate: U128x128,
+    /// A commitment to the balance of this transaction: what assets were consumed and produced.
+    pub balance_commitment: balance::Commitment,
+}
+
+/// The private input for a [`ConvertProof`].
+#[derive(Clone, Debug)]
+pub struct ConvertProofPrivate {
+    /// The private amount of the source asset we're converting.
+    pub amount: Amount,
+    /// The blinding we used to create the public commitment.
+    pub balance_blinding: Fr,
+}
+
+#[cfg(test)]
+fn check_satisfaction(public: &ConvertProofPublic, private: &ConvertProofPrivate) -> Result<()> {
+    let consumed = Value {
+        amount: private.amount,
+        asset_id: public.from,
+    };
+    let produced = Value {
+        amount: public.rate.apply_to_amount(&private.amount)?,
+        asset_id: public.to,
+    };
+    let balance: Balance = Balance::from(produced) - consumed;
+    let commitment = balance.commit(private.balance_blinding);
+    if commitment != public.balance_commitment {
+        anyhow::bail!("balance commitment did not match public input");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(
+    public: ConvertProofPublic,
+    private: ConvertProofPrivate,
+) -> Result<()> {
+    use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystem};
+
+    let cs = ConstraintSystem::new_ref();
+    let circuit = ConvertCircuit::new(public, private);
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    // For why this is ok, see `generate_test_parameters`.
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
+}
 
 /// A circuit that converts a private amount of one asset into another, by some rate.
 #[derive(Clone, Debug)]
@@ -19,23 +87,27 @@ pub struct ConvertCircuit {
     /// A randomizer for the commitment.
     balance_blinding: Fr,
     /// The source asset.
-    pub from: asset::Id,
+    from: asset::Id,
     /// The target asset
-    pub to: asset::Id,
+    to: asset::Id,
     /// The conversion rate from source to target.
-    pub rate: U128x128,
+    rate: U128x128,
     /// A commitment to a balance of `-amount[from] + (rate * amount)[to]`.
-    pub balance_commitment: balance::Commitment,
+    balance_commitment: balance::Commitment,
 }
 
 impl ConvertCircuit {
-    pub fn new(
-        amount: Amount,
-        balance_blinding: Fr,
-        balance_commitment: balance::Commitment,
-        from: asset::Id,
-        to: asset::Id,
-        rate: U128x128,
+    fn new(
+        ConvertProofPublic {
+            from,
+            to,
+            rate,
+            balance_commitment,
+        }: ConvertProofPublic,
+        ConvertProofPrivate {
+            amount,
+            balance_blinding,
+        }: ConvertProofPrivate,
     ) -> Self {
         Self {
             amount,
@@ -109,6 +181,107 @@ impl DummyWitness for ConvertCircuit {
             to,
             rate,
             balance_commitment,
+        }
+    }
+}
+
+/// A proof that one asset was correctly converted into another.
+///
+/// This checks that: `COMMITMENT = COMMIT(-amount[FROM] + (RATE * amount)[TO])`,
+/// where `amount` is private, and other variables are public.
+#[derive(Clone, Debug)]
+pub struct ConvertProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
+
+impl ConvertProof {
+    /// Generate a [`ConvertProof`]
+    pub fn prove(
+        blinding_r: Fq,
+        blinding_s: Fq,
+        pk: &ProvingKey<Bls12_377>,
+        public: ConvertProofPublic,
+        private: ConvertProofPrivate,
+    ) -> Result<Self> {
+        let circuit = ConvertCircuit::new(public, private);
+        let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
+            circuit, pk, blinding_r, blinding_s,
+        )?;
+        let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
+        Proof::serialize_compressed(&proof, &mut proof_bytes[..]).expect("can serialize Proof");
+        Ok(Self(proof_bytes))
+    }
+
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.0), vk = ?vk.debug_id()))]
+    pub fn verify(
+        &self,
+        vk: &PreparedVerifyingKey<Bls12_377>,
+        public: ConvertProofPublic,
+    ) -> Result<()> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow!(e))?;
+
+        let mut public_inputs = Vec::new();
+        public_inputs.extend(
+            public
+                .from
+                .to_field_elements()
+                .ok_or_else(|| anyhow!("could not convert `from` asset ID to field elements"))?,
+        );
+        public_inputs.extend(
+            public
+                .to
+                .to_field_elements()
+                .ok_or_else(|| anyhow!("could not convert `to` asset ID to field elements"))?,
+        );
+        public_inputs.extend(
+            public
+                .rate
+                .to_field_elements()
+                .ok_or_else(|| anyhow!("could not convert exchange rate to field elements"))?,
+        );
+        public_inputs.extend(
+            public
+                .balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or_else(|| anyhow!("could not convert balance commitment to field elements"))?,
+        );
+
+        tracing::trace!(?public_inputs);
+        let start = std::time::Instant::now();
+        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+            vk,
+            public_inputs.as_slice(),
+            &proof,
+        )?;
+        tracing::debug!(?proof_result, elapsed = ?start.elapsed());
+        proof_result
+            .then_some(())
+            .ok_or_else(|| anyhow!("undelegate claim proof did not verify"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    prop_compose! {
+        fn arb_valid_convert_statement(balance_blinding: Fr)(amount in any::<u64>(), from_asset_id64 in any::<u64>(), to_asset_id64 in any::<u64>(), rate in any::<(u64, u128)>()) -> (ConvertProofPublic, ConvertProofPrivate) {
+            let rate = U128x128::ratio(u128::from(rate.0), rate.1).expect("the bounds will make this not overflow");
+            let from = asset::Id(Fq::from(from_asset_id64));
+            let to = asset::Id(Fq::from(to_asset_id64));
+            let amount = Amount::from(amount);
+            let balance = Balance::from(Value { asset_id: to, amount: rate.apply_to_amount(&amount).expect("the bounds will make this not overflow")}) - Value {asset_id: from, amount};
+            let public = ConvertProofPublic { from, to, rate, balance_commitment: balance.commit(balance_blinding) };
+            let private = ConvertProofPrivate { amount, balance_blinding };
+            (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn convert_proof_happy_path((public, private) in arb_valid_convert_statement(Fr::from(1u64))) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 }
