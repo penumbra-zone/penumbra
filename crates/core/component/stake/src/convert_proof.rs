@@ -61,7 +61,7 @@ impl r1cs::ConstraintSynthesizer<Fq> for ConvertCircuit {
 
         // Public Inputs
         let from = AssetIdVar::new_input(cs.clone(), || Ok(self.from))?;
-        let to = AssetIdVar::new_input(cs.clone(), || Ok(self.from))?;
+        let to = AssetIdVar::new_input(cs.clone(), || Ok(self.to))?;
         let rate = U128x128Var::new_input(cs.clone(), || Ok(self.rate))?;
         let balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
