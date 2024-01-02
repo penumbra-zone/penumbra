@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 268e09dabd00548b6ce748f76b5e39104c9161dfd105b4a993f525ca98bc05f2 # shrinks to validator_randomness = BigInt([17614246279131841307, 7571284855640941685, 13271551846766545027, 97259222361261000]), balance_blinding = BigInt([15203842769407007026, 13547731313853933246, 12820089889910798158, 300984408317658221]), value1_amount = 94, penalty_amount = 72

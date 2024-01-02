@@ -257,6 +257,18 @@ impl ConvertProof {
             .then_some(())
             .ok_or_else(|| anyhow!("undelegate claim proof did not verify"))
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for ConvertProof {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &[u8]) -> Result<Self> {
+        Ok(Self(value.try_into()?))
+    }
 }
 
 #[cfg(test)]

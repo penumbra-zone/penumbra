@@ -24,7 +24,7 @@ use penumbra_governance::DelegatorVoteCircuit;
 use penumbra_proof_params::generate_constraint_matrices;
 use penumbra_proto::tools::summoning::v1alpha1::{self as pb};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
-use penumbra_stake::UndelegateClaimCircuit;
+use penumbra_stake::ConvertCircuit;
 
 use rand_core::OsRng;
 
@@ -62,7 +62,7 @@ fn circuits() -> [ConstraintMatrices<F>; NUM_CIRCUITS] {
         generate_constraint_matrices::<SpendCircuit>(),
         generate_constraint_matrices::<OutputCircuit>(),
         generate_constraint_matrices::<DelegatorVoteCircuit>(),
-        generate_constraint_matrices::<UndelegateClaimCircuit>(),
+        generate_constraint_matrices::<ConvertCircuit>(),
         generate_constraint_matrices::<SwapCircuit>(),
         generate_constraint_matrices::<SwapClaimCircuit>(),
         generate_constraint_matrices::<NullifierDerivationCircuit>(),
