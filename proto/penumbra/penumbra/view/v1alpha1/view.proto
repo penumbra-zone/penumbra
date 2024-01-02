@@ -263,23 +263,6 @@ message BalancesResponse {
   core.asset.v1alpha1.Value balance = 2;
 }
 
-// Scaffolding for bearer-token authentication for the ViewService.
-message ViewAuthToken {
-  bytes inner = 1;
-}
-
-message ViewAuthRequest {
-  core.keys.v1alpha1.FullViewingKey fvk = 1;
-}
-
-message ViewAuthResponse {
-  ViewAuthToken token = 1;
-}
-
-service ViewAuthService {
-  rpc ViewAuth(ViewAuthRequest) returns (ViewAuthResponse);
-}
-
 // Requests sync status of the view service.
 message StatusRequest {
   // Identifies the wallet id to query.
