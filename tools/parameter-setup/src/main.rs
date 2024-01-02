@@ -18,7 +18,7 @@ use penumbra_proof_setup::single::{
     Phase2Contribution,
 };
 use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
-use penumbra_stake::UndelegateClaimCircuit;
+use penumbra_stake::ConvertCircuit;
 use rand_core::OsRng;
 
 fn generate_parameters<D: DummyWitness>() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
@@ -82,7 +82,7 @@ fn main() -> Result<()> {
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
     let (swapclaim_pk, swapclaim_vk) = generate_parameters::<SwapClaimCircuit>();
     write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
-    let (undelegateclaim_pk, undelegateclaim_vk) = generate_parameters::<UndelegateClaimCircuit>();
+    let (undelegateclaim_pk, undelegateclaim_vk) = generate_parameters::<ConvertCircuit>();
     write_params(
         &target_dir,
         "undelegateclaim",
