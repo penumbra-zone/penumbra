@@ -58,6 +58,13 @@ impl Penalty {
         )
     }
 
+    /// A rate representing how much of an asset remains after applying a penalty.
+    ///
+    /// e.g. a 1% penalty will yield a rate of 0.99 here.
+    pub fn kept_rate(&self) -> U128x128 {
+        self.0
+    }
+
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
         Self((self.0 * other.0).expect("compounding penalities will not overflow"))
@@ -65,10 +72,9 @@ impl Penalty {
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
     pub fn apply_to_amount(&self, amount: Amount) -> Amount {
-        self.apply_to(amount)
-            .round_down()
-            .try_into()
-            .expect("converting integral U128xU128 into Amount will succeed")
+        self.0
+            .apply_to_amount(&amount)
+            .expect("should not overflow, because penalty is <= 1")
     }
 
     /// Apply this `Penalty` to some fraction.

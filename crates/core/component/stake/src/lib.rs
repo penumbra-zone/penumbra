@@ -28,9 +28,10 @@ pub mod validator;
 pub use delegate::Delegate;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{
-    UndelegateClaim, UndelegateClaimBody, UndelegateClaimCircuit, UndelegateClaimPlan,
+    UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan,
     UndelegateClaimProof,
 };
+pub use convert_proof::ConvertCircuit;
 
 mod delegation_token;
 mod convert_proof;
