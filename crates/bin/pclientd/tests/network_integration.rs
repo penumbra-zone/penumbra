@@ -6,8 +6,13 @@
 //! where no tokens have been delegated, and the address with index 0
 //! was distributedp 1cube.
 
+use std::process::Command as StdCommand;
+
 use assert_cmd::cargo::CommandCargoExt;
 use futures::StreamExt;
+use tempfile::tempdir;
+use tokio::process::Command as TokioCommand;
+
 use pclientd::PclientdConfig;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_custody::soft_kms;
@@ -23,9 +28,6 @@ use penumbra_proto::{
     },
 };
 use penumbra_view::ViewClient;
-use std::process::Command as StdCommand;
-use tempfile::tempdir;
-use tokio::process::Command as TokioCommand;
 
 fn generate_config() -> anyhow::Result<PclientdConfig> {
     Ok(PclientdConfig {
@@ -83,7 +85,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
+        .status_stream()
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -220,7 +222,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
+        .status_stream()
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -317,7 +319,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // 6. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
-        .status_stream(test_keys::FULL_VIEWING_KEY.wallet_id())
+        .status_stream()
         .await?;
     while let Some(item) = status_stream.as_mut().next().await.transpose()? {
         tracing::debug!(?item);
@@ -325,10 +327,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // Ensure we can fetch the SwapRecord with the claimable swap.
     let _swap_record = (&mut view_client as &mut dyn ViewClient)
-        .swap_by_commitment(
-            test_keys::FULL_VIEWING_KEY.wallet_id(),
-            swap_plaintext.swap_commitment(),
-        )
+        .swap_by_commitment(swap_plaintext.swap_commitment())
         .await?;
 
     // 7. Prepare the swap claim

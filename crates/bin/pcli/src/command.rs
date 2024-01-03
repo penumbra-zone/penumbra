@@ -1,3 +1,13 @@
+pub use debug::DebugCmd;
+pub use init::InitCmd;
+pub use query::QueryCmd;
+pub use threshold::ThresholdCmd;
+pub use tx::TxCmd;
+pub use validator::ValidatorCmd;
+pub use view::ViewCmd;
+
+use self::ceremony::CeremonyCmd;
+
 mod ceremony;
 mod debug;
 mod init;
@@ -7,17 +17,6 @@ mod tx;
 mod utils;
 mod validator;
 mod view;
-
-pub use debug::DebugCmd;
-pub use init::InitCmd;
-pub use query::QueryCmd;
-pub use threshold::ThresholdCmd;
-pub use tx::TxCmd;
-pub use validator::ValidatorCmd;
-pub use view::transaction_hashes::TransactionHashesCmd;
-pub use view::ViewCmd;
-
-use self::ceremony::CeremonyCmd;
 
 // Note on display_order:
 //
