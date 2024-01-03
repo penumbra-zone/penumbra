@@ -17,8 +17,9 @@ use penumbra_proof_setup::single::{
     circuit_degree, combine, log::Hashable, transition, Phase1CRSElements, Phase1Contribution,
     Phase2Contribution,
 };
-use penumbra_shielded_pool::{NullifierDerivationCircuit, OutputCircuit, SpendCircuit};
-use penumbra_stake::ConvertCircuit;
+use penumbra_shielded_pool::{
+    ConvertCircuit, NullifierDerivationCircuit, OutputCircuit, SpendCircuit,
+};
 use rand_core::OsRng;
 
 fn generate_parameters<D: DummyWitness>() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
