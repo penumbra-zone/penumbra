@@ -36,16 +36,6 @@ service ViewProtocolService {
   // Returns a stream of `NotesForVotingResponse`s.
   rpc NotesForVoting(NotesForVotingRequest) returns (stream NotesForVotingResponse);
 
-  // Returns authentication paths for the given note commitments.
-  //
-  // This method takes a batch of input commitments, rather than just one, so
-  // that the client can get a consistent set of authentication paths to a
-  // common root.  (Otherwise, if a client made multiple requests, the wallet
-  // service could have advanced the state commitment tree state between queries).
-  rpc Witness(WitnessRequest) returns (WitnessResponse);
-
-  rpc WitnessAndBuild(WitnessAndBuildRequest) returns (WitnessAndBuildResponse);
-
   // Queries for assets.
   // Returns a stream of `AssetsResponse`s.
   rpc Assets(AssetsRequest) returns (stream AssetsResponse);
@@ -94,17 +84,46 @@ service ViewProtocolService {
   // Returns a stream of `TransactionInfoResponse`s.
   rpc TransactionInfo(TransactionInfoRequest) returns (stream TransactionInfoResponse);
 
-  // Query for a transaction plan
-  rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
-
-  // Broadcast a transaction to the network, optionally waiting for full confirmation.
-  rpc BroadcastTransaction(BroadcastTransactionRequest) returns (BroadcastTransactionResponse);
-
   // Query for owned position IDs for the given trading pair and in the given position state.
   rpc OwnedPositionIds(OwnedPositionIdsRequest) returns (stream OwnedPositionIdsResponse);
 
+  // Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
+  rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
+
+  // Returns authentication paths for the given note commitments.
+  //
+  // This method takes a batch of input commitments, rather than just one, so
+  // that the client can get a consistent set of authentication paths to a
+  // common root.  (Otherwise, if a client made multiple requests, the wallet
+  // service could have advanced the state commitment tree state between queries).
+  rpc Witness(WitnessRequest) returns (WitnessResponse);
+
+  // Like `Witness`, but immediately uses the witness data to build (prove) the transaction.
+  //
+  // This method is useful for clients that can't easily do proving themselves, either because
+  // they're not written in Rust and can't easily import the proving code, or because they don't
+  // have access to proving keys, or some other reason.
+  //
+  // This method streams status updates to the caller before finally returning the transaction.
+  rpc WitnessAndBuild(WitnessAndBuildRequest) returns (stream WitnessAndBuildResponse);
+
   // Authorize a transaction plan and build the transaction.
-  rpc AuthorizeAndBuild(AuthorizeAndBuildRequest) returns (AuthorizeAndBuildResponse);
+  //
+  // This method is only supported on view servers that have access to a custody
+  // service.  Otherwise, it will fail.
+  //
+  // Penumbra's transaction authorization mechanism is designed so transactions
+  // can be signed and built (proved) concurrently. This allows implementations
+  // to, e.g., start proving optimistically while presenting the user with an
+  // approval dialog.
+  //
+  // This method streams status updates to the caller before finally returning the transaction.
+  rpc AuthorizeAndBuild(AuthorizeAndBuildRequest) returns (stream AuthorizeAndBuildResponse);
+
+  // Broadcast a transaction to the network, optionally waiting for full confirmation.
+  //
+  // This method streams status updates to the caller before finally returning confirmation.
+  rpc BroadcastTransaction(BroadcastTransactionRequest) returns (stream BroadcastTransactionResponse);
 }
 
 message AuthorizeAndBuildRequest {
@@ -115,8 +134,20 @@ message AuthorizeAndBuildRequest {
 }
 
 message AuthorizeAndBuildResponse {
-  // The transaction that was built.
-  core.transaction.v1alpha1.Transaction transaction = 1;
+  // Signals that building is in progress.
+  message BuildProgress {
+    // An approximate progress of the build, from 0 to 1.
+    float progress = 1;
+  }
+  // Signals that the transaction is complete.
+  message Complete {
+    // The finished transaction.
+    penumbra.core.transaction.v1alpha1.Transaction transaction = 1;
+  }
+  oneof status {
+    BuildProgress build_progress = 1;
+    Complete complete = 2;
+  }
 }
 
 message BroadcastTransactionRequest {
@@ -127,11 +158,24 @@ message BroadcastTransactionRequest {
 }
 
 message BroadcastTransactionResponse {
-  // The hash of the transaction that was broadcast.
-  core.txhash.v1alpha1.TransactionId id = 1;
-  // The height in which the transaction was detected as included in the chain, if any.
-  // Will not be included unless await_detection was true.
-  uint64 detection_height = 2;
+  // Signals that the transaction was broadcast successfully (but has not been confirmed).
+  message BroadcastSuccess {
+    // The hash of the transaction that was broadcast.
+    core.txhash.v1alpha1.TransactionId id = 1;
+  }
+  // Signals that the transaction has been confirmed on-chain and detected by the view server.
+  //
+  // Will not be sent unless await_detection was true.
+  message Confirmed {
+    // The hash of the transaction that was broadcast.
+    core.txhash.v1alpha1.TransactionId id = 1;
+    // The height in which the transaction was detected as included in the chain, if any.
+    uint64 detection_height = 2;
+  }
+  oneof status {
+    BroadcastSuccess broadcast_success = 1;
+    Confirmed confirmed = 2;
+  }
 }
 
 message TransactionPlannerRequest {
@@ -330,7 +374,20 @@ message WitnessAndBuildRequest {
 }
 
 message WitnessAndBuildResponse {
-  penumbra.core.transaction.v1alpha1.Transaction transaction = 1;
+  // Signals that building is in progress.
+  message BuildProgress {
+    // An approximate progress of the build, from 0 to 1.
+    float progress = 1;
+  }
+  // Signals that the transaction is complete.
+  message Complete {
+    // The finished transaction.
+    penumbra.core.transaction.v1alpha1.Transaction transaction = 1;
+  }
+  oneof status {
+    BuildProgress build_progress = 1;
+    Complete complete = 2;
+  }
 }
 
 // Requests all assets known to the view service.
