@@ -7,8 +7,8 @@ use decaf377::{Fq, Fr};
 use penumbra_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proof_params::VerifyingKeyExt;
+use penumbra_shielded_pool::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 
-use crate::convert_proof::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 use crate::Penalty;
 
 #[derive(Clone, Debug)]
@@ -92,7 +92,8 @@ mod tests {
     use proptest::prelude::*;
     use rand_core::OsRng;
 
-    use crate::{convert_proof::ConvertCircuit, IdentityKey, Penalty, UnbondingToken};
+    use crate::{IdentityKey, Penalty, UnbondingToken};
+    use penumbra_shielded_pool::ConvertCircuit;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

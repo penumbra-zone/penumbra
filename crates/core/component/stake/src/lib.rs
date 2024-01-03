@@ -25,14 +25,12 @@ pub mod undelegate;
 pub mod undelegate_claim;
 pub mod validator;
 
-pub use convert_proof::ConvertCircuit;
 pub use delegate::Delegate;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{
     UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan, UndelegateClaimProof,
 };
 
-mod convert_proof;
 mod delegation_token;
 mod governance_key;
 mod identity_key;
