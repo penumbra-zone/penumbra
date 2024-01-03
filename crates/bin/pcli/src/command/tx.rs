@@ -296,7 +296,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*from),
                     )
                     .await
@@ -319,7 +318,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -327,7 +325,6 @@ impl TxCmd {
             }
             TxCmd::Sweep => loop {
                 let plans = plan::sweep(
-                    app.config.full_viewing_key.wallet_id(),
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -381,9 +378,8 @@ impl TxCmd {
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = planner
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap transaction")?;
 
@@ -402,7 +398,7 @@ impl TxCmd {
                 // Fetch the SwapRecord with the claimable swap.
                 let swap_record = app
                     .view()
-                    .swap_by_commitment(wallet_id, swap_plaintext.swap_commitment())
+                    .swap_by_commitment(swap_plaintext.swap_commitment())
                     .await?;
 
                 let asset_cache = app.view().assets().await?;
@@ -425,8 +421,6 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
-
                 let params = app
                     .view
                     .as_mut()
@@ -445,7 +439,7 @@ impl TxCmd {
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
                     })
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap claim")?;
 
@@ -474,10 +468,9 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
-                let wallet_id = app.config.full_viewing_key.wallet_id().clone();
                 let plan = planner
                     .delegate(unbonded_amount.value(), rate_data)
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
 
@@ -518,7 +511,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await
@@ -527,15 +519,13 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::UndelegateClaim {} => {
-                let wallet_id = app.config.full_viewing_key.wallet_id(); // this should be optional? or saved in the client statefully?
-
                 let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let current_height = view.status(wallet_id).await?.full_sync_height;
+                let current_height = view.status().await?.full_sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
@@ -549,7 +539,7 @@ impl TxCmd {
 
                 // Query the view client for the list of undelegations that are ready to be claimed.
                 // We want to claim them into the same address index that currently holds the tokens.
-                let notes = view.unspent_notes_by_address_and_asset(wallet_id).await?;
+                let notes = view.unspent_notes_by_address_and_asset().await?;
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
                     for (token, notes) in
@@ -617,7 +607,6 @@ impl TxCmd {
                                 app.view
                                     .as_mut()
                                     .context("view service must be initialized")?,
-                                app.config.full_viewing_key.wallet_id(),
                                 address_index,
                             )
                             .await?;
@@ -649,7 +638,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -668,7 +656,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -748,7 +735,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -813,7 +799,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -836,7 +821,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         source,
                     )
                     .await?;
@@ -909,7 +893,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -929,7 +912,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -970,7 +952,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1047,7 +1028,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1100,7 +1080,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;

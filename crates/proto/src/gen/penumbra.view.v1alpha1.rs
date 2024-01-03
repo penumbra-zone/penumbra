@@ -90,9 +90,6 @@ pub struct TransactionPlannerRequest {
     /// If present, only spends funds from the given account.
     #[prost(message, optional, tag = "4")]
     pub source: ::core::option::Option<super::super::core::keys::v1alpha1::AddressIndex>,
-    /// Optionally identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
     pub outputs: ::prost::alloc::vec::Vec<transaction_planner_request::Output>,
@@ -487,11 +484,7 @@ impl ::prost::Name for BalancesResponse {
 /// Requests sync status of the view service.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StatusRequest {
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
-}
+pub struct StatusRequest {}
 impl ::prost::Name for StatusRequest {
     const NAME: &'static str = "StatusRequest";
     const PACKAGE: &'static str = "penumbra.view.v1alpha1";
@@ -523,11 +516,7 @@ impl ::prost::Name for StatusResponse {
 /// Requests streaming updates on the sync height until the view service is synchronized.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StatusStreamRequest {
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
-}
+pub struct StatusStreamRequest {}
 impl ::prost::Name for StatusStreamRequest {
     const NAME: &'static str = "StatusStreamRequest";
     const PACKAGE: &'static str = "penumbra.view.v1alpha1";
@@ -581,9 +570,6 @@ pub struct NotesRequest {
     pub amount_to_spend: ::core::option::Option<
         super::super::core::num::v1alpha1::Amount,
     >,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for NotesRequest {
     const NAME: &'static str = "NotesRequest";
@@ -604,9 +590,6 @@ pub struct NotesForVotingRequest {
     pub address_index: ::core::option::Option<
         super::super::core::keys::v1alpha1::AddressIndex,
     >,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for NotesForVotingRequest {
     const NAME: &'static str = "NotesForVotingRequest";
@@ -628,9 +611,6 @@ pub struct WitnessRequest {
     pub transaction_plan: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for WitnessRequest {
     const NAME: &'static str = "WitnessRequest";
@@ -828,9 +808,6 @@ pub struct NoteByCommitmentRequest {
     /// If set to true, waits to return until the requested note is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for NoteByCommitmentRequest {
     const NAME: &'static str = "NoteByCommitmentRequest";
@@ -862,9 +839,6 @@ pub struct SwapByCommitmentRequest {
     /// If set to true, waits to return until the requested swap is detected.
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for SwapByCommitmentRequest {
     const NAME: &'static str = "SwapByCommitmentRequest";
@@ -888,11 +862,7 @@ impl ::prost::Name for SwapByCommitmentResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UnclaimedSwapsRequest {
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "1")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
-}
+pub struct UnclaimedSwapsRequest {}
 impl ::prost::Name for UnclaimedSwapsRequest {
     const NAME: &'static str = "UnclaimedSwapsRequest";
     const PACKAGE: &'static str = "penumbra.view.v1alpha1";
@@ -922,9 +892,6 @@ pub struct NullifierStatusRequest {
     >,
     #[prost(bool, tag = "3")]
     pub await_detection: bool,
-    /// Identifies the wallet id to query.
-    #[prost(message, optional, tag = "14")]
-    pub wallet_id: ::core::option::Option<super::super::core::keys::v1alpha1::WalletId>,
 }
 impl ::prost::Name for NullifierStatusRequest {
     const NAME: &'static str = "NullifierStatusRequest";
@@ -1192,9 +1159,6 @@ pub mod view_protocol_service_client {
     /// transaction-related actions, to request data from a view service, which is
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
-    ///
-    /// View protocol requests optionally include the wallet id, used to
-    /// identify which set of data to query.
     #[derive(Debug, Clone)]
     pub struct ViewProtocolServiceClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -2316,9 +2280,6 @@ pub mod view_protocol_service_server {
     /// transaction-related actions, to request data from a view service, which is
     /// responsible for synchronizing and scanning the public chain state with one or
     /// more full viewing keys.
-    ///
-    /// View protocol requests optionally include the wallet id, used to
-    /// identify which set of data to query.
     #[derive(Debug)]
     pub struct ViewProtocolServiceServer<T: ViewProtocolService> {
         inner: _Inner<T>,

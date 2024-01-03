@@ -1,8 +1,10 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
+
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::CommitmentSource;
 use penumbra_view::ViewClient;
+
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
     #[clap(long)]
@@ -22,9 +24,7 @@ impl BalanceCmd {
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
 
-        let notes = view
-            .unspent_notes_by_account_and_asset(fvk.wallet_id())
-            .await?;
+        let notes = view.unspent_notes_by_account_and_asset().await?;
 
         if self.by_note {
             table.set_header(vec!["Account", "Value", "Source"]);

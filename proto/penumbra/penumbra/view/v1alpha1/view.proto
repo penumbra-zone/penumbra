@@ -21,9 +21,6 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 // transaction-related actions, to request data from a view service, which is
 // responsible for synchronizing and scanning the public chain state with one or
 // more full viewing keys.
-//
-// View protocol requests optionally include the wallet id, used to
-// identify which set of data to query.
 service ViewProtocolService {
   // Get current status of chain sync
   rpc Status(StatusRequest) returns (StatusResponse);
@@ -148,9 +145,6 @@ message TransactionPlannerRequest {
   // If present, only spends funds from the given account.
   core.keys.v1alpha1.AddressIndex source = 4;
 
-  // Optionally identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
-
   // Request contents
   repeated Output outputs = 20;
   repeated Swap swaps = 30;
@@ -264,10 +258,7 @@ message BalancesResponse {
 }
 
 // Requests sync status of the view service.
-message StatusRequest {
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
-}
+message StatusRequest {}
 
 // Returns the status of the view service and whether it is synchronized with the chain state.
 message StatusResponse {
@@ -280,10 +271,7 @@ message StatusResponse {
 }
 
 // Requests streaming updates on the sync height until the view service is synchronized.
-message StatusStreamRequest {
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
-}
+message StatusStreamRequest {}
 
 // A streaming sync status update
 message StatusStreamResponse {
@@ -313,9 +301,6 @@ message NotesRequest {
   //
   // Ignored if `asset_id` is unset or if `include_spent` is set.
   core.num.v1alpha1.Amount amount_to_spend = 6;
-
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 // A query for notes to be used for voting on a proposal.
@@ -325,9 +310,6 @@ message NotesForVotingRequest {
 
   // If set, only return notes with the specified asset id.
   core.keys.v1alpha1.AddressIndex address_index = 3;
-
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 message WitnessRequest {
@@ -336,9 +318,6 @@ message WitnessRequest {
 
   // The transaction plan to witness
   core.transaction.v1alpha1.TransactionPlan transaction_plan = 3;
-
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 message WitnessResponse {
@@ -403,8 +382,6 @@ message NoteByCommitmentRequest {
   crypto.tct.v1alpha1.StateCommitment note_commitment = 2;
   // If set to true, waits to return until the requested note is detected.
   bool await_detection = 3;
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 message NoteByCommitmentResponse {
@@ -415,18 +392,13 @@ message SwapByCommitmentRequest {
   crypto.tct.v1alpha1.StateCommitment swap_commitment = 2;
   // If set to true, waits to return until the requested swap is detected.
   bool await_detection = 3;
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 message SwapByCommitmentResponse {
   SwapRecord swap = 1;
 }
 
-message UnclaimedSwapsRequest {
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 1;
-}
+message UnclaimedSwapsRequest {}
 
 message UnclaimedSwapsResponse {
   SwapRecord swap = 1;
@@ -435,8 +407,6 @@ message UnclaimedSwapsResponse {
 message NullifierStatusRequest {
   core.component.sct.v1alpha1.Nullifier nullifier = 2;
   bool await_detection = 3;
-  // Identifies the wallet id to query.
-  core.keys.v1alpha1.WalletId wallet_id = 14;
 }
 
 message NullifierStatusResponse {

@@ -1,5 +1,9 @@
-use crate::App;
 use anyhow::{anyhow, Context, Result};
+use rand_core::OsRng;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use url::Url;
+
 use penumbra_asset::Value;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
@@ -18,11 +22,9 @@ use penumbra_proto::{
     view::v1alpha1::GasPricesRequest,
 };
 use penumbra_transaction::memo::MemoPlaintext;
-use penumbra_view::Planner;
-use rand_core::OsRng;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::ReceiverStream;
-use url::Url;
+use penumbra_view::{Planner, ViewClient};
+
+use crate::App;
 
 fn max_message_size(phase: u8) -> usize {
     match phase {
@@ -66,7 +68,6 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
             app.view
                 .as_mut()
                 .context("view service must be initialized")?,
-            app.config.full_viewing_key.wallet_id(),
             from,
         )
         .await
