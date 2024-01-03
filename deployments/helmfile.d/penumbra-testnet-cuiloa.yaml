@@ -17,10 +17,10 @@ releases:
       - ingressRoute:
           enabled: false
       - image:
-          tag: main
+          tag: "v0.64.1"
       - persistence:
           enabled: true
-          size: 50G
+          size: 200G
       - cometbft:
           config:
             indexer: psql
