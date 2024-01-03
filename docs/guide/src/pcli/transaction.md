@@ -195,14 +195,14 @@ during setup.
   "ordering": 1,
   "counterparty": {
     "port_id": "transfer",
-    "channel_id": "channel-4544"
+    "channel_id": "channel-4687"
   },
   "connection_hops": [
-    "connection-0"
+    "connection-1"
   ],
   "version": "ics20-1",
   "port_id": "transfer",
-  "channel_id": "channel-0"
+  "channel_id": "channel-1"
 }
 ```
 
