@@ -3466,6 +3466,9 @@ impl serde::Serialize for SpendableNoteRecord {
         if self.source.is_some() {
             len += 1;
         }
+        if self.return_address.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.SpendableNoteRecord", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
@@ -3494,6 +3497,9 @@ impl serde::Serialize for SpendableNoteRecord {
         if let Some(v) = self.source.as_ref() {
             struct_ser.serialize_field("source", v)?;
         }
+        if let Some(v) = self.return_address.as_ref() {
+            struct_ser.serialize_field("returnAddress", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -3516,6 +3522,8 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
             "heightSpent",
             "position",
             "source",
+            "return_address",
+            "returnAddress",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3528,6 +3536,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
             HeightSpent,
             Position,
             Source,
+            ReturnAddress,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3557,6 +3566,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                             "heightSpent" | "height_spent" => Ok(GeneratedField::HeightSpent),
                             "position" => Ok(GeneratedField::Position),
                             "source" => Ok(GeneratedField::Source),
+                            "returnAddress" | "return_address" => Ok(GeneratedField::ReturnAddress),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3584,6 +3594,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                 let mut height_spent__ = None;
                 let mut position__ = None;
                 let mut source__ = None;
+                let mut return_address__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
@@ -3640,6 +3651,12 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                             }
                             source__ = map_.next_value()?;
                         }
+                        GeneratedField::ReturnAddress => {
+                            if return_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("returnAddress"));
+                            }
+                            return_address__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(SpendableNoteRecord {
@@ -3651,6 +3668,7 @@ impl<'de> serde::Deserialize<'de> for SpendableNoteRecord {
                     height_spent: height_spent__.unwrap_or_default(),
                     position: position__.unwrap_or_default(),
                     source: source__,
+                    return_address: return_address__,
                 })
             }
         }

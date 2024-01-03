@@ -1198,6 +1198,11 @@ pub struct SpendableNoteRecord {
     pub source: ::core::option::Option<
         super::super::core::component::sct::v1alpha1::CommitmentSource,
     >,
+    /// The sender's return address, if known.
+    #[prost(message, optional, tag = "9")]
+    pub return_address: ::core::option::Option<
+        super::super::core::keys::v1alpha1::AddressView,
+    >,
 }
 impl ::prost::Name for SpendableNoteRecord {
     const NAME: &'static str = "SpendableNoteRecord";

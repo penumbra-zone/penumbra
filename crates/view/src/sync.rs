@@ -149,6 +149,7 @@ pub async fn scan_block(
                             nullifier,
                             position,
                             source,
+                            return_address: None,
                         },
                     );
                 }
