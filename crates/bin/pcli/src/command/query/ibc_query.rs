@@ -117,7 +117,8 @@ impl IbcCmd {
             IbcCmd::Channel { port, channel_id } => {
                 // TODO channel lookup should be updated to use the ibc query logic.
                 // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/channel/v1/query_client/struct.QueryClient.html#method.channel
-                let key = format!("channelEnds/ports/{port}/channels/channel-{channel_id}");
+                let key =
+                    format!("ibc-data/channelEnds/ports/{port}/channels/channel-{channel_id}");
                 let value = client
                     .key_value(KeyValueRequest {
                         key,
