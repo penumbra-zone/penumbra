@@ -115,7 +115,7 @@ pub mod frontier {
         item::Item,
         leaf::Leaf,
         node::Node,
-        tier::{Nested, Tier},
+        tier::Tier,
         top::{Top, TrackForgotten},
     };
 }

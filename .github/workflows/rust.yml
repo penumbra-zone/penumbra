@@ -15,13 +15,14 @@ jobs:
         uses: taiki-e/install-action@nextest
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Run cargo check
+      - name: Run cargo check, failing on warnings
+        # The benchmarks don't pass lint; soon!
+        # run: cargo check --release --all-targets
         run: cargo check --release
         env:
           # The `-D warnings` option causes an error on warnings;
-          # but it caused apparently spurious warnings, so it was disabled.
           # we must duplicate the rustflags from `.cargo/config.toml`.
-          RUSTFLAGS: "--cfg tokio_unstable"
+          RUSTFLAGS: "-D warnings --cfg tokio_unstable"
 
       # If a dependency was modified, Cargo.lock may flap if not committed.
       - name: Check for diffs
