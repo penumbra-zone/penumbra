@@ -155,6 +155,7 @@ impl ViewServer {
                                 nullifier,
                                 position: note_position,
                                 source,
+                                return_address: None,
                             };
                             self.notes
                                 .insert(payload.note_commitment, note_record.clone());
@@ -239,6 +240,7 @@ impl ViewServer {
                                 nullifier,
                                 position,
                                 source,
+                                return_address: None,
                             };
                             self.notes
                                 .insert(spendable_note.note_commitment, spendable_note.clone());

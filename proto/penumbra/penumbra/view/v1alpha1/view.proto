@@ -525,6 +525,8 @@ message SpendableNoteRecord {
   uint64 position = 7;
   // The source of the note
   core.component.sct.v1alpha1.CommitmentSource source = 8;
+  // The sender's return address, if known.
+  core.keys.v1alpha1.AddressView return_address = 9;
 }
 
 message SwapRecord {
