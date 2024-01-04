@@ -18,7 +18,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
 use ibc_types::path::{
     AckPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-    ReceiptPath, SeqRecvPath,
+    ReceiptPath, SeqRecvPath, SeqSendPath,
 };
 use ibc_types::DomainType;
 
@@ -26,7 +26,6 @@ use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
 
 use ibc_types::core::connection::ConnectionId;
 use prost::Message;
-use sha2::digest::generic_array::functional::MappedSequence;
 
 use std::str::FromStr;
 
@@ -719,8 +718,36 @@ impl ConsensusQuery for IbcQuery {
     /// NextSequenceSend returns the next send sequence for a given channel.
     async fn next_sequence_send(
         &self,
-        _request: tonic::Request<QueryNextSequenceSendRequest>,
+        request: tonic::Request<QueryNextSequenceSendRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceSendResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (next_send_sequence, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqSendPath::new(&port_id, &channel_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel: {e}")))?;
+
+        let next_send_sequence = next_send_sequence
+            .map(|seq_bytes| u64::from_be_bytes(seq_bytes.try_into().expect("invalid sequence")))
+            .ok_or_else(|| tonic::Status::aborted("next receive sequence not found"))?;
+
+        Ok(tonic::Response::new(QueryNextSequenceSendResponse {
+            next_sequence_send: next_send_sequence,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
 }
