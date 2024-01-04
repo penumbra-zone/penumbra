@@ -26,6 +26,9 @@ pub mod output;
 pub mod spend;
 
 pub use convert::{ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic};
-pub use nullifier_derivation::{NullifierDerivationCircuit, NullifierDerivationProof};
+pub use nullifier_derivation::{
+    NullifierDerivationCircuit, NullifierDerivationProof, NullifierDerivationProofPrivate,
+    NullifierDerivationProofPublic,
+};
 pub use output::{Output, OutputCircuit, OutputPlan, OutputProof, OutputView};
 pub use spend::{Spend, SpendCircuit, SpendPlan, SpendProof, SpendView};

@@ -23,7 +23,10 @@ use penumbra_proof_params::{
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
-use penumbra_shielded_pool::{NullifierDerivationProof, OutputProof, SpendProof};
+use penumbra_shielded_pool::{
+    NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
+    OutputProof, SpendProof,
+};
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
 use rand_core::OsRng;
@@ -387,11 +390,16 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
     let position = state_commitment_proof.position();
     let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-    let proof =
-        NullifierDerivationProof::prove(&mut rng, pk, position, note.clone(), nk, nullifier)
-            .expect("can create proof");
+    let public = NullifierDerivationProofPublic {
+        position,
+        note_commitment,
+        nullifier,
+    };
+    let private = NullifierDerivationProofPrivate { nk };
+    let proof = NullifierDerivationProof::prove(&mut rng, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, position, note.commit(), nullifier);
+    let proof_result = proof.verify(vk, public);
 
     assert!(proof_result.is_ok());
 }
