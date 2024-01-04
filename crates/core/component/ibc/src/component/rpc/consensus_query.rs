@@ -15,8 +15,8 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
-use ibc_proto::ibc::core::client::v1::Height;
-use ibc_types::path::ChannelEndPath;
+use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
+use ibc_types::path::{ChannelEndPath, ClientStatePath};
 use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
@@ -26,7 +26,7 @@ use prost::Message;
 
 use std::str::FromStr;
 
-use crate::component::ChannelStateReadExt;
+use crate::component::{ChannelStateReadExt, ConnectionStateReadExt};
 
 use super::IbcQuery;
 
@@ -178,9 +178,81 @@ impl ConsensusQuery for IbcQuery {
     /// with the provided channel identifiers.
     async fn channel_client_state(
         &self,
-        _request: tonic::Request<QueryChannelClientStateRequest>,
+        request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+
+        // 1. get the channel
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let channel = snapshot
+            .get_channel(&channel_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?
+            .ok_or("unable to get channel")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        // 2. get the connection for the channel
+        let connection_id = channel
+            .connection_hops
+            .first()
+            .ok_or("channel has no connection hops")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get connection for channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?.ok_or("unable to get connection").map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?;
+
+        // 3. get the client state for the connection
+        let (client_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientStatePath::new(&connection.client_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let client_state_any = client_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        let identified_client_state = IdentifiedClientState {
+            client_id: connection.client_id.clone().to_string(),
+            client_state: client_state_any,
+        };
+
+        Ok(tonic::Response::new(QueryChannelClientStateResponse {
+            identified_client_state: Some(identified_client_state),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// ChannelConsensusState queries for the consensus state for the channel
     /// associated with the provided channel identifiers.
