@@ -140,7 +140,7 @@ pcli validator identity
 And then delegate some amount of `penumbra` to it:
 
 ```console
-pcli tx delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
+pcli tx delegate 1penumbra --to [YOUR_VALIDATOR_IDENTITY_KEY]
 ```
 
 You should then see your balance of `penumbra` decreased and that you have received some amount of delegation tokens for your validator:
