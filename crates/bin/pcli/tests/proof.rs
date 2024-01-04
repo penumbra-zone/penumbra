@@ -10,7 +10,9 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_governance::DelegatorVoteProof;
+use penumbra_governance::{
+    DelegatorVoteProof, DelegatorVoteProofPrivate, DelegatorVoteProofPublic,
+};
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::{
@@ -133,24 +135,25 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
 
-    let proof = DelegatorVoteProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
+    let public = DelegatorVoteProofPublic {
+        anchor,
+        balance_commitment,
+        nullifier: nf,
+        rk,
+        start_position,
+    };
+    let private = DelegatorVoteProofPrivate {
         state_commitment_proof,
         note,
+        v_blinding: Fr::from(0u64),
         spend_auth_randomizer,
         ak,
         nk,
-        anchor,
-        balance_commitment,
-        nf,
-        rk,
-        start_position,
-    )
-    .expect("can create proof");
+    };
+    let proof = DelegatorVoteProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk, start_position);
+    let proof_result = proof.verify(vk, public);
     assert!(proof_result.is_ok());
 }
 
