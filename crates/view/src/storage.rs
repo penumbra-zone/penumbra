@@ -369,9 +369,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
                     WHERE notes.note_commitment = x'{}'",
                     hex::encode(note_commitment.0.to_bytes())
                 ))?
@@ -790,9 +792,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
                     WHERE hex(spendable_notes.nullifier) = \"{}\"",
                     hex::encode_upper(nullifier_bytes)
                 ))?
@@ -963,9 +967,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                 FROM notes
                 JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
                 WHERE spendable_notes.height_spent IS {spent_clause}
                 AND notes.asset_id IS {asset_clause}
                 AND spendable_notes.address_index IS {address_clause}"
@@ -1670,6 +1676,8 @@ impl Storage {
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         let pool = self.pool.clone();
 
+        // NOTE on SUBSTR:
+        // The `source` field is proto-encoded, if it's a tx hash, that will involve a 4-byte prefix 0x0a220a20
         let query = "SELECT notes.note_commitment,
             spendable_notes.height_created,
             notes.address,
@@ -1683,7 +1691,7 @@ impl Storage {
             spendable_notes.position
             FROM notes
             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-            JOIN tx ON spendable_notes.source = tx.tx_hash
+            JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
             WHERE tx.return_address = ?1";
 
         let return_address = return_address.to_vec();
