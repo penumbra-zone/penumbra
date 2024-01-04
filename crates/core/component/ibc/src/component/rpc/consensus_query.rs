@@ -17,7 +17,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
 use ibc_types::path::{
-    ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ReceiptPath,
+    AckPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ReceiptPath,
 };
 use ibc_types::DomainType;
 
@@ -485,10 +485,41 @@ impl ConsensusQuery for IbcQuery {
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
         &self,
-        _request: tonic::Request<QueryPacketAcknowledgementRequest>,
+        request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (acknowledgement, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        AckPath::new(&port_id, &channel_id, request.get_ref().sequence.into())
+                            .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!("couldn't get packet acknowledgement: {e}"))
+            })?;
+
+        let acknowledgement =
+            acknowledgement.ok_or_else(|| tonic::Status::aborted("acknowledgement not found"))?;
+
+        Ok(tonic::Response::new(QueryPacketAcknowledgementResponse {
+            acknowledgement,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketAcknowledgements returns all the packet acknowledgements associated
     /// with a channel.
