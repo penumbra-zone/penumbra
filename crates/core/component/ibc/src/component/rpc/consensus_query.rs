@@ -16,13 +16,14 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
-use ibc_types::path::{ChannelEndPath, ClientConsensusStatePath, ClientStatePath};
+use ibc_types::path::{ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath};
 use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
 
 use ibc_types::core::connection::ConnectionId;
 use prost::Message;
+use sha2::digest::generic_array::functional::MappedSequence;
 
 use std::str::FromStr;
 
@@ -344,9 +345,43 @@ impl ConsensusQuery for IbcQuery {
     /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
         &self,
-        _request: tonic::Request<QueryPacketCommitmentRequest>,
+        request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+
+        let port_id = PortId::from_str(&request.get_ref().port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+        let channel_id = ChannelId::from_str(&request.get_ref().channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+
+        let (commitment, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        CommitmentPath::new(
+                            &port_id,
+                            &channel_id,
+                            request.get_ref().sequence.into(),
+                        )
+                        .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get packet commitment: {e}")))?;
+
+        let commitment =
+            commitment.ok_or_else(|| tonic::Status::aborted("commitment not found"))?;
+
+        Ok(tonic::Response::new(QueryPacketCommitmentResponse {
+            commitment,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketCommitments returns all the packet commitments hashes associated
     /// with a channel.
