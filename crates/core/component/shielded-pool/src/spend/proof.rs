@@ -87,8 +87,7 @@ pub struct SpendCircuit {
 }
 
 impl SpendCircuit {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    fn new(
         SpendProofPublic {
             anchor,
             balance_commitment,
@@ -249,7 +248,6 @@ impl DummyWitness for SpendCircuit {
 pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SpendProof {
-    #![allow(clippy::too_many_arguments)]
     /// Generate a `SpendProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
     pub fn prove(

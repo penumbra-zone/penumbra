@@ -6,7 +6,7 @@ use ark_relations::r1cs::{
 use decaf377::Fq;
 use penumbra_asset::Value;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
+use penumbra_proof_params::{DummyWitness, NULLIFIER_DERIVATION_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{
     Note, NullifierDerivationProofPrivate, NullifierDerivationProofPublic, Rseed,
@@ -58,7 +58,7 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
         b.iter(|| prove(public.clone(), private.clone()))
     });
 
-    let circuit = NullifierDerivationCircuit::new(public, private);
+    let circuit = NullifierDerivationCircuit::with_dummy_witness();
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);
     cs.set_mode(SynthesisMode::Setup);

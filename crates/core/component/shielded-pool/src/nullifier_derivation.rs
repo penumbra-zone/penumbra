@@ -53,7 +53,7 @@ pub struct NullifierDerivationCircuit {
 }
 
 impl NullifierDerivationCircuit {
-    pub fn new(
+    fn new(
         NullifierDerivationProofPublic {
             position,
             note_commitment,
@@ -127,7 +127,6 @@ impl DummyWitness for NullifierDerivationCircuit {
 pub struct NullifierDerivationProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl NullifierDerivationProof {
-    #![allow(clippy::too_many_arguments)]
     pub fn prove<R: CryptoRng + Rng>(
         rng: &mut R,
         pk: &ProvingKey<Bls12_377>,

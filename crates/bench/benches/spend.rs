@@ -8,7 +8,7 @@ use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::Value;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
+use penumbra_proof_params::{DummyWitness, SPEND_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Note, SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic};
 use penumbra_tct as tct;
@@ -69,7 +69,7 @@ fn spend_proving_time(c: &mut Criterion) {
     });
 
     // Also print out the number of constraints.
-    let circuit = SpendCircuit::new(public, private);
+    let circuit = SpendCircuit::with_dummy_witness();
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);

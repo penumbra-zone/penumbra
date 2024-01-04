@@ -11,7 +11,7 @@ use penumbra_governance::{
     DelegatorVoteCircuit, DelegatorVoteProof, DelegatorVoteProofPrivate, DelegatorVoteProofPublic,
 };
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
-use penumbra_proof_params::DELEGATOR_VOTE_PROOF_PROVING_KEY;
+use penumbra_proof_params::{DummyWitness, DELEGATOR_VOTE_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
 use penumbra_tct as tct;
@@ -80,7 +80,7 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
     });
 
     // Also print out the number of constraints.
-    let circuit = DelegatorVoteCircuit::new(public, private);
+    let circuit = DelegatorVoteCircuit::with_dummy_witness();
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);

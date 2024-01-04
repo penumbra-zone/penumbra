@@ -89,8 +89,7 @@ pub struct DelegatorVoteCircuit {
 }
 
 impl DelegatorVoteCircuit {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    fn new(
         DelegatorVoteProofPublic {
             anchor,
             balance_commitment,
@@ -269,7 +268,6 @@ impl DummyWitness for DelegatorVoteCircuit {
 pub struct DelegatorVoteProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl DelegatorVoteProof {
-    #![allow(clippy::too_many_arguments)]
     pub fn prove(
         blinding_r: Fq,
         blinding_s: Fq,
@@ -277,9 +275,6 @@ impl DelegatorVoteProof {
         public: DelegatorVoteProofPublic,
         private: DelegatorVoteProofPrivate,
     ) -> anyhow::Result<Self> {
-        // The blinding factor for the value commitment is zero since it
-        // is not blinded.
-        let zero_blinding = Fr::from(0);
         let circuit = DelegatorVoteCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
