@@ -25,7 +25,7 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
 use penumbra_shielded_pool::{
     NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
-    OutputProof, SpendProof,
+    OutputProof, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
@@ -59,33 +59,33 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let mut sct = tct::Tree::new();
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let anchor = sct.root();
-    let note_commitment_proof = sct.witness(note_commitment).unwrap();
+    let state_commitment_proof = sct.witness(note_commitment).unwrap();
     let v_blinding = Fr::rand(&mut OsRng);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
+    let nullifier = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
     // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
-    let proof = SpendProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
-        note_commitment_proof,
+    let public = SpendProofPublic {
+        anchor,
+        balance_commitment,
+        nullifier,
+        rk,
+    };
+    let private = SpendProofPrivate {
+        state_commitment_proof,
         note,
         v_blinding,
         spend_auth_randomizer,
         ak,
         nk,
-        anchor,
-        balance_commitment,
-        nf,
-        rk,
-    )
-    .expect("can create proof");
+    };
+    let proof = SpendProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
+    let proof_result = proof.verify(vk, public);
     assert!(proof_result.is_ok());
 }
 
