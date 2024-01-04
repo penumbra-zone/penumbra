@@ -16,7 +16,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
-use ibc_types::path::{ChannelEndPath, ClientStatePath};
+use ibc_types::path::{ChannelEndPath, ClientConsensusStatePath, ClientStatePath};
 use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
@@ -258,10 +258,88 @@ impl ConsensusQuery for IbcQuery {
     /// associated with the provided channel identifiers.
     async fn channel_consensus_state(
         &self,
-        _request: tonic::Request<QueryChannelConsensusStateRequest>,
+        request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let consensus_state_height = ibc_types::core::client::Height {
+            revision_number: request.get_ref().revision_number,
+            revision_height: request.get_ref().revision_height,
+        };
+
+        // 1. get the channel
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let channel = snapshot
+            .get_channel(&channel_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?
+            .ok_or("unable to get channel")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        // 2. get the connection for the channel
+        let connection_id = channel
+            .connection_hops
+            .first()
+            .ok_or("channel has no connection hops")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get connection for channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?.ok_or("unable to get connection").map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?;
+
+        // 3. get the consensus state for the connection
+        let (consensus_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        ClientConsensusStatePath::new(
+                            &connection.client_id,
+                            &consensus_state_height,
+                        )
+                        .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let consensus_state_any = consensus_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        Ok(tonic::Response::new(QueryChannelConsensusStateResponse {
+            consensus_state: consensus_state_any,
+            client_id: connection.client_id.clone().to_string(),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
