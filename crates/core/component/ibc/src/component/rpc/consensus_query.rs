@@ -16,7 +16,9 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
-use ibc_types::path::{ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath};
+use ibc_types::path::{
+    ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath, ReceiptPath,
+};
 use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
@@ -449,9 +451,36 @@ impl ConsensusQuery for IbcQuery {
     /// queried chain
     async fn packet_receipt(
         &self,
-        _request: tonic::Request<QueryPacketReceiptRequest>,
+        request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+
+        let port_id = PortId::from_str(&request.get_ref().port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+        let channel_id = ChannelId::from_str(&request.get_ref().channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+
+        let (receipt, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        ReceiptPath::new(&port_id, &channel_id, request.get_ref().sequence.into())
+                            .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get packet commitment: {e}")))?;
+
+        Ok(tonic::Response::new(QueryPacketReceiptResponse {
+            received: receipt.is_some(),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
