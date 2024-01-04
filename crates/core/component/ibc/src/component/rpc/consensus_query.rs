@@ -1,7 +1,9 @@
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 use async_trait::async_trait;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
+    Channel, PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
     QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
     QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
     QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
@@ -13,12 +15,14 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
-
 use ibc_proto::ibc::core::client::v1::Height;
+use ibc_types::path::ChannelEndPath;
+use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
 
 use ibc_types::core::connection::ConnectionId;
+use prost::Message;
 
 use std::str::FromStr;
 
@@ -31,9 +35,45 @@ impl ConsensusQuery for IbcQuery {
     /// Channel queries an IBC Channel.
     async fn channel(
         &self,
-        _request: tonic::Request<QueryChannelRequest>,
+        request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (channel, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ChannelEndPath::new(&port_id, &channel_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map(|res| {
+                let channel = res
+                    .0
+                    .map(|chan_bytes| Channel::decode(chan_bytes.as_ref()))
+                    .transpose();
+
+                (channel, res.1)
+            })
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel: {e}")))?;
+
+        let channel =
+            channel.map_err(|e| tonic::Status::aborted(format!("couldn't decode channel: {e}")))?;
+
+        let res = QueryChannelResponse {
+            channel,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// Channels queries all the IBC channels of a chain.
     async fn channels(
