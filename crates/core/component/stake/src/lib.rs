@@ -40,7 +40,7 @@ mod unbonding_token;
 pub use delegation_token::DelegationToken;
 pub use governance_key::GovernanceKey;
 pub use identity_key::IdentityKey;
-pub use penalty::{Penalty, PenaltyVar};
+pub use penalty::Penalty;
 pub use unbonding_token::UnbondingToken;
 
 pub use changes::DelegationChanges;

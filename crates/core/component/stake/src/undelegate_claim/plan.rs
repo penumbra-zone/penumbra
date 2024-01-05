@@ -1,7 +1,7 @@
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
-use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
+use penumbra_proof_params::CONVERT_PROOF_PROVING_KEY;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
@@ -55,7 +55,7 @@ impl UndelegateClaimPlan {
         UndelegateClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &UNDELEGATECLAIM_PROOF_PROVING_KEY,
+            &CONVERT_PROOF_PROVING_KEY,
             self.unbonding_amount,
             self.balance_blinding,
             self.balance_commitment(),

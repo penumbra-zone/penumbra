@@ -83,12 +83,12 @@ fn main() -> Result<()> {
     write_params(&target_dir, "swap", &swap_pk, &swap_vk)?;
     let (swapclaim_pk, swapclaim_vk) = generate_parameters::<SwapClaimCircuit>();
     write_params(&target_dir, "swapclaim", &swapclaim_pk, &swapclaim_vk)?;
-    let (undelegateclaim_pk, undelegateclaim_vk) = generate_parameters::<ConvertCircuit>();
+    let (convert_pk, convert_vk) = generate_parameters::<ConvertCircuit>();
     write_params(
         &target_dir,
-        "undelegateclaim",
-        &undelegateclaim_pk,
-        &undelegateclaim_vk,
+        "convert",
+        &convert_pk,
+        &convert_vk,
     )?;
     let (delegator_vote_pk, delegator_vote_vk) = generate_parameters::<DelegatorVoteCircuit>();
     write_params(
