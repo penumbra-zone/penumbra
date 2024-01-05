@@ -17,7 +17,10 @@ use ibc_proto::ibc::core::{
     channel::v1::{query_client::QueryClient as IbcChannelQueryClient, QueryChannelRequest},
     connection::v1::QueryConnectionRequest,
 };
-use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
+use ibc_types::core::{
+    channel::{ChannelId, PortId},
+    client::Height as IbcHeight,
+};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use rand_core::OsRng;
 use regex::Regex;
@@ -862,7 +865,7 @@ impl TxCmd {
                             IbcChannelQueryClient::new(app.pd_channel().await?);
 
                         let req = QueryChannelRequest {
-                            port_id: "transfer".to_string(),
+                            port_id: PortId::transfer().to_string(),
                             channel_id: format!("channel-{}", channel),
                         };
 
