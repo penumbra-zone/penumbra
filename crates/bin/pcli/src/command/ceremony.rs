@@ -22,7 +22,7 @@ use penumbra_proto::{
     view::v1alpha1::GasPricesRequest,
 };
 use penumbra_transaction::memo::MemoPlaintext;
-use penumbra_view::{Planner, ViewClient};
+use penumbra_view::Planner;
 
 use crate::App;
 
