@@ -125,7 +125,14 @@ impl ClientQuery for IbcQuery {
         let snapshot = self.0.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
-        let height = get_latest_verified_height(&snapshot, &client_id).await?;
+        let height = if request.get_ref().latest_height {
+            get_latest_verified_height(&snapshot, &client_id).await?
+        } else {
+            Height {
+                revision_number: request.get_ref().revision_number,
+                revision_height: request.get_ref().revision_height,
+            }
+        };
 
         let (cs_opt, proof) = snapshot
             .get_with_proof(
