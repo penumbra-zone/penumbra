@@ -8,7 +8,6 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use ibc_types::core::client::ClientId;
-use ibc_types::core::client::Height as IbcHeight;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::ClientStateReadExt as _;
@@ -882,15 +881,10 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
             ProposalPayload::FreezeIbcClient { client_id } => {
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let current_height = self
-                    .get_block_height()
-                    .await
-                    .expect("block height should be set");
                 let client_state = self.get_client_state(client_id).await?;
-                let revision_number = self.get_revision_number().await?;
+                let client_height = client_state.latest_height();
 
-                let freeze_height = IbcHeight::new(revision_number, current_height)?;
-                let frozen_client = client_state.with_frozen_height(freeze_height);
+                let frozen_client = client_state.with_frozen_height(client_height);
                 self.put_client(client_id, frozen_client);
             }
             ProposalPayload::UnfreezeIbcClient { client_id } => {
@@ -898,7 +892,6 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
                 let client_state = self.get_client_state(client_id).await?;
 
-                // unfreeze the client
                 let unfrozen_client = client_state.unfrozen();
                 self.put_client(client_id, unfrozen_client);
             }

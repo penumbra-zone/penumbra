@@ -212,14 +212,11 @@ pub enum ProposalKind {
     /// An upgrade proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 500))]
     UpgradePlan,
-    /// An unplanned IBC connection modification.
-    #[cfg_attr(feature = "clap", clap(display_order = 600))]
-    UnplannedIbcUpgrade,
     /// A proposal to freeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 610))]
+    #[cfg_attr(feature = "clap", clap(display_order = 600))]
     FreezeIbcClient,
     /// A proposal to unfreeze an IBC client.
-    #[cfg_attr(feature = "clap", clap(display_order = 611))]
+    #[cfg_attr(feature = "clap", clap(display_order = 700))]
     UnfreezeIbcClient,
 }
 
@@ -297,14 +294,14 @@ pub enum ProposalPayload {
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
     UpgradePlan { height: u64 },
-    /// Freezes an existing IBC client.
+    /// A proposal to freeze a specific IBC client.
     FreezeIbcClient {
-        /// The client ID to be frozen.
+        /// The identifier of the client to freeze.
         client_id: String,
     },
-    // Unfreezes an existing IBC client.
+    /// A proposal to unfreeze a specific IBC client.
     UnfreezeIbcClient {
-        /// The client ID to be unfrozen.
+        /// The identifier of the client to unfreeze.
         client_id: String,
     },
 }
