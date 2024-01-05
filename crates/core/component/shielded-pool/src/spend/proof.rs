@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::Result;
 use ark_r1cs_std::{
     prelude::{EqGadget, FieldVar},
     uint8::UInt8,
@@ -58,6 +59,75 @@ pub struct SpendProofPrivate {
     pub ak: VerificationKey<SpendAuth>,
     /// The nullifier deriving key.
     pub nk: NullifierKey,
+}
+
+#[cfg(test)]
+fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) -> Result<()> {
+    use penumbra_keys::keys::FullViewingKey;
+
+    let amount_u128: u128 = private.note.value().amount.into();
+    if amount_u128 == 0u128 {
+        return Ok(());
+    }
+
+    let note_commitment = private.note.commit();
+    if note_commitment != private.state_commitment_proof.commitment() {
+        anyhow::bail!("note commitment did not match state commitment proof");
+    }
+
+    let nullifier = Nullifier::derive(
+        &private.nk,
+        private.state_commitment_proof.position(),
+        &note_commitment,
+    );
+    if nullifier != public.nullifier {
+        anyhow::bail!("nullifier did not match public input");
+    }
+
+    private.state_commitment_proof.verify(public.anchor)?;
+
+    let rk = private.ak.randomize(&private.spend_auth_randomizer);
+    if rk != public.rk {
+        anyhow::bail!("randomized spend auth key did not match public input");
+    }
+
+    let fvk = FullViewingKey::from_components(private.ak, private.nk);
+    let ivk = fvk.incoming();
+    let transmission_key = ivk.diversified_public(&private.note.diversified_generator());
+    if transmission_key != *private.note.transmission_key() {
+        anyhow::bail!("transmission key did not match note");
+    }
+
+    let balance_commitment = private.note.value().commit(private.v_blinding);
+    if balance_commitment != public.balance_commitment {
+        anyhow::bail!("balance commitment did not match public input");
+    }
+
+    if private.note.diversified_generator() == decaf377::Element::default() {
+        anyhow::bail!("diversified generator is identity");
+    }
+    if private.ak.is_identity() {
+        anyhow::bail!("ak is identity");
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(public: SpendProofPublic, private: SpendProofPrivate) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs = ConstraintSystem::new_ref();
+    let circuit = SpendCircuit::new(public, private);
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
 }
 
 /// Groth16 proof for spending existing notes.
@@ -350,6 +420,7 @@ mod tests {
         keys::{Bip44Path, SeedPhrase, SpendKey},
         Address,
     };
+    use penumbra_num::Amount;
     use penumbra_proof_params::generate_prepared_test_parameters;
     use penumbra_sct::Nullifier;
     use penumbra_tct::StateCommitment;
@@ -369,73 +440,69 @@ mod tests {
             .boxed()
     }
 
-    proptest! {
-        #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    /// Check that the `SpendProof` verification succeeds.
-    fn spend_proof_verification_success(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..2000000000u64, num_commitments in 1..2000u64, v_blinding in fr_strategy()) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
+    prop_compose! {
+        fn arb_valid_spend_statement()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (SpendProofPublic, SpendProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let value_to_send = Value {
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
+            };
+            let note = Note::from_parts(
+                sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
+            let note_commitment = note.commit();
+            let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+            let nk = *sk_sender.nullifier_key();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
 
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+            let mut sct = tct::Tree::new();
 
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
+            // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+            // unrelated items in the SCT.
+            for i in 0..num_commitments {
+                // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
+                let rseed = Rseed([i as u8; 32]);
+                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
+            }
 
-        let note = Note::generate(&mut rng, &sender, value_to_send);
-        let note_commitment = note.commit();
-        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-        let nk = *sk_sender.nullifier_key();
-        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).expect("should be able to insert note commitments into the SCT");
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
+            let balance_commitment = value_to_send.commit(v_blinding);
+            let rk: VerificationKey<SpendAuth> = rsk.into();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
-        // unrelated items in the SCT.
-        for _ in 0..num_commitments {
-            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
-            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+            let public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier,
+                rk,
+            };
+            let private = SpendProofPrivate {
+                state_commitment_proof,
+                note,
+                v_blinding,
+                spend_auth_randomizer,
+                ak,
+                nk,
+            };
+            (public, private)
         }
-
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-        let balance_commitment = value_to_send.commit(v_blinding);
-        let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
-
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let public = SpendProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier: nf,
-            rk,
-        };
-        let private = SpendProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-        };
-        let proof = SpendProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            public.clone(), private
-        )
-        .expect("can create proof");
-
-        let proof_result = proof.verify(&vk, public);
-        assert!(proof_result.is_ok());
     }
+
+    proptest! {
+        #[test]
+        fn spend_proof_happy_path((public, private) in arb_valid_spend_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
+        }
     }
 
     proptest! {
