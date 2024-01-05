@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use ibc_proto::ibc::core::client;
 use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
 use ibc_proto::ibc::core::connection::v1::query_server::Query as ConnectionQuery;
 use ibc_proto::ibc::core::connection::v1::{
