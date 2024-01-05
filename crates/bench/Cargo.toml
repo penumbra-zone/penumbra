@@ -97,5 +97,5 @@ name = "swap_claim"
 harness = false
 
 [[bench]]
-name = "undelegate_claim"
+name = "convert"
 harness = false
