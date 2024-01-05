@@ -5,7 +5,7 @@ use ark_relations::r1cs::{
 use decaf377::{Fq, Fr};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proof_params::{DummyWitness, UNDELEGATECLAIM_PROOF_PROVING_KEY};
+use penumbra_proof_params::{DummyWitness, CONVERT_PROOF_PROVING_KEY};
 use penumbra_shielded_pool::{
     ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic,
 };
@@ -14,7 +14,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 fn prove(r: Fq, s: Fq, public: ConvertProofPublic, private: ConvertProofPrivate) {
-    let _proof = ConvertProof::prove(r, s, &UNDELEGATECLAIM_PROOF_PROVING_KEY, public, private)
+    let _proof = ConvertProof::prove(r, s, &CONVERT_PROOF_PROVING_KEY, public, private)
         .expect("can generate proof");
 }
 
