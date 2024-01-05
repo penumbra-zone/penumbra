@@ -2184,6 +2184,12 @@ impl serde::Serialize for Proposal {
         if self.upgrade_plan.is_some() {
             len += 1;
         }
+        if self.freeze_ibc_client.is_some() {
+            len += 1;
+        }
+        if self.unfreeze_ibc_client.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal", len)?;
         if self.id != 0 {
             #[allow(clippy::needless_borrow)]
@@ -2210,6 +2216,12 @@ impl serde::Serialize for Proposal {
         if let Some(v) = self.upgrade_plan.as_ref() {
             struct_ser.serialize_field("upgradePlan", v)?;
         }
+        if let Some(v) = self.freeze_ibc_client.as_ref() {
+            struct_ser.serialize_field("freezeIbcClient", v)?;
+        }
+        if let Some(v) = self.unfreeze_ibc_client.as_ref() {
+            struct_ser.serialize_field("unfreezeIbcClient", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -2231,6 +2243,10 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             "communityPoolSpend",
             "upgrade_plan",
             "upgradePlan",
+            "freeze_ibc_client",
+            "freezeIbcClient",
+            "unfreeze_ibc_client",
+            "unfreezeIbcClient",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2243,6 +2259,8 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             ParameterChange,
             CommunityPoolSpend,
             UpgradePlan,
+            FreezeIbcClient,
+            UnfreezeIbcClient,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2272,6 +2290,8 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             "parameterChange" | "parameter_change" => Ok(GeneratedField::ParameterChange),
                             "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "upgradePlan" | "upgrade_plan" => Ok(GeneratedField::UpgradePlan),
+                            "freezeIbcClient" | "freeze_ibc_client" => Ok(GeneratedField::FreezeIbcClient),
+                            "unfreezeIbcClient" | "unfreeze_ibc_client" => Ok(GeneratedField::UnfreezeIbcClient),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2299,6 +2319,8 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 let mut parameter_change__ = None;
                 let mut community_pool_spend__ = None;
                 let mut upgrade_plan__ = None;
+                let mut freeze_ibc_client__ = None;
+                let mut unfreeze_ibc_client__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
@@ -2351,6 +2373,18 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             }
                             upgrade_plan__ = map_.next_value()?;
                         }
+                        GeneratedField::FreezeIbcClient => {
+                            if freeze_ibc_client__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("freezeIbcClient"));
+                            }
+                            freeze_ibc_client__ = map_.next_value()?;
+                        }
+                        GeneratedField::UnfreezeIbcClient => {
+                            if unfreeze_ibc_client__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unfreezeIbcClient"));
+                            }
+                            unfreeze_ibc_client__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(Proposal {
@@ -2362,6 +2396,8 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                     parameter_change: parameter_change__,
                     community_pool_spend: community_pool_spend__,
                     upgrade_plan: upgrade_plan__,
+                    freeze_ibc_client: freeze_ibc_client__,
+                    unfreeze_ibc_client: unfreeze_ibc_client__,
                 })
             }
         }
@@ -2550,6 +2586,98 @@ impl<'de> serde::Deserialize<'de> for proposal::Emergency {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.Emergency", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal::FreezeIbcClient {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.client_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient", len)?;
+        if !self.client_id.is_empty() {
+            struct_ser.serialize_field("clientId", &self.client_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::FreezeIbcClient {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "client_id",
+            "clientId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ClientId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "clientId" | "client_id" => Ok(GeneratedField::ClientId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::FreezeIbcClient;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::FreezeIbcClient, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut client_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ClientId => {
+                            if client_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("clientId"));
+                            }
+                            client_id__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::FreezeIbcClient {
+                    client_id: client_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::ParameterChange {
@@ -2751,6 +2879,98 @@ impl<'de> serde::Deserialize<'de> for proposal::Signaling {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.Signaling", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal::UnfreezeIbcClient {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.client_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient", len)?;
+        if !self.client_id.is_empty() {
+            struct_ser.serialize_field("clientId", &self.client_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::UnfreezeIbcClient {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "client_id",
+            "clientId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ClientId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "clientId" | "client_id" => Ok(GeneratedField::ClientId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::UnfreezeIbcClient;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::UnfreezeIbcClient, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut client_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ClientId => {
+                            if client_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("clientId"));
+                            }
+                            client_id__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::UnfreezeIbcClient {
+                    client_id: client_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::UpgradePlan {

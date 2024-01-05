@@ -669,6 +669,10 @@ pub struct Proposal {
     pub community_pool_spend: ::core::option::Option<proposal::CommunityPoolSpend>,
     #[prost(message, optional, tag = "9")]
     pub upgrade_plan: ::core::option::Option<proposal::UpgradePlan>,
+    #[prost(message, optional, tag = "10")]
+    pub freeze_ibc_client: ::core::option::Option<proposal::FreezeIbcClient>,
+    #[prost(message, optional, tag = "11")]
+    pub unfreeze_ibc_client: ::core::option::Option<proposal::UnfreezeIbcClient>,
 }
 /// Nested message and enum types in `Proposal`.
 pub mod proposal {
@@ -769,6 +773,38 @@ pub mod proposal {
     }
     impl ::prost::Name for UpgradePlan {
         const NAME: &'static str = "UpgradePlan";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
+    /// Freeze an existing IBC client.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FreezeIbcClient {
+        #[prost(string, tag = "1")]
+        pub client_id: ::prost::alloc::string::String,
+    }
+    impl ::prost::Name for FreezeIbcClient {
+        const NAME: &'static str = "FreezeIbcClient";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
+    /// Unfreeze an existing IBC client.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UnfreezeIbcClient {
+        #[prost(string, tag = "1")]
+        pub client_id: ::prost::alloc::string::String,
+    }
+    impl ::prost::Name for UnfreezeIbcClient {
+        const NAME: &'static str = "UnfreezeIbcClient";
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(

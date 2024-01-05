@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
@@ -6,10 +7,12 @@ use async_trait::async_trait;
 use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
+use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_community_pool::component::StateReadExt as _;
+use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
@@ -133,6 +136,14 @@ impl ActionHandler for ProposalSubmit {
                 }
             }
             UpgradePlan { .. } => {}
+            FreezeIbcClient { client_id } => {
+                let _ = &ClientId::from_str(client_id)
+                    .context("can't decode client id from IBC proposal")?;
+            }
+            UnfreezeIbcClient { client_id } => {
+                let _ = &ClientId::from_str(client_id)
+                    .context("can't decode client id from IBC proposal")?;
+            }
         }
 
         Ok(())
@@ -202,6 +213,22 @@ impl ActionHandler for ProposalSubmit {
             }
             ProposalPayload::UpgradePlan { .. } => {
                 // TODO(erwan): no stateful checks for upgrade plan.
+            }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                // Check that the client ID is valid and that there is a corresponding
+                // client state. If the client state is already frozen, then freezing it
+                // is a no-op.
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let _ = state.get_client_state(client_id).await?;
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                // Check that the client ID is valid and that there is a corresponding
+                // client state. If the client state is not frozen, then unfreezing it
+                // is a no-op.
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let _ = state.get_client_state(client_id).await?;
             }
         }
 

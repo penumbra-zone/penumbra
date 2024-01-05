@@ -7,8 +7,11 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
+use ibc_types::core::client::ClientId;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_ibc::component::ClientStateReadExt as _;
+use penumbra_ibc::component::ClientStateWriteExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::{component::StateReadExt as _, Nullifier};
@@ -558,7 +561,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
 
 #[async_trait]
-pub trait StateWriteExt: StateWrite {
+pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWriteExt {
     /// Writes the provided governance parameters to the JMT.
     fn put_governance_params(&mut self, params: GovernanceParameters) {
         // Note that the governance params have been updated:
@@ -875,8 +878,24 @@ pub trait StateWriteExt: StateWrite {
                 tracing::info!(target_height = height, "upgrade plan proposal passed");
                 self.signal_upgrade(*height).await?;
             }
-        }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let client_state = self.get_client_state(client_id).await?;
+                let client_height = client_state.latest_height();
 
+                let frozen_client = client_state.with_frozen_height(client_height);
+                self.put_client(client_id, frozen_client);
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                let client_id = &ClientId::from_str(client_id)
+                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+                let client_state = self.get_client_state(client_id).await?;
+
+                let unfrozen_client = client_state.unfrozen();
+                self.put_client(client_id, unfrozen_client);
+            }
+        }
         Ok(Ok(()))
     }
 

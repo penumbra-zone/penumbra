@@ -246,6 +246,8 @@ message Proposal {
   ParameterChange parameter_change = 7;
   CommunityPoolSpend community_pool_spend = 8;
   UpgradePlan upgrade_plan = 9;
+  FreezeIbcClient freeze_ibc_client = 10;
+  UnfreezeIbcClient unfreeze_ibc_client = 11;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
@@ -294,6 +296,16 @@ message Proposal {
   // will halt at the specified height.
   message UpgradePlan {
     uint64 height = 1;
+  }
+
+  // Freeze an existing IBC client.
+  message FreezeIbcClient {
+    string client_id = 1;
+  }
+
+  // Unfreeze an existing IBC client.
+  message UnfreezeIbcClient {
+    string client_id = 1;
   }
 }
 

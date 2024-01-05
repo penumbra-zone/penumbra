@@ -79,6 +79,16 @@ impl From<Proposal> for pb::Proposal {
             ProposalPayload::UpgradePlan { height } => {
                 proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
             }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                proposal.freeze_ibc_client = Some(pb::proposal::FreezeIbcClient {
+                    client_id: client_id.into(),
+                });
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                proposal.unfreeze_ibc_client = Some(pb::proposal::UnfreezeIbcClient {
+                    client_id: client_id.into(),
+                });
+            }
         }
         proposal
     }
@@ -202,6 +212,12 @@ pub enum ProposalKind {
     /// An upgrade proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 500))]
     UpgradePlan,
+    /// A proposal to freeze an IBC client.
+    #[cfg_attr(feature = "clap", clap(display_order = 600))]
+    FreezeIbcClient,
+    /// A proposal to unfreeze an IBC client.
+    #[cfg_attr(feature = "clap", clap(display_order = 700))]
+    UnfreezeIbcClient,
 }
 
 impl FromStr for ProposalKind {
@@ -228,6 +244,8 @@ impl Proposal {
             ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
             ProposalPayload::CommunityPoolSpend { .. } => ProposalKind::CommunityPoolSpend,
             ProposalPayload::UpgradePlan { .. } => ProposalKind::UpgradePlan,
+            ProposalPayload::FreezeIbcClient { .. } => ProposalKind::FreezeIbcClient,
+            ProposalPayload::UnfreezeIbcClient { .. } => ProposalKind::UnfreezeIbcClient,
         }
     }
 }
@@ -276,6 +294,16 @@ pub enum ProposalPayload {
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
     UpgradePlan { height: u64 },
+    /// A proposal to freeze a specific IBC client.
+    FreezeIbcClient {
+        /// The identifier of the client to freeze.
+        client_id: String,
+    },
+    /// A proposal to unfreeze a specific IBC client.
+    UnfreezeIbcClient {
+        /// The identifier of the client to unfreeze.
+        client_id: String,
+    },
 }
 
 /// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
@@ -297,6 +325,12 @@ pub enum ProposalPayloadToml {
     },
     UpgradePlan {
         height: u64,
+    },
+    FreezeIbcClient {
+        client_id: String,
+    },
+    UnfreezeIbcClient {
+        client_id: String,
     },
 }
 
@@ -325,6 +359,12 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 }
             }
             ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
+            ProposalPayloadToml::FreezeIbcClient { client_id } => {
+                ProposalPayload::FreezeIbcClient { client_id }
+            }
+            ProposalPayloadToml::UnfreezeIbcClient { client_id } => {
+                ProposalPayload::UnfreezeIbcClient { client_id }
+            }
         })
     }
 }
@@ -348,6 +388,12 @@ impl From<ProposalPayload> for ProposalPayloadToml {
                 }
             }
             ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                ProposalPayloadToml::FreezeIbcClient { client_id }
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                ProposalPayloadToml::UnfreezeIbcClient { client_id }
+            }
         }
     }
 }
