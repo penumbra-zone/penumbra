@@ -7,8 +7,8 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
+use ibc_types::core::client::ClientId;
 use ibc_types::core::client::Height as IbcHeight;
-use ibc_types::core::{client::ClientId, connection::ConnectionId};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::ClientStateReadExt as _;
@@ -25,7 +25,6 @@ use tracing::instrument;
 use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
 
 use crate::{
-    event,
     params::GovernanceParameters,
     proposal::{ChangedAppParameters, ChangedAppParametersSet, Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
@@ -880,56 +879,18 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 tracing::info!(target_height = height, "upgrade plan proposal passed");
                 self.signal_upgrade(*height).await?;
             }
-            ProposalPayload::UnplannedIbcUpgrade {
-                client_id,
-                new_config,
-            } => {
-                let client_id = &ClientId::from_str(client_id)
-                    .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                tracing::info!(
-                    %client_id,
-                    "unplanned IBC upgrade proposal passed");
-                // TODO: MsgConnectionOpenConfirm has various validation steps
-                // that aren't replicated here; are any of them needed?
-                // We need to at least validate the connection is existing (this probably
-                // should happen both here and when the proposal is made)
-                // self.update_connection(connection_id, new_config.clone());
-                state.put_client(&self.client_id, new_client_state);
-                state
-                    .put_verified_consensus_state(
-                        latest_height,
-                        self.client_id.clone(),
-                        new_consensus_state,
-                    )
-                    .await?;
-
-                state.record(
-                    events::UpgradeClient {
-                        client_id: self.client_id.clone(),
-                        client_type: ibc_types::core::client::ClientType(
-                            TENDERMINT_CLIENT_TYPE.to_string(),
-                        ),
-                        consensus_height: latest_height,
-                    }
-                    .into(),
-                );
-            }
             ProposalPayload::FreezeIbcClient { client_id } => {
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let block_height = self
+                let current_height = self
                     .get_block_height()
                     .await
                     .expect("block height should be set");
                 let client_state = self.get_client_state(client_id).await?;
+                let revision_number = self.get_revision_number().await?;
 
-                // freeze the client
-                let epoch = self.epoch_by_height(block_height).await.map_err(|e| {
-                    tonic::Status::unknown(format!("could not get epoch for height: {e}"))
-                })?;
-                // TODO: is this the right conversion between JMT height and IBC height?
-                let ibc_height = IbcHeight::new(epoch.index, block_height - epoch.start_height)?;
-                let frozen_client = client_state.with_frozen_height(ibc_height);
+                let freeze_height = IbcHeight::new(revision_number, current_height)?;
+                let frozen_client = client_state.with_frozen_height(freeze_height);
                 self.put_client(client_id, frozen_client);
             }
             ProposalPayload::UnfreezeIbcClient { client_id } => {
@@ -942,9 +903,6 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 self.put_client(client_id, unfrozen_client);
             }
         }
-
-        self.record(event::proposal_payload(proposal_id, payload));
-
         Ok(Ok(()))
     }
 

@@ -1,6 +1,5 @@
 use anyhow::Context;
 use bytes::Bytes;
-use ibc_types::core::connection::ConnectionEnd;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -79,15 +78,6 @@ impl From<Proposal> for pb::Proposal {
             }
             ProposalPayload::UpgradePlan { height } => {
                 proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
-            }
-            ProposalPayload::UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            } => {
-                proposal.unplanned_ibc_upgrade = Some(pb::proposal::UnplannedIbcUpgrade {
-                    connection_id,
-                    new_config: Some(new_config.into()),
-                });
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
                 proposal.freeze_ibc_client = Some(pb::proposal::FreezeIbcClient {
@@ -257,7 +247,6 @@ impl Proposal {
             ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
             ProposalPayload::CommunityPoolSpend { .. } => ProposalKind::CommunityPoolSpend,
             ProposalPayload::UpgradePlan { .. } => ProposalKind::UpgradePlan,
-            ProposalPayload::UnplannedIbcUpgrade { .. } => ProposalKind::UnplannedIbcUpgrade,
             ProposalPayload::FreezeIbcClient { .. } => ProposalKind::FreezeIbcClient,
             ProposalPayload::UnfreezeIbcClient { .. } => ProposalKind::UnfreezeIbcClient,
         }
@@ -308,14 +297,6 @@ pub enum ProposalPayload {
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
     UpgradePlan { height: u64 },
-    /// Proposes to update the configuration for an existing IBC connection. This should only be used
-    /// for unplanned upgrades, as the IBC protocol has an existing update mechanism.
-    UnplannedIbcUpgrade {
-        /// The client ID to be upgraded.
-        client_id: String,
-        /// The new configuration for the client.
-        new_config: TendermintClientState,
-    },
     /// Freezes an existing IBC client.
     FreezeIbcClient {
         /// The client ID to be frozen.
@@ -347,10 +328,6 @@ pub enum ProposalPayloadToml {
     },
     UpgradePlan {
         height: u64,
-    },
-    UnplannedIbcUpgrade {
-        connection_id: String,
-        new_config: ConnectionEnd,
     },
     FreezeIbcClient {
         client_id: String,
@@ -385,13 +362,6 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
                 }
             }
             ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
-            ProposalPayloadToml::UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            } => ProposalPayload::UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            },
             ProposalPayloadToml::FreezeIbcClient { client_id } => {
                 ProposalPayload::FreezeIbcClient { client_id }
             }
@@ -421,13 +391,6 @@ impl From<ProposalPayload> for ProposalPayloadToml {
                 }
             }
             ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },
-            ProposalPayload::UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            } => ProposalPayloadToml::UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            },
             ProposalPayload::FreezeIbcClient { client_id } => {
                 ProposalPayloadToml::FreezeIbcClient { client_id }
             }

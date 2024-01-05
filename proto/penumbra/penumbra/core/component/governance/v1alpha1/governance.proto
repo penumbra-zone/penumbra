@@ -2,7 +2,6 @@ syntax = "proto3";
 package penumbra.core.component.governance.v1alpha1;
 
 import "google/protobuf/any.proto";
-import "ibc/core/connection/v1/connection.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/community_pool/v1alpha1/community_pool.proto";
