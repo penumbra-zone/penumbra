@@ -8,11 +8,11 @@ use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use ibc_types::core::client::ClientId;
-use ibc_types::core::connection::ConnectionId;
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_community_pool::component::StateReadExt as _;
+use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
 use penumbra_sct::component::StateReadExt as _;
@@ -136,24 +136,12 @@ impl ActionHandler for ProposalSubmit {
                 }
             }
             UpgradePlan { .. } => {}
-            UnplannedIbcUpgrade {
-                connection_id,
-                new_config,
-            } => {
-                // Validate the connection ID can be decoded:
-                let connection_id: ConnectionId = ConnectionId::from_str(connection_id)
-                    .context("can't decode connection id from IBC proposal")?;
-
-                // TODO: any other stateless checks? `counterparty`?
-            }
             FreezeIbcClient { client_id } => {
-                // Validate the client ID can be decoded:
-                let client_id = &ClientId::from_str(client_id)
+                let _ = &ClientId::from_str(client_id)
                     .context("can't decode client id from IBC proposal")?;
             }
             UnfreezeIbcClient { client_id } => {
-                // Validate the client ID can be decoded:
-                let client_id = &ClientId::from_str(client_id)
+                let _ = &ClientId::from_str(client_id)
                     .context("can't decode client id from IBC proposal")?;
             }
         }
@@ -226,28 +214,21 @@ impl ActionHandler for ProposalSubmit {
             ProposalPayload::UpgradePlan { .. } => {
                 // TODO(erwan): no stateful checks for upgrade plan.
             }
-            ProposalPayload::UnplannedIbcUpgrade { .. } => {
-                // TODO: which checks happen here?
-            }
             ProposalPayload::FreezeIbcClient { client_id } => {
-                // Validate the client isn't already frozen:
+                // Check that the client ID is valid and that there is a corresponding
+                // client state. If the client state is already frozen, then freezing it
+                // is a no-op.
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let client_state = state.get_client_state(client_id).await?;
-
-                if client_state.is_frozen() {
-                    anyhow::bail!("client is already frozen");
-                }
+                let _ = state.get_client_state(client_id).await?;
             }
             ProposalPayload::UnfreezeIbcClient { client_id } => {
-                // Validate the client is frozen:
+                // Check that the client ID is valid and that there is a corresponding
+                // client state. If the client state is not frozen, then unfreezing it
+                // is a no-op.
                 let client_id = &ClientId::from_str(client_id)
                     .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
-                let client_state = state.get_client_state(client_id).await?;
-
-                if !client_state.is_frozen() {
-                    anyhow::bail!("client is already unfrozen");
-                }
+                let _ = state.get_client_state(client_id).await?;
             }
         }
 
