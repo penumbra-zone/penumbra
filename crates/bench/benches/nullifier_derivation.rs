@@ -5,24 +5,24 @@ use ark_relations::r1cs::{
 };
 use decaf377::Fq;
 use penumbra_asset::Value;
-use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
-use penumbra_proof_params::NULLIFIER_DERIVATION_PROOF_PROVING_KEY;
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_proof_params::{DummyWitness, NULLIFIER_DERIVATION_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, Rseed};
+use penumbra_shielded_pool::{
+    Note, NullifierDerivationProofPrivate, NullifierDerivationProofPublic, Rseed,
+};
 use penumbra_shielded_pool::{NullifierDerivationCircuit, NullifierDerivationProof};
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
-fn prove(position: tct::Position, note: Note, nk: NullifierKey, nullifier: Nullifier) {
+fn prove(public: NullifierDerivationProofPublic, private: NullifierDerivationProofPrivate) {
     let _proof = NullifierDerivationProof::prove(
         &mut OsRng,
         &NULLIFIER_DERIVATION_PROOF_PROVING_KEY,
-        position,
-        note,
-        nk,
-        nullifier,
+        public,
+        private,
     )
     .expect("Can generate proof");
 }
@@ -47,14 +47,18 @@ fn nullifier_derivation_proving_time(c: &mut Criterion) {
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let state_commitment_proof = sct.witness(note_commitment).unwrap();
     let position = state_commitment_proof.position();
+    let public = NullifierDerivationProofPublic {
+        position,
+        note_commitment,
+        nullifier,
+    };
+    let private = NullifierDerivationProofPrivate { nk };
 
     c.bench_function("nullifier derivation proving", |b| {
-        b.iter(|| prove(position, note.clone(), nk, nullifier))
+        b.iter(|| prove(public.clone(), private.clone()))
     });
 
-    // Also print out the number of constraints.
-    let circuit = NullifierDerivationCircuit::new(position, note.commit(), nk, nullifier);
-
+    let circuit = NullifierDerivationCircuit::with_dummy_witness();
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);
     cs.set_mode(SynthesisMode::Setup);
