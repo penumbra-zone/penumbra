@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::Result;
 use ark_r1cs_std::prelude::*;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::{Bls12_377, Fq};
@@ -37,6 +38,38 @@ pub struct NullifierDerivationProofPublic {
 pub struct NullifierDerivationProofPrivate {
     /// The nullifier deriving key.
     pub nk: NullifierKey,
+}
+
+#[cfg(test)]
+fn check_satisfaction(
+    public: &NullifierDerivationProofPublic,
+    private: &NullifierDerivationProofPrivate,
+) -> Result<()> {
+    let nullifier = Nullifier::derive(&private.nk, public.position, &public.note_commitment);
+    if nullifier != public.nullifier {
+        anyhow::bail!("nullifier did not match public input");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(
+    public: NullifierDerivationProofPublic,
+    private: NullifierDerivationProofPrivate,
+) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs = ConstraintSystem::new_ref();
+    let circuit = NullifierDerivationCircuit::new(public, private);
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
 }
 
 /// Groth16 proof for correct nullifier derivation.
@@ -215,61 +248,45 @@ mod tests {
     use super::*;
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_proof_params::generate_prepared_test_parameters;
+    use penumbra_num::Amount;
     use penumbra_sct::Nullifier;
-    use penumbra_tct as tct;
     use proptest::prelude::*;
-    use rand_core::OsRng;
 
     use crate::Note;
 
-    proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    fn nullifier_derivation_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), value_amount in 2..200u64) {
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<NullifierDerivationCircuit>(&mut rng);
-
+    prop_compose! {
+        fn arb_valid_nullifier_derivation_statement()(amount in any::<u64>(), address_index in any::<u32>(), position in any::<(u16, u16, u16)>(), asset_id64 in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (NullifierDerivationProofPublic, NullifierDerivationProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
-            let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
-
-            let value_to_send = Value {
-                amount: value_amount.into(),
-                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-            };
-
-            let note = Note::generate(&mut rng, &sender, value_to_send);
-            let note_commitment = note.commit();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
             let nk = *sk_sender.nullifier_key();
-            let mut sct = tct::Tree::new();
-
-            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-            let state_commitment_proof = sct.witness(note_commitment).unwrap();
-            let position = state_commitment_proof.position();
-            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+            let note = Note::from_parts(
+                sender,
+                Value {
+                    amount: Amount::from(amount),
+                    asset_id: asset::Id(Fq::from(asset_id64)),
+                },
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
             let public = NullifierDerivationProofPublic {
-                    position,
-                    note_commitment,
-                    nullifier,
+                position: position.into(),
+                note_commitment: note.commit(),
+                nullifier: Nullifier::derive(&nk, position.into(), &note.commit())
             };
-
             let private = NullifierDerivationProofPrivate {
                 nk,
             };
+            (public, private)
+        }
+    }
 
-            let proof = NullifierDerivationProof::prove(
-                &mut rng,
-                &pk,
-                public.clone(), private
-            )
-            .expect("can create proof");
-
-            let proof_result = proof.verify(&vk, public);
-
-            assert!(proof_result.is_ok());
+    proptest! {
+        #[test]
+        fn nullifier_derivation_proof_happy_path((public, private) in arb_valid_nullifier_derivation_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 }
