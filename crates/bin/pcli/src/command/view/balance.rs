@@ -17,7 +17,7 @@ impl BalanceCmd {
         false
     }
 
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         let asset_cache = view.assets().await?;
 
         // Initialize the table

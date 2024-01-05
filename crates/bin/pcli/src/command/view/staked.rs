@@ -23,7 +23,7 @@ impl StakedCmd {
 
     pub async fn exec(
         &self,
-        full_viewing_key: &FullViewingKey,
+        _fvk: &FullViewingKey,
         view_client: &mut impl ViewClient,
         pd_channel: Channel,
     ) -> Result<()> {
