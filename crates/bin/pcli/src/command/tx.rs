@@ -920,9 +920,12 @@ impl TxCmd {
 
                         let last_update_height = tm_client_state.latest_height;
 
+                        // 10 seconds per block, 2 days
+                        let timeout_n_blocks = ((24 * 60 * 60) / 10) * 2;
+
                         IbcHeight {
                             revision_number: last_update_height.revision_number,
-                            revision_height: last_update_height.revision_height + 87400,
+                            revision_height: last_update_height.revision_height + timeout_n_blocks,
                         }
                     }
                 };
