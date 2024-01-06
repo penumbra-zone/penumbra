@@ -6,6 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::component::StateReadExt;
 use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 
+use crate::undelegate_claim::UndelegateClaimProofPublic;
 use crate::UndelegateClaim;
 use crate::{action_handler::ActionHandler, StateReadExt as _, UnbondingToken};
 
@@ -18,9 +19,11 @@ impl ActionHandler for UndelegateClaim {
 
         self.proof.verify(
             &CONVERT_PROOF_VERIFICATION_KEY,
-            self.body.balance_commitment,
-            unbonding_id,
-            self.body.penalty,
+            UndelegateClaimProofPublic {
+                balance_commitment: self.body.balance_commitment,
+                unbonding_id,
+                penalty: self.body.penalty,
+            },
         )?;
 
         Ok(())

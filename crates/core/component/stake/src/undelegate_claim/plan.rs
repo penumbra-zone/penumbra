@@ -11,6 +11,8 @@ use crate::{
     UndelegateClaimProof,
 };
 
+use super::UndelegateClaimProofPublic;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]
 pub struct UndelegateClaimPlan {
@@ -56,11 +58,15 @@ impl UndelegateClaimPlan {
             self.proof_blinding_r,
             self.proof_blinding_s,
             &CONVERT_PROOF_PROVING_KEY,
-            self.unbonding_amount,
-            self.balance_blinding,
-            self.balance_commitment(),
-            self.unbonding_id(),
-            self.penalty,
+            UndelegateClaimProofPublic {
+                balance_commitment: self.balance_commitment(),
+                unbonding_id: self.unbonding_id(),
+                penalty: self.penalty,
+            },
+            super::UndelegateClaimProofPrivate {
+                unbonding_amount: self.unbonding_amount,
+                balance_blinding: self.balance_blinding,
+            },
         )
         .expect("can generate undelegate claim proof")
     }
