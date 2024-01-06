@@ -511,9 +511,9 @@ mod tests {
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
-        let plan_effect_hash = plan.effect_hash(fvk);
+        let plan_effect_hash = plan.effect_hash(fvk).unwrap();
 
-        let auth_data = plan.authorize(rng, &sk);
+        let auth_data = plan.authorize(rng, &sk).unwrap();
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

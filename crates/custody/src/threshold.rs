@@ -579,7 +579,7 @@ mod test {
                 pre_authorizations: Vec::new(),
             })
             .await?;
-        assert_eq!(plan.effect_hash(&fvk), authorization_data.effect_hash);
+        assert_eq!(plan.effect_hash(&fvk)?, authorization_data.effect_hash);
         // The transaction plan only has spends
         for (randomizer, sig) in plan
             .spend_plans()

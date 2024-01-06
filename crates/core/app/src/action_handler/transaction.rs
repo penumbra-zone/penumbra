@@ -170,7 +170,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -233,7 +233,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
