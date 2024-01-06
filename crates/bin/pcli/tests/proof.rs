@@ -30,6 +30,7 @@ use penumbra_shielded_pool::{
     NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
     OutputProof, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
+use penumbra_stake::undelegate_claim::{UndelegateClaimProofPrivate, UndelegateClaimProofPublic};
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
 use rand_core::OsRng;
@@ -420,36 +421,41 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
 
     let mut rng = OsRng;
 
-    let sk = SigningKey::new_from_field(Fr::from(1u8));
-    let balance_blinding = Fr::from(1u8);
-    let value1_amount = 1u64;
-    let penalty_amount = 1u64;
-    let validator_identity = IdentityKey((&sk).into());
-    let unbonding_amount = Amount::from(value1_amount);
+    let (public, private) = {
+        let sk = SigningKey::new_from_field(Fr::from(1u8));
+        let balance_blinding = Fr::from(1u8);
+        let value1_amount = 1u64;
+        let penalty_amount = 1u64;
+        let validator_identity = IdentityKey((&sk).into());
+        let unbonding_amount = Amount::from(value1_amount);
 
-    let start_epoch_index = 1;
-    let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
-    let unbonding_id = unbonding_token.id();
-    let penalty = Penalty::from_bps_squared(penalty_amount);
-    let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
-    let balance_commitment = balance.commit(balance_blinding);
+        let start_epoch_index = 1;
+        let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
+        let unbonding_id = unbonding_token.id();
+        let penalty = Penalty::from_bps_squared(penalty_amount);
+        let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
+        let balance_commitment = balance.commit(balance_blinding);
+
+        (
+            UndelegateClaimProofPublic {
+                balance_commitment,
+                unbonding_id,
+                penalty,
+            },
+            UndelegateClaimProofPrivate {
+                unbonding_amount,
+                balance_blinding,
+            },
+        )
+    };
 
     let blinding_r = Fq::rand(&mut rng);
     let blinding_s = Fq::rand(&mut rng);
 
-    let proof = UndelegateClaimProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
-        unbonding_amount,
-        balance_blinding,
-        balance_commitment,
-        unbonding_id,
-        penalty,
-    )
-    .expect("can create proof");
+    let proof = UndelegateClaimProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, balance_commitment, unbonding_id, penalty);
+    let proof_result = proof.verify(vk, public);
 
     assert!(proof_result.is_ok());
 }
