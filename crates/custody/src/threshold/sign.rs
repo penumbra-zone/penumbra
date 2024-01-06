@@ -348,7 +348,7 @@ pub fn coordinator_round2(
     let reply = CoordinatorRound2 { all_commitments };
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
-    let effect_hash = state.plan.effect_hash(config.fvk());
+    let effect_hash = state.plan.effect_hash(config.fvk())?;
     let signing_packages = {
         reply
             .all_commitments
@@ -432,7 +432,7 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let effect_hash = state.plan.effect_hash(config.fvk());
+    let effect_hash = state.plan.effect_hash(config.fvk())?;
     let signing_packages = coordinator
         .all_commitments
         .into_iter()

@@ -79,7 +79,7 @@ pub fn authorize(spend_key_str: &str, transaction_plan: JsValue) -> WasmResult<J
     let spend_key = SpendKey::from_str(spend_key_str)?;
     let plan: TransactionPlan = plan_proto.try_into()?;
 
-    let auth_data: AuthorizationData = plan.authorize(OsRng, &spend_key);
+    let auth_data: AuthorizationData = plan.authorize(OsRng, &spend_key)?;
     let result = serde_wasm_bindgen::to_value(&auth_data.to_proto())?;
     Ok(result)
 }
