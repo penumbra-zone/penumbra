@@ -8,7 +8,7 @@ use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::SourceContext;
 
-use crate::{component::NoteManager, event, Output};
+use crate::{component::NoteManager, event, output::OutputProofPublic, Output};
 
 #[async_trait]
 impl ActionHandler for Output {
@@ -18,8 +18,10 @@ impl ActionHandler for Output {
 
         output.proof.verify(
             &OUTPUT_PROOF_VERIFICATION_KEY,
-            output.body.balance_commitment,
-            output.body.note_payload.note_commitment,
+            OutputProofPublic {
+                balance_commitment: output.body.balance_commitment,
+                note_commitment: output.body.note_payload.note_commitment,
+            },
         )?;
 
         Ok(())

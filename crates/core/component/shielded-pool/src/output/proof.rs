@@ -26,6 +26,24 @@ use penumbra_asset::{
 };
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 
+/// The public input for an [`OutputProof`].
+#[derive(Clone, Debug)]
+pub struct OutputProofPublic {
+    /// A hiding commitment to the balance.
+    pub balance_commitment: balance::Commitment,
+    ///
+    pub note_commitment: note::StateCommitment,
+}
+
+/// The private input for an [`OutputProof`].
+#[derive(Clone, Debug)]
+pub struct OutputProofPrivate {
+    /// The note being created.
+    pub note: Note,
+    /// A blinding factor to hide the balance of the transaction.
+    pub balance_blinding: Fr,
+}
+
 /// Public:
 /// * vcm (value commitment)
 /// * ncm (note commitment)
@@ -42,22 +60,22 @@ pub struct OutputCircuit {
     /// The note being created.
     note: Note,
     /// The blinding factor used for generating the balance commitment.
-    v_blinding: Fr,
+    balance_blinding: Fr,
 
     // Public inputs
     /// balance commitment of the new note,
-    pub balance_commitment: balance::Commitment,
+    balance_commitment: balance::Commitment,
     /// note commitment of the new note,
-    pub note_commitment: note::StateCommitment,
+    note_commitment: note::StateCommitment,
 }
 
 impl OutputCircuit {
-    pub fn new(note: Note, v_blinding: Fr, balance_commitment: balance::Commitment) -> Self {
+    fn new(public: OutputProofPublic, private: OutputProofPrivate) -> Self {
         Self {
-            note: note.clone(),
-            v_blinding,
-            balance_commitment,
-            note_commitment: note.commit(),
+            note: private.note,
+            balance_blinding: private.balance_blinding,
+            balance_commitment: public.balance_commitment,
+            note_commitment: public.note_commitment,
         }
     }
 }
@@ -66,8 +84,8 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
-        let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
+        let balance_blinding_arr: [u8; 32] = self.balance_blinding.to_bytes();
+        let balance_blinding_vars = UInt8::new_witness_vec(cs.clone(), &balance_blinding_arr)?;
 
         // Public inputs
         let claimed_note_commitment =
@@ -82,7 +100,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 
         // Check integrity of balance commitment.
         let balance_commitment =
-            BalanceVar::from_negative_value_var(note_var.value()).commit(v_blinding_vars)?;
+            BalanceVar::from_negative_value_var(note_var.value()).commit(balance_blinding_vars)?;
         balance_commitment.enforce_equal(&claimed_balance_commitment)?;
 
         // Note commitment integrity
@@ -111,11 +129,11 @@ impl DummyWitness for OutputCircuit {
             Rseed([1u8; 32]),
         )
         .expect("can make a note");
-        let v_blinding = Fr::from(1);
+        let balance_blinding = Fr::from(1);
         OutputCircuit {
             note: note.clone(),
             note_commitment: note.commit(),
-            v_blinding,
+            balance_blinding,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
         }
     }
@@ -132,17 +150,10 @@ impl OutputProof {
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        note: Note,
-        v_blinding: Fr,
-        balance_commitment: balance::Commitment,
-        note_commitment: note::StateCommitment,
+        public: OutputProofPublic,
+        private: OutputProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = OutputCircuit {
-            note,
-            note_commitment,
-            v_blinding,
-            balance_commitment,
-        };
+        let circuit = OutputCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
@@ -163,23 +174,27 @@ impl OutputProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        balance_commitment: balance::Commitment,
-        note_commitment: note::StateCommitment,
+        public: OutputProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            note_commitment
+            public
+                .note_commitment
                 .0
                 .to_field_elements()
                 .ok_or_else(|| anyhow::anyhow!("note commitment is not a valid field element"))?,
         );
         public_inputs.extend(
-            balance_commitment.0.to_field_elements().ok_or_else(|| {
-                anyhow::anyhow!("balance commitment is not a valid field element")
-            })?,
+            public
+                .balance_commitment
+                .0
+                .to_field_elements()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("balance commitment is not a valid field element")
+                })?,
         );
 
         tracing::trace!(?public_inputs);
@@ -247,12 +262,11 @@ mod tests {
     }
 
     proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64) {
+        #![proptest_config(ProptestConfig::with_cases(2))]
+        #[test]
+        fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), balance_blinding in fr_strategy(), value_amount in 2..200u64) {
             let mut rng = OsRng;
             let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
-
 
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -267,7 +281,10 @@ mod tests {
 
             let note = Note::generate(&mut rng, &dest, value_to_send);
             let note_commitment = note.commit();
-            let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+            let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
+
+            let public = OutputProofPublic { balance_commitment, note_commitment };
+            let private = OutputProofPrivate { note, balance_blinding};
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
@@ -275,110 +292,114 @@ mod tests {
                 blinding_r,
                 blinding_s,
                 &pk,
-                note,
-                v_blinding,
-                balance_commitment,
-                note_commitment,
+                public.clone(),
+                private
             )
             .expect("can create proof");
             let serialized_proof: pb::ZkOutputProof = proof.into();
 
             let deserialized_proof = OutputProof::try_from(serialized_proof).expect("can deserialize proof");
-            let proof_result = deserialized_proof.verify(&vk, balance_commitment, note_commitment);
+            let proof_result = deserialized_proof.verify(&vk, public);
 
             assert!(proof_result.is_ok());
         }
     }
 
     proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
+        #![proptest_config(ProptestConfig::with_cases(2))]
+        #[test]
+        fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), balance_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
+            let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_recipient = sk_recipient.full_viewing_key();
+            let ivk_recipient = fvk_recipient.incoming();
+            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+            };
 
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-        let note_commitment = note.commit();
-        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+            let note = Note::generate(&mut rng, &dest, value_to_send);
+            let note_commitment = note.commit();
+            let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let proof = OutputProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            note.clone(),
-            v_blinding,
-            balance_commitment,
-            note_commitment,
-        )
-        .expect("can create proof");
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
 
-        let incorrect_note_commitment = note::commitment(
-            note_blinding,
-            value_to_send,
-            note.diversified_generator(),
-            note.transmission_key_s(),
-            note.clue_key(),
-        );
+            let public = OutputProofPublic { balance_commitment, note_commitment };
+            let private = OutputProofPrivate { note: note.clone(), balance_blinding};
 
-        let proof_result = proof.verify(&vk, balance_commitment, incorrect_note_commitment);
+            let proof = OutputProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public.clone(),
+                private
+            )
+            .expect("can create proof");
 
-        assert!(proof_result.is_err());
-    }
+            let incorrect_note_commitment = note::commitment(
+                note_blinding,
+                value_to_send,
+                note.diversified_generator(),
+                note.transmission_key_s(),
+                note.clue_key(),
+            );
+
+            let bad_public = OutputProofPublic { balance_commitment, note_commitment: incorrect_note_commitment };
+
+            let proof_result = proof.verify(&vk, bad_public);
+
+            assert!(proof_result.is_err());
+        }
     }
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(2))]
         #[test]
-    fn output_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), v_blinding in fr_strategy(), value_amount in 2..200u64, incorrect_v_blinding in fr_strategy()) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
+        fn output_proof_verification_balance_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), balance_blinding in fr_strategy(), value_amount in 2..200u64, incorrect_v_blinding in fr_strategy()) {
+            let mut rng = OsRng;
+            let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
 
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_recipient = sk_recipient.full_viewing_key();
+            let ivk_recipient = fvk_recipient.incoming();
+            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
 
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
+            let value_to_send = Value {
+                amount: value_amount.into(),
+                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+            };
 
-        let note = Note::generate(&mut rng, &dest, value_to_send);
-        let note_commitment = note.commit();
-        let balance_commitment = (-Balance::from(value_to_send)).commit(v_blinding);
+            let note = Note::generate(&mut rng, &dest, value_to_send);
+            let note_commitment = note.commit();
+            let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let proof = OutputProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            note,
-            v_blinding,
-            balance_commitment,
-            note_commitment,
-        )
-        .expect("can create proof");
+            let public = OutputProofPublic { balance_commitment, note_commitment };
+            let private = OutputProofPrivate { note, balance_blinding};
 
-        let incorrect_balance_commitment = (-Balance::from(value_to_send)).commit(incorrect_v_blinding);
+            let blinding_r = Fq::rand(&mut OsRng);
+            let blinding_s = Fq::rand(&mut OsRng);
+            let proof = OutputProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public.clone(),
+                private
+            )
+            .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, incorrect_balance_commitment, note_commitment);
+            let incorrect_balance_commitment = (-Balance::from(value_to_send)).commit(incorrect_v_blinding);
+            let bad_public = OutputProofPublic { balance_commitment: incorrect_balance_commitment, note_commitment  };
 
-        assert!(proof_result.is_err());
-    }
+            let proof_result = proof.verify(&vk, bad_public);
+
+            assert!(proof_result.is_err());
         }
+    }
 }
