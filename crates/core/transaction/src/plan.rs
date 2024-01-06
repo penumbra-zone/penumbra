@@ -56,7 +56,7 @@ impl TransactionPlan {
     ///
     /// This method is not an [`EffectingData`] impl because it needs an extra input,
     /// the FVK, to partially construct the transaction.
-    pub fn effect_hash(&self, fvk: &FullViewingKey) -> EffectHash {
+    pub fn effect_hash(&self, fvk: &FullViewingKey) -> Result<EffectHash> {
         // This implementation is identical to the one for Transaction, except that we
         // don't need to actually construct the entire `TransactionBody` with
         // complete `Action`s, we just need to construct the bodies of the
@@ -68,18 +68,10 @@ impl TransactionPlan {
 
         let parameters_hash = self.transaction_parameters.effect_hash();
 
-        let memo_hash = self
-            .memo
-            .as_ref()
-            .map(|memo_plan| {
-                memo_plan
-                    .memo()
-                    .expect("can compute memo ciphertext")
-                    .effect_hash()
-            })
-            // If the memo is not present, use the all-zero hash to record its absence in
-            // the overall effect hash.
-            .unwrap_or_default();
+        let memo_hash = match self.memo {
+            Some(ref memo) => memo.memo()?.effect_hash(),
+            None => EffectHash::default(),
+        };
 
         let detection_data_hash = self
             .detection_data
@@ -108,7 +100,7 @@ impl TransactionPlan {
             state.update(action_plan.effect_hash(fvk, &memo_key).as_bytes());
         }
 
-        EffectHash(state.finalize().as_array().clone())
+        Ok(EffectHash(state.finalize().as_array().clone()))
     }
 
     pub fn spend_plans(&self) -> impl Iterator<Item = &SpendPlan> {
