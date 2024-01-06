@@ -1,3 +1,4 @@
+use anyhow::Result;
 use penumbra_keys::keys::SpendKey;
 use rand::{CryptoRng, RngCore};
 
@@ -11,8 +12,8 @@ impl TransactionPlan {
         &self,
         mut rng: R,
         sk: &SpendKey,
-    ) -> AuthorizationData {
-        let effect_hash = self.effect_hash(sk.full_viewing_key());
+    ) -> Result<AuthorizationData> {
+        let effect_hash = self.effect_hash(sk.full_viewing_key())?;
         let mut spend_auths = Vec::new();
         let mut delegator_vote_auths = Vec::new();
 
@@ -28,10 +29,10 @@ impl TransactionPlan {
             let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             delegator_vote_auths.push(auth_sig);
         }
-        AuthorizationData {
+        Ok(AuthorizationData {
             effect_hash,
             spend_auths,
             delegator_vote_auths,
-        }
+        })
     }
 }

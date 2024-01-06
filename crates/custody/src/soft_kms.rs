@@ -33,7 +33,7 @@ impl SoftKms {
             policy.check(request)?;
         }
 
-        Ok(request.plan.authorize(OsRng, &self.config.spend_key))
+        Ok(request.plan.authorize(OsRng, &self.config.spend_key)?)
     }
 }
 

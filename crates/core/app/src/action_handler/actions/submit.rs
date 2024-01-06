@@ -353,7 +353,7 @@ static COMMUNITY_POOL_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
 async fn build_community_pool_transaction(
     transaction_plan: TransactionPlan,
 ) -> Result<Transaction> {
-    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY);
+    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY)?;
     transaction_plan.build(
         &COMMUNITY_POOL_FULL_VIEWING_KEY,
         &WitnessData {
