@@ -8,6 +8,7 @@ use anyhow::anyhow;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
 use penumbra_keys::{
+    address::ADDRESS_LEN_BYTES,
     keys::OutgoingViewingKey,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address,
@@ -57,6 +58,12 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
         let text = String::from_utf8_lossy(&bytes[80..])
             .trim_end_matches(0u8 as char)
             .to_string();
+        if (text).len() > MEMO_LEN_BYTES - ADDRESS_LEN_BYTES {
+            anyhow::bail!(
+                "provided memo text exceeds {} bytes",
+                MEMO_LEN_BYTES - ADDRESS_LEN_BYTES
+            );
+        }
 
         Ok(MemoPlaintext {
             return_address,
@@ -222,6 +229,12 @@ impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
             .return_address
             .ok_or_else(|| anyhow::anyhow!("message missing return address"))?
             .try_into()?;
+        if (msg.text).len() > MEMO_LEN_BYTES - ADDRESS_LEN_BYTES {
+            anyhow::bail!(
+                "provided memo text exceeds {} bytes",
+                MEMO_LEN_BYTES - ADDRESS_LEN_BYTES
+            );
+        }
         Ok(Self {
             return_address: sender,
             text: msg.text,
