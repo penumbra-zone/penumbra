@@ -61,7 +61,7 @@ mod tests {
             serde_wasm_bindgen::to_value(&nullifier_derivation_key).unwrap();
         let swap_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_key).unwrap();
         let swap_claim_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_claim_key).unwrap();
-        let undelegate_claim_key_js: JsValue = serde_wasm_bindgen::to_value(&convert_key).unwrap();
+        let convert_key_js: JsValue = serde_wasm_bindgen::to_value(&convert_key).unwrap();
 
         // Dynamically load the proving keys at runtime for each key type.
         load_proving_key(spend_key_js, "spend").expect("can load spend key");
@@ -72,8 +72,7 @@ mod tests {
             .expect("can load nullifier derivation key");
         load_proving_key(swap_key_js, "swap").expect("can load swap key");
         load_proving_key(swap_claim_key_js, "swap_claim").expect("can load swap claim key");
-        load_proving_key(undelegate_claim_key_js, "undelegate_claim")
-            .expect("can load undelegate claim key");
+        load_proving_key(convert_key_js, "convert").expect("can load convert key");
 
         // Define database parameters.
         #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -165,7 +164,9 @@ mod tests {
             "height_spent": "0",
             "position": "3204061134848",
             "source": {
-                "inner": "oJ9Bo9v22srtUmKdTAMVwPOuGumWE2cAuBbZHci8B1I="
+                "transaction": {
+                    "id": "oJ9Bo9v22srtUmKdTAMVwPOuGumWE2cAuBbZHci8B1I="
+                }
             }
         }
         "#;
