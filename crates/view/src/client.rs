@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
-use tonic::codegen::Bytes;
+use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
@@ -16,7 +16,8 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{
-    self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
+    self as pb, view_protocol_service_client::ViewProtocolServiceClient,
+    BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::note;
@@ -27,6 +28,10 @@ use penumbra_transaction::{
 };
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
+
+pub(crate) type BroadcastStatusStream = Pin<
+    Box<dyn Future<Output = Result<Streaming<BroadcastTransactionResponse>, anyhow::Error>> + Send>,
+>;
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -173,7 +178,7 @@ pub trait ViewClient {
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>>;
+    ) -> BroadcastStatusStream;
 
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self))]
@@ -618,27 +623,7 @@ where
         &mut self,
         plan: &TransactionPlan,
     ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>> {
-        // TODO: delete this code and move it into the view service.
-        // The caller shouldn't have to massage the transaction plan to make the request.
-
-        // Get the witness data from the view service only for non-zero amounts of value,
-        // since dummy spends will have a zero amount.
-        let note_commitments = plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() != 0u64.into())
-            .map(|spend| spend.note.commit().into())
-            .chain(
-                plan.swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
-            )
-            .chain(
-                plan.delegator_vote_plans()
-                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
-            )
-            .collect();
-
         let request = WitnessRequest {
-            note_commitments,
             transaction_plan: Some(plan.clone().into()),
         };
 
@@ -827,7 +812,7 @@ where
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>> {
+    ) -> BroadcastStatusStream {
         let mut self2 = self.clone();
         async move {
             let rsp = ViewProtocolServiceClient::broadcast_transaction(
@@ -840,12 +825,7 @@ where
             .await?
             .into_inner();
 
-            let id = rsp
-                .id
-                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?
-                .try_into()?;
-
-            Ok((id, rsp.detection_height))
+            Ok(rsp)
         }
         .boxed()
     }
@@ -881,16 +861,34 @@ where
         };
         let mut self2 = self.clone();
         async move {
-            let rsp = self2.witness_and_build(tonic::Request::new(request));
-
-            let tx = rsp
+            let mut rsp = self2
+                .witness_and_build(tonic::Request::new(request))
                 .await?
-                .into_inner()
-                .transaction
-                .ok_or_else(|| anyhow::anyhow!("empty WitnessAndBuildResponse message"))?
-                .try_into()?;
+                .into_inner();
 
-            Ok(tx)
+            while let Some(rsp) = rsp.try_next().await? {
+                match rsp.status {
+                    Some(status) => match status {
+                        pb::witness_and_build_response::Status::BuildProgress(_) => {
+                            // TODO: should update progress here
+                        },
+                        pb::witness_and_build_response::Status::Complete(c) => {
+                            return c.transaction
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("WitnessAndBuildResponse complete status message missing transaction")
+                                })?
+                                .try_into();
+                        },
+                    },
+                    None => {
+                        // No status is unexpected behavior
+                        return Err(anyhow::anyhow!(
+                            "empty WitnessAndBuildResponse message"
+                        ));},
+                }
+            }
+
+            Err(anyhow::anyhow!("should have received complete status or error"))
         }
         .boxed()
     }

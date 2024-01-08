@@ -33,12 +33,15 @@ use penumbra_keys::{
     Address,
 };
 use penumbra_num::Amount;
+use penumbra_proto::view::v1alpha1::broadcast_transaction_response::{BroadcastSuccess, Confirmed};
+use penumbra_proto::view::v1alpha1::BroadcastTransactionResponse;
 use penumbra_proto::view::v1alpha1::{WalletIdRequest, WalletIdResponse};
 use penumbra_proto::{
     util::tendermint_proxy::v1alpha1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
+    view::v1alpha1::broadcast_transaction_response::Status as BroadcastStatus,
     view::v1alpha1::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
@@ -51,12 +54,14 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, txhash::TransactionId, AuthorizationData, Transaction,
-    TransactionPerspective, WitnessData,
+    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 
 use crate::{Planner, Storage, Worker};
 
+type BroadcastTransactionStream = Pin<
+    Box<dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>> + Send>,
+>;
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
@@ -151,71 +156,115 @@ impl ViewService {
     }
 
     #[instrument(skip(self, transaction), fields(id = %transaction.id()))]
-    async fn broadcast_transaction(
+    fn broadcast_transaction(
         &self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> anyhow::Result<TransactionId> {
+    ) -> BroadcastTransactionStream {
         use penumbra_app::ActionHandler;
 
-        // 1. Pre-check the transaction for (stateless) validity.
-        transaction
-            .check_stateless(())
-            .await
-            .context("transaction pre-submission checks failed")?;
+        let self2 = self.clone();
+        try_stream! {
+                // 1. Pre-check the transaction for (stateless) validity.
+                transaction
+                    .check_stateless(())
+                    .await
+                    .map_err(|e| {
+                        tonic::Status::unavailable(format!(
+                            "transaction pre-submission checks failed: {:#?}",
+                            e
+                        ))
+                    })?;
 
-        // 2. Broadcast the transaction to the network.
-        // Note that "synchronous" here means "wait for the tx to be accepted by
-        // the fullnode", not "wait for the tx to be included on chain.
-        let mut fullnode_client = self.tendermint_proxy_client().await?;
-        let node_rsp = fullnode_client
-            .broadcast_tx_sync(BroadcastTxSyncRequest {
-                params: transaction.encode_to_vec(),
-                req_id: OsRng.gen(),
-            })
-            .await?
-            .into_inner();
-        tracing::info!(?node_rsp);
-        if node_rsp.code != 0 {
-            anyhow::bail!(
-                "Error submitting transaction: code {}, log: {}",
-                node_rsp.code,
-                node_rsp.log,
-            );
-        }
+                // 2. Broadcast the transaction to the network.
+                // Note that "synchronous" here means "wait for the tx to be accepted by
+                // the fullnode", not "wait for the tx to be included on chain.
+                let mut fullnode_client = self2.tendermint_proxy_client().await
+                            .map_err(|e| {
+                                tonic::Status::unavailable(format!(
+                                    "couldn't connect to fullnode: {:#?}",
+                                    e
+                                ))
+                            })?
+                        ;
+                let node_rsp = fullnode_client
+                    .broadcast_tx_sync(BroadcastTxSyncRequest {
+                        params: transaction.encode_to_vec(),
+                        req_id: OsRng.gen(),
+                    })
+                    .await
+                    .map_err(|e| {
+                        tonic::Status::unavailable(format!(
+                            "error broadcasting tx: {:#?}",
+                            e
+                        ))
+                    })?
+                    .into_inner();
+                tracing::info!(?node_rsp);
+                match node_rsp.code {
+                    0 => Ok(()),
+                    _ => Err(tonic::Status::new(
+                        tonic::Code::Internal,
+                        format!(
+                            "Error submitting transaction: code {}, log: {}",
+                            node_rsp.code,
+                            node_rsp.log,
+                        ),
+                    )),
+                }?;
 
-        // 3. Optionally wait for the transaction to be detected by the view service.
-        let nullifier = if await_detection {
-            // This needs to be only *spend* nullifiers because the nullifier detection
-            // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749
-            //
-            // in the meantime, inline the definition from `Transaction`
-            transaction
-                .actions()
-                .filter_map(|action| match action {
-                    penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
-                    /*
-                    penumbra_transaction::Action::SwapClaim(swap_claim) => {
-                        Some(swap_claim.body.nullifier)
-                    }
-                     */
-                    _ => None,
-                })
-                .next()
-        } else {
-            None
-        };
+                // The transaction was submitted so we provide a status update
+                yield BroadcastTransactionResponse{ status: Some(BroadcastStatus::BroadcastSuccess(BroadcastSuccess{id:Some(transaction.id().into())}))};
 
-        if let Some(nullifier) = nullifier {
-            tracing::info!(?nullifier, "waiting for detection of nullifier");
-            let detection = self.storage.nullifier_status(nullifier, true);
-            tokio::time::timeout(std::time::Duration::from_secs(20), detection)
-                .await
-                .context("timeout waiting to detect nullifier of submitted transaction")?
-                .context("error while waiting for detection of submitted transaction")?;
-        }
+                // 3. Optionally wait for the transaction to be detected by the view service.
+                let nullifier = if await_detection {
+                    // This needs to be only *spend* nullifiers because the nullifier detection
+                    // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749
+                    //
+                    // in the meantime, inline the definition from `Transaction`
+                    transaction
+                        .actions()
+                        .filter_map(|action| match action {
+                            penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                            /*
+                            penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                                Some(swap_claim.body.nullifier)
+                            }
+                             */
+                            _ => None,
+                        })
+                        .next()
+                } else {
+                    None
+                };
 
-        Ok(transaction.id())
+                if let Some(nullifier) = nullifier {
+                    tracing::info!(?nullifier, "waiting for detection of nullifier");
+                    let detection = self2.storage.nullifier_status(nullifier, true);
+                    tokio::time::timeout(std::time::Duration::from_secs(20), detection)
+                        .await
+                        .map_err(|_| {
+                            tonic::Status::unavailable(
+                                "timeout waiting to detect nullifier of submitted transaction"
+                            )
+                        })?
+                        .map_err(|_| {
+                            tonic::Status::unavailable(
+                                "error while waiting for detection of submitted transaction"
+                            )
+                        })?;
+                }
+
+                let detection_height = self2.storage
+                    .transaction_by_hash(&transaction.id().0)
+                    .await
+                    .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
+                    .map(|(height, _tx)| height)
+                    // If we didn't find it for some reason, return 0 for unknown.
+                    // TODO: how does this change if we detach extended transaction fetch from scanning?
+                    .unwrap_or(0);
+                yield BroadcastTransactionResponse{ status: Some(BroadcastStatus::Confirmed(Confirmed{id:Some(transaction.id().into()), detection_height}))};
+            }.boxed()
     }
 
     async fn tendermint_proxy_client(
@@ -312,11 +361,25 @@ impl ViewProtocolService for ViewService {
     type UnclaimedSwapsStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::UnclaimedSwapsResponse, tonic::Status>> + Send>,
     >;
+    type BroadcastTransactionStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
+    type WitnessAndBuildStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::WitnessAndBuildResponse, tonic::Status>> + Send>,
+    >;
+    type AuthorizeAndBuildStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::AuthorizeAndBuildResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     async fn broadcast_transaction(
         &self,
         request: tonic::Request<pb::BroadcastTransactionRequest>,
-    ) -> Result<tonic::Response<pb::BroadcastTransactionResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::BroadcastTransactionStream>, tonic::Status> {
         let pb::BroadcastTransactionRequest {
             transaction,
             await_detection,
@@ -328,31 +391,9 @@ impl ViewProtocolService for ViewService {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        let id = self
-            .broadcast_transaction(transaction, await_detection)
-            .await
-            .map_err(|e| {
-                tonic::Status::internal(format!("could not broadcast transaction: {:#}", e))
-            })?;
+        let stream = self.broadcast_transaction(transaction, await_detection);
 
-        let detection_height = if await_detection {
-            // We already awaited detection, so we expect to know about the transaction:
-            self.storage
-                .transaction_by_hash(&id.0)
-                .await
-                .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
-                .map(|(height, _tx)| height)
-                // If we didn't find it for some reason, return 0 for unknown.
-                // TODO: how does this change if we detach extended transaction fetch from scanning?
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
-            id: Some(id.into()),
-            detection_height,
-        }))
+        Ok(tonic::Response::new(stream))
     }
 
     async fn transaction_planner(
@@ -1250,18 +1291,31 @@ impl ViewProtocolService for ViewService {
         let anchor = sct.root();
 
         // Obtain an auth path for each requested note commitment
-        let requested_note_commitments = request
-            .get_ref()
-            .note_commitments
-            .iter()
-            .map(|nc| StateCommitment::try_from(nc.clone()))
-            .collect::<Result<Vec<StateCommitment>, _>>()
-            .map_err(|_| {
-                tonic::Status::new(
-                    tonic::Code::InvalidArgument,
-                    "Unable to deserialize note commitment",
-                )
-            })?;
+        let tx_plan: TransactionPlan =
+            request
+                .get_ref()
+                .to_owned()
+                .transaction_plan
+                .map_or(TransactionPlan::default(), |x| {
+                    x.try_into()
+                        .expect("TransactionPlan should exist in request")
+                });
+
+        let requested_note_commitments: Vec<StateCommitment> = tx_plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                tx_plan
+                    .swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
+            )
+            .chain(
+                tx_plan
+                    .delegator_vote_plans()
+                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
+            )
+            .collect();
 
         tracing::debug!(?requested_note_commitments);
 
@@ -1287,16 +1341,6 @@ impl ViewProtocolService for ViewService {
 
         tracing::debug!(?witness_data);
 
-        let tx_plan: TransactionPlan =
-            request
-                .get_ref()
-                .to_owned()
-                .transaction_plan
-                .map_or(TransactionPlan::default(), |x| {
-                    x.try_into()
-                        .expect("TransactionPlan should exist in request")
-                });
-
         // Now we need to augment the witness data with dummy proofs such that
         // note commitments corresponding to dummy spends also have proofs.
         for nc in tx_plan
@@ -1316,7 +1360,7 @@ impl ViewProtocolService for ViewService {
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::WitnessAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::WitnessAndBuildStream>, tonic::Status> {
         let pb::WitnessAndBuildRequest {
             transaction_plan,
             authorization_data,
@@ -1328,24 +1372,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction plan"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        // Get the witness data from the view service only for non-zero amounts of value,
-        // since dummy spends will have a zero amount.
-        let note_commitments = transaction_plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() != 0u64.into())
-            .map(|spend| spend.note.commit().into())
-            .chain(
-                transaction_plan
-                    .swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
-            )
-            .chain(
-                transaction_plan
-                    .delegator_vote_plans()
-                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
-            )
-            .collect();
-
         let authorization_data: AuthorizationData = authorization_data
             .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
             .try_into()
@@ -1353,7 +1379,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
         let witness_request = pb::WitnessRequest {
-            note_commitments,
             transaction_plan: Some(transaction_plan.clone().into()),
         };
 
@@ -1374,14 +1399,28 @@ impl ViewProtocolService for ViewService {
 
         let transaction = Some(
             transaction_plan
+                // TODO: calling `.build` should provide some mechanism to get progress
+                // updates
                 .build(&fvk, &witness_data, &authorization_data)
                 .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
                 .into(),
         );
 
-        Ok(tonic::Response::new(pb::WitnessAndBuildResponse {
-            transaction,
-        }))
+        let stream = try_stream! {
+            yield pb::WitnessAndBuildResponse {
+                status: Some(pb::witness_and_build_response::Status::Complete(
+                    pb::witness_and_build_response::Complete { transaction },
+                )),
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error witnessing transaction: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn app_parameters(
@@ -1487,7 +1526,7 @@ impl ViewProtocolService for ViewService {
     async fn authorize_and_build(
         &self,
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::AuthorizeAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::AuthorizeAndBuildStream>, tonic::Status> {
         unimplemented!("authorize_and_build")
     }
 

@@ -1,7 +1,8 @@
 use anyhow::Context;
+use futures::{FutureExt, TryStreamExt};
 use penumbra_proto::{
     util::tendermint_proxy::v1alpha1::tendermint_proxy_service_client::TendermintProxyServiceClient,
-    DomainType,
+    view::v1alpha1::broadcast_transaction_response::Status as BroadcastStatus, DomainType,
 };
 use penumbra_transaction::{plan::TransactionPlan, txhash::TransactionId, Transaction};
 use penumbra_view::ViewClient;
@@ -53,15 +54,50 @@ impl App {
         transaction: Transaction,
     ) -> anyhow::Result<TransactionId> {
         println!("broadcasting transaction and awaiting confirmation...");
-        let (id, detection_height) = self.view().broadcast_transaction(transaction, true).await?;
-        if detection_height != 0 {
-            println!(
-                "transaction confirmed and detected: {} @ height {}",
-                id, detection_height
-            );
-        } else {
-            println!("transaction confirmed and detected: {}", id);
+        let mut rsp = self.view().broadcast_transaction(transaction, true).await?;
+
+        let id = (async move {
+            while let Some(rsp) = rsp.try_next().await? {
+                match rsp.status {
+                    Some(status) => match status {
+                        BroadcastStatus::BroadcastSuccess(bs) => {
+                            println!(
+                                "transaction broadcast successfully: {}",
+                                TransactionId::try_from(
+                                    bs.id.expect("detected transaction missing id")
+                                )?
+                            );
+                        }
+                        BroadcastStatus::Confirmed(c) => {
+                            let id = c.id.expect("detected transaction missing id").try_into()?;
+                            if c.detection_height != 0 {
+                                println!(
+                                    "transaction confirmed and detected: {} @ height {}",
+                                    id, c.detection_height
+                                );
+                            } else {
+                                println!("transaction confirmed and detected: {}", id);
+                            }
+                            return Ok(id);
+                        }
+                    },
+                    None => {
+                        // No status is unexpected behavior
+                        return Err(anyhow::anyhow!(
+                            "empty BroadcastTransactionResponse message"
+                        ));
+                    }
+                }
+            }
+
+            Err(anyhow::anyhow!(
+                "should have received BroadcastTransaction status or error"
+            ))
         }
+        .boxed())
+        .await
+        .context("error broadcasting transaction")?;
+
         Ok(id)
     }
 
