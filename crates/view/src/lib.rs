@@ -1,5 +1,5 @@
 #![deny(clippy::unwrap_used)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
 mod client;
 mod metrics;
 mod note_record;
