@@ -1,3 +1,127 @@
+/// Metadata describing the source of a commitment in the state commitment tree.
+///
+/// This message allows clients to track provenance of state commitments, and to
+/// decide whether or not to download block data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CommitmentSource {
+    #[prost(oneof = "commitment_source::Source", tags = "1, 2, 20, 30, 40")]
+    pub source: ::core::option::Option<commitment_source::Source>,
+}
+/// Nested message and enum types in `CommitmentSource`.
+pub mod commitment_source {
+    /// The state commitment was included in the genesis state.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Genesis {}
+    impl ::prost::Name for Genesis {
+        const NAME: &'static str = "Genesis";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.sct.v1alpha1.CommitmentSource.{}", Self::NAME
+            )
+        }
+    }
+    /// The commitment was created by a transaction.
+    ///
+    /// When included in a `CompactBlock` via a `StatePayload`, the transaction source is "dehydrated"
+    /// by stripping the `id` field and putting empty bytes in its place.  When clients perform extended
+    /// transaction fetch, they should match up transaction hashes to "rehydrate" the source info.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Transaction {
+        /// The transaction ID, if specified.
+        ///
+        /// This field may be omitted to save space, and should not be required to be present.
+        /// If the bytes are missing, the message should be interpreted as "Transaction (Unknown)".
+        #[prost(bytes = "vec", tag = "1")]
+        pub id: ::prost::alloc::vec::Vec<u8>,
+    }
+    impl ::prost::Name for Transaction {
+        const NAME: &'static str = "Transaction";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.sct.v1alpha1.CommitmentSource.{}", Self::NAME
+            )
+        }
+    }
+    /// The commitment was created through a validator's funding stream.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FundingStreamReward {
+        /// The epoch index the rewards were issued in.
+        #[prost(uint64, tag = "1")]
+        pub epoch_index: u64,
+    }
+    impl ::prost::Name for FundingStreamReward {
+        const NAME: &'static str = "FundingStreamReward";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.sct.v1alpha1.CommitmentSource.{}", Self::NAME
+            )
+        }
+    }
+    /// The commitment was created through a `CommunityPoolOutput` in a governance-initated transaction.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct CommunityPoolOutput {}
+    impl ::prost::Name for CommunityPoolOutput {
+        const NAME: &'static str = "CommunityPoolOutput";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.sct.v1alpha1.CommitmentSource.{}", Self::NAME
+            )
+        }
+    }
+    /// The commitment was created by an inbound ICS20 transfer.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Ics20Transfer {
+        /// The sequence number of the packet that triggered the transfer
+        #[prost(uint64, tag = "1")]
+        pub packet_seq: u64,
+        /// The channel id the transfer happened on
+        #[prost(string, tag = "2")]
+        pub channel_id: ::prost::alloc::string::String,
+        /// The sender address on the counterparty chain
+        #[prost(string, tag = "3")]
+        pub sender: ::prost::alloc::string::String,
+    }
+    impl ::prost::Name for Ics20Transfer {
+        const NAME: &'static str = "Ics20Transfer";
+        const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.sct.v1alpha1.CommitmentSource.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Source {
+        #[prost(message, tag = "1")]
+        Transaction(Transaction),
+        #[prost(message, tag = "2")]
+        Ics20Transfer(Ics20Transfer),
+        #[prost(message, tag = "20")]
+        FundingStreamReward(FundingStreamReward),
+        #[prost(message, tag = "30")]
+        CommunityPoolOutput(CommunityPoolOutput),
+        #[prost(message, tag = "40")]
+        Genesis(Genesis),
+    }
+}
+impl ::prost::Name for CommitmentSource {
+    const NAME: &'static str = "CommitmentSource";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Nullifier {
@@ -11,32 +135,91 @@ impl ::prost::Name for Nullifier {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+/// Records information about what transaction spent a nullifier.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByNoteRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub note_commitment: ::core::option::Option<
-        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
-    >,
+pub struct NullificationInfo {
+    #[prost(bytes = "vec", tag = "1")]
+    pub id: ::prost::alloc::vec::Vec<u8>,
+    #[prost(uint64, tag = "2")]
+    pub spend_height: u64,
 }
-impl ::prost::Name for TransactionByNoteRequest {
-    const NAME: &'static str = "TransactionByNoteRequest";
+impl ::prost::Name for NullificationInfo {
+    const NAME: &'static str = "NullificationInfo";
     const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+/// Event recording a new commitment added to the SCT.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TransactionByNoteResponse {
+pub struct EventCommitment {
     #[prost(message, optional, tag = "1")]
-    pub note_source: ::core::option::Option<super::super::chain::v1alpha1::NoteSource>,
+    pub commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub position: u64,
+    #[prost(message, optional, tag = "3")]
+    pub source: ::core::option::Option<CommitmentSource>,
 }
-impl ::prost::Name for TransactionByNoteResponse {
-    const NAME: &'static str = "TransactionByNoteResponse";
+impl ::prost::Name for EventCommitment {
+    const NAME: &'static str = "EventCommitment";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// Event recording an SCT anchor (global root).
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventAnchor {
+    #[prost(message, optional, tag = "1")]
+    pub anchor: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+}
+impl ::prost::Name for EventAnchor {
+    const NAME: &'static str = "EventAnchor";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// Event recording an SCT epoch root.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventEpochRoot {
+    #[prost(message, optional, tag = "1")]
+    pub root: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub index: u64,
+}
+impl ::prost::Name for EventEpochRoot {
+    const NAME: &'static str = "EventEpochRoot";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// Event recording an SCT block root.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBlockRoot {
+    #[prost(message, optional, tag = "1")]
+    pub root: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
+    >,
+    #[prost(uint64, tag = "2")]
+    pub height: u64,
+}
+impl ::prost::Name for EventBlockRoot {
+    const NAME: &'static str = "EventBlockRoot";
     const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
@@ -129,37 +312,6 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// TODO: change to generic tx-by-commitment
-        pub async fn transaction_by_note(
-            &mut self,
-            request: impl tonic::IntoRequest<super::TransactionByNoteRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionByNoteResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.component.sct.v1alpha1.QueryService/TransactionByNote",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.core.component.sct.v1alpha1.QueryService",
-                        "TransactionByNote",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
     }
 }
 /// Generated server implementations.
@@ -169,16 +321,7 @@ pub mod query_service_server {
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
-    pub trait QueryService: Send + Sync + 'static {
-        /// TODO: change to generic tx-by-commitment
-        async fn transaction_by_note(
-            &self,
-            request: tonic::Request<super::TransactionByNoteRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionByNoteResponse>,
-            tonic::Status,
-        >;
-    }
+    pub trait QueryService: Send + Sync + 'static {}
     /// Query operations for the SCT component.
     #[derive(Debug)]
     pub struct QueryServiceServer<T: QueryService> {
@@ -259,53 +402,6 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.core.component.sct.v1alpha1.QueryService/TransactionByNote" => {
-                    #[allow(non_camel_case_types)]
-                    struct TransactionByNoteSvc<T: QueryService>(pub Arc<T>);
-                    impl<
-                        T: QueryService,
-                    > tonic::server::UnaryService<super::TransactionByNoteRequest>
-                    for TransactionByNoteSvc<T> {
-                        type Response = super::TransactionByNoteResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::TransactionByNoteRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as QueryService>::transaction_by_note(&inner, request)
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = TransactionByNoteSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
                 _ => {
                     Box::pin(async move {
                         Ok(

@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::core::{
     channel::{
         channel::{Order as ChannelOrder, State as ChannelState},
@@ -11,7 +12,6 @@ use ibc_types::core::{
     connection::State as ConnectionState,
 };
 use penumbra_chain::component::StateReadExt;
-use penumbra_storage::StateWrite;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},

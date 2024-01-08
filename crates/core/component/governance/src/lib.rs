@@ -5,7 +5,7 @@
 pub mod delegator_vote;
 pub use delegator_vote::{
     DelegatorVote, DelegatorVoteBody, DelegatorVoteCircuit, DelegatorVotePlan, DelegatorVoteProof,
-    DelegatorVoteView,
+    DelegatorVoteProofPrivate, DelegatorVoteProofPublic, DelegatorVoteView,
 };
 
 pub mod proposal_deposit_claim;

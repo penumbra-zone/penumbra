@@ -59,7 +59,7 @@ jobs:
       - name: Install Rust
         run: rustup update "1.73" --no-self-update && rustup default "1.73"
       - name: Install cargo-dist
-        run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.4.2/cargo-dist-installer.sh | sh"
+        run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.5.0/cargo-dist-installer.sh | sh"
       - id: plan
         run: |
           cargo dist plan ${{ !github.event.pull_request && format('--tag={0}', github.ref_name) || '' }} --output-format=json > dist-manifest.json
@@ -85,19 +85,19 @@ jobs:
       # matrix: ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix }}
       matrix:
         include:
-        - runner: buildjet-16vcpu-ubuntu-2004
+        - runner: buildjet-16vcpu-ubuntu-2204
           dist_args: --artifacts=local --target=x86_64-unknown-linux-gnu
-          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.4.2/cargo-dist-installer.sh | sh
+          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.5.0/cargo-dist-installer.sh | sh
           targets:
             - x86_64-unknown-linux-gnu
         - runner: macos-12-xl
           dist_args: --artifacts=local --target=aarch64-apple-darwin
-          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.4.2/cargo-dist-installer.sh | sh
+          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.5.0/cargo-dist-installer.sh | sh
           targets:
             - aarch64-apple-darwin
         - runner: macos-12-xl
           dist_args: --artifacts=local --target=x86_64-apple-darwin
-          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.4.2/cargo-dist-installer.sh | sh
+          install_dist: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.5.0/cargo-dist-installer.sh | sh
           targets:
             - x86_64-apple-darwin
 

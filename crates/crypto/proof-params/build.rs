@@ -9,7 +9,7 @@ fn main() {
         "src/gen/spend_pk.bin",
         "src/gen/swap_pk.bin",
         "src/gen/swapclaim_pk.bin",
-        "src/gen/undelegateclaim_pk.bin",
+        "src/gen/convert_pk.bin",
         "src/gen/delegator_vote_pk.bin",
         "src/gen/nullifier_derivation_pk.bin",
     ];
@@ -18,7 +18,7 @@ fn main() {
         "src/gen/spend_vk.param",
         "src/gen/swap_vk.param",
         "src/gen/swapclaim_vk.param",
-        "src/gen/undelegateclaim_vk.param",
+        "src/gen/convert_vk.param",
         "src/gen/delegator_vote_vk.param",
         "src/gen/nullifier_derivation_vk.param",
     ];

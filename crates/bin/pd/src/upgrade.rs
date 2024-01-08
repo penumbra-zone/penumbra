@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{genesis, SUBSTORE_PREFIXES};
 use penumbra_chain::{
@@ -7,7 +8,6 @@ use penumbra_chain::{
     genesis::Content as ChainContent,
 };
 use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
-use penumbra_storage::{StateDelta, StateWrite, Storage};
 
 use crate::testnet::generate::TestnetConfig;
 

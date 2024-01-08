@@ -3,15 +3,13 @@
 # Set virtual workspace's resolver to v1, to support the "rust-docs" script.
 resolver = "1"
 
-exclude = [
-    "tools/proto-compiler",
-    "tools/parameter-setup",
-]
+exclude = ["tools/proto-compiler", "tools/parameter-setup"]
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
   "crates/proto",
-  "crates/storage",
+  "crates/cnidarium",
+  "crates/cnidarium-component",
   "crates/crypto/decaf377-fmd",
   "crates/crypto/decaf377-frost",
   "crates/crypto/decaf377-ka",
@@ -22,12 +20,12 @@ members = [
   "crates/core/num",
   "crates/core/keys",
   "crates/core/asset",
-  "crates/core/component/component",
+  "crates/core/txhash",
   "crates/core/component/chain",
   "crates/core/component/shielded-pool",
   "crates/core/component/governance",
   "crates/core/component/ibc",
-  "crates/core/component/dao",
+  "crates/core/component/community-pool",
   "crates/core/component/dex",
   "crates/core/component/sct",
   "crates/core/component/fee",
@@ -45,7 +43,6 @@ members = [
   "crates/bin/pclientd",
   "crates/bin/pcli",
   "crates/wasm",
-  "crates/narsil/narsil",
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
@@ -60,13 +57,17 @@ opt-level = "s"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.4.2"
+cargo-dist-version = "0.5.0"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "1.73"
 # CI backends to support
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin"]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+]
 # The installers to generate for each app
 installers = []
 # Publish jobs to run in CI

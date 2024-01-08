@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::{
     core::{client::events::UpdateClient, client::msgs::MsgUpdateClient, client::ClientId},
     lightclients::tendermint::client_state::ClientState as TendermintClientState,
@@ -9,7 +10,6 @@ use ibc_types::{
     },
 };
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 use tendermint::validator;
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
@@ -58,7 +58,7 @@ impl MsgHandler for MsgUpdateClient {
             // We use the specified trusted height to query the trusted
             // consensus state the update extends.
             let last_trusted_consensus_state = state
-                .get_verified_consensus_state(trusted_height, self.client_id.clone())
+                .get_verified_consensus_state(&trusted_height, &self.client_id)
                 .await?;
 
             // We also have to convert from an IBC height, which has two
@@ -174,9 +174,10 @@ async fn update_is_already_committed<S: StateRead>(
 
     // check if we already have a consensus state for this height, if we do, check that it is
     // the same as this update, if it is, return early.
-    let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header.clone());
+    let height = untrusted_header.height();
+    let untrusted_consensus_state = TendermintConsensusState::from(untrusted_header);
     if let Ok(stored_consensus_state) = state
-        .get_verified_consensus_state(untrusted_header.height(), client_id.clone())
+        .get_verified_consensus_state(&height, &client_id)
         .await
     {
         let stored_tm_consensus_state = stored_consensus_state;
@@ -196,7 +197,7 @@ async fn client_is_not_expired<S: StateRead>(
     client_state: &TendermintClientState,
 ) -> anyhow::Result<()> {
     let latest_consensus_state = state
-        .get_verified_consensus_state(client_state.latest_height(), client_id.clone())
+        .get_verified_consensus_state(&client_state.latest_height(), client_id)
         .await?;
 
     // TODO(erwan): for now there is no casting that needs to happen because `get_verified_consensus_state` does not return an

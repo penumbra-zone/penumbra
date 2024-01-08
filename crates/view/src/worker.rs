@@ -24,7 +24,7 @@ use penumbra_proto::{
         },
     },
 };
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
 use proto::core::app::v1alpha1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
@@ -102,18 +102,29 @@ impl Worker {
 
     pub async fn fetch_transactions(
         &self,
-        filtered_block: &FilteredBlock,
+        filtered_block: &mut FilteredBlock,
     ) -> anyhow::Result<Vec<Transaction>> {
-        let inbound_transaction_ids = filtered_block.inbound_transaction_ids();
         let spent_nullifiers = filtered_block
             .spent_nullifiers
             .iter()
             .cloned()
             .collect::<BTreeSet<Nullifier>>();
 
+        let has_tx_sources = filtered_block
+            .new_notes
+            .values()
+            .map(|record| &record.source)
+            .chain(
+                filtered_block
+                    .new_swaps
+                    .values()
+                    .map(|record| &record.source),
+            )
+            .any(|source| matches!(source, CommitmentSource::Transaction { .. }));
+
         // Only make a block request if we detected transactions in the FilteredBlock.
         // TODO: in the future, we could perform chaff downloads.
-        if spent_nullifiers.is_empty() && inbound_transaction_ids.is_empty() {
+        if spent_nullifiers.is_empty() && !has_tx_sources {
             return Ok(Vec::new());
         }
 
@@ -122,23 +133,46 @@ impl Worker {
             "fetching full transaction data"
         );
 
-        let transactions = fetch_transactions(self.channel.clone(), filtered_block.height)
-            .await?
-            .iter()
-            .filter_map(|tx| {
-                let tx_id = tx.id().0;
+        let all_transactions =
+            fetch_transactions(self.channel.clone(), filtered_block.height).await?;
 
-                // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
-                if inbound_transaction_ids.contains(&tx_id)
-                    || tx
-                        .spent_nullifiers()
-                        .any(|nf| spent_nullifiers.contains(&nf))
-                {
-                    return Some(tx.clone());
-                }
-                None
-            })
-            .collect::<Vec<_>>();
+        let mut transactions = Vec::new();
+
+        for tx in all_transactions {
+            let tx_id = tx.id().0;
+
+            let mut relevant = false;
+
+            if tx
+                .spent_nullifiers()
+                .any(|nf| spent_nullifiers.contains(&nf))
+            {
+                // The transaction is relevant, it spends one of our nullifiers.
+                relevant = true;
+            }
+
+            // Rehydrate commitment sources.
+            for commitment in tx.state_commitments() {
+                filtered_block
+                    .new_notes
+                    .entry(commitment)
+                    .and_modify(|record| {
+                        relevant = true;
+                        record.source = CommitmentSource::Transaction { id: Some(tx_id) };
+                    });
+                filtered_block
+                    .new_swaps
+                    .entry(commitment)
+                    .and_modify(|record| {
+                        relevant = true;
+                        record.source = CommitmentSource::Transaction { id: Some(tx_id) };
+                    });
+            }
+
+            if relevant {
+                transactions.push(tx);
+            }
+        }
 
         tracing::debug!(
             matched = transactions.len(),
@@ -211,11 +245,11 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let filtered_block =
+                let mut filtered_block =
                     scan_block(&self.fvk, &mut sct_guard, block, &self.storage).await?;
 
                 // Download any transactions we detected.
-                let transactions = self.fetch_transactions(&filtered_block).await?;
+                let transactions = self.fetch_transactions(&mut filtered_block).await?;
 
                 // LPNFT asset IDs won't be known to the chain, so we need to pre-populate them in the local
                 // registry based on transaction contents.
@@ -282,7 +316,7 @@ impl Worker {
                 }
 
                 // Record any new assets we detected.
-                for note_record in &filtered_block.new_notes {
+                for note_record in filtered_block.new_notes.values() {
                     // If the asset is already known, skip it.
 
                     if self
@@ -407,13 +441,16 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::{storage::v1alpha1::query_service_client::QueryServiceClient, DomainType};
+    use penumbra_proto::{
+        cnidarium::v1alpha1::query_service_client::QueryServiceClient, DomainType,
+    };
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
+    tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
-        .key_value(penumbra_proto::storage::v1alpha1::KeyValueRequest {
+        .key_value(penumbra_proto::cnidarium::v1alpha1::KeyValueRequest {
             key: sct_state_key::anchor_by_height(height),
             ..Default::default()
         })

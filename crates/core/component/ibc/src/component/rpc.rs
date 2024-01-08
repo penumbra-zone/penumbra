@@ -1,4 +1,4 @@
-use penumbra_storage::Storage;
+use cnidarium::Storage;
 use tonic::transport::server::Routes;
 
 mod client_query;
@@ -8,10 +8,10 @@ mod consensus_query;
 // TODO: hide and replace with a routes() constructor that
 // bundles up all the internal services
 #[derive(Clone)]
-pub struct IbcQuery(penumbra_storage::Storage);
+pub struct IbcQuery(cnidarium::Storage);
 
 impl IbcQuery {
-    pub fn new(storage: penumbra_storage::Storage) -> Self {
+    pub fn new(storage: cnidarium::Storage) -> Self {
         Self(storage)
     }
 }

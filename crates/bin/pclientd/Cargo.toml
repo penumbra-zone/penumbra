@@ -1,6 +1,6 @@
 [package]
 name = "pclientd"
-version = "0.63.1"
+version = "0.64.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -63,8 +63,8 @@ directories = "4.0.1"
 tempfile = "3.3.0"
 assert_cmd = "2.0"
 base64 = "0.20"
-ibc-types = { version = "0.10.0" }
-ibc-proto = { version = "0.39.0", default-features = false, features = ["server"] }
+ibc-types = { version = "0.11.0" }
+ibc-proto = { version = "0.40.0", default-features = false, features = ["server"] }
 penumbra-proof-params = { path = "../../crypto/proof-params", features = [
     "bundled-proving-keys",
     "download-proving-keys",

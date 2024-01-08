@@ -36,7 +36,7 @@ pub fn build_action(
 
     let full_viewing_key: FullViewingKey = FullViewingKey::from_str(full_viewing_key)?;
 
-    let memo_key = transaction_plan.memo_plan.map(|memo_plan| memo_plan.key);
+    let memo_key = transaction_plan.memo.map(|memo_plan| memo_plan.key);
 
     let action = ActionPlan::build_unauth(action_plan, &full_viewing_key, &witness, memo_key)?;
 

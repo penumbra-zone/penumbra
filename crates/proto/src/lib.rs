@@ -1,4 +1,4 @@
-//! Protobuf definitions for Penumbra.o
+//! Protobuf definitions for Penumbra.
 //!
 //! This crate only contains the `.proto` files and the Rust types generated
 //! from them.  These types only handle parsing the wire format; validation
@@ -29,14 +29,16 @@ pub use prost::{Message, Name};
 /// Helper methods used for shaping the JSON (and other Serde) formats derived from the protos.
 pub mod serializers;
 
+/// Helper trait for using Protobuf messages as ABCI events.
+pub mod event;
 mod protobuf;
 pub use protobuf::DomainType;
 
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub mod state;
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub use state::StateReadProto;
-#[cfg(feature = "penumbra-storage")]
+#[cfg(feature = "cnidarium")]
 pub use state::StateWriteProto;
 
 pub use penumbra::*;
@@ -59,6 +61,13 @@ pub mod penumbra {
             }
         }
 
+        pub mod txhash {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.txhash.v1alpha1.rs");
+                include!("gen/penumbra.core.txhash.v1alpha1.serde.rs");
+            }
+        }
+
         /// Components of the Penumbra application.
         pub mod component {
 
@@ -76,10 +85,10 @@ pub mod penumbra {
                 }
             }
 
-            pub mod dao {
+            pub mod community_pool {
                 pub mod v1alpha1 {
-                    include!("gen/penumbra.core.component.dao.v1alpha1.rs");
-                    include!("gen/penumbra.core.component.dao.v1alpha1.serde.rs");
+                    include!("gen/penumbra.core.component.community_pool.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.community_pool.v1alpha1.serde.rs");
                 }
             }
 
@@ -209,20 +218,10 @@ pub mod penumbra {
         }
     }
 
-    /// Narsil protocol structures.
-    pub mod narsil {
+    pub mod cnidarium {
         pub mod v1alpha1 {
-            pub mod ledger {
-                include!("gen/penumbra.narsil.ledger.v1alpha1.rs");
-                include!("gen/penumbra.narsil.ledger.v1alpha1.serde.rs");
-            }
-        }
-    }
-
-    pub mod storage {
-        pub mod v1alpha1 {
-            include!("gen/penumbra.storage.v1alpha1.rs");
-            include!("gen/penumbra.storage.v1alpha1.serde.rs");
+            include!("gen/penumbra.cnidarium.v1alpha1.rs");
+            include!("gen/penumbra.cnidarium.v1alpha1.serde.rs");
         }
     }
 

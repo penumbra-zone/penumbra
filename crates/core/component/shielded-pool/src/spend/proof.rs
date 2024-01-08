@@ -30,10 +30,39 @@ use penumbra_keys::keys::{
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 
+/// The public input for a [`SpendProof`].
+#[derive(Clone, Debug)]
+pub struct SpendProofPublic {
+    /// the merkle root of the state commitment tree.
+    pub anchor: tct::Root,
+    /// value commitment of the note to be spent.
+    pub balance_commitment: balance::Commitment,
+    /// nullifier of the note to be spent.
+    pub nullifier: Nullifier,
+    /// the randomized verification spend key.
+    pub rk: VerificationKey<SpendAuth>,
+}
+
+/// The private input for a [`SpendProof`].
+#[derive(Clone, Debug)]
+pub struct SpendProofPrivate {
+    /// Inclusion proof for the note commitment.
+    pub state_commitment_proof: tct::Proof,
+    /// The note being spent.
+    pub note: Note,
+    /// The blinding factor used for generating the value commitment.
+    pub v_blinding: Fr,
+    /// The randomizer used for generating the randomized spend auth key.
+    pub spend_auth_randomizer: Fr,
+    /// The spend authorization key.
+    pub ak: VerificationKey<SpendAuth>,
+    /// The nullifier deriving key.
+    pub nk: NullifierKey,
+}
+
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
 pub struct SpendCircuit {
-    // Witnesses
     /// Inclusion proof for the note commitment.
     state_commitment_proof: tct::Proof,
     /// The note being spent.
@@ -47,30 +76,32 @@ pub struct SpendCircuit {
     /// The nullifier deriving key.
     nk: NullifierKey,
 
-    // Public inputs
     /// the merkle root of the state commitment tree.
-    pub anchor: tct::Root,
+    anchor: tct::Root,
     /// value commitment of the note to be spent.
-    pub balance_commitment: balance::Commitment,
+    balance_commitment: balance::Commitment,
     /// nullifier of the note to be spent.
-    pub nullifier: Nullifier,
+    nullifier: Nullifier,
     /// the randomized verification spend key.
-    pub rk: VerificationKey<SpendAuth>,
+    rk: VerificationKey<SpendAuth>,
 }
 
 impl SpendCircuit {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        state_commitment_proof: tct::Proof,
-        note: Note,
-        v_blinding: Fr,
-        spend_auth_randomizer: Fr,
-        ak: VerificationKey<SpendAuth>,
-        nk: NullifierKey,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
+    fn new(
+        SpendProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier,
+            rk,
+        }: SpendProofPublic,
+        SpendProofPrivate {
+            state_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        }: SpendProofPrivate,
     ) -> Self {
         Self {
             state_commitment_proof,
@@ -217,36 +248,16 @@ impl DummyWitness for SpendCircuit {
 pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl SpendProof {
-    #![allow(clippy::too_many_arguments)]
     /// Generate a `SpendProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
     pub fn prove(
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        state_commitment_proof: tct::Proof,
-        note: Note,
-        v_blinding: Fr,
-        spend_auth_randomizer: Fr,
-        ak: VerificationKey<SpendAuth>,
-        nk: NullifierKey,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
+        public: SpendProofPublic,
+        private: SpendProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SpendCircuit {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-        };
+        let circuit = SpendCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
@@ -263,29 +274,28 @@ impl SpendProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
+        public: SpendProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend([Fq::from(anchor.0)]);
+        public_inputs.extend([Fq::from(public.anchor.0)]);
         public_inputs.extend(
-            balance_commitment
+            public
+                .balance_commitment
                 .0
                 .to_field_elements()
                 .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
         );
         public_inputs.extend(
-            nullifier
+            public
+                .nullifier
                 .0
                 .to_field_elements()
                 .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
         );
-        let element_rk = decaf377::Encoding(rk.to_bytes())
+        let element_rk = decaf377::Encoding(public.rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
         public_inputs.extend(
@@ -401,24 +411,29 @@ mod tests {
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
-        let proof = SpendProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+        };
+        let private = SpendProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
+        };
+        let proof = SpendProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            public.clone(), private
         )
         .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
+        let proof_result = proof.verify(&vk, public);
         assert!(proof_result.is_ok());
     }
     }
@@ -459,24 +474,36 @@ mod tests {
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
-        let proof = SpendProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+        };
+        let private = SpendProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
+        };
+        let proof = SpendProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            public,
+            private
         )
         .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, incorrect_anchor, balance_commitment, nf, rk);
+        let incorrect_public = SpendProofPublic {
+            anchor: incorrect_anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+        };
+        let proof_result = proof.verify(&vk, incorrect_public);
         assert!(proof_result.is_err());
     }
     }
@@ -523,23 +550,29 @@ mod tests {
             // In release mode the proof will be created, but will fail to verify.
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
+            let public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: nf,
+                rk,
+            };
+            let private = SpendProofPrivate {
                 state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
                 ak,
                 nk,
-                anchor,
-                balance_commitment,
-                nf,
-                rk,
+            };
+            let proof = SpendProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public.clone(),
+                private
             ).expect("can create proof in release mode");
 
-            proof.verify(&vk, anchor, balance_commitment, nf, rk).expect("boom");
+            proof.verify(&vk, public).expect("boom");
         }
     }
 
@@ -580,24 +613,35 @@ mod tests {
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
+            let public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: nf,
+                rk,
+            };
+            let private = SpendProofPrivate {
                 state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
                 ak,
                 nk,
-                anchor,
-                balance_commitment,
-                nf,
-                rk,
+            };
+            let proof = SpendProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public, private
             )
             .expect("can create proof");
 
-            let proof_result = proof.verify(&vk, anchor, balance_commitment, incorrect_nf, rk);
+            let incorrect_public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: incorrect_nf,
+                rk,
+            };
+            let proof_result = proof.verify(&vk, incorrect_public);
             assert!(proof_result.is_err());
         }
     }
@@ -637,26 +681,38 @@ mod tests {
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
-        let proof = SpendProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+        };
+        let private = SpendProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
+        };
+        let proof = SpendProof::prove(
+            blinding_r,
+            blinding_s,
+            &pk,
+            public, private
+
         )
         .expect("can create proof");
 
         let incorrect_balance_commitment = value_to_send.commit(incorrect_blinding_factor);
+        let incorrect_public = SpendProofPublic {
+            anchor,
+            balance_commitment: incorrect_balance_commitment,
+            nullifier: nf,
+            rk,
+        };
 
-        let proof_result = proof.verify(&vk, anchor, incorrect_balance_commitment, nf, rk);
+        let proof_result = proof.verify(&vk, incorrect_public);
         assert!(proof_result.is_err());
     }
     }
@@ -700,24 +756,35 @@ mod tests {
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
+            let public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: nf,
+                rk,
+            };
+            let private = SpendProofPrivate {
                 state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
                 ak,
                 nk,
-                anchor,
-                balance_commitment,
-                nf,
-                rk,
+            };
+            let proof = SpendProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public, private
             )
             .expect("should be able to form proof");
 
-            let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, incorrect_rk);
+            let incorrect_public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: nf,
+                rk: incorrect_rk,
+            };
+            let proof_result = proof.verify(&vk, incorrect_public);
             assert!(proof_result.is_err());
         }
     }
@@ -758,24 +825,29 @@ mod tests {
 
             let blinding_r = Fq::rand(&mut OsRng);
             let blinding_s = Fq::rand(&mut OsRng);
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
+            let public = SpendProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier: nf,
+                rk,
+            };
+            let private = SpendProofPrivate {
                 state_commitment_proof,
                 note,
                 v_blinding,
                 spend_auth_randomizer,
                 ak,
                 nk,
-                anchor,
-                balance_commitment,
-                nf,
-                rk,
+            };
+            let proof = SpendProof::prove(
+                blinding_r,
+                blinding_s,
+                &pk,
+                public.clone(), private
             )
             .expect("should be able to form proof");
 
-            let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk);
+            let proof_result = proof.verify(&vk, public);
             assert!(proof_result.is_ok());
         }
     }

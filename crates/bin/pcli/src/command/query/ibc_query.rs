@@ -9,7 +9,7 @@ use ibc_proto::ibc::core::connection::v1::{QueryConnectionRequest, QueryConnecti
 use ibc_types::core::channel::ChannelEnd;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 
-use penumbra_proto::storage::v1alpha1::{
+use penumbra_proto::cnidarium::v1alpha1::{
     query_service_client::QueryServiceClient as StorageQueryServiceClient, KeyValueRequest,
 };
 use penumbra_proto::DomainType;
@@ -117,7 +117,8 @@ impl IbcCmd {
             IbcCmd::Channel { port, channel_id } => {
                 // TODO channel lookup should be updated to use the ibc query logic.
                 // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/channel/v1/query_client/struct.QueryClient.html#method.channel
-                let key = format!("channelEnds/ports/{port}/channels/channel-{channel_id}");
+                let key =
+                    format!("ibc-data/channelEnds/ports/{port}/channels/channel-{channel_id}");
                 let value = client
                     .key_value(KeyValueRequest {
                         key,

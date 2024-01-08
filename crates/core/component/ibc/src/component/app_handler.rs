@@ -8,11 +8,11 @@
 /// token transfers.
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::channel::msgs::{
     MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
     MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
 };
-use penumbra_storage::{StateRead, StateWrite};
 
 /// AppHandlerCheck defines the interface for an IBC application to consume IBC channel and packet
 /// events, and apply their validation logic. This validation logic is used for stateful validation

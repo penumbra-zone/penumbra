@@ -1229,6 +1229,122 @@ impl ::prost::Name for SimulateTradeResponse {
         ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSwap {
+    /// The trading pair to swap.
+    #[prost(message, optional, tag = "1")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// The amount for asset 1.
+    #[prost(message, optional, tag = "2")]
+    pub delta_1_i: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+    /// The amount for asset 2.
+    #[prost(message, optional, tag = "3")]
+    pub delta_2_i: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+    /// The swap commitment.
+    #[prost(message, optional, tag = "4")]
+    pub swap_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+}
+impl ::prost::Name for EventSwap {
+    const NAME: &'static str = "EventSwap";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSwapClaim {
+    /// The trading pair that is subject of the swap claim.
+    #[prost(message, optional, tag = "1")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// Note commitment for the first asset.
+    #[prost(message, optional, tag = "2")]
+    pub output_1_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+    /// Note commitment for the second asset.
+    #[prost(message, optional, tag = "3")]
+    pub output_2_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+    /// The nullifier for the swap commitment.
+    #[prost(message, optional, tag = "4")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
+}
+impl ::prost::Name for EventSwapClaim {
+    const NAME: &'static str = "EventSwapClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPositionOpen {
+    /// Position ID.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+    /// The trading pair to open.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// The amount for asset 1.
+    #[prost(message, optional, tag = "3")]
+    pub reserves_1: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+    /// The amount for asset 2.
+    #[prost(message, optional, tag = "4")]
+    pub reserves_2: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+    /// The trading fee for the position, expressed in basis points.
+    /// e.g. 2% fee is expressed as 200, 100% fee is expressed as 10000;
+    #[prost(uint32, tag = "5")]
+    pub trading_fee: u32,
+}
+impl ::prost::Name for EventPositionOpen {
+    const NAME: &'static str = "EventPositionOpen";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPositionClose {
+    /// The ID of the closed position
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+}
+impl ::prost::Name for EventPositionClose {
+    const NAME: &'static str = "EventPositionClose";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPositionWithdraw {
+    /// The ID of the withdrawn position.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+    /// The trading pair of the withdrawn position.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// The reserves of asset 1 of the withdrawn position.
+    #[prost(message, optional, tag = "3")]
+    pub reserves_1: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+    /// The reserves of asset 2 of the withdrawn position.
+    #[prost(message, optional, tag = "4")]
+    pub reserves_2: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
+}
+impl ::prost::Name for EventPositionWithdraw {
+    const NAME: &'static str = "EventPositionWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

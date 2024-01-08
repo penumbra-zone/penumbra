@@ -19,6 +19,8 @@ use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{r1cs::FqVar, Fq};
 use ethnum::U256;
 
+use crate::{Amount, AmountVar};
+
 use self::div::stub_div_rem_u384_by_u256;
 
 #[derive(thiserror::Error, Debug)]
@@ -174,6 +176,16 @@ impl U128x128 {
     /// Saturating integer subtraction. Computes self - rhs, saturating at the numeric bounds instead of overflowing.
     pub fn saturating_sub(self, rhs: &Self) -> Self {
         U128x128(self.0.saturating_sub(rhs.0))
+    }
+
+    /// Multiply an amount by this fraction, then round down.
+    pub fn apply_to_amount(self, rhs: &Amount) -> Result<Amount, Error> {
+        let mul = (Self::from(rhs) * self)?;
+        let out = mul
+            .round_down()
+            .try_into()
+            .expect("converting integral U128xU128 into Amount will succeed");
+        Ok(out)
     }
 }
 
@@ -629,6 +641,23 @@ impl U128x128Var {
             ],
         }
     }
+    /// Multiply an amount by this fraction, then round down.
+    pub fn apply_to_amount(self, rhs: AmountVar) -> Result<AmountVar, SynthesisError> {
+        U128x128Var::from_amount_var(rhs)?
+            .checked_mul(&self)?
+            .round_down_to_amount()
+    }
+
+    pub fn round_down_to_amount(self) -> Result<AmountVar, SynthesisError> {
+        let bits = self.limbs[2]
+            .to_bits_le()
+            .into_iter()
+            .chain(self.limbs[3].to_bits_le().into_iter())
+            .collect::<Vec<Boolean<Fq>>>();
+        Ok(AmountVar {
+            amount: Boolean::<Fq>::le_bits_to_fp_var(&bits)?,
+        })
+    }
 
     pub fn zero() -> U128x128Var {
         Self {
@@ -715,6 +744,8 @@ mod test {
     use decaf377::Bls12_377;
     use proptest::prelude::*;
     use rand_core::OsRng;
+
+    use crate::Amount;
 
     use super::*;
 
@@ -1298,6 +1329,76 @@ mod test {
         // We want the same behavior in release or debug mode, so we will panic if the proof does not verify.
         if !proof_result {
             panic!("should not be able to verify proof");
+        }
+    }
+
+    proptest! {
+            #![proptest_config(ProptestConfig::with_cases(5))]
+        #[test]
+        fn round_down_to_amount(
+            a_int in any::<u128>(),
+            a_frac in any::<u128>(),
+            ) {
+            let a = U128x128(
+                U256([a_frac, a_int])
+            );
+
+            let expected_c = a.round_down().try_into().expect("should be able to round down OOC");
+
+            let circuit = TestRoundDownCircuit {
+                a,
+                c: expected_c,
+            };
+
+            let (pk, vk) = TestRoundDownCircuit::generate_test_parameters();
+            let mut rng = OsRng;
+
+            let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(&pk, circuit, &mut rng)
+                .expect("should be able to form proof");
+
+            let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify(
+                &vk,
+                &expected_c.to_field_elements().unwrap(),
+                &proof,
+            );
+            assert!(proof_result.is_ok());
+        }
+    }
+
+    struct TestRoundDownCircuit {
+        a: U128x128,
+
+        // `c` is expected to be `a` rounded down to an `Amount`
+        pub c: Amount,
+    }
+
+    impl ConstraintSynthesizer<Fq> for TestRoundDownCircuit {
+        fn generate_constraints(
+            self,
+            cs: ConstraintSystemRef<Fq>,
+        ) -> ark_relations::r1cs::Result<()> {
+            let a_var = U128x128Var::new_witness(cs.clone(), || Ok(self.a))?;
+            let c_public_var = AmountVar::new_input(cs, || Ok(self.c))?;
+            let c_var = a_var.round_down_to_amount()?;
+            c_var.enforce_equal(&c_public_var)?;
+            Ok(())
+        }
+    }
+
+    impl TestRoundDownCircuit {
+        fn generate_test_parameters() -> (ProvingKey<Bls12_377>, VerifyingKey<Bls12_377>) {
+            let num: [u8; 32] = [0u8; 32];
+            let a = U128x128::from_bytes(num);
+            let c: Amount = a
+                .round_down()
+                .try_into()
+                .expect("should be able to round down OOC");
+            let circuit = TestRoundDownCircuit { a, c };
+            let (pk, vk) = Groth16::<Bls12_377, LibsnarkReduction>::circuit_specific_setup(
+                circuit, &mut OsRng,
+            )
+            .expect("can perform circuit specific setup");
+            (pk, vk)
         }
     }
 }

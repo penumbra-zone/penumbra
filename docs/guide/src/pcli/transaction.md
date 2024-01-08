@@ -50,7 +50,7 @@ later to add the previously delegated funds to your wallet.
 
 Penumbra features on-chain governance similar to Cosmos Hub where anyone can submit proposals and
 both validators and delegators to vote on them. Penumbra's governance model incorporates a single
-DAO account, into which anyone can freely deposit, but from which only a successful governance vote
+Community Pool account, into which anyone can freely deposit, but from which only a successful governance vote
 can spend. For details on using governance, see the [governance section](./governance.md).
 
 ## Managing Liquidity Positions
@@ -159,6 +159,7 @@ Penumbra's constant-price pool is a versatile market primitive, allowing users e
 ```bash
 pcli tx lp replicate xyk <TRADING_PAIR> <QUANTITY> [--current-price AMT] [--fee-bps AMT]
 ```
+
 For instance, to provide ~100penumbra and ~100test_usd liquidity on the `penumbra:test_usd` pair with a pool fee of `33bps`, run:
 
 ```bash
@@ -180,7 +181,7 @@ has been configured between the Osmosis testnet and the *current* Penumbra testn
 
 Penumbra aims to implement full IBC support for cross-chain asset transfers. For now, however,
 we're only running a relayer between the Penumbra testnet and the [Osmosis testnet] chains.
-For Testnet 63 Rhea, the channel information is:
+For Testnet 64 Titan, the channel information is:
 
 <!--
 To update the information below, update the Hermes config, then run:
@@ -194,21 +195,21 @@ during setup.
   "ordering": 1,
   "counterparty": {
     "port_id": "transfer",
-    "channel_id": "channel-4217"
+    "channel_id": "channel-4687"
   },
   "connection_hops": [
-    "connection-0"
+    "connection-1"
   ],
   "version": "ics20-1",
   "port_id": "transfer",
-  "channel_id": "channel-0"
+  "channel_id": "channel-1"
 }
 ```
 
-The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 3909.
+The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 4544.
 There's one more piece of information we need to make an IBC withdrawal: the appropriate IBC
 timeout height, which is composed of two values: `<counterparty_chain_id_revision>-<counterparty_chain_block_height>`.
-For the Osmosis testnet, as of 2023Q3, the chain id is `osmo-test-5`, meaning the chain id revision is `5`.
+For the Osmosis testnet, as of 2023Q4, the chain id is `osmo-test-5`, meaning the chain id revision is `5`.
 So a value like `5-5000000` (i.e. revision 5 at height 5 million) will work.
 
 To initiate an IBC withdrawal from Penumbra testnet to Osmosis testnet:

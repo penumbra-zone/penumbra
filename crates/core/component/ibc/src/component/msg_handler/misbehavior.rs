@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::client::{events, ClientType};
 use ibc_types::core::client::{msgs::MsgSubmitMisbehaviour, ClientId};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
@@ -7,7 +8,6 @@ use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
 use ibc_types::lightclients::tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
 use ibc_types::lightclients::tendermint::TENDERMINT_CLIENT_TYPE;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
     ProdVerifier, Verdict, Verifier,
@@ -65,14 +65,14 @@ impl MsgHandler for MsgSubmitMisbehaviour {
 
         verify_misbehavior_header(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header1,
             &trusted_client_state,
         )
         .await?;
         verify_misbehavior_header(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header2,
             &trusted_client_state,
         )
@@ -116,13 +116,13 @@ fn client_is_not_frozen(client: &TendermintClientState) -> anyhow::Result<()> {
 
 async fn verify_misbehavior_header<S: StateRead>(
     state: S,
-    client_id: ClientId,
+    client_id: &ClientId,
     mb_header: &TendermintHeader,
     trusted_client_state: &TendermintClientState,
 ) -> Result<()> {
     let trusted_height = mb_header.trusted_height;
     let last_trusted_consensus_state = state
-        .get_verified_consensus_state(trusted_height, client_id)
+        .get_verified_consensus_state(&trusted_height, &client_id)
         .await?;
 
     let trusted_height = trusted_height

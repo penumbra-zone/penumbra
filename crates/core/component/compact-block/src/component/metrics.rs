@@ -36,7 +36,7 @@ pub fn register_metrics() {
 // pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
 
 pub const COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS: &str =
-    "penumbra_component_compact_block_compact_block_range_active_connections";
+    "cnidarium_component_compact_block_compact_block_range_active_connections";
 
 pub const COMPACT_BLOCK_RANGE_SERVED_TOTAL: &str =
-    "penumbra_component_compact_block_compact_block_range_served_total";
+    "cnidarium_component_compact_block_compact_block_range_served_total";

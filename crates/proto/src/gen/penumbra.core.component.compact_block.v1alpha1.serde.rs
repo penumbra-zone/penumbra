@@ -505,10 +505,16 @@ impl serde::Serialize for StatePayload {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if self.source.is_some() {
+            len += 1;
+        }
         if self.state_payload.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1alpha1.StatePayload", len)?;
+        if let Some(v) = self.source.as_ref() {
+            struct_ser.serialize_field("source", v)?;
+        }
         if let Some(v) = self.state_payload.as_ref() {
             match v {
                 state_payload::StatePayload::RolledUp(v) => {
@@ -532,6 +538,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "source",
             "rolled_up",
             "rolledUp",
             "note",
@@ -540,6 +547,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            Source,
             RolledUp,
             Note,
             Swap,
@@ -564,6 +572,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                         E: serde::de::Error,
                     {
                         match value {
+                            "source" => Ok(GeneratedField::Source),
                             "rolledUp" | "rolled_up" => Ok(GeneratedField::RolledUp),
                             "note" => Ok(GeneratedField::Note),
                             "swap" => Ok(GeneratedField::Swap),
@@ -586,9 +595,16 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                 where
                     V: serde::de::MapAccess<'de>,
             {
+                let mut source__ = None;
                 let mut state_payload__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
+                        GeneratedField::Source => {
+                            if source__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("source"));
+                            }
+                            source__ = map_.next_value()?;
+                        }
                         GeneratedField::RolledUp => {
                             if state_payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rolledUp"));
@@ -613,6 +629,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                     }
                 }
                 Ok(StatePayload {
+                    source: source__,
                     state_payload: state_payload__,
                 })
             }
@@ -628,16 +645,10 @@ impl serde::Serialize for state_payload::Note {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.source.is_some() {
-            len += 1;
-        }
         if self.note.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1alpha1.StatePayload.Note", len)?;
-        if let Some(v) = self.source.as_ref() {
-            struct_ser.serialize_field("source", v)?;
-        }
         if let Some(v) = self.note.as_ref() {
             struct_ser.serialize_field("note", v)?;
         }
@@ -651,13 +662,11 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "source",
             "note",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Source,
             Note,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -680,7 +689,6 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                         E: serde::de::Error,
                     {
                         match value {
-                            "source" => Ok(GeneratedField::Source),
                             "note" => Ok(GeneratedField::Note),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -701,16 +709,9 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut source__ = None;
                 let mut note__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Source => {
-                            if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("source"));
-                            }
-                            source__ = map_.next_value()?;
-                        }
                         GeneratedField::Note => {
                             if note__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("note"));
@@ -720,7 +721,6 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                     }
                 }
                 Ok(state_payload::Note {
-                    source: source__,
                     note: note__,
                 })
             }
@@ -827,16 +827,10 @@ impl serde::Serialize for state_payload::Swap {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.source.is_some() {
-            len += 1;
-        }
         if self.swap.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1alpha1.StatePayload.Swap", len)?;
-        if let Some(v) = self.source.as_ref() {
-            struct_ser.serialize_field("source", v)?;
-        }
         if let Some(v) = self.swap.as_ref() {
             struct_ser.serialize_field("swap", v)?;
         }
@@ -850,13 +844,11 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "source",
             "swap",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Source,
             Swap,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -879,7 +871,6 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                         E: serde::de::Error,
                     {
                         match value {
-                            "source" => Ok(GeneratedField::Source),
                             "swap" => Ok(GeneratedField::Swap),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -900,16 +891,9 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut source__ = None;
                 let mut swap__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Source => {
-                            if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("source"));
-                            }
-                            source__ = map_.next_value()?;
-                        }
                         GeneratedField::Swap => {
                             if swap__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("swap"));
@@ -919,7 +903,6 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                     }
                 }
                 Ok(state_payload::Swap {
-                    source: source__,
                     swap: swap__,
                 })
             }

@@ -1,6 +1,6 @@
 [package]
 name = "pd"
-version = "0.63.1"
+version = "0.64.1"
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
 description = "The node software for the Penumbra Zone"
@@ -22,7 +22,7 @@ download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../../proto" }
-penumbra-storage = { path = "../../storage", features = ["migration", "rpc"] }
+cnidarium = { path = "../../cnidarium", features = ["migration", "rpc"] }
 penumbra-asset = { path = "../../core/asset" }
 penumbra-keys = { path = "../../core/keys" }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = [
@@ -57,9 +57,11 @@ tendermint-config = "0.34.0"
 tendermint-proto = "0.34.0"
 tendermint = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
-ibc-types = { version = "0.10.0" }
+ibc-types = { version = "0.11.0" }
 
-ibc-proto = { version = "0.39.0", default-features = false, features = ["server"] }
+ibc-proto = { version = "0.40.0", default-features = false, features = [
+    "server",
+] }
 prost = "0.12.3"
 toml = "0.5"
 # We don't need this crate at all, but its upstream published a breaking change as

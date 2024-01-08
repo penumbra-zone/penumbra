@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_component::ActionHandler;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
+use penumbra_proto::StateWriteProto as _;
 
 use crate::{
     component::{PositionManager, PositionRead},
@@ -37,7 +38,7 @@ impl ActionHandler for PositionOpen {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         state.put_position(self.position.clone()).await?;
-        state.record(event::position_open(self));
+        state.record_proto(event::position_open(self));
         Ok(())
     }
 }

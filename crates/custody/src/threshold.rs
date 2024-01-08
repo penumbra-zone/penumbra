@@ -460,7 +460,103 @@ mod test {
 
     #[tokio::test]
     async fn test_transaction_signing() -> Result<()> {
-        const TEST_PLAN: &'static str = r#"{"actions":[{"output":{"value":{"amount":{"lo":"1000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"4m4bxumA0sHuonPjr12UnI4CWKj1wuq4y6rrMRb0nw0=","valueBlinding":"HHS7tY19JuWMwdKJvtKs8AmhMVa7osSpZ+CCBszu/AE=","proofBlindingR":"FmbXZoh5Pd2mEtiAEkkAZpllWo9pdwTPlXeODBXHUxA=","proofBlindingS":"0x96kUchW8jFfnxglAoMtvzPT5/RLg2RvfkRKjlU8BA="}},{"spend":{"note":{"value":{"amount":{"lo":"1000000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"rseed":"3svSxWREwvvVzb2upQuu3Cyr56O2kRbo0nuX4+OWcdc=","address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="}},"position":"90","randomizer":"dJvg8FGvw5rJAvtSQvlQ4imLXahVXn419+xroVMLSwA=","valueBlinding":"Ce1/hBKLEMB/bjEA06b4zUJVEstNUjkDBWM3WrVu+QM=","proofBlindingR":"gXA7M4VR48IoxKrf4w4jGae2O7OGlTecU/RBXd4g6QI=","proofBlindingS":"7+Rhrve7mdgsKbkfFq41yfq9+Mx2qRAZDtwP3VUDAAs="}},{"output":{"value":{"amount":{"lo":"999000000000"},"assetId":{"inner":"KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="}},"destAddress":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"rCTbPc6xWyEcDV73Pl+W6XXbACShVOM+8/vdc7RSLlo=","valueBlinding":"DP0FN5CV4g9xZN6u2W6/4o6I/Zwr38n81q4YnJ6COAA=","proofBlindingR":"KV3u8Dc+cZo0HFUIn7n95UkQVXWeYp+3vAVuIpCIZRI=","proofBlindingS":"i00KyJVklWXUhVRy37N3p9szFIvo7383to/qxBexnBE="}}],"chainId":"penumbra-testnet-rhea-8b2dfc5c","fee":{"amount":{}},"cluePlans":[{"address":{"inner":"UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="},"rseed":"1Li0Qx05txsyOrx2pfO9kD5rDSUMy9e+j/hHmucqARI="},{"address":{"inner":"6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="},"rseed":"ePtCm9/tFcpLBdlgyu8bYRKV5CHbqd823UGDhG1LsGY="}],"memoPlan":{"plaintext":{"returnAddress":{"inner":"OB8AEHEehWo0o0/Dn7JtNmgdDX1VRPaDgn6MLl6n41hVjI3llljrTDCFRRjN5mkNwVwsAyJ/UdfjNIFzbGV62YVXfBJ/IMVTq2CNAHwR8Qo="}},"key":"3plOcPZzKKj8KT3sVdKnblUUFDRzCmMWYtgwB3BqfXQ="}}"#;
+        const TEST_PLAN: &'static str = r#"
+{
+    "actions": [
+        {
+            "output": {
+                "value": {
+                    "amount": {
+                        "lo": "1000000000"
+                    },
+                    "assetId": {
+                        "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+                    }
+                },
+                "destAddress": {
+                    "inner": "UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="
+                },
+                "rseed": "4m4bxumA0sHuonPjr12UnI4CWKj1wuq4y6rrMRb0nw0=",
+                "valueBlinding": "HHS7tY19JuWMwdKJvtKs8AmhMVa7osSpZ+CCBszu/AE=",
+                "proofBlindingR": "FmbXZoh5Pd2mEtiAEkkAZpllWo9pdwTPlXeODBXHUxA=",
+                "proofBlindingS": "0x96kUchW8jFfnxglAoMtvzPT5/RLg2RvfkRKjlU8BA="
+            }
+        },
+        {
+            "spend": {
+                "note": {
+                    "value": {
+                        "amount": {
+                            "lo": "1000000000000"
+                        },
+                        "assetId": {
+                            "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+                        }
+                    },
+                    "rseed": "3svSxWREwvvVzb2upQuu3Cyr56O2kRbo0nuX4+OWcdc=",
+                    "address": {
+                        "inner": "6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="
+                    }
+                },
+                "position": "90",
+                "randomizer": "dJvg8FGvw5rJAvtSQvlQ4imLXahVXn419+xroVMLSwA=",
+                "valueBlinding": "Ce1/hBKLEMB/bjEA06b4zUJVEstNUjkDBWM3WrVu+QM=",
+                "proofBlindingR": "gXA7M4VR48IoxKrf4w4jGae2O7OGlTecU/RBXd4g6QI=",
+                "proofBlindingS": "7+Rhrve7mdgsKbkfFq41yfq9+Mx2qRAZDtwP3VUDAAs="
+            }
+        },
+        {
+            "output": {
+                "value": {
+                    "amount": {
+                        "lo": "999000000000"
+                    },
+                    "assetId": {
+                        "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA="
+                    }
+                },
+                "destAddress": {
+                    "inner": "6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="
+                },
+                "rseed": "rCTbPc6xWyEcDV73Pl+W6XXbACShVOM+8/vdc7RSLlo=",
+                "valueBlinding": "DP0FN5CV4g9xZN6u2W6/4o6I/Zwr38n81q4YnJ6COAA=",
+                "proofBlindingR": "KV3u8Dc+cZo0HFUIn7n95UkQVXWeYp+3vAVuIpCIZRI=",
+                "proofBlindingS": "i00KyJVklWXUhVRy37N3p9szFIvo7383to/qxBexnBE="
+            }
+        }
+    ],
+    "transactionParameters": {
+        "chainId": "penumbra-testnet-rhea-8b2dfc5c",
+        "fee": {
+            "amount": {}
+        }
+    },
+    "detectionData": {
+        "cluePlans": [
+            {
+                "address": {
+                    "inner": "UuFEV0VoZNxNTttsJVJzRqEzW4bm0z2RCxhUneve0KTvDjQipeg/1zx0ftbDjgr6uPiSA70yJIdlpFyxeLyXfAAtmSy6BCpR3YjEkf1bI5Q="
+                },
+                "rseed": "1Li0Qx05txsyOrx2pfO9kD5rDSUMy9e+j/hHmucqARI="
+            },
+            {
+                "address": {
+                    "inner": "6146pY5upA9bQa4tag+6hXpMXa2kO5fcicSJGVEUP4HhZt7m4FpwAJ3+qwr5gpbHUON7DigyEJRpeV31FATGdfJhHBzGDWC+CIvi8dyIzGo="
+                },
+                "rseed": "ePtCm9/tFcpLBdlgyu8bYRKV5CHbqd823UGDhG1LsGY="
+            }
+        ]
+    },
+    "memo": {
+        "plaintext": {
+            "returnAddress": {
+                "inner": "OB8AEHEehWo0o0/Dn7JtNmgdDX1VRPaDgn6MLl6n41hVjI3llljrTDCFRRjN5mkNwVwsAyJ/UdfjNIFzbGV62YVXfBJ/IMVTq2CNAHwR8Qo="
+            }
+        },
+        "key": "3plOcPZzKKj8KT3sVdKnblUUFDRzCmMWYtgwB3BqfXQ="
+    }
+}
+        "#;
         const T: u16 = 3;
         const N: u16 = 3;
 

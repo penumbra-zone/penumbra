@@ -44,10 +44,10 @@ pub struct AppParameters {
     pub chain_params: ::core::option::Option<
         super::super::component::chain::v1alpha1::ChainParameters,
     >,
-    /// DAO module parameters.
+    /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
-    pub dao_params: ::core::option::Option<
-        super::super::component::dao::v1alpha1::DaoParameters,
+    pub community_pool_params: ::core::option::Option<
+        super::super::component::community_pool::v1alpha1::CommunityPoolParameters,
     >,
     /// Governance module parameters.
     #[prost(message, optional, tag = "3")]
@@ -162,10 +162,10 @@ pub struct GenesisContent {
     pub chain_content: ::core::option::Option<
         super::super::component::chain::v1alpha1::GenesisContent,
     >,
-    /// DAO module genesis state.
+    /// Community Pool module genesis state.
     #[prost(message, optional, tag = "6")]
-    pub dao_content: ::core::option::Option<
-        super::super::component::dao::v1alpha1::GenesisContent,
+    pub community_pool_content: ::core::option::Option<
+        super::super::component::community_pool::v1alpha1::GenesisContent,
     >,
     /// Fee module genesis state.
     #[prost(message, optional, tag = "7")]

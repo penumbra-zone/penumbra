@@ -1,6 +1,5 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
-use penumbra_fee::Fee;
 use penumbra_keys::AddressView;
 use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 
@@ -14,9 +13,8 @@ use penumbra_tct as tct;
 pub use transaction_perspective::TransactionPerspective;
 
 use crate::{
-    memo::MemoCiphertext,
-    transaction::{DetectionData, TransactionParameters},
-    Action, Transaction, TransactionBody,
+    memo::MemoCiphertext, Action, DetectionData, Transaction, TransactionBody,
+    TransactionParameters,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,7 +33,6 @@ pub struct TransactionView {
 pub struct TransactionBodyView {
     pub action_views: Vec<ActionView>,
     pub transaction_parameters: TransactionParameters,
-    pub fee: Fee,
     pub detection_data: Option<DetectionData>,
     pub memo_view: Option<MemoView>,
 }
@@ -86,7 +83,6 @@ impl TransactionView {
             transaction_body: TransactionBody {
                 actions,
                 transaction_parameters,
-                fee: self.body_view.fee.clone(),
                 detection_data,
                 memo: memo_ciphertext.cloned(),
             },
@@ -108,11 +104,11 @@ impl TryFrom<pbt::TransactionView> for TransactionView {
     type Error = anyhow::Error;
 
     fn try_from(v: pbt::TransactionView) -> Result<Self, Self::Error> {
-        let sig_bytes: [u8; 64] = v.binding_sig[..]
+        let binding_sig = v
+            .binding_sig
+            .ok_or_else(|| anyhow::anyhow!("transaction view missing binding signature"))?
             .try_into()
             .context("transaction binding signature malformed")?;
-
-        let binding_sig = sig_bytes.into();
 
         let anchor = v
             .anchor
@@ -142,12 +138,6 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
         for av in body_view.action_views.clone() {
             action_views.push(av.try_into()?);
         }
-
-        let fee = body_view
-            .fee
-            .ok_or_else(|| anyhow::anyhow!("transaction view missing fee"))?
-            .try_into()
-            .context("transaction fee malformed")?;
 
         let memo_view: Option<MemoView> = match body_view.memo_view {
             Some(mv) => match mv.memo_view {
@@ -201,7 +191,6 @@ impl TryFrom<pbt::TransactionBodyView> for TransactionBodyView {
         Ok(TransactionBodyView {
             action_views,
             transaction_parameters,
-            fee,
             detection_data,
             memo_view,
         })
@@ -213,7 +202,7 @@ impl From<TransactionView> for pbt::TransactionView {
         Self {
             body_view: Some(v.body_view.into()),
             anchor: Some(v.anchor.into()),
-            binding_sig: v.binding_sig.to_bytes().to_vec(),
+            binding_sig: Some(v.binding_sig.into()),
         }
     }
 }
@@ -223,7 +212,6 @@ impl From<TransactionBodyView> for pbt::TransactionBodyView {
         Self {
             action_views: v.action_views.into_iter().map(Into::into).collect(),
             transaction_parameters: Some(v.transaction_parameters.into()),
-            fee: Some(v.fee.into()),
             detection_data: v.detection_data.map(Into::into),
             memo_view: v.memo_view.map(|m| m.into()),
         }

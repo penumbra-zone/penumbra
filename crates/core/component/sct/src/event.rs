@@ -1,33 +1,39 @@
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
-use tendermint::abci::{Event, EventAttributeIndexExt};
 
-pub fn sct_anchor(height: u64, anchor: &tct::Root) -> Event {
-    Event::new(
-        "sct_anchor",
-        [
-            ("height", height.to_string()).index(),
-            ("anchor", anchor.to_string()).index(),
-        ],
-    )
+use penumbra_proto::core::component::sct::v1alpha1 as pb;
+
+use crate::CommitmentSource;
+
+pub fn anchor(height: u64, anchor: tct::Root) -> pb::EventAnchor {
+    pb::EventAnchor {
+        height,
+        anchor: Some(anchor.into()),
+    }
 }
 
-pub fn sct_block_anchor(height: u64, anchor: &block::Root) -> Event {
-    Event::new(
-        "sct_block_anchor",
-        [
-            ("height", height.to_string()).index(),
-            ("anchor", anchor.to_string()).index(),
-        ],
-    )
+pub fn block_root(height: u64, root: block::Root) -> pb::EventBlockRoot {
+    pb::EventBlockRoot {
+        height,
+        root: Some(root.into()),
+    }
 }
 
-pub fn sct_epoch_anchor(index: u64, anchor: &epoch::Root) -> Event {
-    Event::new(
-        "sct_epoch_anchor",
-        [
-            ("index", index.to_string()).index(),
-            ("anchor", anchor.to_string()).index(),
-        ],
-    )
+pub fn epoch_root(index: u64, root: epoch::Root) -> pb::EventEpochRoot {
+    pb::EventEpochRoot {
+        index,
+        root: Some(root.into()),
+    }
+}
+
+pub fn commitment(
+    commitment: tct::StateCommitment,
+    position: tct::Position,
+    source: CommitmentSource,
+) -> pb::EventCommitment {
+    pb::EventCommitment {
+        commitment: Some(commitment.into()),
+        position: position.into(),
+        source: Some(source.into()),
+    }
 }

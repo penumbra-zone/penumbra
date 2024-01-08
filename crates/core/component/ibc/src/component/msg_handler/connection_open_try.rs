@@ -3,6 +3,7 @@ use crate::version::pick_connection_version;
 use crate::IBC_COMMITMENT_PREFIX;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
 use ibc_types::{
@@ -13,7 +14,6 @@ use ibc_types::{
     },
 };
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
     client::StateReadExt as _,
@@ -94,7 +94,7 @@ impl MsgHandler for MsgConnectionOpenTry {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proofs_height_on_a, self.client_id_on_b.clone())
+            .get_verified_consensus_state(&self.proofs_height_on_a, &self.client_id_on_b)
             .await?;
 
         // PROOF VERIFICATION

@@ -51,7 +51,7 @@ the specific instantiation.
 
 ###### `FlowEnc/Encrypt`
 
-This an algorithm run by users. On input an encryption key $D$ and the opening
+This is an algorithm run by users. On input an encryption key $D$ and the opening
 $(v, \widetilde{v})$
 to a Pedersen commitment $C$, this algorithm outputs a
 ciphertext $E = \operatorname{Enc}(v)$ and a proof $\pi_{\operatorname{Enc}}$ which establishes that

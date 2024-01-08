@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::{
     core::channel::{
         channel::Order as ChannelOrder,
@@ -25,7 +26,7 @@ use penumbra_proto::{
     penumbra::core::component::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto,
     StateWriteProto,
 };
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_sct::CommitmentSource;
 use prost::Message;
 
 use penumbra_ibc::component::{
@@ -314,7 +315,12 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Ics20Transfer, // TODO
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    // We are chain A
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
             )
             .await
             .context("unable to mint note when receiving ics20 transfer packet")?;
@@ -367,7 +373,12 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Ics20Transfer,
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    // We are chain A
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
             )
             .await
             .context("failed to mint notes in ibc transfer")?;
@@ -428,7 +439,15 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         }
 
         state
-            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer)
+            .mint_note(
+                value,
+                &receiver,
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
+            )
             .await
             .context("couldn't mint note in timeout_packet_inner")?;
 
@@ -451,7 +470,16 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         );
     } else {
         state
-            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer) // NOTE: should this be Ics20TransferTimeout?
+            .mint_note(
+                value,
+                &receiver,
+                // NOTE: should this be Ics20TransferTimeout?
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
+            )
             .await
             .context("failed to mint return voucher in ics20 transfer timeout")?;
     }

@@ -31,22 +31,24 @@ message CompactBlock {
   fee.v1alpha1.GasPrices gas_prices = 7;
 }
 
+// An encrypted payload, corresponding to a single commitment in the state commitment tree.
 message StatePayload {
   message RolledUp {
     crypto.tct.v1alpha1.StateCommitment commitment = 1;
   }
   message Note {
-    chain.v1alpha1.NoteSource source = 1;
     shielded_pool.v1alpha1.NotePayload note = 2;
   }
   message Swap {
-    chain.v1alpha1.NoteSource source = 1;
     dex.v1alpha1.SwapPayload swap = 2;
   }
+  // The source of the payload, if known.
+  sct.v1alpha1.CommitmentSource source = 1;
+  // The state payload itself.
   oneof state_payload {
-    RolledUp rolled_up = 1;
-    Note note = 2;
-    Swap swap = 3;
+    RolledUp rolled_up = 2;
+    Note note = 3;
+    Swap swap = 4;
   }
 }
 

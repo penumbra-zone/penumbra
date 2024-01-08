@@ -1,11 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::core::{
     channel::channel::State as ChannelState, channel::events, channel::msgs::MsgChannelOpenConfirm,
     channel::ChannelEnd, channel::Counterparty, channel::PortId,
     connection::State as ConnectionState,
 };
-use penumbra_storage::StateWrite;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use crate::proposal::Proposal;
 
@@ -18,6 +19,12 @@ pub struct ProposalSubmit {
     pub proposal: Proposal,
     /// The amount deposited for the proposal.
     pub deposit_amount: Amount,
+}
+
+impl EffectingData for ProposalSubmit {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl ProposalSubmit {

@@ -1,12 +1,12 @@
 name: Protobuf
 on:
   # Exclude feature branches, only run if the PR is targeting main.
-  pull_request_target:
-    types:
-      - opened
+  pull_request:
     branches:
       - "main"
 jobs:
+  # Ensure there are no breaking changes to the protocol specs,
+  # by running the "buf lint" action against the changes in this PR.
   lint:
     name: Lint protobuf
     runs-on: ubuntu-latest
@@ -16,11 +16,10 @@ jobs:
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # input: 'proto'
 
       - uses: bufbuild/buf-lint-action@v1
         with:
-          input: 'proto'
+          input: "proto"
           buf_token: ${{ secrets.BUF_TOKEN }}
 
       - name: Check for module path changes
@@ -40,14 +39,15 @@ jobs:
       - name: Check for breaking changes
         uses: bufbuild/buf-breaking-action@v1
         with:
-          input: 'proto'
+          input: "proto"
           # The 'main' branch of the GitHub repository that defines the module.
-          against: 'https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto'
+          against: "https://github.com/${GITHUB_REPOSITORY}.git#branch=main,subdir=proto"
 
+  # Run our bespoke tooling for codegen, consuming the protocol buffer definitions
+  # and emitting generated code. Afterward, there should be no uncommitted changes.
   protobuf-fresh:
     name: Compile protobuf specs to rust code
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    # runs-on: ubuntu-latest
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
           ./deployments/scripts/protobuf-codegen
           # https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
           git checkout crates/proto/src/gen/proto_descriptor.bin.no_lfs
-          git checkout crates/storage/src/gen/proto_descriptor.bin.no_lfs
+          git checkout crates/cnidarium/src/gen/proto_descriptor.bin.no_lfs
           s="$(git status --porcelain)"
           if [[ -n "$s" ]]; then
               echo "ERROR: protobuf files must be regenerated and committed."

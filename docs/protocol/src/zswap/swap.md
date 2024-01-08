@@ -90,7 +90,7 @@ This action privately mints new tokens of the output type, and proves
 consistency with the user's input contribution (via the swap NFT) and with the
 effective clearing prices (which are part of the public chain state).  The
 `SwapClaim` action is carefully designed so that it is *self-authenticating*,
-and *does not require any spend authorization*.  Any entity in posession of the
+and *does not require any spend authorization*.  Any entity in possession of the
 full viewing key can create and submit a swap claim transaction, without further
 authorization by the user.  This means that wallet software can automatically
 claim swap outputs as soon as it sees confirmation that the swap occurred.
@@ -164,7 +164,7 @@ potential places to try to correlate amounts:
 - Each epoch discloses the net amount of newly bonded stake for each validator;
 - Liquidity pool deposits disclose the precise type and amount of newly
   deposited reserves;
-- Liquidity pool deposits disclose the precise type and amount of newly
+- Liquidity pool withdrawals disclose the precise type and amount of newly
   withdrawn reserves;
 
 The existence of the swap mechanism potentially makes correlation by amount more

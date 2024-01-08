@@ -32,17 +32,19 @@ cargo +nightly doc --no-deps \
   -p decaf377-rdsa \
   -p decaf377-fmd \
   -p decaf377-ka \
+  -p cnidarium \
+  -p cnidarium-component \
   -p penumbra-app \
   -p penumbra-asset \
   -p penumbra-chain \
-  -p penumbra-component \
   -p penumbra-custody \
-  -p penumbra-dao \
+  -p penumbra-community-pool \
   -p penumbra-dex \
   -p penumbra-distributions \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \
+  -p penumbra-txhash \
   -p penumbra-measure \
   -p penumbra-num \
   -p penumbra-proof-params \
@@ -50,7 +52,6 @@ cargo +nightly doc --no-deps \
   -p penumbra-proto \
   -p penumbra-sct \
   -p penumbra-shielded-pool \
-  -p penumbra-storage \
   -p penumbra-tct \
   -p penumbra-transaction \
   -p penumbra-view \
@@ -59,7 +60,6 @@ cargo +nightly doc --no-deps \
   -p pd \
   -p pclientd \
   -p pcli \
-  -p narsil
 
 >&2 echo "Copying newly built index file to version-controlled path:"
 cp -v target/doc/index.html docs/rustdoc/index.html

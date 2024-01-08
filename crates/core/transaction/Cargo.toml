@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-transaction"
-version = "0.63.1"
+version = "0.64.1"
 edition = "2021"
 
 [dependencies]
@@ -12,23 +12,23 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params/" }
 penumbra-chain = { path = "../component/chain/", default-features = false }
 penumbra-governance = { path = "../component/governance/", default-features = false }
-penumbra-compact-block = { path = "../component/compact-block/", default-features = false }
 penumbra-shielded-pool = { path = "../component/shielded-pool/", default-features = false }
 penumbra-sct = { path = "../component/sct/", default-features = false }
 penumbra-stake = { path = "../component/stake", default-features = false }
 penumbra-ibc = { path = "../component/ibc/", default-features = false }
-penumbra-dao = { path = "../component/dao/", default-features = false }
+penumbra-community-pool = { path = "../component/community-pool/", default-features = false }
 penumbra-dex = { path = "../component/dex/", default-features = false }
 penumbra-fee = { path = "../component/fee/", default-features = false }
 penumbra-num = { path = "../num", default-features = false }
 penumbra-asset = { path = "../asset", default-features = false }
 penumbra-keys = { path = "../keys", default-features = false }
+penumbra-txhash = { path = "../txhash", default-features = false }
 
 # Git deps
-ibc-types = { version = "0.10.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
 
 # Crates.io deps
-ibc-proto = { version = "0.39.0", default-features = false }
+ibc-proto = { version = "0.40.0", default-features = false }
 decaf377 = "0.5"
 decaf377-rdsa = { version = "0.7" }
 poseidon377 = { version = "0.6", features = ["r1cs"] }

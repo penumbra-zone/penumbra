@@ -155,6 +155,40 @@ impl ::prost::Name for Spend {
         )
     }
 }
+/// ABCI Event recording a spend.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSpend {
+    #[prost(message, optional, tag = "1")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
+}
+impl ::prost::Name for EventSpend {
+    const NAME: &'static str = "EventSpend";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// ABCI Event recording an output.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventOutput {
+    #[prost(message, optional, tag = "1")]
+    pub note_commitment: ::core::option::Option<
+        super::super::super::super::crypto::tct::v1alpha1::StateCommitment,
+    >,
+}
+impl ::prost::Name for EventOutput {
+    const NAME: &'static str = "EventOutput";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
 /// those changes to be performed.
@@ -167,11 +201,13 @@ pub struct SpendBody {
         super::super::super::asset::v1alpha1::BalanceCommitment,
     >,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "3")]
-    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "4")]
-    pub rk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub rk: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendVerificationKey,
+    >,
 }
 impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";

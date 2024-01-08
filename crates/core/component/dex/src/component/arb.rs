@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateDelta, StateWrite};
 use penumbra_asset::{asset, Value};
 use penumbra_chain::component::StateReadExt;
-use penumbra_storage::{StateDelta, StateWrite};
 use tracing::instrument;
 
 use crate::SwapExecution;

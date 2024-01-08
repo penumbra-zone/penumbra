@@ -50,8 +50,7 @@ mod tests {
         let swap_key: &[u8] = include_bytes!("../../crypto/proof-params/src/gen/swap_pk.bin");
         let swap_claim_key: &[u8] =
             include_bytes!("../../crypto/proof-params/src/gen/swapclaim_pk.bin");
-        let undelegate_claim_key: &[u8] =
-            include_bytes!("../../crypto/proof-params/src/gen/undelegateclaim_pk.bin");
+        let convert_key: &[u8] = include_bytes!("../../crypto/proof-params/src/gen/convert_pk.bin");
 
         // Serialize &[u8] to JsValue.
         let spend_key_js: JsValue = serde_wasm_bindgen::to_value(&spend_key).unwrap();
@@ -62,8 +61,7 @@ mod tests {
             serde_wasm_bindgen::to_value(&nullifier_derivation_key).unwrap();
         let swap_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_key).unwrap();
         let swap_claim_key_js: JsValue = serde_wasm_bindgen::to_value(&swap_claim_key).unwrap();
-        let undelegate_claim_key_js: JsValue =
-            serde_wasm_bindgen::to_value(&undelegate_claim_key).unwrap();
+        let undelegate_claim_key_js: JsValue = serde_wasm_bindgen::to_value(&convert_key).unwrap();
 
         // Dynamically load the proving keys at runtime for each key type.
         load_proving_key(spend_key_js, "spend").expect("can load spend key");

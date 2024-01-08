@@ -28,10 +28,41 @@ use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{note, Note, Rseed};
 
+/// The public input for a [`DelegatorVoteProof`].
+#[derive(Clone, Debug)]
+pub struct DelegatorVoteProofPublic {
+    /// the merkle root of the state commitment tree.
+    pub anchor: tct::Root,
+    /// value commitment of the note to be spent.
+    pub balance_commitment: balance::Commitment,
+    /// nullifier of the note to be spent.
+    pub nullifier: Nullifier,
+    /// the randomized verification spend key.
+    pub rk: VerificationKey<SpendAuth>,
+    /// the start position of the proposal being voted on.
+    pub start_position: tct::Position,
+}
+
+/// The private input for a [`DelegatorVoteProof`].
+#[derive(Clone, Debug)]
+pub struct DelegatorVoteProofPrivate {
+    /// Inclusion proof for the note commitment.
+    pub state_commitment_proof: tct::Proof,
+    /// The note being spent.
+    pub note: Note,
+    /// The blinding factor used for generating the value commitment.
+    pub v_blinding: Fr,
+    /// The randomizer used for generating the randomized spend auth key.
+    pub spend_auth_randomizer: Fr,
+    /// The spend authorization key.
+    pub ak: VerificationKey<SpendAuth>,
+    /// The nullifier deriving key.
+    pub nk: NullifierKey,
+}
+
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
 pub struct DelegatorVoteCircuit {
-    // Witnesses
     /// Inclusion proof for the note commitment.
     state_commitment_proof: tct::Proof,
     /// The note being spent.
@@ -45,33 +76,35 @@ pub struct DelegatorVoteCircuit {
     /// The nullifier deriving key.
     nk: NullifierKey,
 
-    // Public inputs
     /// the merkle root of the state commitment tree.
-    pub anchor: tct::Root,
+    anchor: tct::Root,
     /// value commitment of the note to be spent.
-    pub balance_commitment: balance::Commitment,
+    balance_commitment: balance::Commitment,
     /// nullifier of the note to be spent.
-    pub nullifier: Nullifier,
+    nullifier: Nullifier,
     /// the randomized verification spend key.
-    pub rk: VerificationKey<SpendAuth>,
+    rk: VerificationKey<SpendAuth>,
     /// the start position of the proposal being voted on.
-    pub start_position: tct::Position,
+    start_position: tct::Position,
 }
 
 impl DelegatorVoteCircuit {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        state_commitment_proof: tct::Proof,
-        note: Note,
-        v_blinding: Fr,
-        spend_auth_randomizer: Fr,
-        ak: VerificationKey<SpendAuth>,
-        nk: NullifierKey,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
-        start_position: tct::Position,
+    fn new(
+        DelegatorVoteProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier,
+            rk,
+            start_position,
+        }: DelegatorVoteProofPublic,
+        DelegatorVoteProofPrivate {
+            state_commitment_proof,
+            note,
+            v_blinding,
+            spend_auth_randomizer,
+            ak,
+            nk,
+        }: DelegatorVoteProofPrivate,
     ) -> Self {
         Self {
             state_commitment_proof,
@@ -235,51 +268,14 @@ impl DummyWitness for DelegatorVoteCircuit {
 pub struct DelegatorVoteProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl DelegatorVoteProof {
-    #![allow(clippy::too_many_arguments)]
     pub fn prove(
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        state_commitment_proof: tct::Proof,
-        note: Note,
-        spend_auth_randomizer: Fr,
-        ak: VerificationKey<SpendAuth>,
-        nk: NullifierKey,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
-        start_position: tct::Position,
+        public: DelegatorVoteProofPublic,
+        private: DelegatorVoteProofPrivate,
     ) -> anyhow::Result<Self> {
-        // The blinding factor for the value commitment is zero since it
-        // is not blinded.
-        let zero_blinding = Fr::from(0);
-        tracing::debug!(
-            ?state_commitment_proof,
-            ?note,
-            ?spend_auth_randomizer,
-            ?ak,
-            ?nk,
-            ?anchor,
-            ?balance_commitment,
-            ?nullifier,
-            ?rk,
-            ?start_position,
-            "generating delegator vote proof"
-        );
-        let circuit = DelegatorVoteCircuit {
-            state_commitment_proof,
-            note,
-            v_blinding: zero_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-            start_position,
-        };
+        let circuit = DelegatorVoteCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
@@ -296,39 +292,38 @@ impl DelegatorVoteProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        anchor: tct::Root,
-        balance_commitment: balance::Commitment,
-        nullifier: Nullifier,
-        rk: VerificationKey<SpendAuth>,
-        start_position: tct::Position,
+        public: DelegatorVoteProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            Fq::from(anchor.0)
+            Fq::from(public.anchor.0)
                 .to_field_elements()
                 .expect("valid field element"),
         );
         public_inputs.extend(
-            balance_commitment
+            public
+                .balance_commitment
                 .0
                 .to_field_elements()
                 .expect("valid field element"),
         );
         public_inputs.extend(
-            nullifier
+            public
+                .nullifier
                 .0
                 .to_field_elements()
                 .expect("valid field element"),
         );
-        let element_rk = decaf377::Encoding(rk.to_bytes())
+        let element_rk = decaf377::Encoding(public.rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
         public_inputs.extend(element_rk.to_field_elements().expect("valid field element"));
         public_inputs.extend(
-            start_position
+            public
+                .start_position
                 .to_field_elements()
                 .expect("valid field element"),
         );
@@ -435,25 +430,31 @@ mod tests {
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
+        let public = DelegatorVoteProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+            start_position,
+        };
+        let private = DelegatorVoteProofPrivate {
+            state_commitment_proof,
+            note,
+            v_blinding: Fr::from(0u64),
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
 
         let proof = DelegatorVoteProof::prove(
             blinding_r,
             blinding_s,
             &pk,
-            state_commitment_proof,
-            note,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
-            start_position,
+            public.clone(), private
         )
         .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
+        let proof_result = proof.verify(&vk, public);
         assert!(proof_result.is_ok());
         }
     }
@@ -505,21 +506,28 @@ mod tests {
 
         let blinding_r = Fq::rand(&mut OsRng);
         let blinding_s = Fq::rand(&mut OsRng);
+        let public = DelegatorVoteProofPublic {
+            anchor,
+            balance_commitment,
+            nullifier: nf,
+            rk,
+            start_position,
+        };
+        let private = DelegatorVoteProofPrivate {
+            state_commitment_proof,
+            note,
+            v_blinding: Fr::from(0u64),
+            spend_auth_randomizer,
+            ak,
+            nk,
+        };
+
 
         let proof = DelegatorVoteProof::prove(
             blinding_r,
             blinding_s,
             &pk,
-            state_commitment_proof,
-            note,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nf,
-            rk,
-            start_position,
+            public.clone(), private
         ).expect("can form proof in release mode, but it should not verify");
 
         // In debug mode, we won't be able to construct a valid proof if the start position
@@ -528,7 +536,7 @@ mod tests {
         // generation (upstream) where we panic in debug mode if the circuit is not satisifiable,
         // but not in release mode. To ensure the same behavior in this test for both modes,
         // we panic if we get here and the proof does not verify (expected).
-        let proof_result = proof.verify(&vk, anchor, balance_commitment, nf, rk, start_position);
+        let proof_result = proof.verify(&vk, public);
         proof_result.expect("we expect this proof _not_ to verify, so this will cause a panic");
     }
     }

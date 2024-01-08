@@ -111,7 +111,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(penumbra_storage_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_get_raw_duration_seconds_sum[5m]) / rate(cnidarium_get_raw_duration_seconds_count[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -204,7 +204,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(cnidarium_nonverifiable_get_raw_duration_seconds_count[5m])",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -490,7 +490,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "penumbra_storage_tct_size_bytes{}",
+          "expr": "cnidarium_tct_size_bytes{}",
           "interval": "",
           "legendFormat": "TCT Size (bytes)",
           "refId": "A"

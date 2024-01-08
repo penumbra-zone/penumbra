@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_component::ActionHandler;
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto;
+use penumbra_sct::component::SourceContext as _;
 
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},
@@ -52,7 +54,7 @@ impl ActionHandler for Swap {
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
 
         // Record the swap commitment in the state.
-        let source = state.object_get("source").unwrap_or_default();
+        let source = state.get_current_source().expect("source is set");
         state
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
@@ -61,7 +63,7 @@ impl ActionHandler for Swap {
             crate::component::metrics::DEX_SWAP_DURATION,
             swap_start.elapsed()
         );
-        state.record(event::swap(self));
+        state.record_proto(event::swap(self));
 
         Ok(())
     }

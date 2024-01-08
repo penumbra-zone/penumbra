@@ -1,6 +1,6 @@
 [package]
 name = "penumbra-custody"
-version = "0.63.1"
+version = "0.64.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,10 +17,11 @@ decaf377-frost = { path = "../crypto/decaf377-frost" }
 decaf377-ka = { path = "../crypto/decaf377-ka" }
 penumbra-chain = { path = "../core/component/chain" }
 penumbra-keys = { path = "../core/keys" }
-penumbra-proto = { path = "../proto" , features = ["rpc"] }
+penumbra-txhash = { path = "../core/txhash" }
+penumbra-proto = { path = "../proto", features = ["rpc"] }
 penumbra-transaction = { path = "../core/transaction" }
 
-tokio = { version = "1.21.1", features = ["full"]}
+tokio = { version = "1.21.1", features = ["full"] }
 anyhow = "1"
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }

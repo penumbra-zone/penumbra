@@ -1,0 +1,29 @@
+---
+releases:
+  - name: penumbra-testnet-cuiloa-node
+    chart: ../charts/penumbra-node
+# Disabling the strict dependency on the "testnet" environment,
+# because this release was first deployed manually. Post Testnet 64
+# we plan to retire the CI pipeline for deploying the testnet.
+# If breaking changes are merged to Penumbra or Cuiloa, we'll need
+# to redeploy this node manually.
+#    needs:
+#      - penumbra-testnet
+#      # It's not strictly necessary to wait for node deploys, but doing so allows us to exercise
+#      # the public HTTPS RPC endpoint for joining, which is nice.
+#      - penumbra-testnet-nodes
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: "v0.64.1"
+      - persistence:
+          enabled: true
+          size: 200G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-testnet
+      - nodes:
+        - moniker: cuiloa

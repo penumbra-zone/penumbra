@@ -50,36 +50,6 @@ impl ::prost::Name for FmdParameters {
         ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
     }
 }
-/// A spicy transaction ID
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NoteSource {
-    #[prost(bytes = "vec", tag = "1")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for NoteSource {
-    const NAME: &'static str = "NoteSource";
-    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
-    }
-}
-/// A NoteSource paired with the height at which the note was spent
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SpendInfo {
-    #[prost(message, optional, tag = "1")]
-    pub note_source: ::core::option::Option<NoteSource>,
-    #[prost(uint64, tag = "2")]
-    pub spend_height: u64,
-}
-impl ::prost::Name for SpendInfo {
-    const NAME: &'static str = "SpendInfo";
-    const PACKAGE: &'static str = "penumbra.core.component.chain.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.chain.v1alpha1.{}", Self::NAME)
-    }
-}
 /// Chain-specific genesis content.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

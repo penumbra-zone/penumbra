@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::NoteSource;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
+use penumbra_sct::{component::SourceContext as _, CommitmentSource};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
@@ -87,8 +87,10 @@ impl ActionHandler for Transaction {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
-        let source = NoteSource::Transaction { id: self.id().0 };
-        state.object_put("source", source);
+        let source = CommitmentSource::Transaction {
+            id: Some(self.id().0),
+        };
+        state.put_current_source(Some(source));
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);
@@ -96,7 +98,7 @@ impl ActionHandler for Transaction {
         }
 
         // Delete the note source, in case someone else tries to read it.
-        state.object_delete("source");
+        state.put_current_source(None);
 
         Ok(())
     }
@@ -111,8 +113,8 @@ mod tests {
     use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use penumbra_transaction::{
-        plan::{CluePlan, TransactionPlan},
-        WitnessData,
+        plan::{CluePlan, DetectionDataPlan, TransactionPlan},
+        TransactionParameters, WitnessData,
     };
     use rand_core::OsRng;
 
@@ -149,16 +151,20 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
-            memo_plan: None,
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
+            }),
+            memo: None,
         };
 
         // Build the transaction.
@@ -211,15 +217,17 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![],
-            memo_plan: None,
+            detection_data: None,
+            memo: None,
         };
 
         // Build the transaction.

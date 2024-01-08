@@ -1,15 +1,15 @@
 [package]
 name = "penumbra-ibc"
-version = "0.63.1"
+version = "0.64.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 component = [
-    "penumbra-storage",
-    "penumbra-component",
-    "penumbra-proto/penumbra-storage",
+    "cnidarium",
+    "cnidarium-component",
+    "penumbra-proto/cnidarium",
     "penumbra-chain/component",
 ]
 default = ["component", "std"]
@@ -20,16 +20,17 @@ rpc = ["dep:tonic", "ibc-proto/client", "ibc-proto/server"]
 [dependencies]
 # Workspace dependencies
 penumbra-proto = { path = "../../../proto", default-features = false }
-penumbra-storage = { path = "../../../storage", optional = true }
-penumbra-component = { path = "../component", optional = true }
+cnidarium = { path = "../../../cnidarium", optional = true }
+cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 
 # Penumbra dependencies
-ibc-types = { version = "0.10.0", default-features = false }
-ibc-proto = { version = "0.39.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
+ibc-proto = { version = "0.40.0", default-features = false }
 
 # Crates.io deps
 ics23 = "0.11.0"

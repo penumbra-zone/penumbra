@@ -26,9 +26,9 @@ use ibc_types::{
 };
 
 use async_trait::async_trait;
+use cnidarium::StateRead;
 use num_traits::float::FloatCore;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::StateRead;
 use sha2::{Digest, Sha256};
 
 // NOTE: this is underspecified.
@@ -138,7 +138,7 @@ pub trait ClientUpgradeProofVerifier: StateReadExt {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = self
-            .get_verified_consensus_state(trusted_client_state.latest_height(), client_id.clone())
+            .get_verified_consensus_state(&trusted_client_state.latest_height(), client_id)
             .await?;
 
         verify_merkle_proof(
@@ -191,7 +191,7 @@ pub trait ChannelProofVerifier: StateReadExt {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = self
-            .get_verified_consensus_state(*proof_height, connection.client_id.clone())
+            .get_verified_consensus_state(proof_height, &connection.client_id)
             .await?;
 
         trusted_client_state.verify_height(*proof_height)?;
@@ -437,9 +437,8 @@ mod inner {
                 anyhow::bail!("client is frozen");
             }
 
-            let trusted_consensus_state = self
-                .get_verified_consensus_state(*height, client_id.clone())
-                .await?;
+            let trusted_consensus_state =
+                self.get_verified_consensus_state(height, client_id).await?;
 
             let tm_client_state = trusted_client_state;
 

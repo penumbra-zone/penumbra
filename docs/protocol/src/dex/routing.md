@@ -180,7 +180,7 @@ $\Lambda_2 = \Delta_1 \frac {p} {q \gamma}$
 
 ##### Filling backward
 
-Filling backward is more complicated because we need to ensure every position preceding the constraining hop is zeroed out. This is because the DEX engine only has access to a finite amount of precision and as a result perform divison can be lossy by some $\epsilon$, perpetually preventing a position to be deindexed.
+Filling backward is more complicated because we need to ensure every position preceding the constraining hop is zeroed out. This is because the DEX engine only has access to a finite amount of precision and as a result perform division can be lossy by some $\epsilon$, perpetually preventing a position to be deindexed.
 
 Suppose that the limiting constraint is a index $j$, we compute $\Delta_1^* = \frac {p_2 \gamma} {p_1} R_2$
 

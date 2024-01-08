@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use penumbra_component::Component;
+use cnidarium_component::Component;
 
 use crate::{
     proposal_state::{
@@ -30,11 +30,16 @@ pub struct Governance {}
 impl Component for Governance {
     type AppState = ();
 
-    #[instrument(name = "governance", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: Option<&()>) {
-        // Clients need to be able to read the next proposal number, even when no proposals have
-        // been submitted yet
-        state.init_proposal_counter();
+    #[instrument(name = "governance", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+        match app_state {
+            Some(_) => {
+                // Clients need to be able to read the next proposal number, even when no proposals have
+                // been submitted yet
+                state.init_proposal_counter();
+            }
+            None => {}
+        }
     }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]

@@ -1,8 +1,7 @@
 use penumbra_asset::Value;
-use penumbra_chain::NoteSource;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{view::v1alpha1 as pb, DomainType};
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_tct as tct;
 
@@ -20,7 +19,7 @@ pub struct SpendableNoteRecord {
     pub height_created: u64,
     pub height_spent: Option<u64>,
     pub position: tct::Position,
-    pub source: NoteSource,
+    pub source: CommitmentSource,
 }
 
 impl DomainType for SpendableNoteRecord {
@@ -86,7 +85,7 @@ impl TryFrom<&Row<'_>> for SpendableNoteRecord {
             height_created: row.get("height_created")?,
             height_spent: row.get("height_spent")?,
             position: row.get::<_, u64>("position")?.into(),
-            source: row.get::<_, Vec<u8>>("source")?[..].try_into()?,
+            source: CommitmentSource::decode(&row.get::<_, Vec<u8>>("source")?[..])?,
             note_commitment: row.get::<_, Vec<u8>>("note_commitment")?[..].try_into()?,
             note: Note::from_parts(
                 row.get::<_, Vec<u8>>("address")?[..].try_into()?,

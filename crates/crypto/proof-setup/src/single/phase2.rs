@@ -1,7 +1,7 @@
 //! This module is very similar to the one for phase1, so reading that one might be useful.
 use ark_ec::Group;
 use ark_ff::{fields::Field, UniformRand, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Valid, Validate};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 
 use crate::single::log::{ContributionHash, Hashable, Phase};
@@ -62,8 +62,11 @@ impl RawCRSElements {
 
     /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
     #[cfg(not(feature = "parallel"))]
-    pub(crate) fn checked_deserialize_parallel(compress: Compress, data: &[u8]) -> Self {
-        Self::deserialize_with_mode(data, compress, Validate::Yes)
+    pub(crate) fn checked_deserialize_parallel(
+        compress: Compress,
+        data: &[u8],
+    ) -> anyhow::Result<Self> {
+        Ok(Self::deserialize_with_mode(data, compress, Validate::Yes)?)
     }
 
     /// This is a replacement for the CanonicalDeserialize trait impl (more or less).
@@ -72,6 +75,7 @@ impl RawCRSElements {
         compress: Compress,
         data: &[u8],
     ) -> anyhow::Result<Self> {
+        use ark_serialize::Valid;
         use rayon::prelude::*;
 
         let out = Self::deserialize_with_mode(data, compress, Validate::No)?;

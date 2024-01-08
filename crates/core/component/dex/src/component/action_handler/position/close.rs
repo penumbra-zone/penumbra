@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_component::ActionHandler;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
+use penumbra_proto::StateWriteProto as _;
 
 use crate::{component::PositionManager, event, lp::action::PositionClose};
 
@@ -29,7 +30,7 @@ impl ActionHandler for PositionClose {
         // during that block's batch swap execution.
         state.queue_close_position(self.position_id);
 
-        state.record(event::position_close(self));
+        state.record_proto(event::position_close(self));
 
         Ok(())
     }

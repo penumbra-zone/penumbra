@@ -1,12 +1,11 @@
 use crate::Action;
-use crate::EffectingData;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::Balance;
-use penumbra_chain::EffectHash;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use penumbra_dex::{
     lp::{
@@ -74,9 +73,9 @@ pub enum ActionPlan {
     // must be used.
     PositionRewardClaim(PositionRewardClaimPlan),
 
-    DaoSpend(DaoSpend),
-    DaoOutput(DaoOutput),
-    DaoDeposit(DaoDeposit),
+    CommunityPoolSpend(CommunityPoolSpend),
+    CommunityPoolOutput(CommunityPoolOutput),
+    CommunityPoolDeposit(CommunityPoolDeposit),
 
     Withdrawal(Ics20Withdrawal),
 }
@@ -156,9 +155,9 @@ impl ActionPlan {
             PositionRewardClaim(_plan) => unimplemented!(
                 "this api is wrong and needs to be fixed, but we don't do reward claims anyways"
             ),
-            DaoSpend(plan) => Action::DaoSpend(plan.clone()),
-            DaoOutput(plan) => Action::DaoOutput(plan.clone()),
-            DaoDeposit(plan) => Action::DaoDeposit(plan.clone()),
+            CommunityPoolSpend(plan) => Action::CommunityPoolSpend(plan.clone()),
+            CommunityPoolOutput(plan) => Action::CommunityPoolOutput(plan.clone()),
+            CommunityPoolDeposit(plan) => Action::CommunityPoolDeposit(plan.clone()),
             // Fixme: action name
             Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
         })
@@ -179,9 +178,9 @@ impl ActionPlan {
             ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
             ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
             DelegatorVote(delegator_vote) => delegator_vote.balance(),
-            DaoSpend(dao_spend) => dao_spend.balance(),
-            DaoOutput(dao_output) => dao_output.balance(),
-            DaoDeposit(dao_deposit) => dao_deposit.balance(),
+            CommunityPoolSpend(community_pool_spend) => community_pool_spend.balance(),
+            CommunityPoolOutput(community_pool_output) => community_pool_output.balance(),
+            CommunityPoolDeposit(community_pool_deposit) => community_pool_deposit.balance(),
             PositionOpen(position_open) => position_open.balance(),
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
@@ -214,9 +213,9 @@ impl ActionPlan {
             PositionClose(_) => Fr::zero(),
             PositionWithdraw(_) => Fr::zero(),
             PositionRewardClaim(_) => Fr::zero(),
-            DaoSpend(_) => Fr::zero(),
-            DaoOutput(_) => Fr::zero(),
-            DaoDeposit(_) => Fr::zero(),
+            CommunityPoolSpend(_) => Fr::zero(),
+            CommunityPoolOutput(_) => Fr::zero(),
+            CommunityPoolDeposit(_) => Fr::zero(),
             Withdrawal(_) => Fr::zero(),
         }
     }
@@ -244,9 +243,9 @@ impl ActionPlan {
             PositionClose(plan) => plan.effect_hash(),
             PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
             PositionRewardClaim(_plan) => todo!("position reward claim plan is not implemented"),
-            DaoSpend(plan) => plan.effect_hash(),
-            DaoOutput(plan) => plan.effect_hash(),
-            DaoDeposit(plan) => plan.effect_hash(),
+            CommunityPoolSpend(plan) => plan.effect_hash(),
+            CommunityPoolOutput(plan) => plan.effect_hash(),
+            CommunityPoolDeposit(plan) => plan.effect_hash(),
             Withdrawal(plan) => plan.effect_hash(),
         }
     }
@@ -417,14 +416,16 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),
             },
-            ActionPlan::DaoDeposit(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoDeposit(inner.into())),
+            ActionPlan::CommunityPoolDeposit(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolDeposit(
+                    inner.into(),
+                )),
             },
-            ActionPlan::DaoSpend(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoSpend(inner.into())),
+            ActionPlan::CommunityPoolSpend(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolSpend(inner.into())),
             },
-            ActionPlan::DaoOutput(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoOutput(inner.into())),
+            ActionPlan::CommunityPoolOutput(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolOutput(inner.into())),
             },
             ActionPlan::Withdrawal(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Withdrawal(inner.into())),
@@ -493,14 +494,14 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::PositionRewardClaim(inner) => {
                 Ok(ActionPlan::PositionRewardClaim(inner.try_into()?))
             }
-            pb_t::action_plan::Action::DaoSpend(inner) => {
-                Ok(ActionPlan::DaoSpend(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolSpend(inner) => {
+                Ok(ActionPlan::CommunityPoolSpend(inner.try_into()?))
             }
-            pb_t::action_plan::Action::DaoDeposit(inner) => {
-                Ok(ActionPlan::DaoDeposit(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolDeposit(inner) => {
+                Ok(ActionPlan::CommunityPoolDeposit(inner.try_into()?))
             }
-            pb_t::action_plan::Action::DaoOutput(inner) => {
-                Ok(ActionPlan::DaoOutput(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolOutput(inner) => {
+                Ok(ActionPlan::CommunityPoolOutput(inner.try_into()?))
             }
             pb_t::action_plan::Action::Withdrawal(inner) => {
                 Ok(ActionPlan::Withdrawal(inner.try_into()?))

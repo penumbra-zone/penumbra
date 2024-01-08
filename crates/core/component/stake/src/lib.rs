@@ -28,8 +28,7 @@ pub mod validator;
 pub use delegate::Delegate;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{
-    UndelegateClaim, UndelegateClaimBody, UndelegateClaimCircuit, UndelegateClaimPlan,
-    UndelegateClaimProof,
+    UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan, UndelegateClaimProof,
 };
 
 mod delegation_token;
@@ -41,7 +40,7 @@ mod unbonding_token;
 pub use delegation_token::DelegationToken;
 pub use governance_key::GovernanceKey;
 pub use identity_key::IdentityKey;
-pub use penalty::{Penalty, PenaltyVar};
+pub use penalty::Penalty;
 pub use unbonding_token::UnbondingToken;
 
 pub use changes::DelegationChanges;

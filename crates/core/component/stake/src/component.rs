@@ -14,26 +14,27 @@ pub use self::metrics::register_metrics;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use cnidarium_component::Component;
 use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
-    Epoch, NoteSource,
+    Epoch,
 };
-use penumbra_component::Component;
-use penumbra_dao::component::StateWriteExt as _;
+use penumbra_community_pool::component::StateWriteExt as _;
 
+use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
+use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
     genesis::Content as ShieldedPoolGenesisContent,
 };
-use penumbra_storage::{StateRead, StateWrite};
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
 use tendermint::{
@@ -249,7 +250,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await?;
 
                 // The validator's delegation pool begins unbonding.  Jailed
@@ -273,7 +274,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 let penalty = self.get_stake_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty(penalty))
+                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await?;
 
                 // Regardless of its current bonding state, the validator's
@@ -411,7 +412,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let penalty = self
                 .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
                 .await?
-                .unwrap_or_default();
+                .unwrap_or(Penalty::from_percent(0));
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
             // Then compute the next validator rate, accounting for funding streams and validator state.
@@ -501,15 +502,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                     asset_id: *STAKING_TOKEN_ASSET_ID,
                                 },
                                 &address,
-                                NoteSource::FundingStreamReward {
+                                CommitmentSource::FundingStreamReward {
                                     epoch_index: epoch_to_end.index,
                                 },
                             )
                             .await?;
                         }
-                        // If the recipient is the DAO, deposit the funds into the DAO
-                        Recipient::Dao => {
-                            self.dao_deposit(Value {
+                        // If the recipient is the Community Pool, deposit the funds into the Community Pool
+                        Recipient::CommunityPool => {
+                            self.community_pool_deposit(Value {
                                 amount: commission_reward_amount.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })
@@ -1099,7 +1100,7 @@ pub trait StateReadExt: StateRead {
         let start_key = state_key::penalty_in_epoch(id, start);
         let end_key = state_key::penalty_in_epoch(id, end);
 
-        let mut compounded = Penalty::default();
+        let mut compounded = Penalty::from_percent(0);
         for (_key, penalty) in all_penalties.range(start_key..end_key) {
             compounded = compounded.compound(*penalty);
         }
@@ -1413,7 +1414,7 @@ pub trait StateWriteExt: StateWrite {
         let current_penalty = self
             .penalty_in_epoch(identity_key, current_epoch_index)
             .await?
-            .unwrap_or_default();
+            .unwrap_or(Penalty::from_percent(0));
 
         let new_penalty = current_penalty.compound(slashing_penalty);
 

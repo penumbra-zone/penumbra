@@ -9,7 +9,19 @@ use std::{
 use anyhow::{Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
+use ibc_proto::ibc::core::client::v1::{
+    query_client::QueryClient as IbcClientQueryClient, QueryClientStateRequest,
+};
+use ibc_proto::ibc::core::connection::v1::query_client::QueryClient as IbcConnectionQueryClient;
+use ibc_proto::ibc::core::{
+    channel::v1::{query_client::QueryClient as IbcChannelQueryClient, QueryChannelRequest},
+    connection::v1::QueryConnectionRequest,
+};
+use ibc_types::core::{
+    channel::{ChannelId, PortId},
+    client::Height as IbcHeight,
+};
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use rand_core::OsRng;
 use regex::Regex;
 
@@ -129,9 +141,9 @@ pub enum TxCmd {
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
-    /// Deposit funds into the DAO.
+    /// Deposit funds into the Community Pool.
     #[clap(display_order = 600)]
-    DaoDeposit {
+    CommunityPoolDeposit {
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// Only spend funds originally received by the given account.
@@ -179,8 +191,8 @@ pub enum TxCmd {
         /// height, e.g. `5-1000000` means "chain revision 5, block height of 1000000".
         /// You must know the chain id of the counterparty chain beforehand, e.g. `osmosis-testnet-5`,
         /// to know the revision number.
-        #[clap(long, default_value = "0-0", display_order = 100)]
-        timeout_height: IbcHeight,
+        #[clap(long, display_order = 100)]
+        timeout_height: Option<IbcHeight>,
         /// Timestamp, specified in epoch time, after which the withdrawal will be considered
         /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
@@ -240,7 +252,7 @@ impl TxCmd {
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
-            TxCmd::DaoDeposit { .. } => false,
+            TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
         }
@@ -273,14 +285,15 @@ impl TxCmd {
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
-                let memo_ephemeral_address = app
+
+                let return_address = app
                     .config
                     .full_viewing_key
-                    .ephemeral_address(OsRng, AddressIndex::new(*from))
+                    .payment_address((*from).into())
                     .0;
 
                 let memo_plaintext = MemoPlaintext {
-                    return_address: memo_ephemeral_address,
+                    return_address,
                     text: memo.clone().unwrap_or_default(),
                 };
 
@@ -295,14 +308,13 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*from),
                     )
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::DaoDeposit { values, source } => {
+            TxCmd::CommunityPoolDeposit { values, source } => {
                 let values = values
                     .iter()
                     .map(|v| v.parse())
@@ -311,14 +323,13 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
                 for value in values {
-                    planner.dao_deposit(value);
+                    planner.community_pool_deposit(value);
                 }
                 let plan = planner
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -326,7 +337,6 @@ impl TxCmd {
             }
             TxCmd::Sweep => loop {
                 let plans = plan::sweep(
-                    app.config.full_viewing_key.wallet_id(),
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -380,9 +390,8 @@ impl TxCmd {
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = planner
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap transaction")?;
 
@@ -401,7 +410,7 @@ impl TxCmd {
                 // Fetch the SwapRecord with the claimable swap.
                 let swap_record = app
                     .view()
-                    .swap_by_commitment(wallet_id, swap_plaintext.swap_commitment())
+                    .swap_by_commitment(swap_plaintext.swap_commitment())
                     .await?;
 
                 let asset_cache = app.view().assets().await?;
@@ -424,8 +433,6 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
-
                 let params = app
                     .view
                     .as_mut()
@@ -444,7 +451,7 @@ impl TxCmd {
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
                     })
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap claim")?;
 
@@ -473,10 +480,9 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
-                let wallet_id = app.config.full_viewing_key.wallet_id().clone();
                 let plan = planner
                     .delegate(unbonded_amount.value(), rate_data)
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
 
@@ -517,7 +523,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await
@@ -526,15 +531,13 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::UndelegateClaim {} => {
-                let wallet_id = app.config.full_viewing_key.wallet_id(); // this should be optional? or saved in the client statefully?
-
                 let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let current_height = view.status(wallet_id).await?.full_sync_height;
+                let current_height = view.status().await?.full_sync_height;
                 let mut client = ChainQueryServiceClient::new(channel.clone());
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
@@ -548,7 +551,7 @@ impl TxCmd {
 
                 // Query the view client for the list of undelegations that are ready to be claimed.
                 // We want to claim them into the same address index that currently holds the tokens.
-                let notes = view.unspent_notes_by_address_and_asset(wallet_id).await?;
+                let notes = view.unspent_notes_by_address_and_asset().await?;
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
                     for (token, notes) in
@@ -616,7 +619,6 @@ impl TxCmd {
                                 app.view
                                     .as_mut()
                                     .context("view service must be initialized")?,
-                                app.config.full_viewing_key.wallet_id(),
                                 address_index,
                             )
                             .await?;
@@ -648,7 +650,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -667,7 +668,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -747,7 +747,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -812,7 +811,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -835,7 +833,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         source,
                     )
                     .await?;
@@ -857,13 +854,75 @@ impl TxCmd {
                     .full_viewing_key
                     .ephemeral_address(OsRng, AddressIndex::from(*source));
 
+                let timeout_height = match timeout_height {
+                    Some(h) => h.clone(),
+                    None => {
+                        // look up the height for the counterparty and add 2 days of block time
+                        // (assuming 10 seconds per block) to it
+
+                        // look up the client state from the channel by looking up channel id -> connection id -> client state
+                        let mut ibc_channel_client =
+                            IbcChannelQueryClient::new(app.pd_channel().await?);
+
+                        let req = QueryChannelRequest {
+                            port_id: PortId::transfer().to_string(),
+                            channel_id: format!("channel-{}", channel),
+                        };
+
+                        let channel = ibc_channel_client
+                            .channel(req)
+                            .await?
+                            .into_inner()
+                            .channel
+                            .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+
+                        let connection_id = channel.connection_hops[0].clone();
+
+                        let mut ibc_connection_client =
+                            IbcConnectionQueryClient::new(app.pd_channel().await?);
+
+                        let req = QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                        };
+                        let connection = ibc_connection_client
+                            .connection(req)
+                            .await?
+                            .into_inner()
+                            .connection
+                            .ok_or_else(|| anyhow::anyhow!("connection not found"))?;
+
+                        let mut ibc_client_client =
+                            IbcClientQueryClient::new(app.pd_channel().await?);
+                        let req = QueryClientStateRequest {
+                            client_id: connection.client_id,
+                        };
+                        let client_state = ibc_client_client
+                            .client_state(req)
+                            .await?
+                            .into_inner()
+                            .client_state
+                            .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
+
+                        let tm_client_state = TendermintClientState::try_from(client_state)?;
+
+                        let last_update_height = tm_client_state.latest_height;
+
+                        // 10 seconds per block, 2 days
+                        let timeout_n_blocks = ((24 * 60 * 60) / 10) * 2;
+
+                        IbcHeight {
+                            revision_number: last_update_height.revision_number,
+                            revision_height: last_update_height.revision_height + timeout_n_blocks,
+                        }
+                    }
+                };
+
                 // get the current time on the local machine
                 let current_time_u64_ms = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_nanos() as u64;
 
-                let timeout_height = *timeout_height;
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
@@ -908,7 +967,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -928,7 +986,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -969,7 +1026,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1046,7 +1102,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -1099,7 +1154,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;

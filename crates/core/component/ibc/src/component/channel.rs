@@ -9,9 +9,9 @@ use ibc_types::path::{
     AckPath, ChannelEndPath, CommitmentPath, ReceiptPath, SeqAckPath, SeqRecvPath, SeqSendPath,
 };
 
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::channel::{ChannelEnd, ChannelId, Packet, PortId};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 
 // Note: many of the methods on this trait need to write raw bytes,
 // because the data they write is interpreted by counterparty chains.

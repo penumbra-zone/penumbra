@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::delegator_vote::action::{DelegatorVote, DelegatorVoteBody};
 use crate::delegator_vote::proof::DelegatorVoteProof;
+use crate::DelegatorVoteProofPrivate;
+use crate::DelegatorVoteProofPublic;
 use crate::{vote::Vote, VotingReceiptToken};
 
 /// A plan to vote as a delegator.
@@ -103,20 +105,27 @@ impl DelegatorVotePlan {
         fvk: &FullViewingKey,
         state_commitment_proof: tct::Proof,
     ) -> DelegatorVoteProof {
+        let public = DelegatorVoteProofPublic {
+            anchor: state_commitment_proof.root(),
+            balance_commitment: self.staked_note.value().commit(Fr::zero()),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
+            start_position: self.start_position,
+        };
+        let private = DelegatorVoteProofPrivate {
+            state_commitment_proof,
+            note: self.staked_note.clone(),
+            v_blinding: Fr::from(0),
+            spend_auth_randomizer: self.randomizer,
+            ak: *fvk.spend_verification_key(),
+            nk: *fvk.nullifier_key(),
+        };
         DelegatorVoteProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &DELEGATOR_VOTE_PROOF_PROVING_KEY,
-            state_commitment_proof.clone(),
-            self.staked_note.clone(),
-            self.randomizer,
-            *fvk.spend_verification_key(),
-            *fvk.nullifier_key(),
-            state_commitment_proof.root(),
-            self.staked_note.value().commit(Fr::zero()),
-            self.nullifier(fvk),
-            self.rk(fvk),
-            self.start_position,
+            public,
+            private,
         )
         .expect("can generate ZK delegator vote proof")
     }

@@ -1,23 +1,24 @@
 [package]
 name = "penumbra-chain"
-version = "0.63.1"
+version = "0.64.1"
 edition = "2021"
 
 [dependencies]
 # Workspace dependencies
+cnidarium = { path = "../../../cnidarium", optional = true }
+cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
-penumbra-storage = { path = "../../../storage", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
-penumbra-component = { path = "../component", optional = true }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 
 # Penumbra dependencies
 decaf377 = "0.5"
 
 tendermint = "0.34.0"
-ibc-types = { version = "0.10.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
 ics23 = "0.11.0"
 
 # Crates.io deps
@@ -38,9 +39,9 @@ tokio = { version = "1", optional = true }
 
 [features]
 component = [
-    "penumbra-component",
-    "penumbra-storage",
-    "penumbra-proto/penumbra-storage",
+    "cnidarium-component",
+    "cnidarium",
+    "penumbra-proto/cnidarium",
     "penumbra-proto/rpc",
     "tonic",
     "tokio",
