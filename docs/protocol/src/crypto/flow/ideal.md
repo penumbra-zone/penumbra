@@ -149,7 +149,7 @@ participants (decryptors) must be able to verify that counterparty participants
 (other decryptors) are contributing to the DKG honestly, without the use of a
 trusted dealer. This can be achieved using something similar to [Feldman's
 Verifiable Secret Sharing][feldman] protocol, where each participant shares a
-commitment to their share which is visable to all other participants. In
+commitment to their share which is visible to all other participants. In
 addition, our DKG must be able to tolerate *rogue-key attacks*: that is, it
 must tolerate the instance where a validator maliciously chooses their share
 based on the value of the other validator's shares in order to cancel out other
