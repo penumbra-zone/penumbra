@@ -131,13 +131,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
     async fn set_validator_state_inner(
         &mut self,
         identity_key: &IdentityKey,
-        cur_state: validator::State,
+        old_state: validator::State,
         new_state: validator::State,
     ) -> Result<()> {
         let state_key = state_key::state_by_validator(identity_key).to_owned();
 
         // Update metrics
-        match cur_state {
+        match old_state {
+            Defined => metrics::decrement_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
             Inactive => metrics::decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
             Active => metrics::decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
             Disabled => metrics::decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
@@ -145,6 +146,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             Tombstoned => metrics::decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
         };
         match new_state {
+            Defined => metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
             Inactive => metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
             Active => metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
             Disabled => metrics::increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
@@ -163,14 +165,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // transition. All other validator state transitions (including from active to inactive) are
         // triggered by epoch transitions themselves, or don't immediately affect the active
         // validator set.
-        if let (Active, Disabled | Jailed | Tombstoned) = (cur_state, new_state) {
+        if let (Active, Disabled | Jailed | Tombstoned) = (old_state, new_state) {
             self.signal_end_epoch();
         }
 
-        match (cur_state, new_state) {
-            (Inactive, Inactive) => Ok(()), // no-op
-            (Disabled, Disabled) => Ok(()), // no-op
-            (Active, Active) => Ok(()),     // no-op
+        match (old_state, new_state) {
+            /* ****** no-ops ******* */
+            (Inactive, Inactive) => Ok(()),
+            (Disabled, Disabled) => Ok(()),
+            (Active, Active) => Ok(()),
+            (Defined, Defined) => Ok(()),
+            /* ********************* */
+            (Defined, Inactive) => {
+                tracing::debug!(identity_key = ?identity_key, "validator has reached minimum stake threshold to be considered inactive");
+                // TODO(erwan): is there anything else to do here?
+                Ok(())
+            }
             (Inactive, Active) => {
                 // The validator's delegation pool becomes bonded.
                 self.set_validator_bonding_state(identity_key, Bonded).await;
@@ -195,9 +205,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // Finally, set the validator to be active.
                 self.put(state_key, Active);
 
-                // Update metrics
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
-
                 tracing::debug!(?power, "validator became active");
                 Ok(())
             }
