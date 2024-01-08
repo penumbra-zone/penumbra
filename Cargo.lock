@@ -5477,6 +5477,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-mock-cometbft"
+version = "0.64.1"
+
+[[package]]
 name = "penumbra-num"
 version = "0.64.1"
 dependencies = [

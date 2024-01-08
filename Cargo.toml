@@ -44,6 +44,7 @@ members = [
   "crates/bin/pcli",
   "crates/wasm",
   "crates/test/tct-property-test",
+  "crates/test/mock-cometbft",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
