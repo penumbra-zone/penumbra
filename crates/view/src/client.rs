@@ -840,10 +840,16 @@ where
             .await?
             .into_inner();
 
-            let id = rsp
-                .id
-                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?
-                .try_into()?;
+            if await_detection {
+            } else {
+            }
+
+            let ids: Vec<_> = rsp.await?.into_inner().try_collect().await?;
+
+            // let id = rsp
+            //     .id
+            //     .ok_or_else(|| anyhow::anyhow!("response id is empty"))?
+            //     .try_into()?;
 
             Ok((id, rsp.detection_height))
         }

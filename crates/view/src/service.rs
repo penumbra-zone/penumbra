@@ -312,11 +312,25 @@ impl ViewProtocolService for ViewService {
     type UnclaimedSwapsStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::UnclaimedSwapsResponse, tonic::Status>> + Send>,
     >;
+    type BroadcastTransactionStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
+    type WitnessAndBuildStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::WitnessAndBuildResponse, tonic::Status>> + Send>,
+    >;
+    type AuthorizeAndBuildStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::AuthorizeAndBuildResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     async fn broadcast_transaction(
         &self,
         request: tonic::Request<pb::BroadcastTransactionRequest>,
-    ) -> Result<tonic::Response<pb::BroadcastTransactionResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::BroadcastTransactionStream>, tonic::Status> {
         let pb::BroadcastTransactionRequest {
             transaction,
             await_detection,
@@ -349,10 +363,25 @@ impl ViewProtocolService for ViewService {
             0
         };
 
-        Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
-            id: Some(id.into()),
-            detection_height,
-        }))
+        // TODO: needs to properly take account of the await_detection flag
+        let stream = try_stream! {
+                yield pb::BroadcastTransactionResponse {
+                    status: Some(pb::broadcast_transaction_response::Status::Confirmed(
+                        pb::broadcast_transaction_response::Confirmed {
+                            id: Some(id.into()),
+                            detection_height,
+                        }
+                    )),
+                }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error broadcasting transaction: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn transaction_planner(

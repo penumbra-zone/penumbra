@@ -22,11 +22,55 @@ impl ::prost::Name for AuthorizeAndBuildRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeAndBuildResponse {
-    /// The transaction that was built.
-    #[prost(message, optional, tag = "1")]
-    pub transaction: ::core::option::Option<
-        super::super::core::transaction::v1alpha1::Transaction,
-    >,
+    #[prost(oneof = "authorize_and_build_response::Status", tags = "1, 2")]
+    pub status: ::core::option::Option<authorize_and_build_response::Status>,
+}
+/// Nested message and enum types in `AuthorizeAndBuildResponse`.
+pub mod authorize_and_build_response {
+    /// Signals that building is in progress.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BuildProgress {
+        /// An approximate progress of the build, from 0 to 1.
+        #[prost(float, tag = "1")]
+        pub progress: f32,
+    }
+    impl ::prost::Name for BuildProgress {
+        const NAME: &'static str = "BuildProgress";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.AuthorizeAndBuildResponse.{}", Self::NAME
+            )
+        }
+    }
+    /// Signals that the transaction is complete.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Complete {
+        /// The finished transaction.
+        #[prost(message, optional, tag = "1")]
+        pub transaction: ::core::option::Option<
+            super::super::super::core::transaction::v1alpha1::Transaction,
+        >,
+    }
+    impl ::prost::Name for Complete {
+        const NAME: &'static str = "Complete";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.AuthorizeAndBuildResponse.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Status {
+        #[prost(message, tag = "1")]
+        BuildProgress(BuildProgress),
+        #[prost(message, tag = "2")]
+        Complete(Complete),
+    }
 }
 impl ::prost::Name for AuthorizeAndBuildResponse {
     const NAME: &'static str = "AuthorizeAndBuildResponse";
@@ -57,13 +101,62 @@ impl ::prost::Name for BroadcastTransactionRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BroadcastTransactionResponse {
-    /// The hash of the transaction that was broadcast.
-    #[prost(message, optional, tag = "1")]
-    pub id: ::core::option::Option<super::super::core::txhash::v1alpha1::TransactionId>,
-    /// The height in which the transaction was detected as included in the chain, if any.
-    /// Will not be included unless await_detection was true.
-    #[prost(uint64, tag = "2")]
-    pub detection_height: u64,
+    #[prost(oneof = "broadcast_transaction_response::Status", tags = "1, 2")]
+    pub status: ::core::option::Option<broadcast_transaction_response::Status>,
+}
+/// Nested message and enum types in `BroadcastTransactionResponse`.
+pub mod broadcast_transaction_response {
+    /// Signals that the transaction was broadcast successfully (but has not been confirmed).
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BroadcastSuccess {
+        /// The hash of the transaction that was broadcast.
+        #[prost(message, optional, tag = "1")]
+        pub id: ::core::option::Option<
+            super::super::super::core::txhash::v1alpha1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for BroadcastSuccess {
+        const NAME: &'static str = "BroadcastSuccess";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.BroadcastTransactionResponse.{}", Self::NAME
+            )
+        }
+    }
+    /// Signals that the transaction has been confirmed on-chain and detected by the view server.
+    ///
+    /// Will not be sent unless await_detection was true.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Confirmed {
+        /// The hash of the transaction that was broadcast.
+        #[prost(message, optional, tag = "1")]
+        pub id: ::core::option::Option<
+            super::super::super::core::txhash::v1alpha1::TransactionId,
+        >,
+        /// The height in which the transaction was detected as included in the chain, if any.
+        #[prost(uint64, tag = "2")]
+        pub detection_height: u64,
+    }
+    impl ::prost::Name for Confirmed {
+        const NAME: &'static str = "Confirmed";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.BroadcastTransactionResponse.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Status {
+        #[prost(message, tag = "1")]
+        BroadcastSuccess(BroadcastSuccess),
+        #[prost(message, tag = "2")]
+        Confirmed(Confirmed),
+    }
 }
 impl ::prost::Name for BroadcastTransactionResponse {
     const NAME: &'static str = "BroadcastTransactionResponse";
@@ -656,10 +749,55 @@ impl ::prost::Name for WitnessAndBuildRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessAndBuildResponse {
-    #[prost(message, optional, tag = "1")]
-    pub transaction: ::core::option::Option<
-        super::super::core::transaction::v1alpha1::Transaction,
-    >,
+    #[prost(oneof = "witness_and_build_response::Status", tags = "1, 2")]
+    pub status: ::core::option::Option<witness_and_build_response::Status>,
+}
+/// Nested message and enum types in `WitnessAndBuildResponse`.
+pub mod witness_and_build_response {
+    /// Signals that building is in progress.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct BuildProgress {
+        /// An approximate progress of the build, from 0 to 1.
+        #[prost(float, tag = "1")]
+        pub progress: f32,
+    }
+    impl ::prost::Name for BuildProgress {
+        const NAME: &'static str = "BuildProgress";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.WitnessAndBuildResponse.{}", Self::NAME
+            )
+        }
+    }
+    /// Signals that the transaction is complete.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Complete {
+        /// The finished transaction.
+        #[prost(message, optional, tag = "1")]
+        pub transaction: ::core::option::Option<
+            super::super::super::core::transaction::v1alpha1::Transaction,
+        >,
+    }
+    impl ::prost::Name for Complete {
+        const NAME: &'static str = "Complete";
+        const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1alpha1.WitnessAndBuildResponse.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Status {
+        #[prost(message, tag = "1")]
+        BuildProgress(BuildProgress),
+        #[prost(message, tag = "2")]
+        Complete(Complete),
+    }
 }
 impl ::prost::Name for WitnessAndBuildResponse {
     const NAME: &'static str = "WitnessAndBuildResponse";
@@ -1362,72 +1500,6 @@ pub mod view_protocol_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Returns authentication paths for the given note commitments.
-        ///
-        /// This method takes a batch of input commitments, rather than just one, so
-        /// that the client can get a consistent set of authentication paths to a
-        /// common root.  (Otherwise, if a client made multiple requests, the wallet
-        /// service could have advanced the state commitment tree state between queries).
-        pub async fn witness(
-            &mut self,
-            request: impl tonic::IntoRequest<super::WitnessRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::WitnessResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/Witness",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.view.v1alpha1.ViewProtocolService",
-                        "Witness",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        pub async fn witness_and_build(
-            &mut self,
-            request: impl tonic::IntoRequest<super::WitnessAndBuildRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::WitnessAndBuildResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/WitnessAndBuild",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.view.v1alpha1.ViewProtocolService",
-                        "WitnessAndBuild",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
         /// Queries for assets.
         /// Returns a stream of `AssetsResponse`s.
         pub async fn assets(
@@ -1896,68 +1968,6 @@ pub mod view_protocol_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Query for a transaction plan
-        pub async fn transaction_planner(
-            &mut self,
-            request: impl tonic::IntoRequest<super::TransactionPlannerRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionPlannerResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPlanner",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.view.v1alpha1.ViewProtocolService",
-                        "TransactionPlanner",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
-        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
-        pub async fn broadcast_transaction(
-            &mut self,
-            request: impl tonic::IntoRequest<super::BroadcastTransactionRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::BroadcastTransactionResponse>,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "penumbra.view.v1alpha1.ViewProtocolService",
-                        "BroadcastTransaction",
-                    ),
-                );
-            self.inner.unary(req, path, codec).await
-        }
         /// Query for owned position IDs for the given trading pair and in the given position state.
         pub async fn owned_position_ids(
             &mut self,
@@ -1989,12 +1999,126 @@ pub mod view_protocol_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
+        pub async fn transaction_planner(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TransactionPlannerRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPlanner",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "TransactionPlanner",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Returns authentication data for the given transaction plan.
+        ///
+        /// This method takes a complete transaction plan, so that the client can get a
+        /// consistent set of authentication paths to a common root for the entire
+        /// transaction.  (Otherwise, if a client made multiple requests, the wallet
+        /// service could have advanced the state commitment tree  between queries).
+        pub async fn witness(
+            &mut self,
+            request: impl tonic::IntoRequest<super::WitnessRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::WitnessResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/Witness",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "Witness",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Like `Witness`, but immediately uses the witness data to build (prove) the transaction.
+        ///
+        /// This method is useful for clients that can't easily do proving themselves, either because
+        /// they're not written in Rust and can't easily import the proving code, or because they don't
+        /// have access to proving keys, or some other reason.
+        ///
+        /// This method streams status updates to the caller before finally returning the transaction.
+        pub async fn witness_and_build(
+            &mut self,
+            request: impl tonic::IntoRequest<super::WitnessAndBuildRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::WitnessAndBuildResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/WitnessAndBuild",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "WitnessAndBuild",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
         /// Authorize a transaction plan and build the transaction.
+        ///
+        /// This method is only supported on view servers that have access to a custody
+        /// service.  Otherwise, it will fail.
+        ///
+        /// Penumbra's transaction authorization mechanism is designed so transactions
+        /// can be signed and built (proved) concurrently. This allows implementations
+        /// to, e.g., start proving optimistically while presenting the user with an
+        /// approval dialog.
+        ///
+        /// This method streams status updates to the caller before finally returning the transaction.
         pub async fn authorize_and_build(
             &mut self,
             request: impl tonic::IntoRequest<super::AuthorizeAndBuildRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::AuthorizeAndBuildResponse>,
+            tonic::Response<tonic::codec::Streaming<super::AuthorizeAndBuildResponse>>,
             tonic::Status,
         > {
             self.inner
@@ -2018,7 +2142,42 @@ pub mod view_protocol_service_client {
                         "AuthorizeAndBuild",
                     ),
                 );
-            self.inner.unary(req, path, codec).await
+            self.inner.server_streaming(req, path, codec).await
+        }
+        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
+        ///
+        /// This method streams status updates to the caller before finally returning confirmation.
+        pub async fn broadcast_transaction(
+            &mut self,
+            request: impl tonic::IntoRequest<super::BroadcastTransactionRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::BroadcastTransactionResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "BroadcastTransaction",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
         }
     }
 }
@@ -2074,23 +2233,6 @@ pub mod view_protocol_service_server {
             request: tonic::Request<super::NotesForVotingRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::NotesForVotingStream>,
-            tonic::Status,
-        >;
-        /// Returns authentication paths for the given note commitments.
-        ///
-        /// This method takes a batch of input commitments, rather than just one, so
-        /// that the client can get a consistent set of authentication paths to a
-        /// common root.  (Otherwise, if a client made multiple requests, the wallet
-        /// service could have advanced the state commitment tree state between queries).
-        async fn witness(
-            &self,
-            request: tonic::Request<super::WitnessRequest>,
-        ) -> std::result::Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
-        async fn witness_and_build(
-            &self,
-            request: tonic::Request<super::WitnessAndBuildRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::WitnessAndBuildResponse>,
             tonic::Status,
         >;
         /// Server streaming response type for the Assets method.
@@ -2234,22 +2376,6 @@ pub mod view_protocol_service_server {
             tonic::Response<Self::TransactionInfoStream>,
             tonic::Status,
         >;
-        /// Query for a transaction plan
-        async fn transaction_planner(
-            &self,
-            request: tonic::Request<super::TransactionPlannerRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::TransactionPlannerResponse>,
-            tonic::Status,
-        >;
-        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
-        async fn broadcast_transaction(
-            &self,
-            request: tonic::Request<super::BroadcastTransactionRequest>,
-        ) -> std::result::Result<
-            tonic::Response<super::BroadcastTransactionResponse>,
-            tonic::Status,
-        >;
         /// Server streaming response type for the OwnedPositionIds method.
         type OwnedPositionIdsStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<
@@ -2267,12 +2393,88 @@ pub mod view_protocol_service_server {
             tonic::Response<Self::OwnedPositionIdsStream>,
             tonic::Status,
         >;
+        /// Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
+        async fn transaction_planner(
+            &self,
+            request: tonic::Request<super::TransactionPlannerRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::TransactionPlannerResponse>,
+            tonic::Status,
+        >;
+        /// Returns authentication data for the given transaction plan.
+        ///
+        /// This method takes a complete transaction plan, so that the client can get a
+        /// consistent set of authentication paths to a common root for the entire
+        /// transaction.  (Otherwise, if a client made multiple requests, the wallet
+        /// service could have advanced the state commitment tree  between queries).
+        async fn witness(
+            &self,
+            request: tonic::Request<super::WitnessRequest>,
+        ) -> std::result::Result<tonic::Response<super::WitnessResponse>, tonic::Status>;
+        /// Server streaming response type for the WitnessAndBuild method.
+        type WitnessAndBuildStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::WitnessAndBuildResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Like `Witness`, but immediately uses the witness data to build (prove) the transaction.
+        ///
+        /// This method is useful for clients that can't easily do proving themselves, either because
+        /// they're not written in Rust and can't easily import the proving code, or because they don't
+        /// have access to proving keys, or some other reason.
+        ///
+        /// This method streams status updates to the caller before finally returning the transaction.
+        async fn witness_and_build(
+            &self,
+            request: tonic::Request<super::WitnessAndBuildRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::WitnessAndBuildStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the AuthorizeAndBuild method.
+        type AuthorizeAndBuildStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::AuthorizeAndBuildResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
         /// Authorize a transaction plan and build the transaction.
+        ///
+        /// This method is only supported on view servers that have access to a custody
+        /// service.  Otherwise, it will fail.
+        ///
+        /// Penumbra's transaction authorization mechanism is designed so transactions
+        /// can be signed and built (proved) concurrently. This allows implementations
+        /// to, e.g., start proving optimistically while presenting the user with an
+        /// approval dialog.
+        ///
+        /// This method streams status updates to the caller before finally returning the transaction.
         async fn authorize_and_build(
             &self,
             request: tonic::Request<super::AuthorizeAndBuildRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::AuthorizeAndBuildResponse>,
+            tonic::Response<Self::AuthorizeAndBuildStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the BroadcastTransaction method.
+        type BroadcastTransactionStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::BroadcastTransactionResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Broadcast a transaction to the network, optionally waiting for full confirmation.
+        ///
+        /// This method streams status updates to the caller before finally returning confirmation.
+        async fn broadcast_transaction(
+            &self,
+            request: tonic::Request<super::BroadcastTransactionRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::BroadcastTransactionStream>,
             tonic::Status,
         >;
     }
@@ -2547,102 +2749,6 @@ pub mod view_protocol_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/Witness" => {
-                    #[allow(non_camel_case_types)]
-                    struct WitnessSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::WitnessRequest>
-                    for WitnessSvc<T> {
-                        type Response = super::WitnessResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::WitnessRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewProtocolService>::witness(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = WitnessSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/WitnessAndBuild" => {
-                    #[allow(non_camel_case_types)]
-                    struct WitnessAndBuildSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::WitnessAndBuildRequest>
-                    for WitnessAndBuildSvc<T> {
-                        type Response = super::WitnessAndBuildResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::WitnessAndBuildRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewProtocolService>::witness_and_build(
-                                        &inner,
-                                        request,
-                                    )
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = WitnessAndBuildSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
@@ -3378,106 +3484,6 @@ pub mod view_protocol_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPlanner" => {
-                    #[allow(non_camel_case_types)]
-                    struct TransactionPlannerSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::TransactionPlannerRequest>
-                    for TransactionPlannerSvc<T> {
-                        type Response = super::TransactionPlannerResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::TransactionPlannerRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewProtocolService>::transaction_planner(
-                                        &inner,
-                                        request,
-                                    )
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = TransactionPlannerSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction" => {
-                    #[allow(non_camel_case_types)]
-                    struct BroadcastTransactionSvc<T: ViewProtocolService>(pub Arc<T>);
-                    impl<
-                        T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::BroadcastTransactionRequest>
-                    for BroadcastTransactionSvc<T> {
-                        type Response = super::BroadcastTransactionResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::BroadcastTransactionRequest>,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as ViewProtocolService>::broadcast_transaction(
-                                        &inner,
-                                        request,
-                                    )
-                                    .await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = BroadcastTransactionSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
                 "/penumbra.view.v1alpha1.ViewProtocolService/OwnedPositionIds" => {
                     #[allow(non_camel_case_types)]
                     struct OwnedPositionIdsSvc<T: ViewProtocolService>(pub Arc<T>);
@@ -3530,16 +3536,166 @@ pub mod view_protocol_service_server {
                     };
                     Box::pin(fut)
                 }
+                "/penumbra.view.v1alpha1.ViewProtocolService/TransactionPlanner" => {
+                    #[allow(non_camel_case_types)]
+                    struct TransactionPlannerSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::TransactionPlannerRequest>
+                    for TransactionPlannerSvc<T> {
+                        type Response = super::TransactionPlannerResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TransactionPlannerRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewProtocolService>::transaction_planner(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TransactionPlannerSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/Witness" => {
+                    #[allow(non_camel_case_types)]
+                    struct WitnessSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::WitnessRequest>
+                    for WitnessSvc<T> {
+                        type Response = super::WitnessResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::WitnessRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewProtocolService>::witness(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = WitnessSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/WitnessAndBuild" => {
+                    #[allow(non_camel_case_types)]
+                    struct WitnessAndBuildSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::ServerStreamingService<
+                        super::WitnessAndBuildRequest,
+                    > for WitnessAndBuildSvc<T> {
+                        type Response = super::WitnessAndBuildResponse;
+                        type ResponseStream = T::WitnessAndBuildStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::WitnessAndBuildRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewProtocolService>::witness_and_build(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = WitnessAndBuildSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/penumbra.view.v1alpha1.ViewProtocolService/AuthorizeAndBuild" => {
                     #[allow(non_camel_case_types)]
                     struct AuthorizeAndBuildSvc<T: ViewProtocolService>(pub Arc<T>);
                     impl<
                         T: ViewProtocolService,
-                    > tonic::server::UnaryService<super::AuthorizeAndBuildRequest>
-                    for AuthorizeAndBuildSvc<T> {
+                    > tonic::server::ServerStreamingService<
+                        super::AuthorizeAndBuildRequest,
+                    > for AuthorizeAndBuildSvc<T> {
                         type Response = super::AuthorizeAndBuildResponse;
+                        type ResponseStream = T::AuthorizeAndBuildStream;
                         type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
+                            tonic::Response<Self::ResponseStream>,
                             tonic::Status,
                         >;
                         fn call(
@@ -3575,7 +3731,59 @@ pub mod view_protocol_service_server {
                                 max_decoding_message_size,
                                 max_encoding_message_size,
                             );
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/BroadcastTransaction" => {
+                    #[allow(non_camel_case_types)]
+                    struct BroadcastTransactionSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::ServerStreamingService<
+                        super::BroadcastTransactionRequest,
+                    > for BroadcastTransactionSvc<T> {
+                        type Response = super::BroadcastTransactionResponse;
+                        type ResponseStream = T::BroadcastTransactionStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::BroadcastTransactionRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewProtocolService>::broadcast_transaction(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = BroadcastTransactionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
