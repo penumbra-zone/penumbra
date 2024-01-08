@@ -72,7 +72,7 @@ R-FMD constructions in the original paper.
 
 Unlike R-FMD, the false positive rate is set by the sender, so `CreateClue`
 takes both the false positive rate $p$ and the receiver's clue key.  Because the
-false postive rate is set by the sender, there is no separation of capability
+false positive rate is set by the sender, there is no separation of capability
 between the root key and a detection key, so `KeyGen` outputs a clue key and a
 detection key, and `Extract` disappears.
 
