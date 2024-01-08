@@ -6,13 +6,13 @@ use decaf377::Fq;
 use penumbra_asset::asset;
 use penumbra_dex::{
     swap::SwapPlaintext,
-    swap_claim::{SwapClaimCircuit, SwapClaimProof},
+    swap_claim::{SwapClaimCircuit, SwapClaimProof, SwapClaimProofPrivate, SwapClaimProofPublic},
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
-use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
+use penumbra_proof_params::{DummyWitness, SWAPCLAIM_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
@@ -20,40 +20,9 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
-fn prove(
-    r: Fq,
-    s: Fq,
-    swap_plaintext: SwapPlaintext,
-    state_commitment_proof: tct::Proof,
-    nk: NullifierKey,
-    anchor: tct::Root,
-    nullifier: Nullifier,
-    lambda_1: Amount,
-    lambda_2: Amount,
-    note_blinding_1: Fq,
-    note_blinding_2: Fq,
-    note_commitment_1: tct::StateCommitment,
-    note_commitment_2: tct::StateCommitment,
-    output_data: BatchSwapOutputData,
-) {
-    let _proof = SwapClaimProof::prove(
-        r,
-        s,
-        &SWAPCLAIM_PROOF_PROVING_KEY,
-        swap_plaintext,
-        state_commitment_proof,
-        nk,
-        anchor,
-        nullifier,
-        lambda_1,
-        lambda_2,
-        note_blinding_1,
-        note_blinding_2,
-        note_commitment_1,
-        note_commitment_2,
-        output_data,
-    )
-    .expect("can create proof");
+fn prove(r: Fq, s: Fq, public: SwapClaimProofPublic, private: SwapClaimProofPrivate) {
+    let _proof = SwapClaimProof::prove(r, s, &SWAPCLAIM_PROOF_PROVING_KEY, public, private)
+        .expect("can create proof");
 }
 
 fn swap_claim_proving_time(c: &mut Criterion) {
@@ -80,7 +49,7 @@ fn swap_claim_proving_time(c: &mut Criterion) {
         fee,
         claim_address,
     );
-    let fee = swap_plaintext.clone().claim_fee;
+    let claim_fee = swap_plaintext.clone().claim_fee;
     let mut sct = tct::Tree::new();
     let swap_commitment = swap_plaintext.swap_commitment();
     sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
@@ -111,32 +80,15 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let note_commitment_1 = output_1_note.commit();
     let note_commitment_2 = output_2_note.commit();
 
-    let r = Fq::rand(&mut OsRng);
-    let s = Fq::rand(&mut OsRng);
-
-    c.bench_function("swap claim proving", |b| {
-        b.iter(|| {
-            prove(
-                r,
-                s,
-                swap_plaintext.clone(),
-                state_commitment_proof.clone(),
-                nk,
-                anchor,
-                nullifier,
-                lambda_1,
-                lambda_2,
-                note_blinding_1,
-                note_blinding_2,
-                note_commitment_1,
-                note_commitment_2,
-                output_data,
-            )
-        })
-    });
-
-    // Also print out the number of constraints.
-    let circuit = SwapClaimCircuit::new(
+    let public = SwapClaimProofPublic {
+        anchor,
+        nullifier,
+        claim_fee,
+        output_data,
+        note_commitment_1,
+        note_commitment_2,
+    };
+    let private = SwapClaimProofPrivate {
         swap_plaintext,
         state_commitment_proof,
         nk,
@@ -144,13 +96,17 @@ fn swap_claim_proving_time(c: &mut Criterion) {
         lambda_2,
         note_blinding_1,
         note_blinding_2,
-        anchor,
-        nullifier,
-        fee,
-        output_data,
-        note_commitment_1,
-        note_commitment_2,
-    );
+    };
+
+    let r = Fq::rand(&mut OsRng);
+    let s = Fq::rand(&mut OsRng);
+
+    c.bench_function("swap claim proving", |b| {
+        b.iter(|| prove(r, s, public.clone(), private.clone()))
+    });
+
+    // Also print out the number of constraints.
+    let circuit = SwapClaimCircuit::with_dummy_witness();
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);

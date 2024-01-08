@@ -12,7 +12,11 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::{SctManager as _, SourceContext, StateReadExt as _};
 use penumbra_shielded_pool::component::NoteManager;
 
-use crate::{component::StateReadExt, event, swap_claim::SwapClaim};
+use crate::{
+    component::StateReadExt,
+    event,
+    swap_claim::{SwapClaim, SwapClaimProofPublic},
+};
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
@@ -21,12 +25,14 @@ impl ActionHandler for SwapClaim {
         self.proof
             .verify(
                 &SWAPCLAIM_PROOF_VERIFICATION_KEY,
-                context.anchor,
-                self.body.nullifier,
-                self.body.fee.clone(),
-                self.body.output_data,
-                self.body.output_1_commitment,
-                self.body.output_2_commitment,
+                SwapClaimProofPublic {
+                    anchor: context.anchor,
+                    nullifier: self.body.nullifier,
+                    claim_fee: self.body.fee.clone(),
+                    output_data: self.body.output_data,
+                    note_commitment_1: self.body.output_1_commitment,
+                    note_commitment_2: self.body.output_2_commitment,
+                },
             )
             .context("a swap claim proof did not verify")?;
 

@@ -14,7 +14,11 @@ use tct::Position;
 
 use crate::{swap::SwapPlaintext, BatchSwapOutputData};
 
-use super::{action as swap_claim, proof::SwapClaimProof, SwapClaim};
+use super::{
+    action as swap_claim,
+    proof::{SwapClaimProof, SwapClaimProofPrivate, SwapClaimProofPublic},
+    SwapClaim,
+};
 
 /// A planned [`SwapClaim`](SwapClaim).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -68,18 +72,23 @@ impl SwapClaimPlan {
             self.proof_blinding_r,
             self.proof_blinding_s,
             &SWAPCLAIM_PROOF_PROVING_KEY,
-            self.swap_plaintext.clone(),
-            state_commitment_proof.clone(),
-            *nk,
-            state_commitment_proof.root(),
-            nullifier,
-            lambda_1,
-            lambda_2,
-            note_blinding_1,
-            note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-            self.output_data,
+            SwapClaimProofPublic {
+                anchor: state_commitment_proof.root(),
+                nullifier,
+                claim_fee: self.swap_plaintext.claim_fee.clone(),
+                output_data: self.output_data,
+                note_commitment_1,
+                note_commitment_2,
+            },
+            SwapClaimProofPrivate {
+                swap_plaintext: self.swap_plaintext.clone(),
+                state_commitment_proof: state_commitment_proof.clone(),
+                nk: *nk,
+                lambda_1,
+                lambda_2,
+                note_blinding_1,
+                note_blinding_2,
+            },
         )
         .expect("can generate ZKSwapClaimProof")
     }

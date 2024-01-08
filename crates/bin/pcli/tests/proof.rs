@@ -6,6 +6,7 @@ use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_asset::{asset, Balance, Value};
 use penumbra_dex::swap::proof::{SwapProofPrivate, SwapProofPublic};
+use penumbra_dex::swap_claim::{SwapClaimProofPrivate, SwapClaimProofPublic};
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
@@ -256,7 +257,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
         fee,
         claim_address,
     );
-    let fee = swap_plaintext.clone().claim_fee;
+    let claim_fee = swap_plaintext.clone().claim_fee;
     let mut sct = tct::Tree::new();
     let swap_commitment = swap_plaintext.swap_commitment();
     sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
@@ -287,37 +288,31 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
     let note_commitment_1 = output_1_note.commit();
     let note_commitment_2 = output_2_note.commit();
 
-    let blinding_r = Fq::rand(&mut rng);
-    let blinding_s = Fq::rand(&mut rng);
-
-    let proof = SwapClaimProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
+    let public = SwapClaimProofPublic {
+        anchor,
+        nullifier,
+        claim_fee,
+        output_data,
+        note_commitment_1,
+        note_commitment_2,
+    };
+    let private = SwapClaimProofPrivate {
         swap_plaintext,
         state_commitment_proof,
         nk,
-        anchor,
-        nullifier,
         lambda_1,
         lambda_2,
         note_blinding_1,
         note_blinding_2,
-        note_commitment_1,
-        note_commitment_2,
-        output_data,
-    )
-    .expect("can create proof");
+    };
 
-    let proof_result = proof.verify(
-        vk,
-        anchor,
-        nullifier,
-        fee,
-        output_data,
-        note_commitment_1,
-        note_commitment_2,
-    );
+    let blinding_r = Fq::rand(&mut rng);
+    let blinding_s = Fq::rand(&mut rng);
+
+    let proof = SwapClaimProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
+
+    let proof_result = proof.verify(vk, public);
 
     assert!(proof_result.is_ok());
 }
