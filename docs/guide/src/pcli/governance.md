@@ -98,9 +98,9 @@ slashed (but regardless of whether it passes or fails), the deposit will then be
 proposer at the end of voting.
 
 From the proposer's point of view, the lifecycle of a proposal begins when it is
-_submitted_ and ends when it the deposit is _claimed_. During the voting period, the proposer may
+_submitted_ and ends when the deposit is _claimed_. During the voting period, the proposer may
 also optionally _withdraw_ the proposal, which prevents it from passing, but does not prevent it
-from being slashed. This is usually used when a proposal has been superceded by a revised
+from being slashed. This is usually used when a proposal has been superseded by a revised
 alternative.
 
 <picture>
