@@ -738,6 +738,11 @@ pub struct StakeParameters {
     /// The maximum number of blocks in the window each validator can miss signing without slashing.
     #[prost(uint64, tag = "7")]
     pub missed_blocks_maximum: u64,
+    /// The minimum amount of stake required for a validator to be indexed by the protocol.
+    #[prost(message, optional, tag = "8")]
+    pub min_validator_stake: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
 }
 impl ::prost::Name for StakeParameters {
     const NAME: &'static str = "StakeParameters";

@@ -1579,6 +1579,9 @@ impl serde::Serialize for StakeParameters {
         if self.missed_blocks_maximum != 0 {
             len += 1;
         }
+        if self.min_validator_stake.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.StakeParameters", len)?;
         if self.unbonding_epochs != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1608,6 +1611,9 @@ impl serde::Serialize for StakeParameters {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("missedBlocksMaximum", ToString::to_string(&self.missed_blocks_maximum).as_str())?;
         }
+        if let Some(v) = self.min_validator_stake.as_ref() {
+            struct_ser.serialize_field("minValidatorStake", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -1632,6 +1638,8 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             "signedBlocksWindowLen",
             "missed_blocks_maximum",
             "missedBlocksMaximum",
+            "min_validator_stake",
+            "minValidatorStake",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1643,6 +1651,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             SlashingPenaltyDowntime,
             SignedBlocksWindowLen,
             MissedBlocksMaximum,
+            MinValidatorStake,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1671,6 +1680,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                             "slashingPenaltyDowntime" | "slashing_penalty_downtime" => Ok(GeneratedField::SlashingPenaltyDowntime),
                             "signedBlocksWindowLen" | "signed_blocks_window_len" => Ok(GeneratedField::SignedBlocksWindowLen),
                             "missedBlocksMaximum" | "missed_blocks_maximum" => Ok(GeneratedField::MissedBlocksMaximum),
+                            "minValidatorStake" | "min_validator_stake" => Ok(GeneratedField::MinValidatorStake),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1697,6 +1707,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                 let mut slashing_penalty_downtime__ = None;
                 let mut signed_blocks_window_len__ = None;
                 let mut missed_blocks_maximum__ = None;
+                let mut min_validator_stake__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::UnbondingEpochs => {
@@ -1755,6 +1766,12 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::MinValidatorStake => {
+                            if min_validator_stake__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("minValidatorStake"));
+                            }
+                            min_validator_stake__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(StakeParameters {
@@ -1765,6 +1782,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                     slashing_penalty_downtime: slashing_penalty_downtime__.unwrap_or_default(),
                     signed_blocks_window_len: signed_blocks_window_len__.unwrap_or_default(),
                     missed_blocks_maximum: missed_blocks_maximum__.unwrap_or_default(),
+                    min_validator_stake: min_validator_stake__,
                 })
             }
         }
