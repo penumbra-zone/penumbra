@@ -1,16 +1,18 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::{app::App, ActionHandler, MockClient, TempStorageExt};
+use crate::{ActionHandler, MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;
 use penumbra_asset::Value;
-use penumbra_chain::{component::StateWriteExt, EffectHash, TransactionContext};
-use penumbra_fee::Fee;
+use penumbra_chain::component::StateWriteExt;
+use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
+use penumbra_sct::component::SourceContext;
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
-use penumbra_transaction::{AuthorizingData, Transaction, TransactionBody, TransactionParameters};
+use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
+use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
 use rand_core::SeedableRng;
 use tendermint::abci;
 
@@ -60,6 +62,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     spend.check_stateless(transaction_context).await?;
     spend.check_stateful(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     spend.execute(&mut state_tx).await?;
     state_tx.apply();
 
@@ -72,7 +75,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    App::finish_block(&mut state_tx).await;
+    state_tx.finish_block(false).await.unwrap();
 
     state_tx.apply();
 
@@ -140,6 +143,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .await
         .expect("can apply first spend");
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(1u8);
     spend
         .execute(&mut state_tx)
         .await
@@ -164,6 +168,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .expect("check stateless should succeed");
     spend.check_stateful(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_mock_source(2u8);
     spend.execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 }
@@ -244,7 +249,6 @@ async fn spend_duplicate_nullifier_same_transaction() {
             penumbra_transaction::Action::Output(output),
         ],
         transaction_parameters: TransactionParameters::default(),
-        fee: Fee::from_staking_token_amount(0u64.into()),
         detection_data: None,
         memo: None,
     };

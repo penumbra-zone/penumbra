@@ -5,7 +5,8 @@ use penumbra_asset::{
     Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_num::Amount;
-use penumbra_proto::penumbra::core::component::governance::v1alpha1 as pb;
+use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use crate::proposal_state::{Outcome, Withdrawn};
 
@@ -24,6 +25,16 @@ pub struct ProposalDepositClaim {
     pub deposit_amount: Amount,
     /// The outcome of the proposal.
     pub outcome: Outcome<()>,
+}
+
+impl EffectingData for ProposalDepositClaim {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
+impl DomainType for ProposalDepositClaim {
+    type Proto = pb::ProposalDepositClaim;
 }
 
 impl From<ProposalDepositClaim> for pb::ProposalDepositClaim {

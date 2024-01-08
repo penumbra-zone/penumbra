@@ -1997,18 +1997,12 @@ impl serde::Serialize for NoteByCommitmentRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NoteByCommitmentRequest", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
         }
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2024,15 +2018,12 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             "noteCommitment",
             "await_detection",
             "awaitDetection",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             NoteCommitment,
             AwaitDetection,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2056,7 +2047,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                         match value {
                             "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2078,7 +2068,6 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
             {
                 let mut note_commitment__ = None;
                 let mut await_detection__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
@@ -2093,18 +2082,11 @@ impl<'de> serde::Deserialize<'de> for NoteByCommitmentRequest {
                             }
                             await_detection__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(NoteByCommitmentRequest {
                     note_commitment: note_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2217,9 +2199,6 @@ impl serde::Serialize for NotesForVotingRequest {
         if self.address_index.is_some() {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesForVotingRequest", len)?;
         if self.votable_at_height != 0 {
             #[allow(clippy::needless_borrow)]
@@ -2227,9 +2206,6 @@ impl serde::Serialize for NotesForVotingRequest {
         }
         if let Some(v) = self.address_index.as_ref() {
             struct_ser.serialize_field("addressIndex", v)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2245,15 +2221,12 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             "votableAtHeight",
             "address_index",
             "addressIndex",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             VotableAtHeight,
             AddressIndex,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2277,7 +2250,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                         match value {
                             "votableAtHeight" | "votable_at_height" => Ok(GeneratedField::VotableAtHeight),
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2299,7 +2271,6 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
             {
                 let mut votable_at_height__ = None;
                 let mut address_index__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::VotableAtHeight => {
@@ -2316,18 +2287,11 @@ impl<'de> serde::Deserialize<'de> for NotesForVotingRequest {
                             }
                             address_index__ = map_.next_value()?;
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(NotesForVotingRequest {
                     votable_at_height: votable_at_height__.unwrap_or_default(),
                     address_index: address_index__,
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2464,9 +2428,6 @@ impl serde::Serialize for NotesRequest {
         if self.amount_to_spend.is_some() {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NotesRequest", len)?;
         if self.include_spent {
             struct_ser.serialize_field("includeSpent", &self.include_spent)?;
@@ -2479,9 +2440,6 @@ impl serde::Serialize for NotesRequest {
         }
         if let Some(v) = self.amount_to_spend.as_ref() {
             struct_ser.serialize_field("amountToSpend", v)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2501,8 +2459,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             "addressIndex",
             "amount_to_spend",
             "amountToSpend",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2511,7 +2467,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
             AssetId,
             AddressIndex,
             AmountToSpend,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2537,7 +2492,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
                             "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
                             "amountToSpend" | "amount_to_spend" => Ok(GeneratedField::AmountToSpend),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2561,7 +2515,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                 let mut asset_id__ = None;
                 let mut address_index__ = None;
                 let mut amount_to_spend__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IncludeSpent => {
@@ -2588,12 +2541,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                             }
                             amount_to_spend__ = map_.next_value()?;
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(NotesRequest {
@@ -2601,7 +2548,6 @@ impl<'de> serde::Deserialize<'de> for NotesRequest {
                     asset_id: asset_id__,
                     address_index: address_index__,
                     amount_to_spend: amount_to_spend__,
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -2714,18 +2660,12 @@ impl serde::Serialize for NullifierStatusRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.NullifierStatusRequest", len)?;
         if let Some(v) = self.nullifier.as_ref() {
             struct_ser.serialize_field("nullifier", v)?;
         }
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -2740,15 +2680,12 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             "nullifier",
             "await_detection",
             "awaitDetection",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Nullifier,
             AwaitDetection,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2772,7 +2709,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                         match value {
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2794,7 +2730,6 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
             {
                 let mut nullifier__ = None;
                 let mut await_detection__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Nullifier => {
@@ -2809,18 +2744,11 @@ impl<'de> serde::Deserialize<'de> for NullifierStatusRequest {
                             }
                             await_detection__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(NullifierStatusRequest {
                     nullifier: nullifier__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3350,14 +3278,8 @@ impl serde::Serialize for StatusRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusRequest", len)?;
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusRequest", len)?;
         struct_ser.end()
     }
 }
@@ -3368,13 +3290,10 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3395,10 +3314,7 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -3416,19 +3332,10 @@ impl<'de> serde::Deserialize<'de> for StatusRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut wallet_id__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(StatusRequest {
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3576,14 +3483,8 @@ impl serde::Serialize for StatusStreamRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamRequest", len)?;
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.StatusStreamRequest", len)?;
         struct_ser.end()
     }
 }
@@ -3594,13 +3495,10 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3621,10 +3519,7 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -3642,19 +3537,10 @@ impl<'de> serde::Deserialize<'de> for StatusStreamRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut wallet_id__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(StatusStreamRequest {
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -3812,18 +3698,12 @@ impl serde::Serialize for SwapByCommitmentRequest {
         if self.await_detection {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.SwapByCommitmentRequest", len)?;
         if let Some(v) = self.swap_commitment.as_ref() {
             struct_ser.serialize_field("swapCommitment", v)?;
         }
         if self.await_detection {
             struct_ser.serialize_field("awaitDetection", &self.await_detection)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -3839,15 +3719,12 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             "swapCommitment",
             "await_detection",
             "awaitDetection",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             SwapCommitment,
             AwaitDetection,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -3871,7 +3748,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                         match value {
                             "swapCommitment" | "swap_commitment" => Ok(GeneratedField::SwapCommitment),
                             "awaitDetection" | "await_detection" => Ok(GeneratedField::AwaitDetection),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -3893,7 +3769,6 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
             {
                 let mut swap_commitment__ = None;
                 let mut await_detection__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapCommitment => {
@@ -3908,18 +3783,11 @@ impl<'de> serde::Deserialize<'de> for SwapByCommitmentRequest {
                             }
                             await_detection__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(SwapByCommitmentRequest {
                     swap_commitment: swap_commitment__,
                     await_detection: await_detection__.unwrap_or_default(),
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -4792,9 +4660,6 @@ impl serde::Serialize for TransactionPlannerRequest {
         if self.source.is_some() {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         if !self.outputs.is_empty() {
             len += 1;
         }
@@ -4838,9 +4703,6 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if let Some(v) = self.source.as_ref() {
             struct_ser.serialize_field("source", v)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         if !self.outputs.is_empty() {
             struct_ser.serialize_field("outputs", &self.outputs)?;
@@ -4887,8 +4749,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "fee",
             "memo",
             "source",
-            "wallet_id",
-            "walletId",
             "outputs",
             "swaps",
             "swap_claims",
@@ -4913,7 +4773,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             Fee,
             Memo,
             Source,
-            WalletId,
             Outputs,
             Swaps,
             SwapClaims,
@@ -4949,7 +4808,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "fee" => Ok(GeneratedField::Fee),
                             "memo" => Ok(GeneratedField::Memo),
                             "source" => Ok(GeneratedField::Source),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             "outputs" => Ok(GeneratedField::Outputs),
                             "swaps" => Ok(GeneratedField::Swaps),
                             "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
@@ -4983,7 +4841,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut fee__ = None;
                 let mut memo__ = None;
                 let mut source__ = None;
-                let mut wallet_id__ = None;
                 let mut outputs__ = None;
                 let mut swaps__ = None;
                 let mut swap_claims__ = None;
@@ -5021,12 +4878,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("source"));
                             }
                             source__ = map_.next_value()?;
-                        }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
                         }
                         GeneratedField::Outputs => {
                             if outputs__.is_some() {
@@ -5095,7 +4946,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     fee: fee__,
                     memo: memo__,
                     source: source__,
-                    wallet_id: wallet_id__,
                     outputs: outputs__.unwrap_or_default(),
                     swaps: swaps__.unwrap_or_default(),
                     swap_claims: swap_claims__.unwrap_or_default(),
@@ -6082,14 +5932,8 @@ impl serde::Serialize for UnclaimedSwapsRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsRequest", len)?;
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsRequest", len)?;
         struct_ser.end()
     }
 }
@@ -6100,13 +5944,10 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -6127,10 +5968,7 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
+                            Err(serde::de::Error::unknown_field(value, FIELDS))
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -6148,19 +5986,10 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut wallet_id__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(UnclaimedSwapsRequest {
-                    wallet_id: wallet_id__,
                 })
             }
         }
@@ -6256,282 +6085,6 @@ impl<'de> serde::Deserialize<'de> for UnclaimedSwapsResponse {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1alpha1.UnclaimedSwapsResponse", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for ViewAuthRequest {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.fvk.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.ViewAuthRequest", len)?;
-        if let Some(v) = self.fvk.as_ref() {
-            struct_ser.serialize_field("fvk", v)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for ViewAuthRequest {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "fvk",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Fvk,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "fvk" => Ok(GeneratedField::Fvk),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ViewAuthRequest;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthRequest")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthRequest, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut fvk__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Fvk => {
-                            if fvk__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fvk"));
-                            }
-                            fvk__ = map_.next_value()?;
-                        }
-                    }
-                }
-                Ok(ViewAuthRequest {
-                    fvk: fvk__,
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.view.v1alpha1.ViewAuthRequest", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for ViewAuthResponse {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.token.is_some() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.ViewAuthResponse", len)?;
-        if let Some(v) = self.token.as_ref() {
-            struct_ser.serialize_field("token", v)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for ViewAuthResponse {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "token",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Token,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "token" => Ok(GeneratedField::Token),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ViewAuthResponse;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthResponse")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthResponse, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut token__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Token => {
-                            if token__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("token"));
-                            }
-                            token__ = map_.next_value()?;
-                        }
-                    }
-                }
-                Ok(ViewAuthResponse {
-                    token: token__,
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.view.v1alpha1.ViewAuthResponse", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for ViewAuthToken {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.inner.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.ViewAuthToken", len)?;
-        if !self.inner.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("inner", pbjson::private::base64::encode(&self.inner).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for ViewAuthToken {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "inner",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Inner,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = ViewAuthToken;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.view.v1alpha1.ViewAuthToken")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ViewAuthToken, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut inner__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Inner => {
-                            if inner__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("inner"));
-                            }
-                            inner__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(ViewAuthToken {
-                    inner: inner__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.view.v1alpha1.ViewAuthToken", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for WalletIdRequest {
@@ -6912,18 +6465,12 @@ impl serde::Serialize for WitnessRequest {
         if self.transaction_plan.is_some() {
             len += 1;
         }
-        if self.wallet_id.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessRequest", len)?;
         if !self.note_commitments.is_empty() {
             struct_ser.serialize_field("noteCommitments", &self.note_commitments)?;
         }
         if let Some(v) = self.transaction_plan.as_ref() {
             struct_ser.serialize_field("transactionPlan", v)?;
-        }
-        if let Some(v) = self.wallet_id.as_ref() {
-            struct_ser.serialize_field("walletId", v)?;
         }
         struct_ser.end()
     }
@@ -6939,15 +6486,12 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             "noteCommitments",
             "transaction_plan",
             "transactionPlan",
-            "wallet_id",
-            "walletId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             NoteCommitments,
             TransactionPlan,
-            WalletId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -6971,7 +6515,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                         match value {
                             "noteCommitments" | "note_commitments" => Ok(GeneratedField::NoteCommitments),
                             "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
-                            "walletId" | "wallet_id" => Ok(GeneratedField::WalletId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -6993,7 +6536,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
             {
                 let mut note_commitments__ = None;
                 let mut transaction_plan__ = None;
-                let mut wallet_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitments => {
@@ -7008,18 +6550,11 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                             }
                             transaction_plan__ = map_.next_value()?;
                         }
-                        GeneratedField::WalletId => {
-                            if wallet_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("walletId"));
-                            }
-                            wallet_id__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(WitnessRequest {
                     note_commitments: note_commitments__.unwrap_or_default(),
                     transaction_plan: transaction_plan__,
-                    wallet_id: wallet_id__,
                 })
             }
         }

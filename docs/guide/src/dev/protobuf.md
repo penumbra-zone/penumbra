@@ -33,7 +33,7 @@ unzip protoc-24.4-linux-x86_64.zip -d ~/.local/
 ## Installing buf
 
 The `buf` tool is required to update lockfiles used for version management in
-the [Buf Schema Registry](https://buf.build.penumbra-zone/penumbra). Visit
+the [Buf Schema Registry](https://buf.build/penumbra-zone/penumbra). Visit
 the [buf download page](https://buf.build/docs/installation/) to obtain a version.
 After installing, run `buf --version` and confirm you're running at least
 `1.27.0` (or newer).

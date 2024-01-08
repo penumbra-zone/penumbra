@@ -14,7 +14,7 @@ component = [
     "penumbra-chain/component",
     "penumbra-sct/component",
     "penumbra-shielded-pool/component",
-    "penumbra-dao/component",
+    "penumbra-community-pool/component",
     "penumbra-distributions/component",
     "tokio",
     "im",
@@ -42,9 +42,10 @@ cnidarium = { path = "../../../cnidarium", default-features = false, optional = 
 cnidarium-component = { path = "../../../cnidarium-component", default-features = false, optional = true }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
-penumbra-dao = { path = "../dao", default-features = false }
+penumbra-community-pool = { path = "../community-pool", default-features = false }
 penumbra-distributions = { path = "../distributions", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-proof-params = { path = "../../../crypto/proof-params" }
 penumbra-proto = { path = "../../../proto" }

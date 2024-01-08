@@ -2,17 +2,13 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::StateRead;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
-use penumbra_chain::{NoteSource, SpendInfo};
-use penumbra_proto::StateReadProto;
-use penumbra_sct::Nullifier;
+use penumbra_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
 use crate::genesis::Content as GenesisContent;
-use crate::state_key;
 
 use super::{NoteManager, SupplyWrite};
 
@@ -41,7 +37,11 @@ impl Component for ShieldedPool {
                         .await
                         .expect("able to register denom for genesis allocation");
                     state
-                        .mint_note(allocation.value(), &allocation.address, NoteSource::Genesis)
+                        .mint_note(
+                            allocation.value(),
+                            &allocation.address,
+                            CommitmentSource::Genesis,
+                        )
                         .await
                         .expect("able to mint note for genesis allocation");
                 }
@@ -67,26 +67,3 @@ impl Component for ShieldedPool {
         Ok(())
     }
 }
-
-#[async_trait]
-pub trait StateReadExt: StateRead {
-    async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
-        if let Some(info) = self
-            .get::<SpendInfo>(&state_key::spent_nullifier_lookup(&nullifier))
-            .await?
-        {
-            anyhow::bail!(
-                "nullifier {} was already spent in {:?}",
-                nullifier,
-                info.note_source,
-            );
-        }
-        Ok(())
-    }
-    async fn spend_info(&self, nullifier: Nullifier) -> Result<Option<SpendInfo>> {
-        self.get(&state_key::spent_nullifier_lookup(&nullifier))
-            .await
-    }
-}
-
-impl<T: StateRead + ?Sized> StateReadExt for T {}

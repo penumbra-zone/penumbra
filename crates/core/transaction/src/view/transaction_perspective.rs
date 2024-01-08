@@ -6,10 +6,9 @@ use penumbra_proto::core::transaction::v1alpha1::{
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, NoteView};
+use penumbra_txhash::TransactionId;
 
 use std::collections::BTreeMap;
-
-use crate::Id;
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
@@ -40,7 +39,7 @@ pub struct TransactionPerspective {
     /// Any relevant denoms for viewed assets.
     pub denoms: asset::Cache,
     /// The transaction ID associated with this TransactionPerspective
-    pub transaction_id: Id,
+    pub transaction_id: TransactionId,
 }
 
 impl TransactionPerspective {
@@ -173,9 +172,9 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             );
         }
 
-        let transaction_id: crate::Id = match msg.transaction_id {
+        let transaction_id: penumbra_txhash::TransactionId = match msg.transaction_id {
             Some(tx_id) => tx_id.try_into()?,
-            None => Id::default(),
+            None => TransactionId::default(),
         };
 
         Ok(Self {

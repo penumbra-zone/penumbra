@@ -10,20 +10,25 @@ use penumbra_dex::{
     BatchSwapOutputData, TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_governance::DelegatorVoteProof;
+use penumbra_governance::{
+    DelegatorVoteProof, DelegatorVoteProofPrivate, DelegatorVoteProofPublic,
+};
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
 use penumbra_proof_params::{
-    DELEGATOR_VOTE_PROOF_PROVING_KEY, DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
-    NULLIFIER_DERIVATION_PROOF_PROVING_KEY, NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY,
-    OUTPUT_PROOF_PROVING_KEY, OUTPUT_PROOF_VERIFICATION_KEY, SPEND_PROOF_PROVING_KEY,
-    SPEND_PROOF_VERIFICATION_KEY, SWAPCLAIM_PROOF_PROVING_KEY, SWAPCLAIM_PROOF_VERIFICATION_KEY,
-    SWAP_PROOF_PROVING_KEY, SWAP_PROOF_VERIFICATION_KEY, UNDELEGATECLAIM_PROOF_PROVING_KEY,
-    UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
+    CONVERT_PROOF_PROVING_KEY, CONVERT_PROOF_VERIFICATION_KEY, DELEGATOR_VOTE_PROOF_PROVING_KEY,
+    DELEGATOR_VOTE_PROOF_VERIFICATION_KEY, NULLIFIER_DERIVATION_PROOF_PROVING_KEY,
+    NULLIFIER_DERIVATION_PROOF_VERIFICATION_KEY, OUTPUT_PROOF_PROVING_KEY,
+    OUTPUT_PROOF_VERIFICATION_KEY, SPEND_PROOF_PROVING_KEY, SPEND_PROOF_VERIFICATION_KEY,
+    SWAPCLAIM_PROOF_PROVING_KEY, SWAPCLAIM_PROOF_VERIFICATION_KEY, SWAP_PROOF_PROVING_KEY,
+    SWAP_PROOF_VERIFICATION_KEY,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::Note;
-use penumbra_shielded_pool::{NullifierDerivationProof, OutputProof, SpendProof};
+use penumbra_shielded_pool::{
+    NullifierDerivationProof, NullifierDerivationProofPrivate, NullifierDerivationProofPublic,
+    OutputProof, SpendProof, SpendProofPrivate, SpendProofPublic,
+};
 use penumbra_stake::{IdentityKey, Penalty, UnbondingToken, UndelegateClaimProof};
 use penumbra_tct as tct;
 use rand_core::OsRng;
@@ -56,33 +61,33 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let mut sct = tct::Tree::new();
     sct.insert(tct::Witness::Keep, note_commitment).unwrap();
     let anchor = sct.root();
-    let note_commitment_proof = sct.witness(note_commitment).unwrap();
+    let state_commitment_proof = sct.witness(note_commitment).unwrap();
     let v_blinding = Fr::rand(&mut OsRng);
     let balance_commitment = value_to_send.commit(v_blinding);
     let rk: VerificationKey<SpendAuth> = rsk.into();
-    let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
+    let nullifier = Nullifier::derive(&nk, 0.into(), &note_commitment);
 
     // Random elements to provide ZK (see Section 3.2 Groth16 paper, bottom of page 17)
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
-    let proof = SpendProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
-        note_commitment_proof,
+    let public = SpendProofPublic {
+        anchor,
+        balance_commitment,
+        nullifier,
+        rk,
+    };
+    let private = SpendProofPrivate {
+        state_commitment_proof,
         note,
         v_blinding,
         spend_auth_randomizer,
         ak,
         nk,
-        anchor,
-        balance_commitment,
-        nf,
-        rk,
-    )
-    .expect("can create proof");
+    };
+    let proof = SpendProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk);
+    let proof_result = proof.verify(vk, public);
     assert!(proof_result.is_ok());
 }
 
@@ -130,24 +135,25 @@ fn delegator_vote_proof_parameters_vs_current_delegator_vote_circuit() {
     let blinding_r = Fq::rand(&mut OsRng);
     let blinding_s = Fq::rand(&mut OsRng);
 
-    let proof = DelegatorVoteProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
+    let public = DelegatorVoteProofPublic {
+        anchor,
+        balance_commitment,
+        nullifier: nf,
+        rk,
+        start_position,
+    };
+    let private = DelegatorVoteProofPrivate {
         state_commitment_proof,
         note,
+        v_blinding: Fr::from(0u64),
         spend_auth_randomizer,
         ak,
         nk,
-        anchor,
-        balance_commitment,
-        nf,
-        rk,
-        start_position,
-    )
-    .expect("can create proof");
+    };
+    let proof = DelegatorVoteProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, anchor, balance_commitment, nf, rk, start_position);
+    let proof_result = proof.verify(vk, public);
     assert!(proof_result.is_ok());
 }
 
@@ -387,19 +393,24 @@ fn nullifier_derivation_parameters_vs_current_nullifier_derivation_circuit() {
     let position = state_commitment_proof.position();
     let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-    let proof =
-        NullifierDerivationProof::prove(&mut rng, pk, position, note.clone(), nk, nullifier)
-            .expect("can create proof");
+    let public = NullifierDerivationProofPublic {
+        position,
+        note_commitment,
+        nullifier,
+    };
+    let private = NullifierDerivationProofPrivate { nk };
+    let proof = NullifierDerivationProof::prove(&mut rng, pk, public.clone(), private)
+        .expect("can create proof");
 
-    let proof_result = proof.verify(vk, position, note.commit(), nullifier);
+    let proof_result = proof.verify(vk, public);
 
     assert!(proof_result.is_ok());
 }
 
 #[test]
 fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
-    let pk = &*UNDELEGATECLAIM_PROOF_PROVING_KEY;
-    let vk = &*UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
+    let pk = &*CONVERT_PROOF_PROVING_KEY;
+    let vk = &*CONVERT_PROOF_VERIFICATION_KEY;
 
     let mut rng = OsRng;
 

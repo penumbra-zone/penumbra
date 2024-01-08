@@ -107,14 +107,14 @@ pub mod funding_stream {
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ToDao {
+    pub struct ToCommunityPool {
         /// The portion of the staking reward for the entire delegation pool
         /// allocated to this funding stream, specified in basis points.
         #[prost(uint32, tag = "2")]
         pub rate_bps: u32,
     }
-    impl ::prost::Name for ToDao {
-        const NAME: &'static str = "ToDao";
+    impl ::prost::Name for ToCommunityPool {
+        const NAME: &'static str = "ToCommunityPool";
         const PACKAGE: &'static str = "penumbra.core.component.stake.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -129,7 +129,7 @@ pub mod funding_stream {
         #[prost(message, tag = "1")]
         ToAddress(ToAddress),
         #[prost(message, tag = "2")]
-        ToDao(ToDao),
+        ToCommunityPool(ToCommunityPool),
     }
 }
 impl ::prost::Name for FundingStream {

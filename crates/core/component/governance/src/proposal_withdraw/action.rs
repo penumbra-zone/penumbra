@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use crate::ProposalNft;
 
@@ -14,6 +15,12 @@ pub struct ProposalWithdraw {
     pub proposal: u64,
     // The reason the proposal was withdrawn.
     pub reason: String,
+}
+
+impl EffectingData for ProposalWithdraw {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl From<ProposalWithdraw> for pb::ProposalWithdraw {

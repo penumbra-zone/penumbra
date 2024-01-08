@@ -11,6 +11,7 @@
 //! This trick is probably good to avoid in general, because it could be
 //! confusing, but in this limited case, it seems like a clean option.
 
+#[allow(unused_imports)]
 pub use metrics::*;
 
 /// Registers all metrics used by this crate.

@@ -3,17 +3,14 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa as rdsa;
 use penumbra_keys::FullViewingKey;
+use penumbra_txhash::AuthorizingData;
 use rand_core::OsRng;
 use rand_core::{CryptoRng, RngCore};
 use std::fmt::Debug;
 
 use super::TransactionPlan;
 use crate::ActionPlan;
-use crate::{
-    action::Action,
-    transaction::{DetectionData, TransactionParameters},
-    AuthorizationData, AuthorizingData, Transaction, TransactionBody, WitnessData,
-};
+use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
@@ -26,29 +23,16 @@ impl TransactionPlan {
     ) -> Result<Transaction> {
         // Add the memo if it is planned.
         let memo = self
-            .memo_plan
+            .memo
             .as_ref()
-            .map(|memo_plan| memo_plan.memo())
+            .map(|memo_data| memo_data.memo())
             .transpose()?;
 
-        // Add detection data when there are outputs.
-        let detection_data: Option<DetectionData> = if self.num_outputs() == 0 {
-            None
-        } else {
-            let mut fmd_clues = Vec::new();
-            for clue_plan in self.clue_plans() {
-                fmd_clues.push(clue_plan.clue());
-            }
-            Some(DetectionData { fmd_clues })
-        };
+        let detection_data = self.detection_data.as_ref().map(|x| x.detection_data());
 
         let transaction_body = TransactionBody {
             actions,
-            transaction_parameters: TransactionParameters {
-                expiry_height: self.expiry_height,
-                chain_id: self.chain_id,
-            },
-            fee: self.fee,
+            transaction_parameters: self.transaction_parameters,
             detection_data,
             memo,
         };

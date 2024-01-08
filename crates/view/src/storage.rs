@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
@@ -222,10 +222,11 @@ impl Storage {
                 [fee_params_bytes],
             )?;
 
-            let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+            let community_pool_params_bytes =
+                &CommunityPoolParameters::encode_to_vec(&params.community_pool_params)[..];
             tx.execute(
-                "INSERT INTO dao_params (bytes) VALUES (?1)",
-                [dao_params_bytes],
+                "INSERT INTO community_pool_params (bytes) VALUES (?1)",
+                [community_pool_params_bytes],
             )?;
 
             let distributions_params_bytes =
@@ -588,11 +589,11 @@ impl Storage {
                 .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing governance params"))?;
-            let dao_bytes = pool
+            let community_pool_bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM dao_params LIMIT 1")?
+                .prepare_cached("SELECT bytes FROM community_pool_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing dao params"))?;
+                .ok_or_else(|| anyhow!("missing Community Pool params"))?;
             let fee_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
@@ -609,7 +610,9 @@ impl Storage {
                 stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
                 ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
                 governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
-                dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
+                community_pool_params: CommunityPoolParameters::decode(
+                    community_pool_bytes.as_slice(),
+                )?,
                 fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
                 distributions_params: DistributionsParameters::decode(
                     distributions_bytes.as_slice(),
@@ -1385,10 +1388,10 @@ impl Storage {
                     [fee_params_bytes],
                 )?;
 
-                let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
+                let community_pool_params_bytes = &CommunityPoolParameters::encode_to_vec(&params.community_pool_params)[..];
                 dbtx.execute(
-                    "UPDATE dao_params SET bytes = ?1",
-                    [dao_params_bytes],
+                    "UPDATE community_pool_params SET bytes = ?1",
+                    [community_pool_params_bytes],
                 )?;
 
                 let distributions_params_bytes = &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
@@ -1406,13 +1409,13 @@ impl Storage {
             }
 
             // Insert new note records into storage
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
                 let height_created = filtered_block.height as i64;
                 let address_index = note_record.address_index.to_bytes().to_vec();
                 let nullifier = note_record.nullifier.to_bytes().to_vec();
                 let position = (u64::from(note_record.position)) as i64;
-                let source = note_record.source.to_bytes().to_vec();
+                let source = note_record.source.encode_to_vec();
 
                 // Record the inner note data in the notes table
 
@@ -1435,12 +1438,12 @@ impl Storage {
             }
 
             // Insert new swap records into storage
-            for swap in &filtered_block.new_swaps {
+            for swap in filtered_block.new_swaps.values() {
                 let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
                 let swap_bytes = swap.swap.encode_to_vec();
                 let position = (u64::from(swap.position)) as i64;
                 let nullifier = swap.nullifier.to_bytes().to_vec();
-                let source = swap.source.to_bytes().to_vec();
+                let source = swap.source.encode_to_vec();
                 let output_data = swap.output_data.encode_to_vec();
 
                 dbtx.execute(
@@ -1590,7 +1593,7 @@ impl Storage {
             // Broadcast all committed note records to channel
             // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
 
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 // This will fail to be broadcast if there is no active receiver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do
@@ -1604,7 +1607,7 @@ impl Storage {
                 let _ = scanned_nullifiers_tx.send(*nullifier);
             }
 
-            for swap_record in filtered_block.new_swaps {
+            for swap_record in filtered_block.new_swaps.values() {
                 // This will fail to be broadcast if there is no active rece∑iver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do

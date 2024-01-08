@@ -4,12 +4,13 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::ActionHandler;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_chain::TransactionContext;
+use penumbra_txhash::TransactionContext;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto;
-use penumbra_shielded_pool::component::{NoteManager, StateReadExt as _};
+use penumbra_sct::component::{SctManager as _, SourceContext, StateReadExt as _};
+use penumbra_shielded_pool::component::NoteManager;
 
 use crate::{component::StateReadExt, event, swap_claim::SwapClaim};
 
@@ -67,16 +68,18 @@ impl ActionHandler for SwapClaim {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Record the output notes in the state.
-        let source = state.object_get("source").unwrap_or_default();
+        let source = state
+            .get_current_source()
+            .expect("source is set during tx execution");
 
         state
-            .add_rolled_up_payload(self.body.output_1_commitment)
+            .add_rolled_up_payload(self.body.output_1_commitment, source.clone())
             .await;
         state
-            .add_rolled_up_payload(self.body.output_2_commitment)
+            .add_rolled_up_payload(self.body.output_2_commitment, source.clone())
             .await;
 
-        state.spend_nullifier(self.body.nullifier, source).await;
+        state.nullify(self.body.nullifier, source).await;
 
         state.record_proto(event::swap_claim(self));
 

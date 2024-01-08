@@ -301,7 +301,7 @@ impl Opt {
                     "spend",
                     "output",
                     "delegator_vote",
-                    "undelegateclaim",
+                    "convert",
                     "swap",
                     "swapclaim",
                     "nullifier_derivation",

@@ -1,8 +1,10 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
-use penumbra_asset::{asset::Cache, Value};
+
 use penumbra_keys::FullViewingKey;
+use penumbra_sct::CommitmentSource;
 use penumbra_view::ViewClient;
+
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
     #[clap(long)]
@@ -15,35 +17,53 @@ impl BalanceCmd {
         false
     }
 
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         let asset_cache = view.assets().await?;
 
         // Initialize the table
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
 
-        let rows: Vec<(Option<u32>, Value)> = if self.by_note {
-            let notes = view
-                .unspent_notes_by_account_and_asset(fvk.wallet_id())
-                .await?;
+        let notes = view.unspent_notes_by_account_and_asset().await?;
 
-            notes
+        if self.by_note {
+            table.set_header(vec!["Account", "Value", "Source"]);
+
+            let rows = notes
                 .iter()
                 .flat_map(|(index, notes_by_asset)| {
                     // Include each note individually:
                     notes_by_asset.iter().flat_map(|(asset, notes)| {
-                        notes
-                            .iter()
-                            .map(|record| (Some(*index), asset.value(record.note.amount())))
+                        notes.iter().map(|record| {
+                            (
+                                *index,
+                                asset.value(record.note.amount()),
+                                record.source.clone(),
+                            )
+                        })
                     })
                 })
-                .collect()
-        } else {
-            let notes = view
-                .unspent_notes_by_account_and_asset(fvk.wallet_id())
-                .await?;
+                // Exclude withdrawn LPNFTs.
+                .filter(|(_, value, _)| match asset_cache.get(&value.asset_id) {
+                    None => true,
+                    Some(denom) => !denom.is_withdrawn_position_nft(),
+                });
 
-            notes
+            for (index, value, source) in rows {
+                table.add_row(vec![
+                    format!("# {}", index),
+                    value.format(&asset_cache),
+                    format_source(&source),
+                ]);
+            }
+
+            println!("{table}");
+
+            return Ok(());
+        } else {
+            table.set_header(vec!["Account", "Amount"]);
+
+            let rows = notes
                 .iter()
                 .flat_map(|(index, notes_by_asset)| {
                     // Sum the notes for each asset:
@@ -52,39 +72,42 @@ impl BalanceCmd {
                             .iter()
                             .map(|record| u128::from(record.note.amount()))
                             .sum();
-                        (Some(*index), asset.value(sum.into()))
+                        (*index, asset.value(sum.into()))
                     })
                 })
                 // Exclude withdrawn LPNFTs.
                 .filter(|(_, value)| match asset_cache.get(&value.asset_id) {
                     None => true,
                     Some(denom) => !denom.is_withdrawn_position_nft(),
-                })
-                .collect()
-        };
+                });
 
-        table.set_header(vec!["Account", "Amount"]);
+            for (index, value) in rows {
+                table.add_row(vec![format!("# {}", index), value.format(&asset_cache)]);
+            }
 
-        for row in rows.clone() {
-            table.add_row(format_row(&row, &asset_cache));
+            println!("{table}");
+
+            return Ok(());
         }
-
-        println!("{table}");
-
-        Ok(())
     }
 }
 
-fn format_row(row: &(Option<u32>, Value), asset_cache: &Cache) -> Vec<String> {
-    let (index, value) = row;
-
-    let mut string_row = Vec::with_capacity(2);
-
-    if let Some(index) = index {
-        string_row.push(format!("{}", index));
-
-        string_row.push(value.format(asset_cache));
+fn format_source(source: &CommitmentSource) -> String {
+    match source {
+        CommitmentSource::Genesis => "Genesis".to_owned(),
+        CommitmentSource::Transaction { id: None } => "Tx (Unknown)".to_owned(),
+        CommitmentSource::Transaction { id: Some(id) } => format!("Tx {}", hex::encode(&id[..])),
+        CommitmentSource::FundingStreamReward { epoch_index } => {
+            format!("Funding Stream (Epoch {})", epoch_index)
+        }
+        CommitmentSource::CommunityPoolOutput => format!("CommunityPoolOutput"),
+        CommitmentSource::Ics20Transfer {
+            packet_seq,
+            channel_id,
+            sender,
+        } => format!(
+            "ICS20 packet {} via {} from {}",
+            packet_seq, channel_id, sender
+        ),
     }
-
-    string_row
 }

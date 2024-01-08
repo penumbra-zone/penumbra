@@ -1,11 +1,13 @@
-use penumbra_transaction::{Id, Transaction, TransactionPerspective, TransactionView};
+use penumbra_transaction::{
+    txhash::TransactionId, Transaction, TransactionPerspective, TransactionView,
+};
 
 #[derive(Debug, Clone)]
 pub struct TransactionInfo {
     // The height the transaction was included in a block, if known.
     pub height: u64,
     // The hash of the transaction.
-    pub id: Id,
+    pub id: TransactionId,
     // The transaction data itself.
     pub transaction: Transaction,
     // The transaction perspective, as seen by this view server.

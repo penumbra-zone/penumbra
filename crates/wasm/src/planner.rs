@@ -103,7 +103,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    wallet_id: None,
                     asset_id: Some(asset_id.into()),
                     address_index: source.clone(),
                     amount_to_spend: Some(amount.into()),
@@ -119,7 +118,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        wallet_id: None,
                         votable_at_height: *start_block_height,
                         address_index: source.clone(),
                     },
@@ -130,7 +128,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     /// Set the expiry height for the transaction plan.
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
-        self.plan.expiry_height = expiry_height;
+        self.plan.transaction_parameters.expiry_height = expiry_height;
         self
     }
 
@@ -138,7 +136,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// Errors if the memo is too long.
     pub fn memo(&mut self, memo: MemoPlaintext) -> Result<&mut Self> {
-        self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
+        self.plan.memo = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
 
@@ -147,7 +145,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// This function should be called once.
     pub fn fee(&mut self, fee: Fee) -> &mut Self {
         self.balance += fee.0;
-        self.plan.fee = fee;
+        self.plan.transaction_parameters.fee = fee;
         self
     }
 
@@ -163,7 +161,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // change outputs.
         let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
         self.balance += fee.0;
-        self.plan.fee = fee;
+        self.plan.transaction_parameters.fee = fee;
         self
     }
 
@@ -424,7 +422,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self_address: Address,
     ) -> anyhow::Result<TransactionPlan> {
         // Fill in the chain id based on the view service
-        self.plan.chain_id = chain_params.chain_id.clone();
+        self.plan.transaction_parameters.chain_id = chain_params.chain_id.clone();
 
         // Add the required spends to the planner
         for record in spendable_notes {
@@ -504,12 +502,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
         let tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
-        let excess_fee_spent = self.plan.fee.amount() - tx_real_fee;
+        let excess_fee_spent = self.plan.transaction_parameters.fee.amount() - tx_real_fee;
         self.balance -= Value {
             amount: excess_fee_spent,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
-        self.plan.fee = Fee::from_staking_token_amount(tx_real_fee);
+        self.plan.transaction_parameters.fee = Fee::from_staking_token_amount(tx_real_fee);
 
         // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {
@@ -531,16 +529,16 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
-        if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
+        if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
             self.memo(MemoPlaintext::blank_memo(self_address))?;
-        } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
+        } else if self.plan.num_outputs() == 0 && self.plan.memo.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");
         }
 
         // Add clue plans for `Output`s.
         let precision_bits = fmd_params.precision_bits;
         self.plan
-            .add_all_clue_plans(&mut self.rng, precision_bits.into());
+            .populate_detection_data(&mut self.rng, precision_bits.into());
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();

@@ -75,7 +75,13 @@ pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
 
     let transaction_base_price = current_gas_prices.price(&transaction.gas_cost());
 
-    if transaction.transaction_body().fee.amount() >= transaction_base_price {
+    if transaction
+        .transaction_body()
+        .transaction_parameters
+        .fee
+        .amount()
+        >= transaction_base_price
+    {
         Ok(())
     } else {
         Err(anyhow::anyhow!(

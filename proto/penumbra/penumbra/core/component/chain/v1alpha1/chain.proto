@@ -23,17 +23,6 @@ message FmdParameters {
   uint64 as_of_block_height = 2;
 }
 
-// A spicy transaction ID
-message NoteSource {
-  bytes inner = 1;
-}
-
-// A NoteSource paired with the height at which the note was spent
-message SpendInfo {
-  NoteSource note_source = 1;
-  uint64 spend_height = 2;
-}
-
 // Chain-specific genesis content.
 message GenesisContent {
   // The ChainParameters present at genesis.

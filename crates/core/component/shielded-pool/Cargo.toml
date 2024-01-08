@@ -43,11 +43,12 @@ penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 decaf377-ka = { path = "../../../crypto/decaf377-ka/" }
 decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 
 # Penumbra dependencies
-ibc-types = { version = "0.10.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
 decaf377-rdsa = { version = "0.7" }
 decaf377 = { version = "0.5", features = ["r1cs"] }
 poseidon377 = { version = "0.6", features = ["r1cs"] }

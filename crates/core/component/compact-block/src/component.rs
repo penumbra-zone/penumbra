@@ -1,6 +1,8 @@
+mod manager;
 mod view;
 
 pub mod metrics;
 pub mod rpc;
 
-pub use view::{StateReadExt, StateWriteExt};
+pub use manager::CompactBlockManager;
+pub use view::StateReadExt;

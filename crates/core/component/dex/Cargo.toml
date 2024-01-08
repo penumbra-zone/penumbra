@@ -43,6 +43,7 @@ penumbra-proof-params = { path = "../../../crypto/proof-params" }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 decaf377-ka = { path = "../../../crypto/decaf377-ka/" }
 decaf377-fmd = { path = "../../../crypto/decaf377-fmd/" }
 

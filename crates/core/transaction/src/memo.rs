@@ -12,8 +12,9 @@ use penumbra_keys::{
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address,
 };
-use penumbra_proto::core::transaction::v1alpha1 as pbt;
+use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
 use penumbra_shielded_pool::{note, Note};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
@@ -22,6 +23,12 @@ pub const MEMO_LEN_BYTES: usize = 512;
 
 #[derive(Clone, Debug)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
+
+impl EffectingData for MemoCiphertext {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoPlaintext {
@@ -201,6 +208,10 @@ impl From<MemoCiphertext> for pbt::MemoCiphertext {
             inner: ciphertext.0.to_vec(),
         }
     }
+}
+
+impl DomainType for MemoCiphertext {
+    type Proto = pbt::MemoCiphertext;
 }
 
 impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {

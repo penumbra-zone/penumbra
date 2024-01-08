@@ -59,7 +59,7 @@ proposal deposit itself, provided the deposit has not been slashed. This is the 
 ### Kinds Of Proposal
 
 There are 4 kinds of governance proposals on Penumbra: **signaling**, **emergency**, **parameter
-change**, and **DAO spend**.
+change**, and **community pool spend**.
 
 #### Signaling Proposals
 
@@ -92,15 +92,15 @@ nothing happens. This is to prevent two simultaneous parameter change proposals 
 each others' changes or merging with one another into an undesired state. Almost always, the set of
 old parameters should be the current parameters at the time the proposal is submitted.
 
-#### DAO Spend Proposals
+#### Community Pool Spend Proposals
 
-DAO spend proposals submit a _transaction plan_ which may spend funds from the DAO if passed.
+Community Pool spend proposals submit a _transaction plan_ which may spend funds from the Community Pool if passed.
 
-DAO spend transactions have exclusive capability to use two special actions which are not allowed in
-directly submitted user transactions: `DaoSpend` and `DaoOutput`. These actions, respectively, spend
-funds from the DAO, and mint funds _transparently_ to an output address (unlike regular output
-actions, which are shielded). DAO spend transactions are unable to use regular shielded outputs,
-spend funds from any source other than the DAO itself, perform swaps, or submit, withdraw, or claim
+Community Pool spend transactions have exclusive capability to use two special actions which are not allowed in
+directly submitted user transactions: `CommunityPoolSpend` and `CommunityPoolOutput`. These actions, respectively, spend
+funds from the Community Pool, and mint funds _transparently_ to an output address (unlike regular output
+actions, which are shielded). Community Pool spend transactions are unable to use regular shielded outputs,
+spend funds from any source other than the Community Pool itself, perform swaps, or submit, withdraw, or claim
 governance proposals.
 
 ## Validator Voting
@@ -123,13 +123,13 @@ votes on different proposals from being linkable by correlating nullifiers. If t
 submitted concurrently, it is not possible for the delegator to prevent their votes on the two
 proposals from being linked; this is considered an acceptable sacrifice.
 
-## Contributing To The DAO
+## Contributing To The Community Pool
 
-Anyone can contribute any amount of any denomination to the Penumbra DAO. Funds contributed to the
-DAO cannot be withdrawn except by a successful DAO spend governance proposal. DAO spend proposals
-are only accepted for voting if they would not overdraw the current funds in the DAO at the time the
+Anyone can contribute any amount of any denomination to the Penumbra Community Pool. Funds contributed to the
+Community Pool cannot be withdrawn except by a successful Community Pool spend governance proposal. Community Pool spend proposals
+are only accepted for voting if they would not overdraw the current funds in the Community Pool at the time the
 proposal is submitted.
 
-A validator may non-custodially send funds to the DAO, similarly to any other funding stream. To do
+A validator may non-custodially send funds to the Community Pool, similarly to any other funding stream. To do
 this, a validator declares in their validator declaration that one of their funding streams has the
-DAO as a recipient rather than a penumbra address.
+Community Pool as a recipient rather than a penumbra address.

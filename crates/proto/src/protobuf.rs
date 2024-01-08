@@ -38,8 +38,9 @@ where
 // that shouldn't depend on the Penumbra proto framework.
 
 use crate::penumbra::core::component::ibc::v1alpha1::IbcRelay;
-use crate::penumbra::core::keys::v1alpha1::SpendVerificationKey;
-use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{BindingSignature, SpendAuthSignature};
+use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{
+    BindingSignature, SpendAuthSignature, SpendVerificationKey,
+};
 
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 
@@ -156,7 +157,6 @@ impl TryFrom<crate::core::keys::v1alpha1::ConsensusKey> for tendermint::PublicKe
 // IBC-rs impls
 extern crate ibc_types;
 
-use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::core::connection::v1::ClientPaths as RawClientPaths;
@@ -166,6 +166,7 @@ use ibc_types::core::channel::ChannelEnd;
 use ibc_types::core::client::Height;
 use ibc_types::core::connection::{ClientPaths, ConnectionEnd};
 use ibc_types::lightclients::tendermint::client_state::ClientState;
+use ibc_types::lightclients::tendermint::consensus_state::ConsensusState;
 
 impl DomainType for ClientPaths {
     type Proto = RawClientPaths;
@@ -183,10 +184,10 @@ impl DomainType for Height {
 }
 
 impl DomainType for ClientState {
-    type Proto = Any;
+    type Proto = ibc_proto::ibc::lightclients::tendermint::v1::ClientState;
 }
-impl DomainType for ibc_types::lightclients::tendermint::consensus_state::ConsensusState {
-    type Proto = Any;
+impl DomainType for ConsensusState {
+    type Proto = ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState;
 }
 
 impl<T> From<T> for IbcRelay

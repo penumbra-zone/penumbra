@@ -18,7 +18,7 @@ anyhow = "1.0"
 subtle-encoding = "0.5"
 bech32 = "0.8"
 cnidarium = { path = "../cnidarium", optional = true }
-ibc-types = { version = "0.10.0", features = ["std"] }
+ibc-types = { version = "0.11.0", features = ["std"] }
 pin-project = "1"
 async-trait = "0.1.52"
 async-stream = "0.2.0"
@@ -27,7 +27,7 @@ futures = "0.3"
 pbjson = "0.6"
 pbjson-types = "0.6"
 
-ibc-proto = { version = "0.39.0", default-features = false, features = [
+ibc-proto = { version = "0.40.0", default-features = false, features = [
     "std",
     "serde",
 ] }

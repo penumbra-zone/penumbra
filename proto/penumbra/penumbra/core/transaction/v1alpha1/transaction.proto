@@ -10,6 +10,7 @@ import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/txhash/v1alpha1/txhash.proto";
 import "penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
@@ -18,15 +19,10 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 message Transaction {
   TransactionBody body = 1;
   // The binding signature is stored separately from the transaction body that it signs.
-  bytes binding_sig = 2;
+  crypto.decaf377_rdsa.v1alpha1.BindingSignature binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.tct.v1alpha1.MerkleRoot anchor = 3;
-}
-
-// A transaction ID, the Sha256 hash of a transaction.
-message Id {
-  bytes hash = 1;
 }
 
 // The body of a transaction.
@@ -35,19 +31,12 @@ message TransactionBody {
   repeated Action actions = 1;
   // Parameters determining if a transaction should be accepted by this chain.
   TransactionParameters transaction_parameters = 2;
-  // The transaction fee.
-  component.fee.v1alpha1.Fee fee = 3;
   // Detection data for use with Fuzzy Message Detection
   DetectionData detection_data = 4;
-  // Sub-message containing memo ciphertext if a memo was added to the transaction.
-  MemoData memo_data = 5;
-}
-
-// Represents the encrypted memo data.
-message MemoData {
-  // The encrypted data. It will only be populated if there are
-  // outputs in the actions of the transaction. 528 bytes.
-  bytes encrypted_memo = 1;
+  // The encrypted memo for this transaction.
+  //
+  // This field will be present if and only if the transaction has outputs.
+  MemoCiphertext memo = 5;
 }
 
 // The parameters determining if a transaction should be accepted by the chain.
@@ -59,6 +48,8 @@ message TransactionParameters {
   // The chain this transaction is intended for.  Including this prevents
   // replaying a transaction on one chain onto a different chain.
   string chain_id = 2;
+  // The transaction fee.
+  component.fee.v1alpha1.Fee fee = 3;
 }
 
 // Detection data used by a detection server performing Fuzzy Message Detection.
@@ -99,10 +90,10 @@ message Action {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -121,7 +112,7 @@ message TransactionPerspective {
   // Any relevant denoms for viewed assets.
   repeated asset.v1alpha1.DenomMetadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
-  transaction.v1alpha1.Id transaction_id = 6;
+  txhash.v1alpha1.TransactionId transaction_id = 6;
 }
 
 message PayloadKeyWithCommitment {
@@ -139,7 +130,7 @@ message TransactionView {
   // View of the transaction body
   TransactionBodyView body_view = 1;
   // The binding signature is stored separately from the transaction body that it signs.
-  bytes binding_sig = 2;
+  crypto.decaf377_rdsa.v1alpha1.BindingSignature binding_sig = 2;
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.tct.v1alpha1.MerkleRoot anchor = 3;
@@ -150,8 +141,6 @@ message TransactionBodyView {
   repeated ActionView action_views = 1;
   // Transaction parameters.
   TransactionParameters transaction_parameters = 2;
-  // The transaction fee.
-  component.fee.v1alpha1.Fee fee = 3;
   // The detection data in this transaction, only populated if
   // there are outputs in the actions of this transaction.
   DetectionData detection_data = 4;
@@ -187,10 +176,10 @@ message ActionView {
 
     component.stake.v1alpha1.Delegate delegate = 41;
     component.stake.v1alpha1.Undelegate undelegate = 42;
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
@@ -200,15 +189,10 @@ message ActionView {
   }
 }
 
-// An authorization hash for a Penumbra transaction.
-message EffectHash {
-  bytes inner = 1;
-}
-
 // The data required to authorize a transaction plan.
 message AuthorizationData {
   // The computed auth hash for the approved transaction plan.
-  EffectHash effect_hash = 1;
+  core.txhash.v1alpha1.EffectHash effect_hash = 1;
   // The required spend authorizations, returned in the same order as the
   // Spend actions in the original request.
   repeated crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature spend_auths = 2;
@@ -228,18 +212,22 @@ message WitnessData {
 
 // Describes a planned transaction. Permits clients to prepare a transaction
 // prior submission, so that a user can review it prior to authorizing its execution.
+//
+// The `TransactionPlan` is a fully determined bundle binding all of a transaction's effects.
+// The only thing it does not include is the witness data used for proving.
 message TransactionPlan {
-  // The planner interface(s) for Actions to be performed, such as a Spend, Swap,
-  // or Delegation. See the ActionPlan docs for a full list of options.
+  // The sequence of actions planned for this transaction.
   repeated ActionPlan actions = 1;
-  // Time, as block height, after which TransactionPlan should be considered invalid.
-  uint64 expiry_height = 2;
-  // The name of the network for which this TransactionPlan was built.
-  string chain_id = 3;
-  component.fee.v1alpha1.Fee fee = 4;
+  // Parameters determining if a transaction should be accepted by this chain.
+  TransactionParameters transaction_parameters = 2;
+  // Detection data for use with Fuzzy Message Detection
+  DetectionDataPlan detection_data = 4;
+  // The memo plan for this transaction.
+  MemoPlan memo = 5;
+}
+
+message DetectionDataPlan {
   repeated CluePlan clue_plans = 5;
-  // Planning interface for constructing an optional Memo for the Transaction.
-  MemoPlan memo_plan = 6;
 }
 
 // Describes a planned transaction action.
@@ -281,10 +269,10 @@ message ActionPlan {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
   }
 }
 
@@ -298,7 +286,7 @@ message CluePlan {
   uint64 precision_bits = 3;
 }
 
-// Describes a plan for forming a `Memo`.
+// Describes a plan for forming the transaction memo.
 message MemoPlan {
   // The plaintext.
   MemoPlaintext plaintext = 1;
@@ -306,12 +294,20 @@ message MemoPlan {
   bytes key = 2;
 }
 
+// The encrypted memo data describing information about the purpose of a transaction.
 message MemoCiphertext {
+  // The encrypted data. 528 bytes.
   bytes inner = 1;
 }
 
+// The plaintext describing information about the purpose of a transaction.
 message MemoPlaintext {
+  // The sender's return address.
+  //
+  // This should always be a valid address; the sender is responsible for ensuring
+  // that if the receiver returns funds to this address, they will not be lost.
   keys.v1alpha1.Address return_address = 1;
+  // Free-form text, up to 432 bytes long.
   string text = 2;
 }
 

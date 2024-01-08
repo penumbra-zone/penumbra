@@ -5,8 +5,10 @@ pub struct Transaction {
     #[prost(message, optional, tag = "1")]
     pub body: ::core::option::Option<TransactionBody>,
     /// The binding signature is stored separately from the transaction body that it signs.
-    #[prost(bytes = "vec", tag = "2")]
-    pub binding_sig: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1alpha1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
@@ -16,20 +18,6 @@ pub struct Transaction {
 }
 impl ::prost::Name for Transaction {
     const NAME: &'static str = "Transaction";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
-/// A transaction ID, the Sha256 hash of a transaction.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Id {
-    #[prost(bytes = "vec", tag = "1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for Id {
-    const NAME: &'static str = "Id";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -45,34 +33,17 @@ pub struct TransactionBody {
     /// Parameters determining if a transaction should be accepted by this chain.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
     pub detection_data: ::core::option::Option<DetectionData>,
-    /// Sub-message containing memo ciphertext if a memo was added to the transaction.
+    /// The encrypted memo for this transaction.
+    ///
+    /// This field will be present if and only if the transaction has outputs.
     #[prost(message, optional, tag = "5")]
-    pub memo_data: ::core::option::Option<MemoData>,
+    pub memo: ::core::option::Option<MemoCiphertext>,
 }
 impl ::prost::Name for TransactionBody {
     const NAME: &'static str = "TransactionBody";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
-/// Represents the encrypted memo data.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MemoData {
-    /// The encrypted data. It will only be populated if there are
-    /// outputs in the actions of the transaction. 528 bytes.
-    #[prost(bytes = "vec", tag = "1")]
-    pub encrypted_memo: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for MemoData {
-    const NAME: &'static str = "MemoData";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -91,6 +62,9 @@ pub struct TransactionParameters {
     /// replaying a transaction on one chain onto a different chain.
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
+    /// The transaction fee.
+    #[prost(message, optional, tag = "3")]
+    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
 }
 impl ::prost::Name for TransactionParameters {
     const NAME: &'static str = "TransactionParameters";
@@ -189,13 +163,19 @@ pub mod action {
         UndelegateClaim(
             super::super::super::component::stake::v1alpha1::UndelegateClaim,
         ),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1alpha1::Ics20Withdrawal),
     }
@@ -232,7 +212,9 @@ pub struct TransactionPerspective {
     pub denoms: ::prost::alloc::vec::Vec<super::super::asset::v1alpha1::DenomMetadata>,
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
-    pub transaction_id: ::core::option::Option<Id>,
+    pub transaction_id: ::core::option::Option<
+        super::super::txhash::v1alpha1::TransactionId,
+    >,
 }
 impl ::prost::Name for TransactionPerspective {
     const NAME: &'static str = "TransactionPerspective";
@@ -285,8 +267,10 @@ pub struct TransactionView {
     #[prost(message, optional, tag = "1")]
     pub body_view: ::core::option::Option<TransactionBodyView>,
     /// The binding signature is stored separately from the transaction body that it signs.
-    #[prost(bytes = "vec", tag = "2")]
-    pub binding_sig: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub binding_sig: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1alpha1::BindingSignature,
+    >,
     /// The root of some previous state of the state commitment tree, used as an anchor for all
     /// ZK state transition proofs.
     #[prost(message, optional, tag = "3")]
@@ -310,9 +294,6 @@ pub struct TransactionBodyView {
     /// Transaction parameters.
     #[prost(message, optional, tag = "2")]
     pub transaction_parameters: ::core::option::Option<TransactionParameters>,
-    /// The transaction fee.
-    #[prost(message, optional, tag = "3")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
     /// The detection data in this transaction, only populated if
     /// there are outputs in the actions of this transaction.
     #[prost(message, optional, tag = "4")]
@@ -397,13 +378,19 @@ pub mod action_view {
         Delegate(super::super::super::component::stake::v1alpha1::Delegate),
         #[prost(message, tag = "42")]
         Undelegate(super::super::super::component::stake::v1alpha1::Undelegate),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest
         /// of the transaction. is that fine?
@@ -422,27 +409,13 @@ impl ::prost::Name for ActionView {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// An authorization hash for a Penumbra transaction.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EffectHash {
-    #[prost(bytes = "vec", tag = "1")]
-    pub inner: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for EffectHash {
-    const NAME: &'static str = "EffectHash";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
 /// The data required to authorize a transaction plan.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag = "1")]
-    pub effect_hash: ::core::option::Option<EffectHash>,
+    pub effect_hash: ::core::option::Option<super::super::txhash::v1alpha1::EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]
@@ -488,29 +461,40 @@ impl ::prost::Name for WitnessData {
 }
 /// Describes a planned transaction. Permits clients to prepare a transaction
 /// prior submission, so that a user can review it prior to authorizing its execution.
+///
+/// The `TransactionPlan` is a fully determined bundle binding all of a transaction's effects.
+/// The only thing it does not include is the witness data used for proving.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionPlan {
-    /// The planner interface(s) for Actions to be performed, such as a Spend, Swap,
-    /// or Delegation. See the ActionPlan docs for a full list of options.
+    /// The sequence of actions planned for this transaction.
     #[prost(message, repeated, tag = "1")]
     pub actions: ::prost::alloc::vec::Vec<ActionPlan>,
-    /// Time, as block height, after which TransactionPlan should be considered invalid.
-    #[prost(uint64, tag = "2")]
-    pub expiry_height: u64,
-    /// The name of the network for which this TransactionPlan was built.
-    #[prost(string, tag = "3")]
-    pub chain_id: ::prost::alloc::string::String,
+    /// Parameters determining if a transaction should be accepted by this chain.
+    #[prost(message, optional, tag = "2")]
+    pub transaction_parameters: ::core::option::Option<TransactionParameters>,
+    /// Detection data for use with Fuzzy Message Detection
     #[prost(message, optional, tag = "4")]
-    pub fee: ::core::option::Option<super::super::component::fee::v1alpha1::Fee>,
-    #[prost(message, repeated, tag = "5")]
-    pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
-    /// Planning interface for constructing an optional Memo for the Transaction.
-    #[prost(message, optional, tag = "6")]
-    pub memo_plan: ::core::option::Option<MemoPlan>,
+    pub detection_data: ::core::option::Option<DetectionDataPlan>,
+    /// The memo plan for this transaction.
+    #[prost(message, optional, tag = "5")]
+    pub memo: ::core::option::Option<MemoPlan>,
 }
 impl ::prost::Name for TransactionPlan {
     const NAME: &'static str = "TransactionPlan";
+    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DetectionDataPlan {
+    #[prost(message, repeated, tag = "5")]
+    pub clue_plans: ::prost::alloc::vec::Vec<CluePlan>,
+}
+impl ::prost::Name for DetectionDataPlan {
+    const NAME: &'static str = "DetectionDataPlan";
     const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
@@ -598,13 +582,19 @@ pub mod action_plan {
         UndelegateClaim(
             super::super::super::component::stake::v1alpha1::UndelegateClaimPlan,
         ),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
     }
 }
 impl ::prost::Name for ActionPlan {
@@ -635,7 +625,7 @@ impl ::prost::Name for CluePlan {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// Describes a plan for forming a `Memo`.
+/// Describes a plan for forming the transaction memo.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlan {
@@ -653,9 +643,11 @@ impl ::prost::Name for MemoPlan {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
+/// The encrypted memo data describing information about the purpose of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoCiphertext {
+    /// The encrypted data. 528 bytes.
     #[prost(bytes = "vec", tag = "1")]
     pub inner: ::prost::alloc::vec::Vec<u8>,
 }
@@ -666,11 +658,17 @@ impl ::prost::Name for MemoCiphertext {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
+/// The plaintext describing information about the purpose of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemoPlaintext {
+    /// The sender's return address.
+    ///
+    /// This should always be a valid address; the sender is responsible for ensuring
+    /// that if the receiver returns funds to this address, they will not be lost.
     #[prost(message, optional, tag = "1")]
     pub return_address: ::core::option::Option<super::super::keys::v1alpha1::Address>,
+    /// Free-form text, up to 432 bytes long.
     #[prost(string, tag = "2")]
     pub text: ::prost::alloc::string::String,
 }

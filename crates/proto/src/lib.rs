@@ -61,6 +61,13 @@ pub mod penumbra {
             }
         }
 
+        pub mod txhash {
+            pub mod v1alpha1 {
+                include!("gen/penumbra.core.txhash.v1alpha1.rs");
+                include!("gen/penumbra.core.txhash.v1alpha1.serde.rs");
+            }
+        }
+
         /// Components of the Penumbra application.
         pub mod component {
 
@@ -78,10 +85,10 @@ pub mod penumbra {
                 }
             }
 
-            pub mod dao {
+            pub mod community_pool {
                 pub mod v1alpha1 {
-                    include!("gen/penumbra.core.component.dao.v1alpha1.rs");
-                    include!("gen/penumbra.core.component.dao.v1alpha1.serde.rs");
+                    include!("gen/penumbra.core.component.community_pool.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.community_pool.v1alpha1.serde.rs");
                 }
             }
 

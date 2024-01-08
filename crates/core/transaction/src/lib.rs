@@ -16,11 +16,10 @@
 #![allow(clippy::clone_on_copy)]
 
 mod auth_data;
-mod auth_hash;
-mod effect_hash;
+mod detection_data;
 mod error;
-mod id;
 mod is_action;
+mod parameters;
 mod transaction;
 mod witness_data;
 
@@ -32,15 +31,16 @@ pub mod view;
 
 pub use action::Action;
 pub use auth_data::AuthorizationData;
-pub use auth_hash::{AuthHash, AuthorizingData};
-pub use effect_hash::EffectingData;
+pub use detection_data::DetectionData;
 pub use error::Error;
-pub use id::Id;
 pub use is_action::IsAction;
+pub use parameters::TransactionParameters;
 pub use plan::ActionPlan;
-pub use transaction::{Transaction, TransactionBody, TransactionParameters};
+pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;
+
+pub use penumbra_txhash as txhash;
 
 /// A compatibility wrapper for trait implementations that are temporarily duplicated
 /// in multiple crates as an orphan rule work around until we finish splitting crates (#2288).

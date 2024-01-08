@@ -5,10 +5,12 @@ use std::{
 };
 
 use anyhow::Result;
+use rand::{CryptoRng, RngCore};
+use tracing::instrument;
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::DaoDeposit;
+use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -25,10 +27,7 @@ use penumbra_governance::{
     ProposalWithdraw, ValidatorVote, Vote,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::{
-    keys::{AddressIndex, WalletId},
-    Address,
-};
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
@@ -40,8 +39,6 @@ use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
 };
-use rand::{CryptoRng, RngCore};
-use tracing::instrument;
 
 use crate::{SpendableNoteRecord, ViewClient};
 
@@ -102,14 +99,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        wallet_id: WalletId,
         source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    wallet_id: Some(wallet_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
                     amount_to_spend: Some(amount.into()),
@@ -125,7 +120,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        wallet_id: Some(wallet_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
                     },
@@ -137,7 +131,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Set the expiry height for the transaction plan.
     #[instrument(skip(self))]
     pub fn expiry_height(&mut self, expiry_height: u64) -> &mut Self {
-        self.plan.expiry_height = expiry_height;
+        self.plan.transaction_parameters.expiry_height = expiry_height;
         self
     }
 
@@ -146,7 +140,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Errors if the memo is too long.
     #[instrument(skip(self))]
     pub fn memo(&mut self, memo: MemoPlaintext) -> anyhow::Result<&mut Self> {
-        self.plan.memo_plan = Some(MemoPlan::new(&mut self.rng, memo)?);
+        self.plan.memo = Some(MemoPlan::new(&mut self.rng, memo)?);
         Ok(self)
     }
 
@@ -156,13 +150,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn fee(&mut self, fee: Fee) -> &mut Self {
         self.balance += fee.0;
-        self.plan.fee = fee;
+        self.plan.transaction_parameters.fee = fee;
         self
     }
 
     /// Calculate gas cost-based fees and add to the transaction plan.
     ///
     /// This function should be called once.
+    // TODO: clarify why we have both `add_gas_fees` and `fee`
+    // should one be `auto_fee` and the other `set_fee`?
     #[instrument(skip(self))]
     pub fn add_gas_fees(&mut self) -> &mut Self {
         let minimum_fee = self.gas_prices.price(&self.plan.gas_cost());
@@ -173,7 +169,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // change outputs.
         let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
         self.balance += fee.0;
-        self.plan.fee = fee;
+        self.plan.transaction_parameters.fee = fee;
         self
     }
 
@@ -355,10 +351,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Deposit a value into the DAO.
+    /// Deposit a value into the Community Pool.
     #[instrument(skip(self))]
-    pub fn dao_deposit(&mut self, value: Value) -> &mut Self {
-        self.action(ActionPlan::DaoDeposit(DaoDeposit { value }));
+    pub fn community_pool_deposit(&mut self, value: Value) -> &mut Self {
+        self.action(ActionPlan::CommunityPoolDeposit(CommunityPoolDeposit {
+            value,
+        }));
         self
     }
 
@@ -452,7 +450,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
-        wallet_id: WalletId,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
@@ -467,7 +464,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(wallet_id, source);
+        let (spendable_requests, voting_requests) = self.notes_requests(source);
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);
@@ -514,7 +511,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
         // Fill in the chain id based on the view service
-        self.plan.chain_id = chain_params.chain_id.clone();
+        self.plan.transaction_parameters.chain_id = chain_params.chain_id.clone();
 
         // Add the required spends to the planner
         for record in spendable_notes {
@@ -593,12 +590,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
         let tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
-        let excess_fee_spent = self.plan.fee.amount() - tx_real_fee;
+        let excess_fee_spent = self.plan.transaction_parameters.fee.amount() - tx_real_fee;
         self.balance -= Value {
             amount: excess_fee_spent,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
-        self.plan.fee = Fee::from_staking_token_amount(tx_real_fee);
+        self.plan.transaction_parameters.fee = Fee::from_staking_token_amount(tx_real_fee);
 
         // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {
@@ -620,17 +617,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
-        if self.plan.num_outputs() > 0 && self.plan.memo_plan.is_none() {
+        if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
             self.memo(MemoPlaintext::blank_memo(self_address.clone()))
                 .expect("empty string is a valid memo");
-        } else if self.plan.num_outputs() == 0 && self.plan.memo_plan.is_some() {
+        } else if self.plan.num_outputs() == 0 && self.plan.memo.is_some() {
             anyhow::bail!("if no outputs, no memo should be added");
         }
 
         // Add clue plans for `Output`s.
         let precision_bits = fmd_params.precision_bits;
         self.plan
-            .add_all_clue_plans(&mut self.rng, precision_bits.into());
+            .populate_detection_data(&mut self.rng, precision_bits.into());
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 

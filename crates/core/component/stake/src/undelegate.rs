@@ -1,6 +1,7 @@
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{DelegationToken, IdentityKey, UnbondingToken};
@@ -22,6 +23,13 @@ pub struct Undelegate {
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
     pub delegation_amount: Amount,
+}
+
+impl EffectingData for Undelegate {
+    fn effect_hash(&self) -> EffectHash {
+        // For undelegations, the entire action is considered effecting data.
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl Undelegate {

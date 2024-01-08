@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use super::{position, position::Position, LpNft};
 
@@ -17,6 +18,14 @@ pub struct PositionOpen {
     /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
     /// are unchanged over the entire lifetime of the position.
     pub position: Position,
+}
+
+impl EffectingData for PositionOpen {
+    fn effect_hash(&self) -> EffectHash {
+        // The position open action consists only of the position, which
+        // we consider effecting data.
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl PositionOpen {
@@ -47,6 +56,12 @@ impl PositionOpen {
 #[serde(try_from = "pb::PositionClose", into = "pb::PositionClose")]
 pub struct PositionClose {
     pub position_id: position::Id,
+}
+
+impl EffectingData for PositionClose {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl PositionClose {
@@ -82,6 +97,12 @@ pub struct PositionWithdraw {
     pub reserves_commitment: balance::Commitment,
 }
 
+impl EffectingData for PositionWithdraw {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
 /// A transaction action that claims retroactive rewards for a historical
 /// position.
 ///
@@ -95,6 +116,12 @@ pub struct PositionRewardClaim {
     ///
     /// The chain will check this commitment by recomputing it with the on-chain state.
     pub rewards_commitment: balance::Commitment,
+}
+
+impl EffectingData for PositionRewardClaim {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for PositionOpen {

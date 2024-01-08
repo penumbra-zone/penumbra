@@ -161,9 +161,14 @@ pub trait StateReadExt: StateRead {
         self.object_get::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
             .unwrap_or_default()
     }
+
+    fn pending_batch_swap_outputs(&self) -> im::OrdMap<TradingPair, BatchSwapOutputData> {
+        self.object_get(state_key::pending_outputs())
+            .unwrap_or_default()
+    }
 }
 
-impl<T: StateRead> StateReadExt for T {}
+impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 /// Extension trait providing write access to dex data.
 #[async_trait]
@@ -196,9 +201,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         }
 
         // ... and also add it to the set in the compact block to be pushed out to clients.
-        let mut outputs: im::OrdMap<TradingPair, BatchSwapOutputData> = self
-            .object_get(state_key::pending_outputs())
-            .unwrap_or_default();
+        let mut outputs = self.pending_batch_swap_outputs();
         outputs.insert(trading_pair, output_data);
         self.object_put(state_key::pending_outputs(), outputs);
     }

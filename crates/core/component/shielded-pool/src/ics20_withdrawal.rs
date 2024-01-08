@@ -9,6 +9,7 @@ use penumbra_proto::{
     penumbra::core::component::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -80,6 +81,12 @@ impl Ics20Withdrawal {
         // addresses, but this would preclude sending to chains that don't use bech32 addresses.
 
         Ok(())
+    }
+}
+
+impl EffectingData for Ics20Withdrawal {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

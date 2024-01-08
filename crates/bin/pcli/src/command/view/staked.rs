@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
+use tonic::transport::Channel;
+
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::core::component::stake::v1alpha1::{
@@ -10,7 +12,6 @@ use penumbra_proto::core::component::stake::v1alpha1::{
 };
 use penumbra_stake::{validator, DelegationToken};
 use penumbra_view::ViewClient;
-use tonic::transport::Channel;
 
 #[derive(Debug, clap::Parser)]
 pub struct StakedCmd {}
@@ -22,7 +23,7 @@ impl StakedCmd {
 
     pub async fn exec(
         &self,
-        full_viewing_key: &FullViewingKey,
+        _fvk: &FullViewingKey,
         view_client: &mut impl ViewClient,
         pd_channel: Channel,
     ) -> Result<()> {
@@ -43,10 +44,7 @@ impl StakedCmd {
             .map(TryInto::try_into)
             .collect::<Result<Vec<validator::Info>, _>>()?;
 
-        let wallet_id = full_viewing_key.wallet_id();
-        let notes = view_client
-            .unspent_notes_by_asset_and_address(wallet_id)
-            .await?;
+        let notes = view_client.unspent_notes_by_asset_and_address().await?;
         let mut total = 0u128;
 
         let mut table = Table::new();

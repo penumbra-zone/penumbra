@@ -4,7 +4,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::component::StateReadExt;
-use penumbra_proof_params::UNDELEGATECLAIM_PROOF_VERIFICATION_KEY;
+use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 
 use crate::UndelegateClaim;
 use crate::{action_handler::ActionHandler, StateReadExt as _, UnbondingToken};
@@ -17,7 +17,7 @@ impl ActionHandler for UndelegateClaim {
             UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
 
         self.proof.verify(
-            &UNDELEGATECLAIM_PROOF_VERIFICATION_KEY,
+            &CONVERT_PROOF_VERIFICATION_KEY,
             self.body.balance_commitment,
             unbonding_id,
             self.body.penalty,

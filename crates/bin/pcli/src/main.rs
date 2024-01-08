@@ -1,11 +1,16 @@
 #![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
+
 use std::fs;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use config::PcliConfig;
 use futures::StreamExt;
+
+use box_grpc_svc::BoxGrpcService;
+use command::*;
+use config::PcliConfig;
+use opt::Opt;
 use penumbra_proto::{
     custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
     view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
@@ -20,11 +25,6 @@ mod network;
 mod opt;
 mod terminal;
 mod warning;
-
-use opt::Opt;
-
-use box_grpc_svc::BoxGrpcService;
-use command::*;
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
@@ -45,11 +45,9 @@ impl App {
     }
 
     async fn sync(&mut self) -> Result<()> {
-        let mut status_stream = ViewClient::status_stream(
-            self.view.as_mut().expect("view service initialized"),
-            self.config.full_viewing_key.wallet_id(),
-        )
-        .await?;
+        let mut status_stream =
+            ViewClient::status_stream(self.view.as_mut().expect("view service initialized"))
+                .await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.

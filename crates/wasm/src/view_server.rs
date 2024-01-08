@@ -135,7 +135,7 @@ impl ViewServer {
                         Some(note) => {
                             let note_position = self.sct.insert(Keep, payload.note_commitment)?;
 
-                            let source = clone_payload.source().cloned().unwrap_or_default();
+                            let source = clone_payload.source().clone();
                             let nullifier = Nullifier::derive(
                                 self.fvk.nullifier_key(),
                                 note_position,
@@ -174,7 +174,7 @@ impl ViewServer {
                                     anyhow::anyhow!("server gave invalid compact block")
                                 })?;
 
-                            let source = clone_payload.source().cloned().unwrap_or_default();
+                            let source = clone_payload.source().clone();
                             let nullifier = Nullifier::derive(
                                 self.fvk.nullifier_key(),
                                 swap_position,
@@ -208,7 +208,7 @@ impl ViewServer {
                         }
                     }
                 }
-                StatePayload::RolledUp(commitment) => {
+                StatePayload::RolledUp { commitment, .. } => {
                     // This is a note we anticipated, so retain its auth path.
 
                     let advice_result = self.storage.read_advice(commitment).await?;
@@ -228,7 +228,7 @@ impl ViewServer {
                             let nullifier =
                                 Nullifier::derive(self.fvk.nullifier_key(), position, &commitment);
 
-                            let source = clone_payload.source().cloned().unwrap_or_default();
+                            let source = clone_payload.source().clone();
 
                             let spendable_note = SpendableNoteRecord {
                                 note_commitment: note.commit(),

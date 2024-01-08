@@ -11,13 +11,14 @@ penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
+penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 
 # Penumbra dependencies
 decaf377 = "0.5"
 
 tendermint = "0.34.0"
-ibc-types = { version = "0.10.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
 ics23 = "0.11.0"
 
 # Crates.io deps

@@ -231,7 +231,7 @@ impl serde::Serialize for ChangedAppParameters {
         if self.chain_params.is_some() {
             len += 1;
         }
-        if self.dao_params.is_some() {
+        if self.community_pool_params.is_some() {
             len += 1;
         }
         if self.governance_params.is_some() {
@@ -253,8 +253,8 @@ impl serde::Serialize for ChangedAppParameters {
         if let Some(v) = self.chain_params.as_ref() {
             struct_ser.serialize_field("chainParams", v)?;
         }
-        if let Some(v) = self.dao_params.as_ref() {
-            struct_ser.serialize_field("daoParams", v)?;
+        if let Some(v) = self.community_pool_params.as_ref() {
+            struct_ser.serialize_field("communityPoolParams", v)?;
         }
         if let Some(v) = self.governance_params.as_ref() {
             struct_ser.serialize_field("governanceParams", v)?;
@@ -283,8 +283,8 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
         const FIELDS: &[&str] = &[
             "chain_params",
             "chainParams",
-            "dao_params",
-            "daoParams",
+            "community_pool_params",
+            "communityPoolParams",
             "governance_params",
             "governanceParams",
             "ibc_params",
@@ -300,7 +300,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ChainParams,
-            DaoParams,
+            CommunityPoolParams,
             GovernanceParams,
             IbcParams,
             StakeParams,
@@ -328,7 +328,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     {
                         match value {
                             "chainParams" | "chain_params" => Ok(GeneratedField::ChainParams),
-                            "daoParams" | "dao_params" => Ok(GeneratedField::DaoParams),
+                            "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
                             "governanceParams" | "governance_params" => Ok(GeneratedField::GovernanceParams),
                             "ibcParams" | "ibc_params" => Ok(GeneratedField::IbcParams),
                             "stakeParams" | "stake_params" => Ok(GeneratedField::StakeParams),
@@ -354,7 +354,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut chain_params__ = None;
-                let mut dao_params__ = None;
+                let mut community_pool_params__ = None;
                 let mut governance_params__ = None;
                 let mut ibc_params__ = None;
                 let mut stake_params__ = None;
@@ -368,11 +368,11 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             }
                             chain_params__ = map_.next_value()?;
                         }
-                        GeneratedField::DaoParams => {
-                            if dao_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("daoParams"));
+                        GeneratedField::CommunityPoolParams => {
+                            if community_pool_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("communityPoolParams"));
                             }
-                            dao_params__ = map_.next_value()?;
+                            community_pool_params__ = map_.next_value()?;
                         }
                         GeneratedField::GovernanceParams => {
                             if governance_params__.is_some() {
@@ -408,7 +408,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 }
                 Ok(ChangedAppParameters {
                     chain_params: chain_params__,
-                    dao_params: dao_params__,
+                    community_pool_params: community_pool_params__,
                     governance_params: governance_params__,
                     ibc_params: ibc_params__,
                     stake_params: stake_params__,
@@ -528,7 +528,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParametersSet {
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DaoDeposit {
+impl serde::Serialize for CommunityPoolDeposit {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -539,14 +539,14 @@ impl serde::Serialize for DaoDeposit {
         if self.value.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DaoDeposit", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolDeposit", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoDeposit {
+impl<'de> serde::Deserialize<'de> for CommunityPoolDeposit {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -590,13 +590,13 @@ impl<'de> serde::Deserialize<'de> for DaoDeposit {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoDeposit;
+            type Value = CommunityPoolDeposit;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoDeposit")
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.CommunityPoolDeposit")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoDeposit, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolDeposit, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -611,15 +611,15 @@ impl<'de> serde::Deserialize<'de> for DaoDeposit {
                         }
                     }
                 }
-                Ok(DaoDeposit {
+                Ok(CommunityPoolDeposit {
                     value: value__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.DaoDeposit", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolDeposit", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DaoOutput {
+impl serde::Serialize for CommunityPoolOutput {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -633,7 +633,7 @@ impl serde::Serialize for DaoOutput {
         if self.address.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DaoOutput", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolOutput", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
@@ -643,7 +643,7 @@ impl serde::Serialize for DaoOutput {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoOutput {
+impl<'de> serde::Deserialize<'de> for CommunityPoolOutput {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -690,13 +690,13 @@ impl<'de> serde::Deserialize<'de> for DaoOutput {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoOutput;
+            type Value = CommunityPoolOutput;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoOutput")
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.CommunityPoolOutput")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoOutput, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolOutput, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -718,16 +718,16 @@ impl<'de> serde::Deserialize<'de> for DaoOutput {
                         }
                     }
                 }
-                Ok(DaoOutput {
+                Ok(CommunityPoolOutput {
                     value: value__,
                     address: address__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.DaoOutput", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolOutput", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DaoSpend {
+impl serde::Serialize for CommunityPoolSpend {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -738,14 +738,14 @@ impl serde::Serialize for DaoSpend {
         if self.value.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DaoSpend", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolSpend", len)?;
         if let Some(v) = self.value.as_ref() {
             struct_ser.serialize_field("value", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DaoSpend {
+impl<'de> serde::Deserialize<'de> for CommunityPoolSpend {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -789,13 +789,13 @@ impl<'de> serde::Deserialize<'de> for DaoSpend {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DaoSpend;
+            type Value = CommunityPoolSpend;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.DaoSpend")
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.CommunityPoolSpend")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DaoSpend, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CommunityPoolSpend, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -810,12 +810,12 @@ impl<'de> serde::Deserialize<'de> for DaoSpend {
                         }
                     }
                 }
-                Ok(DaoSpend {
+                Ok(CommunityPoolSpend {
                     value: value__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.DaoSpend", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.CommunityPoolSpend", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for DelegatorVote {
@@ -967,10 +967,10 @@ impl serde::Serialize for DelegatorVoteBody {
         if self.unbonded_amount.is_some() {
             len += 1;
         }
-        if !self.nullifier.is_empty() {
+        if self.nullifier.is_some() {
             len += 1;
         }
-        if !self.rk.is_empty() {
+        if self.rk.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.DelegatorVoteBody", len)?;
@@ -991,13 +991,11 @@ impl serde::Serialize for DelegatorVoteBody {
         if let Some(v) = self.unbonded_amount.as_ref() {
             struct_ser.serialize_field("unbondedAmount", v)?;
         }
-        if !self.nullifier.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("nullifier", pbjson::private::base64::encode(&self.nullifier).as_str())?;
+        if let Some(v) = self.nullifier.as_ref() {
+            struct_ser.serialize_field("nullifier", v)?;
         }
-        if !self.rk.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("rk", pbjson::private::base64::encode(&self.rk).as_str())?;
+        if let Some(v) = self.rk.as_ref() {
+            struct_ser.serialize_field("rk", v)?;
         }
         struct_ser.end()
     }
@@ -1123,17 +1121,13 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                             if nullifier__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("nullifier"));
                             }
-                            nullifier__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            nullifier__ = map_.next_value()?;
                         }
                         GeneratedField::Rk => {
                             if rk__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("rk"));
                             }
-                            rk__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            rk__ = map_.next_value()?;
                         }
                     }
                 }
@@ -1143,8 +1137,8 @@ impl<'de> serde::Deserialize<'de> for DelegatorVoteBody {
                     vote: vote__,
                     value: value__,
                     unbonded_amount: unbonded_amount__,
-                    nullifier: nullifier__.unwrap_or_default(),
-                    rk: rk__.unwrap_or_default(),
+                    nullifier: nullifier__,
+                    rk: rk__,
                 })
             }
         }
@@ -2184,10 +2178,16 @@ impl serde::Serialize for Proposal {
         if self.parameter_change.is_some() {
             len += 1;
         }
-        if self.dao_spend.is_some() {
+        if self.community_pool_spend.is_some() {
             len += 1;
         }
         if self.upgrade_plan.is_some() {
+            len += 1;
+        }
+        if self.freeze_ibc_client.is_some() {
+            len += 1;
+        }
+        if self.unfreeze_ibc_client.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal", len)?;
@@ -2210,11 +2210,17 @@ impl serde::Serialize for Proposal {
         if let Some(v) = self.parameter_change.as_ref() {
             struct_ser.serialize_field("parameterChange", v)?;
         }
-        if let Some(v) = self.dao_spend.as_ref() {
-            struct_ser.serialize_field("daoSpend", v)?;
+        if let Some(v) = self.community_pool_spend.as_ref() {
+            struct_ser.serialize_field("communityPoolSpend", v)?;
         }
         if let Some(v) = self.upgrade_plan.as_ref() {
             struct_ser.serialize_field("upgradePlan", v)?;
+        }
+        if let Some(v) = self.freeze_ibc_client.as_ref() {
+            struct_ser.serialize_field("freezeIbcClient", v)?;
+        }
+        if let Some(v) = self.unfreeze_ibc_client.as_ref() {
+            struct_ser.serialize_field("unfreezeIbcClient", v)?;
         }
         struct_ser.end()
     }
@@ -2233,10 +2239,14 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             "emergency",
             "parameter_change",
             "parameterChange",
-            "dao_spend",
-            "daoSpend",
+            "community_pool_spend",
+            "communityPoolSpend",
             "upgrade_plan",
             "upgradePlan",
+            "freeze_ibc_client",
+            "freezeIbcClient",
+            "unfreeze_ibc_client",
+            "unfreezeIbcClient",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2247,8 +2257,10 @@ impl<'de> serde::Deserialize<'de> for Proposal {
             Signaling,
             Emergency,
             ParameterChange,
-            DaoSpend,
+            CommunityPoolSpend,
             UpgradePlan,
+            FreezeIbcClient,
+            UnfreezeIbcClient,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -2276,8 +2288,10 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             "signaling" => Ok(GeneratedField::Signaling),
                             "emergency" => Ok(GeneratedField::Emergency),
                             "parameterChange" | "parameter_change" => Ok(GeneratedField::ParameterChange),
-                            "daoSpend" | "dao_spend" => Ok(GeneratedField::DaoSpend),
+                            "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "upgradePlan" | "upgrade_plan" => Ok(GeneratedField::UpgradePlan),
+                            "freezeIbcClient" | "freeze_ibc_client" => Ok(GeneratedField::FreezeIbcClient),
+                            "unfreezeIbcClient" | "unfreeze_ibc_client" => Ok(GeneratedField::UnfreezeIbcClient),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -2303,8 +2317,10 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 let mut signaling__ = None;
                 let mut emergency__ = None;
                 let mut parameter_change__ = None;
-                let mut dao_spend__ = None;
+                let mut community_pool_spend__ = None;
                 let mut upgrade_plan__ = None;
+                let mut freeze_ibc_client__ = None;
+                let mut unfreeze_ibc_client__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
@@ -2345,17 +2361,29 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             }
                             parameter_change__ = map_.next_value()?;
                         }
-                        GeneratedField::DaoSpend => {
-                            if dao_spend__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("daoSpend"));
+                        GeneratedField::CommunityPoolSpend => {
+                            if community_pool_spend__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("communityPoolSpend"));
                             }
-                            dao_spend__ = map_.next_value()?;
+                            community_pool_spend__ = map_.next_value()?;
                         }
                         GeneratedField::UpgradePlan => {
                             if upgrade_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("upgradePlan"));
                             }
                             upgrade_plan__ = map_.next_value()?;
+                        }
+                        GeneratedField::FreezeIbcClient => {
+                            if freeze_ibc_client__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("freezeIbcClient"));
+                            }
+                            freeze_ibc_client__ = map_.next_value()?;
+                        }
+                        GeneratedField::UnfreezeIbcClient => {
+                            if unfreeze_ibc_client__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unfreezeIbcClient"));
+                            }
+                            unfreeze_ibc_client__ = map_.next_value()?;
                         }
                     }
                 }
@@ -2366,15 +2394,17 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                     signaling: signaling__,
                     emergency: emergency__,
                     parameter_change: parameter_change__,
-                    dao_spend: dao_spend__,
+                    community_pool_spend: community_pool_spend__,
                     upgrade_plan: upgrade_plan__,
+                    freeze_ibc_client: freeze_ibc_client__,
+                    unfreeze_ibc_client: unfreeze_ibc_client__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for proposal::DaoSpend {
+impl serde::Serialize for proposal::CommunityPoolSpend {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -2385,14 +2415,14 @@ impl serde::Serialize for proposal::DaoSpend {
         if self.transaction_plan.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.DaoSpend", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend", len)?;
         if let Some(v) = self.transaction_plan.as_ref() {
             struct_ser.serialize_field("transactionPlan", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
+impl<'de> serde::Deserialize<'de> for proposal::CommunityPoolSpend {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -2437,13 +2467,13 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = proposal::DaoSpend;
+            type Value = proposal::CommunityPoolSpend;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.DaoSpend")
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::DaoSpend, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::CommunityPoolSpend, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -2458,12 +2488,12 @@ impl<'de> serde::Deserialize<'de> for proposal::DaoSpend {
                         }
                     }
                 }
-                Ok(proposal::DaoSpend {
+                Ok(proposal::CommunityPoolSpend {
                     transaction_plan: transaction_plan__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.DaoSpend", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::Emergency {
@@ -2556,6 +2586,98 @@ impl<'de> serde::Deserialize<'de> for proposal::Emergency {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.Emergency", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal::FreezeIbcClient {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.client_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient", len)?;
+        if !self.client_id.is_empty() {
+            struct_ser.serialize_field("clientId", &self.client_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::FreezeIbcClient {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "client_id",
+            "clientId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ClientId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "clientId" | "client_id" => Ok(GeneratedField::ClientId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::FreezeIbcClient;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::FreezeIbcClient, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut client_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ClientId => {
+                            if client_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("clientId"));
+                            }
+                            client_id__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::FreezeIbcClient {
+                    client_id: client_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::ParameterChange {
@@ -2757,6 +2879,98 @@ impl<'de> serde::Deserialize<'de> for proposal::Signaling {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.Signaling", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for proposal::UnfreezeIbcClient {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.client_id.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient", len)?;
+        if !self.client_id.is_empty() {
+            struct_ser.serialize_field("clientId", &self.client_id)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for proposal::UnfreezeIbcClient {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "client_id",
+            "clientId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ClientId,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "clientId" | "client_id" => Ok(GeneratedField::ClientId),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = proposal::UnfreezeIbcClient;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<proposal::UnfreezeIbcClient, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut client_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ClientId => {
+                            if client_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("clientId"));
+                            }
+                            client_id__ = Some(map_.next_value()?);
+                        }
+                    }
+                }
+                Ok(proposal::UnfreezeIbcClient {
+                    client_id: client_id__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for proposal::UpgradePlan {

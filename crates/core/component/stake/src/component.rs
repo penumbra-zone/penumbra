@@ -19,9 +19,9 @@ use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
-    Epoch, NoteSource,
+    Epoch,
 };
-use penumbra_dao::component::StateWriteExt as _;
+use penumbra_community_pool::component::StateWriteExt as _;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
@@ -30,6 +30,7 @@ use penumbra_proto::{
     state::future::{DomainFuture, ProtoFuture},
     StateReadProto, StateWriteProto,
 };
+use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
     genesis::Content as ShieldedPoolGenesisContent,
@@ -501,15 +502,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                     asset_id: *STAKING_TOKEN_ASSET_ID,
                                 },
                                 &address,
-                                NoteSource::FundingStreamReward {
+                                CommitmentSource::FundingStreamReward {
                                     epoch_index: epoch_to_end.index,
                                 },
                             )
                             .await?;
                         }
-                        // If the recipient is the DAO, deposit the funds into the DAO
-                        Recipient::Dao => {
-                            self.dao_deposit(Value {
+                        // If the recipient is the Community Pool, deposit the funds into the Community Pool
+                        Recipient::CommunityPool => {
+                            self.community_pool_deposit(Value {
                                 amount: commission_reward_amount.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })

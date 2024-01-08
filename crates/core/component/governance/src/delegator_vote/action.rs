@@ -7,12 +7,19 @@ use penumbra_num::Amount;
 use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
+use penumbra_txhash::{EffectHash, EffectingData};
 
 #[derive(Debug, Clone)]
 pub struct DelegatorVote {
     pub body: DelegatorVoteBody,
     pub auth_sig: Signature<SpendAuth>,
     pub proof: DelegatorVoteProof,
+}
+
+impl EffectingData for DelegatorVote {
+    fn effect_hash(&self) -> EffectHash {
+        self.body.effect_hash()
+    }
 }
 
 /// The body of a delegator vote.
@@ -34,6 +41,12 @@ pub struct DelegatorVoteBody {
     pub rk: VerificationKey<SpendAuth>,
 }
 
+impl EffectingData for DelegatorVoteBody {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
 impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
     fn from(value: DelegatorVoteBody) -> Self {
         pb::DelegatorVoteBody {
@@ -42,8 +55,8 @@ impl From<DelegatorVoteBody> for pb::DelegatorVoteBody {
             vote: Some(value.vote.into()),
             value: Some(value.value.into()),
             unbonded_amount: Some(value.unbonded_amount.into()),
-            nullifier: value.nullifier.to_bytes().into(),
-            rk: value.rk.to_bytes().into(),
+            nullifier: Some(value.nullifier.into()),
+            rk: Some(value.rk.into()),
         }
     }
 }
@@ -72,16 +85,14 @@ impl TryFrom<pb::DelegatorVoteBody> for DelegatorVoteBody {
                 .try_into()?,
             nullifier: msg
                 .nullifier
+                .ok_or_else(|| anyhow::anyhow!("missing nullifier in `DelegatorVote`"))?
                 .try_into()
                 .context("invalid nullifier in `DelegatorVote`")?,
-            rk: {
-                let rk_bytes: [u8; 32] = (msg.rk[..])
-                    .try_into()
-                    .context("expected 32-byte rk in `DelegatorVote`")?;
-                rk_bytes
-                    .try_into()
-                    .context("invalid  rk in `DelegatorVote`")?
-            },
+            rk: msg
+                .rk
+                .ok_or_else(|| anyhow::anyhow!("missing rk in `DelegatorVote`"))?
+                .try_into()
+                .context("invalid rk in `DelegatorVote`")?,
         })
     }
 }

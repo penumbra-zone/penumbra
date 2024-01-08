@@ -20,10 +20,17 @@ pub use note::{Note, NoteCiphertext, NoteView};
 pub use note_payload::NotePayload;
 pub use rseed::Rseed;
 
+pub mod convert;
 pub mod nullifier_derivation;
 pub mod output;
 pub mod spend;
 
-pub use nullifier_derivation::{NullifierDerivationCircuit, NullifierDerivationProof};
+pub use convert::{ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic};
+pub use nullifier_derivation::{
+    NullifierDerivationCircuit, NullifierDerivationProof, NullifierDerivationProofPrivate,
+    NullifierDerivationProofPublic,
+};
 pub use output::{Output, OutputCircuit, OutputPlan, OutputProof, OutputView};
-pub use spend::{Spend, SpendCircuit, SpendPlan, SpendProof, SpendView};
+pub use spend::{
+    Spend, SpendCircuit, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic, SpendView,
+};

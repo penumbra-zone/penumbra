@@ -14,9 +14,9 @@ A validator definition contains fields defining metadata regarding your
 validator as well as funding streams, which are Penumbra's analogue to validator
 commissions.
 
-The root of a validator's identity is their *identity key*.  Currently, `pcli`
+The root of a validator's identity is their _identity key_. Currently, `pcli`
 reuses the spend authorization key in whatever wallet is active as the
-validator's identity key.  This key is used to sign validator definitions that
+validator's identity key. This key is used to sign validator definitions that
 update the configuration for a validator.
 
 #### Creating a template definition
@@ -59,7 +59,7 @@ recipient = 'penumbrav2t1cntf73e36y3um4zmqm4j0zar3jyxvyfqxywwg5q6fjxzhe28qttppmc
 rate_bps = 100
 
 [[funding_stream]]
-recipient = "DAO"
+recipient = "CommunityPool"
 rate_bps = 100
 ```
 
@@ -78,7 +78,7 @@ Note that by default the `enabled` field is set to false and will need to be
 enabled in order to activate one's validator.
 
 In the default template, there is a funding stream declared to [contribute funds to the
-DAO](../pcli/governance.md#contributing-to-the-dao). This is not required, and may be altered or
+Community Pool](../pcli/governance.md#contributing-to-the-community-pool). This is not required, and may be altered or
 removed if you wish.
 
 #### Setting the consensus key
@@ -104,11 +104,11 @@ as the `value` field under the `[consensus_key]` heading.
 #### Configuring funding streams
 
 Unlike the Cosmos SDK, which has validators specify a commission percentage that
-goes to the validator, Penumbra uses *funding streams*, a list of pairs of
-commission amounts and addresses.  This design allows validators to dedicate
+goes to the validator, Penumbra uses _funding streams_, a list of pairs of
+commission amounts and addresses. This design allows validators to dedicate
 portions of their commission non-custodially -- for instance, a validator could
 declare some amount of commission to cover their operating costs, and another
-that would be sent to an address controlled by a DAO.
+that would be sent to an address controlled by the Community Pool.
 
 ## Uploading a definition
 
@@ -140,7 +140,7 @@ pcli validator identity
 And then delegate some amount of `penumbra` to it:
 
 ```console
-pcli tx delegate 1penumbra --to penumbravalid1g2huds8klwypzczfgx67j7zp6ntq2m5fxmctkf7ja96zn49d6s9qz72hu3
+pcli tx delegate 1penumbra --to [YOUR_VALIDATOR_IDENTITY_KEY]
 ```
 
 You should then see your balance of `penumbra` decreased and that you have received some amount of delegation tokens for your validator:
@@ -150,11 +150,11 @@ pcli view balance
 ```
 
 Voting power will be calculated on the next epoch transition after your
-delegation takes place.  Assuming that your delegation was enough to place your
+delegation takes place. Assuming that your delegation was enough to place your
 validator in the top N validators by voting power, it should appear in the
-validator list as `Active` after the next epoch transition.  The epoch duration
+validator list as `Active` after the next epoch transition. The epoch duration
 and the active validator limit are chain parameters, and will vary by
-deployment.  You can find the values in use for the current chain in its
+deployment. You can find the values in use for the current chain in its
 `genesis.json` file.
 
 ## Updating your validator

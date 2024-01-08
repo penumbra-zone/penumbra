@@ -1,5 +1,5 @@
 use penumbra_chain::genesis::Content as ChainContent;
-use penumbra_dao::genesis::Content as DaoContent;
+use penumbra_community_pool::genesis::Content as CommunityPoolContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
@@ -33,8 +33,8 @@ pub struct Content {
     pub ibc_content: IBCContent,
     /// Chain module genesis state.
     pub chain_content: ChainContent,
-    /// DAO module genesis state.
-    pub dao_content: DaoContent,
+    /// Community Pool module genesis state.
+    pub community_pool_content: CommunityPoolContent,
     /// Fee module genesis state.
     pub fee_content: FeeContent,
     /// Distributions module genesis state.
@@ -73,7 +73,7 @@ impl From<Content> for pb::GenesisContent {
             stake_content: Some(value.stake_content.into()),
             ibc_content: Some(value.ibc_content.into()),
             governance_content: Some(value.governance_content.into()),
-            dao_content: Some(value.dao_content.into()),
+            community_pool_content: Some(value.community_pool_content.into()),
             shielded_pool_content: Some(value.shielded_pool_content.into()),
             fee_content: Some(value.fee_content.into()),
             distributions_content: Some(value.distributions_content.into()),
@@ -120,9 +120,9 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .ibc_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing ibc content"))?
                 .try_into()?,
-            dao_content: msg
-                .dao_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing dao content"))?
+            community_pool_content: msg
+                .community_pool_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool content"))?
                 .try_into()?,
             chain_content: msg
                 .chain_content

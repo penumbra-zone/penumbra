@@ -5,6 +5,7 @@ use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
 use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::SpendProof;
@@ -22,6 +23,20 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
+impl EffectingData for Spend {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the spend, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
+    }
 }
 
 impl DomainType for Spend {
@@ -72,12 +87,10 @@ impl DomainType for Body {
 
 impl From<Body> for pb::SpendBody {
     fn from(msg: Body) -> Self {
-        let nullifier_bytes: [u8; 32] = msg.nullifier.into();
-        let rk_bytes: [u8; 32] = msg.rk.into();
         pb::SpendBody {
             balance_commitment: Some(msg.balance_commitment.into()),
-            nullifier: nullifier_bytes.to_vec(),
-            rk: rk_bytes.to_vec(),
+            nullifier: Some(msg.nullifier.into()),
+            rk: Some(msg.rk.into()),
         }
     }
 }
@@ -92,14 +105,17 @@ impl TryFrom<pb::SpendBody> for Body {
             .try_into()
             .context("malformed balance commitment")?;
 
-        let nullifier = (proto.nullifier[..])
+        let nullifier = proto
+            .nullifier
+            .ok_or_else(|| anyhow::anyhow!("missing nullifier"))?
             .try_into()
             .context("malformed nullifier")?;
 
-        let rk_bytes: [u8; 32] = (proto.rk[..])
+        let rk = proto
+            .rk
+            .ok_or_else(|| anyhow::anyhow!("missing rk"))?
             .try_into()
-            .map_err(|_| anyhow::anyhow!("expected 32-byte rk"))?;
-        let rk = rk_bytes.try_into().context("malformed rk")?;
+            .context("malformed rk")?;
 
         Ok(Body {
             balance_commitment,

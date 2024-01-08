@@ -5,11 +5,11 @@ use ark_ff::Zero;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use decaf377::Fr;
-use penumbra_chain::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_txhash::TransactionContext;
 
 use crate::{
-    DelegatorVote, DelegatorVoteBody,
+    DelegatorVote, DelegatorVoteBody, DelegatorVoteProofPublic,
     {component::StateWriteExt, StateReadExt},
 };
 use cnidarium_component::ActionHandler;
@@ -40,15 +40,15 @@ impl ActionHandler for DelegatorVote {
             .context("delegator vote auth signature failed to verify")?;
 
         // 2. Verify the proof against the provided anchor and start position:
+        let public = DelegatorVoteProofPublic {
+            anchor: context.anchor,
+            balance_commitment: value.commit(Fr::zero()),
+            nullifier: *nullifier,
+            rk: *rk,
+            start_position: *start_position,
+        };
         proof
-            .verify(
-                &DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
-                context.anchor,
-                value.commit(Fr::zero()),
-                *nullifier,
-                *rk,
-                *start_position,
-            )
+            .verify(&DELEGATOR_VOTE_PROOF_VERIFICATION_KEY, public)
             .context("a delegator vote proof did not verify")?;
 
         Ok(())

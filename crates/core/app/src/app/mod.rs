@@ -7,11 +7,10 @@ use cnidarium_component::Component;
 use jmt::RootHash;
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
-use penumbra_compact_block::component::StateWriteExt as _;
-use penumbra_compact_block::CompactBlock;
-use penumbra_dao::component::StateWriteExt as _;
-use penumbra_dao::StateReadExt as _;
-use penumbra_dex::component::{Dex, SwapManager};
+use penumbra_community_pool::component::StateWriteExt as _;
+use penumbra_community_pool::StateReadExt as _;
+use penumbra_compact_block::component::CompactBlockManager;
+use penumbra_dex::component::Dex;
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
@@ -20,8 +19,7 @@ use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::SctManager;
-use penumbra_shielded_pool::component::{NoteManager, ShieldedPool};
+use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_transaction::Transaction;
 use prost::Message as _;
@@ -31,7 +29,7 @@ use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::params::AppParameters;
-use crate::{genesis, DaoStateReadExt};
+use crate::{genesis, CommunityPoolStateReadExt};
 
 pub mod state_key;
 
@@ -98,7 +96,12 @@ impl App {
                 // TODO: should the components themselves handle this in their
                 // `init_chain` methods?
                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
-                state_tx.put_dao_params(app_state.dao_content.dao_params.clone());
+                state_tx.put_community_pool_params(
+                    app_state
+                        .community_pool_content
+                        .community_pool_params
+                        .clone(),
+                );
                 state_tx.put_stake_params(app_state.stake_content.stake_params.clone());
                 state_tx
                     .put_governance_params(app_state.governance_content.governance_params.clone());
@@ -148,7 +151,11 @@ impl App {
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 Governance::init_chain(&mut state_tx, Some(&())).await;
                 Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
-                App::finish_block(&mut state_tx).await;
+
+                state_tx
+                    .finish_block(state_tx.app_params_updated())
+                    .await
+                    .expect("must be able to finish compact block");
             }
             genesis::AppState::Checkpoint(_) => {
                 ShieldedPool::init_chain(&mut state_tx, None).await;
@@ -189,8 +196,8 @@ impl App {
             if let Some(chain_params) = app_params.new.chain_params {
                 state_tx.put_chain_params(chain_params);
             }
-            if let Some(dao_params) = app_params.new.dao_params {
-                state_tx.put_dao_params(dao_params);
+            if let Some(community_pool_params) = app_params.new.community_pool_params {
+                state_tx.put_community_pool_params(community_pool_params);
             }
             if let Some(ibc_params) = app_params.new.ibc_params {
                 state_tx.put_ibc_params(ibc_params);
@@ -219,30 +226,30 @@ impl App {
             .expect("components did not retain copies of shared state");
 
         // Apply the state from `begin_block` and return the events (we'll append to them if
-        // necessary based on the results of applying the DAO transactions queued)
+        // necessary based on the results of applying the Community Pool transactions queued)
         let mut events = self.apply(state_tx);
 
-        // Deliver DAO transactions here, before any other block processing (effectively adding
+        // Deliver Community Pool transactions here, before any other block processing (effectively adding
         // synthetic transactions slotted in after the start of the block but before any user
         // transactions)
         let pending_transactions = self
             .state
-            .pending_dao_transactions()
+            .pending_community_pool_transactions()
             .await
-            .expect("DAO transactions should always be readable");
+            .expect("Community Pool transactions should always be readable");
         for transaction in pending_transactions {
-            // NOTE: We are *intentionally* using `deliver_tx_allowing_dao_spends` here, rather than
-            // `deliver_tx`, because here is the **ONLY** place we want to permit DAO spends, when
+            // NOTE: We are *intentionally* using `deliver_tx_allowing_community_pool_spends` here, rather than
+            // `deliver_tx`, because here is the **ONLY** place we want to permit Community Pool spends, when
             // delivering transactions that have been scheduled by the chain itself for delivery.
-            tracing::info!(?transaction, "delivering DAO transaction");
+            tracing::info!(?transaction, "delivering Community Pool transaction");
             match self
-                .deliver_tx_allowing_dao_spends(Arc::new(transaction))
+                .deliver_tx_allowing_community_pool_spends(Arc::new(transaction))
                 .await
             {
                 Err(error) => {
-                    tracing::warn!(?error, "failed to deliver DAO transaction");
+                    tracing::warn!(?error, "failed to deliver Community Pool transaction");
                 }
-                Ok(dao_tx_events) => events.extend(dao_tx_events),
+                Ok(community_pool_tx_events) => events.extend(community_pool_tx_events),
             }
         }
 
@@ -257,22 +264,22 @@ impl App {
 
     pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
         // Ensure that any normally-delivered transaction (originating from a user) does not contain
-        // any DAO spends or outputs; the only place those are permitted is transactions originating
+        // any Community Pool spends or outputs; the only place those are permitted is transactions originating
         // from the chain itself:
         anyhow::ensure!(
-            tx.dao_spends().peekable().peek().is_none(),
-            "DAO spends are not permitted in user-submitted transactions"
+            tx.community_pool_spends().peekable().peek().is_none(),
+            "Community Pool spends are not permitted in user-submitted transactions"
         );
         anyhow::ensure!(
-            tx.dao_outputs().peekable().peek().is_none(),
-            "DAO outputs are not permitted in user-submitted transactions"
+            tx.community_pool_outputs().peekable().peek().is_none(),
+            "Community Pool outputs are not permitted in user-submitted transactions"
         );
 
-        // Now that we've ensured that there are not any DAO spends or outputs, we can deliver the transaction:
-        self.deliver_tx_allowing_dao_spends(tx).await
+        // Now that we've ensured that there are not any Community Pool spends or outputs, we can deliver the transaction:
+        self.deliver_tx_allowing_community_pool_spends(tx).await
     }
 
-    async fn deliver_tx_allowing_dao_spends(
+    async fn deliver_tx_allowing_community_pool_spends(
         &mut self,
         tx: Arc<Transaction>,
     ) -> Result<Vec<abci::Event>> {
@@ -444,7 +451,10 @@ impl App {
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
 
-            App::finish_epoch(&mut state_tx).await;
+            state_tx
+                .finish_epoch(state_tx.app_params_updated())
+                .await
+                .expect("must be able to finish compact block");
 
             // set the epoch for the next block
             state_tx.put_epoch_by_height(
@@ -459,127 +469,14 @@ impl App {
         } else {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(current_height + 1, current_epoch);
-            App::finish_block(&mut state_tx).await;
+
+            state_tx
+                .finish_block(state_tx.app_params_updated())
+                .await
+                .expect("must be able to finish compact block");
 
             self.apply(state_tx)
         }
-    }
-
-    /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_block<S: StateWrite>(state: S) {
-        Self::finish_compact_block(state, false).await;
-    }
-
-    /// Finish an SCT block and epoch and use the resulting roots to finalize the current `CompactBlock`.
-    pub(crate) async fn finish_epoch<S: StateWrite>(state: S) {
-        Self::finish_compact_block(state, true).await;
-    }
-
-    // TODO: move this into the compact block crate as a method in its high-level state-write trait
-    // once the dex is separated out into its separate crate
-    async fn finish_compact_block<S: StateWrite>(mut state: S, end_epoch: bool) {
-        // Find out what our block height is (this is set even during the genesis block)
-        let height = state
-            .get_block_height()
-            .await
-            .expect("height of block is always set");
-        tracing::debug!(?height, ?end_epoch, "finishing compact block");
-
-        // Check to see if the app parameters have changed, and include a flag in the compact block
-        // if they have (this is signaled by the various `penumbra_*::StateWriteExt::put_*_params` methods).
-        //
-        // Since the flag is stored in the ephemeral object store, it will be forgotten next block so we don't
-        // need to wipe it.
-        let app_parameters_updated = state.app_params_updated() || height == 0;
-
-        // Check to see if the gas prices have changed, and include them in the compact block
-        // if they have (this is signaled by `penumbra_fee::StateWriteExt::put_gas_prices`):
-        let gas_prices = if state.gas_prices_changed() || height == 0 {
-            Some(
-                state
-                    .get_gas_prices()
-                    .await
-                    .expect("able to get gas prices"),
-            )
-        } else {
-            None
-        };
-
-        let fmd_parameters = if height == 0 {
-            Some(
-                state
-                    .get_current_fmd_parameters()
-                    .await
-                    .expect("able to get fuzzy message detection parameters"),
-            )
-        } else {
-            None
-        };
-
-        // Check to see if a governance proposal has started, and mark this fact if so.
-        let proposal_started = state.proposal_started();
-
-        // End the block in the SCT and record the block root, epoch root if applicable, and the SCT
-        // itself, storing the resultant block and epoch root if applicable in the compact block.
-        let (block_root, epoch_root) = state.end_sct_block(end_epoch).await.expect(
-            "end_sct_block should succeed because we should make sure epochs don't last too long",
-        );
-
-        // Pull out all the pending state payloads (note and swap)
-        let note_payloads = state
-            .pending_note_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, note, source)| (pos, (note, source).into()));
-        let rolled_up_payloads = state
-            .pending_rolled_up_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, commitment)| (pos, commitment.into()));
-        let swap_payloads = state
-            .pending_swap_payloads()
-            .await
-            .into_iter()
-            .map(|(pos, swap, source)| (pos, (swap, source).into()));
-
-        // Sort the payloads by position and put them in the compact block
-        let mut state_payloads = note_payloads
-            .chain(rolled_up_payloads)
-            .chain(swap_payloads)
-            .collect::<Vec<_>>();
-        state_payloads.sort_by_key(|(pos, _)| *pos);
-        let state_payloads = state_payloads
-            .into_iter()
-            .map(|(_, payload)| payload)
-            .collect();
-
-        // Gather the swap outputs
-        let swap_outputs = state
-            .object_get::<im::OrdMap<_, _>>(penumbra_dex::state_key::pending_outputs())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
-
-        // Add all the pending nullifiers to the compact block
-        let nullifiers = state
-            .object_get::<im::Vector<_>>(penumbra_shielded_pool::state_key::pending_nullifiers())
-            .unwrap_or_default()
-            .into_iter()
-            .collect();
-
-        // Output the aggregated final compact block
-        state.set_compact_block(CompactBlock {
-            height,
-            state_payloads,
-            nullifiers,
-            block_root,
-            epoch_root,
-            proposal_started,
-            swap_outputs,
-            fmd_parameters,
-            app_parameters_updated,
-            gas_prices,
-        });
     }
 
     /// Commits the application state to persistent storage,
@@ -661,7 +558,7 @@ pub trait StateReadExt: StateRead {
         self.fee_params_updated()
             || self.governance_params_updated()
             || self.ibc_params_updated()
-            || self.dao_params_updated()
+            || self.community_pool_params_updated()
             || self.stake_params_updated()
             || self.distributions_params_updated()
             || self.chain_params_updated()
@@ -673,13 +570,13 @@ pub trait StateReadExt: StateRead {
         let stake_params = self.get_stake_params().await?;
         let ibc_params = self.get_ibc_params().await?;
         let governance_params = self.get_governance_params().await?;
-        let dao_params = self.get_dao_params().await?;
+        let community_pool_params = self.get_community_pool_params().await?;
         let fee_params = self.get_fee_params().await?;
         let distributions_params = self.get_distributions_params().await?;
 
         Ok(AppParameters {
             chain_params,
-            dao_params,
+            community_pool_params,
             distributions_params,
             fee_params,
             governance_params,
@@ -713,7 +610,7 @@ impl<
             + penumbra_stake::StateReadExt
             + penumbra_governance::component::StateReadExt
             + penumbra_fee::component::StateReadExt
-            + penumbra_dao::component::StateReadExt
+            + penumbra_community_pool::component::StateReadExt
             + penumbra_chain::component::StateReadExt
             + penumbra_ibc::component::StateReadExt
             + penumbra_distributions::component::StateReadExt

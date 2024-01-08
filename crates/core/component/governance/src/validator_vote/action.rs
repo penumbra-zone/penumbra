@@ -1,6 +1,7 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 use penumbra_stake::{GovernanceKey, IdentityKey};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::vote::Vote;
@@ -13,6 +14,25 @@ pub struct ValidatorVote {
     pub body: ValidatorVoteBody,
     /// The signature authorizing the vote (signed with governance key over the body).
     pub auth_sig: Signature<SpendAuth>,
+}
+
+impl EffectingData for ValidatorVote {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+        //self.body.effect_hash()
+    }
+}
+
+/*
+impl EffectingData for ValidatorVoteBody {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+*/
+
+impl DomainType for ValidatorVote {
+    type Proto = pb::ValidatorVote;
 }
 
 impl From<ValidatorVote> for pb::ValidatorVote {
