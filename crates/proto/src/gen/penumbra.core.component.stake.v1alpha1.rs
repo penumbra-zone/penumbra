@@ -285,11 +285,12 @@ pub mod validator_state {
     #[repr(i32)]
     pub enum ValidatorStateEnum {
         Unspecified = 0,
-        Inactive = 1,
-        Active = 2,
-        Jailed = 3,
-        Tombstoned = 4,
-        Disabled = 5,
+        Defined = 1,
+        Inactive = 2,
+        Active = 3,
+        Jailed = 4,
+        Tombstoned = 5,
+        Disabled = 6,
     }
     impl ValidatorStateEnum {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -299,6 +300,7 @@ pub mod validator_state {
         pub fn as_str_name(&self) -> &'static str {
             match self {
                 ValidatorStateEnum::Unspecified => "VALIDATOR_STATE_ENUM_UNSPECIFIED",
+                ValidatorStateEnum::Defined => "VALIDATOR_STATE_ENUM_DEFINED",
                 ValidatorStateEnum::Inactive => "VALIDATOR_STATE_ENUM_INACTIVE",
                 ValidatorStateEnum::Active => "VALIDATOR_STATE_ENUM_ACTIVE",
                 ValidatorStateEnum::Jailed => "VALIDATOR_STATE_ENUM_JAILED",
@@ -310,6 +312,7 @@ pub mod validator_state {
         pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
             match value {
                 "VALIDATOR_STATE_ENUM_UNSPECIFIED" => Some(Self::Unspecified),
+                "VALIDATOR_STATE_ENUM_DEFINED" => Some(Self::Defined),
                 "VALIDATOR_STATE_ENUM_INACTIVE" => Some(Self::Inactive),
                 "VALIDATOR_STATE_ENUM_ACTIVE" => Some(Self::Active),
                 "VALIDATOR_STATE_ENUM_JAILED" => Some(Self::Jailed),
