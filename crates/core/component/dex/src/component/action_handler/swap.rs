@@ -11,7 +11,7 @@ use penumbra_sct::component::SourceContext as _;
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},
     event,
-    swap::Swap,
+    swap::{proof::SwapProofPublic, Swap},
 };
 
 #[async_trait]
@@ -25,9 +25,11 @@ impl ActionHandler for Swap {
 
         self.proof.verify(
             &SWAP_PROOF_VERIFICATION_KEY,
-            self.balance_commitment_inner(),
-            self.body.payload.commitment,
-            self.body.fee_commitment,
+            SwapProofPublic {
+                balance_commitment: self.balance_commitment_inner(),
+                swap_commitment: self.body.payload.commitment,
+                fee_commitment: self.body.fee_commitment,
+            },
         )?;
 
         Ok(())
