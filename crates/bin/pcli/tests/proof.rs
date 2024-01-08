@@ -5,6 +5,7 @@ use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_asset::{asset, Balance, Value};
+use penumbra_dex::swap::proof::{SwapProofPrivate, SwapProofPublic};
 use penumbra_dex::{
     swap::proof::SwapProof, swap::SwapPlaintext, swap_claim::proof::SwapClaimProof,
     BatchSwapOutputData, TradingPair,
@@ -205,21 +206,22 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     balance -= value_fee;
     let balance_commitment = balance.commit(fee_blinding);
 
-    let blinding_r = Fq::rand(&mut OsRng);
-    let blinding_s = Fq::rand(&mut OsRng);
-    let proof = SwapProof::prove(
-        blinding_r,
-        blinding_s,
-        pk,
-        swap_plaintext,
-        fee_blinding,
+    let public = SwapProofPublic {
         balance_commitment,
         swap_commitment,
         fee_commitment,
-    )
-    .expect("can create proof");
+    };
+    let private = SwapProofPrivate {
+        fee_blinding,
+        swap_plaintext,
+    };
 
-    let proof_result = proof.verify(vk, balance_commitment, swap_commitment, fee_commitment);
+    let blinding_r = Fq::rand(&mut OsRng);
+    let blinding_s = Fq::rand(&mut OsRng);
+    let proof = SwapProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
+        .expect("can create proof");
+
+    let proof_result = proof.verify(vk, public);
 
     assert!(proof_result.is_ok());
 }
