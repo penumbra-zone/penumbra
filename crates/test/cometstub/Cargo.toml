@@ -1,0 +1,38 @@
+[package]
+name = "penumbra-cometstub"
+version = "0.64.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["std"]
+std = ["ibc-types/std"]
+
+[dependencies]
+anyhow = "1"
+# ed25519 = "2.2.3"
+ed25519-consensus = "2.1.0"
+ibc-proto = { version = "0.40.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
+rand_core = "0.6.3"
+sha2 = "0.10.8"
+tendermint = "0.34.0"
+tendermint-light-client-verifier = "0.34.0"
+
+[dev-dependencies]
+cnidarium = { path = "../../cnidarium" }
+cnidarium-component = { path = "../../cnidarium-component" }
+penumbra-app = { path = "../../core/app" }
+penumbra-compact-block = { path = "../../core/component/compact-block" }
+penumbra-keys = { path = "../../core/keys" }
+penumbra-proof-params = { path = "../../crypto/proof-params", features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+] }
+penumbra-sct = { path = "../../core/component/sct" }
+penumbra-shielded-pool = { path = "../../core/component/shielded-pool", features = ["component"] }
+penumbra-txhash = { path = "../../core/txhash" }
+rand_chacha = "0.3"
+rand_core = "0.6"
+tokio = { version = "1.21.1", features = ["full", "tracing"] }

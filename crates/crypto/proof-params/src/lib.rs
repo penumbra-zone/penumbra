@@ -98,6 +98,7 @@ impl Deref for LazyProvingKey {
 
 /// Proving key for the spend proof.
 pub static SPEND_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
+    println!("XXX(kate) loading spend proving key");
     let spend_proving_key = LazyProvingKey::new(spend::PROVING_KEY_ID);
 
     #[cfg(feature = "bundled-proving-keys")]
