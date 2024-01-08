@@ -56,6 +56,7 @@ pub fn register_metrics() {
 pub const MISSED_BLOCKS: &str = "penumbra_stake_missed_blocks";
 pub const ACTIVE_VALIDATORS: &str = "penumbra_stake_validators_active";
 pub const DISABLED_VALIDATORS: &str = "penumbra_stake_validators_disabled";
+pub const DEFINED_VALIDATORS: &str = "penumbra_stake_validators_defined";
 pub const INACTIVE_VALIDATORS: &str = "penumbra_stake_validators_inactive";
 pub const JAILED_VALIDATORS: &str = "penumbra_stake_validators_jailed";
 pub const TOMBSTONED_VALIDATORS: &str = "penumbra_stake_validators_tombstoned";
