@@ -54,7 +54,11 @@ pub enum InitSubCmd {
 pub enum SoftKmsInitCmd {
     /// Generate a new seed phrase and import its corresponding key.
     #[clap(display_order = 100)]
-    Generate,
+    Generate {
+        /// If set, will show seed phrase in an alternate screen.
+        #[clap(long, action)]
+        display_discreetly: bool,
+    },
     /// Import a spend key from an existing seed phrase.
     #[clap(display_order = 200)]
     ImportPhrase {
@@ -71,13 +75,21 @@ pub enum SoftKmsInitCmd {
 impl SoftKmsInitCmd {
     fn spend_key(&self) -> Result<SpendKey> {
         Ok(match self {
-            SoftKmsInitCmd::Generate => {
+            SoftKmsInitCmd::Generate { display_discreetly } => {
                 let seed_phrase = SeedPhrase::generate(OsRng);
 
-                display_string_discreetly(
-                    &seed_phrase.to_string(),
-                    "\n\n### SAVE YOUR PRIVATE SEED PHRASE IN A SAFE PLACE! DO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
-                )?;
+                if *display_discreetly {
+                    display_string_discreetly(
+                        &seed_phrase.to_string(),
+                        "\n\n### SAVE YOUR PRIVATE SEED PHRASE IN A SAFE PLACE! DO NOT SHARE WITH ANYONE! PRESS ANY KEY TO COMPLETE. ###",
+                    )?;
+                } else {
+                    // xxx: Something better should be done here, this is in danger of being
+                    // shared by users accidentally in log output.
+                    println!(
+                        "YOUR PRIVATE SEED PHRASE:\n{seed_phrase}\nSave this in a safe place!\nDO NOT SHARE WITH ANYONE!"
+                    );
+                }
 
                 let path = Bip44Path::new(0);
                 SpendKey::from_seed_phrase_bip44(seed_phrase, &path)
