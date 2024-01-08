@@ -3638,6 +3638,7 @@ impl serde::Serialize for validator_state::ValidatorStateEnum {
     {
         let variant = match self {
             Self::Unspecified => "VALIDATOR_STATE_ENUM_UNSPECIFIED",
+            Self::Defined => "VALIDATOR_STATE_ENUM_DEFINED",
             Self::Inactive => "VALIDATOR_STATE_ENUM_INACTIVE",
             Self::Active => "VALIDATOR_STATE_ENUM_ACTIVE",
             Self::Jailed => "VALIDATOR_STATE_ENUM_JAILED",
@@ -3655,6 +3656,7 @@ impl<'de> serde::Deserialize<'de> for validator_state::ValidatorStateEnum {
     {
         const FIELDS: &[&str] = &[
             "VALIDATOR_STATE_ENUM_UNSPECIFIED",
+            "VALIDATOR_STATE_ENUM_DEFINED",
             "VALIDATOR_STATE_ENUM_INACTIVE",
             "VALIDATOR_STATE_ENUM_ACTIVE",
             "VALIDATOR_STATE_ENUM_JAILED",
@@ -3701,6 +3703,7 @@ impl<'de> serde::Deserialize<'de> for validator_state::ValidatorStateEnum {
             {
                 match value {
                     "VALIDATOR_STATE_ENUM_UNSPECIFIED" => Ok(validator_state::ValidatorStateEnum::Unspecified),
+                    "VALIDATOR_STATE_ENUM_DEFINED" => Ok(validator_state::ValidatorStateEnum::Defined),
                     "VALIDATOR_STATE_ENUM_INACTIVE" => Ok(validator_state::ValidatorStateEnum::Inactive),
                     "VALIDATOR_STATE_ENUM_ACTIVE" => Ok(validator_state::ValidatorStateEnum::Active),
                     "VALIDATOR_STATE_ENUM_JAILED" => Ok(validator_state::ValidatorStateEnum::Jailed),
