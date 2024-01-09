@@ -2,12 +2,12 @@
 {{- if .Values.persistence.enabled }}
 # Shared volume for generating network data. Per-validator configs
 # will be copied out of this shared volume, into separate PVCs.
-{{ $pvc_name := printf "%s-shared-config" (include "penumbra-network.fullname" .) }}
+{{ $shared_pvc_name := printf "%s-shared-config" (include "penumbra-network.fullname" .) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ $pvc_name }}
+  name: {{ $shared_pvc_name }}
   labels:
     app.kubernetes.io/component: genesis-generator
     {{- include "penumbra-network.labels" . | nindent 4 }}
@@ -28,11 +28,15 @@ spec:
   storageClassName: {{ .Values.persistence.storageClassName }}
   {{- end }}
 
-# Per-validator config for state.
+# Also provision PVCs for each validator. Normally we'd let the StatefulSet
+# volumeClaimTemplate handle this, but we need the PVCs available in a pre-install hook,
+# so we create them with helm annotations in a loop. The names of the PVCs must match
+# those in the VCTs.
 {{ $count := (.Values.network.num_validators | int) }}
 {{ range $i,$e := until $count }}
 {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
-{{ $pvc_name := printf "%s-config" $val_name }}
+# The `pvc_name` must match the PVC created by the StatefulSet.
+{{ $pvc_name := printf "penumbra-config-%s" $val_name }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

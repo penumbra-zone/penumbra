@@ -104,11 +104,11 @@ function is_patch_release() {
 # by terminating and creating pods to match. Does *not* alter chain state.
 # Allows us to handle "patch" versions.
 function update_image_for_running_deployment() {
-    kubectl set image deployments \
+    kubectl set image statefulset \
         -l "app.kubernetes.io/part-of=${HELM_RELEASE}, app.kubernetes.io/component in (fullnode, genesis-validator)" \
         "pd=${IMAGE}:${PENUMBRA_VERSION}"
     # Wait for rollout to complete. Will block until pods are marked Ready.
-    kubectl rollout status deployment \
+    kubectl rollout status statefulset \
         -l "app.kubernetes.io/part-of=${HELM_RELEASE}, app.kubernetes.io/component in (fullnode, genesis-validator)"
 }
 
