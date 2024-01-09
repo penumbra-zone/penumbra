@@ -1539,7 +1539,7 @@ impl Storage {
                 let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
                 let tx_hash = tx_hash_owned.as_slice();
                 let tx_block_height = filtered_block.height as i64;
-                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.return_address.to_vec()));
+                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.return_address().to_vec()));
 
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 

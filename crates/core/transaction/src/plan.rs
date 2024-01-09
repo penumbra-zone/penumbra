@@ -345,9 +345,7 @@ impl TransactionPlan {
         }
 
         if !clue_plans.is_empty() {
-            self.detection_data = Some(DetectionDataPlan {
-                clue_plans: clue_plans,
-            });
+            self.detection_data = Some(DetectionDataPlan { clue_plans });
         } else {
             self.detection_data = None;
         }
@@ -477,10 +475,7 @@ mod tests {
 
         let mut rng = OsRng;
 
-        let memo_plaintext = MemoPlaintext {
-            return_address: Address::dummy(&mut rng),
-            text: "".to_string(),
-        };
+        let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
         let plan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.

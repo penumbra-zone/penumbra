@@ -301,8 +301,8 @@ impl Transaction {
             Some(ciphertext) => match memo_plaintext {
                 Some(plaintext) => {
                     let plaintext_view: MemoPlaintextView = MemoPlaintextView {
-                        return_address: txp.view_address(plaintext.return_address),
-                        text: plaintext.text,
+                        return_address: txp.view_address(plaintext.return_address()),
+                        text: plaintext.text().to_owned(),
                     };
                     Some(MemoView::Visible {
                         plaintext: plaintext_view,
