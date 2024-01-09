@@ -7066,16 +7066,10 @@ impl serde::Serialize for WitnessRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.note_commitments.is_empty() {
-            len += 1;
-        }
         if self.transaction_plan.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.WitnessRequest", len)?;
-        if !self.note_commitments.is_empty() {
-            struct_ser.serialize_field("noteCommitments", &self.note_commitments)?;
-        }
         if let Some(v) = self.transaction_plan.as_ref() {
             struct_ser.serialize_field("transactionPlan", v)?;
         }
@@ -7089,15 +7083,12 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "note_commitments",
-            "noteCommitments",
             "transaction_plan",
             "transactionPlan",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            NoteCommitments,
             TransactionPlan,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7120,7 +7111,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "noteCommitments" | "note_commitments" => Ok(GeneratedField::NoteCommitments),
                             "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -7141,16 +7131,9 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut note_commitments__ = None;
                 let mut transaction_plan__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::NoteCommitments => {
-                            if note_commitments__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noteCommitments"));
-                            }
-                            note_commitments__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::TransactionPlan => {
                             if transaction_plan__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("transactionPlan"));
@@ -7160,7 +7143,6 @@ impl<'de> serde::Deserialize<'de> for WitnessRequest {
                     }
                 }
                 Ok(WitnessRequest {
-                    note_commitments: note_commitments__.unwrap_or_default(),
                     transaction_plan: transaction_plan__,
                 })
             }

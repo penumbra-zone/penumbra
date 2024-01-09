@@ -1279,18 +1279,31 @@ impl ViewProtocolService for ViewService {
         let anchor = sct.root();
 
         // Obtain an auth path for each requested note commitment
-        let requested_note_commitments = request
-            .get_ref()
-            .note_commitments
-            .iter()
-            .map(|nc| StateCommitment::try_from(nc.clone()))
-            .collect::<Result<Vec<StateCommitment>, _>>()
-            .map_err(|_| {
-                tonic::Status::new(
-                    tonic::Code::InvalidArgument,
-                    "Unable to deserialize note commitment",
-                )
-            })?;
+        let tx_plan: TransactionPlan =
+            request
+                .get_ref()
+                .to_owned()
+                .transaction_plan
+                .map_or(TransactionPlan::default(), |x| {
+                    x.try_into()
+                        .expect("TransactionPlan should exist in request")
+                });
+
+        let requested_note_commitments: Vec<StateCommitment> = tx_plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                tx_plan
+                    .swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
+            )
+            .chain(
+                tx_plan
+                    .delegator_vote_plans()
+                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
+            )
+            .collect();
 
         tracing::debug!(?requested_note_commitments);
 
@@ -1316,16 +1329,6 @@ impl ViewProtocolService for ViewService {
 
         tracing::debug!(?witness_data);
 
-        let tx_plan: TransactionPlan =
-            request
-                .get_ref()
-                .to_owned()
-                .transaction_plan
-                .map_or(TransactionPlan::default(), |x| {
-                    x.try_into()
-                        .expect("TransactionPlan should exist in request")
-                });
-
         // Now we need to augment the witness data with dummy proofs such that
         // note commitments corresponding to dummy spends also have proofs.
         for nc in tx_plan
@@ -1345,7 +1348,7 @@ impl ViewProtocolService for ViewService {
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::WitnessAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::WitnessAndBuildStream>, tonic::Status> {
         let pb::WitnessAndBuildRequest {
             transaction_plan,
             authorization_data,
@@ -1357,24 +1360,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction plan"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        // Get the witness data from the view service only for non-zero amounts of value,
-        // since dummy spends will have a zero amount.
-        let note_commitments = transaction_plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() != 0u64.into())
-            .map(|spend| spend.note.commit().into())
-            .chain(
-                transaction_plan
-                    .swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
-            )
-            .chain(
-                transaction_plan
-                    .delegator_vote_plans()
-                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
-            )
-            .collect();
-
         let authorization_data: AuthorizationData = authorization_data
             .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
             .try_into()
@@ -1382,7 +1367,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
         let witness_request = pb::WitnessRequest {
-            note_commitments,
             transaction_plan: Some(transaction_plan.clone().into()),
         };
 
@@ -1408,9 +1392,22 @@ impl ViewProtocolService for ViewService {
                 .into(),
         );
 
-        Ok(tonic::Response::new(pb::WitnessAndBuildResponse {
-            transaction,
-        }))
+        // TODO: stream progress
+        let stream = try_stream! {
+            yield pb::WitnessAndBuildResponse {
+                status: Some(pb::witness_and_build_response::Status::Complete(
+                    pb::witness_and_build_response::Complete { transaction },
+                )),
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error witnessing transaction: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn app_parameters(
@@ -1516,7 +1513,7 @@ impl ViewProtocolService for ViewService {
     async fn authorize_and_build(
         &self,
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::AuthorizeAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::AuthorizeAndBuildStream>, tonic::Status> {
         unimplemented!("authorize_and_build")
     }
 

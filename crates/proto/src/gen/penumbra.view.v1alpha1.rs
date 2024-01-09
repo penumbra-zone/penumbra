@@ -694,11 +694,6 @@ impl ::prost::Name for NotesForVotingRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct WitnessRequest {
-    /// The note commitments to obtain auth paths for.
-    #[prost(message, repeated, tag = "2")]
-    pub note_commitments: ::prost::alloc::vec::Vec<
-        super::super::crypto::tct::v1alpha1::StateCommitment,
-    >,
     /// The transaction plan to witness
     #[prost(message, optional, tag = "3")]
     pub transaction_plan: ::core::option::Option<
