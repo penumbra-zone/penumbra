@@ -1,0 +1,13 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "penumbra-node.fullname" . }}-pd-init
+  labels:
+    {{- include "penumbra-node.labels" . | nindent 4 }}
+data:
+  # Mount in the init shell script, for preparing config data.
+  pd-init: {{ .Files.Get (printf "files/pd-init") | quote }}
+  # Translate the Helm values for `nodes: []` to a JSON file
+  # within the pod, so the values are available to the init script.
+  nodes.json: {{ .Values.nodes | toJson | quote }}

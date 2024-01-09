@@ -1,12 +1,11 @@
 {{- if .Values.only_lb_svc }}
 {{- else }}
-{{ $val0_name := printf "%s-val-0" (include "penumbra-network.fullname" $) }}
 {{ $count := (.Values.network.num_validators | int) }}
-{{ range $i,$e := until $count }}
-{{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
+{{ $val_name := printf "%s-val" (include "penumbra-network.fullname" $) }}
+{{ $pvc_name := "penumbra-config" }}
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ $val_name }}
   labels:
@@ -15,13 +14,23 @@ metadata:
     app.kubernetes.io/part-of: {{ include "penumbra-network.part_of" $ }}
     {{- include "penumbra-network.labels" $ | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ $count }}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ $pvc_name }}
+        labels:
+          app.kubernetes.io/component: genesis-validator
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
   selector:
     matchLabels:
       app.kubernetes.io/component: genesis-validator
       {{- include "penumbra-network.selectorLabels" $ | nindent 6 }}
-  strategy:
-    type: Recreate
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       {{- with $.Values.podAnnotations }}
@@ -58,22 +67,15 @@ spec:
       serviceAccountName: {{ include "penumbra-network.serviceAccountName" $ }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
-      volumes:
-        - name: {{ $val_name }}-config
-      {{- if $.Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ $val_name }}-config
-      {{- else }}
-          emptyDir: {}
-      {{- end }}
-
       containers:
         - name: pd
-          securityContext:
-            {{- toYaml $.Values.securityContext | nindent 12 }}
           image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           command:
+          {{- if .Values.maintenanceMode }}
+            - sleep
+            - infinity
+          {{- else }}
             - /usr/bin/pd
             - start
             - --grpc-bind
@@ -81,7 +83,8 @@ spec:
             - --metrics-bind
             - "0.0.0.0:9000"
             - --home
-            - "/penumbra-config/{{ $val_name }}/node{{ $i }}/pd"
+            - "/penumbra-config/{{ $val_name }}/node0/pd"
+          {{- end }}
           env:
             {{- toYaml $.Values.containerEnv | nindent 12 }}
           ports:
@@ -101,17 +104,24 @@ spec:
             initialDelaySeconds: 20
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
+          securityContext:
+            runAsUser: {{ .Values.maintenanceMode | ternary 0 .Values.securityContext.runAsUser }}
           volumeMounts:
-            - name: {{ $val_name }}-config
+            - name: {{ $pvc_name }}
               mountPath: /penumbra-config/{{ $val_name }}
 
         - name: cometbft
           image: "{{ $.Values.cometbft.image.repository }}:{{ $.Values.cometbft.image.tag }}"
           imagePullPolicy: {{ $.Values.cometbft.image.pullPolicy }}
           command:
+          {{- if .Values.maintenanceMode }}
+            - sleep
+            - infinity
+          {{- else }}
             - cometbft
             - start
             - --proxy_app=tcp://127.0.0.1:26658
+          {{- end }}
           ports:
             - name: tm-p2p
               containerPort: 26656
@@ -130,8 +140,8 @@ spec:
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
           volumeMounts:
-            - name: {{ $val_name }}-config
-              subPath: node{{ $i }}/cometbft
+            - name: {{ $pvc_name }}
+              subPath: node0/cometbft
               mountPath: /cometbft
       {{- with $.Values.nodeSelector }}
       nodeSelector:
@@ -145,5 +155,4 @@ spec:
       tolerations:
         {{- toYaml $ | nindent 8 }}
       {{- end }}
-{{- end }}
 {{- end }}

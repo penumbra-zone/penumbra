@@ -1,0 +1,92 @@
+#!/bin/bash
+# Entrypoint script to build args for Penumbra's pd,
+# based on StatefulSet k8s ordinal.
+set -euo pipefail
+
+
+if ! [[ $HOSTNAME =~ -([0-9]+)$ ]] ; then
+    >&2 echo "ERROR: hostname did not have a numeric suffix"
+    exit 1
+fi
+
+
+# Disable shellcheck for unused variable; it can't tell we use the var
+# in the jq command below.
+# shellcheck disable=SC2034
+statefulset_ordinal="${BASH_REMATCH[1]}"
+
+# Raw Helm vars translated to JSON representation in this file.
+node_info_filepath="/opt/penumbra/nodes.json"
+
+>&2 echo "Configuring node '$statefulset_ordinal' with node info:"
+jq < "$node_info_filepath"
+
+# Unpack the JSON Helm vars as Bash env vas.
+function get_var() {
+    local v
+    local json_address
+    json_address="${1:-}"
+    shift 1
+    v="$(jq -r ".[$statefulset_ordinal].$json_address" "$node_info_filepath")"
+    if [[ $v = "null" ]]; then
+        v=""
+    fi
+    echo "$v"
+}
+
+external_address_flag=""
+external_address="$(get_var "external_address")"
+if [[ -n $external_address ]] ; then
+    external_address_flag="--external-address $external_address"
+fi
+
+moniker_flag=""
+moniker="$(get_var "moniker")"
+if [[ -n $moniker ]] ; then
+    moniker_flag="--moniker $moniker"
+fi
+
+seed_mode="$(get_var "seed_mode")"
+if [[ "$seed_mode" = "true" ]] ; then
+    seed_mode="true"
+else
+    seed_mode="false"
+fi
+
+# we must write into a subdir of the volumeMount, because the "--testnet-dir" arg
+# to "pd testnet join" must point to a non-existent directory, and the volumeMount
+# will always exist.
+#
+if ! test -d /penumbra-config/testnet_data ; then
+    echo "No pre-existing testnet data, pulling fresh info"
+    # shellcheck disable=SC2086
+    pd testnet --testnet-dir /penumbra-config/testnet_data join \
+        --tendermint-p2p-bind 0.0.0.0:26656 \
+        --tendermint-rpc-bind 0.0.0.0:26657 \
+        $external_address_flag \
+        $moniker_flag \
+        "$PENUMBRA_BOOTSTRAP_URL"
+
+    if [[ "$PENUMBRA_COMETBFT_INDEXER" = "psql" ]] ; then
+        sed -i -e "s#^indexer.*#indexer = \"psql\"\\npsql-conn = \"$COMETBFT_POSTGRES_CONNECTION_URL\"#" \
+            "/penumbra-config/testnet_data/node0/cometbft/config/config.toml"
+    fi
+fi
+
+# set ownership for pd user
+chown -R 1000:1000 /penumbra-config/testnet_data
+
+# apply external address. useful for a two-pass deploy, in which external ips
+# are created after first deploy.
+sed -i -e "s/external_address.*/external_address = \"$external_address\"/" /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+sed -i -e "s/moniker.*/moniker = \"$moniker\"/" /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+
+# configure peer settings
+sed -i -e "s/max_num_inbound_peers.*/max_num_inbound_peers = $COMETBFT_CONFIG_P2P_MAX_NUM_INBOUND_PEERS/" /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+sed -i -e "s/max_num_outbound_peers.*/max_num_outbound_peers = $COMETBFT_CONFIG_P2P_MAX_NUM_OUTBOUND_PEERS/" /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+
+# configure seed node, defaulting to false if unspecified.
+sed -i -e "s/^seed_mode.*/seed_mode = \"$seed_mode\"/" /penumbra-config/testnet_data/node0/cometbft/config/config.toml
+
+# set ownership for cometbft configs to match cometbft container "tmuser" uid/gid
+chown -R 100:1000 /penumbra-config/testnet_data/node0/cometbft

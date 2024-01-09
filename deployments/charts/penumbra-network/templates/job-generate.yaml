@@ -31,7 +31,8 @@ spec:
       # to each PV after network generation.
       {{ range $i,$e := until $count }}
       {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
-      {{ $pvc_name := printf "%s-config" $val_name }}
+      # The `pvc_name` must match the volumes created by the StatefulSet.
+      {{ $pvc_name := printf "penumbra-config-%s" $val_name }}
         - name: {{ $val_name }}-config
       {{- if $.Values.persistence.enabled }}
           persistentVolumeClaim:
@@ -81,20 +82,23 @@ spec:
                 --proposal-voting-blocks {{ .Values.network.proposal_voting_blocks }} \
                 {{- end }}
                 --validators-input-file /penumbra/validators.json \
+                {{- if .Values.network.external_addresses }}
                 --external-addresses {{ .Values.network.external_addresses }}
+                {{- end }}
 
-              echo "Looks like we're dealing with '{{ $count }}' vals"
               # copy validator configs to volume mounts
               {{ range $i,$e := until $count }}
               {{ $val_name := printf "%s-val-%d" (include "penumbra-network.fullname" $) $i }}
 
-              cp -av /penumbra-config/testnet_data/node{{ $i }}/ /penumbra-config/{{ $val_name }}/
+              >&2 printf 'Configuring validator %d/%d...\n' "{{ $i }}" "{{ $count }}"
+              # rename subdir to "node0" so we don't have to look up val ordinal when specifying homedir.
+              mv -v /penumbra-config/testnet_data/node{{ $i }} /penumbra-config/{{ $val_name }}/node0
 
               # set ownership for pd user
               chown -R 1000:1000 /penumbra-config/{{ $val_name }}
 
               # set ownership for cometbft configs to match cometbft container "tmuser" uid/gid
-              chown -R 100:1000 /penumbra-config/{{ $val_name }}/node{{ $i }}/cometbft
+              chown -R 100:1000 /penumbra-config/{{ $val_name }}/node0/cometbft
 
               ls -lsR /penumbra-config
               {{ end }}
