@@ -380,7 +380,12 @@ mod tests {
             let memo_address = Address::dummy(&mut rng);
             let memo_text = s;
             let memo = {
+                let text_len = memo_text.len();
                 let memo = MemoPlaintext::new(memo_address, memo_text);
+                if text_len > MAX_TEXT_LEN {
+                    assert!(memo.is_err());
+                    return Ok(());
+                }
                 assert!(memo.is_ok());
                 memo.unwrap()
             };
