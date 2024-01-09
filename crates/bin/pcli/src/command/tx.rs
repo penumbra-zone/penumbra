@@ -292,10 +292,8 @@ impl TxCmd {
                     .payment_address((*from).into())
                     .0;
 
-                let memo_plaintext = MemoPlaintext {
-                    return_address,
-                    text: memo.clone().unwrap_or_default(),
-                };
+                let memo_plaintext =
+                    MemoPlaintext::new(return_address, memo.clone().unwrap_or_default())?;
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);

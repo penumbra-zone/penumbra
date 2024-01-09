@@ -793,7 +793,7 @@ impl ViewProtocolService for ViewService {
                     let memo = tx.decrypt_memo(&fvk).map_err(|_| {
                         tonic::Status::internal("Error decrypting memo for OutputView")
                     })?;
-                    address_views.insert(memo.return_address, fvk.view_address(address));
+                    address_views.insert(memo.return_address(), fvk.view_address(address));
                 }
                 ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
                     let address = swap_plaintext.claim_address;

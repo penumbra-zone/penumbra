@@ -323,7 +323,7 @@ pub async fn transaction_info_inner(
 
                 // Also add an AddressView for the return address in the memo.
                 let memo = tx.decrypt_memo(&fvk)?;
-                address_views.insert(memo.return_address, fvk.view_address(address));
+                address_views.insert(memo.return_address(), fvk.view_address(address));
             }
             ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
                 let address = swap_plaintext.claim_address;
