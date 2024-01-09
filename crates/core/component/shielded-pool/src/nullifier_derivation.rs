@@ -60,7 +60,7 @@ fn check_circuit_satisfaction(
     use ark_relations::r1cs::{self, ConstraintSystem};
 
     let cs = ConstraintSystem::new_ref();
-    let circuit = NullifierDerivationCircuit::new(public, private);
+    let circuit = NullifierDerivationCircuit { public, private };
     cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
     circuit
         .generate_constraints(cs.clone())
@@ -75,44 +75,22 @@ fn check_circuit_satisfaction(
 /// Groth16 proof for correct nullifier derivation.
 #[derive(Clone, Debug)]
 pub struct NullifierDerivationCircuit {
-    /// The nullifier deriving key.
-    nk: NullifierKey,
-    /// the position of the spent note.
-    position: tct::Position,
-    /// A commitment to the spent note.
-    note_commitment: StateCommitment,
-    /// nullifier of the spent note.
-    nullifier: Nullifier,
-}
-
-impl NullifierDerivationCircuit {
-    fn new(
-        NullifierDerivationProofPublic {
-            position,
-            note_commitment,
-            nullifier,
-        }: NullifierDerivationProofPublic,
-        NullifierDerivationProofPrivate { nk }: NullifierDerivationProofPrivate,
-    ) -> Self {
-        Self {
-            nk,
-            note_commitment,
-            nullifier,
-            position,
-        }
-    }
+    public: NullifierDerivationProofPublic,
+    private: NullifierDerivationProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for NullifierDerivationCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
 
         // Public inputs
-        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let note_commitment_var =
-            tct::r1cs::StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
-        let position_var = tct::r1cs::PositionVar::new_input(cs, || Ok(self.position))?;
+        let claimed_nullifier_var =
+            NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
+        let note_commitment_var = tct::r1cs::StateCommitmentVar::new_input(cs.clone(), || {
+            Ok(self.public.note_commitment)
+        })?;
+        let position_var = tct::r1cs::PositionVar::new_input(cs, || Ok(self.public.position))?;
 
         // Nullifier integrity.
         let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &note_commitment_var)?;
@@ -147,12 +125,14 @@ impl DummyWitness for NullifierDerivationCircuit {
             .expect("able to witness just-inserted note commitment");
         let position = state_commitment_proof.position();
 
-        Self {
-            note_commitment,
-            nk,
-            nullifier,
+        let public = NullifierDerivationProofPublic {
             position,
-        }
+            note_commitment,
+            nullifier,
+        };
+        let private = NullifierDerivationProofPrivate { nk };
+
+        Self { public, private }
     }
 }
 
@@ -166,7 +146,7 @@ impl NullifierDerivationProof {
         public: NullifierDerivationProofPublic,
         private: NullifierDerivationProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = NullifierDerivationCircuit::new(public, private);
+        let circuit = NullifierDerivationCircuit { public, private };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
             .map_err(|err| anyhow::anyhow!(err))?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];

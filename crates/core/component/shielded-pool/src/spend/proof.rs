@@ -118,7 +118,7 @@ fn check_circuit_satisfaction(public: SpendProofPublic, private: SpendProofPriva
     use ark_relations::r1cs::{self, ConstraintSystem};
 
     let cs = ConstraintSystem::new_ref();
-    let circuit = SpendCircuit::new(public, private);
+    let circuit = SpendCircuit { public, private };
     cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
     circuit
         .generate_constraints(cs.clone())
@@ -133,92 +133,43 @@ fn check_circuit_satisfaction(public: SpendProofPublic, private: SpendProofPriva
 /// Groth16 proof for spending existing notes.
 #[derive(Clone, Debug)]
 pub struct SpendCircuit {
-    /// Inclusion proof for the note commitment.
-    state_commitment_proof: tct::Proof,
-    /// The note being spent.
-    note: Note,
-    /// The blinding factor used for generating the value commitment.
-    v_blinding: Fr,
-    /// The randomizer used for generating the randomized spend auth key.
-    spend_auth_randomizer: Fr,
-    /// The spend authorization key.
-    ak: VerificationKey<SpendAuth>,
-    /// The nullifier deriving key.
-    nk: NullifierKey,
-
-    /// the merkle root of the state commitment tree.
-    anchor: tct::Root,
-    /// value commitment of the note to be spent.
-    balance_commitment: balance::Commitment,
-    /// nullifier of the note to be spent.
-    nullifier: Nullifier,
-    /// the randomized verification spend key.
-    rk: VerificationKey<SpendAuth>,
-}
-
-impl SpendCircuit {
-    fn new(
-        SpendProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-        }: SpendProofPublic,
-        SpendProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-        }: SpendProofPrivate,
-    ) -> Self {
-        Self {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-        }
-    }
+    public: SpendProofPublic,
+    private: SpendProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.commitment())
+            Ok(self.private.state_commitment_proof.commitment())
         })?;
 
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
+            Ok(self.private.state_commitment_proof.position())
         })?;
         let position_bits = position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof)
+            Ok(self.private.state_commitment_proof)
         })?;
 
-        let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
+        let v_blinding_arr: [u8; 32] = self.private.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
 
-        let spend_auth_randomizer_var =
-            SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
+        let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
+            Ok(self.private.spend_auth_randomizer)
+        })?;
         let ak_element_var: AuthorizationKeyVar =
-            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
-        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
 
         // Public inputs
-        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.public.anchor)))?;
         let claimed_balance_commitment_var =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
-        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
+        let claimed_nullifier_var =
+            NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.public.rk))?;
 
         // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
         let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
@@ -299,18 +250,22 @@ impl DummyWitness for SpendCircuit {
             .witness(note_commitment)
             .expect("able to witness just-inserted note commitment");
 
-        Self {
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            nullifier,
+            rk,
+        };
+        let private = SpendProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
-            nullifier,
-            rk,
-        }
+        };
+
+        Self { public, private }
     }
 }
 
@@ -327,7 +282,7 @@ impl SpendProof {
         public: SpendProofPublic,
         private: SpendProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SpendCircuit::new(public, private);
+        let circuit = SpendCircuit { public, private };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )

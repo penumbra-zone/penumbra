@@ -127,7 +127,7 @@ fn check_circuit_satisfaction(
     use ark_relations::r1cs::{self, ConstraintSystem};
 
     let cs = ConstraintSystem::new_ref();
-    let circuit = DelegatorVoteCircuit::new(public, private);
+    let circuit = DelegatorVoteCircuit { public, private };
     cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
     circuit
         .generate_constraints(cs.clone())
@@ -142,97 +142,44 @@ fn check_circuit_satisfaction(
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
 pub struct DelegatorVoteCircuit {
-    /// Inclusion proof for the note commitment.
-    state_commitment_proof: tct::Proof,
-    /// The note being spent.
-    note: Note,
-    /// The blinding factor used for generating the value commitment.
-    v_blinding: Fr,
-    /// The randomizer used for generating the randomized spend auth key.
-    spend_auth_randomizer: Fr,
-    /// The spend authorization key.
-    ak: VerificationKey<SpendAuth>,
-    /// The nullifier deriving key.
-    nk: NullifierKey,
-
-    /// the merkle root of the state commitment tree.
-    anchor: tct::Root,
-    /// value commitment of the note to be spent.
-    balance_commitment: balance::Commitment,
-    /// nullifier of the note to be spent.
-    nullifier: Nullifier,
-    /// the randomized verification spend key.
-    rk: VerificationKey<SpendAuth>,
-    /// the start position of the proposal being voted on.
-    start_position: tct::Position,
-}
-
-impl DelegatorVoteCircuit {
-    fn new(
-        DelegatorVoteProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-            start_position,
-        }: DelegatorVoteProofPublic,
-        DelegatorVoteProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-        }: DelegatorVoteProofPrivate,
-    ) -> Self {
-        Self {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-            start_position,
-        }
-    }
+    public: DelegatorVoteProofPublic,
+    private: DelegatorVoteProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.commitment())
+            Ok(self.private.state_commitment_proof.commitment())
         })?;
 
         let delegator_position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
+            Ok(self.private.state_commitment_proof.position())
         })?;
         let delegator_position_bits = delegator_position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof)
+            Ok(self.private.state_commitment_proof)
         })?;
 
-        let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
+        let v_blinding_arr: [u8; 32] = self.private.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
 
-        let spend_auth_randomizer_var =
-            SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
+        let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
+            Ok(self.private.spend_auth_randomizer)
+        })?;
         let ak_element_var: AuthorizationKeyVar =
-            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
-        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
 
         // Public inputs
-        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.public.anchor)))?;
         let claimed_balance_commitment_var =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
-        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk))?;
-        let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
+        let claimed_nullifier_var =
+            NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.public.rk))?;
+        let start_position = PositionVar::new_input(cs.clone(), || Ok(self.public.start_position))?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -327,19 +274,23 @@ impl DummyWitness for DelegatorVoteCircuit {
             .expect("able to witness just-inserted note commitment");
         let start_position = state_commitment_proof.position();
 
-        Self {
+        let public = DelegatorVoteProofPublic {
+            anchor,
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            nullifier,
+            rk,
+            start_position,
+        };
+        let private = DelegatorVoteProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
-            nullifier,
-            rk,
-            start_position,
-        }
+        };
+
+        Self { public, private }
     }
 }
 
@@ -354,7 +305,7 @@ impl DelegatorVoteProof {
         public: DelegatorVoteProofPublic,
         private: DelegatorVoteProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = DelegatorVoteCircuit::new(public, private);
+        let circuit = DelegatorVoteCircuit { public, private };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
