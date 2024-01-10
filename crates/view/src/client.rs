@@ -897,7 +897,9 @@ where
             while let Some(rsp) = rsp.try_next().await? {
                 match rsp.status {
                     Some(status) => match status {
-                        pb::witness_and_build_response::Status::BuildProgress(_) => todo!(),
+                        pb::witness_and_build_response::Status::BuildProgress(_) => {
+                            // TODO: should update progress here
+                        },
                         pb::witness_and_build_response::Status::Complete(c) => {
                             return c.transaction
                                 .ok_or_else(|| {
@@ -906,7 +908,11 @@ where
                                 .try_into();
                         },
                     },
-                    None => todo!(),
+                    None => {
+                        // No status is unexpected behavior
+                        return Err(anyhow::anyhow!(
+                            "empty WitnessAndBuildResponse message"
+                        ));},
                 }
             }
 

@@ -8,8 +8,9 @@
 
 use std::process::Command as StdCommand;
 
+use anyhow::Context;
 use assert_cmd::cargo::CommandCargoExt;
-use futures::StreamExt;
+use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
 use tempfile::tempdir;
 use tokio::process::Command as TokioCommand;
 
@@ -24,7 +25,9 @@ use penumbra_proto::{
     },
     penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
     view::v1alpha1::{
-        BroadcastTransactionRequest, TransactionPlannerRequest, WitnessAndBuildRequest,
+        broadcast_transaction_response::Status as BroadcastStatus,
+        witness_and_build_response::Status as WitnessAndBuildStatus, BroadcastTransactionRequest,
+        TransactionPlannerRequest, WitnessAndBuildRequest,
     },
 };
 use penumbra_view::ViewClient;
@@ -147,26 +150,77 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
 
     // 5.3. Have pclientd build and sign the planned transaction.
-    let tx = view_client
+    let mut tx_rsp = view_client
         .witness_and_build(WitnessAndBuildRequest {
             transaction_plan: Some(plan),
             authorization_data: Some(auth_data),
         })
         .await?
-        .into_inner()
-        .transaction
-        .ok_or_else(|| anyhow::anyhow!("WitnessAndBuildResponse missing transaction"))?;
+        .into_inner();
+    let tx = (async move {
+        while let Some(tx_rsp) = tx_rsp.try_next().await? {
+            match tx_rsp.status {
+                Some(status) => match status {
+                    WitnessAndBuildStatus::BuildProgress(bp) => {
+                        // TODO: need to update display periodically
+                        println!("build progress: {:#?}", bp);
+                    }
+                    WitnessAndBuildStatus::Complete(c) => {
+                        return Ok(c.transaction.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
-    let tx_id = view_client
+    let mut broadcast_rsp = view_client
         .broadcast_transaction(BroadcastTransactionRequest {
             transaction: Some(tx),
             await_detection: true,
         })
         .await?
-        .into_inner()
-        .id
-        .ok_or_else(|| anyhow::anyhow!("BroadcastTransactionRequest missing id"))?;
+        .into_inner();
+    let tx_id = (async move {
+        while let Some(broadcast_rsp) = broadcast_rsp.try_next().await? {
+            match broadcast_rsp.status {
+                Some(status) => match status {
+                    BroadcastStatus::BroadcastSuccess(bs) => {
+                        // TODO: need to update display once
+                        println!("broadcast success, tx id: {:#?}", bs);
+                    }
+                    BroadcastStatus::Confirmed(c) => {
+                        println!("transaction confirmed");
+                        return Ok(c.id.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     tracing::debug!(?tx_id);
 
@@ -288,26 +342,77 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
 
     // 5.3. Have pclientd build and sign the planned transaction.
-    let tx = view_client
+    let mut tx_rsp = view_client
         .witness_and_build(WitnessAndBuildRequest {
             transaction_plan: Some(plan),
             authorization_data: Some(auth_data),
         })
         .await?
-        .into_inner()
-        .transaction
-        .ok_or_else(|| anyhow::anyhow!("WitnessAndBuildResponse missing transaction"))?;
+        .into_inner();
+    let tx = (async move {
+        while let Some(tx_rsp) = tx_rsp.try_next().await? {
+            match tx_rsp.status {
+                Some(status) => match status {
+                    WitnessAndBuildStatus::BuildProgress(bp) => {
+                        // TODO: need to update display periodically
+                        println!("build progress: {:#?}", bp);
+                    }
+                    WitnessAndBuildStatus::Complete(c) => {
+                        return Ok(c.transaction.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
-    let tx_id = view_client
+    let mut broadcast_rsp = view_client
         .broadcast_transaction(BroadcastTransactionRequest {
             transaction: Some(tx),
             await_detection: true,
         })
         .await?
-        .into_inner()
-        .id
-        .ok_or_else(|| anyhow::anyhow!("BroadcastTransactionRequest missing id"))?;
+        .into_inner();
+    let tx_id = (async move {
+        while let Some(broadcast_rsp) = broadcast_rsp.try_next().await? {
+            match broadcast_rsp.status {
+                Some(status) => match status {
+                    BroadcastStatus::BroadcastSuccess(bs) => {
+                        // TODO: need to update display once
+                        println!("broadcast success, tx id: {:#?}", bs);
+                    }
+                    BroadcastStatus::Confirmed(c) => {
+                        println!("transaction confirmed");
+                        return Ok(c.id.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     tracing::debug!(?tx_id);
 
@@ -356,26 +461,77 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
 
     // 5.3. Have pclientd build and sign the planned transaction.
-    let tx = view_client
+    let mut tx_rsp = view_client
         .witness_and_build(WitnessAndBuildRequest {
             transaction_plan: Some(plan),
             authorization_data: Some(auth_data),
         })
         .await?
-        .into_inner()
-        .transaction
-        .ok_or_else(|| anyhow::anyhow!("WitnessAndBuildResponse missing transaction"))?;
+        .into_inner();
+    let tx = (async move {
+        while let Some(tx_rsp) = tx_rsp.try_next().await? {
+            match tx_rsp.status {
+                Some(status) => match status {
+                    WitnessAndBuildStatus::BuildProgress(bp) => {
+                        // TODO: need to update display periodically
+                        println!("build progress: {:#?}", bp);
+                    }
+                    WitnessAndBuildStatus::Complete(c) => {
+                        return Ok(c.transaction.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
-    let tx_id = view_client
+    let mut broadcast_rsp = view_client
         .broadcast_transaction(BroadcastTransactionRequest {
             transaction: Some(tx),
             await_detection: true,
         })
         .await?
-        .into_inner()
-        .id
-        .ok_or_else(|| anyhow::anyhow!("BroadcastTransactionRequest missing id"))?;
+        .into_inner();
+    let tx_id = (async move {
+        while let Some(broadcast_rsp) = broadcast_rsp.try_next().await? {
+            match broadcast_rsp.status {
+                Some(status) => match status {
+                    BroadcastStatus::BroadcastSuccess(bs) => {
+                        // TODO: need to update display once
+                        println!("broadcast success, tx id: {:#?}", bs);
+                    }
+                    BroadcastStatus::Confirmed(c) => {
+                        println!("transaction confirmed");
+                        return Ok(c.id.ok_or_else(|| {
+                            anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
+                        })?);
+                    }
+                },
+                None => {
+                    // No status is unexpected behavior
+                    return Err(anyhow::anyhow!(
+                        "empty BroadcastTransactionResponse message"
+                    ));
+                }
+            }
+        }
+        return Err(anyhow::anyhow!("no witness and build response"));
+    }
+    .boxed())
+    .await
+    .context("error building transaction")?;
 
     tracing::debug!(?tx_id);
 
