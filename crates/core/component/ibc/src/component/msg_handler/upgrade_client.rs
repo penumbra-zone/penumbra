@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use cnidarium_component::HostInterface;
 use ibc_types::{
     core::{
         client::{events, msgs::MsgUpgradeClient},
@@ -16,14 +15,14 @@ use ibc_types::{
 use crate::component::{
     client::{ConsensusStateWriteExt as _, StateReadExt as _, StateWriteExt as _},
     proof_verification::ClientUpgradeProofVerifier,
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 static SENTINEL_UPGRADE_ROOT: &str = "sentinel_root";
 
 #[async_trait]
 impl MsgHandler for MsgUpgradeClient {
-    async fn check_stateless<H>(&self) -> Result<()> {
+    async fn check_stateless<AH, HI>(&self) -> Result<()> {
         Ok(())
     }
 
@@ -38,7 +37,7 @@ impl MsgHandler for MsgUpgradeClient {
     //
     // the first consensus state of the upgraded client uses a sentinel root, against which no
     // proofs will verify. subsequent client updates, post-upgrade, will provide usable roots.
-    async fn try_execute<S: StateWrite + HostInterface, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let upgraded_client_state_tm = TendermintClientState::try_from(self.client_state.clone())
@@ -102,7 +101,7 @@ impl MsgHandler for MsgUpgradeClient {
 
         state.put_client(&self.client_id, new_client_state);
         state
-            .put_verified_consensus_state(
+            .put_verified_consensus_state::<HI>(
                 latest_height,
                 self.client_id.clone(),
                 new_consensus_state,

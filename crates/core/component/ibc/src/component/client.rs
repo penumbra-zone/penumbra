@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
-use cnidarium_component::HostInterface;
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::ClientType;
 use ibc_types::core::client::Height;
@@ -21,6 +20,7 @@ use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
+use super::HostInterface;
 
 // TODO(erwan): remove before opening PR
 // + replace concrete types with trait objects
@@ -113,8 +113,8 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
 
 #[async_trait]
-pub trait ConsensusStateWriteExt: StateWrite + HostInterface {
-    async fn put_verified_consensus_state(
+pub trait ConsensusStateWriteExt: StateWrite {
+    async fn put_verified_consensus_state<HI: HostInterface>(
         &mut self,
         height: Height,
         client_id: ClientId,
@@ -126,9 +126,9 @@ pub trait ConsensusStateWriteExt: StateWrite + HostInterface {
             consensus_state,
         );
 
-        let current_height = self.get_block_height().await?;
+        let current_height = HI::get_block_height(&self).await?;
         let current_time: ibc_types::timestamp::Timestamp =
-            self.get_block_timestamp().await?.into();
+            HI::get_block_timestamp(&self).await?.into();
 
         self.put_proto::<u64>(
             state_key::client_processed_times(&client_id, &height),
@@ -156,7 +156,7 @@ pub trait ConsensusStateWriteExt: StateWrite + HostInterface {
     }
 }
 
-impl<T: StateWrite + HostInterface + ?Sized> ConsensusStateWriteExt for T {}
+impl<T: StateWrite + ?Sized> ConsensusStateWriteExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
@@ -382,7 +382,7 @@ mod tests {
     use std::str::FromStr;
     use tendermint::Time;
 
-    use crate::component::ibc_action_with_handler::IbcActionWithHandler;
+    use crate::component::ibc_action_with_handler::IbcRelayWithHandlers;
     use crate::IbcRelay;
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
@@ -390,6 +390,27 @@ mod tests {
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     };
+
+    struct MockHost {}
+
+    // TODO: should this be actually reading from the state? probably right?
+    // values were suggested by copilot and i wanted to keep refactoring, but
+    // i think this needs to actually read the state or it's broken
+    #[async_trait]
+    impl HostInterface for MockHost {
+        async fn get_chain_id<S: StateRead>(_state: S) -> Result<String> {
+            Ok("mock_chain_id".to_string())
+        }
+        async fn get_revision_number<S: StateRead>(_state: S) -> Result<u64> {
+            Ok(0)
+        }
+        async fn get_block_height<S: StateRead>(_state: S) -> Result<u64> {
+            Ok(0)
+        }
+        async fn get_block_timestamp<S: StateRead>(_state: S) -> Result<tendermint::Time> {
+            Ok(Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?)
+        }
+    }
 
     struct MockAppHandler {}
 
@@ -469,8 +490,6 @@ mod tests {
     // test that we can create and update a light client.
     #[tokio::test]
     async fn test_create_and_update_light_client() -> anyhow::Result<()> {
-        Ok(())
-        /*
         // create a storage backend for testing
 
         // TODO: we can't use apply_default_genesis because it needs the entire
@@ -536,10 +555,10 @@ mod tests {
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+        let create_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
             IbcRelay::CreateClient(msg_create_stargaze_client),
         );
-        let update_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+        let update_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
             IbcRelay::UpdateClient(msg_update_stargaze_client),
         );
 
@@ -566,8 +585,9 @@ mod tests {
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
-        let second_update_client_action =
-            IbcActionWithHandler::<MockAppHandler>::new(IbcRelay::UpdateClient(second_update));
+        let second_update_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
+            IbcRelay::UpdateClient(second_update),
+        );
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action
@@ -578,6 +598,5 @@ mod tests {
         state_tx.apply();
 
         Ok(())
-            */
     }
 }

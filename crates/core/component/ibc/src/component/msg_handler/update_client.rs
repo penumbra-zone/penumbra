@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use cnidarium_component::HostInterface;
 use ibc_types::{
     core::{client::events::UpdateClient, client::msgs::MsgUpdateClient, client::ClientId},
     lightclients::tendermint::client_state::ClientState as TendermintClientState,
@@ -24,13 +23,13 @@ use crate::component::{
 
 #[async_trait]
 impl MsgHandler for MsgUpdateClient {
-    async fn check_stateless<H>(&self) -> Result<()> {
+    async fn check_stateless<AH, HI>(&self) -> Result<()> {
         header_is_tendermint(self)?;
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite + HostInterface, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         // Optimization: no-op if the update is already committed.  We no-op
         // to Ok(()) rather than erroring to avoid having two "racing" relay
         // transactions fail just because they both contain the same client
@@ -130,7 +129,7 @@ impl MsgHandler for MsgUpdateClient {
             // store the updated client and consensus states
             state.put_client(&self.client_id, next_tm_client_state);
             state
-                .put_verified_consensus_state(
+                .put_verified_consensus_state::<HI>(
                     trusted_header.height(),
                     self.client_id.clone(),
                     next_tm_consensus_state,
