@@ -8,8 +8,8 @@ use ibc_types::{
 
 use crate::component::{
     client::{StateReadExt as _, StateWriteExt as _},
-    client_counter::{ics02_validation, ClientCounter},
-    MsgHandler,
+    client_counter::ClientCounter,
+    ics02_validation, MsgHandler,
 };
 
 #[async_trait]
