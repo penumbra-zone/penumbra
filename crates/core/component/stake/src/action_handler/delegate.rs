@@ -93,11 +93,35 @@ impl ActionHandler for Delegate {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        use crate::component::StakingImpl;
+        use crate::validator;
+
         tracing::debug!(?self, "queuing delegation for next epoch");
-        state.record_delegation(self.clone());
+        state.push_delegation(self.clone());
+
+        // Note(erwan): When a validator definition is published, it starts in a
+        // `Defined` state until it gathers enough stake to become `Inactive` and
+        // indexex in the validator list.
+        //
+        // Unlike other validator state transitions, this one is executed with the
+        // delegation transaction and not at the end of the epoch. This is because we
+        // want to avoid having to iterate over all defined validators at all.
+        let validator_state = state
+            .validator_state(&self.validator_identity)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
+
+        if matches!(validator_state, validator::State::Defined)
+            && self.delegation_amount.value()
+                >= state.get_stake_params().await?.min_validator_stake.value()
+        {
+            tracing::debug!(validator_identity = %self.validator_identity, delegation_amount = %self.delegation_amount, "validator has enough stake to transition out of defined state");
+            state
+                .set_validator_state(&self.validator_identity, validator::State::Inactive)
+                .await?;
+        }
 
         state.record(event::delegate(self));
-
         Ok(())
     }
 }

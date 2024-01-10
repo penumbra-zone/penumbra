@@ -83,7 +83,7 @@ pub trait ValidatorUpdates: StateRead {
     ///
     /// Set during `end_block`.
     fn tendermint_validator_updates(&self) -> Option<Vec<Update>> {
-        self.object_get(state_key::internal::stub_tendermint_validator_updates())
+        self.object_get(state_key::internal::tendermint_validator_updates())
             .unwrap_or(None)
     }
 }
@@ -94,7 +94,7 @@ trait PutValidatorUpdates: StateWrite {
     fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
-            state_key::internal::stub_tendermint_validator_updates(),
+            state_key::internal::tendermint_validator_updates(),
             Some(updates),
         )
     }
@@ -399,6 +399,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Set the next base rate as the new "current" base rate.
         self.set_base_rate(next_base_rate.clone());
 
+        // TODO(erwan): here `validator_list` is really `all_defined_validator_index`, we should change this
+        // to be all active validators (including `Inactive` ones)
         let validator_list = self.validator_list().await?;
         for validator in &validator_list {
             // Grab the current validator state.
@@ -543,11 +545,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // we can determine which validators are Active for the next epoch.
         self.process_validator_unbondings().await?;
         self.set_active_and_inactive_validators().await?;
-
-        // The pending delegation changes should be empty at the beginning of the next epoch.
-        // TODO: check that this was a no-op
-        // self.delegation_changes = Default::default();
-
         Ok(())
     }
 
@@ -1271,6 +1268,10 @@ pub trait StateReadExt: StateRead {
 
     /// Returns a list of all known validators metadata.
     // TODO(erwan): #2921.
+    // TODO(erwan): split this into:
+    // - active_validator_index
+    // - validator_index: all defined validators
+    // - all_defined_validator_index: all defined validators
     async fn validator_list(&self) -> Result<Vec<Validator>> {
         self.prefix(state_key::validators::list())
             .map_ok(|(_key, validator)| validator)
@@ -1364,13 +1365,15 @@ pub trait StateWriteExt: StateWrite {
         )
     }
 
-    fn record_delegation(&mut self, delegation: Delegate) {
+    /// Push an entry in the delegation queue for the current block (object-storage).
+    fn push_delegation(&mut self, delegation: Delegate) {
         let mut changes = self.get_delegation_changes();
         changes.delegations.push(delegation);
         self.put_delegation_changes(changes);
     }
 
-    fn stub_push_undelegation(&mut self, undelegation: Undelegate) {
+    /// Push an entry in the undelegation queue for the current block (object-storage).
+    fn push_undelegation(&mut self, undelegation: Undelegate) {
         let mut changes = self.get_delegation_changes();
         changes.undelegations.push(undelegation);
         self.put_delegation_changes(changes);
