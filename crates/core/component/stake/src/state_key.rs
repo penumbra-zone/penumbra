@@ -94,7 +94,7 @@ pub(super) mod internal {
         "staking/delegation_changes"
     }
 
-    pub fn stub_tendermint_validator_updates() -> &'static str {
+    pub fn tendermint_validator_updates() -> &'static str {
         "staking/tendermint_validator_updates"
     }
 }
