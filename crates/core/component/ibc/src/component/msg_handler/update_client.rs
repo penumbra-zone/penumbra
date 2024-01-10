@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::HostInterface;
 use ibc_types::{
     core::{client::events::UpdateClient, client::msgs::MsgUpdateClient, client::ClientId},
     lightclients::tendermint::client_state::ClientState as TendermintClientState,
@@ -29,7 +30,7 @@ impl MsgHandler for MsgUpdateClient {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite + HostInterface, H>(&self, mut state: S) -> Result<()> {
         // Optimization: no-op if the update is already committed.  We no-op
         // to Ok(()) rather than erroring to avoid having two "racing" relay
         // transactions fail just because they both contain the same client
