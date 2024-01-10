@@ -36,6 +36,9 @@ impl ActionHandler for Delegate {
         }
 
         // Check whether the delegation is allowed
+        // The delegation is allowed if:
+        // - the validator definition is "enabled" by the operator
+        // - the validator is not jailed or tombstoned
         let validator = state
             .validator(&d.validator_identity)
             .await?
@@ -52,7 +55,7 @@ impl ActionHandler for Delegate {
                 d.validator_identity,
             );
         }
-        if !matches!(validator_state, Inactive | Active) {
+        if !matches!(validator_state, Defined | Inactive | Active) {
             anyhow::bail!(
                 "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
                 d.validator_identity,
