@@ -365,9 +365,9 @@ impl TransactionViewExt for TransactionView {
                     ["Upload Validator Definition", ""]
                 }
                 penumbra_transaction::ActionView::ValidatorVote(_) => ["Validator Vote", ""],
-                penumbra_transaction::ActionView::DaoDeposit(_) => ["DAO Deposit", ""],
-                penumbra_transaction::ActionView::DaoSpend(_) => ["DAO Spend", ""],
-                penumbra_transaction::ActionView::DaoOutput(_) => ["DAO Output", ""],
+                penumbra_transaction::ActionView::CommunityPoolDeposit(_) => ["Community Pool Deposit", ""],
+                penumbra_transaction::ActionView::CommunityPoolSpend(_) => ["Community Pool Spend", ""],
+                penumbra_transaction::ActionView::CommunityPoolOutput(_) => ["Community Pool Output", ""],
                 penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
                 penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
                 penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
