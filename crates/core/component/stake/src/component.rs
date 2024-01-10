@@ -306,6 +306,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
             (Tombstoned, Inactive | Active | Jailed | Tombstoned | Disabled) => {
                 Err(anyhow::anyhow!("tombstoning is forever"))
             }
+            // TODO(erwan): implement the actual state transitions here:
+            _ => todo!("circle back to this later"),
         }
     }
 
@@ -875,14 +877,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Get the current state, so we can determine whether this update
         // triggers a state transition.
-        let cur_state = self
+        let current_state = self
             .validator_state(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
 
         use validator::State::*;
 
-        match (cur_state, validator.enabled) {
+        match (current_state, validator.enabled) {
             (Disabled, true) => {
                 // The operator has enabled their validator, so set it to Inactive.
                 self.set_validator_state(id, Inactive).await?;
@@ -901,6 +903,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             (Tombstoned, _) => {
                 // Ignore updates to tombstoned validators.
             }
+            (Defined, _) => todo!("TODO(erwan): MERGEBLOCK implement this"),
         }
 
         // Update the consensus key lookup, in case the validator rotated their

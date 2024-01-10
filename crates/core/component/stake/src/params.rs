@@ -39,7 +39,9 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
             base_reward_rate: msg.base_reward_rate,
             missed_blocks_maximum: msg.missed_blocks_maximum,
             signed_blocks_window_len: msg.signed_blocks_window_len,
-            min_validator_stake: msg.min_validator_stake.into(),
+            min_validator_stake: msg
+                .min_validator_stake
+                .ok_or_else(|| anyhow::anyhow!("missing min_validator_stake"))?.try_into()?,
         })
     }
 }
@@ -54,7 +56,7 @@ impl From<StakeParameters> for pb::StakeParameters {
             slashing_penalty_downtime: params.slashing_penalty_downtime,
             slashing_penalty_misbehavior: params.slashing_penalty_misbehavior,
             base_reward_rate: params.base_reward_rate,
-            min_validator_stake: params.min_validator_stake.into(),
+            min_validator_stake: Some(params.min_validator_stake.into()),
         }
     }
 }

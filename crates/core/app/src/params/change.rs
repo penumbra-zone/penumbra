@@ -18,7 +18,8 @@ use super::AppParameters;
 impl AppParameters {
     pub fn check_valid_update(&self, new: &AppParameters) -> Result<()> {
         new.check_valid()?;
-        // TODO: move the checks below into their respective components
+        // TODO: move the checks below into their respective components.
+        // Tracked by #3593
 
         let AppParameters {
             chain_params:
@@ -35,6 +36,7 @@ impl AppParameters {
                     slashing_penalty_downtime: _,
                     signed_blocks_window_len,
                     missed_blocks_maximum: _,
+                    min_validator_stake: _,
                 },
             ibc_params:
                 IBCParameters {
@@ -117,6 +119,7 @@ impl AppParameters {
                     slashing_penalty_downtime,
                     signed_blocks_window_len,
                     missed_blocks_maximum,
+                    min_validator_stake,
                 },
             ibc_params:
                 IBCParameters {
@@ -209,6 +212,10 @@ impl AppParameters {
             (
                 *proposal_slash_threshold > Ratio::new(1, 2),
                 "proposal slash threshold must be greater than 1/2",
+            ),
+            (
+                *min_validator_stake >= 1_000_000u128.into(),
+                "the minimum validator stake must be at least 1penumbra",
             ),
         ])
     }
