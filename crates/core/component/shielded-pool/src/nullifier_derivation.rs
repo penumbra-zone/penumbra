@@ -226,6 +226,8 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_ff::PrimeField;
+
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
@@ -250,13 +252,45 @@ mod tests {
                 },
                 Rseed(rseed_randomness),
             ).expect("should be able to create note");
+            let nullifier = Nullifier::derive(&nk, position.into(), &note.commit());
             let public = NullifierDerivationProofPublic {
                 position: position.into(),
                 note_commitment: note.commit(),
-                nullifier: Nullifier::derive(&nk, position.into(), &note.commit())
+                nullifier
             };
             let private = NullifierDerivationProofPrivate {
                 nk,
+            };
+            (public, private)
+        }
+    }
+
+    prop_compose! {
+        fn arb_invalid_nullifier_derivation_statement()(amount in any::<u64>(), address_index in any::<u32>(), position in any::<(u16, u16, u16)>(), invalid_nk_randomness in any::<[u8; 32]>(), asset_id64 in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (NullifierDerivationProofPublic, NullifierDerivationProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let nk = *sk_sender.nullifier_key();
+            let incorrect_nk = NullifierKey(nk.0 + Fq::from_le_bytes_mod_order(&invalid_nk_randomness));
+            let note = Note::from_parts(
+                sender,
+                Value {
+                    amount: Amount::from(amount),
+                    asset_id: asset::Id(Fq::from(asset_id64)),
+                },
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
+            let nullifier = Nullifier::derive(&nk, position.into(), &note.commit());
+
+            let public = NullifierDerivationProofPublic {
+                position: position.into(),
+                note_commitment: note.commit(),
+                nullifier
+            };
+            let private = NullifierDerivationProofPrivate {
+                nk: incorrect_nk,
             };
             (public, private)
         }
@@ -267,6 +301,14 @@ mod tests {
         fn nullifier_derivation_proof_happy_path((public, private) in arb_valid_nullifier_derivation_statement()) {
             assert!(check_satisfaction(&public, &private).is_ok());
             assert!(check_circuit_satisfaction(public, private).is_ok());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn nullifier_derivation_proof_unhappy_path((public, private) in arb_invalid_nullifier_derivation_statement()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 }
