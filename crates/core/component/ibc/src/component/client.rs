@@ -375,7 +375,6 @@ mod tests {
 
     use super::*;
     use cnidarium::{ArcStateDeltaExt, StateDelta};
-    use cnidarium_component::ActionHandler;
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
     use penumbra_chain::component::StateWriteExt;

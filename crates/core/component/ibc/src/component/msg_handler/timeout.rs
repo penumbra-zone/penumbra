@@ -90,14 +90,14 @@ impl MsgHandler for MsgTimeout {
             // in the case of a timed-out ordered packet, the counterparty should have
             // committed the next sequence number to their state
             state
-                .verify_packet_timeout_proof(&connection, self)
+                .verify_packet_timeout_proof::<HI>(&connection, self)
                 .await
                 .context("failed to verify packet timeout proof")?;
         } else {
             // in the case of a timed-out unordered packet, the counterparty should not have
             // committed a receipt to the state.
             state
-                .verify_packet_timeout_absence_proof(&connection, self)
+                .verify_packet_timeout_absence_proof::<HI>(&connection, self)
                 .await
                 .context("failed to verify packet timeout absence proof")?;
         }

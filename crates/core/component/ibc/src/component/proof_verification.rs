@@ -31,6 +31,8 @@ use num_traits::float::FloatCore;
 use penumbra_chain::component::StateReadExt as _;
 use sha2::{Digest, Sha256};
 
+use super::HostInterface;
+
 // NOTE: this is underspecified.
 // using the same implementation here as ibc-go:
 // https://github.com/cosmos/ibc-go/blob/main/modules/core/04-channel/types/packet.go#L19
@@ -292,13 +294,13 @@ pub fn verify_client_consensus_state(
 
 #[async_trait]
 pub trait PacketProofVerifier: StateReadExt + inner::Inner {
-    async fn verify_packet_recv_proof(
+    async fn verify_packet_recv_proof<HI: HostInterface>(
         &self,
         connection: &ConnectionEnd,
         msg: &MsgRecvPacket,
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
-            .get_trusted_client_and_consensus_state(
+            .get_trusted_client_and_consensus_state::<HI>(
                 &connection.client_id,
                 &msg.proof_height_on_a,
                 connection,
@@ -325,13 +327,13 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         Ok(())
     }
 
-    async fn verify_packet_ack_proof(
+    async fn verify_packet_ack_proof<HI: HostInterface>(
         &self,
         connection: &ConnectionEnd,
         msg: &MsgAcknowledgement,
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
-            .get_trusted_client_and_consensus_state(
+            .get_trusted_client_and_consensus_state::<HI>(
                 &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
@@ -358,13 +360,13 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         Ok(())
     }
 
-    async fn verify_packet_timeout_proof(
+    async fn verify_packet_timeout_proof<HI: HostInterface>(
         &self,
         connection: &ConnectionEnd,
         msg: &MsgTimeout,
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
-            .get_trusted_client_and_consensus_state(
+            .get_trusted_client_and_consensus_state::<HI>(
                 &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
@@ -386,13 +388,13 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
         Ok(())
     }
 
-    async fn verify_packet_timeout_absence_proof(
+    async fn verify_packet_timeout_absence_proof<HI: HostInterface>(
         &self,
         connection: &ConnectionEnd,
         msg: &MsgTimeout,
     ) -> anyhow::Result<()> {
         let (trusted_client_state, trusted_consensus_state) = self
-            .get_trusted_client_and_consensus_state(
+            .get_trusted_client_and_consensus_state::<HI>(
                 &connection.client_id,
                 &msg.proof_height_on_b,
                 connection,
@@ -420,11 +422,13 @@ pub trait PacketProofVerifier: StateReadExt + inner::Inner {
 impl<T: StateRead> PacketProofVerifier for T {}
 
 mod inner {
+    use crate::component::HostInterface;
+
     use super::*;
 
     #[async_trait]
-    pub trait Inner: StateReadExt {
-        async fn get_trusted_client_and_consensus_state(
+    pub trait Inner: StateReadExt + Sized {
+        async fn get_trusted_client_and_consensus_state<HI: HostInterface>(
             &self,
             client_id: &ClientId,
             height: &Height,
@@ -447,7 +451,7 @@ mod inner {
             // verify that the delay time has passed (see ICS07 tendermint IBC client spec for
             // more details)
             let current_timestamp = self.get_block_timestamp().await?;
-            let current_height = self.get_block_height().await?;
+            let current_height = HI::get_block_height(&self).await?;
             let processed_height = self.get_client_update_height(client_id, height).await?;
             let processed_time = self.get_client_update_time(client_id, height).await?;
 

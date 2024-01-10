@@ -29,7 +29,7 @@ use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::params::AppParameters;
-use crate::{genesis, CommunityPoolStateReadExt};
+use crate::{genesis, CommunityPoolStateReadExt, PenumbraHost};
 
 pub mod state_key;
 
@@ -217,7 +217,11 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        IBCComponent::begin_block(&mut arc_state_tx, begin_block).await;
+        IBCComponent::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
+            &mut arc_state_tx,
+            begin_block,
+        )
+        .await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         Fee::begin_block(&mut arc_state_tx, begin_block).await;
