@@ -94,7 +94,7 @@ impl ActionHandler for Delegate {
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing delegation for next epoch");
-        state.stub_push_delegation(self.clone());
+        state.record_delegation(self.clone());
 
         state.record(event::delegate(self));
 

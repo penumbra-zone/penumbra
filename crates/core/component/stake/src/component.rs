@@ -1039,7 +1039,7 @@ impl Component for Staking {
                     .height
                     .try_into()
                     .expect("should be able to convert i64 into block height"),
-                state.stub_delegation_changes().clone(),
+                state.get_delegation_changes().clone(),
             )
             .await;
     }
@@ -1081,8 +1081,8 @@ pub trait StateReadExt: StateRead {
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
-    fn stub_delegation_changes(&self) -> DelegationChanges {
-        self.object_get(state_key::internal::stub_delegation_changes())
+    fn get_delegation_changes(&self) -> DelegationChanges {
+        self.object_get(state_key::internal::delegation_changes())
             .unwrap_or_default()
     }
 
@@ -1348,23 +1348,23 @@ pub trait StateWriteExt: StateWrite {
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
-    fn put_stub_delegation_changes(&mut self, delegation_changes: DelegationChanges) {
+    fn put_delegation_changes(&mut self, delegation_changes: DelegationChanges) {
         self.object_put(
-            state_key::internal::stub_delegation_changes(),
+            state_key::internal::delegation_changes(),
             delegation_changes,
         )
     }
 
-    fn stub_push_delegation(&mut self, delegation: Delegate) {
-        let mut changes = self.stub_delegation_changes();
+    fn record_delegation(&mut self, delegation: Delegate) {
+        let mut changes = self.get_delegation_changes();
         changes.delegations.push(delegation);
-        self.put_stub_delegation_changes(changes);
+        self.put_delegation_changes(changes);
     }
 
     fn stub_push_undelegation(&mut self, undelegation: Undelegate) {
-        let mut changes = self.stub_delegation_changes();
+        let mut changes = self.get_delegation_changes();
         changes.undelegations.push(undelegation);
-        self.put_stub_delegation_changes(changes);
+        self.put_delegation_changes(changes);
     }
 
     #[instrument(skip(self))]
