@@ -9,7 +9,6 @@ use ibc_types::{
         consensus_state::ConsensusState as TendermintConsensusState, TENDERMINT_CLIENT_TYPE,
     },
 };
-use penumbra_chain::component::StateReadExt as _;
 use tendermint::validator;
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
@@ -40,7 +39,7 @@ impl MsgHandler for MsgUpdateClient {
             let client_state = client_is_present(&state, self).await?;
 
             client_is_not_frozen(&client_state)?;
-            client_is_not_expired(&state, &self.client_id, &client_state).await?;
+            client_is_not_expired::<&S, HI>(&state, &self.client_id, &client_state).await?;
 
             let trusted_client_state = client_state;
 
@@ -94,7 +93,7 @@ impl MsgHandler for MsgUpdateClient {
                 untrusted_state,
                 trusted_state,
                 &options,
-                state.get_block_timestamp().await?,
+                HI::get_block_timestamp(&state).await?,
             );
 
             match verdict {
@@ -190,7 +189,7 @@ async fn update_is_already_committed<S: StateRead>(
     }
 }
 
-async fn client_is_not_expired<S: StateRead>(
+async fn client_is_not_expired<S: StateRead, HI: HostInterface>(
     state: S,
     client_id: &ClientId,
     client_state: &TendermintClientState,
@@ -203,7 +202,7 @@ async fn client_is_not_expired<S: StateRead>(
     // abstracted consensus state.
     let latest_consensus_state_tm = latest_consensus_state;
 
-    let now = state.get_block_timestamp().await?;
+    let now = HI::get_block_timestamp(&state).await?;
     let time_elapsed = now.duration_since(latest_consensus_state_tm.timestamp)?;
 
     if client_state.expired(time_elapsed) {
