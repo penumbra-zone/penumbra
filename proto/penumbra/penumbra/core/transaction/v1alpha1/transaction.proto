@@ -2,7 +2,6 @@ syntax = "proto3";
 package penumbra.core.transaction.v1alpha1;
 
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/effecthash/v1alpha1/effecthash.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/governance/v1alpha1/governance.proto";
@@ -11,6 +10,7 @@ import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
 import "penumbra/core/component/stake/v1alpha1/stake.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
+import "penumbra/core/txhash/v1alpha1/txhash.proto";
 import "penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
@@ -23,11 +23,6 @@ message Transaction {
   // The root of some previous state of the state commitment tree, used as an anchor for all
   // ZK state transition proofs.
   crypto.tct.v1alpha1.MerkleRoot anchor = 3;
-}
-
-// A transaction ID, the Sha256 hash of a transaction.
-message Id {
-  bytes hash = 1;
 }
 
 // The body of a transaction.
@@ -95,10 +90,10 @@ message Action {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaim undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -117,7 +112,7 @@ message TransactionPerspective {
   // Any relevant denoms for viewed assets.
   repeated asset.v1alpha1.DenomMetadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
-  transaction.v1alpha1.Id transaction_id = 6;
+  txhash.v1alpha1.TransactionId transaction_id = 6;
 }
 
 message PayloadKeyWithCommitment {
@@ -181,10 +176,10 @@ message ActionView {
 
     component.stake.v1alpha1.Delegate delegate = 41;
     component.stake.v1alpha1.Undelegate undelegate = 42;
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
 
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
@@ -197,7 +192,7 @@ message ActionView {
 // The data required to authorize a transaction plan.
 message AuthorizationData {
   // The computed auth hash for the approved transaction plan.
-  core.effecthash.v1alpha1.EffectHash effect_hash = 1;
+  core.txhash.v1alpha1.EffectHash effect_hash = 1;
   // The required spend authorizations, returned in the same order as the
   // Spend actions in the original request.
   repeated crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature spend_auths = 2;
@@ -274,10 +269,10 @@ message ActionPlan {
     component.stake.v1alpha1.Undelegate undelegate = 41;
     component.stake.v1alpha1.UndelegateClaimPlan undelegate_claim = 42;
 
-    // DAO
-    component.governance.v1alpha1.DaoSpend dao_spend = 50;
-    component.governance.v1alpha1.DaoOutput dao_output = 51;
-    component.governance.v1alpha1.DaoDeposit dao_deposit = 52;
+    // Community Pool
+    component.governance.v1alpha1.CommunityPoolSpend community_pool_spend = 50;
+    component.governance.v1alpha1.CommunityPoolOutput community_pool_output = 51;
+    component.governance.v1alpha1.CommunityPoolDeposit community_pool_deposit = 52;
   }
 }
 

@@ -156,9 +156,7 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = plan::validator_definition(
-                    wallet_id,
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -212,10 +210,7 @@ impl ValidatorCmd {
                 // Construct a new transaction and include the validator definition.
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
-
                 let plan = plan::validator_vote(
-                    wallet_id,
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -286,7 +281,7 @@ impl ValidatorCmd {
                             address,
                             rate_bps: 100,
                         },
-                        FundingStream::ToDao { rate_bps: 100 },
+                        FundingStream::ToCommunityPool { rate_bps: 100 },
                     ])?,
                     sequence_number: 0,
                 }

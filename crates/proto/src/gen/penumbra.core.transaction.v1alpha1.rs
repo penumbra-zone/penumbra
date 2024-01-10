@@ -23,20 +23,6 @@ impl ::prost::Name for Transaction {
         ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
     }
 }
-/// A transaction ID, the Sha256 hash of a transaction.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Id {
-    #[prost(bytes = "vec", tag = "1")]
-    pub hash: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for Id {
-    const NAME: &'static str = "Id";
-    const PACKAGE: &'static str = "penumbra.core.transaction.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.transaction.v1alpha1.{}", Self::NAME)
-    }
-}
 /// The body of a transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -177,13 +163,19 @@ pub mod action {
         UndelegateClaim(
             super::super::super::component::stake::v1alpha1::UndelegateClaim,
         ),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1alpha1::Ics20Withdrawal),
     }
@@ -220,7 +212,9 @@ pub struct TransactionPerspective {
     pub denoms: ::prost::alloc::vec::Vec<super::super::asset::v1alpha1::DenomMetadata>,
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
-    pub transaction_id: ::core::option::Option<Id>,
+    pub transaction_id: ::core::option::Option<
+        super::super::txhash::v1alpha1::TransactionId,
+    >,
 }
 impl ::prost::Name for TransactionPerspective {
     const NAME: &'static str = "TransactionPerspective";
@@ -384,13 +378,19 @@ pub mod action_view {
         Delegate(super::super::super::component::stake::v1alpha1::Delegate),
         #[prost(message, tag = "42")]
         Undelegate(super::super::super::component::stake::v1alpha1::Undelegate),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest
         /// of the transaction. is that fine?
@@ -415,9 +415,7 @@ impl ::prost::Name for ActionView {
 pub struct AuthorizationData {
     /// The computed auth hash for the approved transaction plan.
     #[prost(message, optional, tag = "1")]
-    pub effect_hash: ::core::option::Option<
-        super::super::effecthash::v1alpha1::EffectHash,
-    >,
+    pub effect_hash: ::core::option::Option<super::super::txhash::v1alpha1::EffectHash>,
     /// The required spend authorizations, returned in the same order as the
     /// Spend actions in the original request.
     #[prost(message, repeated, tag = "2")]
@@ -584,13 +582,19 @@ pub mod action_plan {
         UndelegateClaim(
             super::super::super::component::stake::v1alpha1::UndelegateClaimPlan,
         ),
-        /// DAO
+        /// Community Pool
         #[prost(message, tag = "50")]
-        DaoSpend(super::super::super::component::governance::v1alpha1::DaoSpend),
+        CommunityPoolSpend(
+            super::super::super::component::governance::v1alpha1::CommunityPoolSpend,
+        ),
         #[prost(message, tag = "51")]
-        DaoOutput(super::super::super::component::governance::v1alpha1::DaoOutput),
+        CommunityPoolOutput(
+            super::super::super::component::governance::v1alpha1::CommunityPoolOutput,
+        ),
         #[prost(message, tag = "52")]
-        DaoDeposit(super::super::super::component::governance::v1alpha1::DaoDeposit),
+        CommunityPoolDeposit(
+            super::super::super::component::governance::v1alpha1::CommunityPoolDeposit,
+        ),
     }
 }
 impl ::prost::Name for ActionPlan {

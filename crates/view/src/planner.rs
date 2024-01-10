@@ -5,10 +5,12 @@ use std::{
 };
 
 use anyhow::Result;
+use rand::{CryptoRng, RngCore};
+use tracing::instrument;
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::DaoDeposit;
+use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -25,10 +27,7 @@ use penumbra_governance::{
     ProposalWithdraw, ValidatorVote, Vote,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_keys::{
-    keys::{AddressIndex, WalletId},
-    Address,
-};
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
@@ -40,8 +39,6 @@ use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
 };
-use rand::{CryptoRng, RngCore};
-use tracing::instrument;
 
 use crate::{SpendableNoteRecord, ViewClient};
 
@@ -102,14 +99,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Get all the note requests necessary to fulfill the current [`Balance`].
     pub fn notes_requests(
         &self,
-        wallet_id: WalletId,
         source: AddressIndex,
     ) -> (Vec<NotesRequest>, Vec<NotesForVotingRequest>) {
         (
             self.balance
                 .required()
                 .map(|Value { asset_id, amount }| NotesRequest {
-                    wallet_id: Some(wallet_id.into()),
                     asset_id: Some(asset_id.into()),
                     address_index: Some(source.into()),
                     amount_to_spend: Some(amount.into()),
@@ -125,7 +120,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                             start_block_height, ..
                         },
                     )| NotesForVotingRequest {
-                        wallet_id: Some(wallet_id.into()),
                         votable_at_height: *start_block_height,
                         address_index: Some(source.into()),
                     },
@@ -357,10 +351,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Deposit a value into the DAO.
+    /// Deposit a value into the Community Pool.
     #[instrument(skip(self))]
-    pub fn dao_deposit(&mut self, value: Value) -> &mut Self {
-        self.action(ActionPlan::DaoDeposit(DaoDeposit { value }));
+    pub fn community_pool_deposit(&mut self, value: Value) -> &mut Self {
+        self.action(ActionPlan::CommunityPoolDeposit(CommunityPoolDeposit {
+            value,
+        }));
         self
     }
 
@@ -454,7 +450,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub async fn plan<V: ViewClient>(
         &mut self,
         view: &mut V,
-        wallet_id: WalletId,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
@@ -469,7 +464,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let mut spendable_notes = Vec::new();
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(wallet_id, source);
+        let (spendable_requests, voting_requests) = self.notes_requests(source);
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);

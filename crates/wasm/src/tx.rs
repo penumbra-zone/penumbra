@@ -79,7 +79,7 @@ pub fn authorize(spend_key_str: &str, transaction_plan: JsValue) -> WasmResult<J
     let spend_key = SpendKey::from_str(spend_key_str)?;
     let plan: TransactionPlan = plan_proto.try_into()?;
 
-    let auth_data: AuthorizationData = plan.authorize(OsRng, &spend_key);
+    let auth_data: AuthorizationData = plan.authorize(OsRng, &spend_key)?;
     let result = serde_wasm_bindgen::to_value(&auth_data.to_proto())?;
     Ok(result)
 }
@@ -323,7 +323,7 @@ pub async fn transaction_info_inner(
 
                 // Also add an AddressView for the return address in the memo.
                 let memo = tx.decrypt_memo(&fvk)?;
-                address_views.insert(memo.return_address, fvk.view_address(address));
+                address_views.insert(memo.return_address(), fvk.view_address(address));
             }
             ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
                 let address = swap_plaintext.claim_address;

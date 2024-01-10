@@ -2,9 +2,9 @@
   "type": "penumbra",
   "value": {
     "key": "default",
-    "chain-id": "penumbra-testnet-tethys-cc6f18f4",
+    "chain-id": "penumbra-testnet-titan-da6576af",
     "rpc-addr": "https://rpc.testnet-preview.penumbra.zone:443",
-    "account-prefix": "penumbrav2t",
+    "account-prefix": "penumbra",
     "keyring-backend": "test",
     "gas-adjustment": 1.0,
     "gas-prices": "0.00upenumbra",

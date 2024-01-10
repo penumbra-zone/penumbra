@@ -71,14 +71,3 @@ jobs:
 
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-preview
-
-      - name: bounce osiris
-        run: kubectl rollout restart deployment osiris-preview
-
-      # We only run one (1) relayer instance, and re-deploy it as part of the preview update.
-      # The other end of the configured path is the long-running testnet.
-      # We ignore errors on the bounce, because we may have removed the deployment out of band:
-      # we're still working on reliable packet relaying between test chains.
-      - name: bounce relayer
-        run: |-
-          kubectl rollout restart deployment relayer-preview || true

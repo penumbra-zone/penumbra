@@ -21,14 +21,10 @@ use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, 
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
 
-/// Groth16 proof for correct nullifier derivation.
+/// The public input for a ['NullifierDerivationProof'].
 #[derive(Clone, Debug)]
-pub struct NullifierDerivationCircuit {
-    // Witnesses
-    /// The nullifier deriving key.
-    nk: NullifierKey,
-    // Public inputs
-    /// the position of the spent note.
+pub struct NullifierDerivationProofPublic {
+    /// The position of the spent note.
     pub position: tct::Position,
     /// A commitment to the spent note.
     pub note_commitment: StateCommitment,
@@ -36,12 +32,34 @@ pub struct NullifierDerivationCircuit {
     pub nullifier: Nullifier,
 }
 
+/// The private input for a ['NullifierDerivationProof'].
+#[derive(Clone, Debug)]
+pub struct NullifierDerivationProofPrivate {
+    /// The nullifier deriving key.
+    pub nk: NullifierKey,
+}
+
+/// Groth16 proof for correct nullifier derivation.
+#[derive(Clone, Debug)]
+pub struct NullifierDerivationCircuit {
+    /// The nullifier deriving key.
+    nk: NullifierKey,
+    /// the position of the spent note.
+    position: tct::Position,
+    /// A commitment to the spent note.
+    note_commitment: StateCommitment,
+    /// nullifier of the spent note.
+    nullifier: Nullifier,
+}
+
 impl NullifierDerivationCircuit {
-    pub fn new(
-        position: tct::Position,
-        note_commitment: StateCommitment,
-        nk: NullifierKey,
-        nullifier: Nullifier,
+    fn new(
+        NullifierDerivationProofPublic {
+            position,
+            note_commitment,
+            nullifier,
+        }: NullifierDerivationProofPublic,
+        NullifierDerivationProofPrivate { nk }: NullifierDerivationProofPrivate,
     ) -> Self {
         Self {
             nk,
@@ -109,22 +127,13 @@ impl DummyWitness for NullifierDerivationCircuit {
 pub struct NullifierDerivationProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl NullifierDerivationProof {
-    #![allow(clippy::too_many_arguments)]
     pub fn prove<R: CryptoRng + Rng>(
         rng: &mut R,
         pk: &ProvingKey<Bls12_377>,
-        position: tct::Position,
-        note: Note,
-        nk: NullifierKey,
-        nullifier: Nullifier,
+        public: NullifierDerivationProofPublic,
+        private: NullifierDerivationProofPrivate,
     ) -> anyhow::Result<Self> {
-        let note_commitment = note.commit();
-        let circuit = NullifierDerivationCircuit {
-            note_commitment,
-            position,
-            nk,
-            nullifier,
-        };
+        let circuit = NullifierDerivationCircuit::new(public, private);
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::prove(pk, circuit, rng)
             .map_err(|err| anyhow::anyhow!(err))?;
         let mut proof_bytes = [0u8; GROTH16_PROOF_LENGTH_BYTES];
@@ -133,29 +142,35 @@ impl NullifierDerivationProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.0), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        position: tct::Position,
-        note_commitment: StateCommitment,
-        nullifier: Nullifier,
+        public: NullifierDerivationProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            nullifier
+            public
+                .nullifier
                 .0
                 .to_field_elements()
                 .ok_or_else(|| anyhow::anyhow!("could not convert nullifier to field elements"))?,
         );
-        public_inputs.extend(note_commitment.0.to_field_elements().ok_or_else(|| {
-            anyhow::anyhow!("could not convert note commitment to field elements")
-        })?);
         public_inputs.extend(
-            position
+            public
+                .note_commitment
+                .0
+                .to_field_elements()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("could not convert note commitment to field elements")
+                })?,
+        );
+        public_inputs.extend(
+            public
+                .position
                 .to_field_elements()
                 .ok_or_else(|| anyhow::anyhow!("could not convert position to field elements"))?,
         );
@@ -171,7 +186,7 @@ impl NullifierDerivationProof {
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
+            .ok_or_else(|| anyhow::anyhow!("nullifier derivation proof did not verify"))
     }
 }
 
@@ -235,20 +250,26 @@ mod tests {
             let state_commitment_proof = sct.witness(note_commitment).unwrap();
             let position = state_commitment_proof.position();
             let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
-
-                let proof = NullifierDerivationProof::prove(
-                    &mut rng,
-                    &pk,
+            let public = NullifierDerivationProofPublic {
                     position,
-                    note,
-                    nk,
+                    note_commitment,
                     nullifier,
-                )
-                .expect("can create proof");
+            };
 
-                let proof_result = proof.verify(&vk, position, note_commitment, nullifier);
+            let private = NullifierDerivationProofPrivate {
+                nk,
+            };
 
-                assert!(proof_result.is_ok());
+            let proof = NullifierDerivationProof::prove(
+                &mut rng,
+                &pk,
+                public.clone(), private
+            )
+            .expect("can create proof");
+
+            let proof_result = proof.verify(&vk, public);
+
+            assert!(proof_result.is_ok());
         }
     }
 }

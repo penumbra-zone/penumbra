@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
 use penumbra_chain::params::ChainParameters;
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
@@ -68,8 +68,8 @@ impl From<Proposal> for pb::Proposal {
                     new_parameters: Some((*new).into()),
                 });
             }
-            ProposalPayload::DaoSpend { transaction_plan } => {
-                proposal.dao_spend = Some(pb::proposal::DaoSpend {
+            ProposalPayload::CommunityPoolSpend { transaction_plan } => {
+                proposal.community_pool_spend = Some(pb::proposal::CommunityPoolSpend {
                     transaction_plan: Some(pbjson_types::Any {
                         type_url: TRANSACTION_PLAN_TYPE_URL.to_owned(),
                         value: transaction_plan.into(),
@@ -78,6 +78,16 @@ impl From<Proposal> for pb::Proposal {
             }
             ProposalPayload::UpgradePlan { height } => {
                 proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
+            }
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                proposal.freeze_ibc_client = Some(pb::proposal::FreezeIbcClient {
+                    client_id: client_id.into(),
+                });
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                proposal.unfreeze_ibc_client = Some(pb::proposal::UnfreezeIbcClient {
+                    client_id: client_id.into(),
+                });
             }
         }
         proposal
@@ -119,10 +129,10 @@ impl TryFrom<pb::Proposal> for Proposal {
                             .try_into()?,
                     ),
                 }
-            } else if let Some(dao_spend) = inner.dao_spend {
-                ProposalPayload::DaoSpend {
+            } else if let Some(community_pool_spend) = inner.community_pool_spend {
+                ProposalPayload::CommunityPoolSpend {
                     transaction_plan: {
-                        let transaction_plan = dao_spend
+                        let transaction_plan = community_pool_spend
                             .transaction_plan
                             .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
                         if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
@@ -196,12 +206,18 @@ pub enum ProposalKind {
     /// A parameter change proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 300))]
     ParameterChange,
-    /// A DAO spend proposal.
+    /// A Community Pool spend proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 400))]
-    DaoSpend,
+    CommunityPoolSpend,
     /// An upgrade proposal.
     #[cfg_attr(feature = "clap", clap(display_order = 500))]
     UpgradePlan,
+    /// A proposal to freeze an IBC client.
+    #[cfg_attr(feature = "clap", clap(display_order = 600))]
+    FreezeIbcClient,
+    /// A proposal to unfreeze an IBC client.
+    #[cfg_attr(feature = "clap", clap(display_order = 700))]
+    UnfreezeIbcClient,
 }
 
 impl FromStr for ProposalKind {
@@ -212,7 +228,7 @@ impl FromStr for ProposalKind {
             "signaling" => Ok(ProposalKind::Signaling),
             "emergency" => Ok(ProposalKind::Emergency),
             "parameterchange" => Ok(ProposalKind::ParameterChange),
-            "daospend" => Ok(ProposalKind::DaoSpend),
+            "communitypoolspend" => Ok(ProposalKind::CommunityPoolSpend),
             "upgrade_plan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
@@ -226,8 +242,10 @@ impl Proposal {
             ProposalPayload::Signaling { .. } => ProposalKind::Signaling,
             ProposalPayload::Emergency { .. } => ProposalKind::Emergency,
             ProposalPayload::ParameterChange { .. } => ProposalKind::ParameterChange,
-            ProposalPayload::DaoSpend { .. } => ProposalKind::DaoSpend,
+            ProposalPayload::CommunityPoolSpend { .. } => ProposalKind::CommunityPoolSpend,
             ProposalPayload::UpgradePlan { .. } => ProposalKind::UpgradePlan,
+            ProposalPayload::FreezeIbcClient { .. } => ProposalKind::FreezeIbcClient,
+            ProposalPayload::UnfreezeIbcClient { .. } => ProposalKind::UnfreezeIbcClient,
         }
     }
 }
@@ -263,19 +281,29 @@ pub enum ProposalPayload {
         /// passed.
         new: Box<ChangedAppParameters>,
     },
-    /// A DAO spend proposal describes proposed transaction(s) to be executed or cancelled at
-    /// specific heights, with the spend authority of the DAO.
-    DaoSpend {
+    /// A Community Pool spend proposal describes proposed transaction(s) to be executed or cancelled at
+    /// specific heights, with the spend authority of the Community Pool.
+    CommunityPoolSpend {
         /// The transaction plan to be executed at the time the proposal is passed.
         ///
-        /// This must be a transaction plan which can be executed by the DAO, which means it can't
-        /// require any witness data or authorization signatures, but it may use the `DaoSpend`
+        /// This must be a transaction plan which can be executed by the Community Pool, which means it can't
+        /// require any witness data or authorization signatures, but it may use the `CommunityPoolSpend`
         /// action.
         transaction_plan: Vec<u8>,
     },
     /// An upgrade plan proposal describes a planned upgrade to the chain. If ratified, the chain
     /// will halt at the specified height, trigger an epoch transition, and halt the chain.
     UpgradePlan { height: u64 },
+    /// A proposal to freeze a specific IBC client.
+    FreezeIbcClient {
+        /// The identifier of the client to freeze.
+        client_id: String,
+    },
+    /// A proposal to unfreeze a specific IBC client.
+    UnfreezeIbcClient {
+        /// The identifier of the client to unfreeze.
+        client_id: String,
+    },
 }
 
 /// A TOML-serializable version of `ProposalPayload`, meant for human consumption.
@@ -292,11 +320,17 @@ pub enum ProposalPayloadToml {
         old: Box<ChangedAppParameters>,
         new: Box<ChangedAppParameters>,
     },
-    DaoSpend {
+    CommunityPoolSpend {
         transaction: String,
     },
     UpgradePlan {
         height: u64,
+    },
+    FreezeIbcClient {
+        client_id: String,
+    },
+    UnfreezeIbcClient {
+        client_id: String,
     },
 }
 
@@ -312,14 +346,25 @@ impl TryFrom<ProposalPayloadToml> for ProposalPayload {
             ProposalPayloadToml::ParameterChange { old, new } => {
                 ProposalPayload::ParameterChange { old, new }
             }
-            ProposalPayloadToml::DaoSpend { transaction } => ProposalPayload::DaoSpend {
-                transaction_plan: Bytes::from(
-                    base64::Engine::decode(&base64::engine::general_purpose::STANDARD, transaction)
+            ProposalPayloadToml::CommunityPoolSpend { transaction } => {
+                ProposalPayload::CommunityPoolSpend {
+                    transaction_plan: Bytes::from(
+                        base64::Engine::decode(
+                            &base64::engine::general_purpose::STANDARD,
+                            transaction,
+                        )
                         .context("couldn't decode transaction plan from base64")?,
-                )
-                .to_vec(),
-            },
+                    )
+                    .to_vec(),
+                }
+            }
             ProposalPayloadToml::UpgradePlan { height } => ProposalPayload::UpgradePlan { height },
+            ProposalPayloadToml::FreezeIbcClient { client_id } => {
+                ProposalPayload::FreezeIbcClient { client_id }
+            }
+            ProposalPayloadToml::UnfreezeIbcClient { client_id } => {
+                ProposalPayload::UnfreezeIbcClient { client_id }
+            }
         })
     }
 }
@@ -334,13 +379,21 @@ impl From<ProposalPayload> for ProposalPayloadToml {
             ProposalPayload::ParameterChange { old, new } => {
                 ProposalPayloadToml::ParameterChange { old, new }
             }
-            ProposalPayload::DaoSpend { transaction_plan } => ProposalPayloadToml::DaoSpend {
-                transaction: base64::Engine::encode(
-                    &base64::engine::general_purpose::STANDARD,
-                    transaction_plan,
-                ),
-            },
+            ProposalPayload::CommunityPoolSpend { transaction_plan } => {
+                ProposalPayloadToml::CommunityPoolSpend {
+                    transaction: base64::Engine::encode(
+                        &base64::engine::general_purpose::STANDARD,
+                        transaction_plan,
+                    ),
+                }
+            }
             ProposalPayload::UpgradePlan { height } => ProposalPayloadToml::UpgradePlan { height },
+            ProposalPayload::FreezeIbcClient { client_id } => {
+                ProposalPayloadToml::FreezeIbcClient { client_id }
+            }
+            ProposalPayload::UnfreezeIbcClient { client_id } => {
+                ProposalPayloadToml::UnfreezeIbcClient { client_id }
+            }
         }
     }
 }
@@ -358,8 +411,8 @@ impl ProposalPayload {
         matches!(self, ProposalPayload::ParameterChange { .. })
     }
 
-    pub fn is_dao_spend(&self) -> bool {
-        matches!(self, ProposalPayload::DaoSpend { .. })
+    pub fn is_community_pool_spend(&self) -> bool {
+        matches!(self, ProposalPayload::CommunityPoolSpend { .. })
     }
 }
 
@@ -375,7 +428,7 @@ impl ProposalPayload {
 )]
 pub struct ChangedAppParameters {
     pub chain_params: Option<ChainParameters>,
-    pub dao_params: Option<DaoParameters>,
+    pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
     pub stake_params: Option<StakeParameters>,
@@ -393,7 +446,10 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
             chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
-            dao_params: msg.dao_params.map(TryInto::try_into).transpose()?,
+            community_pool_params: msg
+                .community_pool_params
+                .map(TryInto::try_into)
+                .transpose()?,
             distributions_params: msg
                 .distributions_params
                 .map(TryInto::try_into)
@@ -410,7 +466,7 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
             chain_params: params.chain_params.map(Into::into),
-            dao_params: params.dao_params.map(Into::into),
+            community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
             governance_params: params.governance_params.map(Into::into),

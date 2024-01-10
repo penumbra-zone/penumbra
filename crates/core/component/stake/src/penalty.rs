@@ -1,19 +1,10 @@
 use ark_ff::ToConstraintField;
-use ark_r1cs_std::prelude::*;
-use ark_relations::r1cs::SynthesisError;
 use decaf377::Fq;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pbs, DomainType};
 use serde::{Deserialize, Serialize};
 
-use penumbra_asset::{
-    asset::{self, AssetIdVar},
-    balance::BalanceVar,
-    Balance, Value, ValueVar, STAKING_TOKEN_ASSET_ID,
-};
-use penumbra_num::{
-    fixpoint::{U128x128, U128x128Var},
-    Amount, AmountVar,
-};
+use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_num::{fixpoint::U128x128, Amount};
 
 /// Tracks slashing penalties applied to a validator in some epoch.
 ///
@@ -58,6 +49,13 @@ impl Penalty {
         )
     }
 
+    /// A rate representing how much of an asset remains after applying a penalty.
+    ///
+    /// e.g. a 1% penalty will yield a rate of 0.99 here.
+    pub fn kept_rate(&self) -> U128x128 {
+        self.0
+    }
+
     /// Compound this `Penalty` with another `Penalty`.
     pub fn compound(&self, other: Penalty) -> Penalty {
         Self((self.0 * other.0).expect("compounding penalities will not overflow"))
@@ -65,10 +63,9 @@ impl Penalty {
 
     /// Apply this `Penalty` to an `Amount` of unbonding tokens.
     pub fn apply_to_amount(&self, amount: Amount) -> Amount {
-        self.apply_to(amount)
-            .round_down()
-            .try_into()
-            .expect("converting integral U128xU128 into Amount will succeed")
+        self.0
+            .apply_to_amount(&amount)
+            .expect("should not overflow, because penalty is <= 1")
     }
 
     /// Apply this `Penalty` to some fraction.
@@ -115,73 +112,6 @@ impl<'a> TryFrom<&'a [u8]> for Penalty {
 
     fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
         U128x128::try_from(value).map(Self)
-    }
-}
-
-/// One explicit choice in this in circuit representation is that we
-/// DO NOT CHECK THAT THE PENALTY IS <= 1 IN CIRCUIT. This is in practice
-/// the UndelegateClaim circuit is the ONLY consumer of this type, and
-/// in the context of that circuit, the penalty is checked out of circuit
-/// to conform to a real value which will be <= 1.
-///
-/// I repeat myself: IF YOU EVER USE THIS IN A DIFFERENT CIRCUIT, MAKE ABSOLUTELY
-/// CERTAIN THAT A PENALTY BEING > 1 IN CIRCUIT IS NOT AN ISSUE.
-pub struct PenaltyVar {
-    inner: U128x128Var,
-}
-
-impl AllocVar<Penalty, Fq> for PenaltyVar {
-    fn new_variable<T: std::borrow::Borrow<Penalty>>(
-        cs: impl Into<ark_relations::r1cs::Namespace<Fq>>,
-        f: impl FnOnce() -> Result<T, SynthesisError>,
-        mode: ark_r1cs_std::prelude::AllocationMode,
-    ) -> Result<Self, SynthesisError> {
-        assert!(
-            matches!(mode, ark_r1cs_std::prelude::AllocationMode::Input),
-            "Penalty must be an input variable"
-        );
-        Ok(Self {
-            inner: U128x128Var::new_variable(cs, || Ok(f()?.borrow().0), mode)?,
-        })
-    }
-}
-
-impl PenaltyVar {
-    pub fn apply_to(&self, amount: AmountVar) -> Result<AmountVar, SynthesisError> {
-        U128x128Var::from_amount_var(amount)?
-            .checked_mul(&self.inner)?
-            .round_down_to_amount()
-    }
-
-    pub fn balance_for_claim(
-        &self,
-        unbonding_id: AssetIdVar,
-        unbonding_amount: AmountVar,
-    ) -> Result<BalanceVar, SynthesisError> {
-        let negative_value = BalanceVar::from_negative_value_var(ValueVar {
-            amount: unbonding_amount.clone(),
-            asset_id: unbonding_id,
-        });
-        let staking_token_asset_id_var =
-            AssetIdVar::new_witness(self.cs(), || Ok(*STAKING_TOKEN_ASSET_ID))?;
-
-        let positive_value = BalanceVar::from_positive_value_var(ValueVar {
-            amount: self.apply_to(unbonding_amount)?,
-            asset_id: staking_token_asset_id_var,
-        });
-        Ok(negative_value + positive_value)
-    }
-}
-
-impl R1CSVar<Fq> for PenaltyVar {
-    type Value = Penalty;
-
-    fn cs(&self) -> ark_relations::r1cs::ConstraintSystemRef<Fq> {
-        self.inner.cs()
-    }
-
-    fn value(&self) -> Result<Self::Value, SynthesisError> {
-        Ok(Penalty(self.inner.value()?))
     }
 }
 

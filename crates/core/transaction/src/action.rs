@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_effecthash::{EffectHash, EffectingData};
+use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
@@ -36,9 +36,9 @@ pub enum Action {
 
     Ics20Withdrawal(penumbra_shielded_pool::Ics20Withdrawal),
 
-    DaoSpend(penumbra_dao::DaoSpend),
-    DaoOutput(penumbra_dao::DaoOutput),
-    DaoDeposit(penumbra_dao::DaoDeposit),
+    CommunityPoolSpend(penumbra_community_pool::CommunityPoolSpend),
+    CommunityPoolOutput(penumbra_community_pool::CommunityPoolOutput),
+    CommunityPoolDeposit(penumbra_community_pool::CommunityPoolDeposit),
 }
 
 impl EffectingData for Action {
@@ -63,9 +63,9 @@ impl EffectingData for Action {
             Action::PositionWithdraw(p) => p.effect_hash(),
             Action::PositionRewardClaim(p) => p.effect_hash(),
             Action::Ics20Withdrawal(w) => w.effect_hash(),
-            Action::DaoSpend(d) => d.effect_hash(),
-            Action::DaoOutput(d) => d.effect_hash(),
-            Action::DaoDeposit(d) => d.effect_hash(),
+            Action::CommunityPoolSpend(d) => d.effect_hash(),
+            Action::CommunityPoolOutput(d) => d.effect_hash(),
+            Action::CommunityPoolDeposit(d) => d.effect_hash(),
         }
     }
 }
@@ -110,9 +110,9 @@ impl Action {
             Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
             Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
             Action::Ics20Withdrawal(_) => tracing::info_span!("Ics20Withdrawal", ?idx),
-            Action::DaoDeposit(_) => tracing::info_span!("DaoDeposit", ?idx),
-            Action::DaoSpend(_) => tracing::info_span!("DaoSpend", ?idx),
-            Action::DaoOutput(_) => tracing::info_span!("DaoOutput", ?idx),
+            Action::CommunityPoolDeposit(_) => tracing::info_span!("CommunityPoolDeposit", ?idx),
+            Action::CommunityPoolSpend(_) => tracing::info_span!("CommunityPoolSpend", ?idx),
+            Action::CommunityPoolOutput(_) => tracing::info_span!("CommunityPoolOutput", ?idx),
         }
     }
 }
@@ -137,9 +137,9 @@ impl IsAction for Action {
             Action::PositionWithdraw(p) => p.balance_commitment(),
             Action::PositionRewardClaim(p) => p.balance_commitment(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
-            Action::DaoDeposit(deposit) => deposit.balance_commitment(),
-            Action::DaoSpend(spend) => spend.balance_commitment(),
-            Action::DaoOutput(output) => output.balance_commitment(),
+            Action::CommunityPoolDeposit(deposit) => deposit.balance_commitment(),
+            Action::CommunityPoolSpend(spend) => spend.balance_commitment(),
+            Action::CommunityPoolOutput(output) => output.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
             Action::IbcRelay(x) => x.balance_commitment(),
@@ -166,9 +166,9 @@ impl IsAction for Action {
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
             Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
-            Action::DaoSpend(x) => x.view_from_perspective(txp),
-            Action::DaoOutput(x) => x.view_from_perspective(txp),
-            Action::DaoDeposit(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolSpend(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolOutput(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
@@ -240,14 +240,14 @@ impl From<Action> for pb::Action {
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
-            Action::DaoSpend(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoSpend(inner.into())),
+            Action::CommunityPoolSpend(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolSpend(inner.into())),
             },
-            Action::DaoOutput(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoOutput(inner.into())),
+            Action::CommunityPoolOutput(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolOutput(inner.into())),
             },
-            Action::DaoDeposit(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoDeposit(inner.into())),
+            Action::CommunityPoolDeposit(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolDeposit(inner.into())),
             },
         }
     }
@@ -305,9 +305,15 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::Ics20Withdrawal(inner) => {
                 Ok(Action::Ics20Withdrawal(inner.try_into()?))
             }
-            pb::action::Action::DaoSpend(inner) => Ok(Action::DaoSpend(inner.try_into()?)),
-            pb::action::Action::DaoOutput(inner) => Ok(Action::DaoOutput(inner.try_into()?)),
-            pb::action::Action::DaoDeposit(inner) => Ok(Action::DaoDeposit(inner.try_into()?)),
+            pb::action::Action::CommunityPoolSpend(inner) => {
+                Ok(Action::CommunityPoolSpend(inner.try_into()?))
+            }
+            pb::action::Action::CommunityPoolOutput(inner) => {
+                Ok(Action::CommunityPoolOutput(inner.try_into()?))
+            }
+            pb::action::Action::CommunityPoolDeposit(inner) => {
+                Ok(Action::CommunityPoolDeposit(inner.try_into()?))
+            }
         }
     }
 }

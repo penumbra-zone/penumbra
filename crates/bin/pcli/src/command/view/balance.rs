@@ -1,8 +1,10 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
+
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::CommitmentSource;
 use penumbra_view::ViewClient;
+
 #[derive(Debug, clap::Args)]
 pub struct BalanceCmd {
     #[clap(long)]
@@ -15,16 +17,14 @@ impl BalanceCmd {
         false
     }
 
-    pub async fn exec<V: ViewClient>(&self, fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
         let asset_cache = view.assets().await?;
 
         // Initialize the table
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
 
-        let notes = view
-            .unspent_notes_by_account_and_asset(fvk.wallet_id())
-            .await?;
+        let notes = view.unspent_notes_by_account_and_asset().await?;
 
         if self.by_note {
             table.set_header(vec!["Account", "Value", "Source"]);
@@ -100,7 +100,7 @@ fn format_source(source: &CommitmentSource) -> String {
         CommitmentSource::FundingStreamReward { epoch_index } => {
             format!("Funding Stream (Epoch {})", epoch_index)
         }
-        CommitmentSource::DaoOutput => format!("DaoOutput"),
+        CommitmentSource::CommunityPoolOutput => format!("CommunityPoolOutput"),
         CommitmentSource::Ics20Transfer {
             packet_seq,
             channel_id,

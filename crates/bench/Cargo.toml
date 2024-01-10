@@ -16,8 +16,8 @@ decaf377 = { version = "0.5", features = ["r1cs"] }
 
 # Crates.io deps
 ark-ec = "0.4.2"
-ark-ff = {version = "0.4", default-features = false}
-ark-std = {version = "0.4", default-features = false}
+ark-ff = { version = "0.4", default-features = false }
+ark-std = { version = "0.4", default-features = false }
 ark-serialize = "0.4"
 serde = { version = "1", features = ["derive"] }
 once_cell = "1.8"
@@ -26,9 +26,9 @@ rand = "0.8"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
 tracing = "0.1"
-ark-groth16 = {version = "0.4", default-features = false}
+ark-groth16 = { version = "0.4", default-features = false }
 ark-snark = "0.4"
-ark-r1cs-std = {version = "0.4", default-features = false}
+ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 sha2 = "0.10.1"
 bech32 = "0.8.1"
@@ -37,7 +37,7 @@ bech32 = "0.8.1"
 penumbra-tct = { path = "../crypto/tct/", features = ["r1cs"] }
 criterion = { version = "0.4", features = ["html_reports"] }
 penumbra-dex = { path = "../core/component/dex/" }
-penumbra-dao = { path = "../core/component/dao/" }
+penumbra-community-pool = { path = "../core/component/community-pool/" }
 penumbra-stake = { path = "../core/component/stake/" }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool/" }
 penumbra-governance = { path = "../core/component/governance/" }
@@ -52,16 +52,25 @@ penumbra-proof-params = { path = "../crypto/proof-params", features = [
 ] }
 
 [build-dependencies]
-regex = {version = "1", optional=true }
-reqwest = {version ="0.11.14", optional=true, features = ["blocking", "json"] }
-serde_json = {version = "1", optional = true}
-sha2 = {version = "0.10.6", optional=true}
-hex = {version = "0.4.3", optional=true}
+regex = { version = "1", optional = true }
+reqwest = { version = "0.11.14", optional = true, features = [
+    "blocking",
+    "json",
+] }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.10.6", optional = true }
+hex = { version = "0.4.3", optional = true }
 anyhow = "1"
 
 [features]
 download-proving-keys = ["regex", "reqwest", "serde_json", "sha2", "hex"]
-parallel = ["ark-ff/parallel", "decaf377/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel"]
+parallel = [
+    "ark-ff/parallel",
+    "decaf377/parallel",
+    "ark-groth16/parallel",
+    "ark-std/parallel",
+    "ark-r1cs-std/parallel",
+]
 
 [[bench]]
 name = "nullifier_derivation"
@@ -88,5 +97,5 @@ name = "swap_claim"
 harness = false
 
 [[bench]]
-name = "undelegate_claim"
+name = "convert"
 harness = false

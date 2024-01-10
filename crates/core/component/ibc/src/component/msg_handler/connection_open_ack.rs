@@ -78,7 +78,7 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proofs_height_on_b, connection.client_id.clone())
+            .get_verified_consensus_state(&self.proofs_height_on_b, &connection.client_id)
             .await?;
 
         // PROOF VERIFICATION

@@ -2,12 +2,12 @@ use std::convert::{TryFrom, TryInto};
 
 use anyhow::{Context, Error};
 use penumbra_asset::balance;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
     core::component::shielded_pool::v1alpha1 as pb,
     penumbra::core::component::shielded_pool::v1alpha1 as pbc, DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{NotePayload, OutputProof};

@@ -7,13 +7,11 @@ use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
-use penumbra_chain::TransactionContext;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
@@ -26,12 +24,15 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
+use penumbra_txhash::{
+    AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionContext, TransactionId,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
-    Action, ActionView, DetectionData, Id, IsAction, MemoPlaintextView, TransactionParameters,
+    Action, ActionView, DetectionData, IsAction, MemoPlaintextView, TransactionParameters,
     TransactionPerspective, TransactionView,
 };
 
@@ -84,6 +85,24 @@ impl EffectingData for TransactionBody {
 impl EffectingData for Transaction {
     fn effect_hash(&self) -> EffectHash {
         self.transaction_body.effect_hash()
+    }
+}
+
+impl AuthorizingData for TransactionBody {
+    fn auth_hash(&self) -> AuthHash {
+        AuthHash(
+            blake2b_simd::Params::default()
+                .hash(&self.encode_to_vec())
+                .as_bytes()[0..32]
+                .try_into()
+                .expect("blake2b output is always 32 bytes long"),
+        )
+    }
+}
+
+impl AuthorizingData for Transaction {
+    fn auth_hash(&self) -> AuthHash {
+        self.transaction_body.auth_hash()
     }
 }
 
@@ -237,9 +256,9 @@ impl Transaction {
                 | Action::PositionWithdraw(_)
                 | Action::PositionRewardClaim(_)
                 | Action::Ics20Withdrawal(_)
-                | Action::DaoSpend(_)
-                | Action::DaoOutput(_)
-                | Action::DaoDeposit(_) => {}
+                | Action::CommunityPoolSpend(_)
+                | Action::CommunityPoolOutput(_)
+                | Action::CommunityPoolDeposit(_) => {}
             }
         }
 
@@ -282,8 +301,8 @@ impl Transaction {
             Some(ciphertext) => match memo_plaintext {
                 Some(plaintext) => {
                     let plaintext_view: MemoPlaintextView = MemoPlaintextView {
-                        return_address: txp.view_address(plaintext.return_address),
-                        text: plaintext.text,
+                        return_address: txp.view_address(plaintext.return_address()),
+                        text: plaintext.text().to_owned(),
                     };
                     Some(MemoView::Visible {
                         plaintext: plaintext_view,
@@ -463,9 +482,9 @@ impl Transaction {
             .filter_map(|x| x)
     }
 
-    pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+    pub fn community_pool_deposits(&self) -> impl Iterator<Item = &CommunityPoolDeposit> {
         self.actions().filter_map(|action| {
-            if let Action::DaoDeposit(d) = action {
+            if let Action::CommunityPoolDeposit(d) = action {
                 Some(d)
             } else {
                 None
@@ -473,9 +492,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+    pub fn community_pool_spends(&self) -> impl Iterator<Item = &CommunityPoolSpend> {
         self.actions().filter_map(|action| {
-            if let Action::DaoSpend(s) = action {
+            if let Action::CommunityPoolSpend(s) = action {
                 Some(s)
             } else {
                 None
@@ -493,9 +512,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+    pub fn community_pool_outputs(&self) -> impl Iterator<Item = &CommunityPoolOutput> {
         self.actions().filter_map(|action| {
-            if let Action::DaoOutput(o) = action {
+            if let Action::CommunityPoolOutput(o) = action {
                 Some(o)
             } else {
                 None
@@ -535,14 +554,14 @@ impl Transaction {
         &self.binding_sig
     }
 
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> TransactionId {
         use sha2::{Digest, Sha256};
 
         let tx_bytes: Vec<u8> = self.clone().try_into().expect("can serialize transaction");
         let mut id_bytes = [0; 32];
         id_bytes[..].copy_from_slice(Sha256::digest(&tx_bytes).as_slice());
 
-        Id(id_bytes)
+        TransactionId(id_bytes)
     }
 
     /// Compute the binding verification key from the transaction data.

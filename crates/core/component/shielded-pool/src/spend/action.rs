@@ -3,9 +3,9 @@ use std::convert::{TryFrom, TryInto};
 use anyhow::{Context, Error};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::balance;
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
 use penumbra_sct::Nullifier;
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::SpendProof;

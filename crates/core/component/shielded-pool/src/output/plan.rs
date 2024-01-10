@@ -11,7 +11,7 @@ use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType}
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use super::{Body, Output, OutputProof};
+use super::{Body, Output, OutputProof, OutputProofPrivate, OutputProofPublic};
 use crate::{Note, Rseed};
 
 /// A planned [`Output`](Output).
@@ -82,10 +82,14 @@ impl OutputPlan {
             self.proof_blinding_r,
             self.proof_blinding_s,
             &penumbra_proof_params::OUTPUT_PROOF_PROVING_KEY,
-            note,
-            self.value_blinding,
-            balance_commitment,
-            note_commitment,
+            OutputProofPublic {
+                balance_commitment,
+                note_commitment,
+            },
+            OutputProofPrivate {
+                note,
+                balance_blinding: self.value_blinding,
+            },
         )
         .expect("can generate ZKOutputProof")
     }
@@ -165,6 +169,8 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
 
 #[cfg(test)]
 mod test {
+    use crate::output::OutputProofPublic;
+
     use super::OutputPlan;
     use penumbra_asset::Value;
     use penumbra_keys::{
@@ -200,8 +206,10 @@ mod test {
         output_proof
             .verify(
                 &OUTPUT_PROOF_VERIFICATION_KEY,
-                balance_commitment,
-                note_commitment,
+                OutputProofPublic {
+                    balance_commitment,
+                    note_commitment,
+                },
             )
             .unwrap();
     }

@@ -10,7 +10,7 @@ use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
-use crate::{Note, Rseed};
+use crate::{Note, Rseed, SpendProofPrivate, SpendProofPublic};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -100,20 +100,26 @@ impl SpendPlan {
         state_commitment_proof: tct::Proof,
         anchor: tct::Root,
     ) -> SpendProof {
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment: self.balance().commit(self.value_blinding),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
+        };
+        let private = SpendProofPrivate {
+            state_commitment_proof,
+            note: self.note.clone(),
+            v_blinding: self.value_blinding,
+            spend_auth_randomizer: self.randomizer,
+            ak: *fvk.spend_verification_key(),
+            nk: *fvk.nullifier_key(),
+        };
         SpendProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
-            state_commitment_proof.clone(),
-            self.note.clone(),
-            self.value_blinding,
-            self.randomizer,
-            *fvk.spend_verification_key(),
-            *fvk.nullifier_key(),
-            anchor,
-            self.balance().commit(self.value_blinding),
-            self.nullifier(fvk),
-            self.rk(fvk),
+            public,
+            private,
         )
         .expect("can generate ZKSpendProof")
     }

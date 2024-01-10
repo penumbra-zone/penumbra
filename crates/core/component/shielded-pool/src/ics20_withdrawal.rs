@@ -3,13 +3,13 @@ use penumbra_asset::{
     asset::{self, DenomMetadata},
     Balance, Value,
 };
-use penumbra_effecthash::{EffectHash, EffectingData};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
     penumbra::core::component::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
     DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 

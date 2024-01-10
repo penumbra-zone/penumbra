@@ -4,7 +4,7 @@ package penumbra.core.component.governance.v1alpha1;
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
 import "penumbra/core/component/chain/v1alpha1/chain.proto";
-import "penumbra/core/component/dao/v1alpha1/dao.proto";
+import "penumbra/core/component/community_pool/v1alpha1/community_pool.proto";
 import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
@@ -128,18 +128,18 @@ message DelegatorVotePlan {
   bytes proof_blinding_s = 9;
 }
 
-message DaoDeposit {
-  // The value to deposit into the DAO.
+message CommunityPoolDeposit {
+  // The value to deposit into the Community Pool.
   asset.v1alpha1.Value value = 1;
 }
 
-message DaoSpend {
-  // The value to spend from the DAO.
+message CommunityPoolSpend {
+  // The value to spend from the Community Pool.
   asset.v1alpha1.Value value = 1;
 }
 
-message DaoOutput {
-  // The value to output from the DAO.
+message CommunityPoolOutput {
+  // The value to output from the Community Pool.
   asset.v1alpha1.Value value = 1;
   // The address to send the output to.
   keys.v1alpha1.Address address = 2;
@@ -244,8 +244,10 @@ message Proposal {
   Signaling signaling = 5;
   Emergency emergency = 6;
   ParameterChange parameter_change = 7;
-  DaoSpend dao_spend = 8;
+  CommunityPoolSpend community_pool_spend = 8;
   UpgradePlan upgrade_plan = 9;
+  FreezeIbcClient freeze_ibc_client = 10;
+  UnfreezeIbcClient unfreeze_ibc_client = 11;
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
@@ -280,13 +282,13 @@ message Proposal {
     ChangedAppParameters new_parameters = 2;
   }
 
-  // A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
+  // A Community Pool spend proposal describes zero or more transactions to execute on behalf of the Community Pool, with
   // access to its funds, and zero or more scheduled transactions from previous passed proposals to
   // cancel.
-  message DaoSpend {
+  message CommunityPoolSpend {
     // The transaction plan to be executed at the time the proposal is passed. This must be a
-    // transaction plan which can be executed by the DAO, which means it can't require any witness
-    // data or authorization signatures, but it may use the `DaoSpend` action.
+    // transaction plan which can be executed by the Community Pool, which means it can't require any witness
+    // data or authorization signatures, but it may use the `CommunityPoolSpend` action.
     google.protobuf.Any transaction_plan = 2;
   }
 
@@ -294,6 +296,16 @@ message Proposal {
   // will halt at the specified height.
   message UpgradePlan {
     uint64 height = 1;
+  }
+
+  // Freeze an existing IBC client.
+  message FreezeIbcClient {
+    string client_id = 1;
+  }
+
+  // Unfreeze an existing IBC client.
+  message UnfreezeIbcClient {
+    string client_id = 1;
   }
 }
 
@@ -425,8 +437,8 @@ message GenesisContent {
 message ChangedAppParameters {
   // Chain module parameters.
   core.component.chain.v1alpha1.ChainParameters chain_params = 1;
-  // DAO module parameters.
-  core.component.dao.v1alpha1.DaoParameters dao_params = 2;
+  // Community Pool module parameters.
+  core.component.community_pool.v1alpha1.CommunityPoolParameters community_pool_params = 2;
   // Governance module parameters.
   core.component.governance.v1alpha1.GovernanceParameters governance_params = 3;
   // IBC module parameters.
