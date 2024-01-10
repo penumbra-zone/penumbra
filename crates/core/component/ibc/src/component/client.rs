@@ -113,7 +113,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
 
 #[async_trait]
-pub trait ConsensusStateWriteExt: StateWrite {
+pub trait ConsensusStateWriteExt: StateWrite + Sized {
     async fn put_verified_consensus_state<HI: HostInterface>(
         &mut self,
         height: Height,
@@ -156,7 +156,7 @@ pub trait ConsensusStateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> ConsensusStateWriteExt for T {}
+impl<T: StateWrite> ConsensusStateWriteExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {

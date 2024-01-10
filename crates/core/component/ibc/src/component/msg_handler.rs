@@ -27,7 +27,7 @@ use super::HostInterface;
 /// message types) and tweaked (removing the separate check_stateless step).
 #[async_trait]
 pub(crate) trait MsgHandler {
-    async fn check_stateless<AH: AppHandlerCheck, HI: HostInterface>(&self) -> Result<()>;
+    async fn check_stateless<AH: AppHandlerCheck>(&self) -> Result<()>;
     async fn try_execute<
         S: StateWrite,
         AH: AppHandlerCheck + AppHandlerExecute,

@@ -22,7 +22,7 @@ use crate::component::{
 
 #[async_trait]
 impl MsgHandler for MsgRecvPacket {
-    async fn check_stateless<AH, HI>(&self) -> Result<()> {
+    async fn check_stateless<AH>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())

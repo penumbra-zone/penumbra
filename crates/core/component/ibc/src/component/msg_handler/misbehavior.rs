@@ -35,7 +35,7 @@ impl MsgHandler for MsgSubmitMisbehaviour {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H, HI>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let untrusted_misbehavior =
