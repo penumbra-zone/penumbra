@@ -9,7 +9,7 @@
 #[cfg(feature = "component")]
 pub mod component;
 #[cfg(feature = "component")]
-pub use component::ibc_action_with_handler::IbcActionWithHandler;
+pub use component::ibc_action_with_handler::IbcRelayWithHandlers;
 
 pub mod genesis;
 mod ibc_action;

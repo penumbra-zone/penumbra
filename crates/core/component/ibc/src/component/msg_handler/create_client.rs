@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use cnidarium_component::HostInterface;
 use ibc_types::{
     core::client::{events::CreateClient, msgs::MsgCreateClient, ClientId},
     lightclients::tendermint::client_type,
@@ -29,7 +28,7 @@ impl MsgHandler for MsgCreateClient {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn try_execute<S: StateWrite + HostInterface, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S, AH, HI>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let client_state =
             ics02_validation::get_tendermint_client_state(self.client_state.clone())?;

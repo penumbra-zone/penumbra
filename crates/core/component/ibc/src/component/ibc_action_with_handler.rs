@@ -2,11 +2,13 @@ use crate::component::app_handler::AppHandler;
 use crate::IbcRelay;
 use std::marker::PhantomData;
 
-pub struct IbcActionWithHandler<H>(IbcRelay, PhantomData<H>);
+use super::HostInterface;
 
-impl<H: AppHandler> IbcActionWithHandler<H> {
+pub struct IbcRelayWithHandlers<AH, HI>(IbcRelay, PhantomData<AH>, PhantomData<HI>);
+
+impl<AH, HI> IbcRelayWithHandlers<AH, HI> {
     pub fn new(action: IbcRelay) -> Self {
-        Self(action, PhantomData)
+        Self(action, PhantomData, PhantomData)
     }
 
     pub fn action(&self) -> &IbcRelay {
@@ -18,14 +20,14 @@ impl<H: AppHandler> IbcActionWithHandler<H> {
     }
 }
 
-impl<H: AppHandler> From<IbcActionWithHandler<H>> for IbcRelay {
-    fn from(value: IbcActionWithHandler<H>) -> Self {
+impl<AH, HI> From<IbcRelayWithHandlers<AH, HI>> for IbcRelay {
+    fn from(value: IbcRelayWithHandlers<AH, HI>) -> Self {
         value.0
     }
 }
 
 impl IbcRelay {
-    pub fn with_handler<H: AppHandler>(self) -> IbcActionWithHandler<H> {
-        IbcActionWithHandler::new(self)
+    pub fn with_handler<AH: AppHandler, HI: HostInterface>(self) -> IbcRelayWithHandlers<AH, HI> {
+        IbcRelayWithHandlers::new(self)
     }
 }

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use cnidarium_component::{Component, HostInterface};
+use cnidarium_component::Component;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
@@ -11,6 +11,8 @@ use tendermint::abci;
 use tracing::instrument;
 
 use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter};
+
+use super::HostInterface;
 
 pub struct IBCComponent {}
 
@@ -24,7 +26,7 @@ impl IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    pub async fn begin_block<S: StateWrite + HostInterface>(
+    pub async fn begin_block<HI: HostInterface, S: StateWrite>(
         state: &mut S,
         begin_block: &abci::request::BeginBlock,
     ) {
@@ -44,8 +46,7 @@ impl IBCComponent {
         // Currently, we don't use a revision number, because we don't have
         // any further namespacing of blocks than the block height.
         let height = Height::new(
-            state
-                .get_revision_number()
+            HI::get_revision_number(&state)
                 .await
                 .expect("must be able to get revision number in begin block"),
             begin_block.header.height.into(),
