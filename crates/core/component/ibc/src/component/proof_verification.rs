@@ -28,7 +28,6 @@ use ibc_types::{
 use async_trait::async_trait;
 use cnidarium::StateRead;
 use num_traits::float::FloatCore;
-use penumbra_chain::component::StateReadExt as _;
 use sha2::{Digest, Sha256};
 
 use super::HostInterface;
@@ -450,7 +449,7 @@ mod inner {
 
             // verify that the delay time has passed (see ICS07 tendermint IBC client spec for
             // more details)
-            let current_timestamp = self.get_block_timestamp().await?;
+            let current_timestamp = HI::get_block_timestamp(&self).await?;
             let current_height = HI::get_block_height(&self).await?;
             let processed_height = self.get_client_update_height(client_id, height).await?;
             let processed_time = self.get_client_update_time(client_id, height).await?;
@@ -464,7 +463,7 @@ mod inner {
 
             TendermintClientState::verify_delay_passed(
                 current_timestamp.into(),
-                Height::new(self.get_revision_number().await?, current_height)?,
+                Height::new(HI::get_revision_number(self).await?, current_height)?,
                 processed_time,
                 processed_height,
                 delay_period_time,
