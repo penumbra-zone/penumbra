@@ -1,16 +1,18 @@
 use std::str::FromStr;
 
 use anyhow::Context;
+use async_trait::async_trait;
+use cnidarium_component::HostInterface;
 use ibc_types::core::connection::ChainId;
 use penumbra_chain::{component::StateReadExt, state_key};
-use penumbra_ibc::component::HostChainInterface;
 use penumbra_proto::StateReadProto;
 use tendermint::Time;
 
 // ibc-async HostChainInterface for the Penumbra chain
 pub struct PenumbraHost {}
 
-impl HostChainInterface for PenumbraHost {
+#[async_trait]
+impl HostInterface for PenumbraHost {
     async fn get_chain_id<S: cnidarium::StateRead>(state: S) -> anyhow::Result<String> {
         // this might be a bit wasteful -- does it matter?  who knows, at this
         // point. but having it be a separate method means we can do a narrower

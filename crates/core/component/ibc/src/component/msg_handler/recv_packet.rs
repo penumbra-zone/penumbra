@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use cnidarium_component::HostInterface;
 use ibc_types::core::{
     channel::{
         channel::{Order as ChannelOrder, State as ChannelState},
@@ -11,7 +12,6 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-use penumbra_chain::component::StateReadExt;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
@@ -29,7 +29,7 @@ impl MsgHandler for MsgRecvPacket {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<S: StateWrite + HostInterface, H: AppHandlerCheck + AppHandlerExecute>(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -66,8 +66,8 @@ impl MsgHandler for MsgRecvPacket {
             anyhow::bail!("connection for channel is not open");
         }
 
-        let block_height = state.get_block_height().await?;
-        let height = IBCHeight::new(state.get_revision_number().await?, block_height)?;
+        let block_height = S::get_block_height(&state).await?;
+        let height = IBCHeight::new(S::get_revision_number(&state).await?, block_height)?;
 
         if self.packet.timeout_height_on_b.has_expired(height) {
             anyhow::bail!("packet has timed out");
@@ -78,7 +78,7 @@ impl MsgHandler for MsgRecvPacket {
         // TODO: is this correct logic?
         // If the packet has no timeout timestamp, what do we do?
         if let Some(packet_timeout) = packet_timeout {
-            let block_time = state.get_block_timestamp().await?;
+            let block_time = S::get_block_timestamp(&state).await?;
             if block_time >= packet_timeout {
                 anyhow::bail!(
                     "packet has timed out: block time {:?} >= packet timeout {:?}",

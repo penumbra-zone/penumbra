@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
+use cnidarium_component::HostInterface;
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::ClientType;
 use ibc_types::core::client::Height;
@@ -13,7 +14,6 @@ use ibc_types::lightclients::tendermint::{
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
 };
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
@@ -113,6 +113,52 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
 
 #[async_trait]
+pub trait ConsensusStateWriteExt: StateWrite + HostInterface {
+    async fn put_verified_consensus_state(
+        &mut self,
+        height: Height,
+        client_id: ClientId,
+        consensus_state: TendermintConsensusState,
+    ) -> Result<()> {
+        self.put(
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+            consensus_state,
+        );
+
+        let current_height = self.get_block_height().await?;
+        let current_time: ibc_types::timestamp::Timestamp =
+            self.get_block_timestamp().await?.into();
+
+        self.put_proto::<u64>(
+            state_key::client_processed_times(&client_id, &height),
+            current_time.nanoseconds(),
+        );
+
+        self.put(
+            state_key::client_processed_heights(&client_id, &height),
+            ibc_types::core::client::Height::new(0, current_height)?,
+        );
+
+        // update verified heights
+        let mut verified_heights =
+            self.get_verified_heights(&client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
+
+        verified_heights.heights.push(height);
+
+        self.put_verified_heights(&client_id, verified_heights);
+
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + HostInterface + ?Sized> ConsensusStateWriteExt for T {}
+
+#[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_client_counter(&mut self, counter: ClientCounter) {
         self.put("ibc_client_counter".into(), counter);
@@ -154,47 +200,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             format!("penumbra_consensus_states/{height}"),
             consensus_state,
         );
-    }
-
-    async fn put_verified_consensus_state(
-        &mut self,
-        height: Height,
-        client_id: ClientId,
-        consensus_state: TendermintConsensusState,
-    ) -> Result<()> {
-        self.put(
-            IBC_COMMITMENT_PREFIX
-                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
-            consensus_state,
-        );
-
-        let current_height = self.get_block_height().await?;
-        let current_time: ibc_types::timestamp::Timestamp =
-            self.get_block_timestamp().await?.into();
-
-        self.put_proto::<u64>(
-            state_key::client_processed_times(&client_id, &height),
-            current_time.nanoseconds(),
-        );
-
-        self.put(
-            state_key::client_processed_heights(&client_id, &height),
-            ibc_types::core::client::Height::new(0, current_height)?,
-        );
-
-        // update verified heights
-        let mut verified_heights =
-            self.get_verified_heights(&client_id)
-                .await?
-                .unwrap_or(VerifiedHeights {
-                    heights: Vec::new(),
-                });
-
-        verified_heights.heights.push(height);
-
-        self.put_verified_heights(&client_id, verified_heights);
-
-        Ok(())
     }
 }
 

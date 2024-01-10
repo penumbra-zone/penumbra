@@ -2,12 +2,14 @@
 mod action_handler;
 mod community_pool_ext;
 mod mock_client;
+mod penumbra_host_chain;
 mod temp_storage_ext;
 
 pub use action_handler::ActionHandler;
 pub use app::StateWriteExt;
 pub use community_pool_ext::CommunityPoolStateReadExt;
 pub use mock_client::MockClient;
+pub use penumbra_host_chain::PenumbraHost;
 pub use temp_storage_ext::TempStorageExt;
 
 use once_cell::sync::Lazy;
