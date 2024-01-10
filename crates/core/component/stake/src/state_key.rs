@@ -90,7 +90,7 @@ pub fn current_consensus_keys() -> &'static str {
 }
 
 pub(super) mod internal {
-    pub fn stub_delegation_changes() -> &'static str {
+    pub fn delegation_changes() -> &'static str {
         "staking/delegation_changes"
     }
 
