@@ -618,9 +618,6 @@ where
         &mut self,
         plan: &TransactionPlan,
     ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>> {
-        // TODO: delete this code and move it into the view service.
-        // The caller shouldn't have to massage the transaction plan to make the request.
-
         let request = WitnessRequest {
             transaction_plan: Some(plan.clone().into()),
         };
@@ -823,15 +820,17 @@ where
             .await?
             .into_inner();
 
-            if !await_detection {
-                // TODO: exit early here
-            }
 
             while let Some(rsp) = rsp.try_next().await? {
                 match rsp.status {
                     Some(status) => match status {
                         pb::broadcast_transaction_response::Status::BroadcastSuccess(bs) => {
-                            // TODO: stream a progress update
+                            if !await_detection {
+                                // Don't await confirmation, return immediately
+                                return Ok((bs.id.ok_or_else(|| {
+                                    anyhow::anyhow!("BroadcastTransactionResponse broadcast success status message missing transaction id")
+                                })?.try_into()?, 0u64));
+                            }
                         }
                         pb::broadcast_transaction_response::Status::Confirmed(c) => {
                             return Ok((
@@ -853,7 +852,7 @@ where
             }
 
             Err(anyhow::anyhow!(
-                "should have received confirmed status or error"
+                "should have received status or error"
             ))
         }
         .boxed()
