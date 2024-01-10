@@ -40,6 +40,8 @@
 
 mod action_handler;
 mod component;
+mod host_interface;
 
 pub use action_handler::ActionHandler;
 pub use component::Component;
+pub use host_interface::HostInterface;
