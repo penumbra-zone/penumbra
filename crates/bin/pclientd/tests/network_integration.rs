@@ -10,7 +10,7 @@ use std::process::Command as StdCommand;
 
 use anyhow::Context;
 use assert_cmd::cargo::CommandCargoExt;
-use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryStreamExt};
 use tempfile::tempdir;
 use tokio::process::Command as TokioCommand;
 
@@ -142,7 +142,6 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
             pre_authorizations: Vec::new(),
-            ..Default::default()
         })
         .await?
         .into_inner()
@@ -161,14 +160,11 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
         while let Some(tx_rsp) = tx_rsp.try_next().await? {
             match tx_rsp.status {
                 Some(status) => match status {
-                    WitnessAndBuildStatus::BuildProgress(bp) => {
-                        // TODO: need to update display periodically
-                        println!("build progress: {:#?}", bp);
-                    }
+                    WitnessAndBuildStatus::BuildProgress(_) => {}
                     WitnessAndBuildStatus::Complete(c) => {
-                        return Ok(c.transaction.ok_or_else(|| {
+                        return c.transaction.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -179,7 +175,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
@@ -197,15 +193,12 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
         while let Some(broadcast_rsp) = broadcast_rsp.try_next().await? {
             match broadcast_rsp.status {
                 Some(status) => match status {
-                    BroadcastStatus::BroadcastSuccess(bs) => {
-                        // TODO: need to update display once
-                        println!("broadcast success, tx id: {:#?}", bs);
-                    }
+                    BroadcastStatus::BroadcastSuccess(_) => {}
                     BroadcastStatus::Confirmed(c) => {
                         println!("transaction confirmed");
-                        return Ok(c.id.ok_or_else(|| {
+                        return c.id.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -216,7 +209,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
@@ -334,7 +327,6 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
             pre_authorizations: Vec::new(),
-            ..Default::default()
         })
         .await?
         .into_inner()
@@ -353,14 +345,11 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         while let Some(tx_rsp) = tx_rsp.try_next().await? {
             match tx_rsp.status {
                 Some(status) => match status {
-                    WitnessAndBuildStatus::BuildProgress(bp) => {
-                        // TODO: need to update display periodically
-                        println!("build progress: {:#?}", bp);
-                    }
+                    WitnessAndBuildStatus::BuildProgress(_) => {}
                     WitnessAndBuildStatus::Complete(c) => {
-                        return Ok(c.transaction.ok_or_else(|| {
+                        return c.transaction.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -371,7 +360,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
@@ -390,14 +379,13 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
             match broadcast_rsp.status {
                 Some(status) => match status {
                     BroadcastStatus::BroadcastSuccess(bs) => {
-                        // TODO: need to update display once
                         println!("broadcast success, tx id: {:#?}", bs);
                     }
                     BroadcastStatus::Confirmed(c) => {
                         println!("transaction confirmed");
-                        return Ok(c.id.ok_or_else(|| {
+                        return c.id.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -408,7 +396,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
@@ -453,7 +441,6 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
             pre_authorizations: Vec::new(),
-            ..Default::default()
         })
         .await?
         .into_inner()
@@ -472,14 +459,11 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         while let Some(tx_rsp) = tx_rsp.try_next().await? {
             match tx_rsp.status {
                 Some(status) => match status {
-                    WitnessAndBuildStatus::BuildProgress(bp) => {
-                        // TODO: need to update display periodically
-                        println!("build progress: {:#?}", bp);
-                    }
+                    WitnessAndBuildStatus::BuildProgress(_) => {}
                     WitnessAndBuildStatus::Complete(c) => {
-                        return Ok(c.transaction.ok_or_else(|| {
+                        return c.transaction.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -490,7 +474,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
@@ -508,15 +492,12 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         while let Some(broadcast_rsp) = broadcast_rsp.try_next().await? {
             match broadcast_rsp.status {
                 Some(status) => match status {
-                    BroadcastStatus::BroadcastSuccess(bs) => {
-                        // TODO: need to update display once
-                        println!("broadcast success, tx id: {:#?}", bs);
-                    }
+                    BroadcastStatus::BroadcastSuccess(_) => {}
                     BroadcastStatus::Confirmed(c) => {
                         println!("transaction confirmed");
-                        return Ok(c.id.ok_or_else(|| {
+                        return c.id.ok_or_else(|| {
                             anyhow::anyhow!("WitnessAndBuildResponse missing transaction")
-                        })?);
+                        });
                     }
                 },
                 None => {
@@ -527,7 +508,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                 }
             }
         }
-        return Err(anyhow::anyhow!("no witness and build response"));
+        Err(anyhow::anyhow!("no witness and build response"))
     }
     .boxed())
     .await
