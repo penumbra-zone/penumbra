@@ -92,7 +92,7 @@ impl MsgHandler for MsgRecvPacket {
         }
 
         state
-            .verify_packet_recv_proof(&connection, self)
+            .verify_packet_recv_proof::<HI>(&connection, self)
             .await
             .with_context(|| format!("packet {:?} failed to verify", self.packet))?;
 

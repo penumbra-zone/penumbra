@@ -27,9 +27,11 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
+use penumbra_app::PenumbraHost;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
+use penumbra_ibc::component::HostInterface;
 use prost::Message;
 use std::str::FromStr;
 use tendermint::v0_37::abci::{
@@ -70,8 +72,7 @@ impl Info {
         // block that occurs immediately after an upgrade. This block
         // has height 0. To support this case, we report back the height
         // that is stored in the state store.
-        let last_block_height = state
-            .get_block_height()
+        let last_block_height = PenumbraHost::get_block_height(&state)
             .await
             // if we can't get the block height, we're in pregenesis
             // in that case we want to report 0 to cometbft.

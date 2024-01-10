@@ -64,7 +64,7 @@ impl MsgHandler for MsgAcknowledgement {
         }
 
         state
-            .verify_packet_ack_proof(&connection, self)
+            .verify_packet_ack_proof::<HI>(&connection, self)
             .await
             .with_context(|| "packet ack proof verification failed")?;
 

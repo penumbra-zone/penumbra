@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_trait::async_trait;
 use cnidarium::StateWrite;
-use cnidarium_component::Component;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
@@ -26,10 +24,11 @@ impl IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    pub async fn begin_block<HI: HostInterface, S: StateWrite>(
-        state: &mut S,
+    pub async fn begin_block<HI: HostInterface, S: StateWrite + 'static>(
+        state: &mut Arc<S>,
         begin_block: &abci::request::BeginBlock,
     ) {
+        let state = Arc::get_mut(state).expect("state should be unique");
         // In BeginBlock, we want to save a copy of our consensus state to our
         // own state tree, so that when we get a message from our
         // counterparties, we can verify that they are committing the correct
