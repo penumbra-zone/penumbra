@@ -13,12 +13,9 @@ use tendermint_light_client_verifier::{
     ProdVerifier, Verdict, Verifier,
 };
 
-use crate::component::client::StateWriteExt as _;
-use crate::component::client_counter::ics02_validation;
-use crate::component::ClientStateReadExt as _;
-
 use super::update_client::verify_header_validator_set;
 use super::MsgHandler;
+use crate::component::{client::StateWriteExt as _, ics02_validation, ClientStateReadExt as _};
 
 #[async_trait]
 impl MsgHandler for MsgSubmitMisbehaviour {

@@ -4,6 +4,7 @@ mod client;
 mod client_counter;
 mod connection;
 mod connection_counter;
+mod ics02_validation;
 
 #[cfg(feature = "rpc")]
 pub mod rpc;
