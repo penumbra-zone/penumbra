@@ -12,7 +12,7 @@ use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::ChannelProofVerifier,
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -23,7 +23,11 @@ impl MsgHandler for MsgChannelOpenConfirm {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -80,7 +84,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
-            H::chan_open_confirm_check(&mut state, self).await?;
+            AH::chan_open_confirm_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -105,7 +109,7 @@ impl MsgHandler for MsgChannelOpenConfirm {
 
         let transfer = PortId::transfer();
         if self.port_id_on_b == transfer {
-            H::chan_open_confirm_execute(state, self).await;
+            AH::chan_open_confirm_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

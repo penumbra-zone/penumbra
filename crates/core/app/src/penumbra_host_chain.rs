@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use anyhow::Context;
 use async_trait::async_trait;
-use cnidarium_component::HostInterface;
 use ibc_types::core::connection::ChainId;
 use penumbra_chain::{component::StateReadExt, state_key};
+use penumbra_ibc::component::HostInterface;
 use penumbra_proto::StateReadProto;
 use tendermint::Time;
 

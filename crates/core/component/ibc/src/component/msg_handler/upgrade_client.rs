@@ -22,7 +22,7 @@ static SENTINEL_UPGRADE_ROOT: &str = "sentinel_root";
 
 #[async_trait]
 impl MsgHandler for MsgUpgradeClient {
-    async fn check_stateless<AH, HI>(&self) -> Result<()> {
+    async fn check_stateless<AH>(&self) -> Result<()> {
         Ok(())
     }
 

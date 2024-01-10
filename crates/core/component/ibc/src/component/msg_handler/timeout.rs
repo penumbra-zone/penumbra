@@ -14,7 +14,7 @@ use crate::component::{
     client::StateReadExt,
     connection::StateReadExt as _,
     proof_verification::{commit_packet, PacketProofVerifier},
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -25,7 +25,11 @@ impl MsgHandler for MsgTimeout {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        H: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {

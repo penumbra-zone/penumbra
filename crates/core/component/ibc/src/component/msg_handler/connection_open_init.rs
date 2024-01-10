@@ -22,7 +22,7 @@ impl MsgHandler for MsgConnectionOpenInit {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // check that the client with the specified ID exists

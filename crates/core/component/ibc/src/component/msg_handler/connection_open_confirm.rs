@@ -26,7 +26,7 @@ impl MsgHandler for MsgConnectionOpenConfirm {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenConfirm message, completing the IBC connection handshake.
         //
