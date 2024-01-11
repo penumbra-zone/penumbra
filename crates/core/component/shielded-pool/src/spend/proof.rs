@@ -367,7 +367,6 @@ impl TryFrom<pb::ZkSpendProof> for SpendProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::UniformRand;
     use ark_r1cs_std::prelude::Boolean;
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
@@ -519,7 +518,7 @@ mod tests {
 
     proptest! {
     #[test]
-    /// Check that the `SpendProof` is not satisified when using an incorrect
+    /// Check that the `SpendCircuit` is not satisified when using an incorrect
     /// TCT root (`anchor`).
     fn spend_proof_verification_merkle_path_integrity_failure((public, private) in arb_invalid_spend_statement_incorrect_anchor()) {
         assert!(check_satisfaction(&public, &private).is_err());
@@ -583,7 +582,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendProof` is not satisified when the diversified address is wrong.
+        /// Check that the `SpendCircuit` is not satisified when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure((public, private) in arb_invalid_spend_statement_diversified_address()) {
             assert!(check_satisfaction(&public, &private).is_err());
             assert!(check_circuit_satisfaction(public, private).is_err());
@@ -654,7 +653,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendProof` is not satisified, when using an
+        /// Check that the `SpendCircuit` is not satisified, when using an
         /// incorrect nullifier.
         fn spend_proof_verification_nullifier_integrity_failure((public, private) in arb_invalid_spend_statement_nullifier()) {
             assert!(check_satisfaction(&public, &private).is_err());
@@ -721,7 +720,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendProof` is not satisifed when using balance
+        /// Check that the `SpendCircuit` is not satisifed when using balance
         /// commitments with different blinding factors.
         fn spend_proof_verification_balance_commitment_integrity_failure((public, private) in arb_invalid_spend_statement_v_blinding_factor()) {
             assert!(check_satisfaction(&public, &private).is_err());
@@ -746,7 +745,6 @@ mod tests {
                 Rseed(rseed_randomness),
             ).expect("should be able to create note");
             let note_commitment = note.commit();
-            let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
             let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
 
@@ -792,53 +790,50 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendProof` is not satisfied when the incorrect randomizable verification key is used.
+        /// Check that the `SpendCircuit` is not satisfied when the incorrect randomizable verification key is used.
         fn spend_proof_verification_fails_rk_integrity((public, private) in arb_invalid_spend_statement_rk_integrity()) {
             assert!(check_satisfaction(&public, &private).is_err());
             assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 
-    proptest! {
-            #![proptest_config(ProptestConfig::with_cases(2))]
-        #[test]
-        /// Check that the `SpendProof` verification always suceeds for dummy (zero value) spends.
-        fn spend_proof_dummy_verification_suceeds(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), v_blinding in fr_strategy()) {
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
-
+    prop_compose! {
+        fn arb_valid_dummy_spend_statement()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_sender = sk_sender.full_viewing_key();
             let ivk_sender = fvk_sender.incoming();
-            let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
-
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
             let value_to_send = Value {
-                amount: 0u64.into(),
-                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+                amount: Amount::from(0u64),
+                asset_id: asset::Id(Fq::from(asset_id64)),
             };
-
-            let note = Note::generate(&mut rng, &sender, value_to_send);
+            let note = Note::from_parts(
+                sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
-            let ak = sk_sender.spend_auth_key().into();
-            let sct = tct::Tree::new();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+
+            let mut sct = tct::Tree::new();
+            // We shouldn't need a valid Merkle proof here, so let's generate a dummy one.
+            let rseed = Rseed([0u8; 32]);
+            let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+            sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
+
             let anchor = sct.root();
-            let state_commitment_proof = tct::Proof::dummy(&mut OsRng, note_commitment);
-            // Using a random blinding factor here, but the proof will verify
-            // since for dummies we only check if the value is zero, and choose
-            // not to enforce the other equality constraint.
+            let state_commitment_proof = sct.witness(dummy_note_commitment).expect("can witness note commitment");
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-            let blinding_r = Fq::rand(&mut OsRng);
-            let blinding_s = Fq::rand(&mut OsRng);
             let public = SpendProofPublic {
                 anchor,
                 balance_commitment,
-                nullifier: nf,
+                nullifier,
                 rk,
             };
             let private = SpendProofPrivate {
@@ -849,16 +844,16 @@ mod tests {
                 ak,
                 nk,
             };
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
-                public.clone(), private
-            )
-            .expect("should be able to form proof");
+            (public, private)
+        }
+    }
 
-            let proof_result = proof.verify(&vk, public);
-            assert!(proof_result.is_ok());
+    proptest! {
+        #[test]
+        /// Check that the `SpendCircuit` is always satisfied for dummy (zero value) spends.
+        fn spend_proof_dummy_verification_suceeds((public, private) in arb_valid_dummy_spend_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 
