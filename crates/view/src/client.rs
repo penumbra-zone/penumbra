@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
-use tonic::codegen::Bytes;
+use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
@@ -16,7 +16,8 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{
-    self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
+    self as pb, view_protocol_service_client::ViewProtocolServiceClient,
+    BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::note;
@@ -27,6 +28,10 @@ use penumbra_transaction::{
 };
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
+
+pub(crate) type BroadcastStatusStream = Pin<
+    Box<dyn Future<Output = Result<Streaming<BroadcastTransactionResponse>, anyhow::Error>> + Send>,
+>;
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
@@ -173,7 +178,7 @@ pub trait ViewClient {
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>>;
+    ) -> BroadcastStatusStream;
 
     /// Return unspent notes, grouped by address index and then by asset id.
     #[instrument(skip(self))]
@@ -807,10 +812,10 @@ where
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(TransactionId, u64)>> + Send + 'static>> {
+    ) -> BroadcastStatusStream {
         let mut self2 = self.clone();
         async move {
-            let mut rsp = ViewProtocolServiceClient::broadcast_transaction(
+            let rsp = ViewProtocolServiceClient::broadcast_transaction(
                 &mut self2,
                 tonic::Request::new(pb::BroadcastTransactionRequest {
                     transaction: Some(transaction.into()),
@@ -820,40 +825,7 @@ where
             .await?
             .into_inner();
 
-
-            while let Some(rsp) = rsp.try_next().await? {
-                match rsp.status {
-                    Some(status) => match status {
-                        pb::broadcast_transaction_response::Status::BroadcastSuccess(bs) => {
-                            if !await_detection {
-                                // Don't await confirmation, return immediately
-                                return Ok((bs.id.ok_or_else(|| {
-                                    anyhow::anyhow!("BroadcastTransactionResponse broadcast success status message missing transaction id")
-                                })?.try_into()?, 0u64));
-                            }
-                        }
-                        pb::broadcast_transaction_response::Status::Confirmed(c) => {
-                            return Ok((
-                                c.id.ok_or_else(|| {
-                                    anyhow::anyhow!("BroadcastTransactionResponse confirmed status message missing transaction id")
-                                })?
-                                .try_into()?,
-                                c.detection_height,
-                            ));
-                        }
-                    },
-                    None => {
-                        // No status is unexpected behavior
-                        return Err(anyhow::anyhow!(
-                            "empty BroadcastTransactionResponse message"
-                        ));
-                    }
-                }
-            }
-
-            Err(anyhow::anyhow!(
-                "should have received status or error"
-            ))
+            Ok(rsp)
         }
         .boxed()
     }
