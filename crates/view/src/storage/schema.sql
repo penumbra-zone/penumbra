@@ -94,7 +94,9 @@ CREATE TABLE spendable_notes (
     -- the source of the note (a tx hash or structured data jammed into one)
     source                  BLOB NOT NULL,
     -- null if unspent, otherwise spent at height_spent
-    height_spent            BIGINT
+    height_spent            BIGINT,
+    -- null if note source is not a transaction, otherwise the tx hash
+    tx_hash                 BLOB
 );
 
 CREATE INDEX spendable_notes_by_nullifier_idx ON spendable_notes (
