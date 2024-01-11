@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use anyhow::Result;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::uint8::UInt8;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -31,7 +32,7 @@ use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_
 pub struct OutputProofPublic {
     /// A hiding commitment to the balance.
     pub balance_commitment: balance::Commitment,
-    ///
+    /// A hiding commitment to the note.
     pub note_commitment: note::StateCommitment,
 }
 
@@ -42,6 +43,48 @@ pub struct OutputProofPrivate {
     pub note: Note,
     /// A blinding factor to hide the balance of the transaction.
     pub balance_blinding: Fr,
+}
+
+#[cfg(test)]
+fn check_satisfaction(public: &OutputProofPublic, private: &OutputProofPrivate) -> Result<()> {
+    use penumbra_asset::Balance;
+
+    if private.note.diversified_generator() == decaf377::Element::default() {
+        anyhow::bail!("diversified generator is identity");
+    }
+
+    let balance_commitment =
+        (-Balance::from(private.note.value())).commit(private.balance_blinding);
+    if balance_commitment != public.balance_commitment {
+        anyhow::bail!("balance commitment did not match public input");
+    }
+
+    let note_commitment = private.note.commit();
+    if note_commitment != public.note_commitment {
+        anyhow::bail!("note commitment did not match public input");
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(
+    public: OutputProofPublic,
+    private: OutputProofPrivate,
+) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs = ConstraintSystem::new_ref();
+    let circuit = OutputCircuit { public, private };
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
 }
 
 /// Public:
@@ -56,42 +99,28 @@ pub struct OutputProofPrivate {
 /// * nblind (Fq)
 #[derive(Clone, Debug)]
 pub struct OutputCircuit {
-    // Witnesses
-    /// The note being created.
-    note: Note,
-    /// The blinding factor used for generating the balance commitment.
-    balance_blinding: Fr,
-
-    // Public inputs
-    /// balance commitment of the new note,
-    balance_commitment: balance::Commitment,
-    /// note commitment of the new note,
-    note_commitment: note::StateCommitment,
+    public: OutputProofPublic,
+    private: OutputProofPrivate,
 }
 
 impl OutputCircuit {
     fn new(public: OutputProofPublic, private: OutputProofPrivate) -> Self {
-        Self {
-            note: private.note,
-            balance_blinding: private.balance_blinding,
-            balance_commitment: public.balance_commitment,
-            note_commitment: public.note_commitment,
-        }
+        Self { public, private }
     }
 }
 
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
-        let balance_blinding_arr: [u8; 32] = self.balance_blinding.to_bytes();
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
+        let balance_blinding_arr: [u8; 32] = self.private.balance_blinding.to_bytes();
         let balance_blinding_vars = UInt8::new_witness_vec(cs.clone(), &balance_blinding_arr)?;
 
         // Public inputs
         let claimed_note_commitment =
-            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment))?;
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.note_commitment))?;
         let claimed_balance_commitment =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
 
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
@@ -130,12 +159,16 @@ impl DummyWitness for OutputCircuit {
         )
         .expect("can make a note");
         let balance_blinding = Fr::from(1);
-        OutputCircuit {
-            note: note.clone(),
+
+        let public = OutputProofPublic {
             note_commitment: note.commit(),
-            balance_blinding,
             balance_commitment: balance::Commitment(decaf377::basepoint()),
-        }
+        };
+        let private = OutputProofPrivate {
+            note,
+            balance_blinding,
+        };
+        OutputCircuit { public, private }
     }
 }
 
@@ -239,10 +272,10 @@ mod tests {
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Balance, Value};
     use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use penumbra_num::Amount;
     use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
 
-    use penumbra_proto::penumbra::core::component::shielded_pool::v1alpha1 as pb;
     use rand_core::OsRng;
 
     use crate::{note, Note};
@@ -261,47 +294,38 @@ mod tests {
             .boxed()
     }
 
-    proptest! {
-        #![proptest_config(ProptestConfig::with_cases(2))]
-        #[test]
-        fn output_proof_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), balance_blinding in fr_strategy(), value_amount in 2..200u64) {
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
-
+    prop_compose! {
+        fn arb_valid_output_statement()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), amount in any::<u64>(),  balance_blinding in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>()) -> (OutputProofPublic, OutputProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
-            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+            let (dest, _dtk_d) = ivk_recipient.payment_address(address_index.into());
 
             let value_to_send = Value {
-                amount: value_amount.into(),
-                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
             };
-
-            let note = Note::generate(&mut rng, &dest, value_to_send);
+            let note = Note::from_parts(
+                dest,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
             let note_commitment = note.commit();
             let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
             let public = OutputProofPublic { balance_commitment, note_commitment };
             let private = OutputProofPrivate { note, balance_blinding};
 
-            let blinding_r = Fq::rand(&mut OsRng);
-            let blinding_s = Fq::rand(&mut OsRng);
-            let proof = OutputProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
-                public.clone(),
-                private
-            )
-            .expect("can create proof");
-            let serialized_proof: pb::ZkOutputProof = proof.into();
+            (public, private)
+        }
+    }
 
-            let deserialized_proof = OutputProof::try_from(serialized_proof).expect("can deserialize proof");
-            let proof_result = deserialized_proof.verify(&vk, public);
-
-            assert!(proof_result.is_ok());
+    proptest! {
+        #[test]
+        fn output_proof_happy_path((public, private) in arb_valid_output_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 
