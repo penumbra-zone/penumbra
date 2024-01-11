@@ -527,52 +527,46 @@ mod tests {
     }
     }
 
-    proptest! {
-            #![proptest_config(ProptestConfig::with_cases(2))]
-            #[should_panic]
-        #[test]
-        /// Check that the `SpendProof` verification fails when the diversified address is wrong.
-        fn spend_proof_verification_diversified_address_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
-
+    prop_compose! {
+        fn arb_invalid_spend_statement_diversified_address()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let value_to_send = Value {
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
+            };
 
             let wrong_seed_phrase = SeedPhrase::from_randomness(&incorrect_seed_phrase_randomness);
             let wrong_sk_sender = SpendKey::from_seed_phrase_bip44(wrong_seed_phrase, &Bip44Path::new(0));
             let wrong_fvk_sender = wrong_sk_sender.full_viewing_key();
             let wrong_ivk_sender = wrong_fvk_sender.incoming();
-            let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(1u32.into());
+            let (wrong_sender, _dtk_d) = wrong_ivk_sender.payment_address(address_index.into());
 
-            let value_to_send = Value {
-                amount: value_amount.into(),
-                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-            };
-
-            let note = Note::generate(&mut rng, &wrong_sender, value_to_send);
-
+            let note = Note::from_parts(
+                wrong_sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
             let note_commitment = note.commit();
             let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
             let nk = *sk_sender.nullifier_key();
-            let ak = sk_sender.spend_auth_key().into();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+
             let mut sct = tct::Tree::new();
-            sct.insert(tct::Witness::Keep, note_commitment).unwrap();
+            sct.insert(tct::Witness::Keep, note_commitment).expect("should be able to insert note commitments into the SCT");
             let anchor = sct.root();
-            let state_commitment_proof = sct.witness(note_commitment).unwrap();
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
-            let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-            // Note that this will blow up in debug mode as the constraint
-            // system is unsatisified (ark-groth16 has a debug check for this).
-            // In release mode the proof will be created, but will fail to verify.
-            let blinding_r = Fq::rand(&mut OsRng);
-            let blinding_s = Fq::rand(&mut OsRng);
             let public = SpendProofPublic {
                 anchor,
                 balance_commitment,
-                nullifier: nf,
+                nullifier,
                 rk,
             };
             let private = SpendProofPrivate {
@@ -583,15 +577,16 @@ mod tests {
                 ak,
                 nk,
             };
-            let proof = SpendProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
-                public.clone(),
-                private
-            ).expect("can create proof in release mode");
+            (public, private)
+        }
+    }
 
-            proof.verify(&vk, public).expect("boom");
+    proptest! {
+        #[test]
+        /// Check that the `SpendProof` verification fails when the diversified address is wrong.
+        fn spend_proof_verification_diversified_address_integrity_failure((public, private) in arb_invalid_spend_statement_diversified_address()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 
