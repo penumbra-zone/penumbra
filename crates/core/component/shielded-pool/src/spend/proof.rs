@@ -460,73 +460,70 @@ mod tests {
         }
     }
 
+    prop_compose! {
+        fn arb_invalid_spend_statement_incorrect_anchor()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (SpendProofPublic, SpendProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let value_to_send = Value {
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
+            };
+            let note = Note::from_parts(
+                sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
+            let note_commitment = note.commit();
+            let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+            let nk = *sk_sender.nullifier_key();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+
+            let mut sct = tct::Tree::new();
+
+            // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+            // unrelated items in the SCT.
+            for i in 0..num_commitments {
+                // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
+                let rseed = Rseed([i as u8; 32]);
+                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
+            }
+            let incorrect_anchor = sct.root();
+
+            sct.insert(tct::Witness::Keep, note_commitment).expect("should be able to insert note commitments into the SCT");
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
+            let balance_commitment = value_to_send.commit(v_blinding);
+            let rk: VerificationKey<SpendAuth> = rsk.into();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+            let public = SpendProofPublic {
+                anchor: incorrect_anchor,
+                balance_commitment,
+                nullifier,
+                rk,
+            };
+            let private = SpendProofPrivate {
+                state_commitment_proof,
+                note,
+                v_blinding,
+                spend_auth_randomizer,
+                ak,
+                nk,
+            };
+            (public, private)
+        }
+    }
+
     proptest! {
-        #![proptest_config(ProptestConfig::with_cases(2))]
     #[test]
     /// Check that the `SpendProof` verification fails when using an incorrect
     /// TCT root (`anchor`).
-    fn spend_proof_verification_merkle_path_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 2..200u64, v_blinding in fr_strategy()) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<SpendCircuit>(&mut rng);
-
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
-
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
-
-        let note = Note::generate(&mut rng, &sender, value_to_send);
-        let note_commitment = note.commit();
-        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-        let nk = *sk_sender.nullifier_key();
-        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut sct = tct::Tree::new();
-        let incorrect_anchor = sct.root();
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-        let balance_commitment = value_to_send.commit(v_blinding);
-        let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = Nullifier::derive(&nk, 0.into(), &note_commitment);
-
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let public = SpendProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier: nf,
-            rk,
-        };
-        let private = SpendProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-        };
-        let proof = SpendProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            public,
-            private
-        )
-        .expect("can create proof");
-
-        let incorrect_public = SpendProofPublic {
-            anchor: incorrect_anchor,
-            balance_commitment,
-            nullifier: nf,
-            rk,
-        };
-        let proof_result = proof.verify(&vk, incorrect_public);
-        assert!(proof_result.is_err());
+    fn spend_proof_verification_merkle_path_integrity_failure((public, private) in arb_invalid_spend_statement_incorrect_anchor()) {
+        assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
     }
     }
 
