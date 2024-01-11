@@ -1403,12 +1403,13 @@ impl ViewProtocolService for ViewService {
 
         let transaction = Some(
             transaction_plan
+                // TODO: calling `.build` should provide some mechanism to get progress
+                // updates
                 .build(&fvk, &witness_data, &authorization_data)
                 .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
                 .into(),
         );
 
-        // TODO: stream progress
         let stream = try_stream! {
             yield pb::WitnessAndBuildResponse {
                 status: Some(pb::witness_and_build_response::Status::Complete(

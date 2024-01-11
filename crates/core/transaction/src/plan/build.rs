@@ -123,6 +123,7 @@ impl TransactionPlan {
         witness_data: &WitnessData,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
+        // TODO: stream progress updates
         // 1. Build each action.
         let actions = self
             .actions
