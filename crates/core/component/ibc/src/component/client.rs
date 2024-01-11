@@ -376,12 +376,14 @@ mod tests {
     use super::*;
     use cnidarium::{ArcStateDeltaExt, StateDelta};
     use ibc_types::core::client::msgs::MsgUpdateClient;
+    use ibc_types::core::connection::ChainId;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
-    use penumbra_chain::component::StateWriteExt;
+    use penumbra_chain::component::{StateReadExt, StateWriteExt};
     use std::str::FromStr;
     use tendermint::Time;
 
     use crate::component::ibc_action_with_handler::IbcRelayWithHandlers;
+    use crate::component::ClientStateReadExt;
     use crate::IbcRelay;
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
@@ -392,22 +394,32 @@ mod tests {
 
     struct MockHost {}
 
-    // TODO: should this be actually reading from the state? probably right?
-    // values were suggested by copilot and i wanted to keep refactoring, but
-    // i think this needs to actually read the state or it's broken
     #[async_trait]
     impl HostInterface for MockHost {
         async fn get_chain_id<S: StateRead>(_state: S) -> Result<String> {
             Ok("mock_chain_id".to_string())
         }
-        async fn get_revision_number<S: StateRead>(_state: S) -> Result<u64> {
-            Ok(0)
+        async fn get_revision_number<S: StateRead>(state: S) -> Result<u64> {
+            let cid_str = state.get_chain_id().await?;
+
+            Ok(ChainId::from_string(&cid_str).version())
         }
-        async fn get_block_height<S: StateRead>(_state: S) -> Result<u64> {
-            Ok(0)
+        async fn get_block_height<S: StateRead>(state: S) -> Result<u64> {
+            let height: u64 = state
+                .get_proto(penumbra_chain::state_key::block_height())
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("Missing block_height"))?;
+
+            Ok(height)
         }
-        async fn get_block_timestamp<S: StateRead>(_state: S) -> Result<tendermint::Time> {
-            Ok(Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?)
+        async fn get_block_timestamp<S: StateRead>(state: S) -> Result<tendermint::Time> {
+            let timestamp_string: String = state
+                .get_proto(penumbra_chain::state_key::block_timestamp())
+                .await?
+                .ok_or_else(|| anyhow::anyhow!("Missing block_timestamp"))?;
+
+            Ok(Time::from_str(&timestamp_string)
+                .context("block_timestamp was an invalid RFC3339 time string")?)
         }
     }
 
