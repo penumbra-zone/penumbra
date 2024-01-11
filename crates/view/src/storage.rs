@@ -23,7 +23,7 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
 use penumbra_tct as tct;
@@ -373,7 +373,7 @@ impl Storage {
                         tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                    LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
+                    LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                     WHERE notes.note_commitment = x'{}'",
                     hex::encode(note_commitment.0.to_bytes())
                 ))?
@@ -796,7 +796,7 @@ impl Storage {
                         tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                    LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
+                    LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                     WHERE hex(spendable_notes.nullifier) = \"{}\"",
                     hex::encode_upper(nullifier_bytes)
                 ))?
@@ -971,7 +971,7 @@ impl Storage {
                         tx.return_address
                 FROM notes
                 JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-                LEFT JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
+                LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                 WHERE spendable_notes.height_spent IS {spent_clause}
                 AND notes.asset_id IS {asset_clause}
                 AND spendable_notes.address_index IS {address_clause}"
@@ -1422,6 +1422,11 @@ impl Storage {
                 let nullifier = note_record.nullifier.to_bytes().to_vec();
                 let position = (u64::from(note_record.position)) as i64;
                 let source = note_record.source.encode_to_vec();
+                // Check if the note is from a transaction, if so, include the tx hash (id)
+                let tx_hash = match note_record.source {
+                    CommitmentSource::Transaction { id } => id,
+                    _ => None,
+                };
 
                 // Record the inner note data in the notes table
 
@@ -1430,7 +1435,7 @@ impl Storage {
                 dbtx.execute(
                     "INSERT INTO spendable_notes
                     (note_commitment, nullifier, position, height_created, address_index, source, height_spent)
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)",
                     (
                         &note_commitment,
                         &nullifier,
@@ -1439,6 +1444,7 @@ impl Storage {
                         &address_index,
                         &source,
                         // height_spent is NULL because the note is newly discovered
+                        &tx_hash,
                     ),
                 )?;
             }
@@ -1691,7 +1697,7 @@ impl Storage {
             spendable_notes.position
             FROM notes
             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-            JOIN tx ON SUBSTR(spendable_notes.source, 5) = tx.tx_hash
+            JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
             WHERE tx.return_address = ?1";
 
         let return_address = return_address.to_vec();
