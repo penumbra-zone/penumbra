@@ -19,21 +19,21 @@ use ibc_types::DomainType;
 use prost::Message;
 use std::str::FromStr;
 
-use crate::component::ConnectionStateReadExt;
+use crate::component::{ConnectionStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::IbcQuery;
 
 #[async_trait]
-impl ConnectionQuery for IbcQuery {
+impl<HI: HostInterface + Send + Sync + 'static> ConnectionQuery for IbcQuery<HI> {
     /// Connection queries an IBC connection end.
     async fn connection(
         &self,
         request: tonic::Request<QueryConnectionRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionResponse>, tonic::Status> {
         tracing::debug!("querying connection {:?}", request);
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
@@ -89,7 +89,7 @@ impl ConnectionQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = snapshot.version();
 
         let connection_counter = snapshot
@@ -136,7 +136,7 @@ impl ConnectionQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryClientConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let client_id = &ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
 
@@ -176,7 +176,7 @@ impl ConnectionQuery for IbcQuery {
         request: tonic::Request<QueryConnectionClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
 
@@ -224,7 +224,7 @@ impl ConnectionQuery for IbcQuery {
         request: tonic::Request<QueryConnectionConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let consensus_state_height = ibc_types::core::client::Height {
             revision_number: request.get_ref().revision_number,
             revision_height: request.get_ref().revision_height,

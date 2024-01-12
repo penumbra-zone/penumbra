@@ -29,18 +29,18 @@ use prost::Message;
 
 use std::str::FromStr;
 
-use crate::component::{ChannelStateReadExt, ConnectionStateReadExt};
+use crate::component::{ChannelStateReadExt, ConnectionStateReadExt, HostInterface};
 
 use super::IbcQuery;
 
 #[async_trait]
-impl ConsensusQuery for IbcQuery {
+impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> {
     /// Channel queries an IBC Channel.
     async fn channel(
         &self,
         request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
         let port_id = PortId::from_str(request.get_ref().port_id.as_str())
@@ -83,7 +83,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -130,7 +130,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionChannelsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -183,7 +183,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         // 1. get the channel
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
@@ -264,7 +264,7 @@ impl ConsensusQuery for IbcQuery {
         request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let consensus_state_height = ibc_types::core::client::Height {
             revision_number: request.get_ref().revision_number,
             revision_height: request.get_ref().revision_height,
@@ -349,7 +349,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         let port_id = PortId::from_str(&request.get_ref().port_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
@@ -391,7 +391,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryPacketCommitmentsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = snapshot.version();
         let request = request.get_ref();
 
@@ -453,7 +453,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         let port_id = PortId::from_str(&request.get_ref().port_id)
             .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
@@ -488,7 +488,7 @@ impl ConsensusQuery for IbcQuery {
         request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
         let port_id = PortId::from_str(request.get_ref().port_id.as_str())
@@ -528,7 +528,7 @@ impl ConsensusQuery for IbcQuery {
         request: tonic::Request<QueryPacketAcknowledgementsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementsResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -587,7 +587,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryUnreceivedPacketsRequest>,
     ) -> std::result::Result<tonic::Response<QueryUnreceivedPacketsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = snapshot.version();
         let request = request.get_ref();
 
@@ -636,7 +636,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryUnreceivedAcksRequest>,
     ) -> std::result::Result<tonic::Response<QueryUnreceivedAcksResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -684,7 +684,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
@@ -720,7 +720,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryNextSequenceSendRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceSendResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
             .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;

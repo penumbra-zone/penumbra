@@ -7,7 +7,7 @@ use ibc_types::{
 };
 
 use crate::component::{
-    client::{StateReadExt as _, StateWriteExt as _},
+    client::{ConsensusStateWriteExt as _, StateReadExt as _, StateWriteExt as _},
     client_counter::ClientCounter,
     ics02_validation, HostInterface, MsgHandler,
 };
