@@ -9,6 +9,7 @@ use penumbra_proto::StateReadProto;
 use tendermint::Time;
 
 // ibc-async HostChainInterface for the Penumbra chain
+#[derive(Clone)]
 pub struct PenumbraHost {}
 
 #[async_trait]

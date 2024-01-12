@@ -23,7 +23,7 @@ use pd::testnet::{
     join::testnet_join,
 };
 use pd::upgrade;
-use penumbra_app::SUBSTORE_PREFIXES;
+use penumbra_app::{PenumbraHost, SUBSTORE_PREFIXES};
 use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_tendermint_proxy::TendermintProxy;
@@ -372,7 +372,7 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
-            let ibc = penumbra_ibc::component::rpc::IbcQuery::new(storage.clone());
+            let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
 
             // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
             // `Routes` structure to have each component define a method that

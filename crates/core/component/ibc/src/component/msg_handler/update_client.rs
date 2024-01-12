@@ -16,8 +16,10 @@ use tendermint_light_client_verifier::{
 };
 
 use crate::component::{
-    client::{Ics2ClientExt as _, StateReadExt as _, StateWriteExt as _},
-    ics02_validation, MsgHandler,
+    client::{
+        ConsensusStateWriteExt as _, Ics2ClientExt as _, StateReadExt as _, StateWriteExt as _,
+    },
+    ics02_validation, HostInterface, MsgHandler,
 };
 
 #[async_trait]
