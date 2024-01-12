@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{Context, Result};
 use ark_ff::ToConstraintField;
 use ark_groth16::{
     r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
@@ -49,6 +49,52 @@ pub struct SwapProofPrivate {
     pub fee_blinding: Fr,
     /// All information about the swap.
     pub swap_plaintext: SwapPlaintext,
+}
+
+#[cfg(test)]
+fn check_satisfaction(public: &SwapProofPublic, private: &SwapProofPrivate) -> Result<()> {
+    use penumbra_asset::Balance;
+
+    let swap_commitment = private.swap_plaintext.swap_commitment();
+    if swap_commitment != public.swap_commitment {
+        anyhow::bail!("swap commitment did not match public input");
+    }
+
+    let fee_balance = -Balance::from(private.swap_plaintext.claim_fee.0);
+    let fee_commitment = fee_balance.commit(private.fee_blinding);
+    if fee_commitment != public.fee_commitment {
+        anyhow::bail!("fee commitment did not match public input");
+    }
+
+    let balance_1 = -Balance::from(private.swap_plaintext.delta_1_value());
+    let balance_2 = -Balance::from(private.swap_plaintext.delta_2_value());
+    let transparent_blinding = Fr::from(0u64);
+    let balance_1_commit = balance_1.commit(transparent_blinding);
+    let balance_2_commit = balance_2.commit(transparent_blinding);
+    let transparent_balance_commitment = balance_1_commit + balance_2_commit;
+    let total_balance_commitment = transparent_balance_commitment + fee_commitment;
+    if total_balance_commitment != public.balance_commitment {
+        anyhow::bail!("balance commitment did not match public input");
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(public: SwapProofPublic, private: SwapProofPrivate) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs: ConstraintSystemRef<_> = ConstraintSystem::new_ref();
+    let circuit = SwapCircuit { public, private };
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
 }
 
 pub struct SwapCircuit {
@@ -247,13 +293,11 @@ impl TryFrom<pb::ZkSwapProof> for SwapProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::{PrimeField, UniformRand};
+    use ark_ff::PrimeField;
     use penumbra_asset::{Balance, Value};
     use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
     use penumbra_num::Amount;
-    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
-    use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()
@@ -261,69 +305,64 @@ mod tests {
             .boxed()
     }
 
+    prop_compose! {
+        fn arb_valid_swap_statement()(fee_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_trader = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_trader = sk_trader.full_viewing_key();
+            let ivk_trader = fvk_trader.incoming();
+            let (claim_address, _dtk_d) = ivk_trader.payment_address(address_index.into());
+
+            let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+            let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+            let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+            let delta_1_i = Amount::from(value1_amount);
+            let delta_2_i = Amount::from(0u64);
+            let fee = Fee::default();
+
+            let rseed = Rseed(rseed_randomness);
+            let swap_plaintext = SwapPlaintext {
+                trading_pair,
+                delta_1_i,
+                delta_2_i,
+                claim_fee: fee,
+                claim_address,
+                rseed,
+            };
+            let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
+            let swap_commitment = swap_plaintext.swap_commitment();
+
+            let value_1 = Value {
+                amount: swap_plaintext.delta_1_i,
+                asset_id: swap_plaintext.trading_pair.asset_1(),
+            };
+            let value_2 = Value {
+                amount: swap_plaintext.delta_2_i,
+                asset_id:  swap_plaintext.trading_pair.asset_2(),
+            };
+            let value_fee = Value {
+                amount: swap_plaintext.claim_fee.amount(),
+                asset_id: swap_plaintext.claim_fee.asset_id(),
+            };
+            let mut balance = Balance::default();
+            balance -= value_1;
+            balance -= value_2;
+            balance -= value_fee;
+            let balance_commitment = balance.commit(fee_blinding);
+
+            let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment };
+            let private = SwapProofPrivate { fee_blinding, swap_plaintext };
+
+            (public, private)
+        }
+    }
+
     proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    fn swap_proof_happy_path(fee_blinding in fr_strategy(), value1_amount in 2..200u64) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<SwapCircuit>(&mut rng);
-
-
-        let seed_phrase = SeedPhrase::generate(rng);
-        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_recipient = sk_recipient.full_viewing_key();
-        let ivk_recipient = fvk_recipient.incoming();
-        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-
-        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
-        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
-        let trading_pair = TradingPair::new(gm.id(), gn.id());
-
-        let delta_1 = Amount::from(value1_amount);
-        let delta_2 = Amount::from(0u64);
-        let fee = Fee::default();
-
-        let swap_plaintext =
-        SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
-        let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
-        let swap_commitment = swap_plaintext.swap_commitment();
-
-        let value_1 = Value {
-            amount: swap_plaintext.delta_1_i,
-            asset_id: swap_plaintext.trading_pair.asset_1(),
-        };
-        let value_2 = Value {
-            amount: swap_plaintext.delta_2_i,
-            asset_id:  swap_plaintext.trading_pair.asset_2(),
-        };
-        let value_fee = Value {
-            amount: swap_plaintext.claim_fee.amount(),
-            asset_id: swap_plaintext.claim_fee.asset_id(),
-        };
-        let mut balance = Balance::default();
-        balance -= value_1;
-        balance -= value_2;
-        balance -= value_fee;
-        let balance_commitment = balance.commit(fee_blinding);
-
-        let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment };
-        let private = SwapProofPrivate { fee_blinding, swap_plaintext };
-
-        let blinding_r = Fq::rand(&mut rng);
-        let blinding_s = Fq::rand(&mut rng);
-
-        let proof = SwapProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            public.clone(),
-            private
-        )
-        .expect("can create proof");
-
-        let proof_result = proof.verify(&vk, public);
-
-        assert!(proof_result.is_ok());
+        #[test]
+        fn swap_proof_happy_path((public, private) in arb_valid_swap_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 }

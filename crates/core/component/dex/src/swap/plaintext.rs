@@ -146,6 +146,20 @@ impl SwapPlaintext {
         }
     }
 
+    pub fn delta_1_value(&self) -> Value {
+        Value {
+            amount: self.delta_1_i,
+            asset_id: self.trading_pair.asset_1,
+        }
+    }
+
+    pub fn delta_2_value(&self) -> Value {
+        Value {
+            amount: self.delta_2_i,
+            asset_id: self.trading_pair.asset_2,
+        }
+    }
+
     pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
         trading_pair: TradingPair,
