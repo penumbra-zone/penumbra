@@ -109,112 +109,112 @@ fn get_validator(tmpdir: &TempDir) -> String {
     captures.unwrap()[0].to_string()
 }
 
-// #[ignore]
-// #[test]
-// fn transaction_send_from_addr_0_to_addr_1() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+fn transaction_send_from_addr_0_to_addr_1() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     // Create a memo that we can inspect later, to confirm transaction
-//     // is viewable post-send.
-//     let memo_text = "Time is an illusion. Lunchtime doubly so.";
+    // Create a memo that we can inspect later, to confirm transaction
+    // is viewable post-send.
+    let memo_text = "Time is an illusion. Lunchtime doubly so.";
 
-//     // Send to self: tokens were distributed to `ADDRESS_0_STR`, in our test
-//     // we'll send `TEST_ASSET` to `ADDRESS_1_STR` and then check our balance.
-//     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
-//     send_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "send",
-//             TEST_ASSET,
-//             "--to",
-//             ADDRESS_1_STR,
-//             "--memo",
-//             memo_text,
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Send to self: tokens were distributed to `ADDRESS_0_STR`, in our test
+    // we'll send `TEST_ASSET` to `ADDRESS_1_STR` and then check our balance.
+    let mut send_cmd = Command::cargo_bin("pcli").unwrap();
+    send_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "send",
+            TEST_ASSET,
+            "--to",
+            ADDRESS_1_STR,
+            "--memo",
+            memo_text,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     // Look up the transaction id from the command output so we can view it,
-//     // to exercise the `pcli view tx` code.
-//     let send_stdout = send_cmd.unwrap().stdout;
-//     let tx_regex = Regex::new(r"[0-9a-f]{64}").unwrap();
-//     let s = std::str::from_utf8(&send_stdout).unwrap();
-//     let captures = tx_regex.captures(s);
-//     let tx_id = &captures.expect("can find transaction id within 'pcli send tx' output")[0];
-//     let mut view_cmd = Command::cargo_bin("pcli").unwrap();
-//     view_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "view",
-//             "tx",
-//             "--raw",
-//             tx_id,
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     view_cmd.assert().success();
+    // Look up the transaction id from the command output so we can view it,
+    // to exercise the `pcli view tx` code.
+    let send_stdout = send_cmd.unwrap().stdout;
+    let tx_regex = Regex::new(r"[0-9a-f]{64}").unwrap();
+    let s = std::str::from_utf8(&send_stdout).unwrap();
+    let captures = tx_regex.captures(s);
+    let tx_id = &captures.expect("can find transaction id within 'pcli send tx' output")[0];
+    let mut view_cmd = Command::cargo_bin("pcli").unwrap();
+    view_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "view",
+            "tx",
+            "--raw",
+            tx_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    view_cmd.assert().success();
 
-//     // Convert the raw JSON to a protobuf TransactionView, then convert
-//     // that to a domain type.
-//     let view_output = view_cmd.output().unwrap();
-//     let view_stdout: String = std::str::from_utf8(&view_output.stdout)
-//         .unwrap()
-//         .to_string();
-//     let view_json: Value =
-//         serde_json::from_str(&view_stdout).expect("can parse JSON from 'pcli view tx'");
+    // Convert the raw JSON to a protobuf TransactionView, then convert
+    // that to a domain type.
+    let view_output = view_cmd.output().unwrap();
+    let view_stdout: String = std::str::from_utf8(&view_output.stdout)
+        .unwrap()
+        .to_string();
+    let view_json: Value =
+        serde_json::from_str(&view_stdout).expect("can parse JSON from 'pcli view tx'");
 
-//     let tvp: ProtoTransactionView = serde_json::value::from_value(view_json).unwrap();
-//     let tv: TransactionView = tvp.try_into().unwrap();
-//     // TODO: the first may no longer be a spend because of ordering changes.
-//     // Let's not try to fix this at the moment. Later we can put a "canonical ordering" into the planner.
-//     /*
-//     // There will be a lot of ActionViews in the body... let's just check that one is a Spend.
-//     assert!(matches!(
-//         &tv.body_view.action_views[0],
-//         penumbra_transaction::ActionView::Spend(_)
-//     ));
-//      */
-//     // Inspect the TransactionView and ensure that we can read the memo text.
-//     let mv = tv
-//         .body_view
-//         .memo_view
-//         .expect("can find MemoView in TransactionView");
-//     match mv {
-//         penumbra_transaction::MemoView::Visible { plaintext, .. } => {
-//             assert!(plaintext.text == memo_text);
-//         }
-//         penumbra_transaction::MemoView::Opaque { .. } => {
-//             panic!("MemoView for transaction was Opaque! We should be able to read this memo.");
-//         }
-//     }
+    let tvp: ProtoTransactionView = serde_json::value::from_value(view_json).unwrap();
+    let tv: TransactionView = tvp.try_into().unwrap();
+    // TODO: the first may no longer be a spend because of ordering changes.
+    // Let's not try to fix this at the moment. Later we can put a "canonical ordering" into the planner.
+    /*
+    // There will be a lot of ActionViews in the body... let's just check that one is a Spend.
+    assert!(matches!(
+        &tv.body_view.action_views[0],
+        penumbra_transaction::ActionView::Spend(_)
+    ));
+     */
+    // Inspect the TransactionView and ensure that we can read the memo text.
+    let mv = tv
+        .body_view
+        .memo_view
+        .expect("can find MemoView in TransactionView");
+    match mv {
+        penumbra_transaction::MemoView::Visible { plaintext, .. } => {
+            assert!(plaintext.text == memo_text);
+        }
+        penumbra_transaction::MemoView::Opaque { .. } => {
+            panic!("MemoView for transaction was Opaque! We should be able to read this memo.");
+        }
+    }
 
-//     // Now we inspect our wallet balance to ensure the funds were transferred correctly.
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     // The 1 is the index of the address which should be separated from the
-//     // test_asset only by whitespace.
-//     balance_cmd
-//         .assert()
-//         .stdout(predicate::str::is_match(r"1\s*2020test_usd").unwrap());
+    // Now we inspect our wallet balance to ensure the funds were transferred correctly.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // The 1 is the index of the address which should be separated from the
+    // test_asset only by whitespace.
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(r"1\s*2020test_usd").unwrap());
 
-//     // Cleanup: Send the asset back at the end of the test such that other tests begin
-//     // from the original state.
-//     let mut send_cmd = Command::cargo_bin("pcli").unwrap();
-//     send_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "send",
-//             TEST_ASSET,
-//             "--to",
-//             ADDRESS_0_STR,
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-// }
+    // Cleanup: Send the asset back at the end of the test such that other tests begin
+    // from the original state.
+    let mut send_cmd = Command::cargo_bin("pcli").unwrap();
+    send_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "send",
+            TEST_ASSET,
+            "--to",
+            ADDRESS_0_STR,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+}
 
 #[ignore]
 #[test]
