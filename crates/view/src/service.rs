@@ -9,10 +9,7 @@ use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
-use futures::{
-    stream::{StreamExt, TryStreamExt},
-    Future, Stream,
-};
+use futures::stream::{StreamExt, TryStreamExt};
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -57,11 +54,10 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, txhash::TransactionId, AuthorizationData, Transaction,
-    TransactionPerspective, WitnessData,
+    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
 };
 
-use crate::{client::BroadcastStatusStream, Planner, Storage, Worker};
+use crate::{Planner, Storage, Worker};
 
 type BroadcastTransactionStream = Pin<
     Box<dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>> + Send>,
