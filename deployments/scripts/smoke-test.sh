@@ -63,6 +63,7 @@ PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
 echo "Running pcli integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
+    RUST_BACKTRACE=1 \
     cargo test --quiet --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture
 
 echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
