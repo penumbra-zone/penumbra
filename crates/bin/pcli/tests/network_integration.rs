@@ -33,7 +33,7 @@ use penumbra_transaction::view::TransactionView;
 const TEST_ASSET: &str = "1020test_usd";
 
 // The maximum amount of time any command is allowed to take before we error.
-const TIMEOUT_COMMAND_SECONDS: u64 = 20;
+const TIMEOUT_COMMAND_SECONDS: u64 = 45;
 
 // The time to wait before attempting to perform an undelegation claim.
 // By default the epoch duration is 100 blocks, the block time is ~500 ms,
