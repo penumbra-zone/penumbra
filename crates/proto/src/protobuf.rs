@@ -184,10 +184,10 @@ impl DomainType for Height {
 }
 
 impl DomainType for ClientState {
-    type Proto = ibc_proto::ibc::lightclients::tendermint::v1::ClientState;
+    type Proto = ibc_proto::google::protobuf::Any;
 }
 impl DomainType for ConsensusState {
-    type Proto = ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState;
+    type Proto = ibc_proto::google::protobuf::Any;
 }
 
 impl<T> From<T> for IbcRelay

@@ -11,11 +11,10 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
+use prost::Message;
 
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::Height;
-use ibc_types::lightclients::tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
-use ibc_types::lightclients::tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
 use ibc_types::path::ClientConsensusStatePath;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
@@ -58,23 +57,13 @@ impl ClientQuery for IbcQuery {
             .await
             .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
 
-        // Client state may be None, which we'll convert to a NotFound response.
-        let client_state = match cs_opt {
-            // If found, convert to a suitable type to match
-            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
-            Some(c) => ibc_proto::google::protobuf::Any {
-                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: c,
-            },
-            None => {
-                return Err(tonic::Status::not_found(format!(
-                    "couldn't find client: {client_id}"
-                )))
-            }
-        };
+        let client_state = cs_opt
+            .map(|cs_opt| ibc_proto::google::protobuf::Any::decode(cs_opt.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
 
         let res = QueryClientStateResponse {
-            client_state: Some(client_state),
+            client_state,
             proof: proof.encode_to_vec(),
             proof_height: Some(height.into()),
         };
@@ -142,25 +131,15 @@ impl ClientQuery for IbcQuery {
                     .to_vec(),
             )
             .await
-            .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get consensus state: {e}")))?;
 
-        // if state is None, convert to a NotFound response.
-        let consensus_state = match cs_opt {
-            // If found, convert to a suitable type to match
-            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryConsensusStateResponse.html
-            Some(c) => ibc_proto::google::protobuf::Any {
-                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: c,
-            },
-            None => {
-                return Err(tonic::Status::not_found(format!(
-                    "couldn't find client: {client_id}"
-                )))
-            }
-        };
+        let consensus_state = cs_opt
+            .map(|cs_opt| ibc_proto::google::protobuf::Any::decode(cs_opt.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode consensus state: {e}")))?;
 
         let res = QueryConsensusStateResponse {
-            consensus_state: Some(consensus_state),
+            consensus_state,
             proof: proof.encode_to_vec(),
             proof_height: Some(height.into()),
         };
