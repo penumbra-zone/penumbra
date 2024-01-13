@@ -475,6 +475,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .into_iter()
                 .flat_map(|us| us.iter().map(|u| u.delegation_amount.value()))
                 .sum::<u128>();
+
+            // In theory, the maximum amount of delegation tokens is the total supply of staking tokens.
+            // In practice, this is unlikely to happen, but even if it did, we anticipate that the total
+            // supply of staking token is << 10^32 (2^107) tokens with a unit denomination of 10^6 (2^20),
+            // so there should be ample room to cast this to an i128.
             let delegation_delta = (total_delegations as i128) - (total_undelegations as i128);
 
             tracing::debug!(
