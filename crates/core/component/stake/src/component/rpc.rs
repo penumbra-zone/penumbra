@@ -51,7 +51,7 @@ impl QueryService for Server {
             })?;
 
         let validators = state
-            .validator_list()
+            .validator_list() // TODO(erwan): think through a UX for defined validators. Then we can remove `validator_list` entirely.
             .await
             .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {e}")))?;
 

@@ -589,7 +589,10 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
 
         // Snapshot the rate data and voting power for all active validators at this height
         let mut js = JoinSet::new();
-        for identity_key in self.validator_identity_list().await? {
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
+
             let state = self.validator_state(&identity_key);
             let rate_data = self.current_validator_rate(&identity_key);
             let power = self.validator_power(&identity_key);

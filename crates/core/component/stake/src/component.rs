@@ -3,6 +3,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     future::Future,
     pin::Pin,
+    str::FromStr,
     sync::Arc,
 };
 
@@ -486,7 +487,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 validator = ?validator.identity_key,
                 total_delegations,
                 total_undelegations,
-                delegation_delta
+                delegation_delta,
+                "net delegation change for validator's pool for the epoch"
             );
 
             // Delegations and undelegations created in the previous epoch were created
@@ -509,6 +511,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 delegation_delta,
             )
             .await?;
+
             // update the staking token supply in the JMT
             self.update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
                 .await?;
@@ -527,8 +530,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // Update the state of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
             self.set_validator_rates(&validator.identity_key, next_validator_rate.clone());
-            self.set_validator_power(&validator.identity_key, voting_power)
-                .await?;
+            self.set_validator_power(&validator.identity_key, voting_power)?;
 
             // If the validator is Active, distribute its funding stream rewards
             // for the preceding epoch.
@@ -568,13 +570,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 }
             }
 
-            // rename to curr_rate so it lines up with next_rate (same # chars)
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-            tracing::debug!(?prev_validator_rate);
-            tracing::debug!(?next_validator_rate);
-            tracing::debug!(?delegation_delta);
-            tracing::debug!(?delegation_token_supply);
-            tracing::debug!(?delegation_denom);
+
+            let unbonded_amount =
+                next_validator_rate.unbonded_amount(delegation_token_supply.value());
+
+            if unbonded_amount < min_validator_stake.value() {
+                self.set_validator_state(&validator.identity_key, validator::State::Defined)
+                    .await?;
+            }
+
+            tracing::debug!(validator_identity = %validator.identity_key,
+                previous_epoch_validator_rate= ?prev_validator_rate,
+                next_epoch_validator_rate = ?next_validator_rate,
+                delegation_denom = ?delegation_denom,
+                ?delegation_token_supply,
+                "validator's end-epoch has been processed");
         }
 
         // Now that all the voting power has been calculated for the upcoming epoch,
@@ -592,20 +603,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // A list of validators with zero power, who must be inactive.
         let mut zero_power = Vec::new();
 
-        for v in self.validator_identity_list().await? {
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
             let state = self
-                .validator_state(&v)
+                .validator_state(&identity_key)
                 .await?
                 .context("should be able to fetch validator state")?;
             let power = self
-                .validator_power(&v)
+                .validator_power(&identity_key)
                 .await?
                 .context("should be able to fetch validator power")?;
             if matches!(state, validator::State::Active | validator::State::Inactive) {
                 if power == 0 {
-                    zero_power.push((v, power));
+                    zero_power.push((identity_key, power));
                 } else {
-                    validators_by_power.push((v, power));
+                    validators_by_power.push((identity_key, power));
                 }
             }
         }
@@ -639,18 +652,25 @@ pub(crate) trait StakingImpl: StateWriteExt {
     async fn process_validator_unbondings(&mut self) -> Result<()> {
         let current_epoch = self.get_current_epoch().await?;
 
-        for v in self.validator_identity_list().await? {
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
             let state = self
-                .validator_bonding_state(&v)
+                .validator_bonding_state(&identity_key)
                 .await?
                 .context("should be able to fetch validator bonding state")?;
+
+            // If the unbonding epoch has been reached, transition the validator to Unbonded.
             if let validator::BondingState::Unbonding { unbonding_epoch } = state {
-                if unbonding_epoch <= current_epoch.index {
-                    self.set_validator_bonding_state(&v, validator::BondingState::Unbonded)
+                if current_epoch.index >= unbonding_epoch {
+                    let _ = self
+                        .set_validator_bonding_state(
+                            &identity_key,
+                            validator::BondingState::Unbonded,
+                        )
                         // Instrument the call with a span that includes the validator ID,
                         // since our current span doesn't have any per-validator information.
-                        .instrument(tracing::debug_span!("unbonding", ?v))
-                        .await;
+                        .instrument(tracing::debug_span!("unbonding", ?identity_key));
                 }
             }
         }
@@ -678,11 +698,14 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // First, build a mapping of consensus key to voting power for all known validators.
 
         // Using a JoinSet, run each validator's state queries concurrently.
-        let mut js = JoinSet::new();
-        for v in self.validator_identity_list().await?.iter() {
-            let state = self.validator_state(v);
-            let power = self.validator_power(v);
-            let consensus_key = self.validator_consensus_key(v);
+        let mut js: JoinSet<std::prelude::v1::Result<(PublicKey, u64), anyhow::Error>> =
+            JoinSet::new();
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
+            let state = self.validator_state(&identity_key);
+            let power = self.validator_power(&identity_key);
+            let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
@@ -770,10 +793,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // iterate over our app's validators, and match them up with the vote data.
         // We can fetch all the data required for processing each validator concurrently:
         let mut js = JoinSet::new();
-        for v in self.validator_identity_list().await? {
-            let state = self.validator_state(&v);
-            let uptime = self.validator_uptime(&v);
-            let consensus_key = self.validator_consensus_key(&v);
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
+            let state = self.validator_state(&identity_key);
+            let uptime = self.validator_uptime(&identity_key);
+            let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
@@ -783,7 +808,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     validator::State::Active => {
                         // If the validator is active, we need its consensus key and current uptime data:
                         Ok(Some((
-                            v,
+                            identity_key,
                             consensus_key
                                 .await?
                                 .expect("every known validator must have a recorded consensus key"),
@@ -884,51 +909,66 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
-    /// Add a validator after genesis, which will start in Inactive
-    /// state with no power assigned.
-    async fn add_validator(&mut self, validator: Validator, cur_rate_data: RateData) -> Result<()> {
+    /// Add a validator after genesis, which will start in a [`validator::State::Defined`]
+    /// state with zero voting power, and unbonded delegation tokens. This is the default
+    /// "initial" state for a validator.
+    async fn add_validator(&mut self, validator: Validator, rate_data: RateData) -> Result<()> {
         // We explicitly do not call `update_tm_validator_power` here,
         // as a post-genesis validator should not have power reported
         // to Tendermint until it becomes Active.
         self.add_validator_inner(
             validator.clone(),
-            cur_rate_data,
-            // All post-genesis validators start in the "Inactive" state:
-            validator::State::Inactive,
-            // And post-genesis validators have "Unbonded" bonding state:
+            rate_data,
+            validator::State::Defined,
             validator::BondingState::Unbonded,
             0,
         )
         .await
     }
 
-    // Used for updating an existing validator's definition.
+    /// Update a validator definition
     #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
     async fn update_validator(&mut self, validator: Validator) -> Result<()> {
-        tracing::debug!(?validator);
-        let id = &validator.identity_key;
+        use validator::State::*;
 
-        // Get the current state, so we can determine whether this update
-        // triggers a state transition.
+        tracing::debug!(definition = ?validator, "updating validator definition");
+        let id = &validator.identity_key;
         let current_state = self
             .validator_state(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
 
-        use validator::State::*;
+        tracing::debug!(?current_state, ?validator.enabled, "updating validator state");
 
         match (current_state, validator.enabled) {
+            (Active | Inactive | Jailed | Defined | Disabled, false) => {
+                // The operator has disabled their validator.
+                self.set_validator_state(id, Disabled).await?;
+            }
             (Disabled, true) => {
-                // The operator has enabled their validator, so set it to Inactive.
-                self.set_validator_state(id, Inactive).await?;
+                // The operator has re-enabled their validator, if it has enough stake it will become
+                // inactive, otherwise it will become defined.
+                let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
+                let current_validator_rate = self
+                    .current_validator_rate(id)
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let delegation_token_supply = self
+                    .token_supply(&DelegationToken::from(id).id())
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let unbonded_amount =
+                    current_validator_rate.unbonded_amount(delegation_token_supply.value());
+
+                if unbonded_amount >= min_validator_stake.value() {
+                    self.set_validator_state(id, Inactive).await?;
+                } else {
+                    self.set_validator_state(id, Defined).await?;
+                }
             }
             (Jailed, true) => {
                 // Treat updates to jailed validators as unjail requests.
-                self.set_validator_state(id, Inactive).await?;
-            }
-            (Active | Inactive | Jailed | Disabled, false) => {
-                // The operator has disabled their validator.
-                self.set_validator_state(id, Disabled).await?;
+                self.set_validator_state(id, Defined).await?;
             }
             (Active | Inactive, true) => {
                 // This validator update does not affect the validator's state.
@@ -936,7 +976,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             (Tombstoned, _) => {
                 // Ignore updates to tombstoned validators.
             }
-            (Defined, _) => todo!("TODO(erwan): MERGEBLOCK implement this"),
+            (Defined, true) => {}
         }
 
         // Update the consensus key lookup, in case the validator rotated their
@@ -944,7 +984,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
 
-        self.put(state_key::validators::by_id(id), validator);
+        self.put(state_key::validators::index::all::by_id(id), validator);
 
         Ok(())
     }
@@ -1181,7 +1221,8 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get(&state_key::validators::by_id(identity_key)).await
+        self.get(&state_key::validators::index::all::by_id(identity_key))
+            .await
     }
 
     fn validator_consensus_key(
@@ -1192,7 +1233,7 @@ pub trait StateReadExt: StateRead {
         // the consensus key.  Alternatively, we could store the consensus
         // keys in a separate index.
         self.get_proto::<penumbra_proto::penumbra::core::component::stake::v1alpha1::Validator>(
-            &state_key::validators::by_id(identity_key),
+            &state_key::validators::index::all::by_id(identity_key),
         )
         .map_ok(|opt| {
             opt.map(|v| {
@@ -1279,37 +1320,31 @@ pub trait StateReadExt: StateRead {
         }
     }
 
-    /// Returns a list of all known validator identity keys.
-    // TODO(erwan): #2921.
-    fn validator_identity_list(
+    /// Returns a stream of [`IdentityKey`]s of validators that are currently in the consensus set.
+    /// This only excludes validators that do not meet the minimum validator stake requirement
+    /// (see [`StakeParameters::min_validator_stake`]).
+    fn consensus_set_stream(
         &self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<IdentityKey>>> + Send + 'static>> {
-        let mut iks = Vec::new();
-        // TODO: boxing here is to avoid an Unpin problem.. should
-        // we bound the StateRead stream GATs as Unpin?
-        // TODO: why did the previous implementation of this method
-        // fail to compile with a Self does not live longe enough error?
-        let mut stream = self.prefix_keys(state_key::validators::list()).boxed();
-        async move {
-            while let Some(key) = stream.next().await {
-                let ik = key?.as_str()[state_key::validators::list().len()..]
-                    .parse::<IdentityKey>()
-                    .expect("state keys should only have valid identity keys");
-                iks.push(ik);
-            }
-            Ok(iks)
-        }
-        .boxed()
+    ) -> Result<Pin<Box<dyn futures::Stream<Item = Result<IdentityKey>> + Send + 'static>>> {
+        Ok(self
+            .nonverifiable_prefix_raw(
+                state_key::validators::index::consensus_set::prefix().as_bytes(),
+            )
+            .map(|res| {
+                res.map(|(_, raw_identity_key)| {
+                    // TODO(erwan): is this an opportunity to extend the proto overlay?
+                    let str_identity_key = std::str::from_utf8(raw_identity_key.as_slice())
+                        .expect("state keys should only have valid identity keys");
+                    IdentityKey::from_str(str_identity_key)
+                        .expect("state keys should only have valid identity keys")
+                })
+            })
+            .boxed())
     }
 
     /// Returns a list of all known validators metadata.
-    // TODO(erwan): #2921.
-    // TODO(erwan): split this into:
-    // - active_validator_index
-    // - validator_index: all defined validators
-    // - all_defined_validator_index: all defined validators
     async fn validator_list(&self) -> Result<Vec<Validator>> {
-        self.prefix(state_key::validators::list())
+        self.prefix(state_key::validators::index::all::prefix())
             .map_ok(|(_key, validator)| validator)
             .try_collect()
             .await
@@ -1337,6 +1372,7 @@ pub trait StateReadExt: StateRead {
         Ok(self.get_stake_params().await?.missed_blocks_maximum)
     }
 
+    // TODO(erawn): eerily similar to `current_unbonding_end_epoch_for`.
     async fn unbonding_end_epoch_for(
         &self,
         id: &IdentityKey,
@@ -1358,6 +1394,9 @@ pub trait StateReadExt: StateRead {
         Ok(std::cmp::min(default_unbonding, validator_unbonding))
     }
 
+    /// Return the epoch index at which the validator will be unbonded.
+    /// This is the minimum of the default unbonding epoch and the validator's
+    /// unbonding epoch.
     async fn current_unbonding_end_epoch_for(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
         let unbonding_epochs = self.get_stake_params().await?.unbonding_epochs;
@@ -1422,11 +1461,7 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    async fn set_validator_power(
-        &mut self,
-        identity_key: &IdentityKey,
-        voting_power: u64,
-    ) -> Result<()> {
+    fn set_validator_power(&mut self, identity_key: &IdentityKey, voting_power: u64) -> Result<()> {
         tracing::debug!("setting validator power");
         if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {
             anyhow::bail!("invalid voting power");
@@ -1592,18 +1627,17 @@ pub trait StateWriteExt: StateWrite {
     /// denominated in the staking token.
     #[instrument(skip(self))]
     async fn total_active_stake(&self) -> Result<Amount> {
-        let validator_list = self.validator_identity_list().await?;
-
         let mut total_active_stake: u64 = 0;
-        for validator_identity in &validator_list {
-            let validator_state =
-                self.validator_state(validator_identity)
-                    .await?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "validator had ID in validator_list but state not found in JMT"
-                        )
-                    })?;
+
+        let mut validator_stream = self.consensus_set_stream()?;
+        while let Some(validator_identity) = validator_stream.next().await {
+            let validator_identity = validator_identity?;
+            let validator_state = self
+                .validator_state(&validator_identity)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its state was not found", validator_identity)
+                })?;
             if validator_state != validator::State::Active {
                 continue;
             }
@@ -1614,10 +1648,10 @@ pub trait StateWriteExt: StateWrite {
                 .expect("delegation token should be known");
 
             let validator_rate = self
-                .current_validator_rate(validator_identity)
+                .current_validator_rate(&validator_identity)
                 .await?
                 .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but rate not found in JMT")
+                    anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its rate data was not found", validator_identity)
                 })?;
 
             // Add the validator's unbonded amount to the total active stake
