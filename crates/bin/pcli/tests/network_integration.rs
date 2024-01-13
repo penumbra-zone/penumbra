@@ -228,97 +228,97 @@ fn transaction_sweep() {
     sweep_cmd.assert().success();
 }
 
-// #[ignore]
-// #[test]
-// fn delegate_and_undelegate() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+fn delegate_and_undelegate() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     // Get a validator from the testnet.
-//     let validator = get_validator(&tmpdir);
+    // Get a validator from the testnet.
+    let validator = get_validator(&tmpdir);
 
-//     // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
-//     // while we prepare the delegation. See issues #1522, #2047.
-//     let max_attempts = 5;
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issues #1522, #2047.
+    let max_attempts = 5;
 
-//     let mut num_attempts = 0;
-//     loop {
-//         // Delegate a tiny bit of penumbra to the validator.
-//         let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
-//         delegate_cmd
-//             .args([
-//                 "--home",
-//                 tmpdir.path().to_str().unwrap(),
-//                 "tx",
-//                 "delegate",
-//                 "1penumbra",
-//                 "--to",
-//                 validator.as_str(),
-//             ])
-//             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//         let delegation_result = delegate_cmd.assert().try_success();
+    let mut num_attempts = 0;
+    loop {
+        // Delegate a tiny bit of penumbra to the validator.
+        let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+        delegate_cmd
+            .args([
+                "--home",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "delegate",
+                "1penumbra",
+                "--to",
+                validator.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let delegation_result = delegate_cmd.assert().try_success();
 
-//         // If the undelegation command succeeded, we can exit this loop.
-//         if delegation_result.is_ok() {
-//             break;
-//         } else {
-//             num_attempts += 1;
-//             if num_attempts >= max_attempts {
-//                 panic!("Exceeded max attempts for fallible command");
-//             }
-//         }
-//     }
+        // If the undelegation command succeeded, we can exit this loop.
+        if delegation_result.is_ok() {
+            break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
+        }
+    }
 
-//     // Check we have some of the delegation token for that validator now.
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     balance_cmd
-//         .assert()
-//         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+    // Check we have some of the delegation token for that validator now.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
-//     // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
-//     // while we prepare the delegation. See issues #1522, #2047.
-//     let mut num_attempts = 0;
-//     loop {
-//         let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
-//         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
-//         undelegate_cmd
-//             .args([
-//                 "--home",
-//                 tmpdir.path().to_str().unwrap(),
-//                 "tx",
-//                 "undelegate",
-//                 amount_to_undelegate.as_str(),
-//             ])
-//             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//         let undelegation_result = undelegate_cmd.assert().try_success();
+    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+    // while we prepare the delegation. See issues #1522, #2047.
+    let mut num_attempts = 0;
+    loop {
+        let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
+        let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
+        undelegate_cmd
+            .args([
+                "--home",
+                tmpdir.path().to_str().unwrap(),
+                "tx",
+                "undelegate",
+                amount_to_undelegate.as_str(),
+            ])
+            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+        let undelegation_result = undelegate_cmd.assert().try_success();
 
-//         // If the undelegation command succeeded, we can exit this loop.
-//         if undelegation_result.is_ok() {
-//             break;
-//         } else {
-//             num_attempts += 1;
-//             if num_attempts >= max_attempts {
-//                 panic!("Exceeded max attempts for fallible command");
-//             }
-//         }
-//     }
+        // If the undelegation command succeeded, we can exit this loop.
+        if undelegation_result.is_ok() {
+            break;
+        } else {
+            num_attempts += 1;
+            if num_attempts >= max_attempts {
+                panic!("Exceeded max attempts for fallible command");
+            }
+        }
+    }
 
-//     // Wait for the epoch duration.
-//     thread::sleep(*UNBONDING_DURATION);
-//     let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
-//     undelegate_claim_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "undelegate-claim",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     undelegate_claim_cmd.assert().success();
-//     sync(&tmpdir);
-// }
+    // Wait for the epoch duration.
+    thread::sleep(*UNBONDING_DURATION);
+    let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
+    undelegate_claim_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "undelegate-claim",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    undelegate_claim_cmd.assert().success();
+    sync(&tmpdir);
+}
 
 // #[ignore]
 // #[test]
