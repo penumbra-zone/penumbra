@@ -20,14 +20,24 @@ pub fn next_base_rate() -> &'static str {
 }
 
 pub mod validators {
-    use super::*;
+    pub mod index {
+        pub mod consensus_set {
+            pub fn prefix() -> &'static str {
+                "staking/validators/consensus_set/"
+            }
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("{}{id}", prefix())
+            }
+        }
 
-    pub fn list() -> &'static str {
-        "staking/validator/"
-    }
-
-    pub fn by_id(id: &IdentityKey) -> String {
-        format!("staking/validator/{id}")
+        pub mod all {
+            pub fn prefix() -> &'static str {
+                "staking/validators/all/"
+            }
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("{}{id}", prefix())
+            }
+        }
     }
 }
 
