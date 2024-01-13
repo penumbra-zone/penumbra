@@ -53,7 +53,7 @@ use crate::{
     params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
-    validator::{self, Validator},
+    validator::{self, State, Validator},
     CurrentConsensusKeys, DelegationChanges, Penalty, Uptime, {DelegationToken, IdentityKey},
 };
 use crate::{Delegate, Undelegate};
@@ -104,22 +104,48 @@ impl<T: StateWrite + ?Sized> PutValidatorUpdates for T {}
 
 #[async_trait]
 pub(crate) trait StakingImpl: StateWriteExt {
-    /// Updates the state of the given validator, performing all necessary state transitions.
+    /// Perform a state transition for the specified validator and new state.
+    /// Initial validator state is defined using [`add_validator`]
     ///
+    ///                         ┌──────────────────────────────────────┐       
+    ///         ┌────────────┐  │  ┌─────────────────────┐             │       
+    ///         │            │  ▼  ▼                     │             │       
+    ///         ▼          ┌─┴──────┐               ┌────────┐         │       
+    ///    ┌─────────┐     │        ├──────────────▶│        │    ┌────────┐   
+    ///    │ Defined │────▶│Inactive│    ┌──────────│ Active │───▶│ Jailed │──┐
+    ///    └─────────┘     │        │    │          │        │    └────────┘  │
+    ///                    └────────┘    │          └────────┘         │      │
+    ///                         ▲        │               │             │      │
+    ///                         │        │               │             │      │
+    ///                         │        │               │             │      │
+    ///                         │        │               │             │      │
+    ///                         │        │               │             │      │
+    ///                         │        ▼               ▼             │      │
+    ///                         │   ┌─────────┐    ┌──────────┐        │      │
+    ///                         └───│Disabled │    │Tombstoned│◀───────┘      │
+    ///                             └─────────┘    └──────────┘               │
+    ///                                  ▲                                    │
+    ///                                  │                                    │
+    ///                                  └────────────────────────────────────┘
+    ///
+    /// # Errors
     /// This method errors on illegal state transitions; since execution must be infallible,
     /// it's the caller's responsibility to ensure that the state transitions are legal.
+    ///
+    /// It can also error if the validator is not found in the state, though this should
+    /// never happen.
     async fn set_validator_state(
         &mut self,
         identity_key: &IdentityKey,
         new_state: validator::State,
     ) -> Result<()> {
-        let cur_state = self.validator_state(identity_key).await?.ok_or_else(|| {
-            anyhow::anyhow!("validator to have state change did not have state in JMT")
+        let old_state = self.validator_state(identity_key).await?.ok_or_else(|| {
+            anyhow::anyhow!("validator state not found for validator {}", identity_key)
         })?;
 
         // Delegating to an inner method here lets us create a span that has both states,
         // without having to manage span entry/exit in async code.
-        self.set_validator_state_inner(identity_key, cur_state, new_state)
+        self.set_validator_state_inner(identity_key, old_state, new_state)
             .await
     }
 
@@ -135,24 +161,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         new_state: validator::State,
     ) -> Result<()> {
         let state_key = state_key::state_by_validator(identity_key).to_owned();
-
-        // Update metrics
-        match old_state {
-            Defined => metrics::decrement_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
-            Inactive => metrics::decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => metrics::decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => metrics::decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => metrics::decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => metrics::decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
-        };
-        match new_state {
-            Defined => metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
-            Inactive => metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => metrics::increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => metrics::increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => metrics::increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
-        };
 
         // Doing a single tuple match, rather than matching on substates,
         // ensures we exhaustively cover all possible state transitions.
@@ -170,20 +178,19 @@ pub(crate) trait StakingImpl: StateWriteExt {
         }
 
         match (old_state, new_state) {
-            /* ****** no-ops ******* */
-            (Inactive, Inactive) => Ok(()),
-            (Disabled, Disabled) => Ok(()),
-            (Active, Active) => Ok(()),
-            (Defined, Defined) => Ok(()),
-            /* ********************* */
+            (Defined, Disabled) => { /* no-op */ }
+            (Disabled, Defined) => { /* no-op */ }
             (Defined, Inactive) => {
                 tracing::debug!(identity_key = ?identity_key, "validator has reached minimum stake threshold to be considered inactive");
-                // TODO(erwan): is there anything else to do here?
-                Ok(())
+                self.add_consensus_set_index(identity_key);
+            }
+            (Inactive, Defined) => {
+                tracing::debug!(identity_key = ?identity_key, "validator has fallen below minimum stake threshold to be considered inactive");
+                self.remove_consensus_set_index(identity_key);
             }
             (Inactive, Active) => {
                 // The validator's delegation pool becomes bonded.
-                self.set_validator_bonding_state(identity_key, Bonded).await;
+                self.set_validator_bonding_state(identity_key, Bonded);
 
                 // Start tracking the validator's uptime with a new uptime tracker.
                 // This overwrites any existing uptime tracking, regardless of whether
@@ -206,11 +213,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.put(state_key, Active);
 
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
-                tracing::debug!(?power, "validator became active");
-                Ok(())
+
+                tracing::debug!(validator_identity = %identity_key, voting_power = power, "validator has become active");
             }
+
             (Active, new_state @ (Inactive | Disabled)) => {
-                tracing::debug!("removing validator from active set");
+                tracing::debug!(validator_identity = %identity_key, "transitioning validator from active to inactive");
 
                 // The validator's delegation pool begins unbonding.
                 self.set_validator_bonding_state(
@@ -218,41 +226,27 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     Unbonding {
                         unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
                     },
-                )
-                .await;
+                );
 
-                // Finally, set the validator to be inactive or disabled.
                 self.put(state_key, new_state);
-
-                // Update metrics
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
-
-                Ok(())
             }
             (Jailed, Inactive) => {
                 // We don't really have to do anything here; the validator was already
                 // slashed, and we're just allowing it to return to society.
-                tracing::debug!("releasing validator from jail");
+                tracing::debug!(validator_identity = %identity_key, "releasing validator from jail");
                 self.put(state_key, Inactive);
-
-                Ok(())
             }
             (Disabled, Inactive) => {
-                // We don't really have to do anything here; we're just
-                // recording that the validator was enabled.
-                tracing::debug!("enabling validator");
+                tracing::debug!(validator_identity = %identity_key, "disabled validator has become inactive");
                 self.put(state_key, Inactive);
-
-                Ok(())
             }
             (Inactive | Jailed, Disabled) => {
                 // We don't really have to do anything here; we're just
                 // recording that the validator was disabled, so delegations to
                 // it are not allowed.
-                tracing::debug!("disabling validator");
+                tracing::debug!(validator_identity = %identity_key, "inactive or jailed validator has been disabled");
                 self.put(state_key, Disabled);
-
-                Ok(())
             }
             (Active, Jailed) => {
                 let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
@@ -270,15 +264,12 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     Unbonding {
                         unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
                     },
-                )
-                .await;
+                );
 
                 // Finally, set the validator to be jailed.
                 self.put(state_key, Jailed);
-
-                Ok(())
             }
-            (Active | Inactive | Disabled | Jailed, Tombstoned) => {
+            (Active | Inactive | Disabled | Jailed | Defined, Tombstoned) => {
                 let penalty = self.get_stake_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
@@ -289,30 +280,66 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // delegation pool is unbonded immediately, because the
                 // validator has already had the maximum slashing penalty
                 // applied.
-                self.set_validator_bonding_state(identity_key, Unbonded)
-                    .await;
+                self.set_validator_bonding_state(identity_key, Unbonded);
 
                 // Finally, set the validator to be tombstoned.
                 self.put(state_key, Tombstoned);
-
-                Ok(())
             }
-            (Jailed | Disabled, Active) => {
-                Err(anyhow::anyhow!("only inactive validator may become active"))
+            /* ****** bad transitions ******* */
+            (Defined | Jailed | Disabled, Active) => {
+                anyhow::bail!(
+                    "only Inactive validators can become Active: identity_key={}, state={:?}",
+                    identity_key,
+                    old_state
+                )
             }
-            (Inactive | Jailed | Disabled, Jailed) => {
-                Err(anyhow::anyhow!("only active validators may become jailed"))
+            (Active | Jailed, Defined) => {
+                anyhow::bail!(
+                    "only inactive validators can become defined: identity_key={}, state={:?}",
+                    identity_key,
+                    old_state
+                )
             }
-            (Tombstoned, Inactive | Active | Jailed | Tombstoned | Disabled) => {
-                Err(anyhow::anyhow!("tombstoning is forever"))
+            (Inactive | Jailed | Disabled | Defined, Jailed) => anyhow::bail!(
+                "only active validators can get jailed: state={:?}, identity_key={}",
+                old_state,
+                identity_key
+            ),
+            (Tombstoned, Defined | Disabled | Inactive | Active | Jailed | Tombstoned) => {
+                anyhow::bail!("tombstoning is permanent, identity_key={}", identity_key)
             }
-            // TODO(erwan): implement the actual state transitions here:
-            _ => todo!("circle back to this later"),
+            (Inactive, Inactive) => { /* no-op */ }
+            (Disabled, Disabled) => { /* no-op */ }
+            (Active, Active) => { /* no-op */ }
+            (Defined, Defined) => { /* no-op */ }
         }
+
+        // Update the validator metrics once the state transition has been applied.
+        match old_state {
+            Defined => metrics::decrement_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
+            Inactive => metrics::decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => metrics::decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => metrics::decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => metrics::decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => metrics::decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+        };
+        match new_state {
+            Defined => metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
+            Inactive => metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
+            Active => metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
+            Disabled => metrics::increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
+            Jailed => metrics::increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
+            Tombstoned => metrics::increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+        };
+
+        Ok(())
     }
 
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
+    /// Process the end of an epoch for the staking component.
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
+        let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
+
         // Collect all the delegation changes that occurred in the epoch we are ending.
         let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
@@ -399,16 +426,20 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Set the next base rate as the new "current" base rate.
         self.set_base_rate(next_base_rate.clone());
 
-        // TODO(erwan): here `validator_list` is really `all_defined_validator_index`, we should change this
-        // to be all active validators (including `Inactive` ones)
-        let validator_list = self.validator_list().await?;
-        for validator in &validator_list {
+        let mut validator_stream = self.consensus_set_stream()?;
+
+        while let Some(validator_identity) = validator_stream.next().await {
+            let identity_key = validator_identity?;
+            let validator = self.validator(&identity_key).await?.ok_or_else(|| {
+                anyhow::anyhow!("validator (identity={}) is present in consensus set index but its definition was not found in the JMT", &identity_key)
+            })?;
+
             // Grab the current validator state.
             let validator_state = self
                 .validator_state(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but state not found in JMT")
+                    anyhow::anyhow!("validator (identity={}) is present in consensus set index but its state was not found in the JMT", &validator.identity_key)
                 })?;
 
             // We are transitioning to the next epoch, so the "current" validator
@@ -417,7 +448,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .current_validator_rate(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
-                    anyhow::anyhow!("validator had ID in validator_list but current_validator_rate not found in JMT")
+                    anyhow::anyhow!("validator (identity={}) is present in consensus set index but its rate data was not found in the JMT", &validator.identity_key)
                 })?;
 
             // First, apply any penalty recorded in the epoch we are ending.
