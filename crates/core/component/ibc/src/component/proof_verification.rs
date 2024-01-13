@@ -126,10 +126,7 @@ pub trait ClientUpgradeProofVerifier: StateReadExt {
             anyhow::bail!("upgrade path is not set");
         };
 
-        let upgrade_path_prefix = MerklePrefix::try_from(upgrade_path[0].clone().into_bytes())
-            .map_err(|_| {
-                anyhow::anyhow!("couldnt create commitment prefix from client upgrade path")
-            })?;
+        let upgrade_path_prefix = MerklePrefix::from(upgrade_path[0].clone().into_bytes());
 
         // check if the client is frozen
         if trusted_client_state.is_frozen() {

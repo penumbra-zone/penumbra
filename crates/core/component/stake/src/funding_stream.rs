@@ -192,6 +192,6 @@ impl<'a> IntoIterator for &'a FundingStreams {
     type IntoIter = std::slice::Iter<'a, FundingStream>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.funding_streams).into_iter()
+        (&self.funding_streams).iter()
     }
 }

@@ -235,7 +235,7 @@ async fn verify_previous_connection<S: StateRead>(
     let state_is_consistent = connection.state_matches(&State::Init)
         && connection.versions.contains(&msg.version)
         || connection.state_matches(&State::TryOpen)
-            && connection.versions.get(0).eq(&Some(&msg.version));
+            && connection.versions.first().eq(&Some(&msg.version));
 
     if !state_is_consistent {
         anyhow::bail!("connection is not in the correct state");

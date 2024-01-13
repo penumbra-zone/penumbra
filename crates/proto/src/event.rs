@@ -8,7 +8,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
     fn into_event(&self) -> abci::Event {
         let kind = Self::full_name();
 
-        let event_json = serde_json::to_value(&self)
+        let event_json = serde_json::to_value(self)
             .expect("ProtoEvent constrained values should be JSON serializeable.");
 
         // WARNING: Assuming that Rust value will always serialize into a valid JSON Object value. This falls apart the moment that isn't true, so we fail hard if that turns out to be the case.
@@ -27,7 +27,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
         // [0]: https://github.com/cosmos/cosmos-sdk/blob/8fb62054c59e580c0ae0c898751f8dc46044499a/types/events.go#L102-L104
         attributes.sort_by(|a, b| (&a.key).cmp(&b.key));
 
-        return abci::Event::new(kind, attributes);
+        abci::Event::new(kind, attributes)
     }
 
     fn from_event(event: &abci::Event) -> anyhow::Result<Self> {
@@ -51,9 +51,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
         let json = serde_json::to_value(attributes)
             .expect("HashMap of String, serde_json::Value should be serializeable.");
 
-        return Ok(
-            serde_json::from_value(json).context("could not deserialise ProtoJSON into event")?
-        );
+        serde_json::from_value(json).context("could not deserialise ProtoJSON into event")
     }
 }
 

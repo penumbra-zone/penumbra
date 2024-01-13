@@ -22,7 +22,7 @@ pub trait StateReadExt: StateRead {
     }
 
     fn get_staking_token_issuance_for_epoch(&self) -> Option<Amount> {
-        self.object_get(&state_key::staking_token_issuance_for_epoch())
+        self.object_get(state_key::staking_token_issuance_for_epoch())
     }
 }
 

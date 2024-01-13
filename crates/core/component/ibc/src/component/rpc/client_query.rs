@@ -279,7 +279,7 @@ async fn get_latest_verified_height(
     client_id: &ClientId,
 ) -> Result<Height, tonic::Status> {
     let verified_heights = snapshot
-        .get_verified_heights(&client_id)
+        .get_verified_heights(client_id)
         .await
         .map_err(|e| tonic::Status::aborted(format!("couldn't get verified heights: {e}")))?;
 

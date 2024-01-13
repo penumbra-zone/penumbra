@@ -217,7 +217,7 @@ impl ConsensusQuery for IbcQuery {
                 ))
             })?;
 
-        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+        let connection = snapshot.get_connection(connection_id).await.map_err(|e| {
             tonic::Status::aborted(format!(
                 "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
             ))
@@ -302,7 +302,7 @@ impl ConsensusQuery for IbcQuery {
                 ))
             })?;
 
-        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+        let connection = snapshot.get_connection(connection_id).await.map_err(|e| {
             tonic::Status::aborted(format!(
                 "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
             ))

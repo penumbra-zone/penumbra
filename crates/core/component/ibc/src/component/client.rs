@@ -319,7 +319,7 @@ pub trait StateReadExt: StateRead {
         if let Some(next_height) = verified_heights
             .heights
             .iter()
-            .find(|&verified_height| verified_height > &height)
+            .find(|&verified_height| verified_height > height)
         {
             let next_cons_state = self
                 .get_verified_consensus_state(next_height, client_id)
@@ -350,7 +350,7 @@ pub trait StateReadExt: StateRead {
         if let Some(prev_height) = verified_heights
             .heights
             .iter()
-            .find(|&verified_height| verified_height < &height)
+            .find(|&verified_height| verified_height < height)
         {
             let prev_cons_state = self
                 .get_verified_consensus_state(prev_height, client_id)

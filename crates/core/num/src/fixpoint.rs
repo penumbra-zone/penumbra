@@ -652,7 +652,7 @@ impl U128x128Var {
         let bits = self.limbs[2]
             .to_bits_le()
             .into_iter()
-            .chain(self.limbs[3].to_bits_le().into_iter())
+            .chain(self.limbs[3].to_bits_le())
             .collect::<Vec<Boolean<Fq>>>();
         Ok(AmountVar {
             amount: Boolean::<Fq>::le_bits_to_fp_var(&bits)?,

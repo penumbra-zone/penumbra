@@ -119,7 +119,7 @@ async fn verify_misbehavior_header<S: StateRead>(
 ) -> Result<()> {
     let trusted_height = mb_header.trusted_height;
     let last_trusted_consensus_state = state
-        .get_verified_consensus_state(&trusted_height, &client_id)
+        .get_verified_consensus_state(&trusted_height, client_id)
         .await?;
 
     let trusted_height = trusted_height

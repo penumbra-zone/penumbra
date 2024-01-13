@@ -58,7 +58,7 @@ impl MultistoreConfig {
         // If the key does not contain a delimiter, we return the original key
         // routed to the main store. This is because we do not want to allow
         // collisions e.g. `prefix_a/key` and `prefix_akey`.
-        let Some(matching_key) = truncated_key.strip_prefix("/") else {
+        let Some(matching_key) = truncated_key.strip_prefix('/') else {
             return (key, self.main_store.clone());
         };
 
@@ -140,7 +140,7 @@ impl MultistoreConfig {
             .expect("key has the prefix of the matched substore");
 
         let truncated_prefix = truncated_prefix
-            .strip_prefix("/")
+            .strip_prefix('/')
             .unwrap_or(truncated_prefix);
         (truncated_prefix, config)
     }

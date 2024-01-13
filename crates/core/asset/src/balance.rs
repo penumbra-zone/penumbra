@@ -335,7 +335,7 @@ impl BalanceVar {
         // Access constraint system ref from one of the balance contributions
         let cs = self
             .inner
-            .get(0)
+            .first()
             .expect("at least one contribution to balance")
             .0
             .asset_id

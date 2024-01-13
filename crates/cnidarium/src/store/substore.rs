@@ -75,42 +75,52 @@ impl SubstoreConfig {
 
     pub fn cf_jmt<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_values<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_values.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-values column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-values column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_keys_by_keyhash<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys_by_keyhash.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-keys-by-keyhash column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_jmt_keys<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_jmt_keys.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "jmt-keys column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "jmt-keys column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn cf_nonverifiable<'s>(&self, db_handle: &'s Arc<rocksdb::DB>) -> &'s ColumnFamily {
         let column = self.cf_nonverifiable.as_str();
-        db_handle.cf_handle(column).expect(&format!(
-            "nonverifiable column family not found for prefix: {}, substore: {}",
-            column, self.prefix
-        ))
+        db_handle.cf_handle(column).unwrap_or_else(|| {
+            panic!(
+                "nonverifiable column family not found for prefix: {}, substore: {}",
+                column, self.prefix
+            )
+        })
     }
 
     pub fn latest_version_from_db(

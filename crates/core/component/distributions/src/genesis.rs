@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::params::DistributionsParameters;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
     /// The initial configuration parameters for the distributions component.
@@ -34,12 +34,4 @@ impl TryFrom<pb::GenesisContent> for Content {
 
 impl DomainType for Content {
     type Proto = pb::GenesisContent;
-}
-
-impl Default for Content {
-    fn default() -> Self {
-        Self {
-            distributions_params: DistributionsParameters::default(),
-        }
-    }
 }

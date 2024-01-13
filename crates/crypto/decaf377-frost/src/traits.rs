@@ -1,7 +1,6 @@
 use ark_ff::{Field as _, One, UniformRand, Zero};
 use decaf377::{Element, FieldExt, Fr};
 pub use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
-use rand_core;
 
 use crate::hash::Hasher;
 

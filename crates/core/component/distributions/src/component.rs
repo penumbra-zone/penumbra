@@ -46,7 +46,8 @@ impl Component for Distributions {
         let state = Arc::get_mut(state).context("state should be unique")?;
         let new_issuance = state.compute_new_issuance().await?;
         tracing::debug!(?new_issuance, "computed new issuance for epoch");
-        Ok(state.distribute(new_issuance).await)
+        state.distribute(new_issuance).await;
+        Ok(())
     }
 }
 

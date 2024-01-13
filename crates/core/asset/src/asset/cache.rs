@@ -206,7 +206,6 @@ impl From<Cache> for BTreeMap<Id, DenomMetadata> {
         cache
             .cache
             .into_iter()
-            .map(|(id, denom)| (id, denom))
             .collect()
     }
 }
