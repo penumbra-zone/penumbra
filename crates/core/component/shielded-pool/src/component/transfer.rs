@@ -416,7 +416,10 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         .try_into()
         .context("couldn't decode amount in ics20 transfer timeout")?;
 
-    let receiver = Address::from_str(&packet_data.receiver)
+    // packet_data.sender is the original sender for this packet that was not committed on the
+    // other chain but was sent from penumbra. so, the penumbra refund receiver address is the
+    // sender
+    let receiver = Address::from_str(&packet_data.sender)
         .context("couldn't decode receiver address in ics20 timeout")?;
 
     let value: Value = Value {
