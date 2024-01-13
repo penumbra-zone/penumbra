@@ -1429,11 +1429,26 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    fn set_validator_rates(&mut self, identity_key: &IdentityKey, current_rates: RateData) {
+    fn set_initial_validator_state(
+        &mut self,
+        id: &IdentityKey,
+        initial_state: State,
+    ) -> Result<()> {
+        tracing::debug!(validator_identity = %id, ?initial_state, "setting initial validator state");
+        if !matches!(initial_state, State::Active | State::Defined) {
+            anyhow::bail!("invalid initial validator state");
+        }
+
+        self.put(state_key::state_by_validator(&id), initial_state);
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    fn set_validator_rates(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
         tracing::debug!("setting validator rates");
         self.put(
             state_key::current_rate_by_validator(identity_key),
-            current_rates,
+            rate_data,
         );
     }
 
@@ -1454,6 +1469,74 @@ pub trait StateWriteExt: StateWrite {
         );
     }
 
+    /// Record a new validator definition and prime its initial state.
+    /// This method is used for both genesis and post-genesis validators.
+    /// In the former case, the validator starts in `[validator::State::Active]`
+    /// state, while in the latter case, it starts in `[validator::State::Defined]`.
+    ///
+    /// # Errors
+    /// This method errors if the initial state is not one of the two valid
+    /// initial states. Or if the voting power is negative.
+    async fn add_validator_inner(
+        &mut self,
+        validator: Validator,
+        initial_rate_data: RateData,
+        initial_state: validator::State,
+        initial_bonding_state: validator::BondingState,
+        initial_voting_power: u64,
+    ) -> Result<()> {
+        tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
+        if !matches!(initial_state, State::Defined | State::Active) {
+            anyhow::bail!("invalid initial state: {:?}", initial_state)
+        }
+        // TODO(erwan): add more guards for voting power and nonsensical initial states.
+        // in a separate PR, will move this up closer to `add_validator` - i don't want to
+        // clutter the diff for now.
+
+        let id = validator.identity_key.clone();
+
+        // First, we record the validator definition in the general validator index:
+        self.put(
+            state_key::validators::index::all::by_id(&id),
+            validator.clone(),
+        );
+        // Then, we create a mapping from the validator's consensus key to its
+        // identity key, so we can look up the validator by its consensus key, and
+        // vice-versa.
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+            .await;
+        // We register the validator's delegation token in the token registry...
+        self.register_denom(&DelegationToken::from(&id).denom())
+            .await?;
+        // ... and its reward rate data in the JMT.
+        self.set_validator_rates(&id, initial_rate_data);
+
+        // We initialize the validator's state, power, and bonding state.
+        self.set_initial_validator_state(&id, initial_state)?;
+        self.set_validator_power(&id, initial_voting_power)?;
+        self.set_validator_bonding_state(&id, initial_bonding_state);
+
+        // For genesis validators, we also need to add them to the consensus set index.
+        if initial_state == validator::State::Active {
+            self.add_consensus_set_index(&id);
+        }
+
+        // Finally, update metrics for the new validator.
+        match initial_state {
+            validator::State::Active => {
+                metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+            }
+            validator::State::Defined => {
+                metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0);
+            }
+            _ => unreachable!("the initial state was validated by the guard condition"),
+        };
+
+        metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
+
+        Ok(())
+    }
+
     async fn record_slashing_penalty(
         &mut self,
         identity_key: &IdentityKey,
@@ -1472,49 +1555,6 @@ pub trait StateWriteExt: StateWrite {
             state_key::penalty_in_epoch(identity_key, current_epoch_index),
             new_penalty,
         );
-
-        Ok(())
-    }
-
-    // Used for adding a new validator to the JMT. May be either
-    // Active (a genesis validator) on Inactive (a validator added
-    // post-genesis).
-    async fn add_validator_inner(
-        &mut self,
-        validator: Validator,
-        current_rates: RateData,
-        state: validator::State,
-        bonding_state: validator::BondingState,
-        power: u64,
-    ) -> Result<()> {
-        tracing::debug!(?validator);
-        let id = validator.identity_key.clone();
-
-        self.put(state_key::validators::by_id(&id), validator.clone());
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
-            .await;
-        self.register_denom(&DelegationToken::from(&id).denom())
-            .await?;
-
-        self.set_validator_rates(&id, current_rates);
-
-        // We can't call `set_validator_state` here because it requires an existing validator state,
-        // so we manually initialize the state for new validators.
-        self.put(state_key::state_by_validator(&id), state);
-        self.set_validator_power(&id, power).await?;
-        self.set_validator_bonding_state(&id, bonding_state).await;
-
-        // Lastly, update metrics for the new validator.
-        match state {
-            validator::State::Active => {
-                metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
-            }
-            validator::State::Inactive => {
-                metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0);
-            }
-            _ => unreachable!(),
-        };
-        metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
 
         Ok(())
     }
