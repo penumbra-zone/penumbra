@@ -203,10 +203,7 @@ impl Deref for Cache {
 
 impl From<Cache> for BTreeMap<Id, DenomMetadata> {
     fn from(cache: Cache) -> Self {
-        cache
-            .cache
-            .into_iter()
-            .collect()
+        cache.cache.into_iter().collect()
     }
 }
 

@@ -221,10 +221,7 @@ pub fn aggregate(
     signature_shares: &HashMap<Identifier, round2::SignatureShare>,
     pubkeys: &keys::PublicKeyPackage,
 ) -> Result<Signature<SpendAuth>, Error> {
-    let signature_shares = signature_shares
-        .iter()
-        .map(|(a, b)| (*a, b.0))
-        .collect();
+    let signature_shares = signature_shares.iter().map(|(a, b)| (*a, b.0)).collect();
     let frost_sig = frost::aggregate(&signing_package.0, &signature_shares, pubkeys)?;
     Ok(TryInto::<[u8; 64]>::try_into(frost_sig.serialize())
         .expect("serialization is valid")
@@ -239,10 +236,7 @@ pub fn aggregate_randomized(
     pubkeys: &keys::PublicKeyPackage,
     randomizer: decaf377::Fr,
 ) -> Result<Signature<SpendAuth>, Error> {
-    let signature_shares = signature_shares
-        .iter()
-        .map(|(a, b)| (*a, b.0))
-        .collect();
+    let signature_shares = signature_shares.iter().map(|(a, b)| (*a, b.0)).collect();
     let frost_sig = frost_rerandomized::aggregate(
         &signing_package.0,
         &signature_shares,
