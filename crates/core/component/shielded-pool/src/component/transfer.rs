@@ -27,7 +27,6 @@ use penumbra_proto::{
     StateWriteProto,
 };
 use penumbra_sct::CommitmentSource;
-use prost::Message;
 
 use penumbra_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
@@ -217,7 +216,8 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
-        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+        let packet_data: FungibleTokenPacketData =
+            serde_json::from_slice(msg.packet.data.as_slice())?;
         let denom: asset::DenomMetadata = packet_data.denom.as_str().try_into()?;
 
         if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
@@ -404,7 +404,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
 async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
-    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
+    let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())?;
     let denom: asset::DenomMetadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
         .as_str()
