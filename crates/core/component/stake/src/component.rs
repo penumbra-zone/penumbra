@@ -1550,6 +1550,32 @@ pub trait StateWriteExt: StateWrite {
 
         Ok(total_active_stake.into())
     }
+
+    /// Add a validator identity to the consensus set index.
+    /// The consensus set index includes any validator that has a delegation pool that
+    /// is greater than [`StakeParameters::min_validator_stake`].
+    /// TODO(erwan): We should split this into an `ValidatorIndex` extension traits.
+    fn add_consensus_set_index(&mut self, identity_key: &IdentityKey) {
+        tracing::debug!(validator = %identity_key, "adding validator identity to consensus set index");
+        self.nonverifiable_put_raw(
+            state_key::validators::index::consensus_set::by_id(identity_key)
+                .as_bytes()
+                .to_vec(),
+            identity_key.to_string().as_bytes().to_vec(),
+        );
+    }
+
+    /// Remove a validator identity from the consensus set index.
+    /// The consensus set index includes any validator that has a delegation pool that
+    /// is greater than [`StakeParameters::min_validator_stake`].
+    fn remove_consensus_set_index(&mut self, identity_key: &IdentityKey) {
+        tracing::debug!(validator = %identity_key, "removing validator identity from consensus set index");
+        self.nonverifiable_delete(
+            state_key::validators::index::consensus_set::by_id(identity_key)
+                .as_bytes()
+                .to_vec(),
+        );
+    }
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
