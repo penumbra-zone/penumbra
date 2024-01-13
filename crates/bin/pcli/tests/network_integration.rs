@@ -320,214 +320,214 @@ fn delegate_and_undelegate() {
     sync(&tmpdir);
 }
 
-// #[ignore]
-// #[test]
-// fn lp_management() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+fn lp_management() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     // Create a liquidity position selling 1cube for 1penumbra each.
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1penumbra@1gm",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
+    // Create a liquidity position selling 1cube for 1penumbra each.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
 
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     let o = balance_cmd
-//         .output()
-//         .expect("unable to fetch balance")
-//         .stdout;
-//     let output = String::from_utf8_lossy(&o);
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
 
-//     // Address 0 has an opened LPNFT.
-//     assert!(output.contains("1lpnft_opened"));
+    // Address 0 has an opened LPNFT.
+    assert!(output.contains("1lpnft_opened"));
 
-//     // Get the asset id for the LPNFT so we can close it:
-//     let asset_id = output
-//         .split_whitespace()
-//         .find(|s| s.contains("1lpnft_opened"))
-//         .unwrap()
-//         .split(' ')
-//         .next()
-//         .unwrap()
-//         .replace("1lpnft_opened_", "");
+    // Get the asset id for the LPNFT so we can close it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_opened"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap()
+        .replace("1lpnft_opened_", "");
 
-//     // Close the LP.
-//     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
-//     close_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "close",
-//             &asset_id,
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     close_cmd.assert().success();
+    // Close the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close",
+            &asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
 
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     let o = balance_cmd
-//         .output()
-//         .expect("unable to fetch balance")
-//         .stdout;
-//     let output = String::from_utf8_lossy(&o);
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
 
-//     // Address 0 has a closed LPNFT.
-//     assert!(output.contains("1lpnft_closed"));
+    // Address 0 has a closed LPNFT.
+    assert!(output.contains("1lpnft_closed"));
 
-//     // Get the asset id for the LPNFT so we can withdraw it:
-//     let asset_id = output
-//         .split_whitespace()
-//         .find(|s| s.contains("1lpnft_closed"))
-//         .unwrap()
-//         .split(' ')
-//         .next()
-//         .unwrap()
-//         .replace("1lpnft_closed_", "");
+    // Get the asset id for the LPNFT so we can withdraw it:
+    let asset_id = output
+        .split_whitespace()
+        .find(|s| s.contains("1lpnft_closed"))
+        .unwrap()
+        .split(' ')
+        .next()
+        .unwrap()
+        .replace("1lpnft_closed_", "");
 
-//     // Withdraw the LP.
-//     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
-//     close_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "withdraw",
-//             &asset_id,
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     close_cmd.assert().success();
+    // Withdraw the LP.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw",
+            &asset_id,
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
 
-//     // Test close-all: first open a few LPs
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1penumbra@1gm",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1penumbra@1gm",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1penumbra@1gm",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
+    // Test close-all: first open a few LPs
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
 
-//     // Validate there are three opened position NFTs
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Validate there are three opened position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     let o = balance_cmd
-//         .output()
-//         .expect("unable to fetch balance")
-//         .stdout;
-//     let output = String::from_utf8_lossy(&o);
-//     let opened = output.matches("lpnft_opened").count();
-//     assert_eq!(opened, 3);
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 3);
 
-//     // Close all the opened positions
-//     let mut closeall_cmd = Command::cargo_bin("pcli").unwrap();
-//     closeall_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "close-all",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     closeall_cmd.assert().success();
+    // Close all the opened positions
+    let mut closeall_cmd = Command::cargo_bin("pcli").unwrap();
+    closeall_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    closeall_cmd.assert().success();
 
-//     // Validate there are no longer any opened position NFTs
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Validate there are no longer any opened position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     let o = balance_cmd
-//         .output()
-//         .expect("unable to fetch balance")
-//         .stdout;
-//     let output = String::from_utf8_lossy(&o);
-//     let opened = output.matches("lpnft_opened").count();
-//     assert_eq!(opened, 0);
-//     // Should be three closed positions
-//     let closed = output.matches("lpnft_closed").count();
-//     assert_eq!(closed, 3);
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let opened = output.matches("lpnft_opened").count();
+    assert_eq!(opened, 0);
+    // Should be three closed positions
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 3);
 
-//     // Withdraw all the closed positions
-//     let mut withdrawall_cmd = Command::cargo_bin("pcli").unwrap();
-//     withdrawall_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "withdraw-all",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     withdrawall_cmd.assert().success();
+    // Withdraw all the closed positions
+    let mut withdrawall_cmd = Command::cargo_bin("pcli").unwrap();
+    withdrawall_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdrawall_cmd.assert().success();
 
-//     // Validate there are no longer any closed position NFTs
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Validate there are no longer any closed position NFTs
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     let o = balance_cmd
-//         .output()
-//         .expect("unable to fetch balance")
-//         .stdout;
-//     let output = String::from_utf8_lossy(&o);
-//     let closed = output.matches("lpnft_closed").count();
-//     assert_eq!(closed, 0);
-// }
+    let o = balance_cmd
+        .output()
+        .expect("unable to fetch balance")
+        .stdout;
+    let output = String::from_utf8_lossy(&o);
+    let closed = output.matches("lpnft_closed").count();
+    assert_eq!(closed, 0);
+}
 
 // #[ignore]
 // #[test]
