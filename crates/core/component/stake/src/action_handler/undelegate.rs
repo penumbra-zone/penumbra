@@ -65,12 +65,11 @@ impl ActionHandler for Undelegate {
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());
-        // Register the undelegation's denom, so we clients can look it up later.
+        // Register the undelegation's denom, so clients can look it up later.
         state
             .register_denom(&self.unbonding_token().denom())
             .await?;
         // TODO: should we be tracking changes to token supply here or in end_epoch?
-
         state.record(event::undelegate(self));
 
         Ok(())

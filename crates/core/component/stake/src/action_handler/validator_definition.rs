@@ -86,42 +86,41 @@ impl ActionHandler for validator::Definition {
             }
         }
 
-        // the validator definition has now passed all verification checks
         Ok(())
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let v = self;
 
-        let cur_epoch = state
+        let current_epoch = state
             .get_current_epoch()
             .await
             .context("should be able to get current epoch during validator definition execution")?;
 
-        if state
+        let validator_exists = state
             .validator(&v.validator.identity_key)
             .await
             .context("should be able to fetch validator during validator definition execution")?
-            .is_some()
-        {
-            // This is an existing validator definition.
+            .is_some();
+
+        if validator_exists {
             state.update_validator(v.validator.clone()).await.context(
                 "should be able to update validator during validator definition execution",
             )?;
         } else {
-            // This is a new validator definition.
-            // Set the default rates and state.
+            // This is a new validator definition. We prime the validator's
+            // rate data with an initial exchange rate of 1:1.
             let validator_key = v.validator.identity_key;
 
-            let cur_rate_data = RateData {
+            let initial_rate_data = RateData {
                 identity_key: validator_key,
-                epoch_index: cur_epoch.index,
+                epoch_index: current_epoch.index,
                 validator_reward_rate: 0,
                 validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
             };
 
             state
-                .add_validator(v.validator.clone(), cur_rate_data)
+                .add_validator(v.validator.clone(), initial_rate_data)
                 .await
                 .context("should be able to add validator during validator definition execution")?;
         }
