@@ -41,7 +41,8 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
             signed_blocks_window_len: msg.signed_blocks_window_len,
             min_validator_stake: msg
                 .min_validator_stake
-                .ok_or_else(|| anyhow::anyhow!("missing min_validator_stake"))?.try_into()?,
+                .ok_or_else(|| anyhow::anyhow!("missing min_validator_stake"))?
+                .try_into()?,
         })
     }
 }

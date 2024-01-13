@@ -1494,12 +1494,12 @@ pub trait StateWriteExt: StateWrite {
         self.put(state_key::uptime_by_validator(identity_key), uptime);
     }
 
-    async fn set_validator_bonding_state(
+    fn set_validator_bonding_state(
         &mut self,
         identity_key: &IdentityKey,
         state: validator::BondingState,
     ) {
-        tracing::debug!(?state, "set bonding state");
+        tracing::debug!(?state, validator_identity = %identity_key, "set bonding state for validator");
         self.put(state_key::bonding_state_by_validator(identity_key), state);
     }
 
