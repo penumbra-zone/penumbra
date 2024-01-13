@@ -99,13 +99,14 @@ impl ActionHandler for Delegate {
         tracing::debug!(?self, "queuing delegation for next epoch");
         state.push_delegation(self.clone());
 
-        // Note(erwan): When a validator definition is published, it starts in a
-        // `Defined` state until it gathers enough stake to become `Inactive` and
-        // indexex in the validator list.
+        // When a validator definition is published, it starts in a `Defined` state
+        // until it gathers enough stake to become `Inactive` and get indexed in the
+        // validator list.
         //
         // Unlike other validator state transitions, this one is executed with the
         // delegation transaction and not at the end of the epoch. This is because we
         // want to avoid having to iterate over all defined validators at all.
+        // See #2921 for more details.
         let validator_state = state
             .validator_state(&self.validator_identity)
             .await?
