@@ -529,161 +529,161 @@ fn lp_management() {
     assert_eq!(closed, 0);
 }
 
-// #[ignore]
-// #[test]
-// /// Test that we can swap.
-// /// Setup:
-// /// There are two wallets, address 0 and address 1.
-// /// Address 0 has 100gm and some penumbra.
-// /// Address 1 has no gm.
-// /// Test:
-// /// Address 1 posts an order to sell 1penumbra for 1gm.
-// /// Address 0 swaps 1gm for 1penumbra.
-// /// Validate:
-// /// Address 0 has 99gm and some penumbra.
-// /// Address 1 has 1gm and 1000penumbra.
-// fn swap() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+/// Test that we can swap.
+/// Setup:
+/// There are two wallets, address 0 and address 1.
+/// Address 0 has 100gm and some penumbra.
+/// Address 1 has no gm.
+/// Test:
+/// Address 1 posts an order to sell 1penumbra for 1gm.
+/// Address 0 swaps 1gm for 1penumbra.
+/// Validate:
+/// Address 0 has 99gm and some penumbra.
+/// Address 1 has 1gm and 1000penumbra.
+fn swap() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     balance_cmd
-//         .assert()
-//         // Address 0 has 100gm.
-//         .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
-//         // Address 1 has no gm.
-//         .stdout(
-//             predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 0 has some penumbra.
-//         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-//         // Address 1 has 1001penumbra.
-//         .stdout(predicate::str::is_match(r"1\s*1001(\.[0-9]+)?penumbra").unwrap());
+    balance_cmd
+        .assert()
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
+        // Address 1 has no gm.
+        .stdout(
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
+                .unwrap()
+                .not(),
+        )
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
+        // Address 1 has 1001penumbra.
+        .stdout(predicate::str::is_match(r"1\s*1001(\.[0-9]+)?penumbra").unwrap());
 
-//     // Address 1: post an order to sell 1penumbra for 1gm.
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1penumbra@1gm",
-//             "--source",
-//             "1",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
+    // Address 1: post an order to sell 1penumbra for 1gm.
+    let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
+    sell_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "order",
+            "sell",
+            "1penumbra@1gm",
+            "--source",
+            "1",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    sell_cmd.assert().success();
 
-//     balance_cmd
-//         .assert()
-//         // Address 0 has 100gm.
-//         .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
-//         // Address 1 has no gm.
-//         .stdout(
-//             predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 0 has some penumbra.
-//         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-//         // Address 1 has 1000penumbra.
-//         .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+    balance_cmd
+        .assert()
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
+        // Address 1 has no gm.
+        .stdout(
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
+                .unwrap()
+                .not(),
+        )
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
+        // Address 1 has 1000penumbra.
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
 
-//     // Address 1: swaps 1gm for 1penumbra.
-//     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
-//     swap_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "swap",
-//             "1gm",
-//             "--into",
-//             "penumbra",
-//             "--source",
-//             "0",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     swap_cmd.assert().success();
+    // Address 1: swaps 1gm for 1penumbra.
+    let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
+    swap_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "swap",
+            "1gm",
+            "--into",
+            "penumbra",
+            "--source",
+            "0",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    swap_cmd.assert().success();
 
-//     // Sleep to allow the outputs from the swap to be processed.
-//     thread::sleep(*UNBONDING_DURATION);
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    // Sleep to allow the outputs from the swap to be processed.
+    thread::sleep(*UNBONDING_DURATION);
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     balance_cmd
-//         .assert()
-//         // Address 0 has 100gm.
-//         .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
-//         // Address 1 has no gm.
-//         .stdout(
-//             predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 0 has some penumbra.
-//         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-//         // Address 1 has 1000penumbra.
-//         .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+    balance_cmd
+        .assert()
+        // Address 0 has 100gm.
+        .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
+        // Address 1 has no gm.
+        .stdout(
+            predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
+                .unwrap()
+                .not(),
+        )
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
+        // Address 1 has 1000penumbra.
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
 
-//     // Close and withdraw any existing liquidity positions.
-//     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
-//     close_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "close-all",
-//             "--source",
-//             "1",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     close_cmd.assert().success();
+    // Close and withdraw any existing liquidity positions.
+    let mut close_cmd = Command::cargo_bin("pcli").unwrap();
+    close_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "close-all",
+            "--source",
+            "1",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    close_cmd.assert().success();
 
-//     // Wait for processing.
-//     thread::sleep(*UNBONDING_DURATION);
-//     let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
-//     withdraw_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "withdraw-all",
-//             "--source",
-//             "1",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     withdraw_cmd.assert().success();
+    // Wait for processing.
+    thread::sleep(*UNBONDING_DURATION);
+    let mut withdraw_cmd = Command::cargo_bin("pcli").unwrap();
+    withdraw_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "position",
+            "withdraw-all",
+            "--source",
+            "1",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    withdraw_cmd.assert().success();
 
-//     thread::sleep(*UNBONDING_DURATION);
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    thread::sleep(*UNBONDING_DURATION);
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-//     balance_cmd
-//         .assert()
-//         // Address 0 has 99gm.
-//         .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
-//         // Address 1 has 1gm.
-//         .stdout(predicate::str::is_match(r"1\s*1gm").unwrap())
-//         // Address 0 has some penumbra.
-//         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-//         // Address 1 has 1000penumbra.
-//         .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
-// }
+    balance_cmd
+        .assert()
+        // Address 0 has 99gm.
+        .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
+        // Address 1 has 1gm.
+        .stdout(predicate::str::is_match(r"1\s*1gm").unwrap())
+        // Address 0 has some penumbra.
+        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
+        // Address 1 has 1000penumbra.
+        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+}
 
 // // Note: As part of #2589, we changed the way DEX calculations are performed. In particular,
 // // we now perform the division before the multiplication, which means that the result is
