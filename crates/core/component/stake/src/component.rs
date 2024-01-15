@@ -905,11 +905,20 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
+    /// Process evidence of byzantine behavior from CometBFT.
+    ///
+    /// # Errors
+    /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
             .validator_by_tendermint_address(&evidence.validator.address)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("attempted to slash unknown validator"))?;
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "attempted to slash unknown validator with evidence={:?}",
+                    evidence
+                )
+            })?;
 
         self.set_validator_state(&validator.identity_key, validator::State::Tombstoned)
             .await
@@ -1001,12 +1010,12 @@ impl Component for Staking {
     ) {
         let state = Arc::get_mut(state).expect("state should be unique");
         // For each validator identified as byzantine by tendermint, update its
-        // state to be slashed
+        // state to be slashed. If the validator is not tracked in the JMT, this
+        // will be a no-op. See #2919 for more details.
         for evidence in begin_block.byzantine_validators.iter() {
-            state
-                .process_evidence(evidence)
-                .await
-                .expect("should be able to process tendermint ABCI evidence");
+            let _ = state.process_evidence(evidence).await.map_err(|e| {
+                tracing::warn!(?e, "failed to process byzantine misbehavior evidence")
+            });
         }
 
         state
