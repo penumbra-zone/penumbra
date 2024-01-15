@@ -2,11 +2,11 @@ syntax = "proto3";
 package penumbra.core.component.shielded_pool.v1alpha1;
 
 import "penumbra/core/asset/v1alpha1/asset.proto";
+import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/keys/v1alpha1/keys.proto";
 import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
-import "penumbra/core/component/sct/v1alpha1/sct.proto";
 
 message Note {
   asset.v1alpha1.Value value = 1;
@@ -80,9 +80,9 @@ message SpendBody {
   // A commitment to the value of the input note.
   asset.v1alpha1.BalanceCommitment balance_commitment = 1;
   // The nullifier of the input note.
-  bytes nullifier = 3;
+  sct.v1alpha1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
-  bytes rk = 4;
+  crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey rk = 4;
 }
 message SpendView {
   message Visible {

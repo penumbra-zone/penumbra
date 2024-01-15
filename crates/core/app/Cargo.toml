@@ -14,6 +14,7 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-proof-params = { path = "../../crypto/proof-params" }
 penumbra-asset = { path = "../asset" }
 penumbra-keys = { path = "../keys" }
+penumbra-txhash = { path = "../txhash" }
 penumbra-num = { path = "../num" }
 penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = [
@@ -23,7 +24,7 @@ penumbra-stake = { path = "../component/stake" }
 penumbra-governance = { path = "../component/governance" }
 penumbra-sct = { path = "../component/sct" }
 penumbra-fee = { path = "../component/fee" }
-penumbra-dao = { path = "../component/dao" }
+penumbra-community-pool = { path = "../component/community-pool" }
 penumbra-dex = { path = "../component/dex" }
 penumbra-ibc = { path = "../component/ibc", features = ["component"] }
 penumbra-distributions = { path = "../component/distributions" }
@@ -65,8 +66,8 @@ parking_lot = "0.12"
 tendermint = "0.34.0"
 tendermint-proto = "0.34.0"
 tendermint-light-client-verifier = "0.34.0"
-ibc-types = { version = "0.10.0", default-features = false }
-ibc-proto = { version = "0.39.0", default-features = false, features = [
+ibc-types = { version = "0.11.0", default-features = false }
+ibc-proto = { version = "0.40.0", default-features = false, features = [
     "server",
 ] }
 

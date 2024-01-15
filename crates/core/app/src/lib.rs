@@ -1,13 +1,13 @@
 #![deny(clippy::unwrap_used)]
 mod action_handler;
-mod dao_ext;
+mod community_pool_ext;
 mod mock_client;
 mod state_delta_wrapper;
 mod temp_storage_ext;
 
 pub use action_handler::ActionHandler;
 pub use app::StateWriteExt;
-pub use dao_ext::DaoStateReadExt;
+pub use community_pool_ext::CommunityPoolStateReadExt;
 pub use mock_client::MockClient;
 pub use temp_storage_ext::TempStorageExt;
 

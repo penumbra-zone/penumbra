@@ -16,31 +16,41 @@ default = ["std", "parallel", "download-proving-keys"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 sct-divergence-check = ["penumbra-view/sct-divergence-check"]
 std = ["ark-ff/std", "ibc-types/std"]
-parallel = ["penumbra-proof-params/parallel", "decaf377/parallel", "penumbra-shielded-pool/parallel", "penumbra-dex/parallel", "penumbra-governance/parallel", "penumbra-stake/parallel", "penumbra-transaction/parallel", "penumbra-wallet/parallel", "penumbra-proof-setup/parallel"]
+parallel = [
+    "penumbra-proof-params/parallel",
+    "decaf377/parallel",
+    "penumbra-shielded-pool/parallel",
+    "penumbra-dex/parallel",
+    "penumbra-governance/parallel",
+    "penumbra-stake/parallel",
+    "penumbra-transaction/parallel",
+    "penumbra-wallet/parallel",
+    "penumbra-proof-setup/parallel",
+]
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto         = { path = "../../proto", features = ["rpc"] }
-penumbra-tct           = { path = "../../crypto/tct" }
-penumbra-num           = { path = "../../core/num", default-features=false }
-penumbra-asset         = { path = "../../core/asset", default-features=false }
-penumbra-keys          = { path = "../../core/keys", default-features=false }
-penumbra-chain         = { path = "../../core/component/chain", default-features = false }
+penumbra-proto = { path = "../../proto", features = ["rpc"] }
+penumbra-tct = { path = "../../crypto/tct" }
+penumbra-num = { path = "../../core/num", default-features = false }
+penumbra-asset = { path = "../../core/asset", default-features = false }
+penumbra-keys = { path = "../../core/keys", default-features = false }
+penumbra-chain = { path = "../../core/component/chain", default-features = false }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", default-features = false }
-penumbra-governance    = { path = "../../core/component/governance", default-features = false }
-penumbra-stake         = { path = "../../core/component/stake", default-features = false }
-penumbra-sct           = { path = "../../core/component/sct", default-features = false }
-penumbra-fee           = { path = "../../core/component/fee", default-features = false }
-penumbra-dex           = { path = "../../core/component/dex", default-features = false }
-penumbra-dao           = { path = "../../core/component/dao", default-features = false }
-penumbra-ibc           = { path = "../../core/component/ibc", default-features = false }
+penumbra-governance = { path = "../../core/component/governance", default-features = false }
+penumbra-stake = { path = "../../core/component/stake", default-features = false }
+penumbra-sct = { path = "../../core/component/sct", default-features = false }
+penumbra-fee = { path = "../../core/component/fee", default-features = false }
+penumbra-dex = { path = "../../core/component/dex", default-features = false }
+penumbra-community-pool = { path = "../../core/component/community-pool", default-features = false }
+penumbra-ibc = { path = "../../core/component/ibc", default-features = false }
 penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
-penumbra-transaction   = { path = "../../core/transaction", features = ["clap"] }
-penumbra-proof-setup   = { path = "../../crypto/proof-setup" }
-penumbra-app           = { path = "../../core/app" }
-penumbra-wallet        = { path = "../../wallet" }
-penumbra-custody       = { path = "../../custody" }
-penumbra-view          = { path = "../../view" }
+penumbra-transaction = { path = "../../core/transaction", features = ["clap"] }
+penumbra-proof-setup = { path = "../../crypto/proof-setup" }
+penumbra-app = { path = "../../core/app" }
+penumbra-wallet = { path = "../../wallet" }
+penumbra-custody = { path = "../../custody" }
+penumbra-view = { path = "../../view" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.5" }
@@ -49,9 +59,9 @@ tendermint = { version = "0.34.0", features = ["rust-crypto"] }
 jmt = "0.9"
 
 # External dependencies
-ibc-types = { version = "0.10.0", features = ["std", "with_serde"] }
+ibc-types = { version = "0.11.0", features = ["std", "with_serde"] }
 
-ibc-proto = { version = "0.39.0" }
+ibc-proto = { version = "0.40.0" }
 ark-ff = { version = "0.4", default-features = false }
 atty = "0.2"
 ed25519-consensus = "2"
@@ -60,6 +70,7 @@ async-stream = "0.2"
 bincode = "1.3.3"
 blake2b_simd = "0.5"
 base64 = "0.21"
+simple-base64 = "0.23"
 bytes = "1"
 comfy-table = "5"
 directories = "4.0.1"
@@ -100,7 +111,7 @@ assert_cmd = "2.0"
 predicates = "2.1"
 tempfile = "3.3.0"
 regex = "1.6.0"
-penumbra-governance            = { path = "../../core/component/governance", default-features = false }
+penumbra-governance = { path = "../../core/component/governance", default-features = false }
 penumbra-proof-params = { path = "../../crypto/proof-params", features = [
     "bundled-proving-keys",
     "download-proving-keys",

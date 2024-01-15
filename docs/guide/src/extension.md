@@ -30,7 +30,7 @@ recent testnet:
 
 <!--
 Do we want to maintain screenshots inside the web extension docs?
-The image files will become out of data quickly, requiring maitnenance, and bloat the repo.
+The image files will become out of data quickly, requiring maintenance, and bloat the repo.
 -->
 
 <picture>

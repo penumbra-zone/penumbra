@@ -34,8 +34,8 @@ impl DomainType for MemoPlan {
 
 impl From<MemoPlan> for pb::MemoPlan {
     fn from(msg: MemoPlan) -> Self {
-        let return_address = Some(msg.plaintext.return_address.into());
-        let text = msg.plaintext.text;
+        let return_address = Some(msg.plaintext.return_address().into());
+        let text = msg.plaintext.text().to_owned();
         Self {
             plaintext: Some(pb::MemoPlaintext {
                 return_address,
@@ -67,10 +67,7 @@ impl TryFrom<pb::MemoPlan> for MemoPlan {
         let key = PayloadKey::try_from(msg.key.to_vec())?;
 
         Ok(Self {
-            plaintext: MemoPlaintext {
-                return_address: sender,
-                text,
-            },
+            plaintext: MemoPlaintext::new(sender, text)?,
             key,
         })
     }

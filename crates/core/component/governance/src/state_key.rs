@@ -13,8 +13,8 @@ pub fn proposal_definition(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id:020}/data")
 }
 
-pub fn dao_transaction(proposal_id: u64) -> String {
-    format!("governance/proposal/{proposal_id:020}/dao_transaction")
+pub fn community_pool_transaction(proposal_id: u64) -> String {
+    format!("governance/proposal/{proposal_id:020}/community_pool_transaction")
 }
 
 pub fn proposal_state(proposal_id: u64) -> String {
@@ -108,13 +108,16 @@ pub fn all_untallied_delegator_votes() -> &'static str {
     "governance/untallied_delegator_vote/"
 }
 
-pub fn deliver_single_dao_transaction_at_height(block_height: u64, proposal_id: u64) -> String {
-    format!("governance/deliver_dao_transactions/{block_height}/{proposal_id:020}")
+pub fn deliver_single_community_pool_transaction_at_height(
+    block_height: u64,
+    proposal_id: u64,
+) -> String {
+    format!("governance/deliver_community_pool_transactions/{block_height}/{proposal_id:020}")
 }
 
-pub fn deliver_dao_transactions_at_height(block_height: u64) -> String {
-    // Note: this has to be the prefix of the `deliver_single_dao_transaction_at_height` function above.
-    format!("governance/deliver_dao_transactions/{block_height}/")
+pub fn deliver_community_pool_transactions_at_height(block_height: u64) -> String {
+    // Note: this has to be the prefix of the `deliver_single_community_pool_transaction_at_height` function above.
+    format!("governance/deliver_community_pool_transactions/{block_height}/")
 }
 
 // This is in the app's JMT namespace, but governance needs to access

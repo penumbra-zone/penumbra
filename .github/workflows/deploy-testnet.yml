@@ -64,18 +64,6 @@ jobs:
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-testnet
 
-      - name: bounce osiris
-        shell: bash
-        run: |-
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
-          # Set the exact version for the current testnet for Osiris, so deps match.
-          kubectl set image deployments \
-              -l "app.kubernetes.io/instance=osiris-testnet" \
-              "osiris=ghcr.io/penumbra-zone/osiris:penumbra-${PENUMBRA_VERSION}"
-          # Wait for rollout to complete. Will block until pods are marked Ready.
-          kubectl rollout status deployment \
-              -l "app.kubernetes.io/instance=osiris-testnet"
-
       - name: bounce galileo
         shell: bash
         run: |-

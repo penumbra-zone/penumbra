@@ -12,7 +12,7 @@ pub enum ProposalCmd {
         /// The file to output the template to.
         #[clap(long, global = true)]
         file: Option<camino::Utf8PathBuf>,
-        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or dao-spend].
+        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or community-pool-spend].
         #[clap(subcommand)]
         kind: ProposalKindCmd,
     },
@@ -62,8 +62,8 @@ pub enum ProposalKindCmd {
     Emergency,
     /// Generate a template for a parameter change proposal.
     ParameterChange,
-    /// Generate a template for a DAO spend proposal.
-    DaoSpend {
+    /// Generate a template for a Community Pool spend proposal.
+    CommunityPoolSpend {
         /// The transaction plan to include in the proposal, in JSON format.
         ///
         /// If not specified, the default empty transaction plan will be included, to be replaced
@@ -87,7 +87,7 @@ impl ProposalKindCmd {
                 old: Box::new(app_params.as_changed_params()),
                 new: Box::new(ChangedAppParameters {
                     chain_params: None,
-                    dao_params: None,
+                    community_pool_params: None,
                     ibc_params: None,
                     stake_params: None,
                     fee_params: None,
@@ -95,9 +95,9 @@ impl ProposalKindCmd {
                     distributions_params: None,
                 }),
             },
-            ProposalKindCmd::DaoSpend { transaction_plan } => {
+            ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {
                 if let Some(file) = transaction_plan {
-                    ProposalPayload::DaoSpend {
+                    ProposalPayload::CommunityPoolSpend {
                         transaction_plan: serde_json::from_reader(
                             std::fs::File::open(file).with_context(|| {
                                 format!("Failed to open transaction plan file {:?}", file)
@@ -108,7 +108,7 @@ impl ProposalKindCmd {
                         })?,
                     }
                 } else {
-                    ProposalPayload::DaoSpend {
+                    ProposalPayload::CommunityPoolSpend {
                         transaction_plan: TransactionPlan::default().encode_to_vec(),
                     }
                 }

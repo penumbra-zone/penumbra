@@ -201,11 +201,13 @@ pub struct SpendBody {
         super::super::super::asset::v1alpha1::BalanceCommitment,
     >,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "3")]
-    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "4")]
-    pub rk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "4")]
+    pub rk: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendVerificationKey,
+    >,
 }
 impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";

@@ -17,8 +17,8 @@ pub enum CommitmentSource {
     },
     /// The commitment was created through a validator's funding stream.
     FundingStreamReward { epoch_index: u64 },
-    /// The commitment was created through a `DaoOutput` in a governance-initated transaction.
-    DaoOutput,
+    /// The commitment was created through a `CommunityPoolOutput` in a governance-initated transaction.
+    CommunityPoolOutput,
     /// The commitment was created by an inbound ICS20 transfer.
     Ics20Transfer {
         /// The sequence number of the transfer packet.
@@ -70,7 +70,9 @@ impl From<CommitmentSource> for pb::CommitmentSource {
                 CommitmentSource::FundingStreamReward { epoch_index } => {
                     Source::FundingStreamReward(pbcs::FundingStreamReward { epoch_index })
                 }
-                CommitmentSource::DaoOutput => Source::DaoOutput(pbcs::DaoOutput {}),
+                CommitmentSource::CommunityPoolOutput => {
+                    Source::CommunityPoolOutput(pbcs::CommunityPoolOutput {})
+                }
                 CommitmentSource::Ics20Transfer {
                     packet_seq,
                     channel_id,
@@ -94,7 +96,7 @@ impl TryFrom<pb::CommitmentSource> for CommitmentSource {
 
         Ok(match source {
             Source::Genesis(_) => Self::Genesis,
-            Source::DaoOutput(_) => Self::DaoOutput,
+            Source::CommunityPoolOutput(_) => Self::CommunityPoolOutput,
             Source::FundingStreamReward(x) => Self::FundingStreamReward {
                 epoch_index: x.epoch_index,
             },

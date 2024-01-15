@@ -23,6 +23,16 @@ pub struct Cache {
 }
 
 impl Cache {
+    /// Inspect the cache of unwritten changes to the verifiable state.
+    pub fn unwritten_changes(&self) -> &BTreeMap<String, Option<Vec<u8>>> {
+        &self.unwritten_changes
+    }
+
+    /// Inspect the cache of unwritten changes to the nonverifiable state.
+    pub fn nonverifiable_changes(&self) -> &BTreeMap<Vec<u8>, Option<Vec<u8>>> {
+        &self.nonverifiable_changes
+    }
+
     /// Merge the given cache with this one, taking its writes in place of ours.
     pub fn merge(&mut self, other: Cache) {
         // One might ask, why does this exist separately from `apply_to`?  The
@@ -102,5 +112,14 @@ impl Cache {
                 .insert(truncated_key.to_vec(), some_value);
         }
         changes_by_substore
+    }
+
+    pub(crate) fn clone_changes(&self) -> Self {
+        Self {
+            unwritten_changes: self.unwritten_changes.clone(),
+            nonverifiable_changes: self.nonverifiable_changes.clone(),
+            ephemeral_objects: Default::default(),
+            events: Default::default(),
+        }
     }
 }

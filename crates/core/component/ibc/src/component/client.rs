@@ -45,7 +45,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         // if we have a stored consensus state for this height that conflicts, we need to freeze
         // the client. if it doesn't conflict, we can return early
         if let Ok(stored_cs_state) = self
-            .get_verified_consensus_state(verified_header.height(), client_id.clone())
+            .get_verified_consensus_state(&verified_header.height(), &client_id)
             .await
         {
             if stored_cs_state == verified_consensus_state {
@@ -66,11 +66,11 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         // have. In that case, we need to verify that the timestamp is correct. if it isn't, freeze
         // the client.
         let next_consensus_state = self
-            .next_verified_consensus_state(&client_id, verified_header.height())
+            .next_verified_consensus_state(&client_id, &verified_header.height())
             .await
             .expect("able to get next verified consensus state");
         let prev_consensus_state = self
-            .prev_verified_consensus_state(&client_id, verified_header.height())
+            .prev_verified_consensus_state(&client_id, &verified_header.height())
             .await
             .expect("able to get previous verified consensus state");
 
@@ -257,12 +257,12 @@ pub trait StateReadExt: StateRead {
 
     async fn get_verified_consensus_state(
         &self,
-        height: Height,
-        client_id: ClientId,
+        height: &Height,
+        client_id: &ClientId,
     ) -> Result<TendermintConsensusState> {
         self.get(
             &IBC_COMMITMENT_PREFIX
-                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+                .apply_string(ClientConsensusStatePath::new(client_id, height).to_string()),
         )
         .await?
         .ok_or_else(|| {
@@ -309,7 +309,7 @@ pub trait StateReadExt: StateRead {
     async fn next_verified_consensus_state(
         &self,
         client_id: &ClientId,
-        height: Height,
+        height: &Height,
     ) -> Result<Option<TendermintConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
@@ -327,7 +327,7 @@ pub trait StateReadExt: StateRead {
             .find(|&verified_height| verified_height > &height)
         {
             let next_cons_state = self
-                .get_verified_consensus_state(*next_height, client_id.clone())
+                .get_verified_consensus_state(next_height, client_id)
                 .await?;
             return Ok(Some(next_cons_state));
         } else {
@@ -340,7 +340,7 @@ pub trait StateReadExt: StateRead {
     async fn prev_verified_consensus_state(
         &self,
         client_id: &ClientId,
-        height: Height,
+        height: &Height,
     ) -> Result<Option<TendermintConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
@@ -358,7 +358,7 @@ pub trait StateReadExt: StateRead {
             .find(|&verified_height| verified_height < &height)
         {
             let prev_cons_state = self
-                .get_verified_consensus_state(*prev_height, client_id.clone())
+                .get_verified_consensus_state(prev_height, client_id)
                 .await?;
             return Ok(Some(prev_cons_state));
         } else {

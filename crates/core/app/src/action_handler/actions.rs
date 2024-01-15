@@ -3,10 +3,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::TransactionContext;
 use penumbra_ibc::component::StateReadExt as _;
 use penumbra_shielded_pool::component::Ics20Transfer;
 use penumbra_transaction::Action;
+use penumbra_txhash::TransactionContext;
 
 mod submit;
 
@@ -48,9 +48,9 @@ impl ActionHandler for Action {
                     .await
             }
             Action::Ics20Withdrawal(action) => action.check_stateless(()).await,
-            Action::DaoSpend(action) => action.check_stateless(()).await,
-            Action::DaoOutput(action) => action.check_stateless(()).await,
-            Action::DaoDeposit(action) => action.check_stateless(()).await,
+            Action::CommunityPoolSpend(action) => action.check_stateless(()).await,
+            Action::CommunityPoolOutput(action) => action.check_stateless(()).await,
+            Action::CommunityPoolDeposit(action) => action.check_stateless(()).await,
         }
     }
 
@@ -85,9 +85,9 @@ impl ActionHandler for Action {
                     .await
             }
             Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
-            Action::DaoSpend(action) => action.check_stateful(state).await,
-            Action::DaoOutput(action) => action.check_stateful(state).await,
-            Action::DaoDeposit(action) => action.check_stateful(state).await,
+            Action::CommunityPoolSpend(action) => action.check_stateful(state).await,
+            Action::CommunityPoolOutput(action) => action.check_stateful(state).await,
+            Action::CommunityPoolDeposit(action) => action.check_stateful(state).await,
         }
     }
 
@@ -120,9 +120,9 @@ impl ActionHandler for Action {
                     .await
             }
             Action::Ics20Withdrawal(action) => action.execute(state).await,
-            Action::DaoSpend(action) => action.execute(state).await,
-            Action::DaoOutput(action) => action.execute(state).await,
-            Action::DaoDeposit(action) => action.execute(state).await,
+            Action::CommunityPoolSpend(action) => action.execute(state).await,
+            Action::CommunityPoolOutput(action) => action.execute(state).await,
+            Action::CommunityPoolDeposit(action) => action.execute(state).await,
         }
     }
 }

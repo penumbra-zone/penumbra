@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use penumbra_chain::params::{ChainParameters, Ratio};
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
@@ -55,9 +55,9 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                 },
-            dao_params:
-                DaoParameters {
-                    dao_spend_proposals_enabled: _,
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
                 }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -137,9 +137,9 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                 },
-            dao_params:
-                DaoParameters {
-                    dao_spend_proposals_enabled: _,
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
                 }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
@@ -217,7 +217,7 @@ impl AppParameters {
     pub fn as_changed_params(&self) -> ChangedAppParameters {
         ChangedAppParameters {
             chain_params: Some(self.chain_params.clone()),
-            dao_params: Some(self.dao_params.clone()),
+            community_pool_params: Some(self.community_pool_params.clone()),
             distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
             governance_params: Some(self.governance_params.clone()),
@@ -241,7 +241,7 @@ impl AppParameters {
                 || new.ibc_params.is_none()
                 || new.governance_params.is_none()
                 || new.fee_params.is_none()
-                || new.dao_params.is_none()
+                || new.community_pool_params.is_none()
                 || new.distributions_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
@@ -253,9 +253,9 @@ impl AppParameters {
                     .chain_params
                     .clone()
             }),
-            dao_params: new.dao_params.clone().unwrap_or_else(|| {
+            community_pool_params: new.community_pool_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
-                    .dao_params
+                    .community_pool_params
                     .clone()
             }),
             distributions_params: new.distributions_params.clone().unwrap_or_else(|| {

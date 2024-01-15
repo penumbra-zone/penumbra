@@ -12,8 +12,8 @@ use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath}
 use crate::{
     component::{
         client::StateReadExt as _,
-        client_counter::validate_penumbra_client_state,
         connection::{StateReadExt as _, StateWriteExt as _},
+        ics02_validation::validate_penumbra_client_state,
         proof_verification, MsgHandler,
     },
     IBC_COMMITMENT_PREFIX,
@@ -78,7 +78,7 @@ impl MsgHandler for MsgConnectionOpenAck {
 
         // get the stored consensus state for the counterparty
         let trusted_consensus_state = state
-            .get_verified_consensus_state(self.proofs_height_on_b, connection.client_id.clone())
+            .get_verified_consensus_state(&self.proofs_height_on_b, &connection.client_id)
             .await?;
 
         // PROOF VERIFICATION

@@ -419,21 +419,27 @@ impl TxCmd {
                             ),
                         ]
                     }
-                    penumbra_transaction::ActionView::DaoDeposit(_) => {
-                        ["Dao Deposit".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolDeposit(_) => {
+                        ["CommunityPool Deposit".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::DaoSpend(_) => {
-                        ["Dao Spend".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolSpend(_) => {
+                        ["CommunityPool Spend".to_string(), "".to_string()]
                     }
-                    penumbra_transaction::ActionView::DaoOutput(_) => {
-                        ["Dao Output".to_string(), "".to_string()]
+                    penumbra_transaction::ActionView::CommunityPoolOutput(_) => {
+                        ["CommunityPool Output".to_string(), "".to_string()]
                     }
                 });
             }
 
             metadata_table.add_row(vec![
                 "Transaction Fee",
-                &tx_info.view.body_view.fee.value().format(&asset_cache),
+                &tx_info
+                    .view
+                    .body_view
+                    .transaction_parameters
+                    .fee
+                    .value()
+                    .format(&asset_cache),
             ]);
 
             let memo_view = tx_info.view.body_view.memo_view;

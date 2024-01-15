@@ -9,7 +9,7 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 // decide whether or not to download block data.
 message CommitmentSource {
   // The state commitment was included in the genesis state.
-  message Genesis { }
+  message Genesis {}
   // The commitment was created by a transaction.
   //
   // When included in a `CompactBlock` via a `StatePayload`, the transaction source is "dehydrated"
@@ -27,8 +27,8 @@ message CommitmentSource {
     // The epoch index the rewards were issued in.
     uint64 epoch_index = 1;
   }
-  // The commitment was created through a `DaoOutput` in a governance-initated transaction.
-  message DaoOutput { }
+  // The commitment was created through a `CommunityPoolOutput` in a governance-initated transaction.
+  message CommunityPoolOutput {}
   // The commitment was created by an inbound ICS20 transfer.
   message Ics20Transfer {
     // The sequence number of the packet that triggered the transfer
@@ -42,7 +42,7 @@ message CommitmentSource {
     Transaction transaction = 1;
     Ics20Transfer ics_20_transfer = 2;
     FundingStreamReward funding_stream_reward = 20;
-    DaoOutput dao_output = 30;
+    CommunityPoolOutput community_pool_output = 30;
     Genesis genesis = 40;
   }
 }
@@ -83,6 +83,4 @@ message EventBlockRoot {
 }
 
 // Query operations for the SCT component.
-service QueryService {
-}
-
+service QueryService {}

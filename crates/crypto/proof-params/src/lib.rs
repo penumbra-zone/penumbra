@@ -173,24 +173,24 @@ pub mod swapclaim {
     include!("gen/swapclaim_id.rs");
 }
 
-/// Proving key for the undelegateclaim proof.
-pub static UNDELEGATECLAIM_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
-    let undelegate_claim_proving_key = LazyProvingKey::new(undelegateclaim::PROVING_KEY_ID);
+/// Proving key for the convert proof.
+pub static CONVERT_PROOF_PROVING_KEY: Lazy<LazyProvingKey> = Lazy::new(|| {
+    let convert_proving_key = LazyProvingKey::new(convert::PROVING_KEY_ID);
 
     #[cfg(feature = "bundled-proving-keys")]
-    undelegate_claim_proving_key
-        .try_load(include_bytes!("gen/undelegateclaim_pk.bin"))
+    convert_proving_key
+        .try_load(include_bytes!("gen/convert_pk.bin"))
         .expect("bundled proving key is valid");
 
-    undelegate_claim_proving_key
+    convert_proving_key
 });
 
-/// Verification key for the undelegateclaim proof.
-pub static UNDELEGATECLAIM_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
-    Lazy::new(|| undelegateclaim_verification_parameters().into());
+/// Verification key for the convert proof.
+pub static CONVERT_PROOF_VERIFICATION_KEY: Lazy<PreparedVerifyingKey<Bls12_377>> =
+    Lazy::new(|| convert_verification_parameters().into());
 
-pub mod undelegateclaim {
-    include!("gen/undelegateclaim_id.rs");
+pub mod convert {
+    include!("gen/convert_id.rs");
 }
 
 /// Proving key for the delegator vote proof.
@@ -260,8 +260,8 @@ fn swapclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
         .expect("can deserialize VerifyingKey")
 }
 
-fn undelegateclaim_verification_parameters() -> VerifyingKey<Bls12_377> {
-    let vk_params = include_bytes!("gen/undelegateclaim_vk.param");
+fn convert_verification_parameters() -> VerifyingKey<Bls12_377> {
+    let vk_params = include_bytes!("gen/convert_vk.param");
     VerifyingKey::deserialize_uncompressed_unchecked(&vk_params[..])
         .expect("can deserialize VerifyingKey")
 }

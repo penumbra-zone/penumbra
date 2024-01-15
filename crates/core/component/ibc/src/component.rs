@@ -4,6 +4,7 @@ mod client;
 mod client_counter;
 mod connection;
 mod connection_counter;
+mod ics02_validation;
 
 #[cfg(feature = "rpc")]
 pub mod rpc;
@@ -24,7 +25,9 @@ use msg_handler::MsgHandler;
 pub use self::metrics::register_metrics;
 pub use channel::StateReadExt as ChannelStateReadExt;
 pub use client::StateReadExt as ClientStateReadExt;
+pub use client::StateWriteExt as ClientStateWriteExt;
 pub use connection::StateReadExt as ConnectionStateReadExt;
+pub use connection::StateWriteExt as ConnectionStateWriteExt;
 pub use view::{StateReadExt, StateWriteExt};
 
 pub use ibc_component::IBCComponent;

@@ -21,8 +21,8 @@ impl serde::Serialize for CommitmentSource {
                 commitment_source::Source::FundingStreamReward(v) => {
                     struct_ser.serialize_field("fundingStreamReward", v)?;
                 }
-                commitment_source::Source::DaoOutput(v) => {
-                    struct_ser.serialize_field("daoOutput", v)?;
+                commitment_source::Source::CommunityPoolOutput(v) => {
+                    struct_ser.serialize_field("communityPoolOutput", v)?;
                 }
                 commitment_source::Source::Genesis(v) => {
                     struct_ser.serialize_field("genesis", v)?;
@@ -44,8 +44,8 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
             "ics20Transfer",
             "funding_stream_reward",
             "fundingStreamReward",
-            "dao_output",
-            "daoOutput",
+            "community_pool_output",
+            "communityPoolOutput",
             "genesis",
         ];
 
@@ -54,7 +54,7 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
             Transaction,
             Ics20Transfer,
             FundingStreamReward,
-            DaoOutput,
+            CommunityPoolOutput,
             Genesis,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -80,7 +80,7 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
                             "transaction" => Ok(GeneratedField::Transaction),
                             "ics20Transfer" | "ics_20_transfer" => Ok(GeneratedField::Ics20Transfer),
                             "fundingStreamReward" | "funding_stream_reward" => Ok(GeneratedField::FundingStreamReward),
-                            "daoOutput" | "dao_output" => Ok(GeneratedField::DaoOutput),
+                            "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "genesis" => Ok(GeneratedField::Genesis),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -125,11 +125,11 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
                             source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::FundingStreamReward)
 ;
                         }
-                        GeneratedField::DaoOutput => {
+                        GeneratedField::CommunityPoolOutput => {
                             if source__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("daoOutput"));
+                                return Err(serde::de::Error::duplicate_field("communityPoolOutput"));
                             }
-                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::DaoOutput)
+                            source__ = map_.next_value::<::std::option::Option<_>>()?.map(commitment_source::Source::CommunityPoolOutput)
 ;
                         }
                         GeneratedField::Genesis => {
@@ -149,7 +149,7 @@ impl<'de> serde::Deserialize<'de> for CommitmentSource {
         deserializer.deserialize_struct("penumbra.core.component.sct.v1alpha1.CommitmentSource", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for commitment_source::DaoOutput {
+impl serde::Serialize for commitment_source::CommunityPoolOutput {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -157,11 +157,11 @@ impl serde::Serialize for commitment_source::DaoOutput {
     {
         use serde::ser::SerializeStruct;
         let len = 0;
-        let struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1alpha1.CommitmentSource.DaoOutput", len)?;
+        let struct_ser = serializer.serialize_struct("penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput", len)?;
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for commitment_source::DaoOutput {
+impl<'de> serde::Deserialize<'de> for commitment_source::CommunityPoolOutput {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -200,24 +200,24 @@ impl<'de> serde::Deserialize<'de> for commitment_source::DaoOutput {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = commitment_source::DaoOutput;
+            type Value = commitment_source::CommunityPoolOutput;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.sct.v1alpha1.CommitmentSource.DaoOutput")
+                formatter.write_str("struct penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::DaoOutput, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<commitment_source::CommunityPoolOutput, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 while map_.next_key::<GeneratedField>()?.is_some() {
                     let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
-                Ok(commitment_source::DaoOutput {
+                Ok(commitment_source::CommunityPoolOutput {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.sct.v1alpha1.CommitmentSource.DaoOutput", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for commitment_source::FundingStreamReward {

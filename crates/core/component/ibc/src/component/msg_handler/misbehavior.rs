@@ -14,12 +14,9 @@ use tendermint_light_client_verifier::{
 
 use cnidarium_component::ChainStateReadExt;
 
-use crate::component::client::StateWriteExt as _;
-use crate::component::client_counter::ics02_validation;
-use crate::component::ClientStateReadExt as _;
-
 use super::update_client::verify_header_validator_set;
 use super::MsgHandler;
+use crate::component::{client::StateWriteExt as _, ics02_validation, ClientStateReadExt as _};
 
 #[async_trait]
 impl MsgHandler for MsgSubmitMisbehaviour {
@@ -66,14 +63,14 @@ impl MsgHandler for MsgSubmitMisbehaviour {
 
         verify_misbehavior_header(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header1,
             &trusted_client_state,
         )
         .await?;
         verify_misbehavior_header(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header2,
             &trusted_client_state,
         )
@@ -117,13 +114,13 @@ fn client_is_not_frozen(client: &TendermintClientState) -> anyhow::Result<()> {
 
 async fn verify_misbehavior_header<S: ChainStateReadExt>(
     state: &S,
-    client_id: ClientId,
+    client_id: &ClientId,
     mb_header: &TendermintHeader,
     trusted_client_state: &TendermintClientState,
 ) -> Result<()> {
     let trusted_height = mb_header.trusted_height;
     let last_trusted_consensus_state = state
-        .get_verified_consensus_state(trusted_height, client_id)
+        .get_verified_consensus_state(&trusted_height, &client_id)
         .await?;
 
     let trusted_height = trusted_height

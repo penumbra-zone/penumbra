@@ -1,29 +1,25 @@
-use penumbra_dex::swap_claim::SwapClaimPlan;
-use penumbra_proto::view::v1alpha1::NotesRequest;
 use std::collections::BTreeMap;
 
 use anyhow::{Context, Result};
 use ark_std::UniformRand;
 use decaf377::Fq;
-use penumbra_asset::Value;
-use penumbra_fee::Fee;
-use penumbra_governance::{proposal_state, Proposal, ValidatorVote};
-use penumbra_keys::{
-    keys::{AddressIndex, WalletId},
-    Address,
-};
-use penumbra_num::Amount;
-use penumbra_stake::rate::RateData;
-use penumbra_stake::validator;
-use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan};
-use penumbra_view::{SpendableNoteRecord, ViewClient};
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
+use penumbra_asset::Value;
+use penumbra_dex::swap_claim::SwapClaimPlan;
+use penumbra_fee::Fee;
+use penumbra_governance::{proposal_state, Proposal, ValidatorVote};
+use penumbra_keys::{keys::AddressIndex, Address};
+use penumbra_num::Amount;
+use penumbra_proto::view::v1alpha1::NotesRequest;
+use penumbra_stake::rate::RateData;
+use penumbra_stake::validator;
+use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan, TransactionParameters};
 pub use penumbra_view::Planner;
+use penumbra_view::{SpendableNoteRecord, ViewClient};
 
 pub async fn validator_definition<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     new_validator: validator::Definition,
@@ -37,13 +33,12 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_definition(new_validator)
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build validator definition plan")
 }
 
 pub async fn validator_vote<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     vote: ValidatorVote,
@@ -57,15 +52,14 @@ where
     Planner::new(rng)
         .fee(fee)
         .validator_vote(vote)
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build validator vote plan")
 }
 
 /// Generate a new transaction plan delegating stake
-#[instrument(skip(wallet_id, view, rng, rate_data, unbonded_amount, fee, source_address))]
+#[instrument(skip(view, rng, rate_data, unbonded_amount, fee, source_address))]
 pub async fn delegate<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     rate_data: RateData,
@@ -80,24 +74,14 @@ where
     Planner::new(rng)
         .fee(fee)
         .delegate(unbonded_amount, rate_data)
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build delegate plan")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(
-    wallet_id,
-    view,
-    rng,
-    values,
-    fee,
-    dest_address,
-    source_address_index,
-    tx_memo
-))]
+#[instrument(skip(view, rng, values, fee, dest_address, source_address_index, tx_memo))]
 pub async fn send<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     values: &[Value],
@@ -125,17 +109,13 @@ where
     let source_address = view.address_by_index(source_address_index).await?;
     planner
         .memo(tx_memo.unwrap_or_else(|| MemoPlaintext::blank_memo(source_address)))?
-        .plan(view, wallet_id, source_address_index)
+        .plan(view, source_address_index)
         .await
         .context("can't build send transaction")
 }
 
-#[instrument(skip(wallet_id, view, rng))]
-pub async fn sweep<V, R>(
-    wallet_id: WalletId,
-    view: &mut V,
-    mut rng: R,
-) -> anyhow::Result<Vec<TransactionPlan>>
+#[instrument(skip(view, rng))]
+pub async fn sweep<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
@@ -147,7 +127,7 @@ where
 
     // Finally, sweep dust notes by spending them to their owner's address.
     // This will consolidate small-value notes into larger ones.
-    plans.extend(sweep_notes(wallet_id, view, &mut rng).await?);
+    plans.extend(sweep_notes(view, &mut rng).await?);
 
     Ok(plans)
 }
@@ -179,10 +159,13 @@ where
         let output_data = swap.output_data;
 
         let mut plan = TransactionPlan {
-            chain_id: chain_params.clone().chain_id,
-            fee: swap_plaintext.claim_fee.clone(),
+            transaction_parameters: TransactionParameters {
+                chain_id: chain_params.clone().chain_id,
+                fee: swap_plaintext.claim_fee.clone(),
+                ..Default::default()
+            },
             // The transaction doesn't need a memo, because it's to ourselves.
-            memo_plan: None,
+            memo: None,
             ..Default::default()
         };
 
@@ -201,12 +184,8 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(wallet_id, view, rng))]
-pub async fn sweep_notes<V, R>(
-    wallet_id: WalletId,
-    view: &mut V,
-    mut rng: R,
-) -> anyhow::Result<Vec<TransactionPlan>>
+#[instrument(skip(view, rng))]
+pub async fn sweep_notes<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
@@ -215,7 +194,6 @@ where
 
     let all_notes = view
         .notes(NotesRequest {
-            wallet_id: Some(wallet_id.into()),
             ..Default::default()
         })
         .await?;
@@ -254,7 +232,7 @@ where
                 }
 
                 let plan = planner
-                    .plan(view, wallet_id, index)
+                    .plan(view, index)
                     .await
                     .context("can't build sweep transaction")?;
 
@@ -267,9 +245,8 @@ where
     Ok(plans)
 }
 
-#[instrument(skip(wallet_id, view, rng))]
+#[instrument(skip(view, rng))]
 pub async fn proposal_submit<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     proposal: Proposal,
@@ -289,15 +266,14 @@ where
                 .governance_params
                 .proposal_deposit_amount,
         )
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build proposal submit transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(wallet_id, view, rng))]
+#[instrument(skip(view, rng))]
 pub async fn proposal_withdraw<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -312,15 +288,14 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_withdraw(proposal_id, reason)
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }
 
 #[allow(clippy::too_many_arguments)]
-#[instrument(skip(wallet_id, view, rng))]
+#[instrument(skip(view, rng))]
 pub async fn proposal_deposit_claim<V, R>(
-    wallet_id: WalletId,
     view: &mut V,
     rng: R,
     proposal_id: u64,
@@ -336,7 +311,7 @@ where
     Planner::new(rng)
         .fee(fee)
         .proposal_deposit_claim(proposal_id, deposit_amount, outcome)
-        .plan(view, wallet_id, source_address)
+        .plan(view, source_address)
         .await
         .context("can't build proposal withdraw transaction")
 }

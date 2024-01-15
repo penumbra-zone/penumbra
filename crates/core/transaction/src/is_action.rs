@@ -1,7 +1,7 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
         action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
@@ -215,34 +215,34 @@ impl IsAction for Ics20Withdrawal {
     }
 }
 
-impl IsAction for DaoDeposit {
+impl IsAction for CommunityPoolDeposit {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoDeposit(self.clone())
+        ActionView::CommunityPoolDeposit(self.clone())
     }
 }
 
-impl IsAction for DaoOutput {
+impl IsAction for CommunityPoolOutput {
     fn balance_commitment(&self) -> balance::Commitment {
-        // Outputs from the DAO require value
+        // Outputs from the Community Pool require value
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoOutput(self.clone())
+        ActionView::CommunityPoolOutput(self.clone())
     }
 }
 
-impl IsAction for DaoSpend {
+impl IsAction for CommunityPoolSpend {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoSpend(self.clone())
+        ActionView::CommunityPoolSpend(self.clone())
     }
 }
 

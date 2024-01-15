@@ -4,12 +4,12 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
-use penumbra_chain::TransactionContext;
 use penumbra_proof_params::SPEND_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::{SctManager, SourceContext, StateReadExt as _};
+use penumbra_txhash::TransactionContext;
 
-use crate::{event, Spend};
+use crate::{event, Spend, SpendProofPublic};
 
 #[async_trait]
 impl ActionHandler for Spend {
@@ -24,15 +24,15 @@ impl ActionHandler for Spend {
             .context("spend auth signature failed to verify")?;
 
         // 3. Check that the proof verifies.
+        let public = SpendProofPublic {
+            anchor: context.anchor,
+            balance_commitment: spend.body.balance_commitment,
+            nullifier: spend.body.nullifier,
+            rk: spend.body.rk,
+        };
         spend
             .proof
-            .verify(
-                &SPEND_PROOF_VERIFICATION_KEY,
-                context.anchor,
-                spend.body.balance_commitment,
-                spend.body.nullifier,
-                spend.body.rk,
-            )
+            .verify(&SPEND_PROOF_VERIFICATION_KEY, public)
             .context("a spend proof did not verify")?;
 
         Ok(())

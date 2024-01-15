@@ -31,51 +31,46 @@ use crate::{
 
 use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
-pub struct SwapCircuit {
-    /// The swap plaintext.
-    swap_plaintext: SwapPlaintext,
-    /// The blinding factor for the fee commitment.
-    fee_blinding: Fr,
-    /// Balance commitment of the swap.
+/// The public inputs to a [`SwapProof`].
+#[derive(Clone, Debug)]
+pub struct SwapProofPublic {
+    /// A commitment to the balance of this transaction.
     pub balance_commitment: balance::Commitment,
-    /// Swap commitment.
+    /// A commitment to the swap.
     pub swap_commitment: tct::StateCommitment,
-    /// Balance commitment of the fee.
+    /// A commitment to the fee that was paid.
     pub fee_commitment: balance::Commitment,
 }
 
-impl SwapCircuit {
-    pub fn new(
-        swap_plaintext: SwapPlaintext,
-        fee_blinding: Fr,
-        balance_commitment: balance::Commitment,
-        swap_commitment: tct::StateCommitment,
-        fee_commitment: balance::Commitment,
-    ) -> Self {
-        Self {
-            swap_plaintext,
-            fee_blinding,
-            balance_commitment,
-            swap_commitment,
-            fee_commitment,
-        }
-    }
+/// The private inputs to a [`SwapProof`].
+#[derive(Clone, Debug)]
+pub struct SwapProofPrivate {
+    /// A randomizer to make the commitment to the fee hiding.
+    pub fee_blinding: Fr,
+    /// All information about the swap.
+    pub swap_plaintext: SwapPlaintext,
+}
+
+pub struct SwapCircuit {
+    public: SwapProofPublic,
+    private: SwapProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let swap_plaintext_var =
-            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.swap_plaintext.clone()))?;
-        let fee_blinding_var = UInt8::new_witness_vec(cs.clone(), &self.fee_blinding.to_bytes())?;
+            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.private.swap_plaintext.clone()))?;
+        let fee_blinding_var =
+            UInt8::new_witness_vec(cs.clone(), &self.private.fee_blinding.to_bytes())?;
 
         // Inputs
         let claimed_balance_commitment =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
         let claimed_swap_commitment =
-            StateCommitmentVar::new_input(cs.clone(), || Ok(self.swap_commitment))?;
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.swap_commitment))?;
         let claimed_fee_commitment =
-            BalanceCommitmentVar::new_input(cs, || Ok(self.fee_commitment))?;
+            BalanceCommitmentVar::new_input(cs, || Ok(self.public.fee_commitment))?;
 
         // Swap commitment integrity check
         let swap_commitment = swap_plaintext_var.commit()?;
@@ -137,11 +132,15 @@ impl DummyWitness for SwapCircuit {
         };
 
         Self {
-            swap_plaintext: swap_plaintext.clone(),
-            fee_blinding: Fr::from(1),
-            swap_commitment: swap_plaintext.swap_commitment(),
-            fee_commitment: balance::Commitment(decaf377::basepoint()),
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            private: SwapProofPrivate {
+                swap_plaintext: swap_plaintext.clone(),
+                fee_blinding: Fr::from(1),
+            },
+            public: SwapProofPublic {
+                swap_commitment: swap_plaintext.swap_commitment(),
+                fee_commitment: balance::Commitment(decaf377::basepoint()),
+                balance_commitment: balance::Commitment(decaf377::basepoint()),
+            },
         }
     }
 }
@@ -155,19 +154,10 @@ impl SwapProof {
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        swap_plaintext: SwapPlaintext,
-        fee_blinding: Fr,
-        balance_commitment: balance::Commitment,
-        swap_commitment: tct::StateCommitment,
-        fee_commitment: balance::Commitment,
+        public: SwapProofPublic,
+        private: SwapProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SwapCircuit {
-            swap_plaintext,
-            fee_blinding,
-            balance_commitment,
-            swap_commitment,
-            fee_commitment,
-        };
+        let circuit = SwapCircuit { public, private };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
@@ -191,28 +181,29 @@ impl SwapProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        balance_commitment: balance::Commitment,
-        swap_commitment: tct::StateCommitment,
-        fee_commitment: balance::Commitment,
+        public: SwapProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            balance_commitment
+            public
+                .balance_commitment
                 .0
                 .to_field_elements()
                 .context("balance_commitment should be a Bls12-377 field member")?,
         );
         public_inputs.extend(
-            swap_commitment
+            public
+                .swap_commitment
                 .0
                 .to_field_elements()
                 .context("swap_commitment should be a Bls12-377 field member")?,
         );
         public_inputs.extend(
-            fee_commitment
+            public
+                .fee_commitment
                 .0
                 .to_field_elements()
                 .context("fee_commitment should be a Bls12-377 field member")?,
@@ -315,6 +306,9 @@ mod tests {
         balance -= value_fee;
         let balance_commitment = balance.commit(fee_blinding);
 
+        let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment };
+        let private = SwapProofPrivate { fee_blinding, swap_plaintext };
+
         let blinding_r = Fq::rand(&mut rng);
         let blinding_s = Fq::rand(&mut rng);
 
@@ -322,15 +316,12 @@ mod tests {
             blinding_r,
             blinding_s,
             &pk,
-            swap_plaintext,
-            fee_blinding,
-            balance_commitment,
-            swap_commitment,
-            fee_commitment
+            public.clone(),
+            private
         )
         .expect("can create proof");
 
-        let proof_result = proof.verify(&vk, balance_commitment, swap_commitment, fee_commitment);
+        let proof_result = proof.verify(&vk, public);
 
         assert!(proof_result.is_ok());
         }

@@ -191,11 +191,13 @@ pub struct DelegatorVoteBody {
         super::super::super::num::v1alpha1::Amount,
     >,
     /// The nullifier of the input note.
-    #[prost(bytes = "vec", tag = "6")]
-    pub nullifier: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "6")]
+    pub nullifier: ::core::option::Option<super::super::sct::v1alpha1::Nullifier>,
     /// The randomized validating key for the spend authorization signature.
-    #[prost(bytes = "vec", tag = "7")]
-    pub rk: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "7")]
+    pub rk: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_rdsa::v1alpha1::SpendVerificationKey,
+    >,
 }
 impl ::prost::Name for DelegatorVoteBody {
     const NAME: &'static str = "DelegatorVoteBody";
@@ -312,13 +314,13 @@ impl ::prost::Name for DelegatorVotePlan {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoDeposit {
-    /// The value to deposit into the DAO.
+pub struct CommunityPoolDeposit {
+    /// The value to deposit into the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
-impl ::prost::Name for DaoDeposit {
-    const NAME: &'static str = "DaoDeposit";
+impl ::prost::Name for CommunityPoolDeposit {
+    const NAME: &'static str = "CommunityPoolDeposit";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -328,13 +330,13 @@ impl ::prost::Name for DaoDeposit {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoSpend {
-    /// The value to spend from the DAO.
+pub struct CommunityPoolSpend {
+    /// The value to spend from the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
 }
-impl ::prost::Name for DaoSpend {
-    const NAME: &'static str = "DaoSpend";
+impl ::prost::Name for CommunityPoolSpend {
+    const NAME: &'static str = "CommunityPoolSpend";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -344,16 +346,16 @@ impl ::prost::Name for DaoSpend {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DaoOutput {
-    /// The value to output from the DAO.
+pub struct CommunityPoolOutput {
+    /// The value to output from the Community Pool.
     #[prost(message, optional, tag = "1")]
     pub value: ::core::option::Option<super::super::super::asset::v1alpha1::Value>,
     /// The address to send the output to.
     #[prost(message, optional, tag = "2")]
     pub address: ::core::option::Option<super::super::super::keys::v1alpha1::Address>,
 }
-impl ::prost::Name for DaoOutput {
-    const NAME: &'static str = "DaoOutput";
+impl ::prost::Name for CommunityPoolOutput {
+    const NAME: &'static str = "CommunityPoolOutput";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -664,9 +666,13 @@ pub struct Proposal {
     #[prost(message, optional, tag = "7")]
     pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
     #[prost(message, optional, tag = "8")]
-    pub dao_spend: ::core::option::Option<proposal::DaoSpend>,
+    pub community_pool_spend: ::core::option::Option<proposal::CommunityPoolSpend>,
     #[prost(message, optional, tag = "9")]
     pub upgrade_plan: ::core::option::Option<proposal::UpgradePlan>,
+    #[prost(message, optional, tag = "10")]
+    pub freeze_ibc_client: ::core::option::Option<proposal::FreezeIbcClient>,
+    #[prost(message, optional, tag = "11")]
+    pub unfreeze_ibc_client: ::core::option::Option<proposal::UnfreezeIbcClient>,
 }
 /// Nested message and enum types in `Proposal`.
 pub mod proposal {
@@ -736,20 +742,20 @@ pub mod proposal {
             )
         }
     }
-    /// A DAO spend proposal describes zero or more transactions to execute on behalf of the DAO, with
+    /// A Community Pool spend proposal describes zero or more transactions to execute on behalf of the Community Pool, with
     /// access to its funds, and zero or more scheduled transactions from previous passed proposals to
     /// cancel.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct DaoSpend {
+    pub struct CommunityPoolSpend {
         /// The transaction plan to be executed at the time the proposal is passed. This must be a
-        /// transaction plan which can be executed by the DAO, which means it can't require any witness
-        /// data or authorization signatures, but it may use the `DaoSpend` action.
+        /// transaction plan which can be executed by the Community Pool, which means it can't require any witness
+        /// data or authorization signatures, but it may use the `CommunityPoolSpend` action.
         #[prost(message, optional, tag = "2")]
         pub transaction_plan: ::core::option::Option<::pbjson_types::Any>,
     }
-    impl ::prost::Name for DaoSpend {
-        const NAME: &'static str = "DaoSpend";
+    impl ::prost::Name for CommunityPoolSpend {
+        const NAME: &'static str = "CommunityPoolSpend";
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -767,6 +773,38 @@ pub mod proposal {
     }
     impl ::prost::Name for UpgradePlan {
         const NAME: &'static str = "UpgradePlan";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
+    /// Freeze an existing IBC client.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FreezeIbcClient {
+        #[prost(string, tag = "1")]
+        pub client_id: ::prost::alloc::string::String,
+    }
+    impl ::prost::Name for FreezeIbcClient {
+        const NAME: &'static str = "FreezeIbcClient";
+        const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
+            )
+        }
+    }
+    /// Unfreeze an existing IBC client.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UnfreezeIbcClient {
+        #[prost(string, tag = "1")]
+        pub client_id: ::prost::alloc::string::String,
+    }
+    impl ::prost::Name for UnfreezeIbcClient {
+        const NAME: &'static str = "UnfreezeIbcClient";
         const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -1063,9 +1101,11 @@ pub struct ChangedAppParameters {
     pub chain_params: ::core::option::Option<
         super::super::chain::v1alpha1::ChainParameters,
     >,
-    /// DAO module parameters.
+    /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
-    pub dao_params: ::core::option::Option<super::super::dao::v1alpha1::DaoParameters>,
+    pub community_pool_params: ::core::option::Option<
+        super::super::community_pool::v1alpha1::CommunityPoolParameters,
+    >,
     /// Governance module parameters.
     #[prost(message, optional, tag = "3")]
     pub governance_params: ::core::option::Option<GovernanceParameters>,

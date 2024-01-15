@@ -1,0 +1,15 @@
+syntax = "proto3";
+package penumbra.core.txhash.v1alpha1;
+
+// The hash of a Penumbra transaction's _effecting data_, describing the effects
+// of the transaction on the chain state.
+message EffectHash {
+  bytes inner = 1;
+}
+
+// A transaction ID, the Sha256 hash of a transaction.
+//
+// This is the hash of the plain byte encoding, used by Tendermint.
+message TransactionId {
+  bytes inner = 1;
+}

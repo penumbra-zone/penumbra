@@ -31,7 +31,7 @@ penumbra-governance = { path = "../core/component/governance", default-features 
 penumbra-stake = { path = "../core/component/stake", default-features = false }
 penumbra-ibc = { path = "../core/component/ibc", default-features = false }
 penumbra-distributions = { path = "../core/component/distributions", default-features = false }
-penumbra-dao = { path = "../core/component/dao", default-features = false }
+penumbra-community-pool = { path = "../core/component/community-pool", default-features = false }
 penumbra-dex = { path = "../core/component/dex", default-features = false }
 penumbra-sct = { path = "../core/component/sct", default-features = false }
 penumbra-fee = { path = "../core/component/fee", default-features = false }
@@ -39,7 +39,7 @@ penumbra-compact-block = { path = "../core/component/compact-block", default-fea
 penumbra-app = { path = "../core/app" }
 penumbra-transaction = { path = "../core/transaction" }
 
-ibc-types = { version = "0.10.0", default-features = false }
+ibc-types = { version = "0.11.0", default-features = false }
 
 ark-std = { version = "0.4", default-features = false }
 decaf377 = { version = "0.5", features = ["r1cs"] }

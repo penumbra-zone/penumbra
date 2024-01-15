@@ -113,8 +113,8 @@ mod tests {
     use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use penumbra_transaction::{
-        plan::{CluePlan, TransactionPlan},
-        WitnessData,
+        plan::{CluePlan, DetectionDataPlan, TransactionPlan},
+        TransactionParameters, WitnessData,
     };
     use rand_core::OsRng;
 
@@ -151,22 +151,26 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
-            memo_plan: None,
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
+            }),
+            memo: None,
         };
 
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -213,21 +217,23 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![],
-            memo_plan: None,
+            detection_data: None,
+            memo: None,
         };
 
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

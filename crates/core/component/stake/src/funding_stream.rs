@@ -18,7 +18,7 @@ pub enum FundingStream {
         /// validator's total staking reward that goes to this funding stream.
         rate_bps: u16,
     },
-    ToDao {
+    ToCommunityPool {
         /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
         /// validator's total staking reward that goes to this funding stream.
         rate_bps: u16,
@@ -29,21 +29,21 @@ pub enum FundingStream {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Recipient {
     Address(Address),
-    Dao,
+    CommunityPool,
 }
 
 impl FundingStream {
     pub fn rate_bps(&self) -> u16 {
         match self {
             FundingStream::ToAddress { rate_bps, .. } => *rate_bps,
-            FundingStream::ToDao { rate_bps } => *rate_bps,
+            FundingStream::ToCommunityPool { rate_bps } => *rate_bps,
         }
     }
 
     pub fn recipient(&self) -> Recipient {
         match self {
             FundingStream::ToAddress { address, .. } => Recipient::Address(*address),
-            FundingStream::ToDao { .. } => Recipient::Dao,
+            FundingStream::ToCommunityPool { .. } => Recipient::CommunityPool,
         }
     }
 }
@@ -83,11 +83,13 @@ impl From<FundingStream> for pb::FundingStream {
                         rate_bps: rate_bps.into(),
                     }),
                 ),
-                FundingStream::ToDao { rate_bps } => Some(pb::funding_stream::Recipient::ToDao(
-                    pb::funding_stream::ToDao {
-                        rate_bps: rate_bps.into(),
-                    },
-                )),
+                FundingStream::ToCommunityPool { rate_bps } => {
+                    Some(pb::funding_stream::Recipient::ToCommunityPool(
+                        pb::funding_stream::ToCommunityPool {
+                            rate_bps: rate_bps.into(),
+                        },
+                    ))
+                }
             },
         }
     }
@@ -115,15 +117,15 @@ impl TryFrom<pb::FundingStream> for FundingStream {
                 }
                 Ok(FundingStream::ToAddress { address, rate_bps })
             }
-            pb::funding_stream::Recipient::ToDao(to_dao) => {
-                let rate_bps = to_dao
+            pb::funding_stream::Recipient::ToCommunityPool(to_community_pool) => {
+                let rate_bps = to_community_pool
                     .rate_bps
                     .try_into()
                     .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
                 if rate_bps > 10_000 {
                     anyhow::bail!("funding stream rate exceeds 100% (10,000bps)");
                 }
-                Ok(FundingStream::ToDao { rate_bps })
+                Ok(FundingStream::ToCommunityPool { rate_bps })
             }
         }
     }

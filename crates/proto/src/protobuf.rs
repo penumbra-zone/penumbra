@@ -38,8 +38,9 @@ where
 // that shouldn't depend on the Penumbra proto framework.
 
 use crate::penumbra::core::component::ibc::v1alpha1::IbcRelay;
-use crate::penumbra::core::keys::v1alpha1::SpendVerificationKey;
-use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{BindingSignature, SpendAuthSignature};
+use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{
+    BindingSignature, SpendAuthSignature, SpendVerificationKey,
+};
 
 use decaf377_rdsa::{Binding, Signature, SpendAuth, VerificationKey};
 

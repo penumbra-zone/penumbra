@@ -51,7 +51,7 @@ message FundingStream {
     uint32 rate_bps = 2;
   }
 
-  message ToDao {
+  message ToCommunityPool {
     // The portion of the staking reward for the entire delegation pool
     // allocated to this funding stream, specified in basis points.
     uint32 rate_bps = 2;
@@ -60,7 +60,7 @@ message FundingStream {
   // The recipient of the funding stream.
   oneof recipient {
     ToAddress to_address = 1;
-    ToDao to_dao = 2;
+    ToCommunityPool to_community_pool = 2;
   }
 }
 

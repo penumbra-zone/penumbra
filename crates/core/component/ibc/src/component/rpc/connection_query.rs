@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use cnidarium_component::ChainStateReadExt;
-use ibc_proto::ibc::core::client::v1::Height;
+use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
 use ibc_proto::ibc::core::connection::v1::query_server::Query as ConnectionQuery;
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd, QueryClientConnectionsRequest, QueryClientConnectionsResponse,
@@ -11,8 +11,11 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsResponse,
 };
 
-use ibc_types::core::connection::{ConnectionId, IdentifiedConnectionEnd};
-use ibc_types::path::ConnectionPath;
+use ibc_types::core::client::ClientId;
+use ibc_types::core::connection::{ClientPaths, ConnectionId, IdentifiedConnectionEnd};
+use ibc_types::path::{
+    ClientConnectionPath, ClientConsensusStatePath, ClientStatePath, ConnectionPath,
+};
 use ibc_types::DomainType;
 use prost::Message;
 use std::str::FromStr;
@@ -133,26 +136,140 @@ impl<C: ChainStateReadExt + Snapshot + 'static, S: Storage<C>> ConnectionQuery f
     /// state.
     async fn client_connections(
         &self,
-        _request: tonic::Request<QueryClientConnectionsRequest>,
+        request: tonic::Request<QueryClientConnectionsRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientConnectionsResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let client_id = &ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid client id: {e}")))?;
+
+        let (client_connections, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientConnectionPath::new(client_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client connections: {e}")))?;
+
+        let connection_paths: Vec<String> = client_connections
+            .map(|client_connections| ClientPaths::decode(client_connections.as_ref()))
+            .transpose()
+            .map_err(|e| {
+                tonic::Status::aborted(format!("couldn't decode client connections: {e}"))
+            })?
+            .map(|client_paths| client_paths.paths)
+            .map(|paths| paths.into_iter().map(|path| path.to_string()).collect())
+            .unwrap_or_default();
+
+        Ok(tonic::Response::new(QueryClientConnectionsResponse {
+            connection_paths,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// ConnectionClientState queries the client state associated with the
     /// connection.
     async fn connection_client_state(
         &self,
-        _request: tonic::Request<QueryConnectionClientStateRequest>,
+        request: tonic::Request<QueryConnectionClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionClientStateResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
+
+        let client_id = snapshot
+            .get_connection(connection_id)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?
+            .ok_or("unable to get connection")
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?
+            .client_id;
+
+        let (client_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientStatePath::new(&client_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let client_state_any = client_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        let identified_client_state = IdentifiedClientState {
+            client_id: client_id.clone().to_string(),
+            client_state: client_state_any,
+        };
+
+        Ok(tonic::Response::new(QueryConnectionClientStateResponse {
+            identified_client_state: Some(identified_client_state),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// ConnectionConsensusState queries the consensus state associated with the
     /// connection.
     async fn connection_consensus_state(
         &self,
-        _request: tonic::Request<QueryConnectionConsensusStateRequest>,
+        request: tonic::Request<QueryConnectionConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionConsensusStateResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.0.latest_snapshot();
+        let consensus_state_height = ibc_types::core::client::Height {
+            revision_number: request.get_ref().revision_number,
+            revision_height: request.get_ref().revision_height,
+        };
+        let connection_id = &ConnectionId::from_str(&request.get_ref().connection_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid connection id: {e}")))?;
+
+        let client_id = snapshot
+            .get_connection(connection_id)
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?
+            .ok_or("unable to get connection")
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get connection: {e}")))?
+            .client_id;
+
+        let (consensus_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        ClientConsensusStatePath::new(&client_id, &consensus_state_height)
+                            .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let consensus_state_any = consensus_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        Ok(tonic::Response::new(
+            QueryConnectionConsensusStateResponse {
+                consensus_state: consensus_state_any,
+                client_id: client_id.to_string(),
+                proof: proof.encode_to_vec(),
+                proof_height: Some(Height {
+                    revision_number: 0,
+                    revision_height: snapshot.version(),
+                }),
+            },
+        ))
     }
 }
