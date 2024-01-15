@@ -48,7 +48,7 @@ pub fn register_metrics() {
 }
 
 // We configure buckets for the DEX routing times manually, in order to ensure
-// Prometheus metrics are structed as a Histogram, rather than as a Summary.
+// Prometheus metrics are structured as a Histogram, rather than as a Summary.
 // These values are loosely based on the initial Summary output, and may need to be
 // updated over time.
 pub const DEX_BUCKETS: &[f64; 5] = &[0.00001, 0.0001, 0.001, 0.01, 0.1];

@@ -230,7 +230,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
         );
     }
 
-    // After executing 100 swaps of `1000gm` into `gn`. We should have acquried `1199gn*100` or `119900gn`.
+    // After executing 100 swaps of `1000gm` into `gn`. We should have acquired `1199gn*100` or `119900gn`.
     // We consume the last `100gn` in the next swap.
     let delta_gm = Value {
         amount: 84u64.into(),

@@ -155,7 +155,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         )
         .context("couldn't verify client consensus state")?;
 
-        // VALIDATION SUCCESSSFUL, now execute
+        // VALIDATION SUCCESSFUL, now execute
         //
         // new_conn is the new connection that we will open on this chain
         let mut new_conn = ConnectionEnd {
