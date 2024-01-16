@@ -17,6 +17,16 @@ discussion there.
   * The current sprint progress is tracked on a [Github project board](https://github.com/orgs/penumbra-zone/projects/23/views/3) (hint: 🔖 this).
   * The development history by testnet can be found at [another Github board](https://github.com/orgs/penumbra-zone/projects/17).
 
+## Tools
+
+  * Public testnet `pd` endpoint: `https://grpc.testnet.penumbra.zone` This URL won't work in a web browser, as the service speaks gRPC.
+  * Public testnet `cometbft` API endpoint: [https://rpc.testnet.penumbra.zone](https://rpc.testnet.penumbra.zone)
+  * Block explorer: [https://cuiloa.testnet.penumbra.zone](https://cuiloa.testnet.penumbra.zone)
+  * Metrics: [https://grafana.testnet.penumbra.zone](https://grafana.testnet.penumbra.zone)
+
+For all those URLs, there's also a `preview` version available, e.g. `https://grpc.testnet-preview.penumbra.zone`,
+that tracks the latest tip of the git repo, rather than the current public testnet.
+
 [Discord]: https://discord.gg/hKvkrqa3zC
 [protocol]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone
