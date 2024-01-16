@@ -128,7 +128,7 @@ pub trait ClientUpgradeProofVerifier: StateReadExt {
 
         let upgrade_path_prefix = MerklePrefix::try_from(upgrade_path[0].clone().into_bytes())
             .map_err(|_| {
-                anyhow::anyhow!("couldnt create commitment prefix from client upgrade path")
+                anyhow::anyhow!("couldn't create commitment prefix from client upgrade path")
             })?;
 
         // check if the client is frozen

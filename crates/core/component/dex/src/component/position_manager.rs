@@ -133,7 +133,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     async fn put_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
         tracing::debug!(?position, "fetch position's previous state from storage");
-        // We pull the position from the state inconditionally, since we will
+        // We pull the position from the state unconditionally, since we will
         // always need to update the position's liquidity index.
         let prev = self
             .position_by_id(&id)

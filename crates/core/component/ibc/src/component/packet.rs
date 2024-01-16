@@ -131,7 +131,7 @@ pub trait SendPacketRead: StateRead {
 
         let latest_height = client_state.latest_height();
 
-        // check that time timeout height hasn't already pased in the local client tracking the
+        // check that time timeout height hasn't already passed in the local client tracking the
         // receiving chain
         if packet.timeout_height <= latest_height {
             anyhow::bail!(
