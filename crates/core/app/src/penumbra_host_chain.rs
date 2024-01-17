@@ -8,7 +8,8 @@ use penumbra_ibc::component::HostInterface;
 use penumbra_proto::StateReadProto;
 use tendermint::Time;
 
-// ibc-async HostChainInterface for the Penumbra chain
+/// The implementation of HostInterface for Penumbra. This encapsulates all of the chain-specific
+/// data that the ibc implementation needs.
 #[derive(Clone)]
 pub struct PenumbraHost {}
 
