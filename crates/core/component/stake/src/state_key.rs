@@ -19,24 +19,28 @@ pub fn next_base_rate() -> &'static str {
     "staking/base_rate/next"
 }
 
+// TODO(erwan): refactor the state key so that each module
+// represents a coherent set of keys, so that the module path
+// aligns roughly with the actual schema of the data.
+// Tracked by #3615.
 pub mod validators {
     pub mod index {
         pub mod consensus_set {
             pub fn prefix() -> &'static str {
-                "staking/validators/consensus_set/"
+                "staking/validators/index/consensus_set/"
             }
             pub fn by_id(id: &crate::IdentityKey) -> String {
                 format!("{}{id}", prefix())
             }
         }
+    }
 
-        pub mod all {
-            pub fn prefix() -> &'static str {
-                "staking/validators/all/"
-            }
-            pub fn by_id(id: &crate::IdentityKey) -> String {
-                format!("{}{id}", prefix())
-            }
+    pub mod definitions {
+        pub fn prefix() -> &'static str {
+            "staking/validators/definitions/"
+        }
+        pub fn by_id(id: &crate::IdentityKey) -> String {
+            format!("{}{id}", prefix())
         }
     }
 }
