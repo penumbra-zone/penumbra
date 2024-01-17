@@ -129,8 +129,6 @@ service ViewProtocolService {
 message AuthorizeAndBuildRequest {
   // The transaction plan to authorize and build.
   core.transaction.v1alpha1.TransactionPlan transaction_plan = 1;
-  // The authorization data to use to authorize the transaction plan.
-  core.transaction.v1alpha1.AuthorizationData authorization_data = 2;
 }
 
 message AuthorizeAndBuildResponse {
