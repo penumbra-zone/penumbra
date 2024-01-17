@@ -1483,7 +1483,7 @@ pub trait StateWriteExt: StateWrite {
             anyhow::bail!("invalid initial validator state");
         }
 
-        self.put(state_key::state_by_validator(&id), initial_state);
+        self.put(state_key::state_by_validator(id), initial_state);
         Ok(())
     }
 
