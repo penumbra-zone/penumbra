@@ -84,6 +84,15 @@ pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
     {
         Ok(())
     } else {
+        println!(
+            "paid transaction fee: {}",
+            transaction
+                .transaction_body()
+                .transaction_parameters
+                .fee
+                .amount()
+        );
+        println!("base price: {}", transaction_base_price);
         Err(anyhow::anyhow!(
             "consensus rule violated: paid transaction fee must be greater than or equal to transaction's base fee"
         ))

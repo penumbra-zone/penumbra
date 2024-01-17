@@ -325,6 +325,11 @@ impl TransactionPlan {
         self.output_plans().count()
     }
 
+    /// Convenience method to get the number of `SpendPlan`s in this transaction.
+    pub fn num_spends(&self) -> usize {
+        self.spend_plans().count()
+    }
+
     /// Method to populate the detection data for this transaction plan.
     pub fn populate_detection_data<R: CryptoRng + Rng>(
         &mut self,
