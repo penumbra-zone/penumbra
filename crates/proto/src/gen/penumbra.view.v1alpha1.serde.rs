@@ -645,15 +645,9 @@ impl serde::Serialize for AuthorizeAndBuildRequest {
         if self.transaction_plan.is_some() {
             len += 1;
         }
-        if self.authorization_data.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.AuthorizeAndBuildRequest", len)?;
         if let Some(v) = self.transaction_plan.as_ref() {
             struct_ser.serialize_field("transactionPlan", v)?;
-        }
-        if let Some(v) = self.authorization_data.as_ref() {
-            struct_ser.serialize_field("authorizationData", v)?;
         }
         struct_ser.end()
     }
@@ -667,14 +661,11 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildRequest {
         const FIELDS: &[&str] = &[
             "transaction_plan",
             "transactionPlan",
-            "authorization_data",
-            "authorizationData",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             TransactionPlan,
-            AuthorizationData,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -697,7 +688,6 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildRequest {
                     {
                         match value {
                             "transactionPlan" | "transaction_plan" => Ok(GeneratedField::TransactionPlan),
-                            "authorizationData" | "authorization_data" => Ok(GeneratedField::AuthorizationData),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -718,7 +708,6 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut transaction_plan__ = None;
-                let mut authorization_data__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::TransactionPlan => {
@@ -727,17 +716,10 @@ impl<'de> serde::Deserialize<'de> for AuthorizeAndBuildRequest {
                             }
                             transaction_plan__ = map_.next_value()?;
                         }
-                        GeneratedField::AuthorizationData => {
-                            if authorization_data__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("authorizationData"));
-                            }
-                            authorization_data__ = map_.next_value()?;
-                        }
                     }
                 }
                 Ok(AuthorizeAndBuildRequest {
                     transaction_plan: transaction_plan__,
-                    authorization_data: authorization_data__,
                 })
             }
         }

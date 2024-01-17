@@ -6,11 +6,6 @@ pub struct AuthorizeAndBuildRequest {
     pub transaction_plan: ::core::option::Option<
         super::super::core::transaction::v1alpha1::TransactionPlan,
     >,
-    /// The authorization data to use to authorize the transaction plan.
-    #[prost(message, optional, tag = "2")]
-    pub authorization_data: ::core::option::Option<
-        super::super::core::transaction::v1alpha1::AuthorizationData,
-    >,
 }
 impl ::prost::Name for AuthorizeAndBuildRequest {
     const NAME: &'static str = "AuthorizeAndBuildRequest";
