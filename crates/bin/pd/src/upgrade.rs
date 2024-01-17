@@ -63,7 +63,7 @@ impl Upgrade {
                     .expect("can get chain params");
 
                 /* ---------- generate genesis ------------  */
-                let validators = migrated_state.validator_list().await?;
+                let validators = migrated_state.validator_definitions().await?;
                 let app_state = genesis::Content {
                     chain_content: ChainContent { chain_params },
                     stake_content: StakeContent {

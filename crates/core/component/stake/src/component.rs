@@ -984,7 +984,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
             .await;
 
-        self.put(state_key::validators::index::all::by_id(id), validator);
+        self.put(state_key::validators::definitions::by_id(id), validator);
 
         Ok(())
     }
@@ -1221,7 +1221,7 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get(&state_key::validators::index::all::by_id(identity_key))
+        self.get(&state_key::validators::definitions::by_id(identity_key))
             .await
     }
 
@@ -1233,7 +1233,7 @@ pub trait StateReadExt: StateRead {
         // the consensus key.  Alternatively, we could store the consensus
         // keys in a separate index.
         self.get_proto::<penumbra_proto::penumbra::core::component::stake::v1alpha1::Validator>(
-            &state_key::validators::index::all::by_id(identity_key),
+            &state_key::validators::definitions::by_id(identity_key),
         )
         .map_ok(|opt| {
             opt.map(|v| {
@@ -1342,9 +1342,9 @@ pub trait StateReadExt: StateRead {
             .boxed())
     }
 
-    /// Returns a list of all known validators metadata.
-    async fn validator_list(&self) -> Result<Vec<Validator>> {
-        self.prefix(state_key::validators::index::all::prefix())
+    /// Returns a list of **all** known validators metadata.
+    async fn validator_definitions(&self) -> Result<Vec<Validator>> {
+        self.prefix(state_key::validators::definitions::prefix())
             .map_ok(|(_key, validator)| validator)
             .try_collect()
             .await
@@ -1541,7 +1541,7 @@ pub trait StateWriteExt: StateWrite {
 
         // First, we record the validator definition in the general validator index:
         self.put(
-            state_key::validators::index::all::by_id(&id),
+            state_key::validators::definitions::by_id(&id),
             validator.clone(),
         );
         // Then, we create a mapping from the validator's consensus key to its
