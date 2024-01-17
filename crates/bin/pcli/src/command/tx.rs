@@ -297,7 +297,6 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
 
-                println!("gas prices at time of tx plan: {:#?}", gas_prices);
                 planner.set_gas_prices(gas_prices);
                 for value in values.iter().cloned() {
                     planner.output(value, to);
@@ -312,7 +311,6 @@ impl TxCmd {
                     )
                     .await
                     .context("can't build send transaction")?;
-                println!("plan: {:?}", plan);
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::CommunityPoolDeposit { values, source } => {
