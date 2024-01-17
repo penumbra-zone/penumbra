@@ -162,17 +162,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn add_gas_fees(&mut self) -> &mut Self {
         let minimum_fee = self.gas_prices.price(&self.plan.gas_cost());
-        println!("minimum_fee: {:?}", minimum_fee);
 
-        // Since paying the fee possibly requires adding an additional Spend to the
-        // transaction, which would then change the fee calculation, we multiply the
-        // fee here by a factor of 16 and then recalculate and capture the excess as
+        // Since paying the fee possibly requires adding additional Spends and Outputs
+        // to the transaction, which would then change the fee calculation, we multiply
+        // the fee here by a factor of 8 and then recalculate and capture the excess as
         // change outputs.
-        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(64u32));
-        println!("fee: {:?}", fee);
-        println!("balance before fee: {:?}", self.balance);
+        //
+        // TODO: this is gross and depending on gas costs could make the gas overpayment
+        // ridiculously large (so large that the account may not have notes available to cover it)
+        // or too small. We may need a cyclical calculation of fees on the transaction plan,
+        // or a "simulated" transaction plan with infinite assets to calculate fees on before
+        // copying the exact fees to the real transaction.
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(8u32));
         self.balance -= fee.0;
-        println!("balance after fee: {:?}", self.balance);
         self.plan.transaction_parameters.fee = fee;
         self
     }
@@ -183,9 +185,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// the view service when the plan is [`finish`](Planner::finish)ed.
     #[instrument(skip(self))]
     pub fn spend(&mut self, note: Note, position: tct::Position) -> &mut Self {
-        let spend: SpendPlan = SpendPlan::new(&mut self.rng, note, position).into();
-        println!("spend balance: {:?}", spend.balance());
-        self.action(penumbra_transaction::ActionPlan::Spend(spend));
+        let spend = SpendPlan::new(&mut self.rng, note, position).into();
+        self.action(spend);
         self
     }
 
@@ -591,42 +592,24 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Since we over-estimate the fees to be paid upfront by a fixed multiple to account
-        // for the cost of any additional `Spend` actions necessary to pay the fee, we need
-        // to now calculate the transaction's fee again and capture the excess as change
+        // for the cost of any additional `Spend` and `Output` actions necessary to pay the fee,
+        // we need to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
-        println!("tx_plan_gas_cost: {:?}", self.plan.gas_cost());
-        println!("actions in planned tx 1: {}", self.plan.actions.len());
-        println!(
-            "number of output actions in planned tx 1: {}",
-            self.plan.num_outputs()
-        );
-        println!(
-            "number of spend actions in planned tx 1: {}",
-            self.plan.num_spends()
-        );
         let mut tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
 
         // Since the excess fee paid will create an additional Output action, we need to
         // account for the necessary fee for that action as well.
-        println!("fee prior to adding output price: {:?}", tx_real_fee);
         tx_real_fee += self.gas_prices.price(&gas::output_gas_cost());
 
         // For any remaining provided balance, add the necessary fee for collecting:
-        for value in self.balance.provided().collect::<Vec<_>>() {
-            tx_real_fee += self.gas_prices.price(&gas::output_gas_cost());
-        }
+        tx_real_fee += Amount::from(self.balance.provided().count() as u64)
+            * self.gas_prices.price(&gas::output_gas_cost());
 
         assert!(
             tx_real_fee <= self.plan.transaction_parameters.fee.amount(),
             "tx real fee must be less than planned fee"
         );
-        println!("tx_real_fee: {:?}", tx_real_fee);
-        println!(
-            "planned fee: {:?}",
-            self.plan.transaction_parameters.fee.amount()
-        );
         let excess_fee_spent = self.plan.transaction_parameters.fee.amount() - tx_real_fee;
-        println!("excess fee spent: {:?}", excess_fee_spent);
         self.balance += Value {
             amount: excess_fee_spent,
             asset_id: *STAKING_TOKEN_ASSET_ID,

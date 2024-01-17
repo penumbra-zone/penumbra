@@ -31,23 +31,9 @@ impl App {
             .gas_prices
             .expect("gas prices must be available")
             .try_into()?;
-        println!("tx plan gas cost: {:#?}", plan.gas_cost());
-        println!("plan required fee: {}", gas_prices.price(&plan.gas_cost()));
-        println!("actions in planned tx 2: {}", plan.actions.len());
-        println!(
-            "number of output actions in planned tx 2: {}",
-            plan.num_outputs()
-        );
-        println!(
-            "number of spend actions in planned tx 2: {}",
-            plan.num_spends()
-        );
         let transaction = self.build_transaction(plan).await?;
         let gas_cost = transaction.gas_cost();
-        println!("tx gas cost: {:#?}", gas_cost);
-        println!("gas prices at time of tx submission: {:#?}", gas_prices);
         let fee = gas_prices.price(&gas_cost);
-        println!("transaction required fee: {}", fee);
         assert!(
             transaction.transaction_parameters().fee.amount() >= fee,
             "paid fee must be greater than minimum fee"
@@ -60,7 +46,6 @@ impl App {
         plan: TransactionPlan,
     ) -> impl Future<Output = anyhow::Result<Transaction>> + '_ {
         println!("building transaction...");
-        println!("plan: {:#?}", plan);
         let start = std::time::Instant::now();
         let tx = penumbra_wallet::build_transaction(
             &self.config.full_viewing_key,
