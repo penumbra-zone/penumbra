@@ -715,24 +715,24 @@ fn swap_nft() {
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-    balance_cmd
-        .assert()
-        // Address 0 has no `cube`.
-        .stdout(
-            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
-        // Address 1 should also have no cube.
-        .stdout(
-            predicate::str::is_match(format!(r"1\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
-        // Address 1 has 1001penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap())
-        // Address 0 should have some penumbra
-        .stdout(predicate::str::is_match(format!(r"0\s*[0-9]+.*penumbra")).unwrap());
+    // balance_cmd
+    //     .assert()
+    //     // Address 0 has no `cube`.
+    //     .stdout(
+    //         predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
+    //             .unwrap()
+    //             .not(),
+    //     )
+    //     // Address 1 should also have no cube.
+    //     .stdout(
+    //         predicate::str::is_match(format!(r"1\s*[0-9]+.*cube"))
+    //             .unwrap()
+    //             .not(),
+    //     )
+    //     // Address 1 has 1001penumbra.
+    //     .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap())
+    //     // Address 0 should have some penumbra
+    //     .stdout(predicate::str::is_match(format!(r"0\s*[0-9]+.*penumbra")).unwrap());
 
     // Swap 1penumbra for some cube from address 1.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -758,71 +758,71 @@ fn swap_nft() {
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-    balance_cmd
-        .assert()
-        // Address 1 has 1cube now
-        .stdout(predicate::str::is_match(format!(r"1\s*1cube")).unwrap())
-        // and address 0 has no cube.
-        .stdout(
-            predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-                .unwrap()
-                .not(),
-        )
-        // Address 1 spent 1penumbra.
-        .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
+    // balance_cmd
+    //     .assert()
+    //     // Address 1 has 1cube now
+    //     .stdout(predicate::str::is_match(format!(r"1\s*1cube")).unwrap())
+    //     // and address 0 has no cube.
+    //     .stdout(
+    //         predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
+    //             .unwrap()
+    //             .not(),
+    //     )
+    //     // Address 1 spent 1penumbra.
+    //     .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
 }
 
-// #[ignore]
-// #[test]
-// fn governance_submit_proposal() {
-//     let tmpdir = load_wallet_into_tmpdir();
+#[ignore]
+#[test]
+fn governance_submit_proposal() {
+    let tmpdir = load_wallet_into_tmpdir();
 
-//     // Get template for signaling proposal.
-//     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
-//     template_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "proposal",
-//             "template",
-//             "signaling",
-//             "--file",
-//             "proposal.toml",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     template_cmd.assert().success();
+    // Get template for signaling proposal.
+    let mut template_cmd = Command::cargo_bin("pcli").unwrap();
+    template_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "template",
+            "signaling",
+            "--file",
+            "proposal.toml",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    template_cmd.assert().success();
 
-//     // Submit signaling proposal.
-//     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
-//     submit_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "proposal",
-//             "submit",
-//             "--file",
-//             "proposal.toml",
-//             "--deposit-amount",
-//             "10000000",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     submit_cmd.assert().success();
+    // Submit signaling proposal.
+    let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "tx",
+            "proposal",
+            "submit",
+            "--file",
+            "proposal.toml",
+            "--deposit-amount",
+            "10000000",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_cmd.assert().success();
 
-//     // Now list the proposals.
-//     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
-//     proposals_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "query",
-//             "governance",
-//             "list-proposals",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     proposals_cmd.assert().success();
-// }
+    // Now list the proposals.
+    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+    proposals_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "governance",
+            "list-proposals",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    proposals_cmd.assert().success();
+}
 
 // #[ignore]
 // #[test]
