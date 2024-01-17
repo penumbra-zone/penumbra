@@ -6,6 +6,7 @@ use penumbra_proto::{core::component::fee::v1alpha1 as pb, DomainType};
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
 /// transaction resource consumption.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Gas {
     pub block_space: u64,
     pub compact_block_space: u64,
