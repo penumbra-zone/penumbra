@@ -39,12 +39,15 @@ pub struct Validator {
     pub consensus_key: tendermint::PublicKey,
 
     /// The validator's (human-readable) name.
+    /// Length: <= 140 characters.
     pub name: String,
 
     /// The validator's website URL.
+    /// Length: <= 70 characters.
     pub website: String,
 
     /// The validator's description.
+    /// Length: <= 280 characters.
     pub description: String,
 
     /// Whether the validator is enabled or not.

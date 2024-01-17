@@ -16,7 +16,22 @@ use crate::{
 impl ActionHandler for validator::Definition {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // First, check the signature:
+        // First, we check that the validator website/name/description does not
+        // exceed 70, 140, and 280 characters respectively. We use guard statements
+        // so that clients can display actionable error messages.
+        if self.validator.website.len() > 70 {
+            anyhow::bail!("validator website field must be less than 70 characters")
+        }
+
+        if self.validator.name.len() > 140 {
+            anyhow::bail!("validator name must be less than 140 characters")
+        }
+
+        if self.validator.description.len() > 280 {
+            anyhow::bail!("validator description must be less than 280 characters")
+        }
+
+        // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
         self.validator
             .identity_key
