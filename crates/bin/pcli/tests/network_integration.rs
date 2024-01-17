@@ -824,74 +824,74 @@ fn governance_submit_proposal() {
     proposals_cmd.assert().success();
 }
 
-// #[ignore]
-// #[test]
-// fn duplicate_consensus_key_forbidden() {
-//     // Look up validator, so we have known-good data to munge.
-//     let tmpdir = load_wallet_into_tmpdir();
-//     let validator = get_validator(&tmpdir);
-//     let mut query_cmd = Command::cargo_bin("pcli").unwrap();
-//     query_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "query",
-//             "validator",
-//             "definition",
-//             validator.as_str(),
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     query_cmd.assert().success();
-//     let validator_def_vec = query_cmd.unwrap().stdout;
-//     let original_validator_def: ValidatorToml =
-//         toml::from_str(&String::from_utf8_lossy(&validator_def_vec))
-//             .expect("can parse validator template as TOML");
+#[ignore]
+#[test]
+fn duplicate_consensus_key_forbidden() {
+    // Look up validator, so we have known-good data to munge.
+    let tmpdir = load_wallet_into_tmpdir();
+    let validator = get_validator(&tmpdir);
+    let mut query_cmd = Command::cargo_bin("pcli").unwrap();
+    query_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "query",
+            "validator",
+            "definition",
+            validator.as_str(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    query_cmd.assert().success();
+    let validator_def_vec = query_cmd.unwrap().stdout;
+    let original_validator_def: ValidatorToml =
+        toml::from_str(&String::from_utf8_lossy(&validator_def_vec))
+            .expect("can parse validator template as TOML");
 
-//     // Get template for promoting our node to validator.
-//     let mut template_cmd = Command::cargo_bin("pcli").unwrap();
-//     template_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "validator",
-//             "definition",
-//             "template",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     template_cmd.assert().success();
-//     let template_vec = template_cmd.unwrap().stdout;
-//     let mut new_validator_def: ValidatorToml =
-//         toml::from_str(&String::from_utf8_lossy(&template_vec))
-//             .expect("can parse validator template as TOML");
+    // Get template for promoting our node to validator.
+    let mut template_cmd = Command::cargo_bin("pcli").unwrap();
+    template_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "validator",
+            "definition",
+            "template",
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    template_cmd.assert().success();
+    let template_vec = template_cmd.unwrap().stdout;
+    let mut new_validator_def: ValidatorToml =
+        toml::from_str(&String::from_utf8_lossy(&template_vec))
+            .expect("can parse validator template as TOML");
 
-//     // Overwrite randomly generated consensus key with one taken from
-//     // a real validator.
-//     new_validator_def.consensus_key = original_validator_def.consensus_key;
+    // Overwrite randomly generated consensus key with one taken from
+    // a real validator.
+    new_validator_def.consensus_key = original_validator_def.consensus_key;
 
-//     // Write out new, intentionally broken validator definition.
-//     let validator_filepath = NamedTempFile::new().unwrap();
-//     std::fs::write(
-//         &validator_filepath,
-//         toml::to_string_pretty(&new_validator_def)
-//             .expect("Could not marshall new validator config as TOML"),
-//     )
-//     .expect("Could not overwrite validator config file with new definition");
+    // Write out new, intentionally broken validator definition.
+    let validator_filepath = NamedTempFile::new().unwrap();
+    std::fs::write(
+        &validator_filepath,
+        toml::to_string_pretty(&new_validator_def)
+            .expect("Could not marshall new validator config as TOML"),
+    )
+    .expect("Could not overwrite validator config file with new definition");
 
-//     // Submit (intentionally broken) validator definition.
-//     let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
-//     submit_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "validator",
-//             "definition",
-//             "upload",
-//             "--file",
-//             validator_filepath.path().to_str().unwrap(),
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     submit_cmd.assert().failure();
-// }
+    // Submit (intentionally broken) validator definition.
+    let mut submit_cmd = Command::cargo_bin("pcli").unwrap();
+    submit_cmd
+        .args([
+            "--home",
+            tmpdir.path().to_str().unwrap(),
+            "validator",
+            "definition",
+            "upload",
+            "--file",
+            validator_filepath.path().to_str().unwrap(),
+        ])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    submit_cmd.assert().failure();
+}
 
 // #[ignore]
 // #[test]
