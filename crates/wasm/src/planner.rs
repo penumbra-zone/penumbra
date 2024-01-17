@@ -33,7 +33,7 @@ use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
-use penumbra_transaction::gas::GasCost;
+use penumbra_transaction::gas::{self, GasCost};
 use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
@@ -498,12 +498,25 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         // Since we over-estimate the fees to be paid upfront by a fixed multiple to account
-        // for the cost of any additional `Spend` actions necessary to pay the fee, we need
-        // to now calculate the transaction's fee again and capture the excess as change
+        // for the cost of any additional `Spend` and `Output` actions necessary to pay the fee,
+        // we need to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
-        let tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
+        let mut tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
+
+        // Since the excess fee paid will create an additional Output action, we need to
+        // account for the necessary fee for that action as well.
+        tx_real_fee += self.gas_prices.price(&gas::output_gas_cost());
+
+        // For any remaining provided balance, add the necessary fee for collecting:
+        tx_real_fee += Amount::from(self.balance.provided().count() as u64)
+            * self.gas_prices.price(&gas::output_gas_cost());
+
+        assert!(
+            tx_real_fee <= self.plan.transaction_parameters.fee.amount(),
+            "tx real fee must be less than planned fee"
+        );
         let excess_fee_spent = self.plan.transaction_parameters.fee.amount() - tx_real_fee;
-        self.balance -= Value {
+        self.balance += Value {
             amount: excess_fee_spent,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
