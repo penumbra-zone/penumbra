@@ -63,7 +63,7 @@ pub async fn delegate<V, R>(
     view: &mut V,
     rng: R,
     rate_data: RateData,
-    unbonded_amount: u128,
+    unbonded_amount: Amount,
     fee: Fee,
     source_address: AddressIndex,
 ) -> Result<TransactionPlan>

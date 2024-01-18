@@ -559,7 +559,7 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .delegate(unbonded_amount.value(), rate_data)
+                    .delegate(unbonded_amount, rate_data)
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
