@@ -407,20 +407,17 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::internal(format!("could not get app params: {:#}", e))
             })?;
 
-        // TODO: handle gas costs here
+        let gas_prices =
+            self.storage.gas_prices().await.map_err(|e| {
+                tonic::Status::internal(format!("could not get gas prices: {:#}", e))
+            })?;
+
+        // TODO: need to support passing the fee _in_ to this API via the TransactionPlannerRequest
+        // meaning the requester should fetch the gas prices and estimate cost/allow the user to modify
+        // fee paid
         let mut planner = Planner::new(OsRng);
-        planner
-            .fee(
-                match prq.fee {
-                    Some(x) => x,
-                    None => Fee::default().into(),
-                }
-                .try_into()
-                .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
-                })?,
-            )
-            .expiry_height(prq.expiry_height);
+        planner.set_gas_prices(gas_prices);
+        planner.expiry_height(prq.expiry_height);
 
         for output in prq.outputs {
             let address: Address = output
