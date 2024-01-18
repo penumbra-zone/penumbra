@@ -543,7 +543,7 @@ fn lp_management() {
 /// Address 0 swaps 1gm for 1penumbra.
 /// Validate:
 /// Address 0 has 99gm and some penumbra.
-/// Address 1 has 1gm and 1000penumbra.
+/// Address 1 has 1gm and 999penumbra.
 fn swap() {
     let tmpdir = load_wallet_into_tmpdir();
 
@@ -596,8 +596,8 @@ fn swap() {
         )
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        // Address 1 has 999penumbra.
+        .stdout(predicate::str::is_match(r"1\s*999(\.[0-9]+)?penumbra").unwrap());
 
     // Address 1: swaps 1gm for 1penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -635,8 +635,8 @@ fn swap() {
         )
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        // Address 1 has 999penumbra.
+        .stdout(predicate::str::is_match(r"1\s*999(\.[0-9]+)?penumbra").unwrap());
 
     // Close and withdraw any existing liquidity positions.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
