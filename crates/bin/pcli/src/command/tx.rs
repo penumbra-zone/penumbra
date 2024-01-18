@@ -345,15 +345,11 @@ impl TxCmd {
 
                 for (i, plan) in plans.into_iter().enumerate() {
                     println!("building sweep {i} of {num_plans}");
-                    let tx = app.build_transaction(plan).await?;
-                    app.submit_transaction_unconfirmed(tx).await?;
+                    app.build_and_submit_transaction(plan).await?;
                 }
                 if num_plans == 0 {
                     println!("finished sweeping");
                     break;
-                } else {
-                    println!("awaiting confirmations...");
-                    tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
             TxCmd::Swap {
