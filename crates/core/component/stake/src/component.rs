@@ -535,30 +535,55 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // with the prev_validator_rate.  To compute the staking delta, we need to take
             // an absolute value and then re-apply the sign, since .unbonded_amount operates
             // on unsigned values.
-            let abs_unbonded_amount =
-                prev_validator_rate.unbonded_amount(delegation_delta.unsigned_abs()) as i128;
-            let staking_delta = if delegation_delta >= 0 {
-                // Net delegation: subtract the unbonded amount from the staking token supply
-                -abs_unbonded_amount
+            let absolute_delegation_change = Amount::from(delegation_delta.unsigned_abs());
+            let absolute_unbonded_amount =
+                prev_validator_rate.unbonded_amount(absolute_delegation_change);
+
+            let delegation_token_id = DelegationToken::from(&validator.identity_key).id();
+
+            // Staking tokens are being delegated, so the staking token supply decreases and
+            // the delegation token supply increases.
+            if delegation_delta >= 0 {
+                self.decrease_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to decrease staking token supply by {}",
+                            absolute_unbonded_amount
+                        )
+                    })?;
+                self.increase_token_supply(&delegation_token_id, absolute_delegation_change)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to increase delegation token supply by {}",
+                            absolute_delegation_change
+                        )
+                    })?;
             } else {
-                // Net undelegation: add the unbonded amount to the staking token supply
-                abs_unbonded_amount
-            };
-
-            // update the delegation token supply in the JMT
-            self.update_token_supply(
-                &DelegationToken::from(validator.identity_key).id(),
-                delegation_delta,
-            )
-            .await?;
-
-            // update the staking token supply in the JMT
-            self.update_token_supply(&STAKING_TOKEN_ASSET_ID, staking_delta)
-                .await?;
+                // Vice-versa: staking tokens are being undelegated, so the staking token supply
+                // increases and the delegation token supply decreases.
+                self.increase_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to increase staking token supply by {}",
+                            absolute_unbonded_amount
+                        )
+                    })?;
+                self.decrease_token_supply(&delegation_token_id, absolute_delegation_change)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to decrease delegation token supply by {}",
+                            absolute_delegation_change
+                        )
+                    })?;
+            }
 
             // Get the updated delegation token supply for use calculating voting power.
             let delegation_token_supply = self
-                .token_supply(&DelegationToken::from(validator.identity_key).id())
+                .token_supply(&delegation_token_id)
                 .await?
                 .expect("delegation token should be known");
 
@@ -612,10 +637,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
 
-            let unbonded_amount =
-                next_validator_rate.unbonded_amount(delegation_token_supply.value());
+            let unbonded_amount = next_validator_rate.unbonded_amount(delegation_token_supply);
 
-            if unbonded_amount < min_validator_stake.value() {
+            if unbonded_amount < min_validator_stake {
                 self.set_validator_state(&validator.identity_key, validator::State::Defined)
                     .await?;
             }
@@ -914,8 +938,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let cur_rate_data = RateData {
             identity_key: validator.identity_key.clone(),
             epoch_index: genesis_base_rate.epoch_index,
-            validator_reward_rate: 0,
-            validator_exchange_rate: 1_0000_0000, // 1 represented as 1e8
+            validator_reward_rate: 0u128.into(),
+            validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
         };
 
         // The initial allocations to the validator are specified in `genesis_allocations`.
@@ -997,9 +1021,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
                 let unbonded_amount =
-                    current_validator_rate.unbonded_amount(delegation_token_supply.value());
+                    current_validator_rate.unbonded_amount(delegation_token_supply);
 
-                if unbonded_amount >= min_validator_stake.value() {
+                if unbonded_amount >= min_validator_stake {
                     self.set_validator_state(id, Inactive).await?;
                 } else {
                     self.set_validator_state(id, Defined).await?;
@@ -1688,7 +1712,7 @@ pub trait StateWriteExt: StateWrite {
     /// denominated in the staking token.
     #[instrument(skip(self))]
     async fn total_active_stake(&self) -> Result<Amount> {
-        let mut total_active_stake: u64 = 0;
+        let mut total_active_stake = Amount::zero();
 
         let mut validator_stream = self.consensus_set_stream()?;
         while let Some(validator_identity) = validator_stream.next().await {
@@ -1717,15 +1741,10 @@ pub trait StateWriteExt: StateWrite {
 
             // Add the validator's unbonded amount to the total active stake
             total_active_stake = total_active_stake
-                .checked_add(
-                    validator_rate
-                        .unbonded_amount(delegation_token_supply.into())
-                        .try_into()
-                        .map_err(|_| {
-                            anyhow::anyhow!("validator rate unbonded amount overflowed u64")
-                        })?,
-                )
-                .ok_or_else(|| anyhow::anyhow!("total active stake overflowed u64"))?;
+                .checked_add(&validator_rate.unbonded_amount(delegation_token_supply))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("total active stake overflowed `Amount` (128 bits)")
+                })?;
         }
 
         Ok(total_active_stake.into())

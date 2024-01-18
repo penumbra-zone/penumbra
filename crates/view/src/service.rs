@@ -519,8 +519,6 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse amount: {e:#}"))
                 })?;
 
-            let amount_u128: u128 = amount.into();
-
             let rate_data: RateData = delegation
                 .rate_data
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
@@ -529,7 +527,7 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.delegate(amount_u128, rate_data);
+            planner.delegate(amount, rate_data);
         }
 
         for undelegation in prq.undelegations {

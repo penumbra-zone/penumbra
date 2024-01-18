@@ -1,5 +1,6 @@
 //! Staking reward and delegation token exchange rates.
 
+use penumbra_num::fixpoint::U128x128;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateResponse;
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
@@ -17,59 +18,79 @@ pub struct RateData {
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
     /// The validator-specific reward rate.
-    pub validator_reward_rate: u64,
+    pub validator_reward_rate: Amount,
     /// The validator-specific exchange rate.
-    pub validator_exchange_rate: u64,
+    pub validator_exchange_rate: Amount,
 }
 
 impl RateData {
-    /// Compute the validator rate data for the epoch following the current one.
+    /// Compute the validator rate data for the next epoch.
+    ///
+    /// # Panics
+    /// This method panics if the validator's funding streams exceed 100%.
+    /// The stateless checks in the [`ValidatorDefinition`] action handler
+    /// should prevent this from happening.
     pub fn next(
         &self,
-        base_rate_data: &BaseRateData,
+        next_base_rate: &BaseRateData,
         funding_streams: &[FundingStream],
         validator_state: &State,
     ) -> RateData {
-        let prev = self;
+        let previous_rate = self;
 
         if let State::Active = validator_state {
-            // compute the validator's total commission
+            // Compute the validator's total commission rate in basis points.
             let commission_rate_bps = funding_streams
                 .iter()
                 .fold(0u64, |total, stream| total + stream.rate_bps() as u64);
 
             if commission_rate_bps > 1_0000 {
-                // we should never hit this branch: validator funding streams should be verified not to
+                // We should never hit this branch: validator funding streams should be verified not to
                 // sum past 100% in the state machine's validation of registration of new funding
                 // streams
                 panic!("commission rate sums to > 100%")
             }
 
-            // compute next validator reward rate
+            // Actualize the validator's reward rate by applying the commission rate.
             // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-            let validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
-                * base_rate_data.base_reward_rate)
+            let next_validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
+                * next_base_rate.base_reward_rate)
                 / 1_0000_0000;
 
-            // compute validator exchange rate
-            let validator_exchange_rate = (prev.validator_exchange_rate
-                * (validator_reward_rate + 1_0000_0000))
-                / 1_0000_0000;
+            /* ************ Compute the validator exchange rate **************** */
+            // The conversion rate between delegation tokens and unbonded stake.
+            let next_validator_reward_rate = U128x128::from(next_validator_reward_rate);
+            let previous_validator_exchange_rate =
+                U128x128::from(previous_rate.validator_exchange_rate);
+            let scaling_factor = U128x128::from(1_0000_0000u128);
+
+            let effective_reward_rate = (next_validator_reward_rate
+                * previous_validator_exchange_rate)
+                .expect("does not overflow");
+            let validator_exchange_rate = (effective_reward_rate / scaling_factor)
+                .expect("scaling factor is nonzero")
+                .round_down()
+                .try_into()
+                .expect("rounding down gives an integral type");
+            /* ***************************************************************** */
+
+            let next_validator_reward_rate =
+                next_validator_reward_rate.try_into().expect("integral");
 
             RateData {
-                identity_key: prev.identity_key.clone(),
-                epoch_index: prev.epoch_index + 1,
-                validator_reward_rate,
+                identity_key: previous_rate.identity_key.clone(),
+                epoch_index: previous_rate.epoch_index + 1,
+                validator_reward_rate: next_validator_reward_rate,
                 validator_exchange_rate,
             }
         } else {
             // Non-Active validator states result in a constant rate. This means
             // the next epoch's rate is set to the current rate.
             RateData {
-                identity_key: prev.identity_key.clone(),
-                epoch_index: prev.epoch_index + 1,
-                validator_reward_rate: prev.validator_reward_rate,
-                validator_exchange_rate: prev.validator_exchange_rate,
+                identity_key: previous_rate.identity_key.clone(),
+                epoch_index: previous_rate.epoch_index + 1,
+                validator_reward_rate: previous_rate.validator_reward_rate,
+                validator_exchange_rate: previous_rate.validator_exchange_rate,
             }
         }
     }
@@ -87,17 +108,27 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn delegation_amount(&self, unbonded_amount: u128) -> u128 {
+    pub fn delegation_amount(&self, unbonded_amount: Amount) -> Amount {
         // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
         // upconvert to u128 intermediates and panic if the result is too large (unlikely)
-        (unbonded_amount * 1_0000_0000) / self.validator_exchange_rate as u128
+        let scaling_factor = U128x128::from(1_0000_0000u128);
+        let unbonded_amount = U128x128::from(unbonded_amount);
+        let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
+        let unscaled_delegation_amount = (unbonded_amount / validator_exchange_rate)
+            .expect("validator exchange rate is nonzero");
+        let delegation_amount =
+            (unscaled_delegation_amount * scaling_factor).expect("does not overflow");
+        delegation_amount
+            .round_down()
+            .try_into()
+            .expect("rounding down gives an integral type")
     }
 
     pub fn slash(&self, penalty: Penalty) -> Self {
         let mut slashed = self.clone();
         // This will automatically produce a ratio which is multiplied by 1_0000_0000, and so
         // rounding down does what we want.
-        let penalized_exchange_rate: u64 = penalty
+        let penalized_exchange_rate: Amount = penalty
             .apply_to(self.validator_exchange_rate)
             .round_down()
             .try_into()
@@ -119,26 +150,37 @@ impl RateData {
     /// unbonded_amount == rate_data.unbonded_amount(delegation_amount)
     /// ```
     /// but in general *not both*, because the computation involves rounding.
-    pub fn unbonded_amount(&self, delegation_amount: u128) -> u128 {
-        (delegation_amount * self.validator_exchange_rate as u128) / 1_0000_0000
+    pub fn unbonded_amount(&self, delegation_amount: Amount) -> Amount {
+        let delegation_amount = U128x128::from(delegation_amount);
+        let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
+        let scaling_factor = U128x128::from(1_0000_0000u128);
+        let unscaled_unbonded_amount =
+            (delegation_amount * validator_exchange_rate).expect("does not overflow");
+        let unbonded_amount =
+            (unscaled_unbonded_amount / scaling_factor).expect("does not overflow");
+        unbonded_amount
+            .round_down()
+            .try_into()
+            .expect("rounding down gives an integral type")
     }
 
     /// Computes the validator's voting power at this epoch given the total supply of the
     /// validator's delegation tokens.
     pub fn voting_power(
         &self,
-        total_delegation_tokens: u128,
-        base_rate_data: &BaseRateData,
+        _total_delegation_tokens: u128,
+        _base_rate_data: &BaseRateData,
     ) -> u64 {
-        ((total_delegation_tokens * self.validator_exchange_rate as u128)
-            / base_rate_data.base_exchange_rate as u128)
-            .try_into()
-            .expect("voting power should fit in u64")
+        // ((total_delegation_tokens * self.validator_exchange_rate as u128)
+        //     / base_rate_data.base_exchange_rate as u128)
+        //     .try_into()
+        //     .expect("voting power should fit in u64")
+        todo!("MERGEBLOCK(erwan): circle back to do this cleanly")
     }
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
     /// delegates `unbonded_amount` of the staking token.
-    pub fn build_delegate(&self, unbonded_amount: u128) -> Delegate {
+    pub fn build_delegate(&self, unbonded_amount: Amount) -> Delegate {
         Delegate {
             delegation_amount: self.delegation_amount(unbonded_amount).into(),
             epoch_index: self.epoch_index,
@@ -190,28 +232,30 @@ impl DomainType for RateData {
 }
 
 impl From<RateData> for pb::RateData {
-    fn from(v: RateData) -> Self {
-        pb::RateData {
-            identity_key: Some(v.identity_key.into()),
-            epoch_index: v.epoch_index,
-            validator_reward_rate: v.validator_reward_rate,
-            validator_exchange_rate: v.validator_exchange_rate,
-        }
+    fn from(_v: RateData) -> Self {
+        // pb::RateData {
+        //     identity_key: Some(v.identity_key.into()),
+        //     epoch_index: v.epoch_index,
+        //     validator_reward_rate: v.validator_reward_rate,
+        //     validator_exchange_rate: v.validator_exchange_rate,
+        // }
+        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
     }
 }
 
 impl TryFrom<pb::RateData> for RateData {
     type Error = anyhow::Error;
-    fn try_from(v: pb::RateData) -> Result<Self, Self::Error> {
-        Ok(RateData {
-            identity_key: v
-                .identity_key
-                .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
-                .try_into()?,
-            epoch_index: v.epoch_index,
-            validator_reward_rate: v.validator_reward_rate,
-            validator_exchange_rate: v.validator_exchange_rate,
-        })
+    fn try_from(_v: pb::RateData) -> Result<Self, Self::Error> {
+        // Ok(RateData {
+        //     identity_key: v
+        //         .identity_key
+        //         .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+        //         .try_into()?,
+        //     epoch_index: v.epoch_index,
+        //     validator_reward_rate: v.validator_reward_rate,
+        //     validator_exchange_rate: v.validator_exchange_rate,
+        // })
+        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
     }
 }
 
@@ -273,12 +317,12 @@ mod tests {
         let rate_data = RateData {
             identity_key: ik,
             epoch_index: 0,
-            validator_reward_rate: 1_0000_0000,
-            validator_exchange_rate: 2_0000_0000,
+            validator_reward_rate: 1_0000_0000u128.into(),
+            validator_exchange_rate: 2_0000_0000u128.into(),
         };
         // 10%
         let penalty = Penalty::from_percent(10);
         let slashed = rate_data.slash(penalty);
-        assert_eq!(slashed.validator_exchange_rate, 1_8000_0000);
+        assert_eq!(slashed.validator_exchange_rate, 1_8000_0000u128.into());
     }
 }

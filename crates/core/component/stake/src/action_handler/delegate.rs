@@ -77,10 +77,9 @@ impl ActionHandler for Delegate {
         //
         // should give approximately the same results, they may not give
         // exactly the same results.
-        let expected_delegation_amount =
-            next_rate_data.delegation_amount(d.unbonded_amount.value());
+        let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount);
 
-        if expected_delegation_amount != d.delegation_amount.value() {
+        if expected_delegation_amount != d.delegation_amount {
             anyhow::bail!(
                 "given {} unbonded stake, expected {} delegation tokens but description produces {}",
                 d.unbonded_amount,

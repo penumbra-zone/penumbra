@@ -284,7 +284,8 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         };
 
         // Check that the unbonded amount is correct relative to that exchange rate
-        if rate_data.unbonded_amount(value.amount.value()) != unbonded_amount.value() {
+        // TODO(erwan): fix impl
+        if rate_data.unbonded_amount(value.amount).value() != unbonded_amount.value() {
             anyhow::bail!(
                 "unbonded amount {}{} does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
                 unbonded_amount,

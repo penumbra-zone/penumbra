@@ -82,12 +82,15 @@ impl StakedCmd {
                 amount: info
                     .rate_data
                     // TODO fix with new rate calcs
-                    .unbonded_amount(delegation.amount.value())
+                    .unbonded_amount(delegation.amount)
                     .into(),
                 asset_id: *STAKING_TOKEN_ASSET_ID,
             };
 
-            let rate = info.rate_data.validator_exchange_rate as f64 / 1_0000_0000.0;
+            let rate = {
+                let validator_exchange_rate = info.rate_data.validator_exchange_rate.value() as f64;
+                validator_exchange_rate / 1_0000_0000.0
+            };
 
             table.add_row(vec![
                 info.validator.name.clone(),
