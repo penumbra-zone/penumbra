@@ -85,7 +85,7 @@ pub enum Command {
     /// Generate configs for `pclientd` in view or custody mode.
     Init {
         /// If provided, initialize in view mode with the given full viewing key.
-        #[clap(long, display_order = 100)]
+        #[clap(long, display_order = 100, value_name = "FULL_VIEWING_KEY")]
         view: Option<String>,
         /// If provided, initialize in custody mode with the given seed phrase.
         ///
