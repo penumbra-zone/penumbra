@@ -20,7 +20,7 @@
 - [Development](./dev.md)
   - [Compiling from source](./dev/build.md)
   - [Devnet Quickstart](./dev/devnet-quickstart.md)
-  - [SQLite compilation setup](./dev/sqlx.md)
+  - [Working with SQLite](./dev/sql.md)
   - [Building documentation](./dev/docs.md)
   - [Building protobuf](./dev/protobuf.md)
   - [Metrics](./dev/metrics.md)
