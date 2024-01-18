@@ -36,7 +36,9 @@ impl App {
         let fee = gas_prices.price(&gas_cost);
         assert!(
             transaction.transaction_parameters().fee.amount() >= fee,
-            "paid fee must be greater than minimum fee"
+            "paid fee {} must be greater than minimum fee {}",
+            transaction.transaction_parameters().fee.amount(),
+            fee
         );
         self.submit_transaction(transaction).await
     }
