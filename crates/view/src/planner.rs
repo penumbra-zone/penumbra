@@ -175,7 +175,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // copying the exact fees to the real transaction.
         let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(8u32));
         self.balance -= fee.0;
-        self.plan.transaction_parameters.fee = fee;
+        self.plan.transaction_parameters.fee = fee.clone();
         println!("Adding fee: {:?} to transaction", fee);
         self
     }
