@@ -33,7 +33,7 @@ pub trait GasCost {
     fn gas_cost(&self) -> Gas;
 }
 
-fn spend_gas_cost() -> Gas {
+pub fn spend_gas_cost() -> Gas {
     Gas {
         // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
         // will use the encoded size of the complete transaction to calculate the block space.

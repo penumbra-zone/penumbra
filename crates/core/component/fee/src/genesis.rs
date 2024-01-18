@@ -48,10 +48,10 @@ impl Default for Content {
         Self {
             fee_params: FeeParameters::default(),
             gas_prices: GasPrices {
-                block_space_price: 1,
-                compact_block_space_price: 2,
-                verification_price: 3,
-                execution_price: 4,
+                block_space_price: 3_000,
+                compact_block_space_price: 30_000,
+                verification_price: 1_000,
+                execution_price: 1_000,
             },
         }
     }

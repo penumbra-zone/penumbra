@@ -513,7 +513,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         assert!(
             tx_real_fee <= self.plan.transaction_parameters.fee.amount(),
-            "tx real fee must be less than planned fee"
+            "tx real fee {:?} must be less than planned fee {:?}",
+            tx_real_fee,
+            self.plan.transaction_parameters.fee.amount()
         );
         let excess_fee_spent = self.plan.transaction_parameters.fee.amount() - tx_real_fee;
         self.balance += Value {

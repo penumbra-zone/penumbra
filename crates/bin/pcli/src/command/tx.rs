@@ -269,7 +269,6 @@ impl TxCmd {
             .gas_prices
             .expect("gas prices must be available")
             .try_into()?;
-        println!("current gas prices: {:#?}", gas_prices);
 
         match self {
             TxCmd::Send {
@@ -742,6 +741,7 @@ impl TxCmd {
                 };
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .plan(
                         app.view
@@ -821,14 +821,13 @@ impl TxCmd {
                 let asset_cache = app.view().assets().await?;
 
                 tracing::info!(?order);
-                let fee = Fee::from_staking_token_amount(order.fee().into());
                 let source = AddressIndex::new(order.source());
                 let position = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?position);
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .position_open(position)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -848,7 +847,6 @@ impl TxCmd {
             } => {
                 let destination_chain_address = to;
 
-                let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
                     .config
                     .full_viewing_key
@@ -961,8 +959,8 @@ impl TxCmd {
                 };
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .ics20_withdrawal(withdrawal)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -974,14 +972,11 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Close {
                 position_id,
-                fee,
                 source,
             }) => {
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
                     .position_close(*position_id)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -992,7 +987,6 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::CloseAll {
-                fee,
                 source,
                 trading_pair,
             }) => {
@@ -1010,8 +1004,6 @@ impl TxCmd {
                     return Ok(());
                 }
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
 
@@ -1021,7 +1013,6 @@ impl TxCmd {
                 }
 
                 let final_plan = planner
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -1032,7 +1023,6 @@ impl TxCmd {
                 app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::WithdrawAll {
-                fee,
                 source,
                 trading_pair,
             }) => {
@@ -1049,8 +1039,6 @@ impl TxCmd {
                     println!("No closed positions are available to withdraw.");
                     return Ok(());
                 }
-
-                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 let mut planner = Planner::new(OsRng);
                 planner.set_gas_prices(gas_prices);
@@ -1097,7 +1085,6 @@ impl TxCmd {
                 }
 
                 let final_plan = planner
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
@@ -1108,7 +1095,6 @@ impl TxCmd {
                 app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::Withdraw {
-                fee,
                 source,
                 position_id,
             }) => {
@@ -1144,12 +1130,9 @@ impl TxCmd {
                     .pair
                     .expect("missing trading function pair");
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
