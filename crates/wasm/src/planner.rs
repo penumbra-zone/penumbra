@@ -277,7 +277,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Add a delegation to this transaction.
     ///
     /// If you don't specify spends or outputs as well, they will be filled in automatically.
-    pub fn delegate(&mut self, unbonded_amount: u128, rate_data: RateData) -> &mut Self {
+    pub fn delegate(&mut self, unbonded_amount: Amount, rate_data: RateData) -> &mut Self {
         let delegation = rate_data.build_delegate(unbonded_amount).into();
         self.action(delegation);
         self
@@ -471,9 +471,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 let Some(rate_data) = rate_data.get(&identity_key) else {
                     continue;
                 };
-                let unbonded_amount = rate_data
-                    .unbonded_amount(record.note.amount().value())
-                    .into();
+                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
 
                 // If the delegation token is unspent, "roll it over" by spending it (this will
                 // result in change sent back to us). This unlinks nullifiers used for voting on
