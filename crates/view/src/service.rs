@@ -407,6 +407,7 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::internal(format!("could not get app params: {:#}", e))
             })?;
 
+        // TODO: handle gas costs here
         let mut planner = Planner::new(OsRng);
         planner
             .fee(
