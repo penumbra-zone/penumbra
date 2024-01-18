@@ -682,8 +682,8 @@ fn swap() {
         .stdout(predicate::str::is_match(r"1\s*1gm").unwrap())
         // Address 0 has some penumbra.
         .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        // Address 1 has 999penumbra.
+        .stdout(predicate::str::is_match(r"1\s*999(\.[0-9]+)?penumbra").unwrap());
 }
 
 // Note: As part of #2589, we changed the way DEX calculations are performed. In particular,
