@@ -176,6 +176,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(8u32));
         self.balance -= fee.0;
         self.plan.transaction_parameters.fee = fee;
+        println!("Adding fee: {:?} to transaction", fee);
         self
     }
 
@@ -615,6 +616,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
         self.plan.transaction_parameters.fee = Fee::from_staking_token_amount(tx_real_fee);
+        println!(
+            "planning with fee: {:?}",
+            self.plan.transaction_parameters.fee
+        );
 
         // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {

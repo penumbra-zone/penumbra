@@ -269,6 +269,7 @@ impl TxCmd {
             .gas_prices
             .expect("gas prices must be available")
             .try_into()?;
+        println!("current gas prices: {:#?}", gas_prices);
 
         match self {
             TxCmd::Send {
