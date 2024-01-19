@@ -45,7 +45,11 @@ impl Sum for Gas {
 }
 
 /// Expresses the price of each unit of gas in terms of the staking token.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+///
+/// These prices have an implicit denominator of 1,000 relative to the base unit
+/// of the staking token, so gas price 1,000 times 1 unit of gas is 1 base unit
+/// of staking token.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub struct GasPrices {
     pub block_space_price: u64,
     pub compact_block_space_price: u64,
@@ -55,22 +59,16 @@ pub struct GasPrices {
 
 impl GasPrices {
     pub fn zero() -> Self {
-        Self {
-            block_space_price: 0,
-            compact_block_space_price: 0,
-            verification_price: 0,
-            execution_price: 0,
-        }
+        Self::default()
     }
 
-    /// Calculates the price based on given gas schedule. Applies an implicit
-    /// denominator of 1,000 to the gas prices.
-    pub fn price(&self, gas: &Gas) -> Amount {
+    /// Use these gas prices to calculate the fee for a given gas vector.
+    pub fn fee(&self, gas: &Gas) -> Amount {
         Amount::from(
-            self.block_space_price * (gas.block_space * 1_000) / 1_000
-                + self.compact_block_space_price * (gas.compact_block_space * 1_000) / 1_000
-                + self.verification_price * (gas.verification * 1_000) / 1_000
-                + self.execution_price * (gas.execution * 1_000) / 1_000,
+            self.block_space_price * gas.block_space / 1_000
+                + self.compact_block_space_price * gas.compact_block_space / 1_000
+                + self.verification_price * gas.verification / 1_000
+                + self.execution_price * gas.execution / 1_000,
         )
     }
 }

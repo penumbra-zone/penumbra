@@ -153,7 +153,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// This function should be called once.
     pub fn add_gas_fees(&mut self) -> &mut Self {
-        let minimum_fee = self.gas_prices.price(&self.plan.gas_cost());
+        let minimum_fee = self.gas_prices.fee(&self.plan.gas_cost());
 
         // Since paying the fee possibly requires adding an additional Spend to the
         // transaction, which would then change the fee calculation, we multiply the
@@ -501,15 +501,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // for the cost of any additional `Spend` and `Output` actions necessary to pay the fee,
         // we need to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
-        let mut tx_real_fee = self.gas_prices.price(&self.plan.gas_cost());
+        let mut tx_real_fee = self.gas_prices.fee(&self.plan.gas_cost());
 
         // Since the excess fee paid will create an additional Output action, we need to
         // account for the necessary fee for that action as well.
-        tx_real_fee += self.gas_prices.price(&gas::output_gas_cost());
+        tx_real_fee += self.gas_prices.fee(&gas::output_gas_cost());
 
         // For any remaining provided balance, add the necessary fee for collecting:
         tx_real_fee += Amount::from(self.balance.provided().count() as u64)
-            * self.gas_prices.price(&gas::output_gas_cost());
+            * self.gas_prices.fee(&gas::output_gas_cost());
 
         assert!(
             tx_real_fee <= self.plan.transaction_parameters.fee.amount(),

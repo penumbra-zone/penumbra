@@ -47,12 +47,7 @@ impl Default for Content {
     fn default() -> Self {
         Self {
             fee_params: FeeParameters::default(),
-            gas_prices: GasPrices {
-                block_space_price: 30,
-                compact_block_space_price: 300,
-                verification_price: 10,
-                execution_price: 10,
-            },
+            gas_prices: GasPrices::default(),
         }
     }
 }

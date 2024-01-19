@@ -73,7 +73,7 @@ pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
         .await
         .expect("gas prices must be present in state");
 
-    let transaction_base_price = current_gas_prices.price(&transaction.gas_cost());
+    let transaction_base_price = current_gas_prices.fee(&transaction.gas_cost());
 
     if transaction
         .transaction_body()

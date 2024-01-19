@@ -381,7 +381,7 @@ impl TxCmd {
                 // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
                 // call the helper method directly.
                 let estimated_claim_fee = Fee::from_staking_token_amount(
-                    Amount::from(2u32) * gas_prices.price(&swap_claim_gas_cost()),
+                    Amount::from(2u32) * gas_prices.fee(&swap_claim_gas_cost()),
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
