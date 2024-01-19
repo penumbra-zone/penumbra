@@ -17,12 +17,12 @@ use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQuerySe
 use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::events::EventIndexLayer;
+use pd::migrate::Migration::SimpleMigration;
 use pd::testnet::{
     config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
     generate::TestnetConfig,
     join::testnet_join,
 };
-use pd::upgrade;
 use penumbra_app::{PenumbraHost, SUBSTORE_PREFIXES};
 use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
 use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
@@ -148,13 +148,13 @@ enum RootCommand {
     },
     /// Run a migration on the exported storage state of the full node,
     /// and create a genesis file.
-    Upgrade {
+    Migrate {
         /// The directory containing exported state to which the upgrade will be applied.
         #[clap(long, display_order = 200)]
-        upgrade_path: PathBuf,
+        target_dir: PathBuf,
         #[clap(long, display_order = 300)]
         /// Timestamp of the genesis file in RFC3339 format. If unset, defaults to the current time,
-        /// unless the migration script overrides it.
+        /// unless the migration logic overrides it.
         genesis_start: Option<tendermint::time::Time>,
     },
 }
@@ -752,14 +752,13 @@ async fn main() -> anyhow::Result<()> {
             // - apply checks: root hash, size, etc.
             todo!()
         }
-        RootCommand::Upgrade {
-            upgrade_path,
+        RootCommand::Migrate {
+            target_dir,
             genesis_start,
         } => {
-            use upgrade::Upgrade::SimpleUpgrade;
-            tracing::info!("upgrading state from {}", upgrade_path.display());
-            SimpleUpgrade
-                .migrate(upgrade_path.clone(), genesis_start)
+            tracing::info!("migrating state from {}", target_dir.display());
+            SimpleMigration
+                .migrate(target_dir.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;
         }
