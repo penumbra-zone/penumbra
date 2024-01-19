@@ -1,5 +1,5 @@
 use penumbra_keys::Address;
-use penumbra_num::Amount;
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -49,23 +49,51 @@ impl FundingStream {
 }
 
 impl FundingStream {
-    /// Computes the amount of reward at the epoch specified by base_rate_data
+    /// Computes the amount of reward at the epoch as a function of the previous and next base rate.
     pub fn reward_amount(
         &self,
         prev_base_rate: &BaseRateData,
         next_base_rate: &BaseRateData,
         total_delegation_tokens: Amount,
-    ) -> u64 {
+    ) -> Amount {
         if prev_base_rate.epoch_index != next_base_rate.epoch_index - 1 {
             panic!("wrong base rate data for previous epoch")
         }
-        // take yv*cve*re*psi(e-1)
-        let mut r =
-            (total_delegation_tokens.value() * (self.rate_bps() as u128 * 1_0000)) / 1_0000_0000;
-        r = (r * next_base_rate.base_reward_rate as u128) / 1_0000_0000;
-        r = (r * prev_base_rate.base_exchange_rate as u128) / 1_0000_0000;
 
-        r as u64
+        let prev_base_exchange_rate = U128x128::from(prev_base_rate.base_exchange_rate);
+        let next_base_reward_rate = U128x128::from(next_base_rate.base_reward_rate);
+        let stream_rate = U128x128::from(self.rate_bps());
+        let commission_rate = (stream_rate / U128x128::from(1_0000u128)).expect("nonzero divisor");
+        // TODO(erwan): this PR focus on replicating the current behavior of the rate calculations,
+        // but i'm pretty sure this is just wrong. First, the modeling of commission rates is not
+        // good, and second why are we computing the reward amount
+
+        // The reward amount is computed as:
+        //   y_v * c_{v,e} * r_e * psi(e-1)
+        // where:
+        //   y_v = total delegation tokens for validator v
+        //   c_{v,e} = commission rate for validator v, at epoch e
+        //   r_e = base reward rate for epoch e
+        //   psi(e-1) = base exchange rate for epoch e-1
+        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
+        let scaling_factor = U128x128::from(1_0000_0000u128);
+
+        let next_base_reward_rate =
+            (next_base_reward_rate / scaling_factor).expect("nonzero divisor");
+        let prev_base_exchange_rate =
+            (prev_base_exchange_rate / scaling_factor).expect("nonzero divisor");
+
+        let staking_tokens =
+            (total_delegation_tokens * prev_base_exchange_rate).expect("does not overflow");
+        let staking_tokens = (staking_tokens * commission_rate).expect("does not overflow");
+
+        let reward_amount = (staking_tokens * next_base_reward_rate).expect("does not overflow");
+        let reward_amount = (reward_amount * prev_base_exchange_rate).expect("does not overflow");
+
+        reward_amount
+            .round_down()
+            .try_into()
+            .expect("does not overflow")
     }
 }
 

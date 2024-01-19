@@ -51,11 +51,29 @@ impl RateData {
                 panic!("commission rate sums to > 100%")
             }
 
-            // Actualize the validator's reward rate by applying the commission rate.
-            // 1 bps = 1e-4, so here we group digits by 4s rather than 3s as is usual
-            let next_validator_reward_rate = ((1_0000_0000u64 - (commission_rate_bps * 1_0000))
-                * next_base_rate.base_reward_rate)
-                / 1_0000_0000;
+            /* ************ Compute the validator reward rate **************** */
+            let commission_rate_bps = U128x128::from(commission_rate_bps);
+            let bps_scaling = U128x128::from(1_0000u128);
+            let scaling_factor = U128x128::from(1_0000_0000u128);
+            let next_base_reward_rate = U128x128::from(next_base_rate.base_reward_rate);
+
+            // TODO(erwan): this PR focus on using `Amount`s and `fixnum`.
+            // But, this has to be cleaned up, it's a mess and frustrating to work with.
+            let scaled_commision_factor =
+                (commission_rate_bps * bps_scaling).expect("does not overflow");
+            let scaled_commission_rate = (scaling_factor - scaled_commision_factor)
+                .expect("scaled_commission_factor > scaling_factor");
+
+            let unscaled_validator_reward_rate =
+                (scaled_commission_rate * next_base_reward_rate).expect("does not overflow");
+
+            let next_validator_reward_rate: Amount = (unscaled_validator_reward_rate
+                / scaling_factor)
+                .expect("scaling factor is nonzero")
+                .round_down()
+                .try_into()
+                .expect("rounding down gives an integral type");
+            /* ***************************************************************** */
 
             /* ************ Compute the validator exchange rate **************** */
             // The conversion rate between delegation tokens and unbonded stake.
@@ -208,20 +226,38 @@ pub struct BaseRateData {
     /// The index of the epoch for which this rate is valid.
     pub epoch_index: u64,
     /// The base reward rate.
-    pub base_reward_rate: u64,
+    pub base_reward_rate: Amount,
     /// The base exchange rate.
-    pub base_exchange_rate: u64,
+    pub base_exchange_rate: Amount,
 }
 
 impl BaseRateData {
     /// Compute the base rate data for the epoch following the current one,
     /// given the next epoch's base reward rate.
-    pub fn next(&self, base_reward_rate: u64) -> BaseRateData {
-        let base_exchange_rate =
-            (self.base_exchange_rate * (base_reward_rate + 1_0000_0000)) / 1_0000_0000;
+    pub fn next(&self, next_base_reward_rate: Amount) -> BaseRateData {
+        let base_reward_rate_fp = U128x128::from(self.base_reward_rate);
+        let next_base_reward_rate_fp = U128x128::from(next_base_reward_rate);
+        let scaling_factor = U128x128::from(1_0000_0000u128);
+
+        // (BEX * (SCALING_FACTOR + BRR))/SCALIN_FACTOR
+
+        // = (BEX*BRR + BRR*SCALING_FACTOR)/SCALING_FACTOR
+        // = (BEX*BRR)/SCALING + BRR
+
+        let unscaled_combined_rate =
+            (base_reward_rate_fp * next_base_reward_rate_fp).expect("does not overflow");
+        let combined_rate =
+            (unscaled_combined_rate / scaling_factor).expect("scaling factor is nonzero");
+
+        let next_base_exchange_rate = (combined_rate + next_base_reward_rate_fp)
+            .expect("does not overflow")
+            .round_down()
+            .try_into()
+            .expect("rounding down gives an integral type");
+
         BaseRateData {
-            base_exchange_rate,
-            base_reward_rate,
+            base_exchange_rate: next_base_exchange_rate,
+            base_reward_rate: next_base_reward_rate,
             epoch_index: self.epoch_index + 1,
         }
     }
@@ -265,22 +301,24 @@ impl DomainType for BaseRateData {
 
 impl From<BaseRateData> for pb::BaseRateData {
     fn from(v: BaseRateData) -> Self {
-        pb::BaseRateData {
-            epoch_index: v.epoch_index,
-            base_reward_rate: v.base_reward_rate,
-            base_exchange_rate: v.base_exchange_rate,
-        }
+        // pb::BaseRateData {
+        //     epoch_index: v.epoch_index,
+        //     base_reward_rate: v.base_reward_rate,
+        //     base_exchange_rate: v.base_exchange_rate,
+        // }
+        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
     }
 }
 
 impl TryFrom<pb::BaseRateData> for BaseRateData {
     type Error = anyhow::Error;
     fn try_from(v: pb::BaseRateData) -> Result<Self, Self::Error> {
-        Ok(BaseRateData {
-            epoch_index: v.epoch_index,
-            base_reward_rate: v.base_reward_rate,
-            base_exchange_rate: v.base_exchange_rate,
-        })
+        // Ok(BaseRateData {
+        //     epoch_index: v.epoch_index,
+        //     base_reward_rate: v.base_reward_rate,
+        //     base_exchange_rate: v.base_exchange_rate,
+        // })
+        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
     }
 }
 
