@@ -6,13 +6,7 @@ edition = "2021"
 [dependencies]
 # Workspace dependencies
 cnidarium = { path = "../../../cnidarium", optional = true }
-cnidarium-component = { path = "../../../cnidarium-component", optional = true }
-penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
-penumbra-tct = { path = "../../../crypto/tct" }
-penumbra-keys = { path = "../../../core/keys", default-features = false }
-penumbra-txhash = { path = "../../../core/txhash", default-features = false }
-penumbra-num = { path = "../../../core/num", default-features = false }
 
 # Penumbra dependencies
 decaf377 = "0.5"
@@ -24,7 +18,6 @@ ics23 = "0.11.0"
 # Crates.io deps
 ark-ff = { version = "0.4", default_features = false }
 anyhow = "1"
-bincode = "1.3.3"
 bytes = "1"
 hex = "0.4"
 once_cell = "1.8"
@@ -39,7 +32,6 @@ tokio = { version = "1", optional = true }
 
 [features]
 component = [
-    "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
     "penumbra-proto/rpc",

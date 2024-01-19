@@ -61,7 +61,6 @@ hex = "0.4"
 metrics = "0.19.0"
 async-stream = "0.2"
 parking_lot = "0.12"
-clap = { version = "3", features = ["derive"] }
 camino = "1"
 async-trait = "0.1"
 tendermint = "0.34.0"

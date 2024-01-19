@@ -44,7 +44,6 @@ rand_core = "0.6.4"
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = "0.1"
 tonic = "0.10"
-tonic-web = "0.10"
 tower = "0.4"
 tracing = "0.1"
 tracing-subscriber = "0.3"

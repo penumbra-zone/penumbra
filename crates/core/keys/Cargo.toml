@@ -52,17 +52,14 @@ ibig = "0.3"
 # only needed because ark-ff doesn't display correctly
 num-bigint = "0.4"
 tracing = "0.1"
-ark-groth16 = {version = "0.4", default-features = false}
-ark-snark = "0.4"
 ark-r1cs-std = {version = "0.4", default-features = false }
 ark-relations = "0.4"
 
 [dev-dependencies]
 proptest = "1"
 serde_json = "1"
-frost377 = { version = "0.2", default-features=false }
 num-traits = "0.2"
 
 [features]
 default = []
-parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-groth16/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel", "frost377/parallel"]
+parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]

@@ -45,7 +45,7 @@ penumbra-dex = { path = "../../core/component/dex", default-features = false }
 penumbra-community-pool = { path = "../../core/component/community-pool", default-features = false }
 penumbra-ibc = { path = "../../core/component/ibc", default-features = false }
 penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
-penumbra-transaction = { path = "../../core/transaction", features = ["clap"] }
+penumbra-transaction = { path = "../../core/transaction" }
 penumbra-proof-setup = { path = "../../crypto/proof-setup" }
 penumbra-app = { path = "../../core/app" }
 penumbra-wallet = { path = "../../wallet" }
@@ -100,7 +100,6 @@ camino = "1"
 url = { version = "2", features = ["serde"] }
 colored_json = "2.1"
 toml = { version = "0.7", features = ["preserve_order"] }
-walkdir = "2"
 once_cell = "1"
 ndarray = "0.15.6"
 dialoguer = "0.10.4"
