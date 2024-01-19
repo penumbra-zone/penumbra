@@ -33,7 +33,7 @@ impl App {
             .try_into()?;
         let transaction = self.build_transaction(plan).await?;
         let gas_cost = transaction.gas_cost();
-        let fee = gas_prices.price(&gas_cost);
+        let fee = gas_prices.fee(&gas_cost);
         assert!(
             transaction.transaction_parameters().fee.amount() >= fee,
             "paid fee {} must be greater than minimum fee {}",
