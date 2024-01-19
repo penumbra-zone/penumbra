@@ -65,10 +65,10 @@ impl GasPrices {
     /// Use these gas prices to calculate the fee for a given gas vector.
     pub fn fee(&self, gas: &Gas) -> Amount {
         Amount::from(
-            self.block_space_price * gas.block_space / 1_000
-                + self.compact_block_space_price * gas.compact_block_space / 1_000
-                + self.verification_price * gas.verification / 1_000
-                + self.execution_price * gas.execution / 1_000,
+            (self.block_space_price * gas.block_space) / 1_000
+                + (self.compact_block_space_price * gas.compact_block_space) / 1_000
+                + (self.verification_price * gas.verification) / 1_000
+                + (self.execution_price * gas.execution) / 1_000,
         )
     }
 }
