@@ -1,7 +1,5 @@
 #![deny(clippy::unwrap_used)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #[cfg(feature = "component")]
 pub mod component;
 

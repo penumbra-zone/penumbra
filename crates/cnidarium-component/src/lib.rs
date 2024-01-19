@@ -37,6 +37,8 @@
 //! appropriate times.
 
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod action_handler;
 mod component;

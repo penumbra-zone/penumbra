@@ -1,4 +1,7 @@
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use std::convert::{TryFrom, TryInto};
 
 use ark_ff::UniformRand;

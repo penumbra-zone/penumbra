@@ -1,3 +1,6 @@
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use std::net::SocketAddr;
 use std::path::Path;
 

@@ -5,6 +5,8 @@
 //! authorization or blind signing.
 
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #[macro_use]
 extern crate serde_with;
 
