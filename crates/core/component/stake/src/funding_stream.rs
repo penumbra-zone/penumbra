@@ -49,7 +49,7 @@ impl FundingStream {
 }
 
 impl FundingStream {
-    /// Computes the amount of reward at the epoch as a function of the previous and next base rate.
+    /// Computes the amount of reward at the epoch boundary.
     pub fn reward_amount(
         &self,
         prev_base_rate: &BaseRateData,
@@ -60,14 +60,14 @@ impl FundingStream {
             panic!("wrong base rate data for previous epoch")
         }
 
+        // TODO(erwan): why are we using rates from different epochs.
         let prev_base_exchange_rate = U128x128::from(prev_base_rate.base_exchange_rate);
         let next_base_reward_rate = U128x128::from(next_base_rate.base_reward_rate);
+
         let stream_rate = U128x128::from(self.rate_bps());
         let commission_rate = (stream_rate / U128x128::from(1_0000u128)).expect("nonzero divisor");
         // TODO(erwan): this PR focus on replicating the current behavior of the rate calculations,
-        // but i'm pretty sure this is just wrong. First, the modeling of commission rates is not
-        // good, and second why are we computing the reward amount
-
+        // but i'm pretty sure this is wrong:
         // The reward amount is computed as:
         //   y_v * c_{v,e} * r_e * psi(e-1)
         // where:
