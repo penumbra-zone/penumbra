@@ -1,5 +1,7 @@
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 mod client;
 mod metrics;
 mod note_record;

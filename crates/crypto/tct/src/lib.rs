@@ -35,6 +35,7 @@
 
 #![deny(clippy::unwrap_used)]
 #![warn(missing_docs, rustdoc::broken_intra_doc_links)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[macro_use]
 extern crate derivative;

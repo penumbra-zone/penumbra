@@ -1,4 +1,5 @@
 #![deny(clippy::unwrap_used)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 use once_cell::sync::Lazy;
 
 pub mod asset;

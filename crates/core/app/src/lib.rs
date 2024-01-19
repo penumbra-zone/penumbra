@@ -1,4 +1,6 @@
 #![deny(clippy::unwrap_used)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 mod action_handler;
 mod community_pool_ext;
 mod mock_client;
