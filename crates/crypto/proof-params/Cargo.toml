@@ -30,12 +30,6 @@ sha2 = "0.10.1"
 bech32 = "0.8.1"
 lazy_static = "1.4.0"
 
-[dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
-decaf377-fmd = { path = "../decaf377-fmd/" }
-decaf377-ka = { path = "../decaf377-ka/" }
-decaf377-rdsa = "0.7"
-
 [build-dependencies]
 regex = { version = "1", optional = true }
 reqwest = { version = "0.11.14", optional = true, features = [
