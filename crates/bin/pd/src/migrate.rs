@@ -1,3 +1,9 @@
+//! Logic for handling chain upgrades.
+//!
+//! When consensus-breaking changes are made to the Penumbra software,
+//! node operators must coordinate to perform a chain upgrade.
+//! This module declares how local `pd` state should be altered, if at all,
+//! in order to be compatible with the network post-chain-upgrade.
 use std::path::PathBuf;
 
 use cnidarium::{StateDelta, StateWrite, Storage};
@@ -11,25 +17,26 @@ use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
 
 use crate::testnet::generate::TestnetConfig;
 
-pub enum Upgrade {
-    /// No-op migration
+/// The kind of migration that should be performed.
+pub enum Migration {
+    /// No-op migration.
     Noop,
     /// A simple migration: adds a key to the consensus state.
     /// This is useful for testing upgrade mechanisms, including in production.
-    SimpleUpgrade,
+    SimpleMigration,
     /// Migrates from testnet-64 to testnet-65.
     Testnet65,
 }
 
-impl Upgrade {
+impl Migration {
     pub async fn migrate(
         &self,
         path_to_export: PathBuf,
         genesis_start: Option<tendermint::time::Time>,
     ) -> anyhow::Result<()> {
         match self {
-            Upgrade::Noop => (),
-            Upgrade::SimpleUpgrade => {
+            Migration::Noop => (),
+            Migration::SimpleMigration => {
                 let mut db_path = path_to_export.clone();
                 db_path.push("rocksdb");
                 let storage = Storage::load(db_path, SUBSTORE_PREFIXES.to_vec()).await?;
@@ -101,7 +108,7 @@ impl Upgrade {
                 std::fs::write(validator_state_path, fresh_validator_state)
                     .expect("can write validator state");
             }
-            Upgrade::Testnet65 => { /* currently a no-op. */ }
+            Migration::Testnet65 => { /* currently a no-op. */ }
         }
         Ok(())
     }

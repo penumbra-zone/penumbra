@@ -11,8 +11,8 @@ mod snapshot;
 
 pub mod auto_https;
 pub mod events;
+pub mod migrate;
 pub mod testnet;
-pub mod upgrade;
 
 pub use crate::metrics::register_metrics;
 pub use consensus::Consensus;
