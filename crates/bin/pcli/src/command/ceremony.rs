@@ -80,12 +80,21 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
 pub enum CeremonyCmd {
     /// Contribute to the ceremony
     Contribute {
-        #[clap(long)]
+        /// The phase of the summoning ceremony that's currently active. Must match that of the remote
+        /// coordinator.
+        #[clap(long, default_value = "2")]
         phase: u8,
+        /// The URL for the public coordination server.
         #[clap(long, default_value = "https://summoning.penumbra.zone")]
         coordinator_url: Url,
+        /// The Penumbra wallet address of the coordination server. Bids will be sent to this
+        /// address, so the coordinator can compute the contributor's place in the queue.
         #[clap(long)]
         coordinator_address: Address,
+        /// Amount to spend during bid. Must be specified typed values, e.g. '50penumbra'.
+        /// Only the 'penumbra' token is accepted for contributions. Bids are additive,
+        /// so if you're disconnected, you can bid '0penumbra' and your previous bids
+        /// will be still be counted when computing your place in the queue.
         #[clap(long)]
         bid: String,
     },
