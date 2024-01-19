@@ -454,7 +454,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         .expect("rounded to an integral value");
 
         // TODO(erwan): use fixnum and amounts. Tracked in #3453.
-        let next_base_rate = prev_base_rate.next(base_reward_rate.value() as u64);
+        let next_base_rate = prev_base_rate.next(base_reward_rate);
         tracing::debug!(
             ?prev_base_rate,
             ?next_base_rate,
@@ -1116,8 +1116,8 @@ impl Component for Staking {
 
                 let genesis_base_rate = BaseRateData {
                     epoch_index,
-                    base_reward_rate: 0,
-                    base_exchange_rate: 1_0000_0000,
+                    base_reward_rate: 0u128.into(),
+                    base_exchange_rate: 1_0000_0000u128.into(),
                 };
                 state.set_base_rate(genesis_base_rate.clone());
 
