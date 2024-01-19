@@ -4770,6 +4770,7 @@ dependencies = [
  "penumbra-compact-block",
  "penumbra-custody",
  "penumbra-dex",
+ "penumbra-fee",
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
@@ -5234,6 +5235,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "tendermint",
+ "tonic",
  "tracing",
 ]
 
