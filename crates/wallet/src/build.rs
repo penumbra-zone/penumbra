@@ -32,8 +32,7 @@ where
     // ... and then build the transaction:
     #[cfg(not(feature = "parallel"))]
     {
-        let unauth_tx = plan.build(fvk, witness_data)?;
-        let tx = unauth_tx.authorize(&mut rng, &auth_data)?;
+        let tx = plan.build(fvk, &witness_data, &auth_data)?;
         return Ok(tx);
     }
 
