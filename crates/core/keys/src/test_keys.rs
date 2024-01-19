@@ -29,6 +29,7 @@ pub static ADDRESS_1: Lazy<Address> = Lazy::new(|| {
         .expect("hardcoded test addresses should be valid")
 });
 
+/// The test account's spend key.
 pub static SPEND_KEY: Lazy<SpendKey> = Lazy::new(|| {
     SpendKey::from_seed_phrase_bip44(
         SEED_PHRASE
@@ -38,7 +39,24 @@ pub static SPEND_KEY: Lazy<SpendKey> = Lazy::new(|| {
     )
 });
 
-pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> =
-    Lazy::new(|| SPEND_KEY.full_viewing_key().clone());
+/// The test account's full viewing key, as a string.
+pub const FULL_VIEWING_KEY_STR: &str = "penumbrafullviewingkey1vzfytwlvq067g2kz095vn7sgcft47hga40atrg5zu2crskm6tyyjysm28qg5nth2fqmdf5n0q530jreumjlsrcxjwtfv6zdmfpe5kqsa5lg09";
+
+/// The test account's full viewing key.
+pub static FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
+    FULL_VIEWING_KEY_STR
+        .parse()
+        .expect("hardcoded test fvk should be valid")
+});
 
 pub static WALLET_ID: Lazy<WalletId> = Lazy::new(|| FULL_VIEWING_KEY.wallet_id());
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fvk_matches() {
+        assert_eq!(*FULL_VIEWING_KEY, *SPEND_KEY.full_viewing_key());
+    }
+}
