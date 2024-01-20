@@ -197,8 +197,8 @@ pub struct ValidatorStatus {
     >,
     #[prost(message, optional, tag = "2")]
     pub state: ::core::option::Option<ValidatorState>,
-    #[prost(uint64, tag = "3")]
-    pub voting_power: u64,
+    #[prost(message, optional, tag = "3")]
+    pub voting_power: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
     #[prost(message, optional, tag = "4")]
     pub bonding_state: ::core::option::Option<BondingState>,
 }
