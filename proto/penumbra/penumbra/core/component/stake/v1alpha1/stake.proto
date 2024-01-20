@@ -68,15 +68,15 @@ message FundingStream {
 message RateData {
   keys.v1alpha1.IdentityKey identity_key = 1;
   uint64 epoch_index = 2;
-  uint64 validator_reward_rate = 4;
-  uint64 validator_exchange_rate = 5;
+  num.v1alpha1.Amount validator_reward_rate = 4;
+  num.v1alpha1.Amount validator_exchange_rate = 5;
 }
 
 // Describes the base reward and exchange rates in some epoch.
 message BaseRateData {
   uint64 epoch_index = 1;
-  uint64 base_reward_rate = 2;
-  uint64 base_exchange_rate = 3;
+  num.v1alpha1.Amount base_reward_rate = 2;
+  num.v1alpha1.Amount base_exchange_rate = 3;
 }
 
 // Describes the current state of a validator on-chain
