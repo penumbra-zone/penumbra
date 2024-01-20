@@ -190,8 +190,6 @@ impl RateData {
         base_rate_data: &BaseRateData,
     ) -> Amount {
         let total_delegation_tokens = U128x128::from(total_delegation_tokens);
-        let scaling_factor = U128x128::from(1_0000_0000u128);
-
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
         let total_staking_tokens =
