@@ -186,14 +186,26 @@ impl RateData {
     /// validator's delegation tokens.
     pub fn voting_power(
         &self,
-        _total_delegation_tokens: u128,
-        _base_rate_data: &BaseRateData,
-    ) -> u64 {
-        // ((total_delegation_tokens * self.validator_exchange_rate as u128)
-        //     / base_rate_data.base_exchange_rate as u128)
-        //     .try_into()
-        //     .expect("voting power should fit in u64")
-        todo!("MERGEBLOCK(erwan): circle back to do this cleanly")
+        total_delegation_tokens: Amount,
+        base_rate_data: &BaseRateData,
+    ) -> Amount {
+        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
+        let scaling_factor = U128x128::from(1_0000_0000u128);
+
+        let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
+
+        let total_staking_tokens =
+            (total_delegation_tokens * validator_exchange_rate).expect("does not overflow");
+
+        let base_exchange_rate = U128x128::from(base_rate_data.base_exchange_rate);
+
+        let voting_power = (total_staking_tokens / base_exchange_rate)
+            .expect("base exchange rate is nonzero")
+            .round_down()
+            .try_into()
+            .expect("rounding down gives an integral type");
+
+        voting_power
     }
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
@@ -263,14 +275,13 @@ impl DomainType for RateData {
 }
 
 impl From<RateData> for pb::RateData {
-    fn from(_v: RateData) -> Self {
-        // pb::RateData {
-        //     identity_key: Some(v.identity_key.into()),
-        //     epoch_index: v.epoch_index,
-        //     validator_reward_rate: v.validator_reward_rate,
-        //     validator_exchange_rate: v.validator_exchange_rate,
-        // }
-        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
+    fn from(v: RateData) -> Self {
+        pb::RateData {
+            identity_key: Some(v.identity_key.into()),
+            epoch_index: v.epoch_index,
+            validator_reward_rate: Some(v.validator_reward_rate.into()),
+            validator_exchange_rate: Some(v.validator_exchange_rate.into()),
+        }
     }
 }
 
