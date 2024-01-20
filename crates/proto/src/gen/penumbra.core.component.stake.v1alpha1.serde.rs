@@ -3736,7 +3736,7 @@ impl serde::Serialize for ValidatorStatus {
         if self.state.is_some() {
             len += 1;
         }
-        if self.voting_power != 0 {
+        if self.voting_power.is_some() {
             len += 1;
         }
         if self.bonding_state.is_some() {
@@ -3749,9 +3749,8 @@ impl serde::Serialize for ValidatorStatus {
         if let Some(v) = self.state.as_ref() {
             struct_ser.serialize_field("state", v)?;
         }
-        if self.voting_power != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("votingPower", ToString::to_string(&self.voting_power).as_str())?;
+        if let Some(v) = self.voting_power.as_ref() {
+            struct_ser.serialize_field("votingPower", v)?;
         }
         if let Some(v) = self.bonding_state.as_ref() {
             struct_ser.serialize_field("bondingState", v)?;
@@ -3847,9 +3846,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatus {
                             if voting_power__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("votingPower"));
                             }
-                            voting_power__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            voting_power__ = map_.next_value()?;
                         }
                         GeneratedField::BondingState => {
                             if bonding_state__.is_some() {
@@ -3862,7 +3859,7 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatus {
                 Ok(ValidatorStatus {
                     identity_key: identity_key__,
                     state: state__,
-                    voting_power: voting_power__.unwrap_or_default(),
+                    voting_power: voting_power__,
                     bonding_state: bonding_state__,
                 })
             }
