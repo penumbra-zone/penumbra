@@ -83,7 +83,7 @@ message BaseRateData {
 message ValidatorStatus {
   keys.v1alpha1.IdentityKey identity_key = 1;
   ValidatorState state = 2;
-  uint64 voting_power = 3;
+  num.v1alpha1.Amount voting_power = 3;
   BondingState bonding_state = 4;
 }
 
