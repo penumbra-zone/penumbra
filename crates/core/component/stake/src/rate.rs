@@ -239,11 +239,6 @@ impl BaseRateData {
         let next_base_reward_rate_fp = U128x128::from(next_base_reward_rate);
         let scaling_factor = U128x128::from(1_0000_0000u128);
 
-        // (BEX * (SCALING_FACTOR + BRR))/SCALIN_FACTOR
-
-        // = (BEX*BRR + BRR*SCALING_FACTOR)/SCALING_FACTOR
-        // = (BEX*BRR)/SCALING + BRR
-
         let unscaled_combined_rate =
             (base_reward_rate_fp * next_base_reward_rate_fp).expect("does not overflow");
         let combined_rate =
@@ -281,17 +276,24 @@ impl From<RateData> for pb::RateData {
 
 impl TryFrom<pb::RateData> for RateData {
     type Error = anyhow::Error;
-    fn try_from(_v: pb::RateData) -> Result<Self, Self::Error> {
-        // Ok(RateData {
-        //     identity_key: v
-        //         .identity_key
-        //         .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
-        //         .try_into()?,
-        //     epoch_index: v.epoch_index,
-        //     validator_reward_rate: v.validator_reward_rate,
-        //     validator_exchange_rate: v.validator_exchange_rate,
-        // })
-        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
+    fn try_from(v: pb::RateData) -> Result<Self, Self::Error> {
+        Ok(RateData {
+            identity_key: v
+                .identity_key
+                .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
+                .try_into()?,
+            epoch_index: v.epoch_index,
+            validator_reward_rate: v
+                .validator_reward_rate
+                .ok_or_else(|| anyhow::anyhow!("empty validator reward rate in RateData message"))?
+                .try_into()?,
+            validator_exchange_rate: v
+                .validator_exchange_rate
+                .ok_or_else(|| {
+                    anyhow::anyhow!("empty validator exchange rate in RateData message")
+                })?
+                .try_into()?,
+        })
     }
 }
 
@@ -300,25 +302,29 @@ impl DomainType for BaseRateData {
 }
 
 impl From<BaseRateData> for pb::BaseRateData {
-    fn from(v: BaseRateData) -> Self {
-        // pb::BaseRateData {
-        //     epoch_index: v.epoch_index,
-        //     base_reward_rate: v.base_reward_rate,
-        //     base_exchange_rate: v.base_exchange_rate,
-        // }
-        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
+    fn from(rate: BaseRateData) -> Self {
+        pb::BaseRateData {
+            epoch_index: rate.epoch_index,
+            base_reward_rate: Some(rate.base_reward_rate.into()),
+            base_exchange_rate: Some(rate.base_exchange_rate.into()),
+        }
     }
 }
 
 impl TryFrom<pb::BaseRateData> for BaseRateData {
     type Error = anyhow::Error;
     fn try_from(v: pb::BaseRateData) -> Result<Self, Self::Error> {
-        // Ok(BaseRateData {
-        //     epoch_index: v.epoch_index,
-        //     base_reward_rate: v.base_reward_rate,
-        //     base_exchange_rate: v.base_exchange_rate,
-        // })
-        todo!("MERGEBLOCK(erwan): change the proto definitions to use amounts")
+        Ok(BaseRateData {
+            epoch_index: v.epoch_index,
+            base_reward_rate: v
+                .base_reward_rate
+                .ok_or_else(|| anyhow::anyhow!("empty base reward rate in BaseRateData message"))?
+                .try_into()?,
+            base_exchange_rate: v
+                .base_exchange_rate
+                .ok_or_else(|| anyhow::anyhow!("empty base exchange rate in BaseRateData message"))?
+                .try_into()?,
+        })
     }
 }
 
