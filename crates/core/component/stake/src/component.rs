@@ -27,10 +27,7 @@ use penumbra_community_pool::component::StateWriteExt as _;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{
-    state::future::{DomainFuture, ProtoFuture},
-    StateReadProto, StateWriteProto,
-};
+use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
 use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
@@ -61,7 +58,7 @@ use crate::{Delegate, Undelegate};
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
-const MAX_VOTING_POWER: i64 = 1152921504606846975;
+const MAX_VOTING_POWER: u128 = 1152921504606846975;
 
 /// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
 /// This should really be a refined type upstream, but we can't currently upstream
@@ -211,14 +208,15 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
                 let power = self
                     .validator_power(identity_key)
-                    .await?
+                    .await
                     .expect("validator that became active did not have power recorded");
-                tracing::debug!(validator_identity = %identity_key, voting_power = power, "validator has become active");
 
                 // Finally, set the validator to be active.
                 self.put(state_key, Active);
 
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+
+                tracing::debug!(validator_identity = %identity_key, voting_power = ?power, "validator has become active");
             }
 
             (Active, new_state @ (Inactive | Disabled)) => {
@@ -676,10 +674,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .context("should be able to fetch validator state")?;
             let power = self
                 .validator_power(&identity_key)
-                .await?
-                .context("should be able to fetch validator power")?;
+                .await
+                .unwrap_or_default();
             if matches!(state, validator::State::Active | validator::State::Inactive) {
-                if power == 0 {
+                if power == Amount::zero() {
                     zero_power.push((identity_key, power));
                 } else {
                     validators_by_power.push((identity_key, power));
@@ -757,18 +755,18 @@ pub(crate) trait StakingImpl: StateWriteExt {
             .into_iter()
             .collect::<BTreeSet<_>>();
 
-        let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, u64>::new();
+        let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, Amount>::new();
 
         // First, build a mapping of consensus key to voting power for all known validators.
 
         // Using a JoinSet, run each validator's state queries concurrently.
-        let mut js: JoinSet<std::prelude::v1::Result<(PublicKey, u64), anyhow::Error>> =
+        let mut js: JoinSet<std::prelude::v1::Result<(PublicKey, Amount), anyhow::Error>> =
             JoinSet::new();
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
             let state = self.validator_state(&identity_key);
-            let power = self.validator_power(&identity_key);
+            let power = self.validator_power(&identity_key).await;
             let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
@@ -776,12 +774,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     .expect("every known validator must have a recorded state");
                 // Compute the effective power of this validator; this is the
                 // validator power, clamped to zero for all non-Active validators.
-                let effective_power = if state == validator::State::Active {
-                    power
-                        .await?
-                        .expect("every known validator must have a recorded power")
+                let effective_power = if matches!(state, validator::State::Active) {
+                    power.expect("every active validator must have a recorded power")
                 } else {
-                    0
+                    Amount::zero()
                 };
 
                 let consensus_key = consensus_key
@@ -800,23 +796,25 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Next, filter that mapping to exclude any zero-power validators, UNLESS they
         // were already known to Tendermint.
         voting_power_by_consensus_key.retain(|consensus_key, voting_power| {
-            *voting_power > 0 || current_consensus_keys.contains(consensus_key)
+            *voting_power > Amount::zero() || current_consensus_keys.contains(consensus_key)
         });
 
         // Finally, tell tendermint to delete any known consensus keys not otherwise updated
         for ck in current_consensus_keys.iter() {
-            voting_power_by_consensus_key.entry(*ck).or_insert(0);
+            voting_power_by_consensus_key
+                .entry(*ck)
+                .or_insert(Amount::zero());
         }
 
         // Save the validator updates to send to Tendermint.
         let tendermint_validator_updates = voting_power_by_consensus_key
             .iter()
-            .map(|(ck, power)| {
+            .map(|(consensus_key, power)| {
                 Ok(Update {
-                    pub_key: *ck,
-                    power: (*power)
-                        .try_into()
-                        .context("should be able to convert u64 into validator Power")?,
+                    pub_key: *consensus_key,
+                    power: ((*power).value() as u64).try_into()?,
+                    // TODO(erwan): this does not bode well for our hopes to
+                    // transition voting power to a normalized "staking tokens" amount.
                 })
             })
             .collect::<Result<Vec<_>>>()?;
@@ -826,7 +824,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let updated_consensus_keys = CurrentConsensusKeys {
             consensus_keys: voting_power_by_consensus_key
                 .iter()
-                .filter_map(|(ck, power)| if *power != 0 { Some(*ck) } else { None })
+                .filter_map(|(consensus_key, power)| {
+                    if *power != Amount::zero() {
+                        Some(*consensus_key)
+                    } else {
+                        None
+                    }
+                })
                 .collect(),
         };
         tracing::debug!(?updated_consensus_keys);
@@ -949,7 +953,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             .get(&delegation_id)
             .copied()
             .unwrap_or(0u64.into());
-        let power = cur_rate_data.voting_power(total_delegation_tokens.value(), genesis_base_rate);
+        let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
 
         self.add_validator_inner(
             validator.clone(),
@@ -984,7 +988,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             rate_data,
             validator::State::Defined,
             validator::BondingState::Unbonded,
-            0,
+            0u128.into(),
         )
         .await
     }
@@ -1298,8 +1302,10 @@ pub trait StateReadExt: StateRead {
             .boxed()
     }
 
-    fn validator_power(&self, identity_key: &IdentityKey) -> ProtoFuture<u64, Self::GetRawFut> {
-        self.get_proto(&state_key::power_by_validator(identity_key))
+    async fn validator_power(&self, validator: &IdentityKey) -> Option<Amount> {
+        self.get(&state_key::power_by_validator(validator))
+            .await
+            .expect("I/O does not fail")
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
@@ -1389,7 +1395,7 @@ pub trait StateReadExt: StateRead {
     ) -> Result<Option<validator::Status>> {
         let bonding_state = self.validator_bonding_state(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
-        let power = self.validator_power(identity_key).await?;
+        let power = self.validator_power(identity_key).await;
         let identity_key = identity_key.clone();
         match (state, power, bonding_state) {
             (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
@@ -1543,13 +1549,16 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    fn set_validator_power(&mut self, identity_key: &IdentityKey, voting_power: u64) -> Result<()> {
-        tracing::debug!("setting validator power");
-        if voting_power as i64 > MAX_VOTING_POWER || (voting_power as i64) < 0 {
-            anyhow::bail!("invalid voting power");
+    fn set_validator_power(
+        &mut self,
+        identity_key: &IdentityKey,
+        voting_power: Amount,
+    ) -> Result<()> {
+        tracing::debug!(validator_identity = ?identity_key, ?voting_power, "setting validator power");
+        if voting_power.value() > MAX_VOTING_POWER {
+            anyhow::bail!("voting power exceeds maximum")
         }
-
-        self.put_proto(state_key::power_by_validator(identity_key), voting_power);
+        self.put(state_key::power_by_validator(identity_key), voting_power);
 
         Ok(())
     }
@@ -1609,7 +1618,7 @@ pub trait StateWriteExt: StateWrite {
         initial_rate_data: RateData,
         initial_state: validator::State,
         initial_bonding_state: validator::BondingState,
-        initial_voting_power: u64,
+        initial_voting_power: Amount,
     ) -> Result<()> {
         tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
         if !matches!(initial_state, State::Defined | State::Active) {
