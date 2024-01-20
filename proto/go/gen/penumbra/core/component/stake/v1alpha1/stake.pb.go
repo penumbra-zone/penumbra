@@ -449,8 +449,8 @@ type RateData struct {
 
 	IdentityKey           *v1alpha1.IdentityKey `protobuf:"bytes,1,opt,name=identity_key,json=identityKey,proto3" json:"identity_key,omitempty"`
 	EpochIndex            uint64                `protobuf:"varint,2,opt,name=epoch_index,json=epochIndex,proto3" json:"epoch_index,omitempty"`
-	ValidatorRewardRate   uint64                `protobuf:"varint,4,opt,name=validator_reward_rate,json=validatorRewardRate,proto3" json:"validator_reward_rate,omitempty"`
-	ValidatorExchangeRate uint64                `protobuf:"varint,5,opt,name=validator_exchange_rate,json=validatorExchangeRate,proto3" json:"validator_exchange_rate,omitempty"`
+	ValidatorRewardRate   *v1alpha11.Amount     `protobuf:"bytes,4,opt,name=validator_reward_rate,json=validatorRewardRate,proto3" json:"validator_reward_rate,omitempty"`
+	ValidatorExchangeRate *v1alpha11.Amount     `protobuf:"bytes,5,opt,name=validator_exchange_rate,json=validatorExchangeRate,proto3" json:"validator_exchange_rate,omitempty"`
 }
 
 func (x *RateData) Reset() {
@@ -499,18 +499,18 @@ func (x *RateData) GetEpochIndex() uint64 {
 	return 0
 }
 
-func (x *RateData) GetValidatorRewardRate() uint64 {
+func (x *RateData) GetValidatorRewardRate() *v1alpha11.Amount {
 	if x != nil {
 		return x.ValidatorRewardRate
 	}
-	return 0
+	return nil
 }
 
-func (x *RateData) GetValidatorExchangeRate() uint64 {
+func (x *RateData) GetValidatorExchangeRate() *v1alpha11.Amount {
 	if x != nil {
 		return x.ValidatorExchangeRate
 	}
-	return 0
+	return nil
 }
 
 // Describes the base reward and exchange rates in some epoch.
@@ -519,9 +519,9 @@ type BaseRateData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EpochIndex       uint64 `protobuf:"varint,1,opt,name=epoch_index,json=epochIndex,proto3" json:"epoch_index,omitempty"`
-	BaseRewardRate   uint64 `protobuf:"varint,2,opt,name=base_reward_rate,json=baseRewardRate,proto3" json:"base_reward_rate,omitempty"`
-	BaseExchangeRate uint64 `protobuf:"varint,3,opt,name=base_exchange_rate,json=baseExchangeRate,proto3" json:"base_exchange_rate,omitempty"`
+	EpochIndex       uint64            `protobuf:"varint,1,opt,name=epoch_index,json=epochIndex,proto3" json:"epoch_index,omitempty"`
+	BaseRewardRate   *v1alpha11.Amount `protobuf:"bytes,2,opt,name=base_reward_rate,json=baseRewardRate,proto3" json:"base_reward_rate,omitempty"`
+	BaseExchangeRate *v1alpha11.Amount `protobuf:"bytes,3,opt,name=base_exchange_rate,json=baseExchangeRate,proto3" json:"base_exchange_rate,omitempty"`
 }
 
 func (x *BaseRateData) Reset() {
@@ -563,18 +563,18 @@ func (x *BaseRateData) GetEpochIndex() uint64 {
 	return 0
 }
 
-func (x *BaseRateData) GetBaseRewardRate() uint64 {
+func (x *BaseRateData) GetBaseRewardRate() *v1alpha11.Amount {
 	if x != nil {
 		return x.BaseRewardRate
 	}
-	return 0
+	return nil
 }
 
-func (x *BaseRateData) GetBaseExchangeRate() uint64 {
+func (x *BaseRateData) GetBaseExchangeRate() *v1alpha11.Amount {
 	if x != nil {
 		return x.BaseExchangeRate
 	}
-	return 0
+	return nil
 }
 
 // Describes the current state of a validator on-chain
@@ -2275,29 +2275,38 @@ var file_penumbra_core_component_stake_v1alpha1_stake_proto_rawDesc = []byte{
 	0x6d, 0x75, 0x6e, 0x69, 0x74, 0x79, 0x50, 0x6f, 0x6f, 0x6c, 0x12, 0x19, 0x0a, 0x08, 0x72, 0x61,
 	0x74, 0x65, 0x5f, 0x62, 0x70, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x07, 0x72, 0x61,
 	0x74, 0x65, 0x42, 0x70, 0x73, 0x42, 0x0b, 0x0a, 0x09, 0x72, 0x65, 0x63, 0x69, 0x70, 0x69, 0x65,
-	0x6e, 0x74, 0x22, 0xe4, 0x01, 0x0a, 0x08, 0x52, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x12,
+	0x6e, 0x74, 0x22, 0xac, 0x02, 0x0a, 0x08, 0x52, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x12,
 	0x4b, 0x0a, 0x0c, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x6b, 0x65, 0x79, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
 	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6b, 0x65, 0x79, 0x73, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
 	0x68, 0x61, 0x31, 0x2e, 0x49, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x52,
 	0x0b, 0x69, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x1f, 0x0a, 0x0b,
 	0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x0a, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x32, 0x0a,
+	0x04, 0x52, 0x0a, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x56, 0x0a,
 	0x15, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x72, 0x65, 0x77, 0x61, 0x72,
-	0x64, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x52, 0x13, 0x76, 0x61,
-	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x77, 0x61, 0x72, 0x64, 0x52, 0x61, 0x74,
-	0x65, 0x12, 0x36, 0x0a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x65,
-	0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x05, 0x20, 0x01,
-	0x28, 0x04, 0x52, 0x15, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x45, 0x78, 0x63,
-	0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x61, 0x74, 0x65, 0x22, 0x87, 0x01, 0x0a, 0x0c, 0x42, 0x61,
-	0x73, 0x65, 0x52, 0x61, 0x74, 0x65, 0x44, 0x61, 0x74, 0x61, 0x12, 0x1f, 0x0a, 0x0b, 0x65, 0x70,
-	0x6f, 0x63, 0x68, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x0a, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x28, 0x0a, 0x10, 0x62,
-	0x61, 0x73, 0x65, 0x5f, 0x72, 0x65, 0x77, 0x61, 0x72, 0x64, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0e, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x77, 0x61, 0x72,
-	0x64, 0x52, 0x61, 0x74, 0x65, 0x12, 0x2c, 0x0a, 0x12, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x65, 0x78,
-	0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x10, 0x62, 0x61, 0x73, 0x65, 0x45, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52,
+	0x64, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x70,
+	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6e, 0x75, 0x6d,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74,
+	0x52, 0x13, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x77, 0x61, 0x72,
+	0x64, 0x52, 0x61, 0x74, 0x65, 0x12, 0x5a, 0x0a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
+	0x6f, 0x72, 0x5f, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x65,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6e, 0x75, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2e, 0x41, 0x6d, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x15, 0x76, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x45, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x61, 0x74,
+	0x65, 0x22, 0xcf, 0x01, 0x0a, 0x0c, 0x42, 0x61, 0x73, 0x65, 0x52, 0x61, 0x74, 0x65, 0x44, 0x61,
+	0x74, 0x61, 0x12, 0x1f, 0x0a, 0x0b, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x69, 0x6e, 0x64, 0x65,
+	0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x12, 0x4c, 0x0a, 0x10, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x72, 0x65, 0x77, 0x61,
+	0x72, 0x64, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e,
+	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6e, 0x75,
+	0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x6d, 0x6f, 0x75, 0x6e,
+	0x74, 0x52, 0x0e, 0x62, 0x61, 0x73, 0x65, 0x52, 0x65, 0x77, 0x61, 0x72, 0x64, 0x52, 0x61, 0x74,
+	0x65, 0x12, 0x50, 0x0a, 0x12, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x65, 0x78, 0x63, 0x68, 0x61, 0x6e,
+	0x67, 0x65, 0x5f, 0x72, 0x61, 0x74, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e,
+	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6e, 0x75,
+	0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x6d, 0x6f, 0x75, 0x6e,
+	0x74, 0x52, 0x10, 0x62, 0x61, 0x73, 0x65, 0x45, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x52,
 	0x61, 0x74, 0x65, 0x22, 0xaa, 0x02, 0x0a, 0x0f, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
 	0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x4b, 0x0a, 0x0c, 0x69, 0x64, 0x65, 0x6e, 0x74,
 	0x69, 0x74, 0x79, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e,
@@ -2737,54 +2746,58 @@ var file_penumbra_core_component_stake_v1alpha1_stake_proto_depIdxs = []int32{
 	32, // 4: penumbra.core.component.stake.v1alpha1.FundingStream.to_address:type_name -> penumbra.core.component.stake.v1alpha1.FundingStream.ToAddress
 	33, // 5: penumbra.core.component.stake.v1alpha1.FundingStream.to_community_pool:type_name -> penumbra.core.component.stake.v1alpha1.FundingStream.ToCommunityPool
 	34, // 6: penumbra.core.component.stake.v1alpha1.RateData.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	34, // 7: penumbra.core.component.stake.v1alpha1.ValidatorStatus.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	10, // 8: penumbra.core.component.stake.v1alpha1.ValidatorStatus.state:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorState
-	9,  // 9: penumbra.core.component.stake.v1alpha1.ValidatorStatus.bonding_state:type_name -> penumbra.core.component.stake.v1alpha1.BondingState
-	0,  // 10: penumbra.core.component.stake.v1alpha1.BondingState.state:type_name -> penumbra.core.component.stake.v1alpha1.BondingState.BondingStateEnum
-	1,  // 11: penumbra.core.component.stake.v1alpha1.ValidatorState.state:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorState.ValidatorStateEnum
-	3,  // 12: penumbra.core.component.stake.v1alpha1.ValidatorInfo.validator:type_name -> penumbra.core.component.stake.v1alpha1.Validator
-	8,  // 13: penumbra.core.component.stake.v1alpha1.ValidatorInfo.status:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorStatus
-	6,  // 14: penumbra.core.component.stake.v1alpha1.ValidatorInfo.rate_data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
-	3,  // 15: penumbra.core.component.stake.v1alpha1.ValidatorDefinition.validator:type_name -> penumbra.core.component.stake.v1alpha1.Validator
-	34, // 16: penumbra.core.component.stake.v1alpha1.Delegate.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	36, // 17: penumbra.core.component.stake.v1alpha1.Delegate.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	36, // 18: penumbra.core.component.stake.v1alpha1.Delegate.delegation_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	34, // 19: penumbra.core.component.stake.v1alpha1.Undelegate.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	36, // 20: penumbra.core.component.stake.v1alpha1.Undelegate.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	36, // 21: penumbra.core.component.stake.v1alpha1.Undelegate.delegation_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	16, // 22: penumbra.core.component.stake.v1alpha1.UndelegateClaim.body:type_name -> penumbra.core.component.stake.v1alpha1.UndelegateClaimBody
-	34, // 23: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	21, // 24: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
-	37, // 25: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
-	34, // 26: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	21, // 27: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
-	36, // 28: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.unbonding_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	13, // 29: penumbra.core.component.stake.v1alpha1.DelegationChanges.delegations:type_name -> penumbra.core.component.stake.v1alpha1.Delegate
-	14, // 30: penumbra.core.component.stake.v1alpha1.DelegationChanges.undelegations:type_name -> penumbra.core.component.stake.v1alpha1.Undelegate
-	38, // 31: penumbra.core.component.stake.v1alpha1.CurrentConsensusKeys.consensus_keys:type_name -> penumbra.core.keys.v1alpha1.ConsensusKey
-	11, // 32: penumbra.core.component.stake.v1alpha1.ValidatorInfoResponse.validator_info:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorInfo
-	34, // 33: penumbra.core.component.stake.v1alpha1.ValidatorStatusRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	8,  // 34: penumbra.core.component.stake.v1alpha1.ValidatorStatusResponse.status:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorStatus
-	34, // 35: penumbra.core.component.stake.v1alpha1.ValidatorPenaltyRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	21, // 36: penumbra.core.component.stake.v1alpha1.ValidatorPenaltyResponse.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
-	34, // 37: penumbra.core.component.stake.v1alpha1.CurrentValidatorRateRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	6,  // 38: penumbra.core.component.stake.v1alpha1.CurrentValidatorRateResponse.data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
-	36, // 39: penumbra.core.component.stake.v1alpha1.StakeParameters.min_validator_stake:type_name -> penumbra.core.num.v1alpha1.Amount
-	30, // 40: penumbra.core.component.stake.v1alpha1.GenesisContent.stake_params:type_name -> penumbra.core.component.stake.v1alpha1.StakeParameters
-	3,  // 41: penumbra.core.component.stake.v1alpha1.GenesisContent.validators:type_name -> penumbra.core.component.stake.v1alpha1.Validator
-	22, // 42: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorInfo:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorInfoRequest
-	24, // 43: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorStatus:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorStatusRequest
-	26, // 44: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorPenalty:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorPenaltyRequest
-	28, // 45: penumbra.core.component.stake.v1alpha1.QueryService.CurrentValidatorRate:input_type -> penumbra.core.component.stake.v1alpha1.CurrentValidatorRateRequest
-	23, // 46: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorInfo:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorInfoResponse
-	25, // 47: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorStatus:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorStatusResponse
-	27, // 48: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorPenalty:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorPenaltyResponse
-	29, // 49: penumbra.core.component.stake.v1alpha1.QueryService.CurrentValidatorRate:output_type -> penumbra.core.component.stake.v1alpha1.CurrentValidatorRateResponse
-	46, // [46:50] is the sub-list for method output_type
-	42, // [42:46] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	36, // 7: penumbra.core.component.stake.v1alpha1.RateData.validator_reward_rate:type_name -> penumbra.core.num.v1alpha1.Amount
+	36, // 8: penumbra.core.component.stake.v1alpha1.RateData.validator_exchange_rate:type_name -> penumbra.core.num.v1alpha1.Amount
+	36, // 9: penumbra.core.component.stake.v1alpha1.BaseRateData.base_reward_rate:type_name -> penumbra.core.num.v1alpha1.Amount
+	36, // 10: penumbra.core.component.stake.v1alpha1.BaseRateData.base_exchange_rate:type_name -> penumbra.core.num.v1alpha1.Amount
+	34, // 11: penumbra.core.component.stake.v1alpha1.ValidatorStatus.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	10, // 12: penumbra.core.component.stake.v1alpha1.ValidatorStatus.state:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorState
+	9,  // 13: penumbra.core.component.stake.v1alpha1.ValidatorStatus.bonding_state:type_name -> penumbra.core.component.stake.v1alpha1.BondingState
+	0,  // 14: penumbra.core.component.stake.v1alpha1.BondingState.state:type_name -> penumbra.core.component.stake.v1alpha1.BondingState.BondingStateEnum
+	1,  // 15: penumbra.core.component.stake.v1alpha1.ValidatorState.state:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorState.ValidatorStateEnum
+	3,  // 16: penumbra.core.component.stake.v1alpha1.ValidatorInfo.validator:type_name -> penumbra.core.component.stake.v1alpha1.Validator
+	8,  // 17: penumbra.core.component.stake.v1alpha1.ValidatorInfo.status:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorStatus
+	6,  // 18: penumbra.core.component.stake.v1alpha1.ValidatorInfo.rate_data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
+	3,  // 19: penumbra.core.component.stake.v1alpha1.ValidatorDefinition.validator:type_name -> penumbra.core.component.stake.v1alpha1.Validator
+	34, // 20: penumbra.core.component.stake.v1alpha1.Delegate.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	36, // 21: penumbra.core.component.stake.v1alpha1.Delegate.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	36, // 22: penumbra.core.component.stake.v1alpha1.Delegate.delegation_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	34, // 23: penumbra.core.component.stake.v1alpha1.Undelegate.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	36, // 24: penumbra.core.component.stake.v1alpha1.Undelegate.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	36, // 25: penumbra.core.component.stake.v1alpha1.Undelegate.delegation_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	16, // 26: penumbra.core.component.stake.v1alpha1.UndelegateClaim.body:type_name -> penumbra.core.component.stake.v1alpha1.UndelegateClaimBody
+	34, // 27: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	21, // 28: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
+	37, // 29: penumbra.core.component.stake.v1alpha1.UndelegateClaimBody.balance_commitment:type_name -> penumbra.core.asset.v1alpha1.BalanceCommitment
+	34, // 30: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.validator_identity:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	21, // 31: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
+	36, // 32: penumbra.core.component.stake.v1alpha1.UndelegateClaimPlan.unbonding_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	13, // 33: penumbra.core.component.stake.v1alpha1.DelegationChanges.delegations:type_name -> penumbra.core.component.stake.v1alpha1.Delegate
+	14, // 34: penumbra.core.component.stake.v1alpha1.DelegationChanges.undelegations:type_name -> penumbra.core.component.stake.v1alpha1.Undelegate
+	38, // 35: penumbra.core.component.stake.v1alpha1.CurrentConsensusKeys.consensus_keys:type_name -> penumbra.core.keys.v1alpha1.ConsensusKey
+	11, // 36: penumbra.core.component.stake.v1alpha1.ValidatorInfoResponse.validator_info:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorInfo
+	34, // 37: penumbra.core.component.stake.v1alpha1.ValidatorStatusRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	8,  // 38: penumbra.core.component.stake.v1alpha1.ValidatorStatusResponse.status:type_name -> penumbra.core.component.stake.v1alpha1.ValidatorStatus
+	34, // 39: penumbra.core.component.stake.v1alpha1.ValidatorPenaltyRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	21, // 40: penumbra.core.component.stake.v1alpha1.ValidatorPenaltyResponse.penalty:type_name -> penumbra.core.component.stake.v1alpha1.Penalty
+	34, // 41: penumbra.core.component.stake.v1alpha1.CurrentValidatorRateRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	6,  // 42: penumbra.core.component.stake.v1alpha1.CurrentValidatorRateResponse.data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
+	36, // 43: penumbra.core.component.stake.v1alpha1.StakeParameters.min_validator_stake:type_name -> penumbra.core.num.v1alpha1.Amount
+	30, // 44: penumbra.core.component.stake.v1alpha1.GenesisContent.stake_params:type_name -> penumbra.core.component.stake.v1alpha1.StakeParameters
+	3,  // 45: penumbra.core.component.stake.v1alpha1.GenesisContent.validators:type_name -> penumbra.core.component.stake.v1alpha1.Validator
+	22, // 46: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorInfo:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorInfoRequest
+	24, // 47: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorStatus:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorStatusRequest
+	26, // 48: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorPenalty:input_type -> penumbra.core.component.stake.v1alpha1.ValidatorPenaltyRequest
+	28, // 49: penumbra.core.component.stake.v1alpha1.QueryService.CurrentValidatorRate:input_type -> penumbra.core.component.stake.v1alpha1.CurrentValidatorRateRequest
+	23, // 50: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorInfo:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorInfoResponse
+	25, // 51: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorStatus:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorStatusResponse
+	27, // 52: penumbra.core.component.stake.v1alpha1.QueryService.ValidatorPenalty:output_type -> penumbra.core.component.stake.v1alpha1.ValidatorPenaltyResponse
+	29, // 53: penumbra.core.component.stake.v1alpha1.QueryService.CurrentValidatorRate:output_type -> penumbra.core.component.stake.v1alpha1.CurrentValidatorRateResponse
+	50, // [50:54] is the sub-list for method output_type
+	46, // [46:50] is the sub-list for method input_type
+	46, // [46:46] is the sub-list for extension type_name
+	46, // [46:46] is the sub-list for extension extendee
+	0,  // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_stake_v1alpha1_stake_proto_init() }

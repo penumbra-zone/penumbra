@@ -149,10 +149,14 @@ pub struct RateData {
     >,
     #[prost(uint64, tag = "2")]
     pub epoch_index: u64,
-    #[prost(uint64, tag = "4")]
-    pub validator_reward_rate: u64,
-    #[prost(uint64, tag = "5")]
-    pub validator_exchange_rate: u64,
+    #[prost(message, optional, tag = "4")]
+    pub validator_reward_rate: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
+    #[prost(message, optional, tag = "5")]
+    pub validator_exchange_rate: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
 }
 impl ::prost::Name for RateData {
     const NAME: &'static str = "RateData";
@@ -167,10 +171,14 @@ impl ::prost::Name for RateData {
 pub struct BaseRateData {
     #[prost(uint64, tag = "1")]
     pub epoch_index: u64,
-    #[prost(uint64, tag = "2")]
-    pub base_reward_rate: u64,
-    #[prost(uint64, tag = "3")]
-    pub base_exchange_rate: u64,
+    #[prost(message, optional, tag = "2")]
+    pub base_reward_rate: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
+    #[prost(message, optional, tag = "3")]
+    pub base_exchange_rate: ::core::option::Option<
+        super::super::super::num::v1alpha1::Amount,
+    >,
 }
 impl ::prost::Name for BaseRateData {
     const NAME: &'static str = "BaseRateData";

@@ -9,10 +9,10 @@ impl serde::Serialize for BaseRateData {
         if self.epoch_index != 0 {
             len += 1;
         }
-        if self.base_reward_rate != 0 {
+        if self.base_reward_rate.is_some() {
             len += 1;
         }
-        if self.base_exchange_rate != 0 {
+        if self.base_exchange_rate.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.BaseRateData", len)?;
@@ -20,13 +20,11 @@ impl serde::Serialize for BaseRateData {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
-        if self.base_reward_rate != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("baseRewardRate", ToString::to_string(&self.base_reward_rate).as_str())?;
+        if let Some(v) = self.base_reward_rate.as_ref() {
+            struct_ser.serialize_field("baseRewardRate", v)?;
         }
-        if self.base_exchange_rate != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("baseExchangeRate", ToString::to_string(&self.base_exchange_rate).as_str())?;
+        if let Some(v) = self.base_exchange_rate.as_ref() {
+            struct_ser.serialize_field("baseExchangeRate", v)?;
         }
         struct_ser.end()
     }
@@ -111,24 +109,20 @@ impl<'de> serde::Deserialize<'de> for BaseRateData {
                             if base_reward_rate__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("baseRewardRate"));
                             }
-                            base_reward_rate__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            base_reward_rate__ = map_.next_value()?;
                         }
                         GeneratedField::BaseExchangeRate => {
                             if base_exchange_rate__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("baseExchangeRate"));
                             }
-                            base_exchange_rate__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            base_exchange_rate__ = map_.next_value()?;
                         }
                     }
                 }
                 Ok(BaseRateData {
                     epoch_index: epoch_index__.unwrap_or_default(),
-                    base_reward_rate: base_reward_rate__.unwrap_or_default(),
-                    base_exchange_rate: base_exchange_rate__.unwrap_or_default(),
+                    base_reward_rate: base_reward_rate__,
+                    base_exchange_rate: base_exchange_rate__,
                 })
             }
         }
@@ -1409,10 +1403,10 @@ impl serde::Serialize for RateData {
         if self.epoch_index != 0 {
             len += 1;
         }
-        if self.validator_reward_rate != 0 {
+        if self.validator_reward_rate.is_some() {
             len += 1;
         }
-        if self.validator_exchange_rate != 0 {
+        if self.validator_exchange_rate.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.RateData", len)?;
@@ -1423,13 +1417,11 @@ impl serde::Serialize for RateData {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
         }
-        if self.validator_reward_rate != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("validatorRewardRate", ToString::to_string(&self.validator_reward_rate).as_str())?;
+        if let Some(v) = self.validator_reward_rate.as_ref() {
+            struct_ser.serialize_field("validatorRewardRate", v)?;
         }
-        if self.validator_exchange_rate != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("validatorExchangeRate", ToString::to_string(&self.validator_exchange_rate).as_str())?;
+        if let Some(v) = self.validator_exchange_rate.as_ref() {
+            struct_ser.serialize_field("validatorExchangeRate", v)?;
         }
         struct_ser.end()
     }
@@ -1525,25 +1517,21 @@ impl<'de> serde::Deserialize<'de> for RateData {
                             if validator_reward_rate__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("validatorRewardRate"));
                             }
-                            validator_reward_rate__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            validator_reward_rate__ = map_.next_value()?;
                         }
                         GeneratedField::ValidatorExchangeRate => {
                             if validator_exchange_rate__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("validatorExchangeRate"));
                             }
-                            validator_exchange_rate__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            validator_exchange_rate__ = map_.next_value()?;
                         }
                     }
                 }
                 Ok(RateData {
                     identity_key: identity_key__,
                     epoch_index: epoch_index__.unwrap_or_default(),
-                    validator_reward_rate: validator_reward_rate__.unwrap_or_default(),
-                    validator_exchange_rate: validator_exchange_rate__.unwrap_or_default(),
+                    validator_reward_rate: validator_reward_rate__,
+                    validator_exchange_rate: validator_exchange_rate__,
                 })
             }
         }
