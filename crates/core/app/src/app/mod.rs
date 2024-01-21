@@ -216,10 +216,7 @@ impl App {
         response::ProcessProposal::Accept
     }
 
-    pub async fn begin_block(
-        &mut self,
-        begin_block: &abci::request::BeginBlock,
-    ) -> Vec<abci::Event> {
+    pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
 
         // store the block height
@@ -373,7 +370,7 @@ impl App {
         Ok(state_tx.apply().1)
     }
 
-    pub async fn end_block(&mut self, end_block: &abci::request::EndBlock) -> Vec<abci::Event> {
+    pub async fn end_block(&mut self, end_block: &request::EndBlock) -> Vec<abci::Event> {
         let state_tx = StateDelta::new(self.state.clone());
 
         let mut arc_state_tx = Arc::new(state_tx);
