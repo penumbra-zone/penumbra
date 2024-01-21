@@ -82,6 +82,11 @@ impl ActionHandler for ValidatorVote {
             .await?
             .expect("proposal missing state");
 
+        // TODO(erwan): Keeping this guard here, because there was previously a comment highlighting
+        // that we especially do _not_ want to ennact proposals that have been withdrawn. However, note
+        // that `stateful` verification checks that the proposal is votable and we're executing against
+        // the same state, so this seem redundant.
+        // I will remove it once in the PR review once this is confirmed.
         if proposal_state.is_withdrawn() {
             tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cannot cast a vote for a withdrawn proposal");
             return Ok(());
