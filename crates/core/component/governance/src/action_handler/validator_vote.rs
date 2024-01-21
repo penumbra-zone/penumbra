@@ -77,23 +77,28 @@ impl ActionHandler for ValidatorVote {
                 },
         } = self;
 
-        tracing::debug!(proposal = %proposal, "cast validator vote");
-        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
-
-        // If a proposal is an emergency proposal, every validator vote triggers a check to see if
-        // we should immediately enact the proposal (if it's reached a 2/3 majority).
         let proposal_state = state
             .proposal_state(*proposal)
             .await?
             .expect("proposal missing state");
+
+        if proposal_state.is_withdrawn() {
+            tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cannot cast a vote for a withdrawn proposal");
+            return Ok(());
+        }
+
+        tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cast validator vote");
+        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
+
+        // Certain proposals are considered "emergency" proposals, and are enacted immediately if they
+        // receive +2/3 of the votes. These proposals are: `IbcFreeze`, `IbcUnfreeze`, and `Emergency`.
         let proposal_payload = state
             .proposal_payload(*proposal)
             .await?
             .expect("proposal missing payload");
-        // IMPORTANT: We don't want to enact an emergency proposal if it's been withdrawn, because
-        // withdrawal should prevent any proposal, even an emergency proposal, from being enacted.
-        if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
-            tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
+
+        if proposal_payload.is_emergency() || proposal_payload.is_ibc_freeze() {
+            tracing::debug!(proposal = %proposal, "proposal is emergency-tier, checking for emergency pass condition");
             let tally = state.current_tally(*proposal).await?;
             let total_voting_power = state
                 .total_voting_power_at_proposal_start(*proposal)
