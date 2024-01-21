@@ -299,11 +299,15 @@ message Proposal {
   }
 
   // Freeze an existing IBC client.
+  // Like `Emergency` proposals, it is enacted immediately after receiving
+  // +2/3 of validator votes.
   message FreezeIbcClient {
     string client_id = 1;
   }
 
   // Unfreeze an existing IBC client.
+  // Like `Emergency` proposals, it is enacted immediately after receiving
+  // +2/3 of validator votes.
   message UnfreezeIbcClient {
     string client_id = 1;
   }
