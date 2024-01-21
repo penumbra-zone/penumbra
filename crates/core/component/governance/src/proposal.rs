@@ -407,6 +407,11 @@ impl ProposalPayload {
         matches!(self, ProposalPayload::Emergency { .. })
     }
 
+    pub fn is_ibc_freeze(&self) -> bool {
+        matches!(self, ProposalPayload::FreezeIbcClient { .. })
+            || matches!(self, ProposalPayload::UnfreezeIbcClient { .. })
+    }
+
     pub fn is_parameter_change(&self) -> bool {
         matches!(self, ProposalPayload::ParameterChange { .. })
     }
