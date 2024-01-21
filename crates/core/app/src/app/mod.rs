@@ -24,6 +24,8 @@ use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, 
 use penumbra_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};
+
+use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
@@ -169,6 +171,49 @@ impl App {
         };
 
         state_tx.apply();
+    }
+
+    pub async fn prepare_proposal(
+        &mut self,
+        proposal: request::PrepareProposal,
+    ) -> response::PrepareProposal {
+        let mut included_txs = Vec::new();
+        let num_candidate_txs = proposal.txs.len();
+        tracing::debug!(
+            "processing PrepareProposal, found {} candidate transactions",
+            num_candidate_txs
+        );
+
+        let mut proposal_size_bytes = 0u64;
+        let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
+        // Ensure that list of transactions doesn't exceed max tx bytes.
+        // This is the recommended "default" behavior for `PrepareProposal`
+        // for more details see: https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        for tx in proposal.txs {
+            // TODO(erwan): this is curious to me, the proposer is running verification on its own block.
+            // I guess this could be a belt-and-suspenders approach to handle a misconfigured comet node.
+            let tx_len_bytes = tx.len() as u64;
+            proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);
+            if proposal_size_bytes <= max_proposal_size_bytes {
+                included_txs.push(tx);
+            } else {
+                break;
+            }
+        }
+        tracing::debug!(
+            "finished processing PrepareProposal, including {}/{} candidate transactions",
+            included_txs.len(),
+            num_candidate_txs
+        );
+        response::PrepareProposal { txs: included_txs }
+    }
+
+    pub async fn process_proposal(
+        &mut self,
+        proposal: request::ProcessProposal,
+    ) -> response::ProcessProposal {
+        tracing::debug!(?proposal, "processing proposal");
+        response::ProcessProposal::Accept
     }
 
     pub async fn begin_block(
