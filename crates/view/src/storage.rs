@@ -1682,8 +1682,6 @@ impl Storage {
     ) -> anyhow::Result<Vec<SpendableNoteRecord>> {
         let pool = self.pool.clone();
 
-        // NOTE on SUBSTR:
-        // The `source` field is proto-encoded, if it's a tx hash, that will involve a 4-byte prefix 0x0a220a20
         let query = "SELECT notes.note_commitment,
             spendable_notes.height_created,
             notes.address,
