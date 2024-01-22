@@ -10,7 +10,7 @@ use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
     core::{
         asset::v1alpha1::{DenomMetadata, Value},
-        component::fee::v1alpha1::{Fee, GasPrices},
+        component::fee::v1alpha1::{Fee, FeeTier, GasPrices},
         component::ibc::v1alpha1::Ics20Withdrawal,
         keys::v1alpha1::{Address, AddressIndex},
         transaction::v1alpha1::MemoPlaintext,
@@ -81,6 +81,15 @@ impl WasmPlanner {
     pub fn set_gas_prices(&mut self, gas_prices: JsValue) -> WasmResult<()> {
         let gas_prices_proto: GasPrices = serde_wasm_bindgen::from_value(gas_prices)?;
         self.planner.set_gas_prices(gas_prices_proto.try_into()?);
+        Ok(())
+    }
+
+    /// Set fee tier
+    /// Arguments:
+    ///     fee_tier: `FeeTier`
+    pub fn set_fee_tier(&mut self, fee_tier: JsValue) -> WasmResult<()> {
+        let fee_tier_proto: FeeTier = serde_wasm_bindgen::from_value(fee_tier)?;
+        self.planner.set_fee_tier(fee_tier_proto.try_into()?);
         Ok(())
     }
 

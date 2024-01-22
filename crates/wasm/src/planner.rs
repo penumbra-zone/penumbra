@@ -19,7 +19,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::{Fee, GasPrices};
+use penumbra_fee::{Fee, FeeTier, GasPrices};
 use penumbra_governance::{
     proposal_state::Outcome as ProposalOutcome, DelegatorVotePlan, Proposal, ProposalDepositClaim,
     ProposalSubmit, ProposalWithdraw, ValidatorVote, Vote,
@@ -50,6 +50,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     plan: TransactionPlan,
     ibc_actions: Vec<IbcRelay>,
     gas_prices: GasPrices,
+    fee_tier: FeeTier,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -80,12 +81,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             plan: TransactionPlan::default(),
             ibc_actions: Vec::new(),
             gas_prices: GasPrices::zero(),
+            fee_tier: FeeTier::default(),
         }
     }
 
     /// Set the current gas prices for fee prediction.
     pub fn set_gas_prices(&mut self, gas_prices: GasPrices) -> &mut Self {
         self.gas_prices = gas_prices;
+        self
+    }
+
+    /// Set the current fee tier.
+    pub fn set_fee_tier(&mut self, fee_tier: FeeTier) -> &mut Self {
+        self.fee_tier = fee_tier;
         self
     }
 
@@ -501,6 +509,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // for the cost of any additional `Spend` and `Output` actions necessary to pay the fee,
         // we need to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
+        //
+        // Here, tx_real_fee is the minimum fee to be paid for the transaction, with no tip.
         let mut tx_real_fee = self.gas_prices.fee(&self.plan.gas_cost());
 
         // Since the excess fee paid will create an additional Output action, we need to
@@ -510,6 +520,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // For any remaining provided balance, add the necessary fee for collecting:
         tx_real_fee += Amount::from(self.balance.provided().count() as u64)
             * self.gas_prices.fee(&gas::output_gas_cost());
+
+        // Apply the fee tier to tx_real_fee so the block proposer can receive a tip:
+        tx_real_fee = Fee::from_staking_token_amount(tx_real_fee)
+            .apply_tier(self.fee_tier)
+            .amount();
 
         assert!(
             tx_real_fee <= self.plan.transaction_parameters.fee.amount(),

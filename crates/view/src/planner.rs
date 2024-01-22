@@ -185,8 +185,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // or too small. We may need a cyclical calculation of fees on the transaction plan,
         // or a "simulated" transaction plan with infinite assets to calculate fees on before
         // copying the exact fees to the real transaction.
-        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(128u32))
-            .apply_tier(self.fee_tier);
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(128u32));
         self.balance -= fee.0;
         self.plan.transaction_parameters.fee = fee.clone();
         self
@@ -608,6 +607,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // for the cost of any additional `Spend` and `Output` actions necessary to pay the fee,
         // we need to now calculate the transaction's fee again and capture the excess as change
         // by subtracting the excess from the required value balance.
+        //
+        // Here, tx_real_fee is the minimum fee to be paid for the transaction, with no tip.
         let mut tx_real_fee = self.gas_prices.fee(&self.plan.gas_cost());
 
         // Since the excess fee paid will create an additional Output action, we need to
@@ -617,6 +618,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // For any remaining provided balance, add the necessary fee for collecting:
         tx_real_fee += Amount::from(self.balance.provided().count() as u64)
             * self.gas_prices.fee(&gas::output_gas_cost());
+
+        // Apply the fee tier to tx_real_fee so the block proposer can receive a tip:
+        tx_real_fee = Fee::from_staking_token_amount(tx_real_fee)
+            .apply_tier(self.fee_tier)
+            .amount();
 
         assert!(
             tx_real_fee <= self.plan.transaction_parameters.fee.amount(),
@@ -629,6 +635,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             amount: excess_fee_spent,
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
+
         self.plan.transaction_parameters.fee = Fee::from_staking_token_amount(tx_real_fee);
 
         // For any remaining provided balance, make a single change note for each

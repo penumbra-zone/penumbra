@@ -132,3 +132,35 @@ impl Default for FeeTier {
         Self::Low
     }
 }
+
+impl DomainType for FeeTier {
+    type Proto = pb::FeeTier;
+}
+
+impl From<FeeTier> for pb::FeeTier {
+    fn from(prices: FeeTier) -> Self {
+        match prices {
+            FeeTier::Low => pb::FeeTier {
+                fee_tier: pb::fee_tier::Tier::Low.into(),
+            },
+            FeeTier::Medium => pb::FeeTier {
+                fee_tier: pb::fee_tier::Tier::Medium.into(),
+            },
+            FeeTier::High => pb::FeeTier {
+                fee_tier: pb::fee_tier::Tier::High.into(),
+            },
+        }
+    }
+}
+
+impl TryFrom<pb::FeeTier> for FeeTier {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb::FeeTier) -> Result<Self, Self::Error> {
+        match pb::fee_tier::Tier::try_from(proto.fee_tier)? {
+            pb::fee_tier::Tier::Low => Ok(FeeTier::Low),
+            pb::fee_tier::Tier::Medium => Ok(FeeTier::Medium),
+            pb::fee_tier::Tier::High => Ok(FeeTier::High),
+        }
+    }
+}
