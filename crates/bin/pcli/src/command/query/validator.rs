@@ -3,6 +3,7 @@ use std::{fs::File, io::Write};
 use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
+use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1alpha1::{
     query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
 };
@@ -60,14 +61,14 @@ impl ValidatorCmd {
                 // Sort by voting power (descending), active first, then inactive
                 validators.sort_by(|a, b| {
                     let av = if matches!(a.status.state, validator::State::Active) {
-                        (a.status.voting_power, 0)
+                        (a.status.voting_power, Amount::zero())
                     } else {
-                        (0, a.status.voting_power)
+                        (Amount::zero(), a.status.voting_power)
                     };
                     let bv = if matches!(b.status.state, validator::State::Active) {
-                        (b.status.voting_power, 0)
+                        (b.status.voting_power, Amount::zero())
                     } else {
-                        (0, b.status.voting_power)
+                        (Amount::zero(), b.status.voting_power)
                     };
 
                     bv.cmp(&av)
@@ -77,12 +78,12 @@ impl ValidatorCmd {
                     .iter()
                     .filter_map(|v| {
                         if let validator::State::Active = v.status.state {
-                            Some(v.status.voting_power)
+                            Some(v.status.voting_power.value())
                         } else {
                             None
                         }
                     })
-                    .sum::<u64>() as f64;
+                    .sum::<u128>() as f64;
 
                 let mut table = Table::new();
                 table.load_preset(presets::NOTHING);
@@ -96,10 +97,10 @@ impl ValidatorCmd {
                 ]);
 
                 for v in validators {
-                    let voting_power = (v.status.voting_power as f64) * 1e-6; // apply udelegation factor
+                    let voting_power = (v.status.voting_power.value() as f64) * 1e-6; // apply udelegation factor
                     let active_voting_power = if matches!(v.status.state, validator::State::Active)
                     {
-                        v.status.voting_power as f64
+                        v.status.voting_power.value() as f64
                     } else {
                         0.0
                     };
