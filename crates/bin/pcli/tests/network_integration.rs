@@ -138,10 +138,13 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // Look up the transaction id from the command output so we can view it,
     // to exercise the `pcli view tx` code.
     let send_stdout = send_cmd.unwrap().stdout;
-    let tx_regex = Regex::new(r"[0-9a-f]{64}").unwrap();
+    let tx_regex = Regex::new(r"transaction confirmed and detected: ([0-9a-f]{64})").unwrap();
     let s = std::str::from_utf8(&send_stdout).unwrap();
     let captures = tx_regex.captures(s);
-    let tx_id = &captures.expect("can find transaction id within 'pcli send tx' output")[0];
+    let tx_id = &captures
+        .and_then(|x| x.get(1))
+        .expect("can find transaction id within 'pcli send tx' output")
+        .as_str();
     let mut view_cmd = Command::cargo_bin("pcli").unwrap();
     view_cmd
         .args([
