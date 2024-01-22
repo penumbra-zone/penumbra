@@ -186,9 +186,9 @@ impl App {
 
         let mut proposal_size_bytes = 0u64;
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
-        // The CometBFT spec requires that application "MUST" check that the list 
-        // of transactions in the proposal does not exceed `max_tx_bytes`. And shed 
-        // excess transactions so as to be "as close as possible" to the target 
+        // The CometBFT spec requires that application "MUST" check that the list
+        // of transactions in the proposal does not exceed `max_tx_bytes`. And shed
+        // excess transactions so as to be "as close as possible" to the target
         // parameter.
         //
         // A couple things to note about this:
@@ -196,10 +196,10 @@ impl App {
         // - it is different than the homonymous mempool configuration
         //   parameter controlling the maximum size of a single tx.
         // - the motivation for this check is that even though `PrepareProposal`
-        //   is only called by the proposer process, CometBFT might not honor 
+        //   is only called by the proposer process, CometBFT might not honor
         //   the target, presuming that some transactions might be yanked.
         // For more details, see the specification:
-        // - Adapting existing applications to use ABCI+: 
+        // - Adapting existing applications to use ABCI+:
         //  https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
         // - Application requirements:
         // https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_app_requirements
