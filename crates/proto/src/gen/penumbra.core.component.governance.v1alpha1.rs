@@ -781,6 +781,8 @@ pub mod proposal {
         }
     }
     /// Freeze an existing IBC client.
+    /// Like `Emergency` proposals, it is enacted immediately after receiving
+    /// +2/3 of validator votes.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct FreezeIbcClient {
@@ -797,6 +799,8 @@ pub mod proposal {
         }
     }
     /// Unfreeze an existing IBC client.
+    /// Like `Emergency` proposals, it is enacted immediately after receiving
+    /// +2/3 of validator votes.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct UnfreezeIbcClient {

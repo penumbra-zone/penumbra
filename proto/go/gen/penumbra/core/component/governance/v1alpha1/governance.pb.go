@@ -3468,6 +3468,8 @@ func (x *Proposal_UpgradePlan) GetHeight() uint64 {
 }
 
 // Freeze an existing IBC client.
+// Like `Emergency` proposals, it is enacted immediately after receiving
+// +2/3 of validator votes.
 type Proposal_FreezeIbcClient struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3516,6 +3518,8 @@ func (x *Proposal_FreezeIbcClient) GetClientId() string {
 }
 
 // Unfreeze an existing IBC client.
+// Like `Emergency` proposals, it is enacted immediately after receiving
+// +2/3 of validator votes.
 type Proposal_UnfreezeIbcClient struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
