@@ -10,7 +10,6 @@ use metrics_util::layers::Stack;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 use cnidarium::{StateDelta, Storage};
-use futures::stream::TryStreamExt;
 use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
 use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
 use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
@@ -30,7 +29,7 @@ use penumbra_tower_trace::remote_addr;
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
-use tokio::{net::TcpListener, runtime};
+use tokio::runtime;
 use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
@@ -478,39 +477,34 @@ async fn main() -> anyhow::Result<()> {
                 )));
             }
 
-            let grpc_server = if let Some(domain) = grpc_auto_https {
-                use pd::auto_https::Wrapper;
-                use rustls_acme::{caches::DirCache, AcmeConfig};
-                use tokio_stream::wrappers::TcpListenerStream;
-                use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
+            // Now we drop down a layer of abstraction, from tonic to axum.
+            //
+            // TODO(kate): this is where we may attach additional routes upon this router in the
+            // future. see #3646 for more information.
+            let router = grpc_server.into_router();
+            let make_svc = router.into_make_service();
 
-                let mut acme_cache = pd_home.clone();
-                acme_cache.push("rustls_acme_cache");
-
-                let bound_listener = TcpListener::bind(grpc_bind)
-                    .await
-                    .context(format!("Failed to bind HTTPS listener on {}", grpc_bind))?;
-                let listener = TcpListenerStream::new(bound_listener);
-                // Configure HTTP2 support for the TLS negotiation; we also permit HTTP1.1
-                // for backwards-compatibility, specifically for grpc-web.
-                let alpn_config = vec!["h2".into(), "http/1.1".into()];
-                let tls_incoming = AcmeConfig::new([domain.as_str()])
-                    .cache(DirCache::new(acme_cache))
-                    .directory_lets_encrypt(true) // Use the production LE environment
-                    .incoming(listener.map_ok(|conn| conn.compat()), alpn_config)
-                    .map_ok(|incoming| Wrapper {
-                        inner: incoming.compat(),
-                    });
-
-                tokio::task::Builder::new()
-                    .name("grpc_server")
-                    .spawn(grpc_server.serve_with_incoming(tls_incoming))
-                    .expect("failed to spawn grpc server")
-            } else {
-                tokio::task::Builder::new()
-                    .name("grpc_server")
-                    .spawn(grpc_server.serve(grpc_bind))
-                    .expect("failed to spawn grpc server")
+            // Now start the GRPC server, initializing an ACME client to use as a certificate
+            // resolver if auto-https has been enabled.
+            macro_rules! spawn_grpc_server {
+                ($server:expr) => {
+                    tokio::task::Builder::new()
+                        .name("grpc_server")
+                        .spawn($server.serve(make_svc))
+                        .expect("failed to spawn grpc server")
+                };
+            }
+            let grpc_server = axum_server::bind(grpc_bind);
+            let grpc_server = match grpc_auto_https {
+                Some(domain) => {
+                    let (acceptor, acme_worker) = pd::auto_https::axum_acceptor(pd_home, domain);
+                    // TODO(kate): we should eventually propagate errors from the ACME worker task.
+                    tokio::spawn(acme_worker);
+                    spawn_grpc_server!(grpc_server.acceptor(acceptor))
+                }
+                None => {
+                    spawn_grpc_server!(grpc_server)
+                }
             };
 
             // Configure a Prometheus recorder and exporter.
