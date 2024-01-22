@@ -82,10 +82,10 @@ impl ActionHandler for ValidatorVote {
             .await?
             .expect("proposal missing state");
 
-        // TODO(erwan): Keeping this guard here, because there was previously a comment highlighting
-        // that we especially do _not_ want to ennact proposals that have been withdrawn. However, note
-        // that `stateful` verification checks that the proposal is votable and we're executing against
-        // the same state, so this seem redundant.
+        // TODO(erwan): Keeping this guard here, because there was previously a
+        // comment stressing that we want to avoid enacting withdrawn proposals.
+        // However, note that this is already checked in the stateful check and
+        // we execute against the same snapshotted state, so this seem redundant.
         // I will remove it once in the PR review once this is confirmed.
         if proposal_state.is_withdrawn() {
             tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cannot cast a vote for a withdrawn proposal");
@@ -95,15 +95,16 @@ impl ActionHandler for ValidatorVote {
         tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cast validator vote");
         state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
 
-        // Certain proposals are considered "emergency" proposals, and are enacted immediately if they
-        // receive +2/3 of the votes. These proposals are: `IbcFreeze`, `IbcUnfreeze`, and `Emergency`.
+        // Emergency proposals are passed immediately afeter receiving +2/3 of
+        // validator votes. These include the eponymous `Emergency` proposal but
+        // also `IbcFreeze` and `IbcUnfreeze`.
         let proposal_payload = state
             .proposal_payload(*proposal)
             .await?
             .expect("proposal missing payload");
 
         if proposal_payload.is_emergency() || proposal_payload.is_ibc_freeze() {
-            tracing::debug!(proposal = %proposal, "proposal is emergency-tier, checking for emergency pass condition");
+            tracing::debug!(proposal = %proposal, "detected an emergency-tier proposal, checking pass conditions");
             let tally = state.current_tally(*proposal).await?;
             let total_voting_power = state
                 .total_voting_power_at_proposal_start(*proposal)
@@ -116,7 +117,7 @@ impl ActionHandler for ValidatorVote {
                 match state.enact_proposal(*proposal, &proposal_payload).await? {
                     Ok(_) => tracing::debug!(proposal = %proposal, "emergency proposal enacted"),
                     Err(error) => {
-                        tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
+                        tracing::error!(proposal = %proposal, %error, "error enacting emergency proposal")
                     }
                 }
                 // Update the proposal state to reflect the outcome (it will always be passed,
