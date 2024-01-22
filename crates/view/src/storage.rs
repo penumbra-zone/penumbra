@@ -1434,7 +1434,7 @@ impl Storage {
 
                 dbtx.execute(
                     "INSERT INTO spendable_notes
-                    (note_commitment, nullifier, position, height_created, address_index, source, height_spent)
+                    (note_commitment, nullifier, position, height_created, address_index, source, height_spent, tx_hash)
                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)",
                     (
                         &note_commitment,
