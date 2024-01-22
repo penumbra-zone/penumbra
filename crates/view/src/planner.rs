@@ -21,7 +21,7 @@ use penumbra_dex::{
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
-use penumbra_fee::{Fee, GasPrices};
+use penumbra_fee::{Fee, FeeTier, GasPrices};
 use penumbra_governance::{
     proposal_state, DelegatorVotePlan, Proposal, ProposalDepositClaim, ProposalSubmit,
     ProposalWithdraw, ValidatorVote, Vote,
@@ -51,6 +51,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     plan: TransactionPlan,
     ibc_actions: Vec<IbcRelay>,
     gas_prices: GasPrices,
+    fee_tier: FeeTier,
     // IMPORTANT: if you add more fields here, make sure to clear them when the planner is finished
 }
 
@@ -81,6 +82,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             plan: TransactionPlan::default(),
             ibc_actions: Vec::new(),
             gas_prices: GasPrices::zero(),
+            fee_tier: FeeTier::default(),
         }
     }
 
@@ -88,6 +90,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn set_gas_prices(&mut self, gas_prices: GasPrices) -> &mut Self {
         self.gas_prices = gas_prices;
+        self
+    }
+
+    /// Set the fee tier.
+    #[instrument(skip(self))]
+    pub fn set_fee_tier(&mut self, fee_tier: FeeTier) -> &mut Self {
+        self.fee_tier = fee_tier;
         self
     }
 
@@ -176,7 +185,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // or too small. We may need a cyclical calculation of fees on the transaction plan,
         // or a "simulated" transaction plan with infinite assets to calculate fees on before
         // copying the exact fees to the real transaction.
-        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(128u32));
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(128u32))
+            .apply_tier(self.fee_tier);
         self.balance -= fee.0;
         self.plan.transaction_parameters.fee = fee.clone();
         self
