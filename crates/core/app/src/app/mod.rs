@@ -186,12 +186,24 @@ impl App {
 
         let mut proposal_size_bytes = 0u64;
         let max_proposal_size_bytes = proposal.max_tx_bytes as u64;
-        // Ensure that list of transactions doesn't exceed max tx bytes.
-        // This is the recommended "default" behavior for `PrepareProposal`
-        // for more details see: https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        // The CometBFT spec requires that application "MUST" check that the list 
+        // of transactions in the proposal does not exceed `max_tx_bytes`. And shed 
+        // excess transactions so as to be "as close as possible" to the target 
+        // parameter.
+        //
+        // A couple things to note about this:
+        // - `max_tx_bytes` here is an operator controlled parameter
+        // - it is different than the homonymous mempool configuration
+        //   parameter controlling the maximum size of a single tx.
+        // - the motivation for this check is that even though `PrepareProposal`
+        //   is only called by the proposer process, CometBFT might not honor 
+        //   the target, presuming that some transactions might be yanked.
+        // For more details, see the specification:
+        // - Adapting existing applications to use ABCI+: 
+        //  https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        // - Application requirements:
+        // https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_app_requirements
         for tx in proposal.txs {
-            // TODO(erwan): this is curious to me, the proposer is running verification on its own block.
-            // I guess this could be a belt-and-suspenders approach to handle a misconfigured comet node.
             let tx_len_bytes = tx.len() as u64;
             proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);
             if proposal_size_bytes <= max_proposal_size_bytes {
