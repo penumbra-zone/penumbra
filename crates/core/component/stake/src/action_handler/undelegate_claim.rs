@@ -38,7 +38,9 @@ impl ActionHandler for UndelegateClaim {
             .await?;
         ensure!(
             current_epoch.index >= end_epoch_index,
-            "cannot claim unbonding tokens before the end epoch"
+            "cannot claim unbonding tokens before the end epoch (current epoch: {}, end epoch: {})",
+            current_epoch.index,
+            end_epoch_index
         );
 
         // 2. That the penalty is correct.

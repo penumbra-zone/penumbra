@@ -607,7 +607,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                         .await?
                         .expect("every known validator must have a recorded current rate");
                     let power = power
-                        .await
+                        .await?
                         .expect("every known validator must have a recorded current power");
                     Some((identity_key, rate_data, power))
                 } else {
@@ -625,7 +625,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     state_key::rate_data_at_proposal_start(proposal_id, identity_key),
                     rate_data,
                 );
-                self.put_proto(
+                self.put(
                     state_key::voting_power_at_proposal_start(proposal_id, identity_key),
                     power,
                 )
