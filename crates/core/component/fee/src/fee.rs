@@ -5,7 +5,12 @@ use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+// Each fee tier multiplier has an implicit 100 denominator.
+pub static FEE_TIER_LOW_MULTIPLIER: u32 = 105;
+pub static FEE_TIER_MEDIUM_MULTIPLIER: u32 = 130;
+pub static FEE_TIER_HIGH_MULTIPLIER: u32 = 200;
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Fee(pub Value);
 
 impl Default for Fee {
@@ -40,6 +45,25 @@ impl Fee {
 
     pub fn format(&self, cache: &asset::Cache) -> String {
         self.0.format(cache)
+    }
+
+    pub fn apply_tier(self, fee_tier: FeeTier) -> Self {
+        // TODO: this could be fingerprinted since fees are public; it would be ideal to apply
+        // some sampling distribution, see https://github.com/penumbra-zone/penumbra/issues/3153
+        match fee_tier {
+            FeeTier::Low => {
+                let amount = (self.amount() * FEE_TIER_LOW_MULTIPLIER.into()) / 100u32.into();
+                Self::from_staking_token_amount(amount)
+            }
+            FeeTier::Medium => {
+                let amount = (self.amount() * FEE_TIER_MEDIUM_MULTIPLIER.into()) / 100u32.into();
+                Self::from_staking_token_amount(amount)
+            }
+            FeeTier::High => {
+                let amount = (self.amount() * FEE_TIER_HIGH_MULTIPLIER.into()) / 100u32.into();
+                Self::from_staking_token_amount(amount)
+            }
+        }
     }
 }
 
@@ -93,5 +117,18 @@ impl TryFrom<pb::Fee> for Fee {
 impl Fee {
     pub fn value(&self) -> Value {
         self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum FeeTier {
+    Low,
+    Medium,
+    High,
+}
+
+impl Default for FeeTier {
+    fn default() -> Self {
+        Self::Low
     }
 }

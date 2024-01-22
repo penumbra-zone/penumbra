@@ -10,7 +10,7 @@ use penumbra_dex::{
 };
 use rand_core::CryptoRngCore;
 
-use super::replicate::ReplicateCmd;
+use super::{replicate::ReplicateCmd, FeeTier};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum PositionCmd {
@@ -25,6 +25,9 @@ pub enum PositionCmd {
         /// Only close positions for the given trading pair.
         #[clap(long)]
         trading_pair: Option<TradingPair>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Debits an opened position NFT and credits a closed position NFT.
     Close {
@@ -33,6 +36,9 @@ pub enum PositionCmd {
         source: u32,
         /// The [`position::Id`] of the position to close.
         position_id: position::Id,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Debits all closed position NFTs associated with a specific account and credits withdrawn position NFTs and the final reserves.
     WithdrawAll {
@@ -42,6 +48,9 @@ pub enum PositionCmd {
         /// Only withdraw positions for the given trading pair.
         #[clap(long)]
         trading_pair: Option<TradingPair>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
     Withdraw {
@@ -50,6 +59,9 @@ pub enum PositionCmd {
         source: u32,
         /// The [`position::Id`] of the position to withdraw.
         position_id: position::Id,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
 
     /// Debits a withdrawn position NFT and credits a claimed position NFT and any liquidity incentives.
@@ -89,6 +101,9 @@ pub enum OrderCmd {
         /// When set, tags the position as being a limit-sell order.
         #[clap(long)]
         limit_order: bool,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     Sell {
         /// The desired sale, formatted as a string, e.g. `100penumbra@1.2gm` would attempt
@@ -103,6 +118,9 @@ pub enum OrderCmd {
         /// When set, tags the position as being a limit-sell order.
         #[clap(long)]
         limit_order: bool,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
 }
 
@@ -111,6 +129,13 @@ impl OrderCmd {
         match self {
             OrderCmd::Buy { source, .. } => *source,
             OrderCmd::Sell { source, .. } => *source,
+        }
+    }
+
+    pub fn fee_tier(&self) -> FeeTier {
+        match self {
+            OrderCmd::Buy { fee_tier, .. } => *fee_tier,
+            OrderCmd::Sell { fee_tier, .. } => *fee_tier,
         }
     }
 

@@ -13,6 +13,6 @@ mod gas;
 pub mod genesis;
 pub mod params;
 
-pub use fee::Fee;
+pub use fee::{Fee, FeeTier};
 pub use gas::{Gas, GasPrices};
 pub use params::FeeParameters;

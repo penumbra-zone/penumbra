@@ -84,6 +84,9 @@ pub enum TxCmd {
         /// Optional. Set the transaction's memo field to the provided text.
         #[clap(long)]
         memo: Option<String>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Deposit stake into a validator's delegation pool.
     #[clap(display_order = 200)]
@@ -96,6 +99,9 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Withdraw stake from a validator's delegation pool.
     #[clap(display_order = 200)]
@@ -105,10 +111,17 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Claim any undelegations that have finished unbonding.
     #[clap(display_order = 200)]
-    UndelegateClaim {},
+    UndelegateClaim {
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
+    },
     /// Swap tokens of one denomination for another using the DEX.
     ///
     /// Swaps are batched and executed at the market-clearing price.
@@ -127,6 +140,9 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
     #[clap(display_order = 400)]
@@ -137,6 +153,9 @@ pub enum TxCmd {
         source: u32,
         #[clap(subcommand)]
         vote: VoteCmd,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
@@ -149,6 +168,9 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Manage liquidity positions.
     #[clap(display_order = 500, subcommand, visible_alias = "lp")]
@@ -201,7 +223,47 @@ pub enum TxCmd {
         /// Only withdraw funds from the specified wallet id within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
+
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
+}
+
+// A fee tier enum suitable for use with clap.
+#[derive(Copy, Clone, clap::ValueEnum, Debug)]
+pub enum FeeTier {
+    Low,
+    Medium,
+    High,
+}
+
+impl Default for FeeTier {
+    fn default() -> Self {
+        Self::Low
+    }
+}
+
+// Convert from the internal fee tier enum to the clap-compatible enum.
+impl From<penumbra_fee::FeeTier> for FeeTier {
+    fn from(tier: penumbra_fee::FeeTier) -> Self {
+        match tier {
+            penumbra_fee::FeeTier::Low => Self::Low,
+            penumbra_fee::FeeTier::Medium => Self::Medium,
+            penumbra_fee::FeeTier::High => Self::High,
+        }
+    }
+}
+
+// Convert from the the clap-compatible fee tier enum to the internal fee tier enum.
+impl From<FeeTier> for penumbra_fee::FeeTier {
+    fn from(tier: FeeTier) -> Self {
+        match tier {
+            FeeTier::Low => Self::Low,
+            FeeTier::Medium => Self::Medium,
+            FeeTier::High => Self::High,
+        }
+    }
 }
 
 /// Vote on a governance proposal.
@@ -276,6 +338,7 @@ impl TxCmd {
                 to,
                 source: from,
                 memo,
+                fee_tier,
             } => {
                 // Parse all of the values provided.
                 let values = values
@@ -297,7 +360,9 @@ impl TxCmd {
 
                 let mut planner = Planner::new(OsRng);
 
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 for value in values.iter().cloned() {
                     planner.output(value, to);
                 }
@@ -313,14 +378,20 @@ impl TxCmd {
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::CommunityPoolDeposit { values, source } => {
+            TxCmd::CommunityPoolDeposit {
+                values,
+                source,
+                fee_tier,
+            } => {
                 let values = values
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 for value in values {
                     planner.community_pool_deposit(value);
                 }
@@ -357,6 +428,7 @@ impl TxCmd {
                 input,
                 into,
                 source,
+                fee_tier,
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
@@ -369,7 +441,9 @@ impl TxCmd {
                     fvk.incoming().payment_address(AddressIndex::new(*source));
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices.clone());
+                planner
+                    .set_gas_prices(gas_prices.clone())
+                    .set_fee_tier((*fee_tier).into());
                 // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
                 // This shouldn't be an issue, since the planner will account for the difference and add additional
                 // spends alongside the swap claim transaction as necessary.
@@ -436,7 +510,9 @@ impl TxCmd {
                     .await?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
                         swap_plaintext,
@@ -455,7 +531,12 @@ impl TxCmd {
                 // https://github.com/penumbra-zone/penumbra/pull/2091/commits/128b24a6303c2f855a708e35f9342987f1dd34ec
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Delegate { to, amount, source } => {
+            TxCmd::Delegate {
+                to,
+                amount,
+                source,
+                fee_tier,
+            } => {
                 let unbonded_amount = {
                     let Value { amount, asset_id } = amount.parse::<Value>()?;
                     if asset_id != *STAKING_TOKEN_ASSET_ID {
@@ -474,7 +555,9 @@ impl TxCmd {
                     .try_into()?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .delegate(unbonded_amount.value(), rate_data)
                     .plan(app.view(), AddressIndex::new(*source))
@@ -483,7 +566,11 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Undelegate { amount, source } => {
+            TxCmd::Undelegate {
+                amount,
+                source,
+                fee_tier,
+            } => {
                 let delegation_value @ Value {
                     amount: _,
                     asset_id,
@@ -510,7 +597,9 @@ impl TxCmd {
                     .try_into()?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 let plan = planner
                     .undelegate(delegation_value.amount, rate_data)
@@ -525,7 +614,7 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::UndelegateClaim {} => {
+            TxCmd::UndelegateClaim { fee_tier } => {
                 let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
                     .view
@@ -594,7 +683,9 @@ impl TxCmd {
                             .try_into()?;
 
                         let mut planner = Planner::new(OsRng);
-                        planner.set_gas_prices(gas_prices.clone());
+                        planner
+                            .set_gas_prices(gas_prices.clone())
+                            .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
                         for note in notes {
                             planner.spend(note.note, note.position);
@@ -625,6 +716,7 @@ impl TxCmd {
                 file,
                 source,
                 deposit_amount,
+                fee_tier,
             }) => {
                 let mut proposal_file = File::open(file).context("can't open proposal file")?;
                 let mut proposal_string = String::new();
@@ -638,7 +730,9 @@ impl TxCmd {
                     .context("can't parse proposal file")?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .proposal_submit(proposal, Amount::from(*deposit_amount))
                     .plan(
@@ -654,9 +748,12 @@ impl TxCmd {
                 proposal_id,
                 reason,
                 source,
+                fee_tier,
             }) => {
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .proposal_withdraw(*proposal_id, reason.clone())
                     .plan(
@@ -698,6 +795,7 @@ impl TxCmd {
             TxCmd::Proposal(ProposalCmd::DepositClaim {
                 proposal_id,
                 source,
+                fee_tier,
             }) => {
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let proposal = client
@@ -738,6 +836,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .plan(
                         app.view
@@ -749,7 +848,11 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Vote { vote, source } => {
+            TxCmd::Vote {
+                vote,
+                source,
+                fee_tier,
+            } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();
 
                 // Before we vote on the proposal, we have to gather some information about it so
@@ -796,6 +899,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .delegator_vote(
                         proposal_id,
                         start_block_height,
@@ -823,6 +927,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier(order.fee_tier().into())
                     .position_open(position)
                     .plan(
                         app.view
@@ -840,6 +945,7 @@ impl TxCmd {
                 timeout_timestamp,
                 channel,
                 source,
+                fee_tier,
             } => {
                 let destination_chain_address = to;
 
@@ -956,6 +1062,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .ics20_withdrawal(withdrawal)
                     .plan(
                         app.view
@@ -969,9 +1076,11 @@ impl TxCmd {
             TxCmd::Position(PositionCmd::Close {
                 position_id,
                 source,
+                fee_tier,
             }) => {
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .position_close(*position_id)
                     .plan(
                         app.view
@@ -985,6 +1094,7 @@ impl TxCmd {
             TxCmd::Position(PositionCmd::CloseAll {
                 source,
                 trading_pair,
+                fee_tier,
             }) => {
                 let view: &mut dyn ViewClient = app
                     .view
@@ -1001,7 +1111,9 @@ impl TxCmd {
                 }
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 for position_id in owned_position_ids {
                     // Close the position
@@ -1021,6 +1133,7 @@ impl TxCmd {
             TxCmd::Position(PositionCmd::WithdrawAll {
                 source,
                 trading_pair,
+                fee_tier,
             }) => {
                 let view: &mut dyn ViewClient = app
                     .view
@@ -1037,7 +1150,9 @@ impl TxCmd {
                 }
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
@@ -1093,6 +1208,7 @@ impl TxCmd {
             TxCmd::Position(PositionCmd::Withdraw {
                 source,
                 position_id,
+                fee_tier,
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
@@ -1128,6 +1244,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
                     .plan(
                         app.view
