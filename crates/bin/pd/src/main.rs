@@ -286,7 +286,7 @@ async fn main() -> anyhow::Result<()> {
             // Unpack grpc bind option, defaulting to localhost, but setting 0.0.0.0:443
             // if auto https is enabled. We unpack the option outside of the conditional
             // below, in order to report the bind address in error handling.
-            let grpc_bind = if grpc_bind.is_some() {
+            let grpc_bind = if grpc_auto_https.is_some() {
                 grpc_bind.unwrap_or(
                     "0.0.0.0:443"
                         .parse()
