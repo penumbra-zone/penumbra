@@ -40,6 +40,63 @@ impl ::prost::Name for GasPrices {
         ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeeTier {
+    /// The selected fee tier.
+    #[prost(enumeration = "fee_tier::Tier", tag = "1")]
+    pub fee_tier: i32,
+}
+/// Nested message and enum types in `FeeTier`.
+pub mod fee_tier {
+    /// The tier for the fee.
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Tier {
+        Low = 0,
+        Medium = 1,
+        High = 2,
+    }
+    impl Tier {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Tier::Low => "TIER_LOW",
+                Tier::Medium => "TIER_MEDIUM",
+                Tier::High => "TIER_HIGH",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "TIER_LOW" => Some(Self::Low),
+                "TIER_MEDIUM" => Some(Self::Medium),
+                "TIER_HIGH" => Some(Self::High),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for FeeTier {
+    const NAME: &'static str = "FeeTier";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Fee component configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

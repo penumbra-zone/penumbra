@@ -24,6 +24,18 @@ message GasPrices {
   uint64 execution_price = 4;
 }
 
+message FeeTier {
+  // The tier for the fee.
+  enum Tier {
+    TIER_LOW = 0;
+    TIER_MEDIUM = 1;
+    TIER_HIGH = 2;
+  }
+
+  // The selected fee tier.
+  Tier fee_tier = 1;
+}
+
 // Fee component configuration data.
 message FeeParameters {}
 
