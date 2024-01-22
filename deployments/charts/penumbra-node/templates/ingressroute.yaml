@@ -26,8 +26,8 @@ Otherwise, RPC can return surprising results, like very low numbers of peers.
 {{- $seed_mode := (index $.Values.nodes $i).seed_mode | default false }}
 {{- if $seed_mode }}
 {{- else }}
-{{ $fn_name := printf "%s-%d" $.Release.Name $i }}
-    - name: {{ $fn_name }}
+{{ $rpc_svc_name := printf "%s-fn-%d" $.Release.Name $i }}
+    - name: {{ $rpc_svc_name }}
       port: 8080
       scheme: h2c
 {{- end }}
@@ -39,8 +39,8 @@ Otherwise, RPC can return surprising results, like very low numbers of peers.
 {{- $seed_mode := (index $.Values.nodes $i).seed_mode | default false }}
 {{- if $seed_mode }}
 {{- else }}
-{{ $fn_name := printf "%s-%d" $.Release.Name $i }}
-    - name: {{ $fn_name }}
+{{ $rpc_svc_name := printf "%s-fn-%d" $.Release.Name $i }}
+    - name: {{ $rpc_svc_name }}
       port: 26657
 {{- end }}
 {{- end }}
