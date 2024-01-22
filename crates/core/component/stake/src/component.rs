@@ -16,7 +16,7 @@ pub use self::metrics::register_metrics;
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::Component;
-use futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
@@ -206,10 +206,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     ),
                 );
 
-                let power = self
-                    .validator_power(identity_key)
-                    .await
-                    .expect("validator that became active did not have power recorded");
+                let power = self.validator_power(identity_key).await;
 
                 // Finally, set the validator to be active.
                 self.put(state_key, Active);
@@ -674,7 +671,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .context("should be able to fetch validator state")?;
             let power = self
                 .validator_power(&identity_key)
-                .await
+                .await?
                 .unwrap_or_default();
             if matches!(state, validator::State::Active | validator::State::Inactive) {
                 if power == Amount::zero() {
@@ -766,7 +763,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
             let state = self.validator_state(&identity_key);
-            let power = self.validator_power(&identity_key).await;
+            let power = self.validator_power(&identity_key);
             let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
@@ -775,7 +772,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // Compute the effective power of this validator; this is the
                 // validator power, clamped to zero for all non-Active validators.
                 let effective_power = if matches!(state, validator::State::Active) {
-                    power.expect("every active validator must have a recorded power")
+                    power
+                        .await?
+                        .expect("every active validator must have a recorded power")
                 } else {
                     Amount::zero()
                 };
@@ -1302,10 +1301,8 @@ pub trait StateReadExt: StateRead {
             .boxed()
     }
 
-    async fn validator_power(&self, validator: &IdentityKey) -> Option<Amount> {
+    fn validator_power(&self, validator: &IdentityKey) -> DomainFuture<Amount, Self::GetRawFut> {
         self.get(&state_key::power_by_validator(validator))
-            .await
-            .expect("I/O does not fail")
     }
 
     async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
@@ -1313,23 +1310,17 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    // TODO(erwan): we pull the entire validator definition instead of tracking
+    // the consensus key separately.  If we did, not only could we save on deserialization
+    // but we could also make this a clean [`DomainFuture`].
     fn validator_consensus_key(
         &self,
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
-        // TODO: this is pulling out the whole proto, but only parsing
-        // the consensus key.  Alternatively, we could store the consensus
-        // keys in a separate index.
-        self.get_proto::<penumbra_proto::penumbra::core::component::stake::v1alpha1::Validator>(
-            &state_key::validators::definitions::by_id(identity_key),
-        )
-        .map_ok(|opt| {
-            opt.map(|v| {
-                tendermint::PublicKey::from_raw_ed25519(v.consensus_key.as_slice())
-                    .expect("validator consensus key must be valid ed25519 key")
-            })
-        })
-        .boxed()
+        use futures::TryFutureExt;
+        self.get(&state_key::validators::definitions::by_id(&identity_key))
+            .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
+            .boxed()
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -1395,7 +1386,7 @@ pub trait StateReadExt: StateRead {
     ) -> Result<Option<validator::Status>> {
         let bonding_state = self.validator_bonding_state(identity_key).await?;
         let state = self.validator_state(identity_key).await?;
-        let power = self.validator_power(identity_key).await;
+        let power = self.validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
         match (state, power, bonding_state) {
             (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
