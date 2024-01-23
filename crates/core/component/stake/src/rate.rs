@@ -6,6 +6,7 @@ use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateRespon
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+use crate::component::FP_SCALING_FACTOR;
 use crate::{validator::State, FundingStream, IdentityKey};
 use crate::{Delegate, Penalty, Undelegate};
 
@@ -141,15 +142,20 @@ impl RateData {
     /// ```
     /// but in general *not both*, because the computation involves rounding.
     pub fn delegation_amount(&self, unbonded_amount: Amount) -> Amount {
-        // validator_exchange_rate fits in 32 bits, but unbonded_amount is 64-bit;
-        // upconvert to u128 intermediates and panic if the result is too large (unlikely)
         let scaling_factor = U128x128::from(1_0000_0000u128);
+        // Setup:
         let unbonded_amount = U128x128::from(unbonded_amount);
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
-        let unscaled_delegation_amount = (unbonded_amount / validator_exchange_rate)
+
+        // Remove scaling factors:
+        let validator_exchange_rate =
+            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+
+        /* **************** Compute the corresponding delegation size *********************** */
+        let delegation_amount = (unbonded_amount / validator_exchange_rate)
             .expect("validator exchange rate is nonzero");
-        let delegation_amount =
-            (unscaled_delegation_amount * scaling_factor).expect("does not overflow");
+        /* ********************************************************************************** */
+
         delegation_amount
             .round_down()
             .try_into()
