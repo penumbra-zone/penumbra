@@ -283,21 +283,22 @@ async fn main() -> anyhow::Result<()> {
             cometbft_addr,
             enable_expensive_rpc,
         } => {
-            // Unpack grpc bind option, defaulting to localhost, but setting 0.0.0.0:443
-            // if auto https is enabled. We unpack the option outside of the conditional
-            // below, in order to report the bind address in error handling.
-            let grpc_bind = if grpc_auto_https.is_some() {
-                grpc_bind.unwrap_or(
-                    "0.0.0.0:443"
-                        .parse()
-                        .context("failed to parse grpc_bind address")?,
-                )
-            } else {
-                grpc_bind.unwrap_or(
-                    "127.0.0.1:8080"
-                        .parse()
-                        .context("failed to parse grpc_bind address")?,
-                )
+            // Use the given `grpc_bind` address if one was specified. If not, we will choose a
+            // default depending on whether or not `grpc_auto_https` was set. See the
+            // `RootCommand::Start::grpc_bind` documentation above.
+            let grpc_bind = {
+                use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+                const HTTP_DEFAULT: SocketAddr =
+                    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+                const HTTPS_DEFAULT: SocketAddr =
+                    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 443);
+                let default = || {
+                    grpc_auto_https
+                        .is_some()
+                        .then_some(HTTPS_DEFAULT)
+                        .unwrap_or(HTTP_DEFAULT)
+                };
+                grpc_bind.unwrap_or_else(default)
             };
 
             // Ensure we have all necessary parts in the URL
