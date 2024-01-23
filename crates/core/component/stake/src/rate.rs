@@ -205,23 +205,38 @@ impl RateData {
             .expect("rounding down gives an integral type")
     }
 
-    /// Computes the validator's voting power at this epoch given the total supply of the
-    /// validator's delegation tokens.
+    /// Compute the voting power of the validator in the given epoch.
+    /// TODO(erwan): We should measure the voting power in terms of staking tokens
+    /// that is to say: the amount of staking tokens that corresponds to the delegation pool.
+    /// Tracked in #1280.
     pub fn voting_power(
         &self,
         total_delegation_tokens: Amount,
         base_rate_data: &BaseRateData,
     ) -> Amount {
+        // Setup:
         let total_delegation_tokens = U128x128::from(total_delegation_tokens);
+        let base_exchange_rate = U128x128::from(base_rate_data.base_exchange_rate);
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
+        // Unroll scaling factors:
+        let base_exchange_rate =
+            (base_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+
+        let validator_exchange_rate =
+            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+
+        // Compute the amount of staking tokens that corresponds to the delegation pool:
         let total_staking_tokens =
             (total_delegation_tokens * validator_exchange_rate).expect("does not overflow");
 
-        let base_exchange_rate = U128x128::from(base_rate_data.base_exchange_rate);
+        // Compute the normalized exchange rate:
+        let rate =
+            (validator_exchange_rate / base_exchange_rate).expect("base exchange rate is nonzero");
 
-        let voting_power = (total_staking_tokens / base_exchange_rate)
-            .expect("base exchange rate is nonzero")
+        // Compute the voting power:
+        let voting_power = (total_staking_tokens * rate)
+            .expect("rate is between 0 and 1")
             .round_down()
             .try_into()
             .expect("rounding down gives an integral type");
@@ -267,7 +282,6 @@ pub struct BaseRateData {
 impl BaseRateData {
     /// Compute the base rate data for the epoch following the current one,
     /// given the next epoch's base reward rate.
-    pub fn next(&self, next_base_reward_rate: Amount) -> BaseRateData {
         let base_reward_rate_fp = U128x128::from(self.base_reward_rate);
         let next_base_reward_rate_fp = U128x128::from(next_base_reward_rate);
         let scaling_factor = U128x128::from(1_0000_0000u128);
