@@ -79,19 +79,20 @@ impl FundingStream {
         let prev_base_reward_rate =
             (prev_base_reward_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
 
-        // We compute the net rate after commission:
-        let previous_net_rate =
-            (commission_rate * prev_base_exchange_rate).expect("does not overflow");
+        // Then, we compute the cumulative depreciation for this pool:
+        let staking_tokens = (total_delegation_tokens * prev_base_exchange_rate)
+            .expect("exchange rate is between 0 and 1");
 
-        // We compute the amount of staking tokens in the pool:
-        let staking_tokens =
-            (total_delegation_tokens * previous_net_rate).expect("does not overflow");
+        // Now, we can compute the total reward amount for this pool:
+        let total_reward_amount =
+            (staking_tokens * prev_base_reward_rate).expect("does not overflow");
 
         /* ********** Compute the reward amount for this funding stream ************* */
-        let reward_amount = (staking_tokens * prev_base_reward_rate).expect("does not overflow");
+        let stream_reward_amount =
+            (total_reward_amount * commission_rate).expect("commission rate is between 0 and 1");
         /* ************************************************************************** */
 
-        reward_amount
+        stream_reward_amount
             .round_down()
             .try_into()
             .expect("does not overflow")
