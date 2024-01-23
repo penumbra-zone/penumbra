@@ -189,14 +189,17 @@ impl RateData {
     /// ```
     /// but in general *not both*, because the computation involves rounding.
     pub fn unbonded_amount(&self, delegation_amount: Amount) -> Amount {
+        // Setup:
         let delegation_amount = U128x128::from(delegation_amount);
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
-        let scaling_factor = U128x128::from(1_0000_0000u128);
-        let unscaled_unbonded_amount =
-            (delegation_amount * validator_exchange_rate).expect("does not overflow");
-        let unbonded_amount =
-            (unscaled_unbonded_amount / scaling_factor).expect("does not overflow");
-        unbonded_amount
+
+        // Remove scaling factors:
+        let validator_exchange_rate =
+            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+
+        /* **************** Compute the unbonded amount *********************** */
+        (delegation_amount * validator_exchange_rate)
+            .expect("does not overflow")
             .round_down()
             .try_into()
             .expect("rounding down gives an integral type")
