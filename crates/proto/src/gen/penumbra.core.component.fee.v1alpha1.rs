@@ -63,9 +63,10 @@ pub mod fee_tier {
     )]
     #[repr(i32)]
     pub enum Tier {
-        Low = 0,
-        Medium = 1,
-        High = 2,
+        Unspecified = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3,
     }
     impl Tier {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -74,6 +75,7 @@ pub mod fee_tier {
         /// (if the ProtoBuf definition does not change) and safe for programmatic use.
         pub fn as_str_name(&self) -> &'static str {
             match self {
+                Tier::Unspecified => "TIER_UNSPECIFIED",
                 Tier::Low => "TIER_LOW",
                 Tier::Medium => "TIER_MEDIUM",
                 Tier::High => "TIER_HIGH",
@@ -82,6 +84,7 @@ pub mod fee_tier {
         /// Creates an enum from field names used in the ProtoBuf definition.
         pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
             match value {
+                "TIER_UNSPECIFIED" => Some(Self::Unspecified),
                 "TIER_LOW" => Some(Self::Low),
                 "TIER_MEDIUM" => Some(Self::Medium),
                 "TIER_HIGH" => Some(Self::High),

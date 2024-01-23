@@ -27,9 +27,10 @@ message GasPrices {
 message FeeTier {
   // The tier for the fee.
   enum Tier {
-    TIER_LOW = 0;
-    TIER_MEDIUM = 1;
-    TIER_HIGH = 2;
+    TIER_UNSPECIFIED = 0;
+    TIER_LOW = 1;
+    TIER_MEDIUM = 2;
+    TIER_HIGH = 3;
   }
 
   // The selected fee tier.
