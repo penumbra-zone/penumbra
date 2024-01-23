@@ -3,7 +3,7 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::rate::BaseRateData;
+use crate::{component::FP_SCALING_FACTOR, rate::BaseRateData};
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
@@ -52,43 +52,44 @@ impl FundingStream {
     /// Computes the amount of reward at the epoch boundary.
     pub fn reward_amount(
         &self,
-        prev_base_rate: &BaseRateData,
-        next_base_rate: &BaseRateData,
+        epoch_to_end: &BaseRateData,
         total_delegation_tokens: Amount,
     ) -> Amount {
-        if prev_base_rate.epoch_index != next_base_rate.epoch_index - 1 {
-            panic!("wrong base rate data for previous epoch")
-        }
+        // Setup:
+        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
+        let prev_base_exchange_rate = U128x128::from(epoch_to_end.base_exchange_rate);
+        let prev_base_reward_rate = U128x128::from(epoch_to_end.base_reward_rate);
+        let commission_rate_bps = U128x128::from(self.rate_bps());
+        let max_bps = U128x128::from(10_000u128);
 
-        // TODO(erwan): why are we using rates from different epochs.
-        let prev_base_exchange_rate = U128x128::from(prev_base_rate.base_exchange_rate);
-        let next_base_reward_rate = U128x128::from(next_base_rate.base_reward_rate);
-
-        let stream_rate = U128x128::from(self.rate_bps());
-        let commission_rate = (stream_rate / U128x128::from(1_0000u128)).expect("nonzero divisor");
-        // TODO(erwan): this PR focus on replicating the current behavior of the rate calculations,
-        // but i'm pretty sure this is wrong:
         // The reward amount is computed as:
-        //   y_v * c_{v,e} * r_e * psi(e-1)
+        //   y_v * c_{v,e} * r_e * psi(e)
         // where:
         //   y_v = total delegation tokens for validator v
         //   c_{v,e} = commission rate for validator v, at epoch e
         //   r_e = base reward rate for epoch e
-        //   psi(e-1) = base exchange rate for epoch e-1
-        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
-        let scaling_factor = U128x128::from(1_0000_0000u128);
+        //   psi(e) = base exchange rate for epoch e
+        // The commission rate is the sum of all the funding streams rate, and is capped at 100%.
+        // In this method, we use a partial commission rate specific to `this` funding stream.
 
-        let next_base_reward_rate =
-            (next_base_reward_rate / scaling_factor).expect("nonzero divisor");
+        // First, we remove the scaling factors:
+        let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
         let prev_base_exchange_rate =
-            (prev_base_exchange_rate / scaling_factor).expect("nonzero divisor");
+            (prev_base_exchange_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
+        let prev_base_reward_rate =
+            (prev_base_reward_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
 
+        // We compute the net rate after commission:
+        let previous_net_rate =
+            (commission_rate * prev_base_exchange_rate).expect("does not overflow");
+
+        // We compute the amount of staking tokens in the pool:
         let staking_tokens =
-            (total_delegation_tokens * prev_base_exchange_rate).expect("does not overflow");
-        let staking_tokens = (staking_tokens * commission_rate).expect("does not overflow");
+            (total_delegation_tokens * previous_net_rate).expect("does not overflow");
 
-        let reward_amount = (staking_tokens * next_base_reward_rate).expect("does not overflow");
-        let reward_amount = (reward_amount * prev_base_exchange_rate).expect("does not overflow");
+        /* ********** Compute the reward amount for this funding stream ************* */
+        let reward_amount = (staking_tokens * prev_base_reward_rate).expect("does not overflow");
+        /* ************************************************************************** */
 
         reward_amount
             .round_down()
