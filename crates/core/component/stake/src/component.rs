@@ -612,14 +612,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // If the validator is Active, distribute its funding stream rewards
             // for the preceding epoch.
             if validator_state == validator::State::Active {
-                let mut total_reward_amount = Amount::zero();
                 for stream in &validator.funding_streams {
                     // We compute the reward amount for this specific funding stream, it is based
                     // on the ending epoch's rate data.
                     let reward_amount_for_stream =
                         stream.reward_amount(&prev_base_rate, delegation_token_supply);
-
-                    total_reward_amount += reward_amount_for_stream;
 
                     match stream.recipient() {
                         // If the recipient is an address, mint a note to that address
@@ -635,11 +632,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                 },
                             )
                             .await?;
-                            tracing::debug!(
-                            validator = ?validator.identity_key,
-                            recipient = ?address,
-                            reward_amount = ?reward_amount_for_stream,
-                            "distributed validator commission for the epoch");
                         }
                         // If the recipient is the Community Pool, deposit the funds into the Community Pool
                         Recipient::CommunityPool => {
@@ -648,36 +640,29 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })
                             .await?;
-                            tracing::debug!(
-                            validator = ?validator.identity_key,
-                            recipient = "community pool",
-                            reward_amount = ?reward_amount_for_stream,
-                            "distributed validator commission for the epoch");
                         }
                     }
                 }
-                tracing::debug!(
-                    validator = ?validator.identity_key,
-                    total_reward_amount = ?total_reward_amount,
-                    "TOTAL distributed validator commission for the epoch"
-                );
             }
 
-            let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
-
-            let unbonded_amount = next_validator_rate.unbonded_amount(delegation_token_supply);
+            // We want to know if the validator has enough stake delegated to it to remain
+            // in the consensus set. In order to do this, we need to know what is the "absolute"
+            // (i.e. unbonded) amount corresponding to the validator's delegation pool.
+            let delegation_token_denom = DelegationToken::from(&validator.identity_key).denom();
+            let validator_unbonded_amount =
+                next_validator_rate.unbonded_amount(delegation_token_supply);
 
             tracing::debug!(
                 validator_identity = %validator.identity_key,
                 validator_delegation_pool = ?delegation_token_supply,
-                validator_unbonded_amount = ?unbonded_amount,
+                validator_unbonded_amount = ?validator_unbonded_amount,
                 "calculated validator's unbonded amount for the upcoming epoch"
             );
 
-            if unbonded_amount < min_validator_stake {
+            if validator_unbonded_amount < min_validator_stake {
                 tracing::debug!(
                     validator_identity = %validator.identity_key,
-                    validator_unbonded_amount = ?unbonded_amount,
+                    validator_unbonded_amount = ?validator_unbonded_amount,
                     min_validator_stake = ?min_validator_stake,
                     "validator's unbonded amount is below the minimum stake threshold, transitioning to defined"
                 );
@@ -688,7 +673,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             tracing::debug!(validator_identity = %validator.identity_key,
                 previous_epoch_validator_rate= ?prev_validator_rate,
                 next_epoch_validator_rate = ?next_validator_rate,
-                delegation_denom = ?delegation_denom,
+                delegation_denom = ?delegation_token_denom,
                 ?delegation_token_supply,
                 "validator's end-epoch has been processed");
         }
