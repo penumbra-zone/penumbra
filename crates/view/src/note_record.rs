@@ -89,7 +89,6 @@ impl TryFrom<&Row<'_>> for SpendableNoteRecord {
             .flatten();
         let return_address = return_address_bytes
             .map(|b| {
-                println!("return_address_bytes: {:?}", hex::encode(&b));
                 // Address is not proto-encoded
                 Address::try_from(b)
             })
