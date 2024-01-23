@@ -142,7 +142,6 @@ impl RateData {
     /// ```
     /// but in general *not both*, because the computation involves rounding.
     pub fn delegation_amount(&self, unbonded_amount: Amount) -> Amount {
-        let scaling_factor = U128x128::from(1_0000_0000u128);
         // Setup:
         let unbonded_amount = U128x128::from(unbonded_amount);
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
@@ -282,24 +281,39 @@ pub struct BaseRateData {
 impl BaseRateData {
     /// Compute the base rate data for the epoch following the current one,
     /// given the next epoch's base reward rate.
-        let base_reward_rate_fp = U128x128::from(self.base_reward_rate);
         let next_base_reward_rate_fp = U128x128::from(next_base_reward_rate);
         let scaling_factor = U128x128::from(1_0000_0000u128);
+    pub fn next_epoch(&self, next_base_reward_rate: Amount) -> BaseRateData {
+        // Setup:
+        let prev_base_exchange_rate = U128x128::from(self.base_exchange_rate);
+        let next_base_reward_rate_scaled = next_base_reward_rate.clone();
+        let next_base_reward_rate = U128x128::from(next_base_reward_rate);
+        let one = U128x128::from(1u128);
 
-        let unscaled_combined_rate =
-            (base_reward_rate_fp * next_base_reward_rate_fp).expect("does not overflow");
-        let combined_rate =
-            (unscaled_combined_rate / scaling_factor).expect("scaling factor is nonzero");
+        // Remove scaling factors:
+        let prev_base_exchange_rate =
+            (prev_base_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        let next_base_reward_rate_fp =
+            (next_base_reward_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
 
-        let next_base_exchange_rate = (combined_rate + next_base_reward_rate_fp)
-            .expect("does not overflow")
+        // Compute the reward growth factor:
+        let reward_growth_factor = (one + next_base_reward_rate_fp).expect("does not overflow");
+
+        /* ********* Compute the base exchange rate for the next epoch ****************** */
+        let next_base_exchange_rate =
+            (prev_base_exchange_rate * reward_growth_factor).expect("does not overflow");
+        /* ****************************************************************************** */
+
+        // Rescale the exchange rate:
+        let next_base_exchange_rate_scaled = (next_base_exchange_rate * *FP_SCALING_FACTOR)
+            .expect("rate is between 0 and 1")
             .round_down()
             .try_into()
             .expect("rounding down gives an integral type");
 
         BaseRateData {
-            base_exchange_rate: next_base_exchange_rate,
-            base_reward_rate: next_base_reward_rate,
+            base_exchange_rate: next_base_exchange_rate_scaled,
+            base_reward_rate: next_base_reward_rate_scaled,
             epoch_index: self.epoch_index + 1,
         }
     }
