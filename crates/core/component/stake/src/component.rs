@@ -55,10 +55,13 @@ use crate::{
     CurrentConsensusKeys, DelegationChanges, Penalty, Uptime, {DelegationToken, IdentityKey},
 };
 use crate::{Delegate, Undelegate};
+use once_cell::sync::Lazy;
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
 const MAX_VOTING_POWER: u128 = 1152921504606846975;
+
+pub(crate) const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
 
 /// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
 /// This should really be a refined type upstream, but we can't currently upstream
