@@ -279,6 +279,7 @@ impl serde::Serialize for fee_tier::Tier {
         S: serde::Serializer,
     {
         let variant = match self {
+            Self::Unspecified => "TIER_UNSPECIFIED",
             Self::Low => "TIER_LOW",
             Self::Medium => "TIER_MEDIUM",
             Self::High => "TIER_HIGH",
@@ -293,6 +294,7 @@ impl<'de> serde::Deserialize<'de> for fee_tier::Tier {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "TIER_UNSPECIFIED",
             "TIER_LOW",
             "TIER_MEDIUM",
             "TIER_HIGH",
@@ -336,6 +338,7 @@ impl<'de> serde::Deserialize<'de> for fee_tier::Tier {
                 E: serde::de::Error,
             {
                 match value {
+                    "TIER_UNSPECIFIED" => Ok(fee_tier::Tier::Unspecified),
                     "TIER_LOW" => Ok(fee_tier::Tier::Low),
                     "TIER_MEDIUM" => Ok(fee_tier::Tier::Medium),
                     "TIER_HIGH" => Ok(fee_tier::Tier::High),

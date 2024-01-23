@@ -161,6 +161,7 @@ impl TryFrom<pb::FeeTier> for FeeTier {
             pb::fee_tier::Tier::Low => Ok(FeeTier::Low),
             pb::fee_tier::Tier::Medium => Ok(FeeTier::Medium),
             pb::fee_tier::Tier::High => Ok(FeeTier::High),
+            _ => Err(anyhow::anyhow!("invalid fee tier")),
         }
     }
 }
