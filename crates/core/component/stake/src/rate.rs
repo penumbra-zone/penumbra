@@ -30,7 +30,7 @@ impl RateData {
     /// This method panics if the validator's funding streams exceed 100%.
     /// The stateless checks in the [`ValidatorDefinition`] action handler
     /// should prevent this from happening.
-    pub fn next(
+    pub fn next_epoch(
         &self,
         next_base_rate: &BaseRateData,
         funding_streams: &[FundingStream],
@@ -40,66 +40,80 @@ impl RateData {
 
         if let State::Active = validator_state {
             // Compute the validator's total commission rate in basis points.
-            let commission_rate_bps = funding_streams
+            let validator_commission_bps = funding_streams
                 .iter()
                 .fold(0u64, |total, stream| total + stream.rate_bps() as u64);
 
-            if commission_rate_bps > 1_0000 {
+            if validator_commission_bps > 1_0000 {
                 // We should never hit this branch: validator funding streams should be verified not to
                 // sum past 100% in the state machine's validation of registration of new funding
                 // streams
                 panic!("commission rate sums to > 100%")
             }
 
-            /* ************ Compute the validator reward rate **************** */
-            let commission_rate_bps = U128x128::from(commission_rate_bps);
-            let bps_scaling = U128x128::from(1_0000u128);
-            let scaling_factor = U128x128::from(1_0000_0000u128);
+            // Rate data is represented with an implicit scaling factor of 1_0000_0000.
+            // To make the calculations more readable, we use `U128x128` to represent
+            // the intermediate descaled values. As a last step, we scaled them back
+            // using [`FP_SCALING_FACTOR`] and round down to an [`Amount`].
+
+            /* Setting up constants and unrolling scaling factors */
+            let one = U128x128::from(1u128);
+            let max_bps = U128x128::from(1_0000u128);
+
+            let validator_commission_bps = U128x128::from(validator_commission_bps);
             let next_base_reward_rate = U128x128::from(next_base_rate.base_reward_rate);
+            let previous_validator_exchange_rate =
+                U128x128::from(previous_rate.validator_exchange_rate);
 
-            // TODO(erwan): this PR focus on using `Amount`s and `fixnum`.
-            // But, this has to be cleaned up, it's a mess and frustrating to work with.
-            let scaled_commision_factor =
-                (commission_rate_bps * bps_scaling).expect("does not overflow");
-            let scaled_commission_rate = (scaling_factor - scaled_commision_factor)
-                .expect("scaled_commission_factor > scaling_factor");
+            let validator_commission =
+                (validator_commission_bps / max_bps).expect("max_bps is nonzero");
+            let next_base_reward_rate =
+                (next_base_reward_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+            let previous_validator_exchange_rate = (previous_validator_exchange_rate
+                / *FP_SCALING_FACTOR)
+                .expect("scaling factor is nonzero");
+            /* ************************************************* */
 
-            let unscaled_validator_reward_rate =
-                (scaled_commission_rate * next_base_reward_rate).expect("does not overflow");
+            /* ************ Compute the validator reward rate **************** */
+            tracing::debug!(%validator_commission, %next_base_reward_rate, "computing validator reward rate");
+            let commission_factor =
+                (one - validator_commission).expect("0 <= validator_commission_bps <= 1");
+            tracing::debug!(%commission_factor, "complement commission rate");
 
-            let next_validator_reward_rate: Amount = (unscaled_validator_reward_rate
-                / scaling_factor)
-                .expect("scaling factor is nonzero")
-                .round_down()
-                .try_into()
-                .expect("rounding down gives an integral type");
+            let next_validator_reward_rate =
+                (next_base_reward_rate * commission_factor).expect("does not overflow");
+            tracing::debug!(%next_validator_reward_rate, "validator reward rate");
             /* ***************************************************************** */
 
             /* ************ Compute the validator exchange rate **************** */
-            // The conversion rate between delegation tokens and unbonded stake.
-            let next_validator_reward_rate = U128x128::from(next_validator_reward_rate);
-            let previous_validator_exchange_rate =
-                U128x128::from(previous_rate.validator_exchange_rate);
-            let scaling_factor = U128x128::from(1_0000_0000u128);
+            tracing::debug!(%next_validator_reward_rate, %previous_validator_exchange_rate, "computing validator exchange rate");
 
-            let effective_reward_rate = (next_validator_reward_rate
-                * previous_validator_exchange_rate)
+            let reward_growth_factor =
+                (one + next_validator_reward_rate).expect("does not overflow");
+            let next_validator_exchange_rate = (previous_validator_exchange_rate
+                * reward_growth_factor)
                 .expect("does not overflow");
-            let validator_exchange_rate = (effective_reward_rate / scaling_factor)
-                .expect("scaling factor is nonzero")
+            tracing::debug!(%next_validator_exchange_rate, "computed the validator exchange rate");
+            /* ***************************************************************** */
+
+            /* Rescale the rate data using the fixed point scaling factor */
+            let next_validator_reward_rate = (next_validator_reward_rate * *FP_SCALING_FACTOR)
+                .expect("rate is between 0 and 1")
                 .round_down()
                 .try_into()
                 .expect("rounding down gives an integral type");
-            /* ***************************************************************** */
-
-            let next_validator_reward_rate =
-                next_validator_reward_rate.try_into().expect("integral");
+            let next_validator_exchange_rate = (next_validator_exchange_rate * *FP_SCALING_FACTOR)
+                .expect("rate is between 0 and 1")
+                .round_down()
+                .try_into()
+                .expect("rounding down gives an integral type");
+            /* ************************************************************* */
 
             RateData {
                 identity_key: previous_rate.identity_key.clone(),
                 epoch_index: previous_rate.epoch_index + 1,
                 validator_reward_rate: next_validator_reward_rate,
-                validator_exchange_rate,
+                validator_exchange_rate: next_validator_exchange_rate,
             }
         } else {
             // Non-Active validator states result in a constant rate. This means
