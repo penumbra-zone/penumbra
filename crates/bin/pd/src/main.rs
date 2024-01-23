@@ -1,12 +1,11 @@
 #![allow(clippy::clone_on_copy)]
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
-use std::{net::SocketAddr, path::PathBuf};
+use std::{error::Error, net::SocketAddr, path::PathBuf};
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
-use std::error::Error;
 
 use anyhow::Context;
 use clap::{Parser, Subcommand};
