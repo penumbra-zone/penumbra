@@ -281,8 +281,6 @@ pub struct BaseRateData {
 impl BaseRateData {
     /// Compute the base rate data for the epoch following the current one,
     /// given the next epoch's base reward rate.
-        let next_base_reward_rate_fp = U128x128::from(next_base_reward_rate);
-        let scaling_factor = U128x128::from(1_0000_0000u128);
     pub fn next_epoch(&self, next_base_reward_rate: Amount) -> BaseRateData {
         // Setup:
         let prev_base_exchange_rate = U128x128::from(self.base_exchange_rate);
