@@ -31,9 +31,7 @@ impl ActionHandler for UndelegateClaim {
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // We need to check two things:
-
         // 1. That we're past the specified unbonding end epoch.
-
         let current_epoch = state.epoch().await?;
         let end_epoch_index = state
             .unbonding_end_epoch_for(&self.body.validator_identity, self.body.start_epoch_index)

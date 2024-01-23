@@ -39,8 +39,6 @@ impl ActionHandler for validator::Definition {
             .verify(&definition_bytes, &self.auth_sig)
             .context("validator definition signature failed to verify")?;
 
-        // TODO(hdevalence) -- is this duplicated by the check during parsing?
-        // Check that the funding streams do not exceed 100% commission (10000bps)
         let total_funding_bps = self
             .validator
             .funding_streams
@@ -48,9 +46,9 @@ impl ActionHandler for validator::Definition {
             .map(|fs| fs.rate_bps() as u64)
             .sum::<u64>();
 
-        if total_funding_bps > 10000 {
+        if total_funding_bps > 10_000 {
             anyhow::bail!(
-                "validator defined {} bps of funding streams, greater than 10000bps = 100%",
+                "validator defined {} bps of funding streams, greater than 10000bps (= 100%)",
                 total_funding_bps
             );
         }
@@ -81,14 +79,11 @@ impl ActionHandler for validator::Definition {
             .await?
         {
             if v.validator.identity_key != existing_v.identity_key {
-                // This is a new validator definition, but the consensus
-                // key it declares is already in use by another validator.
+                // This is a new validator definition, but the consensus it declares
+                // is used by another validator. We MUST reject this definition:
                 //
-                // Rejecting this is important for two reasons:
-                //
-                // 1. It prevents someone from declaring an (app-level)
-                // validator that "piggybacks" on the actual behavior of someone
-                // else's validator.
+                // 1. It prevents someone from declaring an (app-level) validator that
+                // "piggybacks" on the actual behavior of someone else's validator.
                 //
                 // 2. If we submit a validator update to Tendermint that
                 // includes duplicate consensus keys, Tendermint gets confused
