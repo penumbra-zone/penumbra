@@ -1067,18 +1067,18 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // Treat updates to jailed validators as unjail requests.
                 // If the validator has enough stake, it will become inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
-                let current_validator_rate = self
+                let validator_rate_data = self
                     .current_validator_rate(id)
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
-                let delegation_token_supply = self
+                let delegation_pool_size = self
                     .token_supply(&DelegationToken::from(id).id())
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
-                let unbonded_amount =
-                    current_validator_rate.unbonded_amount(delegation_token_supply.value());
 
-                if unbonded_amount >= min_validator_stake.value() {
+                let unbonded_pool_size = validator_rate_data.unbonded_amount(delegation_pool_size);
+
+                if unbonded_pool_size.value() >= min_validator_stake.value() {
                     self.set_validator_state(id, Inactive).await?;
                 } else {
                     self.set_validator_state(id, Defined).await?;
