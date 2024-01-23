@@ -8,6 +8,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
+use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_num::Amount;
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -59,12 +60,14 @@ trait DistributionManager: StateWriteExt {
         let current_epoch = self.get_epoch_for_height(current_block_height).await?;
         let num_blocks = current_block_height
             .checked_sub(current_epoch.start_height)
-            .expect("epoch start height is less than or equal to current block height");
+            .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
+        // TODO(erwan): Will make the distribution chain param an `Amount`
+        // in a subsequent PR. Want to avoid conflicts with other in-flight changes.
         let staking_issuance_per_block = self
             .get_distributions_params()
             .await?
-            .staking_issuance_per_block;
+            .staking_issuance_per_block as u128;
 
         tracing::debug!(
             number_of_blocks_in_epoch = num_blocks,
@@ -73,9 +76,23 @@ trait DistributionManager: StateWriteExt {
         );
 
         let new_issuance_for_epoch = staking_issuance_per_block
-            .checked_mul(num_blocks)
+            .checked_mul(num_blocks as u128) /* Safe to cast a `u64` to `u128` */
             .expect("infaillible unless issuance is pathological");
 
+        tracing::debug!(
+            ?new_issuance_for_epoch,
+            "computed new issuance for epoch (pre-scaled)"
+        );
+
+        let new_issuance_for_epoch = STAKING_TOKEN_DENOM
+            .default_unit()
+            .value(new_issuance_for_epoch.into())
+            .amount;
+
+        tracing::debug!(
+            ?new_issuance_for_epoch,
+            "computed new issuance for epoch (scaled)"
+        );
         Ok(Amount::from(new_issuance_for_epoch))
     }
 
