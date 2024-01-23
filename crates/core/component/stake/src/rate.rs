@@ -6,9 +6,11 @@ use penumbra_proto::core::component::stake::v1alpha1::CurrentValidatorRateRespon
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::component::FP_SCALING_FACTOR;
 use crate::{validator::State, FundingStream, IdentityKey};
 use crate::{Delegate, Penalty, Undelegate};
+use once_cell::sync::Lazy;
+
+pub(crate) const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
