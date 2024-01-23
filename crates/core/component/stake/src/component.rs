@@ -941,7 +941,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
-        let cur_rate_data = RateData {
+        let initial_rate_data = RateData {
             identity_key: validator.identity_key.clone(),
             epoch_index: genesis_base_rate.epoch_index,
             validator_reward_rate: 0u128.into(),
@@ -955,11 +955,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
             .get(&delegation_id)
             .copied()
             .unwrap_or(0u64.into());
-        let power = cur_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
+        let power = initial_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
 
         self.add_validator_inner(
             validator.clone(),
-            cur_rate_data,
+            initial_rate_data,
             // All genesis validators start in the "Active" state:
             validator::State::Active,
             // All genesis validators start in the "Bonded" bonding state:
