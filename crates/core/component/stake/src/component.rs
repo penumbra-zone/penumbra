@@ -430,29 +430,27 @@ pub(crate) trait StakingImpl: StateWriteExt {
             .get_staking_token_issuance_for_epoch()
             .expect("issuance budget is always set by the distributions component");
 
-        tracing::debug!(
-            ?issuance_budget_for_epoch,
-            "calculating base rate for next epoch from issuance budget"
-        );
-
         // Compute the base reward rate for the upcoming epoch based on the total amount
         // of active stake and the issuance budget given to us by the distribution component.
-        tracing::debug!("processing base rate");
-        let bps_squared = Amount::from(1_0000_0000u128);
-        let issuance_budget_for_epoch_bps = issuance_budget_for_epoch * bps_squared;
-
         let total_active_stake_previous_epoch = self.total_active_stake().await?;
-        let base_reward_rate: Amount = U128x128::ratio(
-            issuance_budget_for_epoch_bps,
-            total_active_stake_previous_epoch,
-        )
-        .expect("total active stake is nonzero")
-        .round_down()
-        .try_into()
-        .expect("rounded to an integral value");
+        tracing::debug!(
+            ?total_active_stake_previous_epoch,
+            ?issuance_budget_for_epoch,
+            "computing base rate for the upcoming epoch"
+        );
+        let base_reward_rate =
+            U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
+                .expect("total active stake is nonzero");
+        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch (before rounding)");
+        let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
+            .expect("base reward rate is between zero and one")
+            .round_down()
+            .try_into()
+            .expect("rounded to an integral value");
+        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch (after rounding)");
 
         // TODO(erwan): use fixnum and amounts. Tracked in #3453.
-        let next_base_rate = prev_base_rate.next(base_reward_rate);
+        let next_base_rate = prev_base_rate.next_epoch(base_reward_rate);
         tracing::debug!(
             ?prev_base_rate,
             ?next_base_rate,
@@ -498,7 +496,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
             // Then compute the next validator rate, accounting for funding streams and validator state.
-            let next_validator_rate = prev_validator_rate_with_penalty.next(
+            let next_validator_rate = prev_validator_rate_with_penalty.next_epoch(
                 &next_base_rate,
                 validator.funding_streams.as_ref(),
                 &validator_state,
@@ -541,7 +539,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
             // Staking tokens are being delegated, so the staking token supply decreases and
             // the delegation token supply increases.
-            if delegation_delta >= 0 {
+            if delegation_delta > 0 {
+                tracing::debug!(
+                    validator = ?validator.identity_key,
+                    "staking tokens are being delegated, so the staking token supply decreases and the delegation token supply increases");
                 self.decrease_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
                     .await
                     .with_context(|| {
@@ -558,7 +559,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                             absolute_delegation_change
                         )
                     })?;
-            } else {
+            } else if delegation_delta < 0 {
+                tracing::debug!(
+                    validator = ?validator.identity_key,
+                    "staking tokens are being undelegated, so the staking token supply increases and the delegation token supply decreases");
                 // Vice-versa: staking tokens are being undelegated, so the staking token supply
                 // increases and the delegation token supply decreases.
                 self.increase_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
@@ -577,6 +581,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                             absolute_delegation_change
                         )
                     })?;
+            } else {
+                tracing::debug!(
+                    validator = ?validator.identity_key,
+                    "no change in delegation, no change in token supply")
             }
 
             // Get the updated delegation token supply for use calculating voting power.
@@ -588,7 +596,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // Calculate the voting power in the newly beginning epoch
             let voting_power =
                 next_validator_rate.voting_power(delegation_token_supply.into(), &next_base_rate);
-            tracing::debug!(?voting_power);
+
+            tracing::debug!(
+                validator = ?validator.identity_key,
+                validator_delegation_pool = ?delegation_token_supply,
+                validator_power = ?voting_power,
+                "calculated validator's voting power for the upcoming epoch"
+            );
 
             // Update the state of the validator within the validator set
             // with the newly starting epoch's calculated voting rate and power.
@@ -598,20 +612,21 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // If the validator is Active, distribute its funding stream rewards
             // for the preceding epoch.
             if validator_state == validator::State::Active {
-                // distribute validator commission
+                let mut total_reward_amount = Amount::zero();
                 for stream in &validator.funding_streams {
-                    let commission_reward_amount = stream.reward_amount(
-                        &prev_base_rate,
-                        &next_base_rate,
-                        delegation_token_supply,
-                    );
+                    // We compute the reward amount for this specific funding stream, it is based
+                    // on the ending epoch's rate data.
+                    let reward_amount_for_stream =
+                        stream.reward_amount(&prev_base_rate, delegation_token_supply);
+
+                    total_reward_amount += reward_amount_for_stream;
 
                     match stream.recipient() {
                         // If the recipient is an address, mint a note to that address
                         Recipient::Address(address) => {
                             self.mint_note(
                                 Value {
-                                    amount: commission_reward_amount.into(),
+                                    amount: reward_amount_for_stream.into(),
                                     asset_id: *STAKING_TOKEN_ASSET_ID,
                                 },
                                 &address,
@@ -620,24 +635,52 @@ pub(crate) trait StakingImpl: StateWriteExt {
                                 },
                             )
                             .await?;
+                            tracing::debug!(
+                            validator = ?validator.identity_key,
+                            recipient = ?address,
+                            reward_amount = ?reward_amount_for_stream,
+                            "distributed validator commission for the epoch");
                         }
                         // If the recipient is the Community Pool, deposit the funds into the Community Pool
                         Recipient::CommunityPool => {
                             self.community_pool_deposit(Value {
-                                amount: commission_reward_amount.into(),
+                                amount: reward_amount_for_stream.into(),
                                 asset_id: *STAKING_TOKEN_ASSET_ID,
                             })
                             .await?;
+                            tracing::debug!(
+                            validator = ?validator.identity_key,
+                            recipient = "community pool",
+                            reward_amount = ?reward_amount_for_stream,
+                            "distributed validator commission for the epoch");
                         }
                     }
                 }
+                tracing::debug!(
+                    validator = ?validator.identity_key,
+                    total_reward_amount = ?total_reward_amount,
+                    "TOTAL distributed validator commission for the epoch"
+                );
             }
 
             let delegation_denom = DelegationToken::from(&validator.identity_key).denom();
 
             let unbonded_amount = next_validator_rate.unbonded_amount(delegation_token_supply);
 
+            tracing::debug!(
+                validator_identity = %validator.identity_key,
+                validator_delegation_pool = ?delegation_token_supply,
+                validator_unbonded_amount = ?unbonded_amount,
+                "calculated validator's unbonded amount for the upcoming epoch"
+            );
+
             if unbonded_amount < min_validator_stake {
+                tracing::debug!(
+                    validator_identity = %validator.identity_key,
+                    validator_unbonded_amount = ?unbonded_amount,
+                    min_validator_stake = ?min_validator_stake,
+                    "validator's unbonded amount is below the minimum stake threshold, transitioning to defined"
+                );
                 self.set_validator_state(&validator.identity_key, validator::State::Defined)
                     .await?;
             }
