@@ -69,7 +69,7 @@ impl Default for StakeParameters {
         Self {
             unbonding_epochs: 2,
             active_validator_limit: 80,
-            // copied from cosmos hub
+            // Copied from cosmos hub
             signed_blocks_window_len: 10000,
             missed_blocks_maximum: 9500,
             // 1000 basis points = 10%
