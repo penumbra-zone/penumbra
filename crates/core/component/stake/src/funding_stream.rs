@@ -3,7 +3,7 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::{component::FP_SCALING_FACTOR, rate::BaseRateData};
+use crate::rate::{BaseRateData, FP_SCALING_FACTOR};
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
