@@ -195,18 +195,18 @@ during setup.
   "ordering": 1,
   "counterparty": {
     "port_id": "transfer",
-    "channel_id": "channel-4687"
+    "channel_id": "channel-5077"
   },
   "connection_hops": [
-    "connection-1"
+    "connection-6"
   ],
   "version": "ics20-1",
   "port_id": "transfer",
-  "channel_id": "channel-1"
+  "channel_id": "channel-2"
 }
 ```
 
-The output above shows that the IBC channel id on Penumbra is 0, and on Osmosis it's 4544.
+The output above shows that the IBC channel id on Penumbra is 2, and on Osmosis it's 5077.
 There's one more piece of information we need to make an IBC withdrawal: the appropriate IBC
 timeout height, which is composed of two values: `<counterparty_chain_id_revision>-<counterparty_chain_block_height>`.
 For the Osmosis testnet, as of 2023Q4, the chain id is `osmo-test-5`, meaning the chain id revision is `5`.
