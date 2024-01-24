@@ -289,23 +289,19 @@ fn delegate_and_undelegate() {
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
 
-    let output = balance_cmd.output().unwrap();
+    let balance_output = balance_cmd.output().unwrap().stdout;
+
+    let balance_output_string = String::from_utf8_lossy(&balance_output);
 
     // We successfully delegated. But since the validator exchange rates are dynamic, we
     // need to pull the amount of delegation tokens we obtained so that we can later
     // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
     // To do this, we use a regex to extract the amount of delegation tokens we obtained:
-    let re = Regex::new(r"\d*\.?\d*delegation_[a-zA-Z0-9]*").unwrap();
-
-    let amount_to_undelegate = {
-        match re.captures(&String::from_utf8_lossy(&output.stdout)) {
-            Some(delegation_tokens) => delegation_tokens.get(0).unwrap().as_str().to_string(),
-            None => panic!(
-                "could not extract delegation tokens from output (output={:?})",
-                output.stdout
-            ),
-        }
-    };
+    let delegation_token_pattern = Regex::new(r"\(\d*\.?\d*delegation_[a-zA-Z0-9]*\)").unwrap();
+    let (delegation_token_str, []) = delegation_token_pattern
+        .captures(&balance_output_string)
+        .expect("pattern match")
+        .extract();
 
     tracing::info!("check passed, now undelegate");
 
@@ -321,7 +317,7 @@ fn delegate_and_undelegate() {
                 tmpdir.path().to_str().unwrap(),
                 "tx",
                 "undelegate",
-                amount_to_undelegate.as_str(),
+                delegation_token_str,
             ])
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let undelegation_result = undelegate_cmd.assert().try_success();
