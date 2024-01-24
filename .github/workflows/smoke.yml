@@ -30,5 +30,22 @@ jobs:
         run: |
           export PATH="$HOME/bin:$PATH"
           ./deployments/scripts/smoke-test.sh
+
+       - name: Display comet logs
+         if: always()
+         run: cat comet.log
+
+       - name: Display pd logs
+         if: always()
+         run: cat pd.log
+
+       - name: Display pclientd logs
+         if: always()
+         run: cat pclientd.log
+
+       - name: Display pcli logs
+         if: always()
+         run: cat pcli.log
+
         env:
           TESTNET_RUNTIME: 2m

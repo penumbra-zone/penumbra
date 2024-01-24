@@ -27,7 +27,7 @@ if ! hash cometbft > /dev/null 2>&1 ; then
     exit 1
 fi
 
-export RUST_LOG="pclientd=info,pcli=info,pd=info,penumbra=info"
+export RUST_LOG="pclientd=debug,pcli=debug,pd=info,penumbra=info"
 
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
@@ -42,11 +42,11 @@ EPOCH_DURATION="${EPOCH_DURATION:-100}"
 cargo run --quiet --release --bin pd -- testnet generate --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
 echo "Starting CometBFT..."
-cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &
+cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" &> comet.log
 cometbft_pid="$!"
 
 echo "Starting pd..."
-cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &
+cargo run --release --bin pd -- start --home "${HOME}/.penumbra/testnet_data/node0/pd" &> pd.log
 pd_pid="$!"
 
 # Ensure processes are cleaned up after script exits, regardless of status.
@@ -58,12 +58,12 @@ sleep "$TESTNET_BOOTTIME"
 echo "Running pclientd integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture
+    cargo test --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture &> pclientd.log
 
 echo "Running pcli integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
-    cargo test --quiet --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture
+    cargo test --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture &> pcli.log
 
 echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
 sleep "$TESTNET_RUNTIME"
