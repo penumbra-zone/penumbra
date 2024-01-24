@@ -284,9 +284,26 @@ fn delegate_and_undelegate() {
     balance_cmd
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    // Contains "30798.50157delegation_penumbravalid1pt45hjzj4wur6v98lnu6tuchx0h0u46ypdpzs6kpyjfpdef4luyqelzjfg"
     balance_cmd
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+
+    let output = balance_cmd.output().unwrap();
+
+    // We successfully delegated. But since the validator exchange rates are dynamic, we
+    // need to pull the amount of delegation tokens we obtained so that we can later
+    // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
+    // To do this, we use a regex to extract the amount of delegation tokens we obtained:
+    let re = Regex::new(r"\d+\.\d+delegation_[a-zA-Z0-9]+").unwrap();
+
+    let amount_to_undelegate = {
+        match re.captures(&String::from_utf8_lossy(&output.stdout)) {
+            Some(delegation_tokens) => delegation_tokens.get(0).unwrap().as_str().to_string(),
+            None => panic!("could not extract delegation tokens from output"),
+        }
+    };
 
     tracing::info!("check passed, now undelegate");
 
@@ -295,7 +312,6 @@ fn delegate_and_undelegate() {
     let mut num_attempts = 0;
     loop {
         tracing::info!(attempt_number = num_attempts, "attempting undelegation");
-        let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
         undelegate_cmd
             .args([
