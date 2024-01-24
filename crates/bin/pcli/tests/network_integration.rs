@@ -68,6 +68,47 @@ fn load_wallet_into_tmpdir() -> TempDir {
     tmpdir
 }
 
+#[test]
+fn dumb() {
+    tracing_subscriber::fmt::try_init().ok();
+    tracing::info!("DUMB TEST");
+    tracing::debug!("DUMB TEST");
+    let tmpdir = load_wallet_into_tmpdir();
+    sync(&tmpdir);
+
+    // Get a validator from the testnet.
+    let validator = get_validator(&tmpdir);
+
+    tracing::info!("check that we have some of the delegation token");
+    // Check we have some of the delegation token for that validator now.
+    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+    balance_cmd
+        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
+    balance_cmd
+        .assert()
+        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+
+    let balance_output = balance_cmd.output().unwrap().stdout;
+
+    let balance_output_string = String::from_utf8_lossy(&balance_output);
+
+    tracing::debug!(?balance_output_string, "balance output string");
+
+    // We successfully delegated. But since the validator exchange rates are dynamic, we
+    // need to pull the amount of delegation tokens we obtained so that we can later
+    // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
+    // To do this, we use a regex to extract the amount of delegation tokens we obtained:
+    let delegation_token_pattern = Regex::new(r"\(\d*\.?\d*[a-z]?delegation_[a-zA-Z0-9]*\)").unwrap();
+    let (delegation_token_str, []) = delegation_token_pattern
+        .captures(&balance_output_string)
+        .expect("can find delegation token in balance output")
+        .extract();
+
+    tracing::info!(?delegation_token_str, "check passed, now undelegate");
+}
+
 #[allow(dead_code)]
 fn load_string_to_file(content: String, tmpdir: &TempDir) -> NamedTempFile {
     let mut file = NamedTempFile::new_in(tmpdir.path()).unwrap();
