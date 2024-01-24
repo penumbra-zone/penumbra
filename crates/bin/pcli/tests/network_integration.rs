@@ -101,7 +101,7 @@ fn dumb() {
     // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
     // To do this, we use a regex to extract the amount of delegation tokens we obtained:
     let delegation_token_pattern =
-        Regex::new(r"\(\d*\.?\d*[a-z]?delegation_[a-zA-Z0-9]*\)").unwrap();
+        Regex::new(r"(\d*\.?\d*[a-z]?delegation_[a-zA-Z0-9]*)").unwrap();
     let (delegation_token_str, []) = delegation_token_pattern
         .captures(&balance_output_string)
         .expect("can find delegation token in balance output")
