@@ -5,7 +5,7 @@
 extern crate core;
 
 pub mod build;
-mod dex;
+pub mod dex;
 pub mod error;
 pub mod keys;
 pub mod note_record;
