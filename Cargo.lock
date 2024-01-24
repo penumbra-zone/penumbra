@@ -5200,6 +5200,7 @@ dependencies = [
  "async-trait",
  "cnidarium",
  "cnidarium-component",
+ "penumbra-asset",
  "penumbra-chain",
  "penumbra-num",
  "penumbra-proto",
