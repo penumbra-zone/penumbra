@@ -27,7 +27,12 @@ if ! hash cometbft > /dev/null 2>&1 ; then
     exit 1
 fi
 
-export RUST_LOG="pclientd=debug,pcli=debug,pd=info,penumbra=info"
+# If the action is running in debugging mode, then show me *everything*
+if [ -n "$RUNNER_DEBUG" ]; then
+    export RUST_LOG=debug
+else
+    export RUST_LOG="info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
+fi
 
 # Duration that the network will be left running before script exits.
 TESTNET_RUNTIME="${TESTNET_RUNTIME:-120}"
