@@ -285,7 +285,6 @@ fn delegate_and_undelegate() {
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
 
-    // Contains "30798.50157delegation_penumbravalid1pt45hjzj4wur6v98lnu6tuchx0h0u46ypdpzs6kpyjfpdef4luyqelzjfg"
     balance_cmd
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
@@ -296,12 +295,15 @@ fn delegate_and_undelegate() {
     // need to pull the amount of delegation tokens we obtained so that we can later
     // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
     // To do this, we use a regex to extract the amount of delegation tokens we obtained:
-    let re = Regex::new(r"\d+\.\d+delegation_[a-zA-Z0-9]+").unwrap();
+    let re = Regex::new(r"\d*\.?\d*delegation_[a-zA-Z0-9]*").unwrap();
 
     let amount_to_undelegate = {
         match re.captures(&String::from_utf8_lossy(&output.stdout)) {
             Some(delegation_tokens) => delegation_tokens.get(0).unwrap().as_str().to_string(),
-            None => panic!("could not extract delegation tokens from output"),
+            None => panic!(
+                "could not extract delegation tokens from output (output={:?})",
+                output.stdout
+            ),
         }
     };
 
