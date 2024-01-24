@@ -20,7 +20,8 @@ docsrs = []
 # Workspace dependencies
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-chain = { path = "../chain", default-features = false }
-penumbra-num = { path = "../../../core/num", default-features = false }
+penumbra-asset = { path = "../../asset", default-features = false }
+penumbra-num = { path = "../../num", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
 cnidarium = { path = "../../../cnidarium", optional = true }
 
