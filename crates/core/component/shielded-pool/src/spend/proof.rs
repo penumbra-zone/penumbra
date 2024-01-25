@@ -460,6 +460,10 @@ mod tests {
     }
 
     prop_compose! {
+        // This strategy generates a spend statement that uses a Merkle root
+        // from prior to the note commitment being added to the SCT. The Merkle
+        // path should not verify using this invalid root, and as such the circuit
+        // should be unsatisfiable.
         fn arb_invalid_spend_statement_incorrect_anchor()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -527,6 +531,17 @@ mod tests {
     }
 
     prop_compose! {
+        // Recall: The transmission key `pk_d` is derived as:
+        //
+        // `pk_d ​= [ivk] B_d`
+        //
+        // where `B_d` is the diversified basepoint and `ivk` is the incoming
+        // viewing key.
+        //
+        // This strategy generates a spend statement that is spending a note
+        // that corresponds to a diversified address associated with a different
+        // IVK, i.e. the prover cannot demonstrate the transmission key `pk_d`
+        // was derived as above and the circuit should be unsatisfiable.
         fn arb_invalid_spend_statement_diversified_address()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), incorrect_seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -590,6 +605,8 @@ mod tests {
     }
 
     prop_compose! {
+        // This strategy generates a spend statement that derives a nullifier
+        // using a different position.
         fn arb_invalid_spend_statement_nullifier()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -662,6 +679,8 @@ mod tests {
     }
 
     prop_compose! {
+        // This statement uses a randomly generated incorrect value blinding factor for deriving the
+        // balance commitment.
         fn arb_invalid_spend_statement_v_blinding_factor()(v_blinding in fr_strategy(), incorrect_v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -729,6 +748,8 @@ mod tests {
     }
 
     prop_compose! {
+        // This statement uses a randomly generated incorrect spend auth randomizer for deriving the
+        // randomized verification key.
         fn arb_invalid_spend_statement_rk_integrity()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100, incorrect_spend_auth_randomizer in fr_strategy()) -> (SpendProofPublic, SpendProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
