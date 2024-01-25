@@ -75,52 +75,29 @@ impl App {
         &mut self,
         transaction: Transaction,
     ) -> anyhow::Result<TransactionId> {
+        let id = transaction.id();
         println!("broadcasting transaction and awaiting confirmation...");
         let mut rsp = self.view().broadcast_transaction(transaction, true).await?;
 
-        let id = (async move {
-            while let Some(rsp) = rsp.try_next().await? {
-                match rsp.status {
-                    Some(status) => match status {
-                        BroadcastStatus::BroadcastSuccess(bs) => {
-                            println!(
-                                "transaction broadcast successfully: {}",
-                                TransactionId::try_from(
-                                    bs.id.expect("detected transaction missing id")
-                                )?
-                            );
-                        }
-                        BroadcastStatus::Confirmed(c) => {
-                            let id = c.id.expect("detected transaction missing id").try_into()?;
-                            if c.detection_height != 0 {
-                                println!(
-                                    "transaction confirmed and detected: {} @ height {}",
-                                    id, c.detection_height
-                                );
-                            } else {
-                                println!("transaction confirmed and detected: {}", id);
-                            }
-                            return Ok(id);
-                        }
-                    },
-                    None => {
-                        // No status is unexpected behavior
-                        return Err(anyhow::anyhow!(
-                            "empty BroadcastTransactionResponse message"
-                        ));
-                    }
+        while let Some(rsp) = rsp.try_next().await? {
+            match rsp.status {
+                Some(BroadcastStatus::BroadcastSuccess(_)) => {
+                    println!("transaction broadcast successfully: {}", id);
                 }
+                Some(BroadcastStatus::Confirmed(c)) => {
+                    println!(
+                        "transaction confirmed and detected: {} @ height {}",
+                        id, c.detection_height
+                    );
+                    return Ok(id);
+                }
+                _ => {}
             }
-
-            Err(anyhow::anyhow!(
-                "should have received BroadcastTransaction status or error"
-            ))
         }
-        .boxed())
-        .await
-        .context("error broadcasting transaction")?;
 
-        Ok(id)
+        Err(anyhow::anyhow!(
+            "view server closed stream without reporting transaction confirmation"
+        ))
     }
 
     /// Submits a transaction to the network, returning `Ok` as soon as the
