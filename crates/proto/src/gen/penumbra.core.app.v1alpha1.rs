@@ -74,6 +74,11 @@ pub struct AppParameters {
     pub distributions_params: ::core::option::Option<
         super::super::component::distributions::v1alpha1::DistributionsParameters,
     >,
+    /// Funding module parameters.
+    #[prost(message, optional, tag = "8")]
+    pub funding_params: ::core::option::Option<
+        super::super::component::funding::v1alpha1::FundingParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";
@@ -176,6 +181,11 @@ pub struct GenesisContent {
     #[prost(message, optional, tag = "8")]
     pub distributions_content: ::core::option::Option<
         super::super::component::distributions::v1alpha1::GenesisContent,
+    >,
+    /// Funding module genesis state.
+    #[prost(message, optional, tag = "9")]
+    pub funding_content: ::core::option::Option<
+        super::super::component::funding::v1alpha1::GenesisContent,
     >,
 }
 impl ::prost::Name for GenesisContent {
