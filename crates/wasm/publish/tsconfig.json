@@ -29,7 +29,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
   },
-  "exclude": ["node_modules", "./build/**/*", "index.ts"]
+  "exclude": ["node_modules", "./build/**/*", "index.ts"],
 }
