@@ -31,6 +31,7 @@ members = [
   "crates/core/component/fee",
   "crates/core/component/compact-block",
   "crates/core/component/distributions",
+  "crates/core/component/funding",
   "crates/core/component/stake",
   "crates/core/transaction",
   "crates/core/app",
@@ -47,7 +48,7 @@ members = [
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
-  "tools/summonerd",
+  "tools/summonerd", "crates/core/component/funding",
 ]
 
 # Optimize for small binaries in just the wasm crate.
