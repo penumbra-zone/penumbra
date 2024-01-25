@@ -291,10 +291,11 @@ async fn main() -> anyhow::Result<()> {
                 const HTTPS_DEFAULT: SocketAddr =
                     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 443);
                 let default = || {
-                    grpc_auto_https
-                        .is_some()
-                        .then_some(HTTPS_DEFAULT)
-                        .unwrap_or(HTTP_DEFAULT)
+                    if grpc_auto_https.is_some() {
+                        HTTPS_DEFAULT
+                    } else {
+                        HTTP_DEFAULT
+                    }
                 };
                 grpc_bind.unwrap_or_else(default)
             };
