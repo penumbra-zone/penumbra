@@ -27,6 +27,30 @@ impl AppParameters {
                     chain_id,
                     epoch_duration,
                 },
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
+                },
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
+                },
+            fee_params: FeeParameters {},
+            funding_params: FundingParams {},
+            governance_params:
+                GovernanceParameters {
+                    proposal_voting_blocks: _,
+                    proposal_deposit_amount: _,
+                    proposal_valid_quorum,
+                    proposal_pass_threshold,
+                    proposal_slash_threshold,
+                },
+            ibc_params:
+                IBCParameters {
+                    ibc_enabled: _,
+                    inbound_ics20_transfers_enabled: _,
+                    outbound_ics20_transfers_enabled: _,
+                },
             stake_params:
                 StakeParameters {
                     unbonding_epochs: _,
@@ -38,29 +62,7 @@ impl AppParameters {
                     missed_blocks_maximum: _,
                     min_validator_stake: _,
                 },
-            ibc_params:
-                IBCParameters {
-                    ibc_enabled: _,
-                    inbound_ics20_transfers_enabled: _,
-                    outbound_ics20_transfers_enabled: _,
-                },
-            governance_params:
-                GovernanceParameters {
-                    proposal_voting_blocks: _,
-                    proposal_deposit_amount: _,
-                    proposal_valid_quorum,
-                    proposal_pass_threshold,
-                    proposal_slash_threshold,
-                },
-            fee_params: FeeParameters {},
-            distributions_params:
-                DistributionsParameters {
-                    staking_issuance_per_block: _,
-                },
-            community_pool_params:
-                CommunityPoolParameters {
-                    community_pool_spend_proposals_enabled: _,
-                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
@@ -110,6 +112,30 @@ impl AppParameters {
                     chain_id,
                     epoch_duration,
                 },
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
+                },
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
+                },
+            fee_params: FeeParameters {},
+            funding_params: FundingParams {},
+            governance_params:
+                GovernanceParameters {
+                    proposal_voting_blocks,
+                    proposal_deposit_amount,
+                    proposal_valid_quorum,
+                    proposal_pass_threshold,
+                    proposal_slash_threshold,
+                },
+            ibc_params:
+                IBCParameters {
+                    ibc_enabled,
+                    inbound_ics20_transfers_enabled,
+                    outbound_ics20_transfers_enabled,
+                },
             stake_params:
                 StakeParameters {
                     unbonding_epochs,
@@ -121,29 +147,7 @@ impl AppParameters {
                     missed_blocks_maximum,
                     min_validator_stake,
                 },
-            ibc_params:
-                IBCParameters {
-                    ibc_enabled,
-                    inbound_ics20_transfers_enabled,
-                    outbound_ics20_transfers_enabled,
-                },
-            governance_params:
-                GovernanceParameters {
-                    proposal_voting_blocks,
-                    proposal_deposit_amount,
-                    proposal_valid_quorum,
-                    proposal_pass_threshold,
-                    proposal_slash_threshold,
-                },
-            fee_params: FeeParameters {},
-            distributions_params:
-                DistributionsParameters {
-                    staking_issuance_per_block: _,
-                },
-            community_pool_params:
-                CommunityPoolParameters {
-                    community_pool_spend_proposals_enabled: _,
-                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         check_all([
@@ -227,6 +231,7 @@ impl AppParameters {
             community_pool_params: Some(self.community_pool_params.clone()),
             distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
+            funding_params: Some(self.funding_params.clone()),
             governance_params: Some(self.governance_params.clone()),
             ibc_params: Some(self.ibc_params.clone()),
             stake_params: Some(self.stake_params.clone()),
@@ -244,12 +249,13 @@ impl AppParameters {
     ) -> Result<AppParameters> {
         if old.is_none()
             && (new.chain_params.is_none()
-                || new.stake_params.is_none()
-                || new.ibc_params.is_none()
-                || new.governance_params.is_none()
-                || new.fee_params.is_none()
                 || new.community_pool_params.is_none()
-                || new.distributions_params.is_none())
+                || new.distributions_params.is_none()
+                || new.fee_params.is_none()
+                || new.funding_params.is_none()
+                || new.governance_params.is_none()
+                || new.ibc_params.is_none()
+                || new.stake_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
         }
@@ -273,6 +279,11 @@ impl AppParameters {
             fee_params: new.fee_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .fee_params
+                    .clone()
+            }),
+            funding_params: new.funding_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .funding_params
                     .clone()
             }),
             governance_params: new.governance_params.clone().unwrap_or_else(|| {

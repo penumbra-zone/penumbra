@@ -653,6 +653,7 @@ pub trait StateReadExt: StateRead {
             community_pool_params,
             distributions_params,
             fee_params,
+            funding_params,
             governance_params,
             ibc_params,
             stake_params,
