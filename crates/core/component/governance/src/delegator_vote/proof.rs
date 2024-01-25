@@ -487,6 +487,8 @@ mod tests {
     }
 
     prop_compose! {
+        // This strategy generates a delegator vote statement that votes on a proposal with
+        // a non-zero position commitment index. The circuit should be unsatisfiable in this case.
         fn arb_invalid_delegator_vote_statement_nonzero_start()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (DelegatorVoteProofPublic, DelegatorVoteProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));

@@ -266,6 +266,10 @@ mod tests {
     }
 
     prop_compose! {
+        // An invalid nullifier derivation statement is derived here by
+        // adding a random value to the nullifier key. The circuit should
+        // be unsatisfiable if the witnessed nullifier key is incorrect, i.e.
+        // does not match the nullifier key used to derive the nullifier.
         fn arb_invalid_nullifier_derivation_statement()(amount in any::<u64>(), address_index in any::<u32>(), position in any::<(u16, u16, u16)>(), invalid_nk_randomness in any::<[u8; 32]>(), asset_id64 in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (NullifierDerivationProofPublic, NullifierDerivationProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
