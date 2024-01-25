@@ -14,7 +14,7 @@ pub struct Content {
 impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {
-            Funding_params: Some(value.Funding_params.into()),
+            funding_params: Some(value.funding_params.into()),
         }
     }
 }

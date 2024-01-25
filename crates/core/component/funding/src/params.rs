@@ -13,13 +13,13 @@ impl DomainType for FundingParameters {
 impl TryFrom<pb::FundingParameters> for FundingParameters {
     type Error = anyhow::Error;
 
-    fn try_from(msg: pb::FundingParameters) -> anyhow::Result<Self> {
+    fn try_from(_params: pb::FundingParameters) -> anyhow::Result<Self> {
         Ok(FundingParameters {})
     }
 }
 
 impl From<FundingParameters> for pb::FundingParameters {
-    fn from(params: FundingParameters) -> Self {
+    fn from(_params: FundingParameters) -> Self {
         pb::FundingParameters {}
     }
 }
