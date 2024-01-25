@@ -5298,6 +5298,7 @@ dependencies = [
  "penumbra-community-pool",
  "penumbra-distributions",
  "penumbra-fee",
+ "penumbra-funding",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-num",

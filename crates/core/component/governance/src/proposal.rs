@@ -1,5 +1,6 @@
 use anyhow::Context;
 use bytes::Bytes;
+use penumbra_funding::FundingParameters;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -28,15 +29,6 @@ pub struct Proposal {
     /// The specific kind and attributes of the proposal.
     pub payload: ProposalPayload,
 }
-
-/*
-// TODO: is this needed?
-impl EffectingData for Proposal {
-    fn effect_hash(&self) -> EffectHash {
-        EffectHash::from_proto_effecting_data(&self.to_proto())
-    }
-}
- */
 
 /// The protobuf type URL for a transaction plan.
 pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
