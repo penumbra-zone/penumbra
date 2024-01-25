@@ -1,4 +1,5 @@
 pub mod state_key;
+pub use view::{StateReadExt, StateWriteExt};
 
 mod view;
 
@@ -12,7 +13,6 @@ use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_num::Amount;
 use tendermint::v0_37::abci;
 use tracing::instrument;
-pub use view::{StateReadExt, StateWriteExt};
 
 pub struct Distributions {}
 

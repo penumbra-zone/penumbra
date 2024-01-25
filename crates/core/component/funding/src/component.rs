@@ -1,5 +1,6 @@
 mod state_key;
-pub mod view; // TODO(erwan): clean that up in next push.
+pub mod view;
+pub use view::{StateReadExt, StateWriteExt};
 
 use std::sync::Arc;
 
