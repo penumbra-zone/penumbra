@@ -13,7 +13,7 @@ use crate::{config::Config, PhaseMarker};
 use crate::{queue::ParticipantQueue, storage::Storage};
 
 /// The number of previous contributions to display
-const LAST_N: u64 = 10_000;
+const LAST_N: u64 = 50_000;
 
 /// Represents the storage used by the web application.
 pub struct WebAppState {
