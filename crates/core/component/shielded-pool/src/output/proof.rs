@@ -329,45 +329,29 @@ mod tests {
         }
     }
 
-    proptest! {
-        #![proptest_config(ProptestConfig::with_cases(2))]
-        #[test]
-        fn output_proof_verification_note_commitment_integrity_failure(seed_phrase_randomness in any::<[u8; 32]>(), balance_blinding in fr_strategy(), value_amount in 2..200u64, note_blinding in fq_strategy()) {
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<OutputCircuit>(&mut rng);
-
+    prop_compose! {
+        // This strategy generates an output statement, but then replaces the note commitment
+        // with one generated using an invalid note blinding factor.
+        fn arb_invalid_output_note_commitment_integrity()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), amount in any::<u64>(),  balance_blinding in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), incorrect_note_blinding in fq_strategy()) -> (OutputProofPublic, OutputProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_recipient = sk_recipient.full_viewing_key();
             let ivk_recipient = fvk_recipient.incoming();
-            let (dest, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+            let (dest, _dtk_d) = ivk_recipient.payment_address(address_index.into());
 
             let value_to_send = Value {
-                amount: value_amount.into(),
-                asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
             };
-
-            let note = Note::generate(&mut rng, &dest, value_to_send);
-            let note_commitment = note.commit();
+            let note = Note::from_parts(
+                dest,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
             let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
 
-            let blinding_r = Fq::rand(&mut OsRng);
-            let blinding_s = Fq::rand(&mut OsRng);
-
-            let public = OutputProofPublic { balance_commitment, note_commitment };
-            let private = OutputProofPrivate { note: note.clone(), balance_blinding};
-
-            let proof = OutputProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
-                public.clone(),
-                private
-            )
-            .expect("can create proof");
-
             let incorrect_note_commitment = note::commitment(
-                note_blinding,
+                incorrect_note_blinding,
                 value_to_send,
                 note.diversified_generator(),
                 note.transmission_key_s(),
@@ -375,10 +359,18 @@ mod tests {
             );
 
             let bad_public = OutputProofPublic { balance_commitment, note_commitment: incorrect_note_commitment };
+            let private = OutputProofPrivate { note, balance_blinding};
 
-            let proof_result = proof.verify(&vk, bad_public);
+            (bad_public, private)
+        }
+    }
 
-            assert!(proof_result.is_err());
+    proptest! {
+        #[test]
+        /// Check that the `OutputCircuit` is not satisfied when the note commitment is invalid.
+        fn output_proof_verification_fails_note_commitment_integrity((public, private) in arb_invalid_output_note_commitment_integrity()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 
