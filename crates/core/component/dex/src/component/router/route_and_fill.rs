@@ -14,7 +14,7 @@ use crate::{
         PositionManager, StateWriteExt,
     },
     lp::position::MAX_RESERVE_AMOUNT,
-    BatchSwapOutputData, SwapExecution, TradingPair,
+    BatchSwapOutputData, ExecutionCircuitBreaker, SwapExecution, TradingPair,
 };
 
 use super::fill_route::FillError;
@@ -145,12 +145,21 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
 
+        let mut execution_circuit_breaker = ExecutionCircuitBreaker::new();
+
         // Termination conditions:
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
         // 3. We have reached the `RoutingParams` specified price limit
+        // 4. The execution circuit breaker has been triggered based on the number of path searches and executions
 
         loop {
+            // Check if we have exceeded the execution circuit breaker limits.
+            if execution_circuit_breaker.exceeded_limits() {
+                tracing::debug!("execution circuit breaker triggered, exiting route_and_fill");
+                break;
+            }
+
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
                 .path_search(asset_1, asset_2, params.clone())
@@ -166,6 +175,9 @@ pub trait RouteAndFill: StateWrite + Sized {
                 tracing::debug!("empty path found, exiting route_and_fill");
                 break;
             }
+
+            // Increment the execution circuit breaker path search counter.
+            execution_circuit_breaker.current_path_searches += 1;
 
             let delta_1 = Value {
                 amount: total_unfilled_1.min(max_delta_1),
@@ -222,6 +234,9 @@ pub trait RouteAndFill: StateWrite + Sized {
                     total_unfilled_1 - delta_1.amount + unfilled_1.amount,
                 )
             };
+
+            // Increment the execution circuit breaker execution counter.
+            execution_circuit_breaker.current_executions += 1;
 
             if total_unfilled_1.value() == 0 {
                 tracing::debug!("filled all input, exiting route_and_fill");
