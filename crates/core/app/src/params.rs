@@ -2,6 +2,7 @@ use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::DistributionsParameters;
 use penumbra_fee::FeeParameters;
+use penumbra_funding::FundingParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::core::app::v1alpha1 as pb;
@@ -19,6 +20,7 @@ pub struct AppParameters {
     pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
     pub fee_params: FeeParameters,
+    pub funding_params: FundingParameters,
     pub governance_params: GovernanceParameters,
     pub ibc_params: IBCParameters,
     pub stake_params: StakeParameters,
@@ -49,6 +51,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .fee_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing fee params"))?
                 .try_into()?,
+            funding_params: msg
+                .funding_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing funding params"))?
+                .try_into()?,
             governance_params: msg
                 .governance_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing governance params"))?
@@ -71,10 +77,11 @@ impl From<AppParameters> for pb::AppParameters {
             chain_params: Some(params.chain_params.into()),
             community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
+            fee_params: Some(params.fee_params.into()),
+            funding_params: Some(params.funding_params.into()),
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),
             stake_params: Some(params.stake_params.into()),
-            fee_params: Some(params.fee_params.into()),
         }
     }
 }

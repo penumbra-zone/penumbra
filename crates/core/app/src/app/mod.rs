@@ -14,6 +14,7 @@ use penumbra_dex::component::Dex;
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
+use penumbra_funding::component::StateReadExt as _;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -626,24 +627,26 @@ const TOTAL_HALT_COUNT: u64 = 0;
 pub trait StateReadExt: StateRead {
     /// Returns true if the app parameters have been changed in this block.
     fn app_params_updated(&self) -> bool {
-        self.fee_params_updated()
-            || self.governance_params_updated()
-            || self.ibc_params_updated()
+        self.chain_params_updated()
             || self.community_pool_params_updated()
-            || self.stake_params_updated()
             || self.distributions_params_updated()
-            || self.chain_params_updated()
+            || self.ibc_params_updated()
+            || self.fee_params_updated()
+            || self.funding_params_updated()
+            || self.governance_params_updated()
+            || self.stake_params_updated()
     }
 
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
         let chain_params = self.get_chain_params().await?;
-        let stake_params = self.get_stake_params().await?;
-        let ibc_params = self.get_ibc_params().await?;
-        let governance_params = self.get_governance_params().await?;
         let community_pool_params = self.get_community_pool_params().await?;
-        let fee_params = self.get_fee_params().await?;
         let distributions_params = self.get_distributions_params().await?;
+        let ibc_params = self.get_ibc_params().await?;
+        let fee_params = self.get_fee_params().await?;
+        let funding_params = self.get_funding_params().await?;
+        let governance_params = self.get_governance_params().await?;
+        let stake_params = self.get_stake_params().await?;
 
         Ok(AppParameters {
             chain_params,
