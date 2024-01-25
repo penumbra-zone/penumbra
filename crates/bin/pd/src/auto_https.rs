@@ -17,11 +17,11 @@ use {
 /// [rfc7301]: https://datatracker.ietf.org/doc/html/rfc7301
 //
 //  We also permit HTTP1.1 for backwards-compatibility, specifically for grpc-web.
-const ALPN_PROTOCOLS: [&'static [u8]; 2] = [b"h2", b"http/1.1"];
+const ALPN_PROTOCOLS: [&[u8]; 2] = [b"h2", b"http/1.1"];
 
 /// The location of the file-based certificate cache.
 //  NB: this must not be an absolute path see [Path::join].
-const CACHE_DIR: &'static str = "tokio_rustls_acme_cache";
+const CACHE_DIR: &str = "tokio_rustls_acme_cache";
 
 /// If true, use the production Let's Encrypt environment.
 ///
