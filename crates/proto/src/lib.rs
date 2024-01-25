@@ -112,6 +112,13 @@ pub mod penumbra {
                 }
             }
 
+            pub mod funding {
+                pub mod v1alpha1 {
+                    include!("gen/penumbra.core.component.funding.v1alpha1.rs");
+                    include!("gen/penumbra.core.component.funding.v1alpha1.serde.rs");
+                }
+            }
+
             pub mod governance {
                 pub mod v1alpha1 {
                     include!("gen/penumbra.core.component.governance.v1alpha1.rs");
