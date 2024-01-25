@@ -206,41 +206,23 @@ impl RateData {
             .expect("rounding down gives an integral type")
     }
 
-    /// Compute the voting power of the validator in the given epoch.
-    /// TODO(erwan): We should measure the voting power in terms of staking tokens
-    /// that is to say: the amount of staking tokens that corresponds to the delegation pool.
-    /// Tracked in #1280.
-    pub fn voting_power(
-        &self,
-        total_delegation_tokens: Amount,
-        base_rate_data: &BaseRateData,
-    ) -> Amount {
+    /// Compute the voting power of the validator given the size of its delegation pool.
+    pub fn voting_power(&self, delegation_pool_size: Amount) -> Amount {
         // Setup:
-        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
-        let base_exchange_rate = U128x128::from(base_rate_data.base_exchange_rate);
+        let delegation_pool_size = U128x128::from(delegation_pool_size);
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
-        // Unroll scaling factors:
-        let base_exchange_rate =
-            (base_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
-
+        // Remove scaling factors:
         let validator_exchange_rate =
             (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
 
-        // Compute the amount of staking tokens that corresponds to the delegation pool:
-        let total_staking_tokens =
-            (total_delegation_tokens * validator_exchange_rate).expect("does not overflow");
-
-        // Compute the normalized exchange rate:
-        let rate =
-            (validator_exchange_rate / base_exchange_rate).expect("base exchange rate is nonzero");
-
-        // Compute the voting power:
-        let voting_power = (total_staking_tokens * rate)
-            .expect("rate is between 0 and 1")
+        /* ************************ Convert the delegation tokens to staking tokens ******************** */
+        let voting_power = (delegation_pool_size * validator_exchange_rate)
+            .expect("does not overflow")
             .round_down()
             .try_into()
             .expect("rounding down gives an integral type");
+        /* ******************************************************************************************* */
 
         voting_power
     }
