@@ -594,8 +594,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .expect("delegation token should be known");
 
             // Calculate the voting power in the newly beginning epoch
-            let voting_power =
-                next_validator_rate.voting_power(delegation_token_supply.into(), &next_base_rate);
+            let voting_power = next_validator_rate.voting_power(delegation_token_supply.into());
 
             tracing::debug!(
                 validator = ?validator.identity_key,
@@ -983,7 +982,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             .get(&delegation_id)
             .copied()
             .unwrap_or(0u64.into());
-        let power = initial_rate_data.voting_power(total_delegation_tokens, genesis_base_rate);
+        let power = initial_rate_data.voting_power(total_delegation_tokens);
 
         self.add_validator_inner(
             validator.clone(),
