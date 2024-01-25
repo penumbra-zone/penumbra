@@ -365,4 +365,67 @@ mod tests {
             assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
+
+    prop_compose! {
+        // This strategy generates a swap statement with an invalid fee blinding factor.
+        fn arb_invalid_swap_statement_fee_commitment()(fee_blinding in fr_strategy(), invalid_fee_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_trader = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_trader = sk_trader.full_viewing_key();
+            let ivk_trader = fvk_trader.incoming();
+            let (claim_address, _dtk_d) = ivk_trader.payment_address(address_index.into());
+
+            let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+            let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+            let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+            let delta_1_i = Amount::from(value1_amount);
+            let delta_2_i = Amount::from(0u64);
+            let fee = Fee::default();
+
+            let rseed = Rseed(rseed_randomness);
+            let swap_plaintext = SwapPlaintext {
+                trading_pair,
+                delta_1_i,
+                delta_2_i,
+                claim_fee: fee,
+                claim_address,
+                rseed,
+            };
+            let swap_commitment = swap_plaintext.swap_commitment();
+
+            let value_1 = Value {
+                amount: swap_plaintext.delta_1_i,
+                asset_id: swap_plaintext.trading_pair.asset_1(),
+            };
+            let value_2 = Value {
+                amount: swap_plaintext.delta_2_i,
+                asset_id:  swap_plaintext.trading_pair.asset_2(),
+            };
+            let value_fee = Value {
+                amount: swap_plaintext.claim_fee.amount(),
+                asset_id: swap_plaintext.claim_fee.asset_id(),
+            };
+            let mut balance = Balance::default();
+            balance -= value_1;
+            balance -= value_2;
+            balance -= value_fee;
+            let balance_commitment = balance.commit(fee_blinding);
+
+            let invalid_fee_commitment = swap_plaintext.claim_fee.commit(invalid_fee_blinding);
+
+            let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment: invalid_fee_commitment };
+            let private = SwapProofPrivate { fee_blinding, swap_plaintext };
+
+            (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn swap_proof_invalid_fee_commitment((public, private) in arb_invalid_swap_statement_fee_commitment()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
+        }
+    }
 }
