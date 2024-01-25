@@ -102,6 +102,7 @@ impl ProposalKindCmd {
                     ibc_params: None,
                     stake_params: None,
                     fee_params: None,
+                    funding_params: None,
                     governance_params: None,
                     distributions_params: None,
                 }),

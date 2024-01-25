@@ -5,6 +5,7 @@ use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
+use penumbra_funding::params::FundingParameters;
 use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
 use penumbra_ibc::params::IBCParameters;
 use penumbra_stake::params::StakeParameters;
@@ -36,7 +37,7 @@ impl AppParameters {
                     staking_issuance_per_block: _,
                 },
             fee_params: FeeParameters {},
-            funding_params: FundingParams {},
+            funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks: _,
@@ -121,7 +122,7 @@ impl AppParameters {
                     staking_issuance_per_block: _,
                 },
             fee_params: FeeParameters {},
-            funding_params: FundingParams {},
+            funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks,
