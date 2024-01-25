@@ -2,6 +2,7 @@ use penumbra_chain::genesis::Content as ChainContent;
 use penumbra_community_pool::genesis::Content as CommunityPoolContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
+use penumbra_funding::FundingParameters;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_ibc::genesis::Content as IBCContent;
 use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType};
@@ -23,22 +24,24 @@ pub enum AppState {
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
-    /// Stake module genesis state.
-    pub stake_content: StakeContent,
-    /// Shielded pool module genesis state.
-    pub shielded_pool_content: ShieldedPoolContent,
-    /// Governance module genesis state.
-    pub governance_content: GovernanceContent,
-    /// IBC module genesis state.
-    pub ibc_content: IBCContent,
     /// Chain module genesis state.
     pub chain_content: ChainContent,
     /// Community Pool module genesis state.
     pub community_pool_content: CommunityPoolContent,
-    /// Fee module genesis state.
-    pub fee_content: FeeContent,
     /// Distributions module genesis state.
     pub distributions_content: DistributionsContent,
+    /// Fee module genesis state.
+    pub fee_content: FeeContent,
+    /// Funding module genesis state.
+    pub funding_content: FundingParameters,
+    /// Governance module genesis state.
+    pub governance_content: GovernanceContent,
+    /// IBC module genesis state.
+    pub ibc_content: IBCContent,
+    /// Shielded pool module genesis state.
+    pub shielded_pool_content: ShieldedPoolContent,
+    /// Stake module genesis state.
+    pub stake_content: StakeContent,
 }
 
 impl DomainType for Content {
@@ -70,13 +73,14 @@ impl From<Content> for pb::GenesisContent {
     fn from(value: Content) -> Self {
         pb::GenesisContent {
             chain_content: Some(value.chain_content.into()),
+            community_pool_content: Some(value.community_pool_content.into()),
+            distributions_content: Some(value.distributions_content.into()),
             stake_content: Some(value.stake_content.into()),
             ibc_content: Some(value.ibc_content.into()),
-            governance_content: Some(value.governance_content.into()),
-            community_pool_content: Some(value.community_pool_content.into()),
-            shielded_pool_content: Some(value.shielded_pool_content.into()),
             fee_content: Some(value.fee_content.into()),
-            distributions_content: Some(value.distributions_content.into()),
+            funding_content: Some(value.funding_content.into()),
+            governance_content: Some(value.governance_content.into()),
+            shielded_pool_content: Some(value.shielded_pool_content.into()),
         }
     }
 }
@@ -104,22 +108,6 @@ impl TryFrom<pb::GenesisContent> for Content {
 
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
-            stake_content: msg
-                .stake_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing stake content"))?
-                .try_into()?,
-            shielded_pool_content: msg
-                .shielded_pool_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing shielded pool content"))?
-                .try_into()?,
-            governance_content: msg
-                .governance_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing governance content"))?
-                .try_into()?,
-            ibc_content: msg
-                .ibc_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing ibc content"))?
-                .try_into()?,
             community_pool_content: msg
                 .community_pool_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool content"))?
@@ -128,13 +116,33 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .chain_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing chain content"))?
                 .try_into()?,
+            distributions_content: msg
+                .distributions_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing distributions content"))?
+                .try_into()?,
+            governance_content: msg
+                .governance_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing governance content"))?
+                .try_into()?,
             fee_content: msg
                 .fee_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing fee content"))?
                 .try_into()?,
-            distributions_content: msg
-                .distributions_content
-                .ok_or_else(|| anyhow::anyhow!("proto response missing distributions content"))?
+            funding_content: msg
+                .funding_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing funding content"))?
+                .try_into()?,
+            ibc_content: msg
+                .ibc_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing ibc content"))?
+                .try_into()?,
+            stake_content: msg
+                .stake_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing stake content"))?
+                .try_into()?,
+            shielded_pool_content: msg
+                .shielded_pool_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing shielded pool content"))?
                 .try_into()?,
         })
     }
