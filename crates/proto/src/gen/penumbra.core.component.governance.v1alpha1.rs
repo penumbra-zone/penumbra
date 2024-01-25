@@ -1129,6 +1129,11 @@ pub struct ChangedAppParameters {
     pub distributions_params: ::core::option::Option<
         super::super::distributions::v1alpha1::DistributionsParameters,
     >,
+    /// Funding module parameters.
+    #[prost(message, optional, tag = "8")]
+    pub funding_params: ::core::option::Option<
+        super::super::funding::v1alpha1::FundingParameters,
+    >,
 }
 impl ::prost::Name for ChangedAppParameters {
     const NAME: &'static str = "ChangedAppParameters";
