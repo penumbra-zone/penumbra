@@ -2,7 +2,7 @@ use penumbra_chain::genesis::Content as ChainContent;
 use penumbra_community_pool::genesis::Content as CommunityPoolContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
-use penumbra_funding::FundingParameters;
+use penumbra_funding::genesis::Content as FundingContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_ibc::genesis::Content as IBCContent;
 use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType};
@@ -33,7 +33,7 @@ pub struct Content {
     /// Fee module genesis state.
     pub fee_content: FeeContent,
     /// Funding module genesis state.
-    pub funding_content: FundingParameters,
+    pub funding_content: FundingContent,
     /// Governance module genesis state.
     pub governance_content: GovernanceContent,
     /// IBC module genesis state.

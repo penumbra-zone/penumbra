@@ -13,6 +13,7 @@ use penumbra_dex::{
 };
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::{FeeParameters, GasPrices};
+use penumbra_funding::FundingParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
@@ -204,24 +205,6 @@ impl Storage {
                 [chain_params_bytes],
             )?;
 
-            let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
-            tx.execute(
-                "INSERT INTO stake_params (bytes) VALUES (?1)",
-                [stake_params_bytes],
-            )?;
-
-            let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
-            tx.execute(
-                "INSERT INTO ibc_params (bytes) VALUES (?1)",
-                [ibc_params_bytes],
-            )?;
-
-            let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
-            tx.execute(
-                "INSERT INTO fee_params (bytes) VALUES (?1)",
-                [fee_params_bytes],
-            )?;
-
             let community_pool_params_bytes =
                 &CommunityPoolParameters::encode_to_vec(&params.community_pool_params)[..];
             tx.execute(
@@ -236,11 +219,36 @@ impl Storage {
                 [distributions_params_bytes],
             )?;
 
+            let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+            tx.execute(
+                "INSERT INTO fee_params (bytes) VALUES (?1)",
+                [fee_params_bytes],
+            )?;
+
+            let funding_params_bytes =
+                &FundingParameters::encode_to_vec(&params.funding_params)[..];
+            tx.execute(
+                "INSERT INTO funding_params (bytes) VALUES (?1)",
+                [funding_params_bytes],
+            )?;
+
             let governance_params_bytes =
                 &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
             tx.execute(
                 "INSERT INTO governance_params (bytes) VALUES (?1)",
                 [governance_params_bytes],
+            )?;
+
+            let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+            tx.execute(
+                "INSERT INTO stake_params (bytes) VALUES (?1)",
+                [stake_params_bytes],
+            )?;
+
+            let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+            tx.execute(
+                "INSERT INTO ibc_params (bytes) VALUES (?1)",
+                [ibc_params_bytes],
             )?;
 
             let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
@@ -576,49 +584,60 @@ impl Storage {
                 .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing chain params"))?;
-            let stake_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing stake params"))?;
-            let ibc_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing ibc params"))?;
-            let governance_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing governance params"))?;
+
             let community_pool_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM community_pool_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing Community Pool params"))?;
-            let fee_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing fee params"))?;
+
             let distributions_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM distributions_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing distributions params"))?;
 
+            let governance_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing governance params"))?;
+
+            let fee_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing fee params"))?;
+
+            let funding_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM funding_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing funding params"))?;
+
+            let ibc_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing ibc params"))?;
+            let stake_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing stake params"))?;
             Ok(AppParameters {
                 chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
-                stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
-                ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
-                governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
                 community_pool_params: CommunityPoolParameters::decode(
                     community_pool_bytes.as_slice(),
                 )?,
-                fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
                 distributions_params: DistributionsParameters::decode(
                     distributions_bytes.as_slice(),
                 )?,
+                fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
+                funding_params: FundingParameters::decode(funding_bytes.as_slice())?,
+                governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
+                ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
+                stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
             })
         })
         .await?

@@ -35,6 +35,7 @@ penumbra-community-pool = { path = "../core/component/community-pool", default-f
 penumbra-dex = { path = "../core/component/dex", default-features = false }
 penumbra-sct = { path = "../core/component/sct", default-features = false }
 penumbra-fee = { path = "../core/component/fee", default-features = false }
+penumbra-funding = { path = "../core/component/funding", default-features = false }
 penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
 penumbra-app = { path = "../core/app" }
 penumbra-transaction = { path = "../core/transaction" }
