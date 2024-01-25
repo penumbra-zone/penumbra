@@ -95,6 +95,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/core/component/community_pool/v1alpha1/community_pool.proto",
                 "../../proto/penumbra/penumbra/core/component/dex/v1alpha1/dex.proto",
                 "../../proto/penumbra/penumbra/core/component/distributions/v1alpha1/distributions.proto",
+                "../../proto/penumbra/penumbra/core/component/funding/v1alpha1/funding.proto",
                 "../../proto/penumbra/penumbra/core/component/fee/v1alpha1/fee.proto",
                 "../../proto/penumbra/penumbra/core/component/governance/v1alpha1/governance.proto",
                 "../../proto/penumbra/penumbra/core/component/ibc/v1alpha1/ibc.proto",
