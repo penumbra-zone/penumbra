@@ -41,6 +41,7 @@ penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-stake = { path = "../stake", default-features = false }
 penumbra-community-pool = { path = "../community-pool", default-features = false }
 penumbra-fee = { path = "../fee", default-features = false }
+penumbra-funding = { path = "../funding", default-features = false }
 penumbra-ibc = { path = "../ibc", default-features = false }
 penumbra-distributions = { path = "../distributions", default-features = false }
 penumbra-chain = { path = "../chain", default-features = false }
