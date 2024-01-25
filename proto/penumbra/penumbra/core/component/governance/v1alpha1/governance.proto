@@ -7,6 +7,7 @@ import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/community_pool/v1alpha1/community_pool.proto";
 import "penumbra/core/component/distributions/v1alpha1/distributions.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
+import "penumbra/core/component/funding/v1alpha1/funding.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
 import "penumbra/core/component/sct/v1alpha1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto";
@@ -453,6 +454,8 @@ message ChangedAppParameters {
   core.component.fee.v1alpha1.FeeParameters fee_params = 6;
   // Distributions module parameters.
   core.component.distributions.v1alpha1.DistributionsParameters distributions_params = 7;
+  // Funding module parameters.
+  core.component.funding.v1alpha1.FundingParameters funding_params = 8;
 }
 
 message ChangedAppParametersSet {
