@@ -13,6 +13,7 @@ use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_dex::component::Dex;
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
+use penumbra_funding::component::Funding;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -153,6 +154,7 @@ impl App {
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 Governance::init_chain(&mut state_tx, Some(&())).await;
                 Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
+                Funding::init_chain(&mut state_tx, Some(&())).await;
 
                 state_tx
                     .finish_block(state_tx.app_params_updated())
@@ -167,6 +169,7 @@ impl App {
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
                 Fee::init_chain(&mut state_tx, None).await;
+                Funding::init_chain(&mut state_tx, None).await;
             }
         };
 
@@ -265,6 +268,11 @@ impl App {
             if let Some(governance_params) = app_params.new.governance_params {
                 state_tx.put_governance_params(governance_params);
             }
+            if let Some(distributions_params) = app_params.new.distributions_params {
+                state_tx.put_distributions_params(distributions_params);
+            }
+
+            // TODO(erwan): Untracked, but will add funding params here.
         }
 
         // Run each of the begin block handlers for each component, in sequence:
@@ -279,6 +287,7 @@ impl App {
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         Fee::begin_block(&mut arc_state_tx, begin_block).await;
+        Funding::begin_block(&mut arc_state_tx, begin_block).await;
 
         let state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
@@ -393,6 +402,7 @@ impl App {
         Governance::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
         Fee::end_block(&mut arc_state_tx, end_block).await;
+        Funding::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
@@ -505,6 +515,9 @@ impl App {
             Fee::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Fee component");
+            Funding::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Funding component");
 
             let mut state_tx = Arc::try_unwrap(arc_state_tx)
                 .expect("components did not retain copies of shared state");
