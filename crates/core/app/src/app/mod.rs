@@ -14,7 +14,7 @@ use penumbra_dex::component::Dex;
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
-use penumbra_funding::component::StateReadExt as _;
+use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
@@ -106,14 +106,15 @@ impl App {
                         .community_pool_params
                         .clone(),
                 );
-                state_tx.put_stake_params(app_state.stake_content.stake_params.clone());
-                state_tx
-                    .put_governance_params(app_state.governance_content.governance_params.clone());
-                state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
-                state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
                 state_tx.put_distributions_params(
                     app_state.distributions_content.distributions_params.clone(),
                 );
+                state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
+                state_tx.put_funding_params(app_state.funding_content.funding_params.clone());
+                state_tx
+                    .put_governance_params(app_state.governance_content.governance_params.clone());
+                state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
+                state_tx.put_stake_params(app_state.stake_content.stake_params.clone());
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
