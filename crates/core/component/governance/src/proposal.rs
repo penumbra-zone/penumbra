@@ -436,9 +436,10 @@ pub struct ChangedAppParameters {
     pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
-    pub stake_params: Option<StakeParameters>,
     pub fee_params: Option<FeeParameters>,
+    pub funding_params: Option<FundingParameters>,
     pub governance_params: Option<GovernanceParameters>,
+    pub stake_params: Option<StakeParameters>,
 }
 
 impl DomainType for ChangedAppParameters {
@@ -460,6 +461,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
                 .map(TryInto::try_into)
                 .transpose()?,
             fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
+            funding_params: msg.funding_params.map(TryInto::try_into).transpose()?,
             governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
             ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
             stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
@@ -474,6 +476,7 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
             community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
+            funding_params: params.funding_params.map(Into::into),
             governance_params: params.governance_params.map(Into::into),
             ibc_params: params.ibc_params.map(Into::into),
             stake_params: params.stake_params.map(Into::into),
