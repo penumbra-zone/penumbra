@@ -4737,7 +4737,6 @@ dependencies = [
  "async-stream 0.2.1",
  "async-trait",
  "atty",
- "axum 0.6.20",
  "axum-server",
  "base64 0.20.0",
  "bincode",
