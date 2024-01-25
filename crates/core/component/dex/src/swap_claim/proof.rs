@@ -653,4 +653,92 @@ mod tests {
             assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
+
+    prop_compose! {
+        // This strategy is invalid because the fee is not equal to the claim fee.
+        fn arb_invalid_swapclaim_statement_fee()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, fee_amount in any::<u64>(), test_bsod in unfilled_bsod_strategy()) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+        let nk = *sk_recipient.nullifier_key();
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1_i = Amount::from(value1_amount);
+        let delta_2_i = Amount::from(0u64);
+        let fee = Fee::default();
+
+        let rseed = Rseed(rseed_randomness);
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i,
+            delta_2_i,
+            claim_fee: fee,
+            claim_address,
+            rseed,
+        };
+        let incorrect_fee = Fee::from_staking_token_amount(Amount::from(fee_amount));
+        let mut sct = tct::Tree::new();
+        let swap_commitment = swap_plaintext.swap_commitment();
+        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let position = state_commitment_proof.position();
+        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
+        let epoch_duration = 20;
+        let height = epoch_duration * position.epoch() + position.block();
+
+        let output_data = BatchSwapOutputData {
+            delta_1: test_bsod.delta_1,
+            delta_2: test_bsod.delta_2,
+            lambda_1: test_bsod.lambda_1,
+            lambda_2: test_bsod.lambda_2,
+            unfilled_1: test_bsod.unfilled_1,
+            unfilled_2: test_bsod.unfilled_2,
+            height: height.into(),
+            trading_pair: swap_plaintext.trading_pair,
+            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+        };
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
+
+        let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
+
+        let public = SwapClaimProofPublic {
+            anchor,
+            nullifier,
+            claim_fee: incorrect_fee,
+            output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+        let private = SwapClaimProofPrivate {
+            swap_plaintext,
+            state_commitment_proof,
+            nk,
+            lambda_1,
+            lambda_2,
+            note_blinding_1,
+            note_blinding_2,
+        };
+
+        (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn swap_claim_proof_invalid_fee((public, private) in arb_invalid_swapclaim_statement_fee()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
+        }
+    }
 }
