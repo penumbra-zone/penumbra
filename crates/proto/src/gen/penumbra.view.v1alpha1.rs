@@ -916,7 +916,7 @@ impl ::prost::Name for FmdParametersRequest {
 pub struct FmdParametersResponse {
     #[prost(message, optional, tag = "1")]
     pub parameters: ::core::option::Option<
-        super::super::core::component::chain::v1alpha1::FmdParameters,
+        super::super::core::component::shielded_pool::v1alpha1::FmdParameters,
     >,
 }
 impl ::prost::Name for FmdParametersResponse {

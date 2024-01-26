@@ -539,6 +539,24 @@ impl ::prost::Name for GenesisContent {
         )
     }
 }
+/// Parameters for Fuzzy Message Detection
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdParameters {
+    #[prost(uint32, tag = "1")]
+    pub precision_bits: u32,
+    #[prost(uint64, tag = "2")]
+    pub as_of_block_height: u64,
+}
+impl ::prost::Name for FmdParameters {
+    const NAME: &'static str = "FmdParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
