@@ -1,6 +1,3 @@
-// TODO: remove this once we finish implementation and start using the code
-#![allow(dead_code)]
-
 mod fill_route;
 mod params;
 mod path;

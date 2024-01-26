@@ -46,10 +46,6 @@ impl<S: StateRead + 'static> Path<S> {
         }
     }
 
-    pub fn state(&self) -> &StateDelta<S> {
-        &self.state
-    }
-
     // We can't clone, because StateDelta only has an explicit fork() on purpose
     pub fn fork(&mut self) -> Self {
         Self {
