@@ -56,48 +56,6 @@ impl Default for ChainParameters {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "pb_chain::FmdParameters", into = "pb_chain::FmdParameters")]
-pub struct FmdParameters {
-    /// Bits of precision.
-    pub precision_bits: u8,
-    /// The block height at which these parameters became effective.
-    pub as_of_block_height: u64,
-}
-
-impl DomainType for FmdParameters {
-    type Proto = pb_chain::FmdParameters;
-}
-
-impl TryFrom<pb_chain::FmdParameters> for FmdParameters {
-    type Error = anyhow::Error;
-
-    fn try_from(msg: pb_chain::FmdParameters) -> Result<Self, Self::Error> {
-        Ok(FmdParameters {
-            precision_bits: msg.precision_bits.try_into()?,
-            as_of_block_height: msg.as_of_block_height,
-        })
-    }
-}
-
-impl From<FmdParameters> for pb_chain::FmdParameters {
-    fn from(params: FmdParameters) -> Self {
-        pb_chain::FmdParameters {
-            precision_bits: u32::from(params.precision_bits),
-            as_of_block_height: params.as_of_block_height,
-        }
-    }
-}
-
-impl Default for FmdParameters {
-    fn default() -> Self {
-        Self {
-            precision_bits: 0,
-            as_of_block_height: 1,
-        }
-    }
-}
-
 /// This is a ratio of two `u64` values, intended to be used solely in governance parameters and
 /// tallying. It only implements construction and comparison, not arithmetic, to reduce the trusted
 /// codebase for governance.

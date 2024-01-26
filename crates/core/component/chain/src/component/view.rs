@@ -7,17 +7,13 @@ use ibc_types::core::connection::ChainId;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::Time;
 
-use crate::{
-    params::{ChainParameters, FmdParameters},
-    state_key, Epoch,
-};
+use crate::{params::ChainParameters, state_key, Epoch};
 
 /// This trait provides read access to chain-related parts of the Penumbra
 /// state store.
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
-//#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Indicates if the chain parameters have been updated in this block.
@@ -115,20 +111,6 @@ pub trait StateReadExt: StateRead {
         }
     }
 
-    /// Gets the current FMD parameters from the JMT.
-    async fn get_current_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get(state_key::fmd_parameters_current())
-            .await?
-            .ok_or_else(|| anyhow!("Missing FmdParameters"))
-    }
-
-    /// Gets the previous FMD parameters from the JMT.
-    async fn get_previous_fmd_parameters(&self) -> Result<FmdParameters> {
-        self.get(state_key::fmd_parameters_previous())
-            .await?
-            .ok_or_else(|| anyhow!("Missing FmdParameters"))
-    }
-
     /// Get the current epoch.
     async fn epoch(&self) -> Result<Epoch> {
         // Get the height
@@ -217,16 +199,6 @@ pub trait StateWriteExt: StateWrite {
     /// Writes the block timestamp to the JMT
     fn put_block_timestamp(&mut self, timestamp: Time) {
         self.put_proto(state_key::block_timestamp().into(), timestamp.to_rfc3339())
-    }
-
-    /// Writes the current FMD parameters to the JMT.
-    fn put_current_fmd_parameters(&mut self, params: FmdParameters) {
-        self.put(state_key::fmd_parameters_current().into(), params)
-    }
-
-    /// Writes the previous FMD parameters to the JMT.
-    fn put_previous_fmd_parameters(&mut self, params: FmdParameters) {
-        self.put(state_key::fmd_parameters_previous().into(), params)
     }
 
     /// Signals to the consensus worker to halt after the next commit.
