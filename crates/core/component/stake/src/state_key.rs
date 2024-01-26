@@ -15,8 +15,8 @@ pub fn current_base_rate() -> &'static str {
     "staking/base_rate/current"
 }
 
-pub fn next_base_rate() -> &'static str {
-    "staking/base_rate/next"
+pub fn previous_base_rate() -> &'static str {
+    "staking/base_rate/previous"
 }
 
 // TODO(erwan): refactor the state key so that each module
