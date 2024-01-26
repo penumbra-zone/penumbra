@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use crate::genesis;
+use crate::{fmd, genesis};
+use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
+use penumbra_proto::StateReadProto as _;
 use penumbra_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -66,3 +68,37 @@ impl Component for ShieldedPool {
         Ok(())
     }
 }
+/// Extension trait providing read access to shielded pool data.
+#[async_trait]
+pub trait StateReadExt: StateRead {
+    async fn get_current_fmd_parameters(&self) -> Result<fmd::Parameters> {
+        self.get(fmd::state_key::parameters::current())
+            .await?
+            .ok_or_else(|| anyhow!("Missing FmdParameters"))
+    }
+
+    /// Gets the previous FMD parameters from the JMT.
+    async fn get_previous_fmd_parameters(&self) -> Result<fmd::Parameters> {
+        self.get(fmd::state_key::parameters::previous())
+            .await?
+            .ok_or_else(|| anyhow!("Missing FmdParameters"))
+    }
+}
+
+impl<T: StateRead + ?Sized> StateReadExt for T {}
+
+/// Extension trait providing write access to shielded pool data.
+#[async_trait]
+pub trait StateWriteExt: StateWrite + StateReadExt {
+    /// Writes the current FMD parameters to the JMT.
+    fn put_current_fmd_parameters(&mut self, params: fmd::Parameters) {
+        self.put(fmd::state_key::parameters::current().into(), params)
+    }
+
+    /// Writes the previous FMD parameters to the JMT.
+    fn put_previous_fmd_parameters(&mut self, params: fmd::Parameters) {
+        self.put(fmd::state_key::parameters::previous().into(), params)
+    }
+}
+
+impl<T: StateWrite> StateWriteExt for T {}
