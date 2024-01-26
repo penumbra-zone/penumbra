@@ -48,7 +48,8 @@ use crate::{
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, State, Validator},
-    CurrentConsensusKeys, DelegationChanges, Penalty, Uptime, {DelegationToken, IdentityKey},
+    CurrentConsensusKeys, DelegationChanges, FundingStreams, Penalty, Uptime,
+    {DelegationToken, IdentityKey},
 };
 use crate::{Delegate, Undelegate};
 use once_cell::sync::Lazy;
@@ -420,7 +421,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
         tracing::debug!(
             "fetching the issuance budget for this epoch from the distributions component"
         );
-
         // Fetch the issuance budget for the epoch we are ending.
         let issuance_budget_for_epoch = self
             .get_staking_token_issuance_for_epoch()
@@ -429,6 +429,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // Compute the base reward rate for the upcoming epoch based on the total amount
         // of active stake and the issuance budget given to us by the distribution component.
         let total_active_stake_previous_epoch = self.total_active_stake().await?;
+
         tracing::debug!(
             ?total_active_stake_previous_epoch,
             ?issuance_budget_for_epoch,
@@ -437,15 +438,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let base_reward_rate =
             U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
                 .expect("total active stake is nonzero");
-        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch (before rounding)");
         let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
-            .expect("base reward rate is between zero and one")
+            .expect("base reward rate is around one")
             .round_down()
             .try_into()
             .expect("rounded to an integral value");
-        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch (after rounding)");
+        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch");
 
-        // TODO(erwan): use fixnum and amounts. Tracked in #3453.
         let next_base_rate = prev_base_rate.next_epoch(base_reward_rate);
         tracing::debug!(
             ?prev_base_rate,
@@ -458,6 +457,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Set the next base rate as the new "current" base rate.
         self.set_base_rate(next_base_rate.clone());
+        // We cache the previous base rate in the state, so that other components
+        // can use it in their end-epoch procesisng (e.g. funding for staking rewards).
+        self.set_prev_base_rate(prev_base_rate.clone());
+
+        let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
 
         let mut validator_stream = self.consensus_set_stream()?;
 
@@ -1320,6 +1324,10 @@ pub trait StateReadExt: StateRead {
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
+    fn previous_base_rate(&self) -> Option<BaseRateData> {
+        self.object_get(state_key::previous_base_rate())
+    }
+
     // This is a normal fn returning a boxed future so it can be 'static with no inferred lifetime bound
     fn current_validator_rate(
         &self,
@@ -1564,7 +1572,12 @@ pub trait StateWriteExt: StateWrite {
     #[instrument(skip(self))]
     fn set_base_rate(&mut self, current: BaseRateData) {
         tracing::debug!("setting base rate");
-        self.put(state_key::current_base_rate().to_owned(), current);
+        self.put(state_key::current_base_rate().to_owned(), rate_data);
+    }
+
+    #[instrument(skip(self))]
+    fn set_prev_base_rate(&mut self, rate_data: BaseRateData) {
+        self.object_put(state_key::previous_base_rate(), rate_data);
     }
 
     #[instrument(skip(self))]
