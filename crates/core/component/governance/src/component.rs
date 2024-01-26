@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::{genesis, };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
@@ -28,12 +29,13 @@ pub struct Governance {}
 
 #[async_trait]
 impl Component for Governance {
-    type AppState = ();
+    type AppState = genesis::Content;
 
     #[instrument(name = "governance", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            Some(_) => {
+            Some(content) => {
+                state.put_governance_params(content.governance_params.clone());
                 // Clients need to be able to read the next proposal number, even when no proposals have
                 // been submitted yet
                 state.init_proposal_counter();
