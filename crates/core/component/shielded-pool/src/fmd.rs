@@ -1,6 +1,8 @@
+pub mod state_key;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 // #[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
-pub struct FmdParameters {
+pub struct Parameters {
     /// Bits of precision.
     pub precision_bits: u8,
     /// The block height at which these parameters became effective.
@@ -32,7 +34,7 @@ pub struct FmdParameters {
 //     }
 // }
 
-impl Default for FmdParameters {
+impl Default for Parameters {
     fn default() -> Self {
         Self {
             precision_bits: 0,
