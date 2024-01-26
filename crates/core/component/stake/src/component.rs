@@ -652,6 +652,10 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 "validator's end-epoch has been processed");
         }
 
+        // We have collected the funding streams for all validators, so we can now
+        // record them for the funding component to process.
+        self.queue_staking_rewards(funding_queue);
+
         // Now that all the voting power has been calculated for the upcoming epoch,
         // we can determine which validators are Active for the next epoch.
         self.process_validator_unbondings().await?;
