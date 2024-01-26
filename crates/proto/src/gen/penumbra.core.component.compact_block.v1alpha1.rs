@@ -16,28 +16,28 @@ pub struct CompactBlock {
         super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
     /// The epoch root of this epoch (only present when the block is the last in an epoch).
-    #[prost(message, optional, tag = "17")]
+    #[prost(message, optional, tag = "5")]
     pub epoch_root: ::core::option::Option<
         super::super::super::super::crypto::tct::v1alpha1::MerkleRoot,
     >,
     /// If a proposal started voting in this block, this is set to `true`.
-    #[prost(bool, tag = "20")]
+    #[prost(bool, tag = "6")]
     pub proposal_started: bool,
     /// Latest Fuzzy Message Detection parameters.
-    #[prost(message, optional, tag = "100")]
+    #[prost(message, optional, tag = "7")]
     pub fmd_parameters: ::core::option::Option<
-        super::super::chain::v1alpha1::FmdParameters,
+        super::super::shielded_pool::v1alpha1::FmdParameters,
     >,
     /// Price data for swaps executed in this block.
-    #[prost(message, repeated, tag = "5")]
+    #[prost(message, repeated, tag = "8")]
     pub swap_outputs: ::prost::alloc::vec::Vec<
         super::super::dex::v1alpha1::BatchSwapOutputData,
     >,
     /// Indicates updated app parameters.
-    #[prost(bool, tag = "6")]
+    #[prost(bool, tag = "9")]
     pub app_parameters_updated: bool,
     /// Updated gas prices, if they have changed.
-    #[prost(message, optional, tag = "7")]
+    #[prost(message, optional, tag = "10")]
     pub gas_prices: ::core::option::Option<super::super::fee::v1alpha1::GasPrices>,
 }
 impl ::prost::Name for CompactBlock {
