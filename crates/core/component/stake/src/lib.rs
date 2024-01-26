@@ -6,7 +6,6 @@
 mod changes;
 mod current_consensus_keys;
 mod event;
-mod funding_stream;
 mod uptime;
 
 // TODO: move into component mod like other component crates
@@ -20,6 +19,7 @@ pub mod component;
 pub use component::StateReadExt;
 
 pub mod delegate;
+pub mod funding_stream;
 pub mod rate;
 pub mod state_key;
 pub mod undelegate;
