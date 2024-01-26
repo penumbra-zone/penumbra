@@ -57,7 +57,7 @@ pub trait NoteManager: StateWrite {
 
         let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
         // Now record the note and update the total supply:
-        self.update_token_supply(&value.asset_id, value.amount.value() as i128)
+        self.increase_token_supply(&value.asset_id, value.amount)
             .await?;
         self.add_note_payload(note.payload(), source).await;
 

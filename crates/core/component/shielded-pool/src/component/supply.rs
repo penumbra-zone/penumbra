@@ -92,46 +92,6 @@ pub trait SupplyWrite: StateWrite {
         self.put(key, new_supply);
         Ok(())
     }
-
-    // TODO: should this really be separate from note management?
-    // #[instrument(skip(self, change))]
-    async fn update_token_supply(&mut self, asset_id: &asset::Id, change: i128) -> Result<()> {
-        let key = state_key::token_supply(asset_id);
-        let current_supply: Amount = self.get(&key).await?.unwrap_or(0u64.into());
-
-        // TODO: replace with a single checked_add_signed call when mixed_integer_ops lands in stable (1.66)
-        let new_supply: Amount = if change < 0 {
-            current_supply
-                .value()
-                .checked_sub(change.unsigned_abs())
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "underflow updating token {} supply {} with delta {}",
-                        asset_id,
-                        current_supply,
-                        change
-                    )
-                })?
-                .into()
-        } else {
-            current_supply
-                .value()
-                .checked_add(change as u128)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "overflow updating token {} supply {} with delta {}",
-                        asset_id,
-                        current_supply,
-                        change
-                    )
-                })?
-                .into()
-        };
-        tracing::debug!(?current_supply, ?new_supply, ?change);
-
-        self.put(key, new_supply);
-        Ok(())
-    }
 }
 
 impl<T: StateWrite + ?Sized> SupplyWrite for T {}
