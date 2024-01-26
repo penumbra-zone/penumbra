@@ -43,6 +43,14 @@ pub mod validators {
             format!("{}{id}", prefix())
         }
     }
+
+    /// Tracks the rewards of the previously active validator set
+    /// in object storage.
+    pub mod rewards {
+        pub fn object_storage_key() -> &'static str {
+            "staking/validators/rewards"
+        }
+    }
 }
 
 pub fn penalty_in_epoch(id: &IdentityKey, epoch: u64) -> String {
