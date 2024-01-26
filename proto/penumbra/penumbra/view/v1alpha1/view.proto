@@ -4,7 +4,6 @@ package penumbra.view.v1alpha1;
 
 import "penumbra/core/app/v1alpha1/app.proto";
 import "penumbra/core/asset/v1alpha1/asset.proto";
-import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/ibc/v1alpha1/ibc.proto";
@@ -427,7 +426,7 @@ message GasPricesResponse {
 message FMDParametersRequest {}
 
 message FMDParametersResponse {
-  core.component.chain.v1alpha1.FmdParameters parameters = 1;
+  core.component.shielded_pool.v1alpha1.FmdParameters parameters = 1;
 }
 
 message NoteByCommitmentRequest {

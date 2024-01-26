@@ -18,17 +18,17 @@ message CompactBlock {
   // The block root of this block.
   crypto.tct.v1alpha1.MerkleRoot block_root = 4;
   // The epoch root of this epoch (only present when the block is the last in an epoch).
-  crypto.tct.v1alpha1.MerkleRoot epoch_root = 17;
+  crypto.tct.v1alpha1.MerkleRoot epoch_root = 5;
   // If a proposal started voting in this block, this is set to `true`.
-  bool proposal_started = 20;
+  bool proposal_started = 6;
   // Latest Fuzzy Message Detection parameters.
-  chain.v1alpha1.FmdParameters fmd_parameters = 100;
+  shielded_pool.v1alpha1.FmdParameters fmd_parameters = 7;
   // Price data for swaps executed in this block.
-  repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 5;
+  repeated dex.v1alpha1.BatchSwapOutputData swap_outputs = 8;
   // Indicates updated app parameters.
-  bool app_parameters_updated = 6;
+  bool app_parameters_updated = 9;
   // Updated gas prices, if they have changed.
-  fee.v1alpha1.GasPrices gas_prices = 7;
+  fee.v1alpha1.GasPrices gas_prices = 10;
 }
 
 // An encrypted payload, corresponding to a single commitment in the state commitment tree.
