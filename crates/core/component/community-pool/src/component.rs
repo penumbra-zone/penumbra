@@ -26,8 +26,8 @@ impl Component for CommunityPool {
     #[instrument(name = "community_pool", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            Some(content) => {
-                state.put_community_pool_params(content.community_pool_params.clone());
+            Some(genesis) => {
+                state.put_community_pool_params(genesis.community_pool_params.clone());
             }
             None => {}
         }

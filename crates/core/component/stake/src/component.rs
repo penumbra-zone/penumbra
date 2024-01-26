@@ -31,7 +31,6 @@ use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProt
 use penumbra_sct::CommitmentSource;
 use penumbra_shielded_pool::{
     component::{NoteManager, SupplyRead, SupplyWrite},
-    genesis::Content as ShieldedPoolGenesisContent,
 };
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
@@ -47,7 +46,6 @@ use tracing::{instrument, Instrument};
 
 use crate::{
     funding_stream::Recipient,
-    genesis::Content as GenesisContent,
     params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
@@ -1128,16 +1126,16 @@ impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
 
 #[async_trait]
 impl Component for Staking {
-    type AppState = (GenesisContent, ShieldedPoolGenesisContent);
+    type AppState = (
+        crate::genesis::Content,
+        penumbra_shielded_pool::genesis::Content,
+    );
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(
-        mut state: S,
-        app_state: Option<&(GenesisContent, ShieldedPoolGenesisContent)>,
-    ) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            Some((staking_app_state, shielded_pool_app_state)) => {
-                state.put_stake_params(staking_app_state.stake_params.clone());
+            Some((staking_genesis, sp_genesis)) => {
+                state.put_stake_params(staking_genesis.stake_params.clone());
 
                 let starting_height = state
                     .get_block_height()
@@ -1159,7 +1157,7 @@ impl Component for Staking {
                 // Compile totals of genesis allocations by denom, which we can use
                 // to compute the delegation tokens for each validator.
                 let mut genesis_allocations = BTreeMap::<_, Amount>::new();
-                for allocation in &shielded_pool_app_state.allocations {
+                for allocation in &sp_genesis.allocations {
                     let value = allocation.value();
                     *genesis_allocations.entry(value.asset_id).or_default() += value.amount;
                 }
@@ -1167,7 +1165,7 @@ impl Component for Staking {
                 // Add initial validators to the JMT
                 // Validators are indexed in the JMT by their public key,
                 // and there is a separate key containing the list of all validator keys.
-                for validator in &staking_app_state.validators {
+                for validator in &staking_genesis.validators {
                     // Parse the proto into a domain type.
                     let validator = Validator::try_from(validator.clone())
                         .expect("should be able to parse genesis validator");
