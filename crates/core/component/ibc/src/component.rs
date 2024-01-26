@@ -32,4 +32,4 @@ pub use connection::StateWriteExt as ConnectionStateWriteExt;
 pub use host_interface::HostInterface;
 pub use view::{StateReadExt, StateWriteExt};
 
-pub use ibc_component::IBCComponent;
+pub use ibc_component::Ibc;

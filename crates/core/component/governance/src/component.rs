@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{genesis, };
+use crate::genesis;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;

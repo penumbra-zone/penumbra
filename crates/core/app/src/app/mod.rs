@@ -17,7 +17,7 @@ use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
-use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
+use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
@@ -74,7 +74,7 @@ impl App {
     // access. This method "externally" applies the state delta to the
     // inter-block state.
     //
-    // Invariant: state_tx and self.state are the only two references to the
+    // Invariant: `state_tx` and `self.state` are the only two references to the
     // inter-block state.
     fn apply(&mut self, state_tx: StateDelta<InterBlockState>) -> Vec<Event> {
         let (state2, mut cache) = state_tx.flatten();
@@ -97,13 +97,9 @@ impl App {
         match app_state {
             genesis::AppState::Content(app_state) => {
                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
-                state_tx.put_funding_params(app_state.funding_content.funding_params.clone());
-                state_tx
-                    .put_governance_params(app_state.governance_content.governance_params.clone());
-                state_tx.put_ibc_params(app_state.ibc_content.ibc_params.clone());
-                state_tx.put_stake_params(app_state.stake_content.stake_params.clone());
 
                 // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
+                // TODO(erwan): moving this when we gut the chain component.
                 state_tx.put_current_fmd_parameters(FmdParameters::default());
                 state_tx.put_previous_fmd_parameters(FmdParameters::default());
 
@@ -130,7 +126,8 @@ impl App {
 
                 ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
                     .await;
-                Distributions::init_chain(&mut state_tx, Some(&app_state.distributions_content)).await;
+                Distributions::init_chain(&mut state_tx, Some(&app_state.distributions_content))
+                    .await;
                 Staking::init_chain(
                     &mut state_tx,
                     Some(&(
@@ -139,13 +136,13 @@ impl App {
                     )),
                 )
                 .await;
-                Ibc::init_chain(&mut state_tx, Some(&())).await;
+                Ibc::init_chain(&mut state_tx, Some(&app_state.ibc_content)).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 CommunityPool::init_chain(&mut state_tx, Some(&app_state.community_pool_content))
                     .await;
                 Governance::init_chain(&mut state_tx, Some(&app_state.governance_content)).await;
                 Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
-                Funding::init_chain(&mut state_tx, Some(&())).await;
+                Funding::init_chain(&mut state_tx, Some(&app_state.funding_content)).await;
 
                 state_tx
                     .finish_block(state_tx.app_params_updated())
@@ -159,6 +156,7 @@ impl App {
                 Ibc::init_chain(&mut state_tx, None).await;
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
+                CommunityPool::init_chain(&mut state_tx, None).await;
                 Fee::init_chain(&mut state_tx, None).await;
                 Funding::init_chain(&mut state_tx, None).await;
             }
@@ -247,23 +245,24 @@ impl App {
             if let Some(community_pool_params) = app_params.new.community_pool_params {
                 state_tx.put_community_pool_params(community_pool_params);
             }
+            if let Some(distributions_params) = app_params.new.distributions_params {
+                state_tx.put_distributions_params(distributions_params);
+            }
+            if let Some(fee_params) = app_params.new.fee_params {
+                state_tx.put_fee_params(fee_params);
+            }
+            if let Some(funding_params) = app_params.new.funding_params {
+                state_tx.put_funding_params(funding_params);
+            }
+            if let Some(governance_params) = app_params.new.governance_params {
+                state_tx.put_governance_params(governance_params);
+            }
             if let Some(ibc_params) = app_params.new.ibc_params {
                 state_tx.put_ibc_params(ibc_params);
             }
             if let Some(stake_params) = app_params.new.stake_params {
                 state_tx.put_stake_params(stake_params);
             }
-            if let Some(fee_params) = app_params.new.fee_params {
-                state_tx.put_fee_params(fee_params);
-            }
-            if let Some(governance_params) = app_params.new.governance_params {
-                state_tx.put_governance_params(governance_params);
-            }
-            if let Some(distributions_params) = app_params.new.distributions_params {
-                state_tx.put_distributions_params(distributions_params);
-            }
-
-            // TODO(erwan): Untracked, but will add funding params here.
         }
 
         // Run each of the begin block handlers for each component, in sequence:
@@ -275,6 +274,7 @@ impl App {
             begin_block,
         )
         .await;
+        CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
         Fee::begin_block(&mut arc_state_tx, begin_block).await;
@@ -390,6 +390,7 @@ impl App {
         Distributions::end_block(&mut arc_state_tx, end_block).await;
         Ibc::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
+        CommunityPool::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
         Fee::end_block(&mut arc_state_tx, end_block).await;
@@ -494,6 +495,9 @@ impl App {
             Dex::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on dex component");
+            CommunityPool::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Community Pool component");
             Governance::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Governance component");
