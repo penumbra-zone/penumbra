@@ -32,7 +32,7 @@ penumbra-distributions = { path = "../component/distributions" }
 penumbra-compact-block = { path = "../component/compact-block" }
 penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 
-# Penumbra dependencies
+# External dependencies
 decaf377 = { version = "0.5" }
 decaf377-rdsa = { version = "0.7" }
 jmt = "0.9"
