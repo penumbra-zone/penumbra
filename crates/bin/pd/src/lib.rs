@@ -12,6 +12,7 @@ mod metrics;
 mod snapshot;
 
 pub mod auto_https;
+pub mod cli;
 pub mod events;
 pub mod migrate;
 pub mod testnet;
