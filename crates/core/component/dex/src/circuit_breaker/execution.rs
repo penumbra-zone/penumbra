@@ -21,6 +21,7 @@ pub(crate) struct ExecutionCircuitBreaker {
 }
 
 impl ExecutionCircuitBreaker {
+    #[allow(dead_code)]
     pub fn new(max_path_searches: u32, max_executions: u32) -> Self {
         Self {
             max_path_searches,
