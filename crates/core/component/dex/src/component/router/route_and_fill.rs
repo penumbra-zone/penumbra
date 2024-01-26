@@ -126,7 +126,7 @@ impl<T: PositionManager> HandleBatchSwaps for T {}
 /// Lower-level trait that ties together the routing and filling logic.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, input, params))]
+    #[instrument(skip(self, asset_1, asset_2, input, params, execution_circuit_breaker))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
