@@ -14,9 +14,12 @@ penumbra-tct = { path = "../../crypto/tct/", features = ["r1cs"] }
 penumbra-asset = { path = "../../core/asset" }
 
 # Git deps
-decaf377 = {version = "0.5", features = ["r1cs"] }
-decaf377-rdsa = { version = "0.7" }
-poseidon377 = { version = "0.6", features = ["r1cs"] }
+# decaf377 = {version = "0.5", features = ["r1cs"] }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+# decaf377-rdsa = { version = "0.7" }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+# poseidon377 = { version = "0.6", features = ["r1cs"] }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-deps", features = ["r1cs"] }
 f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
 
 # Crates.io deps

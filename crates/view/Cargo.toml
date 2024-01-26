@@ -43,7 +43,8 @@ penumbra-transaction = { path = "../core/transaction" }
 ibc-types = { version = "0.11.0", default-features = false }
 
 ark-std = { version = "0.4", default-features = false }
-decaf377 = { version = "0.5", features = ["r1cs"] }
+# decaf377 = { version = "0.5", features = ["r1cs"] }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
 tokio = { version = "1.22", features = ["full"] }
 tokio-stream = { version = "0.1.8", features = ["sync"] }
 anyhow = "1"

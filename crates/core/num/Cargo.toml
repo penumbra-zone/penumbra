@@ -11,8 +11,10 @@ decaf377-fmd = { path = "../../crypto/decaf377-fmd/" }
 penumbra-proto = { path = "../../proto/" }
 
 # Git deps
-decaf377 = {version = "0.5", features = ["r1cs"] }
-decaf377-rdsa = { version = "0.7" }
+# decaf377 = {version = "0.5", features = ["r1cs"] }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+# decaf377-rdsa = { version = "0.7" }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
 
 # Crates.io deps
 base64 = "0.20"

@@ -11,8 +11,10 @@ ark-ff = "0.4"
 ark-serialize = "0.4"
 blake2b_simd = "0.5"
 chacha20poly1305 = "0.9"
-decaf377 = "0.5"
-decaf377-rdsa = "0.7"
+# decaf377 = "0.5"
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377-rdsa = "0.7"
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
 decaf377-frost = { path = "../crypto/decaf377-frost" }
 decaf377-ka = { path = "../crypto/decaf377-ka" }
 penumbra-chain = { path = "../core/component/chain" }

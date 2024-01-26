@@ -29,9 +29,13 @@ ibc-types = { version = "0.11.0", default-features = false }
 
 # Crates.io deps
 ibc-proto = { version = "0.40.0", default-features = false }
-decaf377 = "0.5"
-decaf377-rdsa = { version = "0.7" }
-poseidon377 = { version = "0.6", features = ["r1cs"] }
+# decaf377 = "0.5"
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377-rdsa = { version = "0.7" }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+# poseidon377 = { version = "0.6", features = ["r1cs"] }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-deps", features = ["r1cs"] }
+
 base64 = "0.21"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"

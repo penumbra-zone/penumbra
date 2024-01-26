@@ -33,8 +33,10 @@ penumbra-compact-block = { path = "../component/compact-block" }
 penumbra-transaction = { path = "../transaction", features = ["parallel"] }
 
 # Penumbra dependencies
-decaf377 = { version = "0.5" }
-decaf377-rdsa = { version = "0.7" }
+# decaf377 = { version = "0.5" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377-rdsa = { version = "0.7" }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
 jmt = "0.9"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"

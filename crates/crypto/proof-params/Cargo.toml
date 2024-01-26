@@ -7,7 +7,8 @@ edition = "2021"
 
 [dependencies]
 # Git deps
-decaf377 = { version = "0.5", features = ["r1cs"] }
+# decaf377 = { version = "0.5", features = ["r1cs"] }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
 
 # Crates.io deps
 anyhow = "1"
