@@ -1,3 +1,6 @@
+use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use serde::{Deserialize, Serialize};
+
 pub mod state_key;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -9,30 +12,29 @@ pub struct Parameters {
     pub as_of_block_height: u64,
 }
 
-// TODO(erwan): re-enable on second pass
-// impl DomainType for FmdParameters {
-//     type Proto = pb::FmdParameters;
-// }
-//
-// impl TryFrom<pb::FmdParameters> for FmdParameters {
-//     type Error = anyhow::Error;
-//
-//     fn try_from(msg: pb::FmdParameters) -> Result<Self, Self::Error> {
-//         Ok(FmdParameters {
-//             precision_bits: msg.precision_bits.try_into()?,
-//             as_of_block_height: msg.as_of_block_height,
-//         })
-//     }
-// }
-//
-// impl From<FmdParameters> for pb::FmdParameters {
-//     fn from(params: FmdParameters) -> Self {
-//         pb::FmdParameters {
-//             precision_bits: u32::from(params.precision_bits),
-//             as_of_block_height: params.as_of_block_height,
-//         }
-//     }
-// }
+impl DomainType for Parameters {
+    type Proto = pb::FmdParameters;
+}
+
+impl TryFrom<pb::FmdParameters> for Parameters {
+    type Error = anyhow::Error;
+
+    fn try_from(msg: pb::FmdParameters) -> Result<Self, Self::Error> {
+        Ok(Parameters {
+            precision_bits: msg.precision_bits.try_into()?,
+            as_of_block_height: msg.as_of_block_height,
+        })
+    }
+}
+
+impl From<Parameters> for pb::FmdParameters {
+    fn from(params: Parameters) -> Self {
+        pb::FmdParameters {
+            precision_bits: u32::from(params.precision_bits),
+            as_of_block_height: params.as_of_block_height,
+        }
+    }
+}
 
 impl Default for Parameters {
     fn default() -> Self {
