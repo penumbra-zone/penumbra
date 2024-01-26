@@ -47,6 +47,8 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             Some(
                 self.route_and_fill(
@@ -54,6 +56,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                     trading_pair.asset_2(),
                     delta_1,
                     params.clone(),
+                    execution_circuit_breaker.clone(),
                 )
                 .await?,
             )
@@ -69,6 +72,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                     trading_pair.asset_1(),
                     delta_2,
                     params.clone(),
+                    execution_circuit_breaker,
                 )
                 .await?,
             )
@@ -129,6 +133,7 @@ pub trait RouteAndFill: StateWrite + Sized {
         asset_2: asset::Id,
         input: Amount,
         params: RoutingParams,
+        mut execution_circuit_breaker: ExecutionCircuitBreaker,
     ) -> Result<SwapExecution>
     where
         Self: 'static,
@@ -144,8 +149,6 @@ pub trait RouteAndFill: StateWrite + Sized {
         let mut traces: Vec<Vec<Value>> = Vec::new();
 
         let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
-
-        let mut execution_circuit_breaker = ExecutionCircuitBreaker::new();
 
         // Termination conditions:
         // 1. We have no more delta_1 remaining
