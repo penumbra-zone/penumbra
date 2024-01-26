@@ -7,7 +7,7 @@ use cnidarium_component::Component;
 use jmt::RootHash;
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_chain::params::FmdParameters;
-use penumbra_community_pool::component::StateWriteExt as _;
+use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_dex::component::Dex;
@@ -17,7 +17,7 @@ use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
-use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
+use penumbra_ibc::component::{IbcComponent, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
@@ -96,16 +96,7 @@ impl App {
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
             genesis::AppState::Content(app_state) => {
-                // Put all the initial component parameters in the JMT:
-                // TODO: should the components themselves handle this in their
-                // `init_chain` methods?
                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
-                state_tx.put_community_pool_params(
-                    app_state
-                        .community_pool_content
-                        .community_pool_params
-                        .clone(),
-                );
                 state_tx.put_distributions_params(
                     app_state.distributions_content.distributions_params.clone(),
                 );
@@ -152,9 +143,11 @@ impl App {
                     )),
                 )
                 .await;
-                IBCComponent::init_chain(&mut state_tx, Some(&())).await;
+                IbcComponent::init_chain(&mut state_tx, Some(&())).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
-                Governance::init_chain(&mut state_tx, Some(&())).await;
+                CommunityPool::init_chain(&mut state_tx, Some(&app_state.community_pool_content))
+                    .await;
+                Governance::init_chain(&mut state_tx, Some(&app_state.governance_content)).await;
                 Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
                 Funding::init_chain(&mut state_tx, Some(&())).await;
 
@@ -167,7 +160,7 @@ impl App {
                 ShieldedPool::init_chain(&mut state_tx, None).await;
                 Distributions::init_chain(&mut state_tx, None).await;
                 Staking::init_chain(&mut state_tx, None).await;
-                IBCComponent::init_chain(&mut state_tx, None).await;
+                IbcComponent::init_chain(&mut state_tx, None).await;
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
                 Fee::init_chain(&mut state_tx, None).await;
@@ -281,7 +274,7 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        IBCComponent::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
+        IbcComponent::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
             &mut arc_state_tx,
             begin_block,
         )
@@ -399,7 +392,7 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
-        IBCComponent::end_block(&mut arc_state_tx, end_block).await;
+        IbcComponent::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
@@ -499,7 +492,7 @@ impl App {
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
-            IBCComponent::end_epoch(&mut arc_state_tx)
+            IbcComponent::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
             Dex::end_epoch(&mut arc_state_tx)
