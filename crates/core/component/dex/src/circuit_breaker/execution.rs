@@ -9,7 +9,7 @@ const MAX_EXECUTIONS: u32 = 64;
 ///
 /// The circuit breaker ensures the swap will not use unbounded time complexity.
 #[derive(Debug, Clone)]
-pub(crate) struct ExecutionCircuitBreaker {
+pub struct ExecutionCircuitBreaker {
     /// The maximum number of times to perform path searches before stopping.
     pub max_path_searches: u32,
     /// The number of times path searches have been performed.
