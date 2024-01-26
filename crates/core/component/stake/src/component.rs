@@ -29,9 +29,7 @@ use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
 use penumbra_sct::CommitmentSource;
-use penumbra_shielded_pool::{
-    component::{NoteManager, SupplyRead, SupplyWrite},
-};
+use penumbra_shielded_pool::component::{NoteManager, SupplyRead, SupplyWrite};
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
 use tendermint::{
