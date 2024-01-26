@@ -4907,6 +4907,7 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tct",
+ "penumbra-tendermint-proxy",
  "penumbra-transaction",
  "penumbra-txhash",
  "prost",
@@ -4924,6 +4925,8 @@ dependencies = [
  "tendermint-proto",
  "tokio",
  "tonic",
+ "tonic-reflection",
+ "tonic-web",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]

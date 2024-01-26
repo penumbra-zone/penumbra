@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Workspace dependencies
-cnidarium = { path = "../../cnidarium" }
+cnidarium = { path = "../../cnidarium", features = ["rpc"] }
 cnidarium-component = { path = "../../cnidarium-component" }
 penumbra-proto = { path = "../../proto", features = ["cnidarium"] }
 penumbra-tct = { path = "../../crypto/tct" }
@@ -27,10 +27,11 @@ penumbra-fee = { path = "../component/fee" }
 penumbra-funding = { path = "../component/funding" }
 penumbra-community-pool = { path = "../component/community-pool" }
 penumbra-dex = { path = "../component/dex" }
-penumbra-ibc = { path = "../component/ibc", features = ["component"] }
+penumbra-ibc = { path = "../component/ibc", features = ["component", "rpc"] }
 penumbra-distributions = { path = "../component/distributions" }
 penumbra-compact-block = { path = "../component/compact-block" }
 penumbra-transaction = { path = "../transaction", features = ["parallel"] }
+penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 
 # External dependencies
 decaf377 = { version = "0.5" }
@@ -39,6 +40,8 @@ jmt = "0.9"
 tokio = { version = "1.21.1", features = ["full", "tracing"] }
 async-trait = "0.1.52"
 tonic = "0.10"
+tonic-web = "0.10.0"
+tonic-reflection = "0.10.0"
 futures = "0.3"
 anyhow = "1"
 tracing = "0.1"
