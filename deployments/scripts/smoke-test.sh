@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Wrapper script to bottle up logic for running "smoke tests" in CI,
 # supporting backgrounding tasks and checking on their status later.
 # The execution plan is:
