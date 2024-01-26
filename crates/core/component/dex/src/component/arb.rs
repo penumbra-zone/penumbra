@@ -7,7 +7,7 @@ use penumbra_asset::{asset, Value};
 use penumbra_chain::component::StateReadExt;
 use tracing::instrument;
 
-use crate::SwapExecution;
+use crate::{ExecutionCircuitBreaker, SwapExecution};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
@@ -50,8 +50,15 @@ pub trait Arbitrage: StateWrite + Sized {
             amount: u64::MAX.into(),
         };
 
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = this
-            .route_and_fill(arb_token, arb_token, flash_loan.amount, params)
+            .route_and_fill(
+                arb_token,
+                arb_token,
+                flash_loan.amount,
+                params,
+                execution_circuit_breaker,
+            )
             .await?;
         let filled_input = swap_execution.input.amount;
         let output = swap_execution.output.amount;

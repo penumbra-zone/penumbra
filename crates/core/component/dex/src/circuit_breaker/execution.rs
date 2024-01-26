@@ -8,6 +8,7 @@ const MAX_EXECUTIONS: u32 = 64;
 /// to the search and execution limits managed by the circuit breaker.
 ///
 /// The circuit breaker ensures the swap will not use unbounded time complexity.
+#[derive(Debug, Clone)]
 pub(crate) struct ExecutionCircuitBreaker {
     /// The maximum number of times to perform path searches before stopping.
     pub max_path_searches: u32,
@@ -20,11 +21,11 @@ pub(crate) struct ExecutionCircuitBreaker {
 }
 
 impl ExecutionCircuitBreaker {
-    pub fn new() -> Self {
+    pub fn new(max_path_searches: u32, max_executions: u32) -> Self {
         Self {
-            max_path_searches: MAX_PATH_SEARCHES,
+            max_path_searches,
             current_path_searches: 0,
-            max_executions: MAX_EXECUTIONS,
+            max_executions,
             current_executions: 0,
         }
     }
@@ -32,5 +33,16 @@ impl ExecutionCircuitBreaker {
     pub fn exceeded_limits(&self) -> bool {
         self.current_path_searches > self.max_path_searches
             || self.current_executions > self.max_executions
+    }
+}
+
+impl Default for ExecutionCircuitBreaker {
+    fn default() -> Self {
+        Self {
+            max_path_searches: MAX_PATH_SEARCHES,
+            current_path_searches: 0,
+            max_executions: MAX_EXECUTIONS,
+            current_executions: 0,
+        }
     }
 }
