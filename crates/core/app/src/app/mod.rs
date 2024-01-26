@@ -17,7 +17,7 @@ use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
-use penumbra_ibc::component::{IbcComponent, StateWriteExt as _};
+use penumbra_ibc::component::{IBCComponent, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
@@ -97,10 +97,6 @@ impl App {
         match app_state {
             genesis::AppState::Content(app_state) => {
                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
-                state_tx.put_distributions_params(
-                    app_state.distributions_content.distributions_params.clone(),
-                );
-                state_tx.put_fee_params(app_state.fee_content.fee_params.clone());
                 state_tx.put_funding_params(app_state.funding_content.funding_params.clone());
                 state_tx
                     .put_governance_params(app_state.governance_content.governance_params.clone());
@@ -134,7 +130,7 @@ impl App {
 
                 ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
                     .await;
-                Distributions::init_chain(&mut state_tx, Some(&())).await;
+                Distributions::init_chain(&mut state_tx, Some(&app_state.distributions_content)).await;
                 Staking::init_chain(
                     &mut state_tx,
                     Some(&(
@@ -143,7 +139,7 @@ impl App {
                     )),
                 )
                 .await;
-                IbcComponent::init_chain(&mut state_tx, Some(&())).await;
+                Ibc::init_chain(&mut state_tx, Some(&())).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
                 CommunityPool::init_chain(&mut state_tx, Some(&app_state.community_pool_content))
                     .await;
@@ -160,7 +156,7 @@ impl App {
                 ShieldedPool::init_chain(&mut state_tx, None).await;
                 Distributions::init_chain(&mut state_tx, None).await;
                 Staking::init_chain(&mut state_tx, None).await;
-                IbcComponent::init_chain(&mut state_tx, None).await;
+                Ibc::init_chain(&mut state_tx, None).await;
                 Dex::init_chain(&mut state_tx, None).await;
                 Governance::init_chain(&mut state_tx, None).await;
                 Fee::init_chain(&mut state_tx, None).await;
@@ -274,7 +270,7 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
-        IbcComponent::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
+        Ibc::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
             &mut arc_state_tx,
             begin_block,
         )
@@ -392,7 +388,7 @@ impl App {
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
-        IbcComponent::end_block(&mut arc_state_tx, end_block).await;
+        Ibc::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
         Staking::end_block(&mut arc_state_tx, end_block).await;
@@ -492,7 +488,7 @@ impl App {
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
-            IbcComponent::end_epoch(&mut arc_state_tx)
+            Ibc::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
             Dex::end_epoch(&mut arc_state_tx)
