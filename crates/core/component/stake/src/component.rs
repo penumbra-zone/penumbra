@@ -17,19 +17,17 @@ use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::Component;
 use futures::{FutureExt, StreamExt, TryStreamExt};
-use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_chain::{
     component::{StateReadExt as _, StateWriteExt as _},
     Epoch,
 };
-use penumbra_community_pool::component::StateWriteExt as _;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
-use penumbra_sct::CommitmentSource;
-use penumbra_shielded_pool::component::{NoteManager, SupplyRead, SupplyWrite};
+use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
 use tendermint::{
@@ -43,7 +41,6 @@ use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
 use crate::{
-    funding_stream::Recipient,
     params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
@@ -608,40 +605,18 @@ pub(crate) trait StakingImpl: StateWriteExt {
             self.set_validator_rates(&validator.identity_key, next_validator_rate.clone());
             self.set_validator_power(&validator.identity_key, voting_power)?;
 
-            // If the validator is Active, distribute its funding stream rewards
-            // for the preceding epoch.
-            if validator_state == validator::State::Active {
-                for stream in &validator.funding_streams {
-                    // We compute the reward amount for this specific funding stream, it is based
-                    // on the ending epoch's rate data.
-                    let reward_amount_for_stream =
-                        stream.reward_amount(&prev_base_rate, delegation_token_supply);
-
-                    match stream.recipient() {
-                        // If the recipient is an address, mint a note to that address
-                        Recipient::Address(address) => {
-                            self.mint_note(
-                                Value {
-                                    amount: reward_amount_for_stream.into(),
-                                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                                },
-                                &address,
-                                CommitmentSource::FundingStreamReward {
-                                    epoch_index: epoch_to_end.index,
-                                },
-                            )
-                            .await?;
-                        }
-                        // If the recipient is the Community Pool, deposit the funds into the Community Pool
-                        Recipient::CommunityPool => {
-                            self.community_pool_deposit(Value {
-                                amount: reward_amount_for_stream.into(),
-                                asset_id: *STAKING_TOKEN_ASSET_ID,
-                            })
-                            .await?;
-                        }
-                    }
-                }
+            // The epoch is ending, so we check if this validator was active and if so
+            // we queue its [`FundingStreams`] for processing by the funding component.
+            if matches!(validator_state, validator::State::Active) {
+                // Here we collect funding data to create a record that the funding component
+                // can "pull". We do this because by the time the funding component is executed
+                // the validator set has possibly changed (e.g. a new validator enter the active
+                // set).
+                funding_queue.push((
+                    validator.identity_key.clone(),
+                    validator.funding_streams.clone(),
+                    delegation_token_supply,
+                ));
             }
 
             // We want to know if the validator has enough stake delegated to it to remain
@@ -1465,6 +1440,11 @@ pub trait StateReadExt: StateRead {
             .await
     }
 
+    /// Returns the funding queue from object storage (end-epoch).
+    fn funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
+        self.object_get(state_key::validators::rewards::object_storage_key())
+    }
+
     async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
             .get(&state_key::delegation_changes_by_height(height.value()))
@@ -1570,7 +1550,18 @@ pub trait StateWriteExt: StateWrite {
     }
 
     #[instrument(skip(self))]
-    fn set_base_rate(&mut self, current: BaseRateData) {
+    fn queue_staking_rewards(
+        &mut self,
+        staking_reward_queue: Vec<(IdentityKey, FundingStreams, Amount)>,
+    ) {
+        self.object_put(
+            state_key::validators::rewards::object_storage_key(),
+            staking_reward_queue,
+        )
+    }
+
+    #[instrument(skip(self))]
+    fn set_base_rate(&mut self, rate_data: BaseRateData) {
         tracing::debug!("setting base rate");
         self.put(state_key::current_base_rate().to_owned(), rate_data);
     }
