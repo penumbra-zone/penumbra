@@ -1,6 +1,6 @@
 //! Generating random values of various types.
 
-use ark_ed_on_bls12_377::Fq;
+use decaf377::Fq;
 use decaf377::FieldExt;
 use rand::{distributions::Distribution, Rng};
 

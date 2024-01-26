@@ -133,7 +133,8 @@ pub use arbitrary::FqStrategy;
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary {
-    use ark_ed_on_bls12_377::Fq;
+    // use ark_ed_on_bls12_377::Fq;
+    use decaf377::Fq;
     use ark_ff::{BigInteger256, PrimeField};
     use proptest::strategy::Strategy;
 
@@ -191,9 +192,9 @@ mod arbitrary {
                     rng.next_u64(),
                     rng.next_u64(),
                 ];
-                proptest::strategy::Just(decaf377::Fq::new(BigInteger256::new(parts)))
+                proptest::strategy::Just(Fq::from_le_limbs(parts))
             }
-            .prop_filter("bigger than modulus", |fq| fq.0 < Fq::MODULUS))
+            .prop_filter("bigger than modulus", |fq| fq.0.0 < Fq::MODULUS.0))
         }
     }
 }

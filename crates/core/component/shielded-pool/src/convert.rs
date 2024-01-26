@@ -162,7 +162,7 @@ impl r1cs::ConstraintSynthesizer<Fq> for ConvertCircuit {
 impl DummyWitness for ConvertCircuit {
     fn with_dummy_witness() -> Self {
         let amount = Amount::from(1u64);
-        let balance_blinding = Fr::from(1);
+        let balance_blinding = Fr::from(1u64);
         let from = *STAKING_TOKEN_ASSET_ID;
         let to = *STAKING_TOKEN_ASSET_ID;
         let rate = U128x128::from(1u64);

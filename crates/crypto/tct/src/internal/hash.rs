@@ -142,7 +142,7 @@ impl Hash {
     /// A stand-in hash that is out-of-range for `Fq`, to be used during intermediate construction
     /// of the tree as a sentinel value for uninitialized nodes.
     pub(crate) fn uninitialized() -> Hash {
-        Self(Fp256::new_unchecked(BigInteger256::new([u64::MAX; 4])))
+        Self(Fq::from_le_limbs([u64::MAX; 4]))
     }
 
     /// Checks if the hash is uninitialized.
@@ -307,9 +307,7 @@ mod arbitrary {
                 rng.next_u64(),
                 rng.next_u64(),
             ];
-            Ok(proptest::strategy::Just(Hash(Fq::new(BigInteger256::new(
-                parts,
-            )))))
+            Ok(proptest::strategy::Just(Hash(Fq::from_le_limbs(parts))))
         }
     }
 }

@@ -118,7 +118,7 @@ impl IncomingViewingKeyVar {
 
         // Finally, we figure out how many times we needed to subtract r from ivk_mod_q_ooc to get ivk_mod_r_ooc.
         let mut temp_ivk_mod_q = ivk_mod_q_ooc;
-        let mut a = 0;
+        let mut a = 0u64;
         while temp_ivk_mod_q > r_modulus {
             temp_ivk_mod_q -= r_modulus;
             a += 1;

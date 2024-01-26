@@ -115,7 +115,7 @@ impl DelegatorVotePlan {
         let private = DelegatorVoteProofPrivate {
             state_commitment_proof,
             note: self.staked_note.clone(),
-            v_blinding: Fr::from(0),
+            v_blinding: Fr::from(0u64),
             spend_auth_randomizer: self.randomizer,
             ak: *fvk.spend_verification_key(),
             nk: *fvk.nullifier_key(),

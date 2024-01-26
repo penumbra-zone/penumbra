@@ -20,7 +20,7 @@ fn prove(r: Fq, s: Fq, public: ConvertProofPublic, private: ConvertProofPrivate)
 
 fn dummy_instance() -> (ConvertProofPublic, ConvertProofPrivate) {
     let amount = Amount::from(1u64);
-    let balance_blinding = Fr::from(1);
+    let balance_blinding = Fr::from(1u64);
     let from = *STAKING_TOKEN_ASSET_ID;
     let to = *STAKING_TOKEN_ASSET_ID;
     let rate = U128x128::from(1u64);

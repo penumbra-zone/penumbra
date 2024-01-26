@@ -36,7 +36,8 @@ anyhow                   = "1.0.75"
 ark-ff                   = { version = "0.4.2", features = ["std"] }
 base64                   = "0.21.2"
 console_error_panic_hook = { version = "0.1.7", optional = true }
-decaf377                 = { version = "0.5", features = ["r1cs"] }
+# decaf377                 = { version = "0.5", features = ["r1cs"] }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
 hex                      = "0.4.3"
 indexed_db_futures       = "0.3.0"
 rand_core                = { version = "0.6.4", features = ["getrandom"] }

@@ -213,7 +213,7 @@ impl WhichWayVar {
         // the range [0, 3] via the equation `inner = bit_1 + 2 * bit_2`
         // For example, for the maximum values: bit_1 = 1, bit_2 = 1
         // inner = 1 + 2 * 1 = 3
-        let inner = FqVar::from(bit_1) + FqVar::constant(Fq::from(2)) * FqVar::from(bit_2);
+        let inner = FqVar::from(bit_1) + FqVar::constant(Fq::from(2u64)) * FqVar::from(bit_2);
 
         Ok(WhichWayVar { inner })
     }

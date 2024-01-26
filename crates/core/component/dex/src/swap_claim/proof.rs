@@ -305,7 +305,7 @@ impl DummyWitness for SwapClaimCircuit {
         let state_commitment_proof = sct
             .witness(swap_commitment)
             .expect("the SCT should be able to witness the just-inserted swap commitment");
-        let nullifier = Nullifier(Fq::from(1));
+        let nullifier = Nullifier(Fq::from(1u64));
         let claim_fee = Fee::default();
         let output_data = BatchSwapOutputData {
             delta_1: Amount::from(10u64),
@@ -318,10 +318,10 @@ impl DummyWitness for SwapClaimCircuit {
             trading_pair: swap_plaintext.trading_pair,
             epoch_starting_height: 0,
         };
-        let note_blinding_1 = Fq::from(1);
-        let note_blinding_2 = Fq::from(1);
-        let note_commitment_1 = tct::StateCommitment(Fq::from(1));
-        let note_commitment_2 = tct::StateCommitment(Fq::from(2));
+        let note_blinding_1 = Fq::from(1u64);
+        let note_blinding_2 = Fq::from(1u64);
+        let note_commitment_1 = tct::StateCommitment(Fq::from(1u64));
+        let note_commitment_2 = tct::StateCommitment(Fq::from(2u64));
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
         let public = SwapClaimProofPublic {
