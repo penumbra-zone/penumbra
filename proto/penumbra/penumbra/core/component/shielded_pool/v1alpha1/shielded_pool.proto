@@ -198,3 +198,9 @@ message GenesisContent {
   // The allocations present at genesis
   repeated Allocation allocations = 2;
 }
+
+// Parameters for Fuzzy Message Detection
+message FmdParameters {
+  uint32 precision_bits = 1;
+  uint64 as_of_block_height = 2;
+}

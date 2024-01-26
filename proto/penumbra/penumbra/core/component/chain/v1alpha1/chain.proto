@@ -17,12 +17,6 @@ message Ratio {
   uint64 denominator = 2;
 }
 
-// Parameters for Fuzzy Message Detection
-message FmdParameters {
-  uint32 precision_bits = 1;
-  uint64 as_of_block_height = 2;
-}
-
 // Chain-specific genesis content.
 message GenesisContent {
   // The ChainParameters present at genesis.
