@@ -8,17 +8,23 @@ use ibc_types::{
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter};
+use crate::{
+    component::{client::StateWriteExt as _, client_counter::ClientCounter},
+    genesis, StateWriteExt as _,
+};
 
 use super::HostInterface;
 
-pub struct IBCComponent {}
+pub struct Ibc {}
 
-impl IBCComponent {
+impl Ibc {
     #[instrument(name = "ibc", skip(state, app_state))]
-    pub async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+    pub async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&genesis::Content>) {
         match app_state {
-            Some(_) => state.put_client_counter(ClientCounter(0)),
+            Some(genesis) => {
+                state.put_ibc_params(genesis.ibc_params.clone());
+                state.put_client_counter(ClientCounter(0))
+            }
             None => { /* perform upgrade specific check */ }
         }
     }

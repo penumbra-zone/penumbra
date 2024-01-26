@@ -24,7 +24,6 @@ impl Component for Funding {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
             Some(genesis) => {
-
                 state.put_funding_params(genesis.funding_params.clone());
             }
         };

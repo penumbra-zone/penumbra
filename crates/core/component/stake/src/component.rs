@@ -1136,7 +1136,9 @@ impl Component for Staking {
         app_state: Option<&(GenesisContent, ShieldedPoolGenesisContent)>,
     ) {
         match app_state {
-            Some((app_state, sp_app_state)) => {
+            Some((staking_app_state, shielded_pool_app_state)) => {
+                state.put_stake_params(staking_app_state.stake_params.clone());
+
                 let starting_height = state
                     .get_block_height()
                     .await
@@ -1157,7 +1159,7 @@ impl Component for Staking {
                 // Compile totals of genesis allocations by denom, which we can use
                 // to compute the delegation tokens for each validator.
                 let mut genesis_allocations = BTreeMap::<_, Amount>::new();
-                for allocation in &sp_app_state.allocations {
+                for allocation in &shielded_pool_app_state.allocations {
                     let value = allocation.value();
                     *genesis_allocations.entry(value.asset_id).or_default() += value.amount;
                 }
@@ -1165,7 +1167,7 @@ impl Component for Staking {
                 // Add initial validators to the JMT
                 // Validators are indexed in the JMT by their public key,
                 // and there is a separate key containing the list of all validator keys.
-                for validator in &app_state.validators {
+                for validator in &staking_app_state.validators {
                     // Parse the proto into a domain type.
                     let validator = Validator::try_from(validator.clone())
                         .expect("should be able to parse genesis validator");
