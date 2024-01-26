@@ -34,8 +34,8 @@ impl Component for Governance {
     #[instrument(name = "governance", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            Some(content) => {
-                state.put_governance_params(content.governance_params.clone());
+            Some(genesis) => {
+                state.put_governance_params(genesis.governance_params.clone());
                 // Clients need to be able to read the next proposal number, even when no proposals have
                 // been submitted yet
                 state.init_proposal_counter();

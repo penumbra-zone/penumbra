@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::genesis;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
@@ -8,23 +9,21 @@ use penumbra_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::genesis::Content as GenesisContent;
-
 use super::{NoteManager, SupplyWrite};
 
 pub struct ShieldedPool {}
 
 #[async_trait]
 impl Component for ShieldedPool {
-    type AppState = GenesisContent;
+    type AppState = genesis::Content;
 
     #[instrument(name = "shielded_pool", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(app_state) => {
+            Some(genesis) => {
                 // Register a denom for each asset in the genesis state
-                for allocation in &app_state.allocations {
+                for allocation in &genesis.allocations {
                     tracing::debug!(?allocation, "processing allocation");
                     assert_ne!(
                         allocation.raw_amount,

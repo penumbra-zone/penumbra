@@ -11,13 +11,13 @@ use cnidarium_component::Component;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::genesis::Content;
+use crate::genesis;
 
 pub struct Funding {}
 
 #[async_trait]
 impl Component for Funding {
-    type AppState = Content;
+    type AppState = genesis::Content;
 
     #[instrument(name = "funding", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {

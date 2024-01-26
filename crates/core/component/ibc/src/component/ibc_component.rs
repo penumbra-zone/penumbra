@@ -17,6 +17,9 @@ use super::HostInterface;
 
 pub struct Ibc {}
 
+// Note: [`Ibc`] does not implement the [`cnidarium_component::Component`] trait
+// this is because we want to have a bound on [`HostInterface`] in the `begin_block`
+// processing.
 impl Ibc {
     #[instrument(name = "ibc", skip(state, app_state))]
     pub async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&genesis::Content>) {

@@ -26,8 +26,8 @@ impl Component for Distributions {
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(content) => {
-                state.put_distributions_params(content.distributions_params.clone());
+            Some(genesis) => {
+                state.put_distributions_params(genesis.distributions_params.clone());
             }
         };
     }
