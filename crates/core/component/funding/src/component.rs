@@ -11,17 +11,22 @@ use cnidarium_component::Component;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
+use crate::genesis::Content;
+
 pub struct Funding {}
 
 #[async_trait]
 impl Component for Funding {
-    type AppState = ();
+    type AppState = Content;
 
-    #[instrument(name = "funding", skip(_state, app_state))]
-    async fn init_chain<S: StateWrite>(mut _state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "funding", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(_) => { /* no-op */ }
+            Some(genesis) => {
+
+                state.put_funding_params(genesis.funding_params.clone());
+            }
         };
     }
 

@@ -14,17 +14,21 @@ use penumbra_num::Amount;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
+use crate::genesis;
+
 pub struct Distributions {}
 
 #[async_trait]
 impl Component for Distributions {
-    type AppState = ();
+    type AppState = genesis::Content;
 
-    #[instrument(name = "distributions", skip(_state, app_state))]
-    async fn init_chain<S: StateWrite>(mut _state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "distributions", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(_) => { /* no-op, future check of genesis chain parameters? */ }
+            Some(content) => {
+                state.put_distributions_params(content.distributions_params.clone());
+            }
         };
     }
 

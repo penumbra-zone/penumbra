@@ -2,7 +2,7 @@ mod view;
 
 use std::sync::Arc;
 
-use crate::{genesis::Content as GenesisContent, state_key};
+use crate::{genesis::Content, state_key};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::Component;
@@ -15,14 +15,14 @@ pub struct Fee {}
 
 #[async_trait]
 impl Component for Fee {
-    type AppState = GenesisContent;
+    type AppState = Content;
 
     #[instrument(name = "staking", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&GenesisContent>) {
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Content>) {
         match app_state {
-            Some(app_state) => {
-                // Put the initial gas prices
-                state.put_gas_prices(app_state.gas_prices);
+            Some(genesis) => {
+                state.put_fee_params(genesis.fee_params.clone());
+                state.put_gas_prices(genesis.gas_prices);
             }
             None => { /* perform upgrade specific check */ }
         }
