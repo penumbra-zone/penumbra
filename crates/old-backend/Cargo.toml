@@ -1,0 +1,11 @@
+[package]
+name = "old-backend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+decaf377_outdated = { package = "decaf377", version = "0.5" }
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+

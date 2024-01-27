@@ -48,7 +48,7 @@ members = [
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
-  "tools/summonerd", "crates/core/component/funding",
+  "tools/summonerd", "crates/core/component/funding", "crates/old-backend",
 ]
 
 # Optimize for small binaries in just the wasm crate.
