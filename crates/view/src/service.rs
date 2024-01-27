@@ -9,10 +9,16 @@ use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
-use futures::stream::{StreamExt, TryStreamExt};
+use futures::{
+    stream::{StreamExt, TryStreamExt},
+    FutureExt,
+};
 use rand::Rng;
 use rand_core::OsRng;
-use tokio::sync::{watch, RwLock};
+use tokio::{
+    sync::{watch, RwLock},
+    task::JoinHandle,
+};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::instrument;
@@ -82,6 +88,8 @@ pub struct ViewService {
     node: Url,
     /// Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
+    /// The handle to the spawned worker task, allowing us to cancel it.
+    worker_handle: Arc<JoinHandle<()>>,
 }
 
 impl ViewService {
@@ -107,7 +115,7 @@ impl ViewService {
         let (worker, sct, error_slot, sync_height_rx) =
             Worker::new(storage.clone(), node.clone()).await?;
 
-        tokio::spawn(worker.run());
+        let worker_handle = tokio::spawn(worker.run().map(|_| ()));
 
         Ok(Self {
             storage,
@@ -115,7 +123,20 @@ impl ViewService {
             sync_height_rx,
             state_commitment_tree: sct,
             node,
+            worker_handle: Arc::new(worker_handle),
         })
+    }
+
+    /// Close this view service, stopping the background syncing task.
+    ///
+    /// This will have a spoooky action at a distance in that other cloned instances of this
+    /// service sharing the syncing task will also be silently broken, so be careful when using
+    /// this method.
+    ///
+    /// Also this is sort of a stop-gap for a more robust view service where this method won't be
+    /// necessary, so one should exercise skepticism that this method even exists.
+    pub async fn abort(&self) {
+        self.worker_handle.abort();
     }
 
     async fn check_worker(&self) -> Result<(), tonic::Status> {
