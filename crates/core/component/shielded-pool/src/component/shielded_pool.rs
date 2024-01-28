@@ -25,6 +25,9 @@ impl Component for ShieldedPool {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
             Some(genesis) => {
+                state.put_current_fmd_parameters(fmd::Parameters::default());
+                state.put_previous_fmd_parameters(fmd::Parameters::default());
+
                 // Register a denom for each asset in the genesis state
                 for allocation in &genesis.allocations {
                     tracing::debug!(?allocation, "processing allocation");

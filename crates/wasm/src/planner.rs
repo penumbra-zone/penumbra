@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use rand_core::{CryptoRng, RngCore};
 
 use penumbra_asset::{asset::DenomMetadata, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::ChainParameters;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -29,7 +29,7 @@ use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::core::keys::v1alpha1::AddressIndex;
 use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{fmd, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
@@ -424,7 +424,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_params: &ChainParameters,
-        fmd_params: &FmdParameters,
+        fmd_params: &fmd::Parameters,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
         self_address: Address,

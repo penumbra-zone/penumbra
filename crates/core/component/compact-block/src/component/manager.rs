@@ -40,6 +40,7 @@ trait Inner: StateWrite {
         end_epoch: bool,
         mut app_parameters_updated: bool,
     ) -> Result<()> {
+        use penumbra_shielded_pool::component::StateReadExt as _;
         // Find out what our block height is (this is set even during the genesis block)
         let height = self
             .get_block_height()

@@ -7,7 +7,6 @@ use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
 use penumbra_asset::asset::{self, DenomMetadata, Id};
-use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
@@ -20,7 +19,7 @@ use penumbra_proto::view::v1alpha1::{
     BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::note;
+use penumbra_shielded_pool::{fmd, note};
 use penumbra_stake::IdentityKey;
 use penumbra_transaction::AuthorizationData;
 use penumbra_transaction::{
@@ -77,7 +76,7 @@ pub trait ViewClient {
     /// Get a copy of the FMD parameters.
     fn fmd_parameters(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<FmdParameters>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>>;
 
     /// Queries for notes.
     fn notes(
@@ -394,7 +393,7 @@ where
 
     fn fmd_parameters(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<FmdParameters>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
             let parameters = ViewProtocolServiceClient::fmd_parameters(

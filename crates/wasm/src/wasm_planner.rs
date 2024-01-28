@@ -1,11 +1,12 @@
 use anyhow::anyhow;
 use ark_ff::UniformRand;
 use decaf377::Fq;
+use penumbra_shielded_pool::fmd;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::ChainParameters;
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
     core::{
@@ -30,7 +31,7 @@ pub struct WasmPlanner {
     planner: Planner<OsRng>,
     storage: IndexedDBStorage,
     chain_params: ChainParameters,
-    fmd_params: FmdParameters,
+    fmd_params: fmd::Parameters,
 }
 
 #[wasm_bindgen]
@@ -40,7 +41,7 @@ impl WasmPlanner {
     /// Arguments:
     ///     idb_constants: `IndexedDbConstants`
     ///     chain_params: `ChainParams`
-    ///     fmd_params: `FmdParameters`
+    ///     fmd_params: `penumbra_shielded_pool::fmd::Parameters`
     /// Returns: `WasmPlanner`
     #[wasm_bindgen]
     pub async fn new(
