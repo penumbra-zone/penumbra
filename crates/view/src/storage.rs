@@ -5,7 +5,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
+use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
@@ -25,7 +25,7 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
-use penumbra_shielded_pool::{note, Note, Rseed};
+use penumbra_shielded_pool::{fmd, note, Note, Rseed};
 use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
@@ -658,7 +658,7 @@ impl Storage {
         .await?
     }
 
-    pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
+    pub async fn fmd_parameters(&self) -> anyhow::Result<fmd::Parameters> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -668,7 +668,7 @@ impl Storage {
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing fmd parameters"))?;
 
-            FmdParameters::decode(bytes.as_slice())
+            fmd::Parameters::decode(bytes.as_slice())
         })
         .await?
     }
@@ -1592,7 +1592,7 @@ impl Storage {
             // Update FMD parameters if they've changed.
             if filtered_block.fmd_parameters.is_some() {
                 let fmd_parameters_bytes =
-                    &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
+                    &fmd::Parameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
 
                 dbtx.execute("INSERT INTO fmd_parameters (bytes) VALUES (?1)", [&fmd_parameters_bytes])?;
             }

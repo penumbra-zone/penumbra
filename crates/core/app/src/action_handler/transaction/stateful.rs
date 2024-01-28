@@ -1,9 +1,10 @@
 use anyhow::Result;
 use cnidarium::StateRead;
 use penumbra_chain::component::StateReadExt as _;
-use penumbra_chain::params::FmdParameters;
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_sct::component::StateReadExt as _;
+use penumbra_shielded_pool::component::StateReadExt as _;
+use penumbra_shielded_pool::fmd;
 use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::Transaction;
 
@@ -39,8 +40,8 @@ const FMD_GRACE_PERIOD_BLOCKS: u64 = 10;
 
 pub fn fmd_precision_within_grace_period(
     tx: &Transaction,
-    previous_fmd_parameters: FmdParameters,
-    current_fmd_parameters: FmdParameters,
+    previous_fmd_parameters: fmd::Parameters,
+    current_fmd_parameters: fmd::Parameters,
     block_height: u64,
 ) -> anyhow::Result<()> {
     for clue in tx
@@ -49,8 +50,8 @@ pub fn fmd_precision_within_grace_period(
         .unwrap_or_default()
         .fmd_clues
     {
-        // Clue must be using the current `FmdParameters`, or be within
-        // `FMD_GRACE_PERIOD_BLOCKS` of the previous `FmdParameters`.
+        // Clue must be using the current `fmd::Parameters`, or be within
+        // `FMD_GRACE_PERIOD_BLOCKS` of the previous `fmd::Parameters`.
         if clue.precision_bits() == current_fmd_parameters.precision_bits
             || (clue.precision_bits() == previous_fmd_parameters.precision_bits
                 && block_height

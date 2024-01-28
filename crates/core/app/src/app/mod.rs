@@ -6,7 +6,6 @@ use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, S
 use cnidarium_component::Component;
 use jmt::RootHash;
 use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_chain::params::FmdParameters;
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
@@ -97,11 +96,6 @@ impl App {
         match app_state {
             genesis::AppState::Content(app_state) => {
                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
-
-                // TEMP: Hardcoding FMD parameters until we have a mechanism to change them. See issue #1226.
-                // TODO(erwan): moving this when we gut the chain component.
-                state_tx.put_current_fmd_parameters(FmdParameters::default());
-                state_tx.put_previous_fmd_parameters(FmdParameters::default());
 
                 // The genesis block height is 0
                 state_tx.put_block_height(0);
