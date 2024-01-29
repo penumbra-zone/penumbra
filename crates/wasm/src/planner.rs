@@ -161,15 +161,23 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// This function should be called once.
     pub fn add_gas_fees(&mut self) -> &mut Self {
-        let minimum_fee = self.gas_prices.fee(&self.plan.gas_cost());
+        let minimum_fee = self
+            .gas_prices
+            .fee(&(self.plan.gas_cost() + gas::output_gas_cost() + gas::spend_gas_cost()));
 
-        // Since paying the fee possibly requires adding an additional Spend to the
-        // transaction, which would then change the fee calculation, we multiply the
-        // fee here by a factor of 2 and then recalculate and capture the excess as
+        // Since paying the fee possibly requires adding additional Spends and Outputs
+        // to the transaction, which would then change the fee calculation, we multiply
+        // the fee here by a factor of 128 and then recalculate and capture the excess as
         // change outputs.
-        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(2u32));
-        self.balance += fee.0;
-        self.plan.transaction_parameters.fee = fee;
+        //
+        // TODO: this is gross and depending on gas costs could make the gas overpayment
+        // ridiculously large (so large that the account may not have notes available to cover it)
+        // or too small. We may need a cyclical calculation of fees on the transaction plan,
+        // or a "simulated" transaction plan with infinite assets to calculate fees on before
+        // copying the exact fees to the real transaction.
+        let fee = Fee::from_staking_token_amount(minimum_fee * Amount::from(128u32));
+        self.balance -= fee.0;
+        self.plan.transaction_parameters.fee = fee.clone();
         self
     }
 
