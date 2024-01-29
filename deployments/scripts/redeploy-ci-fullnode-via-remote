@@ -1,0 +1,74 @@
+#!/bin/bash
+# CI script to manage a standalone fullnode, created in order to exercise
+# direct serving of pd. This script is intended to executed on the remote host
+# that serves `pd`, triggered from a CI runner over SSH.
+set -euo pipefail
+
+
+# Unpack args.
+if [[ $# -lt 2 ]] ; then
+    >&2 echo "ERROR: required arguments not specified."
+    >&2 echo "Usage: $0 <PENUMBRA_VERSION> <PENUMBRA_ENVIRONMENT>"
+    exit 1
+fi
+PENUMBRA_VERSION="${1:-}"
+PENUMBRA_ENVIRONMENT="${2:-}"
+shift 2
+if [[ "$PENUMBRA_ENVIRONMENT" = "penumbra-preview" ]] ; then
+    pd_bootstrap_url="https://rpc.testnet-preview.penumbra.zone"
+elif [[ "$PENUMBRA_ENVIRONMENT" = "penumbra-testnet" ]] ; then
+    pd_bootstrap_url="https://rpc.testnet.penumbra.zone"
+else
+    >&2 echo "ERROR: unsupported PENUMBRA_ENVIRONMENT: '$PENUMBRA_ENVIRONMENT'"
+    exit 2
+fi
+
+# Additional sanity-check to ensure we're running in the proper CI context.
+if ! getent passwd | grep -q "^penumbra:" ; then
+    >&2 echo "ERROR: 'penumbra' user not found."
+    >&2 echo "This script should only be run within a dedicated CI box."
+    exit 3
+fi
+
+# Take down running service prior to maintenance.
+sudo systemctl stop cometbft penumbra
+
+# Pluck out recently built `pd` from packaged container.
+# We reuse existing build artifacts to ensure what's deployed it what was built,
+# and it has the nice benefit of being faster, because we don't have to rebuild
+# the same gitref on a slower remote host.
+# TODO: local container storage will grow indefinitely; only a problem for preview, but handle it.
+container_img="ghcr.io/penumbra-zone/penumbra:${PENUMBRA_VERSION}"
+podman pull "$container_img"
+container_id="$(podman run "$container_img" sleep infinity)"
+f="$(mktemp)"
+podman cp "${container_id}:/usr/bin/pd" "$f"
+podman kill "$container_id"
+sudo mv -v -f "$f" /usr/local/bin/pd
+
+# Back up ACME dir, so we don't hit ratelimit requesting new certs.
+acme_cache="/home/penumbra/.penumbra/testnet_data/node0/pd/tokio_rustls_acme_cache"
+if [[ -d "$acme_cache" ]]; then
+    sudo rm -rf /opt/penumbra-ci
+    sudo mkdir -p /opt/penumbra-ci
+    sudo mv "$acme_cache" /opt/penumbra-ci/
+else
+    >&2 echo "ERROR: ACME cache directory not found: $acme_cache"
+    exit 4
+fi
+
+# The pd operations must be run specifically as "penumbra" user.
+# Nuke state, rejoin.
+sudo -u penumbra pd testnet unsafe-reset-all
+sudo -u penumbra pd testnet join "$pd_bootstrap_url"
+# Restore ACME dir prior to service start
+sudo mv -v "/opt/penumbra-ci/$(basename "$acme_cache")" "$acme_cache"
+sudo chown -R penumbra: /home/penumbra/.penumbra
+
+# Bring service back up.
+sudo systemctl daemon-reload
+sudo systemctl restart penumbra cometbft
+# Verify that the services are in fact running, else exit non-zero.
+sleep 5
+sudo systemctl is-active penumbra
+sudo systemctl is-active cometbft
