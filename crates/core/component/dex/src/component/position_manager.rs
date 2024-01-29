@@ -475,11 +475,11 @@ pub(crate) trait Inner: StateWrite {
             "updating position aggregate value"
         );
 
-        // Find the delta amounts of assets A and B, based on the state of the position being stored,
+        // Find the difference in the amounts of assets A and B, based on the state of the position being stored,
         // and the previous state of the position.
-        let (delta_a, delta_b) = match (position.state, prev_position) {
+        let (net_change_for_a, net_change_for_b) = match (position.state, prev_position) {
             (State::Opened, None) => {
-                // The position is newly opened, so the delta is the full amount of assets A and B.
+                // The position is newly opened, so the change is the full amount of assets A and B.
 
                 // Use the new reserves to compute `new_position_contribution`,
                 // the amount of asset A contributed by the position (i.e. the reserves of asset A).
@@ -502,7 +502,7 @@ pub(crate) trait Inner: StateWrite {
                 (new_a, new_b)
             }
             (State::Opened, Some(prev)) => {
-                // The position is still open however the reserves have changed, so the delta is the difference
+                // The position is still open however the reserves have changed, so the change is the difference
                 // between the previous reserves and the new reserves.
                 let pair = position.phi.pair;
                 let new_a = Balance::from(Value {
@@ -551,7 +551,7 @@ pub(crate) trait Inner: StateWrite {
                     asset_id: pair.asset_2,
                     amount: old_b,
                 });
-                // The position is closed, so the delta is the negative of the previous reserves.
+                // The position is closed, so the change is the negative of the previous reserves.
                 (-old_a, -old_b)
             }
             (State::Withdrawn, _) | (State::Claimed, _) | (State::Closed, None) => {
@@ -562,8 +562,8 @@ pub(crate) trait Inner: StateWrite {
 
         tracing::debug!(
             ?position,
-            ?delta_a,
-            ?delta_b,
+            ?net_change_for_a,
+            ?net_change_for_b,
             "updating position assets' aggregate balances"
         );
 
@@ -578,9 +578,9 @@ pub(crate) trait Inner: StateWrite {
             None => ValueCircuitBreaker::default(),
         };
 
-        // Add the delta to the value circuit breaker for assets A and B.
-        value_circuit_breaker.tally(delta_a);
-        value_circuit_breaker.tally(delta_b);
+        // Add the change to the value circuit breaker for assets A and B.
+        value_circuit_breaker.tally(net_change_for_a);
+        value_circuit_breaker.tally(net_change_for_b);
 
         // Confirm that the value circuit breaker is still within the limits.
         // This call will panic if the value circuit breaker detects inflation.
