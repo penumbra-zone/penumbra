@@ -6,12 +6,11 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
+use validator::BondingState::*;
 
 pub mod metrics;
 pub mod rpc;
 pub use self::metrics::register_metrics;
-
-// TODO: move into leaf submodules under component/ and re-export
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -157,7 +156,6 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Doing a single tuple match, rather than matching on substates,
         // ensures we exhaustively cover all possible state transitions.
-        use validator::BondingState::*;
         use validator::State::*;
 
         // Whenever a validator transitions out of the active state to a disabled, jailed, or
@@ -223,7 +221,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
+                        unbonds_at_epoch: self
+                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .await?,
                     },
                 );
 
@@ -271,7 +271,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
+                        unbonds_at_epoch: self
+                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .await?,
                     },
                 );
 
@@ -287,7 +289,9 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonding_epoch: self.current_unbonding_end_epoch_for(identity_key).await?,
+                        unbonds_at_epoch: self
+                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .await?,
                     },
                 );
                 self.remove_consensus_set_index(identity_key);
@@ -728,17 +732,22 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 .await?
                 .context("should be able to fetch validator bonding state")?;
 
-            // If the unbonding epoch has been reached, transition the validator to Unbonded.
-            if let validator::BondingState::Unbonding { unbonding_epoch } = state {
-                if current_epoch.index >= unbonding_epoch {
-                    let _ = self
-                        .set_validator_bonding_state(
-                            &identity_key,
-                            validator::BondingState::Unbonded,
-                        )
-                        // Instrument the call with a span that includes the validator ID,
-                        // since our current span doesn't have any per-validator information.
-                        .instrument(tracing::debug_span!("unbonding", ?identity_key));
+            match state {
+                Bonded => continue,
+                Unbonded => continue,
+                Unbonding { unbonds_at_epoch } => {
+                    if current_epoch.index >= unbonds_at_epoch {
+                        // The validator's delegation pool has finished unbonding, so we
+                        // transition it to the Unbonded state.
+                        let _ = self
+                            .set_validator_bonding_state(
+                                &identity_key,
+                                validator::BondingState::Unbonded,
+                            )
+                            // Instrument the call with a span that includes the validator ID,
+                            // since our current span doesn't have any per-validator information.
+                            .instrument(tracing::debug_span!("unbonding", ?identity_key));
+                    }
                 }
             }
         }
@@ -1471,47 +1480,42 @@ pub trait StateReadExt: StateRead {
         Ok(self.get_stake_params().await?.missed_blocks_maximum)
     }
 
-    // TODO(erwan): eerily similar to `current_unbonding_end_epoch_for`.
-    async fn unbonding_end_epoch_for(
+    /// Compute the number of epochs that will elapse before the validator is unbonded.
+    /// TODO(erwan): move this to the `ValidatorManager`
+    async fn compute_unbonding_delay_for_validator(
         &self,
-        id: &IdentityKey,
-        start_epoch_index: u64,
+        validator_identity: &IdentityKey,
     ) -> Result<u64> {
-        let unbonding_epochs = self.get_stake_params().await?.unbonding_epochs;
+        let Some(val_bonding_state) = self.validator_bonding_state(validator_identity).await?
+        else {
+            anyhow::bail!(
+                "validator bonding state not tracked (validator_identity={})",
+                validator_identity
+            )
+        };
 
-        let default_unbonding = start_epoch_index + unbonding_epochs;
+        let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
 
-        let validator_unbonding =
-            if let Some(validator::BondingState::Unbonding { unbonding_epoch }) =
-                self.validator_bonding_state(id).await?
-            {
-                unbonding_epoch
-            } else {
-                u64::MAX
-            };
+        let epoch_delay = match val_bonding_state {
+            Bonded => min_epoch_delay,
+            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(unbonds_at_epoch),
+            Unbonded => 0u64,
+        };
 
-        Ok(std::cmp::min(default_unbonding, validator_unbonding))
+        // When the minimum delay parameter changes, an unbonding validator may
+        // have a delay that is larger than the new minimum delay. In this case,
+        // we want to use the new minimum delay.
+        Ok(std::cmp::min(epoch_delay, min_epoch_delay))
     }
 
     /// Return the epoch index at which the validator will be unbonded.
     /// This is the minimum of the default unbonding epoch and the validator's
     /// unbonding epoch.
-    async fn current_unbonding_end_epoch_for(&self, id: &IdentityKey) -> Result<u64> {
+    async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
-        let unbonding_epochs = self.get_stake_params().await?.unbonding_epochs;
-
-        let default_unbonding = current_epoch.index + unbonding_epochs;
-
-        let validator_unbonding =
-            if let Some(validator::BondingState::Unbonding { unbonding_epoch }) =
-                self.validator_bonding_state(id).await?
-            {
-                unbonding_epoch
-            } else {
-                u64::MAX
-            };
-
-        Ok(std::cmp::min(default_unbonding, validator_unbonding))
+        let unbonding_delay = self.compute_unbonding_delay_for_validator(id).await?;
+        let unbonding_epoch = current_epoch.index.saturating_add(unbonding_delay);
+        Ok(unbonding_epoch)
     }
 }
 

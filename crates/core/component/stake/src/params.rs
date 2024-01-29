@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::StakeParameters", into = "pb::StakeParameters")]
 pub struct StakeParameters {
+    /// The number of epochs that must pass before a validator can be undonded.
     pub unbonding_epochs: u64,
     /// The number of validators allowed in the consensus set (Active state).
     pub active_validator_limit: u64,

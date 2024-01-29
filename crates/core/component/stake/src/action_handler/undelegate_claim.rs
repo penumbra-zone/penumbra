@@ -30,27 +30,30 @@ impl ActionHandler for UndelegateClaim {
     }
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        // We need to check two things:
-        // 1. That we're past the specified unbonding end epoch.
+        // If the validator delegation pool is bonded, or unbonding, check that enough epochs
+        // have elapsed to claim the unbonding tokens:
         let current_epoch = state.epoch().await?;
-        let end_epoch_index = state
-            .unbonding_end_epoch_for(&self.body.validator_identity, self.body.start_epoch_index)
+        let unbonding_epoch = state
+            .compute_unbonding_epoch_for_validator(&self.body.validator_identity)
             .await?;
+
         ensure!(
-            current_epoch.index >= end_epoch_index,
+            unbonding_epoch > current_epoch.index,
             "cannot claim unbonding tokens before the end epoch (current epoch: {}, end epoch: {})",
             current_epoch.index,
-            end_epoch_index
+            unbonding_epoch
         );
 
-        // 2. That the penalty is correct.
+        // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
+        // that it matches the penalty in the claim.
         let expected_penalty = state
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
                 self.body.start_epoch_index,
-                end_epoch_index,
+                unbonding_epoch,
             )
             .await?;
+
         ensure!(
             self.body.penalty == expected_penalty,
             "penalty does not match expected penalty"
