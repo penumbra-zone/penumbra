@@ -5153,6 +5153,7 @@ dependencies = [
  "async-stream 0.2.1",
  "async-trait",
  "base64 0.20.0",
+ "bincode",
  "blake2b_simd 0.5.11",
  "cnidarium",
  "cnidarium-component",

@@ -7,11 +7,12 @@ use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_asset::asset;
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
+use crate::circuit_breaker::ValueCircuitBreaker;
 use crate::lp::position::State;
 use crate::{
     lp::position::{self, Position},
@@ -153,6 +154,10 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Update the available liquidity for this position's trading pair.
         self.update_available_liquidity(&position, &prev).await?;
+
+        // Update the value circuit breaker's aggregate account.
+        self.update_position_aggregate_value(&position, &prev)
+            .await?;
 
         self.put(state_key::position_by_id(&id), position);
         Ok(())
@@ -452,6 +457,140 @@ pub(super) trait Inner: StateWrite {
         // B -> A
         self.update_liquidity_index(DirectedTradingPair::new(b, a), position, prev_position)
             .await?;
+
+        Ok(())
+    }
+
+    /// Tracks the total token supply deposited in positions for all assets to ensure
+    /// asset value conservation (i.e. that more assets can't come out of positions than
+    /// were deposited).
+    async fn update_position_aggregate_value(
+        &mut self,
+        position: &Position,
+        prev_position: &Option<Position>,
+    ) -> Result<()> {
+        tracing::debug!(
+            ?position,
+            ?prev_position,
+            "updating position aggregate value"
+        );
+
+        // Find the delta amounts of assets A and B, based on the state of the position being stored,
+        // and the previous state of the position.
+        let (delta_a, delta_b) = match (position.state, prev_position) {
+            (State::Opened, None) => {
+                // The position is newly opened, so the delta is the full amount of assets A and B.
+
+                // Use the new reserves to compute `new_position_contribution`,
+                // the amount of asset A contributed by the position (i.e. the reserves of asset A).
+                let pair = position.phi.pair;
+                let new_a = position
+                    .reserves_for(pair.asset_1)
+                    .expect("specified position should match provided trading pair");
+                let new_b = position
+                    .reserves_for(pair.asset_2)
+                    .expect("specified position should match provided trading pair");
+
+                let new_a = Balance::from(Value {
+                    asset_id: pair.asset_1,
+                    amount: new_a,
+                });
+                let new_b = Balance::from(Value {
+                    asset_id: pair.asset_2,
+                    amount: new_b,
+                });
+                (new_a, new_b)
+            }
+            (State::Opened, Some(prev)) => {
+                // The position is still open however the reserves have changed, so the delta is the difference
+                // between the previous reserves and the new reserves.
+                let pair = position.phi.pair;
+                let new_a = Balance::from(Value {
+                    asset_id: pair.asset_1,
+                    amount: position
+                        .reserves_for(pair.asset_1)
+                        .expect("specified position should match provided trading pair"),
+                });
+                let new_b = Balance::from(Value {
+                    asset_id: pair.asset_2,
+                    amount: position
+                        .reserves_for(pair.asset_2)
+                        .expect("specified position should match provided trading pair"),
+                });
+                let old_a = Balance::from(Value {
+                    asset_id: pair.asset_1,
+                    amount: prev
+                        .reserves_for(pair.asset_1)
+                        .expect("specified position should match provided trading pair"),
+                });
+                let old_b = Balance::from(Value {
+                    asset_id: pair.asset_2,
+                    amount: prev
+                        .reserves_for(pair.asset_2)
+                        .expect("specified position should match provided trading pair"),
+                });
+
+                (new_a - old_a, new_b - old_b)
+            }
+            (State::Closed, Some(prev)) => {
+                // The previous amount of assets A and B should be subtracted from the aggregate value.
+
+                let pair = position.phi.pair;
+                let old_a = prev
+                    .reserves_for(pair.asset_1)
+                    .expect("specified position should match provided trading pair");
+                let old_b = prev
+                    .reserves_for(pair.asset_2)
+                    .expect("specified position should match provided trading pair");
+
+                let old_a = Balance::from(Value {
+                    asset_id: pair.asset_1,
+                    amount: old_a,
+                });
+                let old_b = Balance::from(Value {
+                    asset_id: pair.asset_2,
+                    amount: old_b,
+                });
+                // The position is closed, so the delta is the negative of the previous reserves.
+                (-old_a, -old_b)
+            }
+            (State::Withdrawn, _) | (State::Claimed, _) | (State::Closed, None) => {
+                // The position already went through the `Closed` state or was opened in the `Closed` state, so its contribution has already been subtracted.
+                return Ok(());
+            }
+        };
+
+        tracing::debug!(
+            ?position,
+            ?delta_a,
+            ?delta_b,
+            "updating position assets' aggregate balances"
+        );
+
+        let mut value_circuit_breaker: ValueCircuitBreaker = match self
+            .nonverifiable_get_raw(&state_key::aggregate_value().as_bytes())
+            .await
+            .expect("able to retrieve value circuit breaker from nonverifiable storage")
+        {
+            Some(bytes) => bincode::deserialize(&bytes).expect(
+                "able to deserialize stored value circuit breaker from nonverifiable storage",
+            ),
+            None => ValueCircuitBreaker::default(),
+        };
+
+        // Add the delta to the value circuit breaker for assets A and B.
+        value_circuit_breaker.tally(delta_a);
+        value_circuit_breaker.tally(delta_b);
+
+        // Confirm that the value circuit breaker is still within the limits.
+        value_circuit_breaker.check()?;
+
+        // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
+        self.nonverifiable_put_raw(
+            (&state_key::aggregate_value().as_bytes()).to_vec(),
+            bincode::serialize(&value_circuit_breaker)
+                .expect("able to serialize value circuit breaker for nonverifiable storage"),
+        );
 
         Ok(())
     }

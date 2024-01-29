@@ -2,6 +2,7 @@ use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;
 use penumbra_num::{Amount, AmountVar};
+use serde::{Deserialize, Serialize};
 use std::{
     collections::{btree_map, BTreeMap},
     fmt::{self, Debug, Formatter},
@@ -30,7 +31,7 @@ use self::commitment::BalanceCommitmentVar;
 
 /// A `Balance` is a "vector of [`Value`]s", where some values may be required, while others may be
 /// provided. For a transaction to be valid, its balance must be zero.
-#[derive(Clone, Eq, Default)]
+#[derive(Clone, Eq, Default, Serialize, Deserialize)]
 pub struct Balance {
     negated: bool,
     balance: BTreeMap<Id, Imbalance<NonZeroU128>>,
