@@ -5,7 +5,7 @@ releases:
     values:
       - persistence:
           enabled: true
-          size: 50G
+          size: 20G
       - preserve_lb_svc: true
       - only_lb_svc: false
       - image:
@@ -37,7 +37,7 @@ releases:
       - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-preview-val-0:26657"
       - persistence:
           enabled: true
-          size: 50G
+          size: 20G
       - part_of: penumbra-preview
       # Node config info, including ip address, monikers, and seed-mode status.
       - vars/penumbra-preview-nodes-ips.yml
@@ -78,7 +78,7 @@ releases:
           tag: main
       - persistence:
           enabled: true
-          size: 50G
+          size: 20G
       - cometbft:
           config:
             indexer: psql
