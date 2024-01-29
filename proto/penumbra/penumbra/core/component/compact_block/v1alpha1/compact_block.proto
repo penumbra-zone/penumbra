@@ -1,7 +1,6 @@
 syntax = "proto3";
 package penumbra.core.component.compact_block.v1alpha1;
 
-import "penumbra/core/component/chain/v1alpha1/chain.proto";
 import "penumbra/core/component/dex/v1alpha1/dex.proto";
 import "penumbra/core/component/fee/v1alpha1/fee.proto";
 import "penumbra/core/component/sct/v1alpha1/sct.proto";
