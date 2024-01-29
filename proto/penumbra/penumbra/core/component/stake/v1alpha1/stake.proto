@@ -96,7 +96,7 @@ message BondingState {
     BONDING_STATE_ENUM_UNBONDED = 3;
   }
   BondingStateEnum state = 1;
-  uint64 unbonding_epoch = 2;
+  uint64 unbonds_at_epoch = 2;
 }
 
 // Describes the state of a validator

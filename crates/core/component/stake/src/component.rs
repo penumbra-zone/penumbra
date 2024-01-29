@@ -719,7 +719,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         Ok(())
     }
 
-    /// Process all validator unbondings queued for release in the current epoch.
+    /// Process all `Unbonding` validators, transitioning them to `Unbonded` if their
+    /// unbonding target has been reached.
     #[instrument(skip(self))]
     async fn process_validator_unbondings(&mut self) -> Result<()> {
         let current_epoch = self.get_current_epoch().await?;
@@ -1481,7 +1482,7 @@ pub trait StateReadExt: StateRead {
     }
 
     /// Compute the number of epochs that will elapse before the validator is unbonded.
-    /// TODO(erwan): move this to the `ValidatorManager`
+    // TODO(erwan): move this to the `ValidatorManager`
     async fn compute_unbonding_delay_for_validator(
         &self,
         current_epoch: Epoch,
