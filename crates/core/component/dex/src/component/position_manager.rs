@@ -249,7 +249,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
-pub(super) trait Inner: StateWrite {
+pub(crate) trait Inner: StateWrite {
     fn index_position_by_price(&mut self, position: &position::Position) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         let id = position.id();
@@ -584,7 +584,7 @@ pub(super) trait Inner: StateWrite {
 
         // Confirm that the value circuit breaker is still within the limits.
         // This call will panic if the value circuit breaker detects inflation.
-        value_circuit_breaker.assert_balance_invariant();
+        value_circuit_breaker.check()?;
 
         // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
         self.nonverifiable_put_raw(

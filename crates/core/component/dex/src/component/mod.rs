@@ -10,7 +10,7 @@ mod action_handler;
 mod arb;
 mod dex;
 mod flow;
-mod position_manager;
+pub(crate) mod position_manager;
 mod swap_manager;
 
 pub use self::metrics::register_metrics;
