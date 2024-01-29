@@ -572,7 +572,7 @@ pub(super) trait Inner: StateWrite {
             .await
             .expect("able to retrieve value circuit breaker from nonverifiable storage")
         {
-            Some(bytes) => bincode::deserialize(&bytes).expect(
+            Some(bytes) => serde_json::from_slice(&bytes).expect(
                 "able to deserialize stored value circuit breaker from nonverifiable storage",
             ),
             None => ValueCircuitBreaker::default(),
@@ -588,7 +588,7 @@ pub(super) trait Inner: StateWrite {
         // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
         self.nonverifiable_put_raw(
             state_key::aggregate_value().as_bytes().to_vec(),
-            bincode::serialize(&value_circuit_breaker)
+            serde_json::to_vec(&value_circuit_breaker)
                 .expect("able to serialize value circuit breaker for nonverifiable storage"),
         );
 
