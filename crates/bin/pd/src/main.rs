@@ -9,6 +9,9 @@ use metrics_util::layers::Stack;
 
 use anyhow::Context;
 use cnidarium::{StateDelta, Storage};
+use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
+use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
+use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
@@ -21,6 +24,8 @@ use pd::{
     },
 };
 use penumbra_app::{PenumbraHost, SUBSTORE_PREFIXES};
+use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
+use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -148,6 +153,7 @@ async fn main() -> anyhow::Result<()> {
                     async move { pd::Mempool::new(storage.clone(), queue).await?.run().await }
                 }));
             let info = pd::Info::new(storage.clone());
+            let tm_proxy = TendermintProxy::new(cometbft_addr);
             let snapshot = pd::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
@@ -164,21 +170,48 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .expect("failed to spawn abci server");
 
+            let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
+
+            // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
+            // `Routes` structure to have each component define a method that
+            // returns a `Routes` with all of its query services bundled inside.
+            //
+            // This means we won't have to import all this shit and recite every
+            // single service -- we can e.g., have the app crate assemble all of
+            // its components' query services into a single `Routes` and then
+            // just add that to the gRPC server.
+
+            use cnidarium::rpc::proto::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
+            use penumbra_proto::core::{
+                app::v1alpha1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+                component::{
+                    chain::v1alpha1::query_service_server::QueryServiceServer as ChainQueryServiceServer,
+                    compact_block::v1alpha1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                    dex::v1alpha1::query_service_server::QueryServiceServer as DexQueryServiceServer,
+                    governance::v1alpha1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                    sct::v1alpha1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                    shielded_pool::v1alpha1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                    stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+                },
+            };
+            use tonic_web::enable as we;
+
+            use cnidarium::rpc::Server as StorageServer;
+            use penumbra_app::rpc::Server as AppServer;
+            use penumbra_chain::component::rpc::Server as ChainServer;
+            use penumbra_compact_block::component::rpc::Server as CompactBlockServer;
+            use penumbra_dex::component::rpc::Server as DexServer;
+            use penumbra_governance::component::rpc::Server as GovernanceServer;
+            use penumbra_sct::component::rpc::Server as SctServer;
+            use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
+            use penumbra_stake::component::rpc::Server as StakeServer;
+
             // Set rather permissive CORS headers for pd's gRPC: the service
             // should be accessible from arbitrary web contexts, such as localhost,
             // or any FQDN that wants to reference its data.
             let cors_layer = CorsLayer::permissive();
 
-            let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
-            let tendermint_proxy = TendermintProxy::new(cometbft_addr);
-            let routes = penumbra_app::rpc::Routes {
-                storage,
-                ibc,
-                tendermint_proxy,
-                enable_expensive_rpc,
-            }
-            .build()?;
-            let grpc_server = Server::builder()
+            let mut grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
                         tracing::error_span!("grpc", ?remote_addr)
@@ -201,7 +234,47 @@ async fn main() -> anyhow::Result<()> {
                 // new blocks.
                 // .timeout(std::time::Duration::from_secs(7))
                 // Wrap each of the gRPC services in a tonic-web proxy:
-                .add_routes(routes);
+                .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(AppQueryServiceServer::new(AppServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ChainQueryServiceServer::new(ChainServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(CompactBlockQueryServiceServer::new(
+                    CompactBlockServer::new(storage.clone()),
+                )))
+                .add_service(we(DexQueryServiceServer::new(DexServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(GovernanceQueryServiceServer::new(
+                    GovernanceServer::new(storage.clone()),
+                )))
+                .add_service(we(SctQueryServiceServer::new(SctServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ShieldedPoolQueryServiceServer::new(
+                    ShieldedPoolServer::new(storage.clone()),
+                )))
+                .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
+                    storage.clone(),
+                ))))
+                .add_service(we(ClientQueryServer::new(ibc.clone())))
+                .add_service(we(ChannelQueryServer::new(ibc.clone())))
+                .add_service(we(ConnectionQueryServer::new(ibc.clone())))
+                .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
+                .add_service(we(tonic_reflection::server::Builder::configure()
+                    .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
+                    .build()
+                    .with_context(|| "could not configure grpc reflection service")?));
+
+            if enable_expensive_rpc {
+                grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(
+                    DexServer::new(storage.clone()),
+                )));
+            }
 
             // Now we drop down a layer of abstraction, from tonic to axum.
             //
