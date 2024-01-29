@@ -27,7 +27,9 @@ impl std::fmt::Display for State {
         match self {
             State::Bonded => write!(f, "Bonded"),
             State::Unbonded => write!(f, "Unbonded"),
-            State::Unbonding { unbonds_at_epoch: unbonding_epoch } => {
+            State::Unbonding {
+                unbonds_at_epoch: unbonding_epoch,
+            } => {
                 write!(f, "Unbonding (end epoch: {unbonding_epoch})")
             }
         }
@@ -44,12 +46,14 @@ impl From<State> for pb::BondingState {
             state: match v {
                 State::Bonded => pb::bonding_state::BondingStateEnum::Bonded as i32,
                 State::Unbonded => pb::bonding_state::BondingStateEnum::Unbonded as i32,
-                State::Unbonding { unbonds_at_epoch: _ } => {
-                    pb::bonding_state::BondingStateEnum::Unbonding as i32
-                }
+                State::Unbonding {
+                    unbonds_at_epoch: _,
+                } => pb::bonding_state::BondingStateEnum::Unbonding as i32,
             },
             unbonding_epoch: match v {
-                State::Unbonding { unbonds_at_epoch: unbonding_epoch } => unbonding_epoch,
+                State::Unbonding {
+                    unbonds_at_epoch: unbonding_epoch,
+                } => unbonding_epoch,
                 _ => 0,
             },
         }
@@ -71,7 +75,9 @@ impl TryFrom<pb::BondingState> for State {
                 } else {
                     anyhow::bail!("unbonding epoch should be set for unbonding state")
                 };
-                Ok(State::Unbonding { unbonds_at_epoch: unbonding_epoch })
+                Ok(State::Unbonding {
+                    unbonds_at_epoch: unbonding_epoch,
+                })
             }
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))
