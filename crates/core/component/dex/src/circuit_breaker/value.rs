@@ -1,4 +1,5 @@
-use penumbra_asset::Balance;
+use penumbra_asset::{asset::Id, Balance, Value};
+use penumbra_num::Amount;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -11,23 +12,38 @@ impl ValueCircuitBreaker {
         self.balance += balance;
     }
 
-    pub fn check(&self) -> anyhow::Result<()> {
+    pub fn assert_balance_invariant(&self) {
         // No assets should ever be "required" by the circuit breaker's
         // internal balance tracking, only "provided".
         if let Some(r) = self.balance.required().next() {
-            return Err(anyhow::anyhow!(
+            assert!(
+                false,
                 "balance for asset {} is negative: -{}",
-                r.asset_id,
-                r.amount
-            ));
+                r.asset_id, r.amount
+            );
         }
+    }
 
-        Ok(())
+    pub fn available(&self, asset_id: Id) -> Value {
+        self.balance
+            .provided()
+            .find(|b| b.asset_id == asset_id)
+            .unwrap_or(Value {
+                asset_id,
+                amount: Amount::from(0u64),
+            })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
+    use crate::{
+        component::{router::limit_buy, tests::TempStorageExt, PositionManager as _},
+        DirectedUnitPair,
+    };
+    use cnidarium::{ArcStateDeltaExt as _, StateDelta, TempStorage};
     use penumbra_asset::{asset, Value};
     use penumbra_num::Amount;
     use rand_core::OsRng;
@@ -85,12 +101,20 @@ mod tests {
         value_circuit_breaker.tally(new_a);
         value_circuit_breaker.tally(new_b.clone());
 
+        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
+        assert!(value_circuit_breaker.available(pair.asset_2).amount == 120_000u64.into());
+
         // The circuit breaker should not trip.
-        assert!(value_circuit_breaker.check().is_ok());
+        let result = std::panic::catch_unwind(|| value_circuit_breaker.assert_balance_invariant());
+        assert!(result.is_ok());
 
         // If the same amount of gn is taken out of the position, the circuit breaker should not trip.
         value_circuit_breaker.tally(-new_b);
-        assert!(value_circuit_breaker.check().is_ok());
+        let result = std::panic::catch_unwind(|| value_circuit_breaker.assert_balance_invariant());
+        assert!(result.is_ok());
+
+        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
+        assert!(value_circuit_breaker.available(pair.asset_2).amount == 0u64.into());
 
         // But if there's ever a negative amount of gn in the position, the circuit breaker should trip.
         let one_b = Balance::from(Value {
@@ -98,6 +122,48 @@ mod tests {
             amount: Amount::from(1u64),
         });
         value_circuit_breaker.tally(-one_b);
-        assert!(value_circuit_breaker.check().is_err());
+        let result = std::panic::catch_unwind(|| value_circuit_breaker.assert_balance_invariant());
+        assert!(result.is_err());
+        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
+        assert!(value_circuit_breaker.available(pair.asset_2).amount == 0u64.into());
+    }
+
+    #[tokio::test]
+    async fn position_value_circuit_breaker() -> anyhow::Result<()> {
+        let _ = tracing_subscriber::fmt::try_init();
+        let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+        let pair_1 = DirectedUnitPair::new(gm.clone(), gn.clone());
+
+        let one = 1u64.into();
+        let price1 = one;
+        // Create a position buying 1 gm with 1 gn (i.e. reserves will be 1gn).
+        let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+        state_tx.put_position(buy_1.clone()).await.unwrap();
+
+        // Update the position to buy 1 gm with 2 gn (i.e. reserves will be 2gn).
+        buy_1.reserves.r2 = 2u64.into();
+        state_tx.put_position(buy_1.clone()).await.unwrap();
+
+        // Pretend the position has been filled against and flipped, so there's no
+        // gn in the position and there is 2 gm.
+        buy_1.reserves.r1 = 2u64.into();
+        buy_1.reserves.r2 = 0u64.into();
+
+        // This should not panic, the circuit breaker should not trip.
+        state_tx.put_position(buy_1.clone()).await.unwrap();
+
+        // Pretend the position was overfilled.
+        buy_1.reserves.r1 = 0u64.into();
+        buy_1.reserves.r2 = 0u64.into();
+        // This should panic
+        state_tx.put_position(buy_1.clone()).await.unwrap();
+
+        Ok(())
     }
 }

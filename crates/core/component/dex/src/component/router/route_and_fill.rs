@@ -8,13 +8,14 @@ use penumbra_num::Amount;
 use tracing::instrument;
 
 use crate::{
+    circuit_breaker::ValueCircuitBreaker,
     component::{
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
         PositionManager, StateWriteExt,
     },
     lp::position::MAX_RESERVE_AMOUNT,
-    BatchSwapOutputData, ExecutionCircuitBreaker, SwapExecution, TradingPair,
+    state_key, BatchSwapOutputData, ExecutionCircuitBreaker, SwapExecution, TradingPair,
 };
 
 use super::fill_route::FillError;
@@ -48,6 +49,19 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
         let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        // Fetch the ValueCircuitBreaker prior to calling `route_and_fill`, so
+        // we know the total aggregate amount of each asset prior to executing and
+        // can ensure the total outflows don't exceed the total balances.
+        let value_circuit_breaker: ValueCircuitBreaker = match self
+            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
+            .await
+            .expect("able to retrieve value circuit breaker from nonverifiable storage")
+        {
+            Some(bytes) => serde_json::from_slice(&bytes).expect(
+                "able to deserialize stored value circuit breaker from nonverifiable storage",
+            ),
+            None => ValueCircuitBreaker::default(),
+        };
 
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             Some(
@@ -106,6 +120,19 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             unfilled_1,
             unfilled_2,
         };
+
+        // Check that the output data doesn't exceed the ValueCircuitBreaker's quantities
+        // (i.e. we didn't outflow more value than existed within liquidity positions).
+        let available_asset_1 = value_circuit_breaker.available(trading_pair.asset_1());
+        let available_asset_2 = value_circuit_breaker.available(trading_pair.asset_2());
+        assert!(
+            output_data.lambda_1 <= available_asset_1.amount,
+            "asset 1 outflow exceeds available balance"
+        );
+        assert!(
+            output_data.lambda_2 <= available_asset_2.amount,
+            "asset 2 outflow exceeds available balance"
+        );
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
         tracing::debug!(
