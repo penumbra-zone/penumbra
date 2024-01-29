@@ -1,4 +1,4 @@
-use penumbra_asset::{asset, Balance, Value};
+use penumbra_asset::Balance;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -28,6 +28,7 @@ impl ValueCircuitBreaker {
 
 #[cfg(test)]
 mod tests {
+    use penumbra_asset::{asset, Value};
     use penumbra_num::Amount;
     use rand_core::OsRng;
 
