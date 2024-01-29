@@ -568,7 +568,7 @@ pub(super) trait Inner: StateWrite {
         );
 
         let mut value_circuit_breaker: ValueCircuitBreaker = match self
-            .nonverifiable_get_raw(&state_key::aggregate_value().as_bytes())
+            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
             .await
             .expect("able to retrieve value circuit breaker from nonverifiable storage")
         {
@@ -587,7 +587,7 @@ pub(super) trait Inner: StateWrite {
 
         // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
         self.nonverifiable_put_raw(
-            (&state_key::aggregate_value().as_bytes()).to_vec(),
+            state_key::aggregate_value().as_bytes().to_vec(),
             bincode::serialize(&value_circuit_breaker)
                 .expect("able to serialize value circuit breaker for nonverifiable storage"),
         );
