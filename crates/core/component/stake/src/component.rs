@@ -1484,6 +1484,7 @@ pub trait StateReadExt: StateRead {
     /// TODO(erwan): move this to the `ValidatorManager`
     async fn compute_unbonding_delay_for_validator(
         &self,
+        current_epoch: Epoch,
         validator_identity: &IdentityKey,
     ) -> Result<u64> {
         let Some(val_bonding_state) = self.validator_bonding_state(validator_identity).await?
@@ -1498,7 +1499,7 @@ pub trait StateReadExt: StateRead {
 
         let epoch_delay = match val_bonding_state {
             Bonded => min_epoch_delay,
-            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(unbonds_at_epoch),
+            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
             Unbonded => 0u64,
         };
 
@@ -1513,7 +1514,9 @@ pub trait StateReadExt: StateRead {
     /// unbonding epoch.
     async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
         let current_epoch = self.get_current_epoch().await?;
-        let unbonding_delay = self.compute_unbonding_delay_for_validator(id).await?;
+        let unbonding_delay = self
+            .compute_unbonding_delay_for_validator(current_epoch, id)
+            .await?;
         let unbonding_epoch = current_epoch.index.saturating_add(unbonding_delay);
         Ok(unbonding_epoch)
     }
