@@ -583,7 +583,8 @@ pub(super) trait Inner: StateWrite {
         value_circuit_breaker.tally(delta_b);
 
         // Confirm that the value circuit breaker is still within the limits.
-        value_circuit_breaker.check()?;
+        // This call will panic if the value circuit breaker detects inflation.
+        value_circuit_breaker.assert_balance_invariant();
 
         // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
         self.nonverifiable_put_raw(

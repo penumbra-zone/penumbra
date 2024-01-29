@@ -20,4 +20,4 @@ pub use position_manager::{PositionManager, PositionRead};
 pub use swap_manager::SwapManager;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
