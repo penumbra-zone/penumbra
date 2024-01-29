@@ -16,6 +16,7 @@ pub mod cli;
 pub mod events;
 pub mod migrate;
 pub mod testnet;
+pub mod tracing;
 
 pub use crate::metrics::register_metrics;
 pub use consensus::Consensus;

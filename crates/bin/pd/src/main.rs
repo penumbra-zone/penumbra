@@ -3,8 +3,7 @@
 #![recursion_limit = "512"]
 use std::error::Error;
 
-use console_subscriber::ConsoleLayer;
-use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
+use metrics_tracing_context::TracingContextLayer;
 use metrics_util::layers::Stack;
 
 use anyhow::Context;
@@ -29,7 +28,6 @@ use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
-use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
 use penumbra_tower_trace::v037::RequestExt;
@@ -41,28 +39,7 @@ async fn main() -> anyhow::Result<()> {
     let Opt { tokio_console, cmd } = <Opt as clap::Parser>::parse();
 
     // Instantiate tracing layers.
-    // The MetricsLayer handles enriching metrics output with labels from tracing spans.
-    let metrics_layer = MetricsLayer::new();
-    // The `FmtLayer` is used to print to the console.
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(atty::is(atty::Stream::Stdout))
-        .with_target(true);
-    // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
-
-    // Register the tracing subscribers, conditionally enabling tokio console support
-    let registry = tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(fmt_layer)
-        .with(metrics_layer);
-    if tokio_console {
-        // The ConsoleLayer enables collection of data for `tokio-console`.
-        // The `spawn` call will panic if AddrInUse, so we only spawn if enabled.
-        let console_layer = ConsoleLayer::builder().with_default_env().spawn();
-        registry.with(console_layer).init();
-    } else {
-        registry.init();
-    }
+    pd::tracing::init(tokio_console)?;
 
     match cmd {
         RootCommand::Start {
