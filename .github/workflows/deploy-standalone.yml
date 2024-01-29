@@ -1,0 +1,35 @@
+---
+# Deploys a standalone instance of pd, specifically to exercise the auto-https direct-serve logic.
+name: Deploy standalone pd, preview
+on:
+  # Only run when triggered manually.
+  workflow_dispatch:
+  workflow_call:
+
+# Queue deploys serially.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy jawn
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure ssh identity
+        run: |-
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo ${{ secrets.CI_RUNNER_SSH_PRIVKEY }} > ~/.ssh/id_ed25519
+          # TODO host key mgmt
+
+      - name: deploy
+        run: |-
+          # TODO: iterate on this workflow in a separate PR. need the base in main first.
+          ./deployments/scripts/redeploy-ci-fullnode-via-runner
