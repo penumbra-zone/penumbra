@@ -13,6 +13,7 @@ mod snapshot;
 
 pub mod auto_https;
 pub mod cli;
+pub mod entrypoint;
 pub mod events;
 pub mod migrate;
 pub mod testnet;
