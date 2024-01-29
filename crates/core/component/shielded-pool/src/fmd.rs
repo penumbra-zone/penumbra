@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub mod state_key;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-// #[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
+#[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
 pub struct Parameters {
     /// Bits of precision.
     pub precision_bits: u8,
