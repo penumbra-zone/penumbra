@@ -460,5 +460,6 @@ async fn main() -> anyhow::Result<()> {
                 .context("failed to upgrade state")?;
         }
     }
+
     Ok(())
 }
