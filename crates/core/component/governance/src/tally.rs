@@ -1,7 +1,5 @@
-use std::ops::{Add, AddAssign};
-
-use penumbra_chain::params::Ratio;
 use serde::{Deserialize, Serialize};
+use std::ops::{Add, AddAssign};
 
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
@@ -185,5 +183,95 @@ impl Tally {
         // Now that we've checked for slash and quorum, we can just check to see if it should pass in
         // the emergency condition of 2/3 majority of voting power
         Ratio::new(self.yes, total_voting_power) > Ratio::new(2, 3)
+    }
+}
+
+/// This is a ratio of two `u64` values, intended to be used solely in governance parameters and
+/// tallying. It only implements construction and comparison, not arithmetic, to reduce the trusted
+/// codebase for governance.
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[serde(try_from = "pb::Ratio", into = "pb::Ratio")]
+pub struct Ratio {
+    numerator: u64,
+    denominator: u64,
+}
+
+impl Display for Ratio {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}", self.numerator, self.denominator)
+    }
+}
+
+impl FromStr for Ratio {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s.split('/');
+        let numerator = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing numerator"))?
+            .parse()?;
+        let denominator = parts
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("missing denominator"))?
+            .parse()?;
+        if parts.next().is_some() {
+            anyhow::bail!("too many parts");
+        }
+        Ok(Ratio {
+            numerator,
+            denominator,
+        })
+    }
+}
+
+impl Ratio {
+    pub fn new(numerator: u64, denominator: u64) -> Self {
+        Self {
+            numerator,
+            denominator,
+        }
+    }
+}
+
+impl PartialEq for Ratio {
+    fn eq(&self, other: &Self) -> bool {
+        // Convert everything to `u128` to avoid overflow when multiplying
+        u128::from(self.numerator) * u128::from(other.denominator)
+            == u128::from(self.denominator) * u128::from(other.numerator)
+    }
+}
+
+impl Eq for Ratio {}
+
+impl PartialOrd for Ratio {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Ratio {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Convert everything to `u128` to avoid overflow when multiplying
+        (u128::from(self.numerator) * u128::from(other.denominator))
+            .cmp(&(u128::from(self.denominator) * u128::from(other.numerator)))
+    }
+}
+
+impl From<Ratio> for pb::Ratio {
+    fn from(ratio: Ratio) -> Self {
+        pb::Ratio {
+            numerator: ratio.numerator,
+            denominator: ratio.denominator,
+        }
+    }
+}
+
+impl From<pb::Ratio> for Ratio {
+    fn from(msg: pb::Ratio) -> Self {
+        Ratio {
+            numerator: msg.numerator,
+            denominator: msg.denominator,
+        }
     }
 }
