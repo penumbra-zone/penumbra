@@ -6,6 +6,9 @@ impl serde::Serialize for AppParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if !self.chain_id.is_empty() {
+            len += 1;
+        }
         if self.sct_params.is_some() {
             len += 1;
         }
@@ -31,6 +34,9 @@ impl serde::Serialize for AppParameters {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.AppParameters", len)?;
+        if !self.chain_id.is_empty() {
+            struct_ser.serialize_field("chainId", &self.chain_id)?;
+        }
         if let Some(v) = self.sct_params.as_ref() {
             struct_ser.serialize_field("sctParams", v)?;
         }
@@ -65,6 +71,8 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "chain_id",
+            "chainId",
             "sct_params",
             "sctParams",
             "community_pool_params",
@@ -85,6 +93,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            ChainId,
             SctParams,
             CommunityPoolParams,
             GovernanceParams,
@@ -115,6 +124,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                         E: serde::de::Error,
                     {
                         match value {
+                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "sctParams" | "sct_params" => Ok(GeneratedField::SctParams),
                             "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
                             "governanceParams" | "governance_params" => Ok(GeneratedField::GovernanceParams),
@@ -142,6 +152,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
+                let mut chain_id__ = None;
                 let mut sct_params__ = None;
                 let mut community_pool_params__ = None;
                 let mut governance_params__ = None;
@@ -152,6 +163,12 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                 let mut funding_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
+                        GeneratedField::ChainId => {
+                            if chain_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chainId"));
+                            }
+                            chain_id__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::SctParams => {
                             if sct_params__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("sctParams"));
@@ -206,6 +223,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                     }
                 }
                 Ok(AppParameters {
+                    chain_id: chain_id__.unwrap_or_default(),
                     sct_params: sct_params__,
                     community_pool_params: community_pool_params__,
                     governance_params: governance_params__,
@@ -535,6 +553,9 @@ impl serde::Serialize for GenesisContent {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if !self.chain_id.is_empty() {
+            len += 1;
+        }
         if self.stake_content.is_some() {
             len += 1;
         }
@@ -563,6 +584,9 @@ impl serde::Serialize for GenesisContent {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.GenesisContent", len)?;
+        if !self.chain_id.is_empty() {
+            struct_ser.serialize_field("chainId", &self.chain_id)?;
+        }
         if let Some(v) = self.stake_content.as_ref() {
             struct_ser.serialize_field("stakeContent", v)?;
         }
@@ -600,6 +624,8 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "chain_id",
+            "chainId",
             "stake_content",
             "stakeContent",
             "shielded_pool_content",
@@ -622,6 +648,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            ChainId,
             StakeContent,
             ShieldedPoolContent,
             GovernanceContent,
@@ -653,6 +680,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                         E: serde::de::Error,
                     {
                         match value {
+                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "stakeContent" | "stake_content" => Ok(GeneratedField::StakeContent),
                             "shieldedPoolContent" | "shielded_pool_content" => Ok(GeneratedField::ShieldedPoolContent),
                             "governanceContent" | "governance_content" => Ok(GeneratedField::GovernanceContent),
@@ -681,6 +709,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 where
                     V: serde::de::MapAccess<'de>,
             {
+                let mut chain_id__ = None;
                 let mut stake_content__ = None;
                 let mut shielded_pool_content__ = None;
                 let mut governance_content__ = None;
@@ -692,6 +721,12 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 let mut funding_content__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
+                        GeneratedField::ChainId => {
+                            if chain_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chainId"));
+                            }
+                            chain_id__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::StakeContent => {
                             if stake_content__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("stakeContent"));
@@ -752,6 +787,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     }
                 }
                 Ok(GenesisContent {
+                    chain_id: chain_id__.unwrap_or_default(),
                     stake_content: stake_content__,
                     shielded_pool_content: shielded_pool_content__,
                     governance_content: governance_content__,

@@ -38,10 +38,7 @@ impl TryFrom<pb::AppParameters> for AppParameters {
 
     fn try_from(msg: pb::AppParameters) -> anyhow::Result<Self> {
         Ok(AppParameters {
-            chain_params: msg
-                .chain_params
-                .ok_or_else(|| anyhow::anyhow!("proto response missing chain params"))?
-                .try_into()?,
+            chain_id: msg.chain_id,
             community_pool_params: msg
                 .community_pool_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool params"))?
@@ -66,6 +63,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .ibc_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing ibc params"))?
                 .try_into()?,
+            sct_params: msg
+                .sct_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing sct params"))?
+                .try_into()?,
             stake_params: msg
                 .stake_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing stake params"))?
@@ -77,13 +78,13 @@ impl TryFrom<pb::AppParameters> for AppParameters {
 impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
-            chain_params: Some(params.chain_params.into()),
             community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
             fee_params: Some(params.fee_params.into()),
             funding_params: Some(params.funding_params.into()),
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),
+            sct_params: Some(params.sct_params.into()),
             stake_params: Some(params.stake_params.into()),
         }
     }

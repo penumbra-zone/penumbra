@@ -5,11 +5,12 @@
 pub mod component;
 
 pub mod event;
+pub mod genesis;
 mod nullification_info;
 mod nullifier;
+pub mod params;
 mod source;
 pub mod state_key;
-pub mod params
 
 pub use nullification_info::NullificationInfo;
 pub use nullifier::{Nullifier, NullifierVar};

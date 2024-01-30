@@ -69,14 +69,6 @@ pub mod penumbra {
 
         /// Components of the Penumbra application.
         pub mod component {
-
-            pub mod chain {
-                pub mod v1alpha1 {
-                    include!("gen/penumbra.core.component.chain.v1alpha1.rs");
-                    include!("gen/penumbra.core.component.chain.v1alpha1.serde.rs");
-                }
-            }
-
             pub mod compact_block {
                 pub mod v1alpha1 {
                     include!("gen/penumbra.core.component.compact_block.v1alpha1.rs");
