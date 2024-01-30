@@ -79,13 +79,6 @@ pub struct DenomMetadata {
     /// be the same as the display.
     #[prost(string, tag = "6")]
     pub symbol: ::prost::alloc::string::String,
-    /// URI to a document (on or off-chain) that contains additional information. Optional.
-    #[prost(string, tag = "7")]
-    pub uri: ::prost::alloc::string::String,
-    /// URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
-    /// the document didn't change. Optional.
-    #[prost(string, tag = "8")]
-    pub uri_hash: ::prost::alloc::string::String,
     /// the asset ID on Penumbra for this denomination.
     #[prost(message, optional, tag = "1984")]
     pub penumbra_asset_id: ::core::option::Option<AssetId>,

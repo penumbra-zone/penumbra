@@ -339,12 +339,6 @@ impl serde::Serialize for DenomMetadata {
         if !self.symbol.is_empty() {
             len += 1;
         }
-        if !self.uri.is_empty() {
-            len += 1;
-        }
-        if !self.uri_hash.is_empty() {
-            len += 1;
-        }
         if self.penumbra_asset_id.is_some() {
             len += 1;
         }
@@ -367,12 +361,6 @@ impl serde::Serialize for DenomMetadata {
         if !self.symbol.is_empty() {
             struct_ser.serialize_field("symbol", &self.symbol)?;
         }
-        if !self.uri.is_empty() {
-            struct_ser.serialize_field("uri", &self.uri)?;
-        }
-        if !self.uri_hash.is_empty() {
-            struct_ser.serialize_field("uriHash", &self.uri_hash)?;
-        }
         if let Some(v) = self.penumbra_asset_id.as_ref() {
             struct_ser.serialize_field("penumbraAssetId", v)?;
         }
@@ -393,9 +381,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
             "display",
             "name",
             "symbol",
-            "uri",
-            "uri_hash",
-            "uriHash",
             "penumbra_asset_id",
             "penumbraAssetId",
         ];
@@ -408,8 +393,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
             Display,
             Name,
             Symbol,
-            Uri,
-            UriHash,
             PenumbraAssetId,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -438,8 +421,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                             "display" => Ok(GeneratedField::Display),
                             "name" => Ok(GeneratedField::Name),
                             "symbol" => Ok(GeneratedField::Symbol),
-                            "uri" => Ok(GeneratedField::Uri),
-                            "uriHash" | "uri_hash" => Ok(GeneratedField::UriHash),
                             "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -466,8 +447,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                 let mut display__ = None;
                 let mut name__ = None;
                 let mut symbol__ = None;
-                let mut uri__ = None;
-                let mut uri_hash__ = None;
                 let mut penumbra_asset_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -507,18 +486,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                             }
                             symbol__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::Uri => {
-                            if uri__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("uri"));
-                            }
-                            uri__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::UriHash => {
-                            if uri_hash__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("uriHash"));
-                            }
-                            uri_hash__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::PenumbraAssetId => {
                             if penumbra_asset_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("penumbraAssetId"));
@@ -534,8 +501,6 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                     display: display__.unwrap_or_default(),
                     name: name__.unwrap_or_default(),
                     symbol: symbol__.unwrap_or_default(),
-                    uri: uri__.unwrap_or_default(),
-                    uri_hash: uri_hash__.unwrap_or_default(),
                     penumbra_asset_id: penumbra_asset_id__,
                 })
             }
