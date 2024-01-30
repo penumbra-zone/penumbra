@@ -9,6 +9,14 @@ message SctParameters {
   uint64 epoch_duration = 1;
 }
 
+// An epoch is a sequentially numbered collection of contiguous blocks.
+message Epoch {
+  // The unique index of the epoch.
+  uint64 index = 1;
+  // The starting height for the epoch.
+  uint64 start_height = 2;
+}
+
 // Metadata describing the source of a commitment in the state commitment tree.
 //
 // This message allows clients to track provenance of state commitments, and to
