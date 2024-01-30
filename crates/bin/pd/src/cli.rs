@@ -52,9 +52,17 @@ pub enum RootCommand {
         /// Let's Encrypt and caches them in the `home` directory.  The
         /// production LE CA has rate limits, so be careful using this option
         /// with `pd testnet unsafe-reset-all`, which will delete the certificates
-        /// and force re-issuance, possibly hitting the rate limit.
+        /// and force re-issuance, possibly hitting the rate limit. See the
+        /// `--acme-staging` option.
         #[clap(long, value_name = "DOMAIN", display_order = 200)]
         grpc_auto_https: Option<String>,
+        /// Enable use of the LetsEncrypt ACME staging API (https://letsencrypt.org/docs/staging-environment/),
+        /// which is more forgiving of ratelimits. Set this option to `true`
+        /// if you're trying out the `--grpc-auto-https` option for the first time,
+        /// to validate your configuration, before subjecting yourself to production
+        /// ratelimits. This option has no effect if `--grpc-auto-https` is not set.
+        #[clap(long, display_order = 201, default_value = "false")]
+        acme_staging: bool,
         /// Bind the metrics endpoint to this socket.
         #[clap(
             short,

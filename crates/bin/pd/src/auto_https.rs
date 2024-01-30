@@ -23,13 +23,6 @@ const ALPN_PROTOCOLS: [&[u8]; 2] = [b"h2", b"http/1.1"];
 //  NB: this must not be an absolute path see [Path::join].
 const CACHE_DIR: &str = "tokio_rustls_acme_cache";
 
-/// If true, use the production Let's Encrypt environment.
-///
-/// If false, the ACME resolver will use the [staging environment].
-///
-/// [staging environment]: https://letsencrypt.org/docs/staging-environment/
-const PRODUCTION_LETS_ENCRYPT: bool = true;
-
 /// Use ACME to resolve certificates and handle new connections.
 ///
 /// This returns a tuple containing an [`AxumAcceptor`] that may be used with [`axum_server`], and
@@ -38,6 +31,7 @@ const PRODUCTION_LETS_ENCRYPT: bool = true;
 pub fn axum_acceptor(
     home: PathBuf,
     domain: String,
+    production_api: bool,
 ) -> (AxumAcceptor, impl Future<Output = Result<(), Error>>) {
     // Use a file-based cache located within the home directory.
     let cache = home.join(CACHE_DIR);
@@ -46,7 +40,7 @@ pub fn axum_acceptor(
     // Create an ACME client, which we will use to resolve certificates.
     let state = AcmeConfig::new(vec![domain])
         .cache(cache)
-        .directory_lets_encrypt(PRODUCTION_LETS_ENCRYPT)
+        .directory_lets_encrypt(production_api)
         .state();
 
     // Define our server configuration, using the ACME certificate resolver.
