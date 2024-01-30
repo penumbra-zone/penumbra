@@ -9,6 +9,7 @@ pub use ics20_withdrawal::Ics20Withdrawal;
 pub mod event;
 pub mod fmd;
 pub mod genesis;
+pub mod params;
 pub mod state_key;
 
 pub mod note;
