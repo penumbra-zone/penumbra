@@ -9,6 +9,7 @@ mod nullification_info;
 mod nullifier;
 mod source;
 pub mod state_key;
+pub mod params
 
 pub use nullification_info::NullificationInfo;
 pub use nullifier::{Nullifier, NullifierVar};

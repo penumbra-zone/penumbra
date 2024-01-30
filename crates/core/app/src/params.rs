@@ -8,6 +8,7 @@ use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::core::app::v1alpha1 as pb;
 use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::DomainType;
+use penumbra_sct::params::SctParameters;
 use penumbra_stake::params::StakeParameters;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +17,7 @@ pub mod change;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
+    pub chain_id: String,
     pub chain_params: ChainParameters,
     pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
@@ -23,6 +25,7 @@ pub struct AppParameters {
     pub funding_params: FundingParameters,
     pub governance_params: GovernanceParameters,
     pub ibc_params: IBCParameters,
+    pub sct_params: SctParameters,
     pub stake_params: StakeParameters,
 }
 

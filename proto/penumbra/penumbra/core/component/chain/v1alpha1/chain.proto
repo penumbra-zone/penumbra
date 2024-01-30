@@ -9,23 +9,10 @@ message ChainParameters {
   uint64 epoch_duration = 2;
 }
 
-// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
-message Ratio {
-  // The numerator.
-  uint64 numerator = 1;
-  // The denominator.
-  uint64 denominator = 2;
-}
-
 // Chain-specific genesis content.
 message GenesisContent {
   // The ChainParameters present at genesis.
   ChainParameters chain_params = 1;
-}
-
-message Epoch {
-  uint64 index = 1;
-  uint64 start_height = 2;
 }
 
 // Query operations for the chain component.
