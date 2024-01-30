@@ -22,14 +22,6 @@ use crate::IBC_COMMITMENT_PREFIX;
 use super::state_key;
 use super::HostInterface;
 
-// TODO(erwan): remove before opening PR
-// + replace concrete types with trait objects
-// + evaluate how to make penumbra_proto::Protobuf more friendly with the erased protobuf traits that
-//   underpins the ics02 traits
-// + ADR004 defers LC state/consensus deserialization later, maybe we should have a preprocessing step before execution
-// . to distinguish I/O errors from actual execution errors. It would also make things a little less boilerplaty.
-// +
-
 #[async_trait]
 pub(crate) trait Ics2ClientExt: StateWrite {
     // given an already verified tendermint header, and a trusted tendermint client state, compute
@@ -376,9 +368,8 @@ mod tests {
     use super::*;
     use cnidarium::{ArcStateDeltaExt, StateDelta};
     use ibc_types::core::client::msgs::MsgUpdateClient;
-    use ibc_types::core::connection::ChainId;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
-    use penumbra_chain::component::{StateReadExt, StateWriteExt};
+    use penumbra_sct::component::{EpochManager as _, EpochRead, };
     use std::str::FromStr;
     use tendermint::Time;
 
@@ -399,20 +390,17 @@ mod tests {
         async fn get_chain_id<S: StateRead>(_state: S) -> Result<String> {
             Ok("mock_chain_id".to_string())
         }
+
         async fn get_revision_number<S: StateRead>(state: S) -> Result<u64> {
-            let cid_str = state.get_chain_id().await?;
-
-            Ok(ChainId::from_string(&cid_str).version())
+            Ok(0u64)
         }
+
         async fn get_block_height<S: StateRead>(state: S) -> Result<u64> {
-            let height: u64 = state
-                .get_proto(penumbra_chain::state_key::block_height())
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("Missing block_height"))?;
-
-            Ok(height)
+            Ok(state.get_block_height().await?)
         }
+
         async fn get_block_timestamp<S: StateRead>(state: S) -> Result<tendermint::Time> {
+            let timestamp_string = state.get_block_timestamp().await?;
             let timestamp_string: String = state
                 .get_proto(penumbra_chain::state_key::block_timestamp())
                 .await?
@@ -501,27 +489,26 @@ mod tests {
     // test that we can create and update a light client.
     #[tokio::test]
     async fn test_create_and_update_light_client() -> anyhow::Result<()> {
+        use penumbra_sct::epoch::Epoch;
         // create a storage backend for testing
 
-        // TODO: we can't use apply_default_genesis because it needs the entire
-        // application, and we're in a component now
-        //let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        // TODO(erwan): `apply_default_genesis` is not available here. We need a component
+        // equivalent.
         let mut state = Arc::new(StateDelta::new(()));
         {
             // TODO: this is copied out of App::init_chain, can we put it in penumbra-chain or sth?
             let mut state_tx = state.try_begin_transaction().unwrap();
-            state_tx.put_chain_params(Default::default());
             state_tx.put_block_height(0);
             state_tx.put_epoch_by_height(
                 0,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: 0,
                     start_height: 0,
                 },
             );
             state_tx.put_epoch_by_height(
                 1,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: 0,
                     start_height: 0,
                 },
@@ -536,13 +523,10 @@ mod tests {
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         state_tx.put_block_timestamp(timestamp);
-        // TODO(erwan): check that this is a correct assumption to make?
-        //              the ibc::ics02::Height constructor forbids building `Height` with value zero.
-        //              Semantically this seem to correspond to a blockchain that has not begun to produce blocks
         state_tx.put_block_height(1);
         state_tx.put_epoch_by_height(
             1,
-            penumbra_chain::Epoch {
+            Epoch {
                 index: 0,
                 start_height: 0,
             },

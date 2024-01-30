@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_chain::component::StateReadExt as _;
+use penumbra_sct::component::EpochRead;
 
 use std::sync::Arc;
 
@@ -103,7 +104,7 @@ impl ActionHandler for validator::Definition {
         let v = self;
 
         let current_epoch = state
-            .get_current_epoch()
+            .current_epoch()
             .await
             .context("should be able to get current epoch during validator definition execution")?;
 

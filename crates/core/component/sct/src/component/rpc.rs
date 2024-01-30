@@ -5,7 +5,7 @@ use penumbra_proto::core::component::sct::v1alpha1::{
 use tonic::Status;
 use tracing::instrument;
 
-use super::StateReadExt;
+use super::EpochRead;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {

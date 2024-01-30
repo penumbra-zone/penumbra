@@ -34,6 +34,23 @@ use crate::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
+    /// Returns true if the next height is an upgrade height.
+    /// We look-ahead to the next height because we want to halt the chain immediately after
+    /// committing the block.
+    async fn is_upgrade_height(&self) -> Result<bool> {
+        let Some(next_upgrade_height) = self
+            .nonverifiable_get_raw(state_key::next_upgrade().as_bytes())
+            .await?
+        else {
+            return Ok(false);
+        };
+
+        let next_upgrade_height = u64::from_be_bytes(next_upgrade_height.as_slice().try_into()?);
+
+        let current_height = self.get_block_height().await?;
+        Ok(current_height.saturating_add(1) == next_upgrade_height)
+    }
+
     /// Indicates if the governance parameters have been updated in this block.
     fn governance_params_updated(&self) -> bool {
         self.object_get::<()>(state_key::governance_params_updated())
@@ -556,6 +573,10 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         self.object_get::<()>(state_key::proposal_started())
             .is_some()
     }
+
+    fn is_chain_halted(&self, total_halt_count: u64) -> u64 {
+        self.get_proto(state_key::halt_count()).unwrap_or_default()
+    }
 }
 
 impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -946,6 +967,36 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         tracing::info!(%next_height, "canceling pending app parameters for next block");
 
         self.delete(state_key::change_app_params_at_height(next_height));
+        Ok(())
+    }
+
+    /// Records the next upgrade height.
+    /// After commititng the height, the chain should halt and wait for an upgrade.
+    /// It re-uses the same mechanism as emergency halting that prevents the chain from
+    /// restarting without incrementing the application `TOTAL_HALT_COUNT`.
+    async fn signal_upgrade(&mut self, height: u64) -> Result<()> {
+        self.nonverifiable_put_raw(
+            state_key::upgrades::next_upgrade().into(),
+            height.to_be_bytes().to_vec(),
+        );
+        Ok(())
+    }
+
+    /// Signals to the consensus worker to halt after the next commit.
+    async fn signal_halt(&mut self) -> Result<()> {
+        let halt_count = self.chain_halt_count().await?;
+
+        // Increment the current halt count unconditionally...
+        self.put_proto(
+            state_key::counters::halt_count().to_string(),
+            halt_count + 1,
+        );
+
+        // ...and signal that a halt should occur if the halt count is fresh (`is_chain_halted` will
+        // check against the total number of expected chain halts to determine whether a halt should
+        // actually occur).
+        self.nonverifiable_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
+
         Ok(())
     }
 }

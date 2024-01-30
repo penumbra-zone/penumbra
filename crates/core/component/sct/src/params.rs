@@ -35,12 +35,10 @@ impl From<SctParameters> for pb::SctParameters {
 }
 
 // TODO(erwan): defaults are implemented here as well as in the `pd::main`
-// commenting it out before removing it
-// impl Default for SctParameters {
-//     fn default() -> Self {
-//         Self {
-//             chain_id: String::new(),
-//             epoch_duration: 719,
-//         }
-//     }
-// }
+impl Default for SctParameters {
+    fn default() -> Self {
+        Self {
+            epoch_duration: 719,
+        }
+    }
+}

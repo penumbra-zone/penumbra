@@ -33,18 +33,13 @@ pub trait TempStorageExt: Sized {
 #[async_trait]
 impl TempStorageExt for TempStorage {
     async fn apply_minimal_genesis(self) -> anyhow::Result<Self> {
-        use penumbra_chain::component::StateWriteExt;
-
+        use penumbra_sct::component::EpochManager as _;
         let mut state = StateDelta::new(self.latest_snapshot());
-
-        // TODO: this corresponds to code in App that should be part of
-        // penumbra_chain or something (TBD: how to split up penumbra-chain?
-        // params should be at the top, stuff like this should be at the bottom)
 
         state.put_block_height(0);
         state.put_epoch_by_height(
             0,
-            penumbra_chain::Epoch {
+            penumbra_sct::epoch::Epoch {
                 index: 0,
                 start_height: 0,
             },

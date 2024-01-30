@@ -1,9 +1,9 @@
 use cnidarium::Storage;
 use penumbra_asset::asset;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::component::shielded_pool::v1alpha1::{
     query_service_server::QueryService, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
 };
+use penumbra_sct::component::StateReadExt as _;
 use tonic::Status;
 use tracing::instrument;
 
@@ -28,10 +28,6 @@ impl QueryService for Server {
         request: tonic::Request<DenomMetadataByIdRequest>,
     ) -> Result<tonic::Response<DenomMetadataByIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let request = request.into_inner();
         let id: asset::Id = request

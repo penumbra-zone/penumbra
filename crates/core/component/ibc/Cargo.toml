@@ -9,7 +9,7 @@ edition = "2021"
 component = [
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
+    "penumbra-sct/component",
 ]
 default = ["component", "std"]
 std = ["ibc-types/std"]
@@ -18,11 +18,11 @@ rpc = ["dep:tonic", "ibc-proto/client", "ibc-proto/server"]
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../../../proto", default-features = false }
 cnidarium = { path = "../../../cnidarium", optional = true }
-penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
+penumbra-proto = { path = "../../../proto", default-features = false }
+penumbra-sct = { path = "../sct", default-features = false }
 penumbra-txhash = { path = "../../../core/txhash", default-features = false }
 
 # Penumbra dependencies

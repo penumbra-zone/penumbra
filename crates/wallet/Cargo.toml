@@ -18,7 +18,7 @@ penumbra-tct = { path = "../crypto/tct" }
 penumbra-num = { path = "../core/num" }
 penumbra-asset = { path = "../core/asset" }
 penumbra-keys = { path = "../core/keys" }
-penumbra-chain = { path = "../core/component/chain" }
+# penumbra-chain = { path = "../core/component/chain" }
 penumbra-dex = { path = "../core/component/dex" }
 penumbra-transaction = { path = "../core/transaction" }
 penumbra-app = { path = "../core/app" }

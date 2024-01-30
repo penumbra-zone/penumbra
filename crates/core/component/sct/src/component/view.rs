@@ -1,15 +1,17 @@
-use anyhow::{anyhow, Result};
+use std::str::FromStr;
+
+use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
 use tracing::instrument;
 
-// TODO: make epoch management the responsibility of this component
-
-use crate::{event, state_key, CommitmentSource, NullificationInfo, Nullifier};
+use crate::{
+    epoch::Epoch, event, params::SctParameters, state_key, CommitmentSource, NullificationInfo,
+    Nullifier,
+};
 
 /// A helper trait for placing a `CommitmentSource` as ambient context during execution.
 #[async_trait]
@@ -38,14 +40,78 @@ pub trait SourceContext: StateWrite {
 
 impl<T: StateWrite + ?Sized> SourceContext for T {}
 
+#[async_trait]
+/// Provides read access to the block eights, epoch, and other related data.
+pub trait EpochRead: StateRead {
+    /// Get the current block height.
+    async fn get_block_height(&self) -> Result<u64> {
+        self.get_proto(state_key::block_manager::block_height())
+            .await?
+            .ok_or_else(|| anyhow!("Missing block_height"))
+    }
+
+    /// Gets the current block timestamp from the JMT
+    async fn get_block_timestamp(&self) -> Result<tendermint::Time> {
+        let timestamp_string: String = self
+            .get_proto(state_key::block_manager::block_timestamp())
+            .await?
+            .ok_or_else(|| anyhow!("Missing block_timestamp"))?;
+
+        Ok(tendermint::Time::from_str(&timestamp_string)
+            .context("block_timestamp was an invalid RFC3339 time string")?)
+    }
+
+    /// Get the current epoch.
+    async fn current_epoch(&self) -> Result<Epoch> {
+        // Get the height
+        let height = self.get_block_height().await?;
+
+        self.get(&state_key::epoch_manager::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for current height: {height}"))
+    }
+
+    async fn epoch_by_height(&self, height: u64) -> Result<Epoch> {
+        self.get(&state_key::epoch_manager::epoch_by_height(height))
+            .await?
+            .ok_or_else(|| anyhow!("missing epoch for height"))
+    }
+
+    // Returns true if the epoch is ending early this block.
+    fn epoch_ending_early(&self) -> bool {
+        self.object_get(state_key::epoch_manager::end_epoch_early())
+            .unwrap_or(false)
+    }
+
+    /// Gets the epoch duration for the chain (in blocks).
+    async fn get_epoch_duration(&self) -> Result<u64> {
+        self.get_sct_params()
+            .await
+            .map(|params| params.epoch_duration)
+    }
+}
+
+impl<T: StateRead + ?Sized> EpochRead for T {}
+
 /// This trait provides read access to common parts of the Penumbra
 /// state store.
 ///
 /// Note: the `get_` methods in this trait assume that the state store has been
 /// initialized, so they will error on an empty state.
-//#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Gets the fee parameters from the JMT.
+    async fn get_sct_params(&self) -> Result<SctParameters> {
+        self.get(state_key::sct_params())
+            .await?
+            .ok_or_else(|| anyhow!("Missing SctParameters"))
+    }
+    /// Indicates if the sct parameters have been updated in this block.
+    fn sct_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::sct_params_updated())
+            .is_some()
+    }
+
     async fn state_commitment_tree(&self) -> tct::Tree {
         // If we have a cached tree, use that.
         if let Some(tree) = self.object_get(state_key::cached_state_commitment_tree()) {
@@ -196,6 +262,24 @@ impl<T: StateWrite + ?Sized> SctManager for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 trait StateWriteExt: StateWrite {
+    /* TODO(erwan): move this to a dedicated trait */
+    // Signals that the epoch should end this block.
+    fn signal_end_epoch(&mut self) {
+        self.object_put(state_key::epoch_manager::end_epoch_early(), true)
+    }
+
+    /// Writes the block height to the JMT
+    fn put_block_height(&mut self, height: u64) {
+        self.put_proto(state_key::block_manager::block_height().to_string(), height)
+    }
+
+    /// Writes the epoch for the current height
+    fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
+        self.put(state_key::epoch_manager::epoch_by_height(height), epoch)
+    }
+
+    /* ***************************** */
+
     // Set the state commitment tree in memory, but without committing to it in the nonverifiable
     // storage (very cheap).
     fn put_state_commitment_tree(&mut self, tree: tct::Tree) {
@@ -236,7 +320,7 @@ trait StateWriteExt: StateWrite {
         self.record_proto(event::block_root(height, block_root));
         // Only record an epoch root event if we are ending the epoch.
         if let Some(epoch_root) = epoch_root {
-            let index = self.epoch().await.expect("epoch must be set").index;
+            let index = self.current_epoch().await.expect("epoch must be set").index;
             self.record_proto(event::epoch_root(index, epoch_root));
         }
 
@@ -246,3 +330,31 @@ trait StateWriteExt: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+
+#[async_trait]
+pub trait EpochManager: StateWrite {
+    /// Writes the block timestamp to the JMT
+    fn put_block_timestamp(&mut self, timestamp: tendermint::Time) {
+        self.put_proto(
+            state_key::block_manager::block_timestamp().into(),
+            timestamp.to_rfc3339(),
+        )
+    }
+
+    // Signals that the epoch should end this block.
+    fn signal_end_epoch(&mut self) {
+        self.object_put(state_key::epoch_manager::end_epoch_early(), true)
+    }
+
+    /// Writes the block height to the JMT
+    fn put_block_height(&mut self, height: u64) {
+        self.put_proto(state_key::block_manager::block_height().to_string(), height)
+    }
+
+    /// Writes the epoch for the current height
+    fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
+        self.put(state_key::epoch_manager::epoch_by_height(height), epoch)
+    }
+}
+
+impl<T: StateWrite + ?Sized> EpochManager for T {}

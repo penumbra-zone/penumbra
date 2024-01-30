@@ -8,6 +8,7 @@ pub mod event;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
+pub mod epoch;
 
 mod nullification_info;
 mod nullifier;

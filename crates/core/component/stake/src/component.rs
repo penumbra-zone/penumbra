@@ -1,4 +1,5 @@
 // Implementation of a pd component for the staking system.
+use penumbra_sct::component::EpochRead;
 use std::{
     collections::{BTreeMap, BTreeSet},
     future::Future,
@@ -1514,7 +1515,7 @@ pub trait StateReadExt: StateRead {
     /// This is the minimum of the default unbonding epoch and the validator's
     /// unbonding epoch.
     async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
-        let current_epoch = self.get_current_epoch().await?;
+        let current_epoch = self.current_epoch().await?;
         let unbonding_delay = self
             .compute_unbonding_delay_for_validator(current_epoch, id)
             .await?;
@@ -1715,7 +1716,7 @@ pub trait StateWriteExt: StateWrite {
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
     ) -> Result<()> {
-        let current_epoch_index = self.epoch().await?.index;
+        let current_epoch_index = self.current_epoch().await?.index;
 
         let current_penalty = self
             .penalty_in_epoch(identity_key, current_epoch_index)
