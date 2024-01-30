@@ -3,6 +3,12 @@ package penumbra.core.component.sct.v1alpha1;
 
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
+// Configuration data for the SCT component.
+message SctParameters {
+  // The default duration of each epoch, in number of blocks.
+  uint64 epoch_duration = 1;
+}
+
 // Metadata describing the source of a commitment in the state commitment tree.
 //
 // This message allows clients to track provenance of state commitments, and to
