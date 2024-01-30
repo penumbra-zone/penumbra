@@ -625,6 +625,47 @@ pub trait StateReadExt: StateRead {
             || self.stake_params_updated()
     }
 
+    async fn get_chain_id(&self) -> Result<String> {
+        self.get_app_params()
+            .await
+            .map(|params| params.chain_params.chain_id)
+    }
+
+    /// Checks a provided chain_id against the chain state.
+    ///
+    /// Passes through if the provided chain_id is empty or matches, and
+    /// otherwise errors.
+    async fn check_chain_id(&self, provided: &str) -> Result<()> {
+        let chain_id = self
+            .get_chain_id()
+            .await
+            .context(format!("error getting chain id: '{provided}'"))?;
+        if provided.is_empty() || provided == chain_id {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "provided chain_id {} does not match chain_id {}",
+                provided,
+                chain_id
+            ))
+        }
+    }
+
+    /// Gets the chain revision number, from the chain ID
+    async fn get_revision_number(&self) -> Result<u64> {
+        let cid_str = self.get_chain_id().await?;
+
+        Ok(ChainId::from_string(&cid_str).version())
+    }
+
+        /// Returns true if the chain is halted (or will be halted momentarily).
+        async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
+            Ok(self
+                .nonverifiable_get_raw(&state_key::halted(total_halt_count))
+                .await?
+                .is_some())
+        }
+
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
         let chain_params = self.get_chain_params().await?;
