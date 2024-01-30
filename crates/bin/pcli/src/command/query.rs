@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 
 mod shielded_pool;
+use colored_json::ToColoredJson;
 use shielded_pool::ShieldedPool;
 mod tx;
 use tx::Tx;
@@ -113,6 +114,25 @@ impl QueryCmd {
 
         if let QueryCmd::Ibc(ibc) = self {
             return ibc.exec(app).await;
+        }
+
+        // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
+        if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
+            use penumbra_proto::core::component::compact_block::v1alpha1::{
+                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+                CompactBlockRequest,
+            };
+            let mut client = CompactBlockQueryServiceClient::new(app.pd_channel().await?);
+            let compact_block = client
+                .compact_block(CompactBlockRequest { height: *height })
+                .await?
+                .into_inner()
+                .compact_block
+                .ok_or_else(|| anyhow!("compact block missing from response"))?;
+            let json = serde_json::to_string_pretty(&compact_block)?;
+
+            println!("{}", json.to_colored_json_auto()?);
+            return Ok(());
         }
 
         let key = match self {

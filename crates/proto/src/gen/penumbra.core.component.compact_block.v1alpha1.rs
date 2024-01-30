@@ -179,6 +179,36 @@ impl ::prost::Name for CompactBlockRangeResponse {
         )
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CompactBlockRequest {
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+}
+impl ::prost::Name for CompactBlockRequest {
+    const NAME: &'static str = "CompactBlockRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CompactBlockResponse {
+    #[prost(message, optional, tag = "1")]
+    pub compact_block: ::core::option::Option<CompactBlock>,
+}
+impl ::prost::Name for CompactBlockResponse {
+    const NAME: &'static str = "CompactBlockResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.compact_block.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.compact_block.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -266,7 +296,7 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// Returns a stream of `CompactBlockRangeResponse`s.
+        /// Returns a stream of compact blocks, optionally keeping the stream alive for push notifications.
         pub async fn compact_block_range(
             &mut self,
             request: impl tonic::IntoRequest<super::CompactBlockRangeRequest>,
@@ -297,6 +327,39 @@ pub mod query_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Returns a single compact block at a specific height.
+        ///
+        /// Clients requesting multiple compact blocks should generally use the streaming RPC.
+        pub async fn compact_block(
+            &mut self,
+            request: impl tonic::IntoRequest<super::CompactBlockRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::CompactBlockResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.compact_block.v1alpha1.QueryService/CompactBlock",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.compact_block.v1alpha1.QueryService",
+                        "CompactBlock",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -316,12 +379,22 @@ pub mod query_service_server {
             >
             + Send
             + 'static;
-        /// Returns a stream of `CompactBlockRangeResponse`s.
+        /// Returns a stream of compact blocks, optionally keeping the stream alive for push notifications.
         async fn compact_block_range(
             &self,
             request: tonic::Request<super::CompactBlockRangeRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::CompactBlockRangeStream>,
+            tonic::Status,
+        >;
+        /// Returns a single compact block at a specific height.
+        ///
+        /// Clients requesting multiple compact blocks should generally use the streaming RPC.
+        async fn compact_block(
+            &self,
+            request: tonic::Request<super::CompactBlockRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::CompactBlockResponse>,
             tonic::Status,
         >;
     }
@@ -450,6 +523,52 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.compact_block.v1alpha1.QueryService/CompactBlock" => {
+                    #[allow(non_camel_case_types)]
+                    struct CompactBlockSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::CompactBlockRequest>
+                    for CompactBlockSvc<T> {
+                        type Response = super::CompactBlockResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::CompactBlockRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::compact_block(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = CompactBlockSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
