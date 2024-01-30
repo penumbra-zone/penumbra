@@ -7,7 +7,7 @@ use ibc_types::core::connection::ChainId;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::Time;
 
-use crate::{params::ChainParameters, state_key, Epoch};
+use crate::{state_key, Epoch};
 
 /// This trait provides read access to chain-related parts of the Penumbra
 /// state store.

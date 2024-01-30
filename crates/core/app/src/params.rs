@@ -77,6 +77,7 @@ impl TryFrom<pb::AppParameters> for AppParameters {
 impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
+            chain_id: params.chain_id,
             community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
             fee_params: Some(params.fee_params.into()),
