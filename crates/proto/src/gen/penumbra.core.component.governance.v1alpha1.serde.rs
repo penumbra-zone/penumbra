@@ -260,6 +260,9 @@ impl serde::Serialize for ChangedAppParameters {
         if self.funding_params.is_some() {
             len += 1;
         }
+        if self.shielded_pool_params.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", len)?;
         if let Some(v) = self.sct_params.as_ref() {
             struct_ser.serialize_field("sctParams", v)?;
@@ -284,6 +287,9 @@ impl serde::Serialize for ChangedAppParameters {
         }
         if let Some(v) = self.funding_params.as_ref() {
             struct_ser.serialize_field("fundingParams", v)?;
+        }
+        if let Some(v) = self.shielded_pool_params.as_ref() {
+            struct_ser.serialize_field("shieldedPoolParams", v)?;
         }
         struct_ser.end()
     }
@@ -311,6 +317,8 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             "distributionsParams",
             "funding_params",
             "fundingParams",
+            "shielded_pool_params",
+            "shieldedPoolParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -323,6 +331,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             FeeParams,
             DistributionsParams,
             FundingParams,
+            ShieldedPoolParams,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -353,6 +362,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             "feeParams" | "fee_params" => Ok(GeneratedField::FeeParams),
                             "distributionsParams" | "distributions_params" => Ok(GeneratedField::DistributionsParams),
                             "fundingParams" | "funding_params" => Ok(GeneratedField::FundingParams),
+                            "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -380,6 +390,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 let mut fee_params__ = None;
                 let mut distributions_params__ = None;
                 let mut funding_params__ = None;
+                let mut shielded_pool_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SctParams => {
@@ -430,6 +441,12 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             }
                             funding_params__ = map_.next_value()?;
                         }
+                        GeneratedField::ShieldedPoolParams => {
+                            if shielded_pool_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("shieldedPoolParams"));
+                            }
+                            shielded_pool_params__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -444,6 +461,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     fee_params: fee_params__,
                     distributions_params: distributions_params__,
                     funding_params: funding_params__,
+                    shielded_pool_params: shielded_pool_params__,
                 })
             }
         }

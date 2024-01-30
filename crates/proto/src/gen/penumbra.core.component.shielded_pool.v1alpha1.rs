@@ -1,3 +1,81 @@
+/// Configuration data for the shielded pool component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ShieldedPoolParameters {
+    #[prost(message, optional, tag = "1")]
+    pub fmd_params: ::core::option::Option<FmdParameters>,
+}
+impl ::prost::Name for ShieldedPoolParameters {
+    const NAME: &'static str = "ShieldedPoolParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// Genesis data for the shielded pool component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The allocations present at genesis
+    #[prost(message, repeated, tag = "2")]
+    pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
+}
+/// Nested message and enum types in `GenesisContent`.
+pub mod genesis_content {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Allocation {
+        #[prost(message, optional, tag = "1")]
+        pub amount: ::core::option::Option<
+            super::super::super::super::num::v1alpha1::Amount,
+        >,
+        #[prost(string, tag = "2")]
+        pub denom: ::prost::alloc::string::String,
+        #[prost(message, optional, tag = "3")]
+        pub address: ::core::option::Option<
+            super::super::super::super::keys::v1alpha1::Address,
+        >,
+    }
+    impl ::prost::Name for Allocation {
+        const NAME: &'static str = "Allocation";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1alpha1.GenesisContent.{}",
+                Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// Parameters for Fuzzy Message Detection
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdParameters {
+    #[prost(uint32, tag = "1")]
+    pub precision_bits: u32,
+    #[prost(uint64, tag = "2")]
+    pub as_of_block_height: u64,
+}
+impl ::prost::Name for FmdParameters {
+    const NAME: &'static str = "FmdParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Note {
@@ -488,68 +566,6 @@ pub struct DenomMetadataByIdResponse {
 }
 impl ::prost::Name for DenomMetadataByIdResponse {
     const NAME: &'static str = "DenomMetadataByIdResponse";
-    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
-        )
-    }
-}
-/// Genesis data for the shielded pool component.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisContent {
-    /// The allocations present at genesis
-    #[prost(message, repeated, tag = "2")]
-    pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
-}
-/// Nested message and enum types in `GenesisContent`.
-pub mod genesis_content {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Allocation {
-        #[prost(message, optional, tag = "1")]
-        pub amount: ::core::option::Option<
-            super::super::super::super::num::v1alpha1::Amount,
-        >,
-        #[prost(string, tag = "2")]
-        pub denom: ::prost::alloc::string::String,
-        #[prost(message, optional, tag = "3")]
-        pub address: ::core::option::Option<
-            super::super::super::super::keys::v1alpha1::Address,
-        >,
-    }
-    impl ::prost::Name for Allocation {
-        const NAME: &'static str = "Allocation";
-        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
-        fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!(
-                "penumbra.core.component.shielded_pool.v1alpha1.GenesisContent.{}",
-                Self::NAME
-            )
-        }
-    }
-}
-impl ::prost::Name for GenesisContent {
-    const NAME: &'static str = "GenesisContent";
-    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!(
-            "penumbra.core.component.shielded_pool.v1alpha1.{}", Self::NAME
-        )
-    }
-}
-/// Parameters for Fuzzy Message Detection
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FmdParameters {
-    #[prost(uint32, tag = "1")]
-    pub precision_bits: u32,
-    #[prost(uint64, tag = "2")]
-    pub as_of_block_height: u64,
-}
-impl ::prost::Name for FmdParameters {
-    const NAME: &'static str = "FmdParameters";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

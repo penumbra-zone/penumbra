@@ -1132,6 +1132,11 @@ pub struct ChangedAppParameters {
     pub funding_params: ::core::option::Option<
         super::super::funding::v1alpha1::FundingParameters,
     >,
+    /// Shielded pool module parameters
+    #[prost(message, optional, tag = "9")]
+    pub shielded_pool_params: ::core::option::Option<
+        super::super::shielded_pool::v1alpha1::ShieldedPoolParameters,
+    >,
 }
 impl ::prost::Name for ChangedAppParameters {
     const NAME: &'static str = "ChangedAppParameters";
