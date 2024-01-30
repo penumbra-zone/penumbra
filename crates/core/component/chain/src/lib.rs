@@ -11,6 +11,4 @@ pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 #[cfg(feature = "component")]
 pub mod component;
 
-pub mod genesis;
-pub mod params;
 pub mod state_key;
