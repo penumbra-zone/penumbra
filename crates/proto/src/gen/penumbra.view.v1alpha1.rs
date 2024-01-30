@@ -1282,6 +1282,39 @@ impl ::prost::Name for OwnedPositionIdsResponse {
         ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
     }
 }
+/// Requests information on an asset by asset id
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomMetadataByIdRequest {
+    /// The asset id to request information on.
+    #[prost(message, optional, tag = "2")]
+    pub asset_id: ::core::option::Option<super::super::core::asset::v1alpha1::AssetId>,
+}
+impl ::prost::Name for DenomMetadataByIdRequest {
+    const NAME: &'static str = "DenomMetadataByIdRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DenomMetadataByIdResponse {
+    /// If present, information on the requested asset.
+    ///
+    /// If the requested asset was unknown, this field will not be present.
+    #[prost(message, optional, tag = "1")]
+    pub denom_metadata: ::core::option::Option<
+        super::super::core::asset::v1alpha1::DenomMetadata,
+    >,
+}
+impl ::prost::Name for DenomMetadataByIdResponse {
+    const NAME: &'static str = "DenomMetadataByIdResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_protocol_service_client {
@@ -1495,7 +1528,7 @@ pub mod view_protocol_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Queries for assets.
+        /// Queries for metadata about known assets.
         /// Returns a stream of `AssetsResponse`s.
         pub async fn assets(
             &mut self,
@@ -1526,6 +1559,41 @@ pub mod view_protocol_service_client {
                     ),
                 );
             self.inner.server_streaming(req, path, codec).await
+        }
+        /// Query for metadata about a specific asset, by asset ID.
+        ///
+        /// This is the same as the method on the shielded pool's `QueryService`, but exposing it
+        /// here allows a view server to provide more specific or opinionated asset metadata -- like
+        /// using an asset registry to provide tickers, symbols, etc.
+        pub async fn denom_metadata_by_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DenomMetadataByIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DenomMetadataByIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1alpha1.ViewProtocolService/DenomMetadataById",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1alpha1.ViewProtocolService",
+                        "DenomMetadataById",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Query for the current app parameters.
         pub async fn app_parameters(
@@ -2236,12 +2304,24 @@ pub mod view_protocol_service_server {
             >
             + Send
             + 'static;
-        /// Queries for assets.
+        /// Queries for metadata about known assets.
         /// Returns a stream of `AssetsResponse`s.
         async fn assets(
             &self,
             request: tonic::Request<super::AssetsRequest>,
         ) -> std::result::Result<tonic::Response<Self::AssetsStream>, tonic::Status>;
+        /// Query for metadata about a specific asset, by asset ID.
+        ///
+        /// This is the same as the method on the shielded pool's `QueryService`, but exposing it
+        /// here allows a view server to provide more specific or opinionated asset metadata -- like
+        /// using an asset registry to provide tickers, symbols, etc.
+        async fn denom_metadata_by_id(
+            &self,
+            request: tonic::Request<super::DenomMetadataByIdRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::DenomMetadataByIdResponse>,
+            tonic::Status,
+        >;
         /// Query for the current app parameters.
         async fn app_parameters(
             &self,
@@ -2791,6 +2871,56 @@ pub mod view_protocol_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1alpha1.ViewProtocolService/DenomMetadataById" => {
+                    #[allow(non_camel_case_types)]
+                    struct DenomMetadataByIdSvc<T: ViewProtocolService>(pub Arc<T>);
+                    impl<
+                        T: ViewProtocolService,
+                    > tonic::server::UnaryService<super::DenomMetadataByIdRequest>
+                    for DenomMetadataByIdSvc<T> {
+                        type Response = super::DenomMetadataByIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::DenomMetadataByIdRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewProtocolService>::denom_metadata_by_id(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = DenomMetadataByIdSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
