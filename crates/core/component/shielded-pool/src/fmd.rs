@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod state_key;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq    )]
 #[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
 pub struct Parameters {
     /// Bits of precision.

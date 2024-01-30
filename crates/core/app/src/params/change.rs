@@ -1,13 +1,16 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use penumbra_chain::params::{ChainParameters, Ratio};
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_funding::params::FundingParameters;
-use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
+use penumbra_governance::{
+    params::GovernanceParameters, proposal::ChangedAppParameters, tally::Ratio,
+};
 use penumbra_ibc::params::IBCParameters;
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 use super::AppParameters;
@@ -23,11 +26,7 @@ impl AppParameters {
         // Tracked by #3593
 
         let AppParameters {
-            chain_params:
-                ChainParameters {
-                    chain_id,
-                    epoch_duration,
-                },
+            chain_id,
             community_pool_params:
                 CommunityPoolParameters {
                     community_pool_spend_proposals_enabled: _,
@@ -52,6 +51,8 @@ impl AppParameters {
                     inbound_ics20_transfers_enabled: _,
                     outbound_ics20_transfers_enabled: _,
                 },
+            sct_params: SctParameters { epoch_duration },
+            shielded_pool_params: ShieldedPoolParameters { fmd_params: _ },
             stake_params:
                 StakeParameters {
                     unbonding_epochs: _,
@@ -67,11 +68,11 @@ impl AppParameters {
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
-        check_invariant([(chain_id, &new.chain_params.chain_id, "chain ID")])?;
+        check_invariant([(chain_id, &new.chain_id, "chain ID")])?;
         check_invariant([
             (
                 epoch_duration,
-                &new.chain_params.epoch_duration,
+                &new.sct_params.epoch_duration,
                 "epoch duration",
             ),
             (
@@ -108,11 +109,7 @@ impl AppParameters {
 
     pub fn check_valid(&self) -> Result<()> {
         let AppParameters {
-            chain_params:
-                ChainParameters {
-                    chain_id,
-                    epoch_duration,
-                },
+            chain_id,
             community_pool_params:
                 CommunityPoolParameters {
                     community_pool_spend_proposals_enabled: _,
@@ -137,6 +134,8 @@ impl AppParameters {
                     inbound_ics20_transfers_enabled,
                     outbound_ics20_transfers_enabled,
                 },
+            sct_params: SctParameters { epoch_duration },
+            shielded_pool_params: ShieldedPoolParameters { fmd_params: _ },
             stake_params:
                 StakeParameters {
                     unbonding_epochs,
@@ -228,13 +227,14 @@ impl AppParameters {
     /// Converts an `AppParameters` instance to a complete `ChangedAppParameters`.
     pub fn as_changed_params(&self) -> ChangedAppParameters {
         ChangedAppParameters {
-            chain_params: Some(self.chain_params.clone()),
             community_pool_params: Some(self.community_pool_params.clone()),
             distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
             funding_params: Some(self.funding_params.clone()),
             governance_params: Some(self.governance_params.clone()),
             ibc_params: Some(self.ibc_params.clone()),
+            shielded_pool_params: Some(self.shielded_pool_params.clone()),
+            sct_params: Some(self.sct_params.clone()),
             stake_params: Some(self.stake_params.clone()),
         }
     }
@@ -249,13 +249,14 @@ impl AppParameters {
         old: Option<&AppParameters>,
     ) -> Result<AppParameters> {
         if old.is_none()
-            && (new.sct_params.is_none()
-                || new.community_pool_params.is_none()
+            && (new.community_pool_params.is_none()
                 || new.distributions_params.is_none()
                 || new.fee_params.is_none()
                 || new.funding_params.is_none()
                 || new.governance_params.is_none()
                 || new.ibc_params.is_none()
+                || new.sct_params.is_none()
+                || new.shielded_pool_params.is_none()
                 || new.stake_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
@@ -302,6 +303,11 @@ impl AppParameters {
             sct_params: new.sct_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .sct_params
+                    .clone()
+            }),
+            shielded_pool_params: new.shielded_pool_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .shielded_pool_params
                     .clone()
             }),
             stake_params: new.stake_params.clone().unwrap_or_else(|| {

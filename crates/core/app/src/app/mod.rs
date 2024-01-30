@@ -20,7 +20,7 @@ use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::{EpochManager, EpochRead};
+use penumbra_sct::component::{EpochManager, EpochRead, StateReadExt as _};
 use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
@@ -97,8 +97,8 @@ impl App {
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
             genesis::AppState::Content(app_state) => {
-// MERGEBLOCK: chain id init and shielded pool
-//                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
+                // MERGEBLOCK: chain id init and shielded pool
+                //                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
 
                 // The genesis block height is 0
                 state_tx.put_block_height(0);
@@ -236,9 +236,6 @@ impl App {
             tracing::info!(?app_params, "applying pending app parameters");
             // The app parameters are sparse so only those which are `Some` need
             // updating here
-            if let Some(chain_params) = app_params.new.chain_params {
-                state_tx.put_chain_params(chain_params);
-            }
             if let Some(community_pool_params) = app_params.new.community_pool_params {
                 state_tx.put_community_pool_params(community_pool_params);
             }
@@ -256,6 +253,12 @@ impl App {
             }
             if let Some(ibc_params) = app_params.new.ibc_params {
                 state_tx.put_ibc_params(ibc_params);
+            }
+            if let Some(shielded_pool_params) = app_params.new.shielded_pool_params {
+                state_tx.put_shielded_pool_params(shielded_pool_params);
+            }
+            if let Some(sct_params) = app_params.new.sct_params {
+                state_tx.put_sct_params(sct_params);
             }
             if let Some(stake_params) = app_params.new.stake_params {
                 state_tx.put_stake_params(stake_params);
@@ -618,20 +621,21 @@ const TOTAL_HALT_COUNT: u64 = 0;
 pub trait StateReadExt: StateRead {
     /// Returns true if the app parameters have been changed in this block.
     fn app_params_updated(&self) -> bool {
-        self.chain_params_updated()
-            || self.community_pool_params_updated()
+        self.community_pool_params_updated()
             || self.distributions_params_updated()
             || self.ibc_params_updated()
             || self.fee_params_updated()
             || self.funding_params_updated()
             || self.governance_params_updated()
+            || self.sct_params_updated()
+            || self.shielded_pool_params_updated()
             || self.stake_params_updated()
     }
 
     async fn get_chain_id(&self) -> Result<String> {
         self.get_app_params()
             .await
-            .map(|params| params.chain_params.chain_id)
+            .map(|params| params.chain_id)
     }
 
     /// Checks a provided chain_id against the chain state.
@@ -663,21 +667,27 @@ pub trait StateReadExt: StateRead {
 
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
+        let chain_id = self.get_chain_id().await?;
         let community_pool_params = self.get_community_pool_params().await?;
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
         let fee_params = self.get_fee_params().await?;
         let funding_params = self.get_funding_params().await?;
         let governance_params = self.get_governance_params().await?;
+        let sct_params = self.get_sct_params().await?;
+        let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
 
         Ok(AppParameters {
+            chain_id,
             community_pool_params,
             distributions_params,
             fee_params,
             funding_params,
             governance_params,
             ibc_params,
+            sct_params,
+            shielded_pool_params,
             stake_params,
         })
     }

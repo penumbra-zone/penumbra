@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::fmd;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(
     try_from = "pb::ShieldedPoolParameters",
     into = "pb::ShieldedPoolParameters"

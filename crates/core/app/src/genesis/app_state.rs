@@ -1,4 +1,3 @@
-use ibc_proto::cosmos::bank::v1beta1::GenesisState;
 use penumbra_community_pool::genesis::Content as CommunityPoolContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
@@ -25,6 +24,8 @@ pub enum AppState {
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
+    /// The chain ID.
+    pub chain_id: String,
     /// Community Pool module genesis state.
     pub community_pool_content: CommunityPoolContent,
     /// Distributions module genesis state.
@@ -73,7 +74,7 @@ impl From<AppState> for pb::GenesisAppState {
 impl From<Content> for pb::GenesisContent {
     fn from(genesis: Content) -> Self {
         pb::GenesisContent {
-            chain_id: Some(genesis.chain_id),
+            chain_id: genesis.chain_id,
             community_pool_content: Some(genesis.community_pool_content.into()),
             distributions_content: Some(genesis.distributions_content.into()),
             fee_content: Some(genesis.fee_content.into()),
@@ -110,6 +111,7 @@ impl TryFrom<pb::GenesisContent> for Content {
 
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
+            chain_id: msg.chain_id,
             community_pool_content: msg
                 .community_pool_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool content"))?
