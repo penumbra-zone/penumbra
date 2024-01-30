@@ -4,7 +4,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::SctParameters", into = "pb::SctParameters")]
+/// The configuration parameters for the SCT component.
 pub struct SctParameters {
+    /// The "default" duration of an epoch in number of blocks.
+    /// Note that this is a soft target, and a variety of events
+    /// can trigger an epoch transition.
     pub epoch_duration: u64,
 }
 
@@ -30,6 +34,7 @@ impl From<SctParameters> for pb::SctParameters {
     }
 }
 
+// TODO(erwan): Remove?
 impl Default for SctParameters {
     fn default() -> Self {
         Self {
