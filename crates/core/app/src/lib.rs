@@ -23,8 +23,6 @@ pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     ]
 });
 
-pub const APP_VERSION: u64 = 1;
-
 pub mod app;
 pub mod genesis;
 pub mod params;
@@ -32,6 +30,10 @@ pub mod params;
 pub mod metrics;
 pub mod rpc;
 pub use self::metrics::register_metrics;
+
+pub const APP_VERSION: u64 = 1;
+/// The substore prefix used for storing histori CometBFT block data.
+pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 
 #[cfg(test)]
 mod tests;
