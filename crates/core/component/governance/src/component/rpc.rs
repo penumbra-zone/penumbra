@@ -71,10 +71,10 @@ impl QueryService for Server {
         }))
     }
 
-    #[instrument(skip(self, request))]
+    #[instrument(skip(self, _request))]
     async fn next_proposal_id(
         &self,
-        request: tonic::Request<NextProposalIdRequest>,
+        _request: tonic::Request<NextProposalIdRequest>,
     ) -> Result<tonic::Response<NextProposalIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
 

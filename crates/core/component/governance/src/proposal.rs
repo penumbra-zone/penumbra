@@ -431,6 +431,7 @@ pub struct ChangedAppParameters {
     pub fee_params: Option<FeeParameters>,
     pub funding_params: Option<FundingParameters>,
     pub governance_params: Option<GovernanceParameters>,
+    pub sct_params: Option<SctParameters>,
     pub shielded_pool_params: Option<ShieldedPoolParameters>,
     pub stake_params: Option<StakeParameters>,
 }

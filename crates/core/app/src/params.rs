@@ -1,4 +1,3 @@
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::DistributionsParameters;
 use penumbra_fee::FeeParameters;
@@ -9,12 +8,14 @@ use penumbra_proto::core::app::v1alpha1 as pb;
 use penumbra_proto::view::v1alpha1 as pb_view;
 use penumbra_proto::DomainType;
 use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 use serde::{Deserialize, Serialize};
 
 pub mod change;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq
+)]
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_id: String,
@@ -25,6 +26,7 @@ pub struct AppParameters {
     pub governance_params: GovernanceParameters,
     pub ibc_params: IBCParameters,
     pub sct_params: SctParameters,
+    pub shielded_pool_params: ShieldedPoolParameters,
     pub stake_params: StakeParameters,
 }
 
@@ -66,6 +68,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .sct_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing sct params"))?
                 .try_into()?,
+            shielded_pool_params: msg
+                .shielded_pool_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing shielded pool params"))?
+                .try_into()?,
             stake_params: msg
                 .stake_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing stake params"))?
@@ -85,6 +91,7 @@ impl From<AppParameters> for pb::AppParameters {
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),
             sct_params: Some(params.sct_params.into()),
+            shielded_pool_params: Some(params.shielded_pool_params.into()),
             stake_params: Some(params.stake_params.into()),
         }
     }

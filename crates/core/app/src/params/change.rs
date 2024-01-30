@@ -249,7 +249,7 @@ impl AppParameters {
         old: Option<&AppParameters>,
     ) -> Result<AppParameters> {
         if old.is_none()
-            && (new.chain_params.is_none()
+            && (new.sct_params.is_none()
                 || new.community_pool_params.is_none()
                 || new.distributions_params.is_none()
                 || new.fee_params.is_none()
@@ -262,11 +262,13 @@ impl AppParameters {
         }
 
         Ok(AppParameters {
-            chain_params: new.chain_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .chain_params
-                    .clone()
-            }),
+            // TODO(erwan): we are momentarily not supporting chain_id changes
+            // until the IBC host chain changes land.
+            // See: https://github.com/penumbra-zone/penumbra/issues/3617#issuecomment-1917708221
+            chain_id: old
+                .expect("old should be set if new has any None values")
+                .chain_id
+                .clone(),
             community_pool_params: new.community_pool_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .community_pool_params
@@ -295,6 +297,11 @@ impl AppParameters {
             ibc_params: new.ibc_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .ibc_params
+                    .clone()
+            }),
+            sct_params: new.sct_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .sct_params
                     .clone()
             }),
             stake_params: new.stake_params.clone().unwrap_or_else(|| {

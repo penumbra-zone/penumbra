@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use cnidarium_component::Component;
+use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
@@ -20,6 +20,8 @@ use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
+use penumbra_sct::component::{EpochManager, EpochRead};
+use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::component::ShieldedPool;
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_transaction::Transaction;
@@ -95,14 +97,15 @@ impl App {
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
             genesis::AppState::Content(app_state) => {
-                state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
+// MERGEBLOCK: chain id init and shielded pool
+//                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
 
                 // The genesis block height is 0
                 state_tx.put_block_height(0);
 
                 state_tx.put_epoch_by_height(
                     0,
-                    penumbra_chain::Epoch {
+                    Epoch {
                         index: 0,
                         start_height: 0,
                     },
@@ -112,7 +115,7 @@ impl App {
                 // the epoch by height in end_block, and end_block isn't called after init_chain.
                 state_tx.put_epoch_by_height(
                     1,
-                    penumbra_chain::Epoch {
+                    Epoch {
                         index: 0,
                         start_height: 0,
                     },
@@ -456,7 +459,7 @@ impl App {
             .await
             .expect("able to get block height in end_block");
         let current_epoch = state_tx
-            .epoch()
+            .current_epoch()
             .await
             .expect("able to get current epoch in end_block");
 
@@ -519,7 +522,7 @@ impl App {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(
                 current_height + 1,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: current_epoch.index + 1,
                     start_height: current_height + 1,
                 },
@@ -658,17 +661,8 @@ pub trait StateReadExt: StateRead {
         Ok(ChainId::from_string(&cid_str).version())
     }
 
-    /// Returns true if the chain is halted (or will be halted momentarily).
-    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
-        Ok(self
-            .nonverifiable_get_raw(&state_key::halted(total_halt_count))
-            .await?
-            .is_some())
-    }
-
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
-        let chain_params = self.get_chain_params().await?;
         let community_pool_params = self.get_community_pool_params().await?;
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
@@ -678,7 +672,6 @@ pub trait StateReadExt: StateRead {
         let stake_params = self.get_stake_params().await?;
 
         Ok(AppParameters {
-            chain_params,
             community_pool_params,
             distributions_params,
             fee_params,
@@ -694,7 +687,9 @@ pub trait StateReadExt: StateRead {
         block_height: u64,
     ) -> Result<TransactionsByHeightResponse> {
         let transactions = match self
-            .nonverifiable_get_raw(state_key::transactions_by_height(block_height).as_bytes())
+            .nonverifiable_get_raw(
+                state_key::cometbft_data::transactions_by_height(block_height).as_bytes(),
+            )
             .await?
         {
             Some(transactions) => transactions,
@@ -715,7 +710,7 @@ impl<
             + penumbra_governance::component::StateReadExt
             + penumbra_fee::component::StateReadExt
             + penumbra_community_pool::component::StateReadExt
-            + penumbra_chain::component::StateReadExt
+            + penumbra_sct::component::EpochRead
             + penumbra_ibc::component::StateReadExt
             + penumbra_distributions::component::StateReadExt
             + ?Sized,
@@ -743,7 +738,7 @@ pub trait StateWriteExt: StateWrite {
             .collect();
 
         self.nonverifiable_put_raw(
-            state_key::transactions_by_height(height).into(),
+            state_key::cometbft_data::transactions_by_height(height).into(),
             transactions_response.encode_to_vec(),
         );
         Ok(())

@@ -1,10 +1,10 @@
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, Swap, SwapClaim,
 };
 use penumbra_fee::Gas;
 use penumbra_ibc::IbcRelay;
+use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
@@ -349,7 +349,7 @@ impl GasCost for ProposalSubmit {
             // to the compact block.
             // For a ProposalSubmit the compact block is only modified if the proposal type is a `ParameterChange`.
             compact_block_space: match self.proposal.kind() {
-                ProposalKind::ParameterChange => std::mem::size_of::<ChainParameters>() as u64,
+                ProposalKind::ParameterChange => std::mem::size_of::<SctParameters>() as u64, // TODO(erwan): placeholder MERGEBLOCK
                 _ => 0u64,
             },
             // There are some checks performed to validate the proposed state changes, so we include a constant verification cost,

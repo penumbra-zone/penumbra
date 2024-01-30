@@ -1,8 +1,7 @@
 use anyhow::Result;
 use cnidarium::StateRead;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_fee::component::StateReadExt as _;
-use penumbra_sct::component::StateReadExt as _;
+use penumbra_sct::component::{EpochRead, StateReadExt as _};
 use penumbra_shielded_pool::component::StateReadExt as _;
 use penumbra_shielded_pool::fmd;
 use penumbra_transaction::gas::GasCost;

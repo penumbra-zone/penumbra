@@ -9,7 +9,7 @@ use penumbra_chain::component::StateWriteExt;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
-use penumbra_sct::component::SourceContext;
+use penumbra_sct::{component::{EpochManager, SourceContext}, epoch::Epoch};
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
 use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
@@ -206,7 +206,7 @@ async fn spend_duplicate_nullifier_same_transaction() {
     state_tx.put_block_height(height);
     state_tx.put_epoch_by_height(
         height,
-        penumbra_chain::Epoch {
+        Epoch {
             index: 0,
             start_height: 0,
         },

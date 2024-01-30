@@ -3,11 +3,11 @@ use std::pin::Pin;
 use anyhow::bail;
 use cnidarium::Storage;
 use futures::{StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::component::compact_block::v1alpha1::{
     query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
     CompactBlockRequest, CompactBlockResponse,
 };
+use penumbra_sct::component::EpochRead;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
@@ -62,14 +62,15 @@ impl QueryService for Server {
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
         let snapshot = self.storage.latest_snapshot();
-        snapshot
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during compact_block_range request: {e}"
-                ))
-            })?;
+        // TODO(erwan): re-enable chain id checks
+        // snapshot
+        //     .check_chain_id(&request.get_ref().chain_id)
+        //     .await
+        //     .map_err(|e| {
+        //         tonic::Status::unknown(format!(
+        //             "failed to validate chain id during compact_block_range request: {e}"
+        //         ))
+        //     })?;
 
         let CompactBlockRangeRequest {
             start_height,
