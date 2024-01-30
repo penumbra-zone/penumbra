@@ -53,8 +53,12 @@ message StatePayload {
 
 // Query operations for the compact block component.
 service QueryService {
-  // Returns a stream of `CompactBlockRangeResponse`s.
+  // Returns a stream of compact blocks, optionally keeping the stream alive for push notifications.
   rpc CompactBlockRange(CompactBlockRangeRequest) returns (stream CompactBlockRangeResponse);
+  // Returns a single compact block at a specific height.
+  //
+  // Clients requesting multiple compact blocks should generally use the streaming RPC.
+  rpc CompactBlock(CompactBlockRequest) returns (CompactBlockResponse);
 }
 
 // Requests a range of compact block data.
@@ -71,5 +75,13 @@ message CompactBlockRangeRequest {
 }
 
 message CompactBlockRangeResponse {
+  core.component.compact_block.v1alpha1.CompactBlock compact_block = 1;
+}
+
+message CompactBlockRequest {
+  uint64 height = 1;
+}
+
+message CompactBlockResponse {
   core.component.compact_block.v1alpha1.CompactBlock compact_block = 1;
 }

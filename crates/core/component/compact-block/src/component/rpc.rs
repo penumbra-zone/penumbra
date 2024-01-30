@@ -6,6 +6,7 @@ use futures::{StreamExt, TryFutureExt, TryStreamExt};
 use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::component::compact_block::v1alpha1::{
     query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
+    CompactBlockRequest, CompactBlockResponse,
 };
 use tokio::sync::mpsc;
 use tonic::Status;
@@ -29,6 +30,24 @@ impl QueryService for Server {
     type CompactBlockRangeStream = Pin<
         Box<dyn futures::Stream<Item = Result<CompactBlockRangeResponse, tonic::Status>> + Send>,
     >;
+
+    async fn compact_block(
+        &self,
+        request: tonic::Request<CompactBlockRequest>,
+    ) -> Result<tonic::Response<CompactBlockResponse>, Status> {
+        let snapshot = self.storage.latest_snapshot();
+
+        let height = request.get_ref().height;
+        let compact_block = snapshot
+            .compact_block(height)
+            .await
+            .map_err(|e| tonic::Status::internal(format!("error fetching block: {e:#}")))?
+            .ok_or_else(|| tonic::Status::not_found(format!("compact block {height} not found")))?;
+
+        Ok(tonic::Response::new(CompactBlockResponse {
+            compact_block: Some(compact_block.into()),
+        }))
+    }
 
     #[instrument(
         skip(self, request),
