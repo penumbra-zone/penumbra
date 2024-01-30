@@ -46,8 +46,9 @@ use penumbra_proto::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        AppParametersResponse, FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse,
-        StatusResponse, SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
+        AppParametersResponse, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
+        FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse, StatusResponse,
+        SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
     DomainType,
 };
@@ -1563,6 +1564,28 @@ impl ViewProtocolService for ViewService {
 
         Ok(Response::new(WalletIdResponse {
             wallet_id: Some(fvk.wallet_id().into()),
+        }))
+    }
+
+    async fn denom_metadata_by_id(
+        &self,
+        request: Request<DenomMetadataByIdRequest>,
+    ) -> Result<Response<DenomMetadataByIdResponse>, Status> {
+        let asset_id = request
+            .into_inner()
+            .asset_id
+            .ok_or_else(|| Status::invalid_argument("missing asset id"))?
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e:#}")))?;
+
+        let metadata = self
+            .storage
+            .asset_by_id(&asset_id)
+            .await
+            .map_err(|e| Status::internal(format!("Error retrieving asset by id: {e:#}")))?;
+
+        Ok(Response::new(DenomMetadataByIdResponse {
+            denom_metadata: metadata.map(Into::into),
         }))
     }
 }

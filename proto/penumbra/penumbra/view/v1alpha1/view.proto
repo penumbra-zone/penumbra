@@ -35,9 +35,16 @@ service ViewProtocolService {
   // Returns a stream of `NotesForVotingResponse`s.
   rpc NotesForVoting(NotesForVotingRequest) returns (stream NotesForVotingResponse);
 
-  // Queries for assets.
+  // Queries for metadata about known assets.
   // Returns a stream of `AssetsResponse`s.
   rpc Assets(AssetsRequest) returns (stream AssetsResponse);
+
+  // Query for metadata about a specific asset, by asset ID.
+  //
+  // This is the same as the method on the shielded pool's `QueryService`, but exposing it
+  // here allows a view server to provide more specific or opinionated asset metadata -- like
+  // using an asset registry to provide tickers, symbols, etc.
+  rpc DenomMetadataById(DenomMetadataByIdRequest) returns (DenomMetadataByIdResponse);
 
   // Query for the current app parameters.
   rpc AppParameters(AppParametersRequest) returns (AppParametersResponse);
@@ -547,4 +554,17 @@ message OwnedPositionIdsRequest {
 
 message OwnedPositionIdsResponse {
   core.component.dex.v1alpha1.PositionId position_id = 1;
+}
+
+// Requests information on an asset by asset id
+message DenomMetadataByIdRequest {
+  // The asset id to request information on.
+  core.asset.v1alpha1.AssetId asset_id = 2;
+}
+
+message DenomMetadataByIdResponse {
+  // If present, information on the requested asset.
+  //
+  // If the requested asset was unknown, this field will not be present.
+  core.asset.v1alpha1.DenomMetadata denom_metadata = 1;
 }
