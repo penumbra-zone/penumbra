@@ -39,6 +39,7 @@ impl<'de> serde::Deserialize<'de> for DkgRound1Package {
         enum GeneratedField {
             Commitment,
             ProofOfKnowledge,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -62,7 +63,7 @@ impl<'de> serde::Deserialize<'de> for DkgRound1Package {
                         match value {
                             "commitment" => Ok(GeneratedField::Commitment),
                             "proofOfKnowledge" | "proof_of_knowledge" => Ok(GeneratedField::ProofOfKnowledge),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -98,6 +99,9 @@ impl<'de> serde::Deserialize<'de> for DkgRound1Package {
                             proof_of_knowledge__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -142,6 +146,7 @@ impl<'de> serde::Deserialize<'de> for DkgRound2Package {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             SigningShare,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -164,7 +169,7 @@ impl<'de> serde::Deserialize<'de> for DkgRound2Package {
                     {
                         match value {
                             "signingShare" | "signing_share" => Ok(GeneratedField::SigningShare),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -191,6 +196,9 @@ impl<'de> serde::Deserialize<'de> for DkgRound2Package {
                                 return Err(serde::de::Error::duplicate_field("signingShare"));
                             }
                             signing_share__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -234,6 +242,7 @@ impl<'de> serde::Deserialize<'de> for NonceCommitment {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Element,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -256,7 +265,7 @@ impl<'de> serde::Deserialize<'de> for NonceCommitment {
                     {
                         match value {
                             "element" => Ok(GeneratedField::Element),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -285,6 +294,9 @@ impl<'de> serde::Deserialize<'de> for NonceCommitment {
                             element__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -328,6 +340,7 @@ impl<'de> serde::Deserialize<'de> for SignatureShare {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Scalar,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -350,7 +363,7 @@ impl<'de> serde::Deserialize<'de> for SignatureShare {
                     {
                         match value {
                             "scalar" => Ok(GeneratedField::Scalar),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -379,6 +392,9 @@ impl<'de> serde::Deserialize<'de> for SignatureShare {
                             scalar__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -429,6 +445,7 @@ impl<'de> serde::Deserialize<'de> for SigningCommitments {
         enum GeneratedField {
             Hiding,
             Binding,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -452,7 +469,7 @@ impl<'de> serde::Deserialize<'de> for SigningCommitments {
                         match value {
                             "hiding" => Ok(GeneratedField::Hiding),
                             "binding" => Ok(GeneratedField::Binding),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -486,6 +503,9 @@ impl<'de> serde::Deserialize<'de> for SigningCommitments {
                                 return Err(serde::de::Error::duplicate_field("binding"));
                             }
                             binding__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -530,6 +550,7 @@ impl<'de> serde::Deserialize<'de> for SigningShare {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Scalar,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -552,7 +573,7 @@ impl<'de> serde::Deserialize<'de> for SigningShare {
                     {
                         match value {
                             "scalar" => Ok(GeneratedField::Scalar),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -581,6 +602,9 @@ impl<'de> serde::Deserialize<'de> for SigningShare {
                             scalar__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -623,6 +647,7 @@ impl<'de> serde::Deserialize<'de> for VerifiableSecretSharingCommitment {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Elements,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -645,7 +670,7 @@ impl<'de> serde::Deserialize<'de> for VerifiableSecretSharingCommitment {
                     {
                         match value {
                             "elements" => Ok(GeneratedField::Elements),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -675,6 +700,9 @@ impl<'de> serde::Deserialize<'de> for VerifiableSecretSharingCommitment {
                                 Some(map_.next_value::<Vec<::pbjson::private::BytesDeserialize<_>>>()?
                                     .into_iter().map(|x| x.0).collect())
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

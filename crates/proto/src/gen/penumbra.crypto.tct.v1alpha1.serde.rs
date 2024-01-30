@@ -51,6 +51,7 @@ impl<'de> serde::Deserialize<'de> for MerklePathChunk {
             Sibling1,
             Sibling2,
             Sibling3,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -75,7 +76,7 @@ impl<'de> serde::Deserialize<'de> for MerklePathChunk {
                             "sibling1" | "sibling_1" => Ok(GeneratedField::Sibling1),
                             "sibling2" | "sibling_2" => Ok(GeneratedField::Sibling2),
                             "sibling3" | "sibling_3" => Ok(GeneratedField::Sibling3),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -123,6 +124,9 @@ impl<'de> serde::Deserialize<'de> for MerklePathChunk {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(MerklePathChunk {
@@ -167,6 +171,7 @@ impl<'de> serde::Deserialize<'de> for MerkleRoot {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -189,7 +194,7 @@ impl<'de> serde::Deserialize<'de> for MerkleRoot {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -218,6 +223,9 @@ impl<'de> serde::Deserialize<'de> for MerkleRoot {
                             inner__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -261,6 +269,7 @@ impl<'de> serde::Deserialize<'de> for StateCommitment {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -283,7 +292,7 @@ impl<'de> serde::Deserialize<'de> for StateCommitment {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -312,6 +321,9 @@ impl<'de> serde::Deserialize<'de> for StateCommitment {
                             inner__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -373,6 +385,7 @@ impl<'de> serde::Deserialize<'de> for StateCommitmentProof {
             NoteCommitment,
             Position,
             AuthPath,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -397,7 +410,7 @@ impl<'de> serde::Deserialize<'de> for StateCommitmentProof {
                             "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
                             "position" => Ok(GeneratedField::Position),
                             "authPath" | "auth_path" => Ok(GeneratedField::AuthPath),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -440,6 +453,9 @@ impl<'de> serde::Deserialize<'de> for StateCommitmentProof {
                                 return Err(serde::de::Error::duplicate_field("authPath"));
                             }
                             auth_path__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

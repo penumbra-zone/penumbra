@@ -30,6 +30,7 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -52,7 +53,7 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -81,6 +82,9 @@ impl<'de> serde::Deserialize<'de> for EffectHash {
                             inner__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -124,6 +128,7 @@ impl<'de> serde::Deserialize<'de> for TransactionId {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -146,7 +151,7 @@ impl<'de> serde::Deserialize<'de> for TransactionId {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -175,6 +180,9 @@ impl<'de> serde::Deserialize<'de> for TransactionId {
                             inner__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

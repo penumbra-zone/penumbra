@@ -110,6 +110,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
             SwapOutputs,
             AppParametersUpdated,
             GasPrices,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -141,7 +142,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             "swapOutputs" | "swap_outputs" => Ok(GeneratedField::SwapOutputs),
                             "appParametersUpdated" | "app_parameters_updated" => Ok(GeneratedField::AppParametersUpdated),
                             "gasPrices" | "gas_prices" => Ok(GeneratedField::GasPrices),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -234,6 +235,9 @@ impl<'de> serde::Deserialize<'de> for CompactBlock {
                             }
                             gas_prices__ = map_.next_value()?;
                         }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(CompactBlock {
@@ -314,6 +318,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
             StartHeight,
             EndHeight,
             KeepAlive,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -339,7 +344,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "endHeight" | "end_height" => Ok(GeneratedField::EndHeight),
                             "keepAlive" | "keep_alive" => Ok(GeneratedField::KeepAlive),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -392,6 +397,9 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                             }
                             keep_alive__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(CompactBlockRangeRequest {
@@ -437,6 +445,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             CompactBlock,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -459,7 +468,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeResponse {
                     {
                         match value {
                             "compactBlock" | "compact_block" => Ok(GeneratedField::CompactBlock),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -486,6 +495,9 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeResponse {
                                 return Err(serde::de::Error::duplicate_field("compactBlock"));
                             }
                             compact_block__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -529,6 +541,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRequest {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Height,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -551,7 +564,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRequest {
                     {
                         match value {
                             "height" => Ok(GeneratedField::Height),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -580,6 +593,9 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRequest {
                             height__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -623,6 +639,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             CompactBlock,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -645,7 +662,7 @@ impl<'de> serde::Deserialize<'de> for CompactBlockResponse {
                     {
                         match value {
                             "compactBlock" | "compact_block" => Ok(GeneratedField::CompactBlock),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -672,6 +689,9 @@ impl<'de> serde::Deserialize<'de> for CompactBlockResponse {
                                 return Err(serde::de::Error::duplicate_field("compactBlock"));
                             }
                             compact_block__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -737,6 +757,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
             RolledUp,
             Note,
             Swap,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -762,7 +783,7 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                             "rolledUp" | "rolled_up" => Ok(GeneratedField::RolledUp),
                             "note" => Ok(GeneratedField::Note),
                             "swap" => Ok(GeneratedField::Swap),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -812,6 +833,9 @@ impl<'de> serde::Deserialize<'de> for StatePayload {
                             state_payload__ = map_.next_value::<::std::option::Option<_>>()?.map(state_payload::StatePayload::Swap)
 ;
                         }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(StatePayload {
@@ -854,6 +878,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Note,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -876,7 +901,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                     {
                         match value {
                             "note" => Ok(GeneratedField::Note),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -903,6 +928,9 @@ impl<'de> serde::Deserialize<'de> for state_payload::Note {
                                 return Err(serde::de::Error::duplicate_field("note"));
                             }
                             note__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -945,6 +973,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::RolledUp {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Commitment,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -967,7 +996,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::RolledUp {
                     {
                         match value {
                             "commitment" => Ok(GeneratedField::Commitment),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -994,6 +1023,9 @@ impl<'de> serde::Deserialize<'de> for state_payload::RolledUp {
                                 return Err(serde::de::Error::duplicate_field("commitment"));
                             }
                             commitment__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -1036,6 +1068,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Swap,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1058,7 +1091,7 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                     {
                         match value {
                             "swap" => Ok(GeneratedField::Swap),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -1085,6 +1118,9 @@ impl<'de> serde::Deserialize<'de> for state_payload::Swap {
                                 return Err(serde::de::Error::duplicate_field("swap"));
                             }
                             swap__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

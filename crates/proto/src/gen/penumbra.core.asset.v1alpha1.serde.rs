@@ -48,6 +48,7 @@ impl<'de> serde::Deserialize<'de> for AssetId {
             Inner,
             AltBech32m,
             AltBaseDenom,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -72,7 +73,7 @@ impl<'de> serde::Deserialize<'de> for AssetId {
                             "inner" => Ok(GeneratedField::Inner),
                             "altBech32m" | "alt_bech32m" => Ok(GeneratedField::AltBech32m),
                             "altBaseDenom" | "alt_base_denom" => Ok(GeneratedField::AltBaseDenom),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -116,6 +117,9 @@ impl<'de> serde::Deserialize<'de> for AssetId {
                             }
                             alt_base_denom__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(AssetId {
@@ -126,6 +130,266 @@ impl<'de> serde::Deserialize<'de> for AssetId {
             }
         }
         deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.AssetId", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AssetImage {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.png.is_empty() {
+            len += 1;
+        }
+        if !self.svg.is_empty() {
+            len += 1;
+        }
+        if self.theme.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.AssetImage", len)?;
+        if !self.png.is_empty() {
+            struct_ser.serialize_field("png", &self.png)?;
+        }
+        if !self.svg.is_empty() {
+            struct_ser.serialize_field("svg", &self.svg)?;
+        }
+        if let Some(v) = self.theme.as_ref() {
+            struct_ser.serialize_field("theme", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AssetImage {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "png",
+            "svg",
+            "theme",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Png,
+            Svg,
+            Theme,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "png" => Ok(GeneratedField::Png),
+                            "svg" => Ok(GeneratedField::Svg),
+                            "theme" => Ok(GeneratedField::Theme),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AssetImage;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.asset.v1alpha1.AssetImage")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetImage, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut png__ = None;
+                let mut svg__ = None;
+                let mut theme__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Png => {
+                            if png__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("png"));
+                            }
+                            png__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Svg => {
+                            if svg__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("svg"));
+                            }
+                            svg__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Theme => {
+                            if theme__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("theme"));
+                            }
+                            theme__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AssetImage {
+                    png: png__.unwrap_or_default(),
+                    svg: svg__.unwrap_or_default(),
+                    theme: theme__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.AssetImage", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for asset_image::Theme {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.primary_color_hex.is_empty() {
+            len += 1;
+        }
+        if self.circle {
+            len += 1;
+        }
+        if self.dark_mode {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.AssetImage.Theme", len)?;
+        if !self.primary_color_hex.is_empty() {
+            struct_ser.serialize_field("primaryColorHex", &self.primary_color_hex)?;
+        }
+        if self.circle {
+            struct_ser.serialize_field("circle", &self.circle)?;
+        }
+        if self.dark_mode {
+            struct_ser.serialize_field("darkMode", &self.dark_mode)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for asset_image::Theme {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "primary_color_hex",
+            "primaryColorHex",
+            "circle",
+            "dark_mode",
+            "darkMode",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PrimaryColorHex,
+            Circle,
+            DarkMode,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "primaryColorHex" | "primary_color_hex" => Ok(GeneratedField::PrimaryColorHex),
+                            "circle" => Ok(GeneratedField::Circle),
+                            "darkMode" | "dark_mode" => Ok(GeneratedField::DarkMode),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = asset_image::Theme;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.asset.v1alpha1.AssetImage.Theme")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<asset_image::Theme, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut primary_color_hex__ = None;
+                let mut circle__ = None;
+                let mut dark_mode__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::PrimaryColorHex => {
+                            if primary_color_hex__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("primaryColorHex"));
+                            }
+                            primary_color_hex__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Circle => {
+                            if circle__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("circle"));
+                            }
+                            circle__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::DarkMode => {
+                            if dark_mode__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("darkMode"));
+                            }
+                            dark_mode__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(asset_image::Theme {
+                    primary_color_hex: primary_color_hex__.unwrap_or_default(),
+                    circle: circle__.unwrap_or_default(),
+                    dark_mode: dark_mode__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.AssetImage.Theme", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for BalanceCommitment {
@@ -160,6 +424,7 @@ impl<'de> serde::Deserialize<'de> for BalanceCommitment {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Inner,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -182,7 +447,7 @@ impl<'de> serde::Deserialize<'de> for BalanceCommitment {
                     {
                         match value {
                             "inner" => Ok(GeneratedField::Inner),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -211,6 +476,9 @@ impl<'de> serde::Deserialize<'de> for BalanceCommitment {
                             inner__ = 
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -253,6 +521,7 @@ impl<'de> serde::Deserialize<'de> for Denom {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Denom,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -275,7 +544,7 @@ impl<'de> serde::Deserialize<'de> for Denom {
                     {
                         match value {
                             "denom" => Ok(GeneratedField::Denom),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -302,6 +571,9 @@ impl<'de> serde::Deserialize<'de> for Denom {
                                 return Err(serde::de::Error::duplicate_field("denom"));
                             }
                             denom__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -342,6 +614,9 @@ impl serde::Serialize for DenomMetadata {
         if self.penumbra_asset_id.is_some() {
             len += 1;
         }
+        if !self.images.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.DenomMetadata", len)?;
         if !self.description.is_empty() {
             struct_ser.serialize_field("description", &self.description)?;
@@ -364,6 +639,9 @@ impl serde::Serialize for DenomMetadata {
         if let Some(v) = self.penumbra_asset_id.as_ref() {
             struct_ser.serialize_field("penumbraAssetId", v)?;
         }
+        if !self.images.is_empty() {
+            struct_ser.serialize_field("images", &self.images)?;
+        }
         struct_ser.end()
     }
 }
@@ -383,6 +661,7 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
             "symbol",
             "penumbra_asset_id",
             "penumbraAssetId",
+            "images",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -394,6 +673,8 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
             Name,
             Symbol,
             PenumbraAssetId,
+            Images,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -422,7 +703,8 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                             "name" => Ok(GeneratedField::Name),
                             "symbol" => Ok(GeneratedField::Symbol),
                             "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            "images" => Ok(GeneratedField::Images),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -448,6 +730,7 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                 let mut name__ = None;
                 let mut symbol__ = None;
                 let mut penumbra_asset_id__ = None;
+                let mut images__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Description => {
@@ -492,6 +775,15 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                             }
                             penumbra_asset_id__ = map_.next_value()?;
                         }
+                        GeneratedField::Images => {
+                            if images__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("images"));
+                            }
+                            images__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
                 Ok(DenomMetadata {
@@ -502,6 +794,7 @@ impl<'de> serde::Deserialize<'de> for DenomMetadata {
                     name: name__.unwrap_or_default(),
                     symbol: symbol__.unwrap_or_default(),
                     penumbra_asset_id: penumbra_asset_id__,
+                    images: images__.unwrap_or_default(),
                 })
             }
         }
@@ -555,6 +848,7 @@ impl<'de> serde::Deserialize<'de> for DenomUnit {
             Denom,
             Exponent,
             Aliases,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -579,7 +873,7 @@ impl<'de> serde::Deserialize<'de> for DenomUnit {
                             "denom" => Ok(GeneratedField::Denom),
                             "exponent" => Ok(GeneratedField::Exponent),
                             "aliases" => Ok(GeneratedField::Aliases),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -622,6 +916,9 @@ impl<'de> serde::Deserialize<'de> for DenomUnit {
                                 return Err(serde::de::Error::duplicate_field("aliases"));
                             }
                             aliases__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -675,6 +972,7 @@ impl<'de> serde::Deserialize<'de> for Value {
         enum GeneratedField {
             Amount,
             AssetId,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -698,7 +996,7 @@ impl<'de> serde::Deserialize<'de> for Value {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
                             "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -732,6 +1030,9 @@ impl<'de> serde::Deserialize<'de> for Value {
                                 return Err(serde::de::Error::duplicate_field("assetId"));
                             }
                             asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -786,6 +1087,7 @@ impl<'de> serde::Deserialize<'de> for ValueView {
         enum GeneratedField {
             KnownDenom,
             UnknownDenom,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -809,7 +1111,7 @@ impl<'de> serde::Deserialize<'de> for ValueView {
                         match value {
                             "knownDenom" | "known_denom" => Ok(GeneratedField::KnownDenom),
                             "unknownDenom" | "unknown_denom" => Ok(GeneratedField::UnknownDenom),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -844,6 +1146,9 @@ impl<'de> serde::Deserialize<'de> for ValueView {
                             }
                             value_view__ = map_.next_value::<::std::option::Option<_>>()?.map(value_view::ValueView::UnknownDenom)
 ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -894,6 +1199,7 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
         enum GeneratedField {
             Amount,
             Denom,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -917,7 +1223,7 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
                             "denom" => Ok(GeneratedField::Denom),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -951,6 +1257,9 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
                                 return Err(serde::de::Error::duplicate_field("denom"));
                             }
                             denom__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -1003,6 +1312,7 @@ impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
         enum GeneratedField {
             Amount,
             AssetId,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1026,7 +1336,7 @@ impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
                             "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -1060,6 +1370,9 @@ impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
                                 return Err(serde::de::Error::duplicate_field("assetId"));
                             }
                             asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

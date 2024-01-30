@@ -39,6 +39,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
         enum GeneratedField {
             ChainId,
             AssetIds,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -62,7 +63,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
                         match value {
                             "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "assetIds" | "asset_ids" => Ok(GeneratedField::AssetIds),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -96,6 +97,9 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
                                 return Err(serde::de::Error::duplicate_field("assetIds"));
                             }
                             asset_ids__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -139,6 +143,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Balance,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -161,7 +166,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesResponse {
                     {
                         match value {
                             "balance" => Ok(GeneratedField::Balance),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -188,6 +193,9 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesResponse {
                                 return Err(serde::de::Error::duplicate_field("balance"));
                             }
                             balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -231,6 +239,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolParameters {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             CommunityPoolSpendProposalsEnabled,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -253,7 +262,7 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolParameters {
                     {
                         match value {
                             "communityPoolSpendProposalsEnabled" | "community_pool_spend_proposals_enabled" => Ok(GeneratedField::CommunityPoolSpendProposalsEnabled),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -280,6 +289,9 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolParameters {
                                 return Err(serde::de::Error::duplicate_field("communityPoolSpendProposalsEnabled"));
                             }
                             community_pool_spend_proposals_enabled__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
@@ -323,6 +335,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             CommunityPoolParams,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -345,7 +358,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     {
                         match value {
                             "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -372,6 +385,9 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                                 return Err(serde::de::Error::duplicate_field("communityPoolParams"));
                             }
                             community_pool_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
