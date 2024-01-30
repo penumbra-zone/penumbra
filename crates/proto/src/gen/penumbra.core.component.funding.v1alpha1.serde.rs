@@ -21,6 +21,7 @@ impl<'de> serde::Deserialize<'de> for FundingParameters {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -41,7 +42,7 @@ impl<'de> serde::Deserialize<'de> for FundingParameters {
                     where
                         E: serde::de::Error,
                     {
-                            Err(serde::de::Error::unknown_field(value, FIELDS))
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -101,6 +102,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             FundingParams,
+            __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -123,7 +125,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     {
                         match value {
                             "fundingParams" | "funding_params" => Ok(GeneratedField::FundingParams),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                            _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
                 }
@@ -150,6 +152,9 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                                 return Err(serde::de::Error::duplicate_field("fundingParams"));
                             }
                             funding_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }

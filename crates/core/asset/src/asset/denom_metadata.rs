@@ -36,6 +36,10 @@ pub(super) struct Inner {
     id: Id,
     base_denom: String,
     description: String,
+    // For now, don't bother with a domain type here,
+    // since we don't render images from Rust code.
+    images: Vec<pb::AssetImage>,
+
     /// Sorted by priority order.
     pub(super) units: Vec<BareDenomUnit>,
     //display: String,
@@ -59,6 +63,7 @@ impl From<&Inner> for pb::DenomMetadata {
             symbol: inner.symbol.clone(),
             penumbra_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
+            images: inner.images.clone(),
         }
     }
 }
@@ -123,6 +128,7 @@ impl TryFrom<pb::DenomMetadata> for Inner {
             description: value.description,
             name: value.name,
             symbol: value.symbol,
+            images: value.images,
         })
     }
 }
@@ -243,6 +249,7 @@ impl Inner {
             description: String::new(),
             name: String::new(),
             symbol: String::new(),
+            images: Vec::new(),
         }
     }
 }
@@ -509,5 +516,54 @@ impl Debug for Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.units[self.unit_index].denom.as_str())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn can_parse_metadata_from_chain_registry() {
+        const SOME_COSMOS_JSON: &str = r#"
+        {
+            "description": "The native staking token of dYdX Protocol.",
+            "denom_units": [
+              {
+                "denom": "adydx",
+                "exponent": 0
+              },
+              {
+                "denom": "dydx",
+                "exponent": 18
+              }
+            ],
+            "base": "adydx",
+            "name": "dYdX",
+            "display": "dydx",
+            "symbol": "DYDX",
+            "logo_URIs": {
+              "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.png",
+              "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.svg"
+            },
+            "coingecko_id": "dydx",
+            "images": [
+              {
+                "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.png",
+                "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.svg"
+              },
+              {
+                "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx-circle.svg",
+                "theme": {
+                  "circle": true
+                }
+              }
+            ]
+          }
+        "#;
+
+        let _metadata: super::DenomMetadata = serde_json::from_str(SOME_COSMOS_JSON).unwrap();
+
+        // uncomment to see what our subset looks like
+        //let json2 = serde_json::to_string_pretty(&_metadata).unwrap();
+        //println!("{}", json2);
     }
 }
