@@ -18,13 +18,4 @@ message GenesisContent {
 // Query operations for the chain component.
 service QueryService {
   // TODO: move to SCT cf sct/src/component/view.rs:9 "make epoch management the responsibility of this component"
-  rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
-}
-
-message EpochByHeightRequest {
-  uint64 height = 1;
-}
-
-message EpochByHeightResponse {
-  core.component.chain.v1alpha1.Epoch epoch = 1;
 }

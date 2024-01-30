@@ -95,6 +95,15 @@ message EventBlockRoot {
   crypto.tct.v1alpha1.MerkleRoot root = 1;
   uint64 height = 2;
 }
+message EpochByHeightRequest {
+  uint64 height = 1;
+}
+
+message EpochByHeightResponse {
+  Epoch epoch = 1;
+}
 
 // Query operations for the SCT component.
-service QueryService {}
+service QueryService {
+  rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
+}
