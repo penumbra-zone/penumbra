@@ -455,6 +455,8 @@ message ChangedAppParameters {
   core.component.distributions.v1alpha1.DistributionsParameters distributions_params = 7;
   // Funding module parameters.
   core.component.funding.v1alpha1.FundingParameters funding_params = 8;
+  // Shielded pool module parameters
+  core.component.shielded_pool.v1alpha1.ShieldedPoolParameters shielded_pool_params = 9;
 }
 
 message ChangedAppParametersSet {
