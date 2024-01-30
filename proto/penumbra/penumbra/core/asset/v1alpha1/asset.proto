@@ -49,11 +49,6 @@ message DenomMetadata {
   // symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
   // be the same as the display.
   string symbol = 6;
-  // URI to a document (on or off-chain) that contains additional information. Optional.
-  string uri = 7;
-  // URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
-  // the document didn't change. Optional.
-  string uri_hash = 8;
 
   // the asset ID on Penumbra for this denomination.
   AssetId penumbra_asset_id = 1984;

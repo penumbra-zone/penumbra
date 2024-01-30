@@ -43,8 +43,6 @@ pub(super) struct Inner {
     display_index: usize,
     name: String,
     symbol: String,
-    uri: String,
-    uri_hash: String,
 }
 
 impl DomainType for DenomMetadata {
@@ -59,8 +57,6 @@ impl From<&Inner> for pb::DenomMetadata {
             display: inner.units[inner.display_index].denom.clone(),
             name: inner.name.clone(),
             symbol: inner.symbol.clone(),
-            uri: inner.uri.clone(),
-            uri_hash: inner.uri_hash.clone(),
             penumbra_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
         }
@@ -127,8 +123,6 @@ impl TryFrom<pb::DenomMetadata> for Inner {
             description: value.description,
             name: value.name,
             symbol: value.symbol,
-            uri: value.uri,
-            uri_hash: value.uri_hash,
         })
     }
 }
@@ -249,8 +243,6 @@ impl Inner {
             description: String::new(),
             name: String::new(),
             symbol: String::new(),
-            uri: String::new(),
-            uri_hash: String::new(),
         }
     }
 }
