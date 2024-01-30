@@ -505,3 +505,11 @@ message NextProposalIdResponse {
   // The next proposal ID.
   uint64 next_proposal_id = 1;
 }
+
+// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
+message Ratio {
+  // The numerator.
+  uint64 numerator = 1;
+  // The denominator.
+  uint64 denominator = 2;
+}
