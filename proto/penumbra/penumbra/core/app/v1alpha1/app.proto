@@ -38,7 +38,7 @@ message TransactionsByHeightResponse {
 
 message AppParameters {
   // Sct module parameters.
-  core.component.sct.v1alpha1.sct sct_params = 1;
+  core.component.sct.v1alpha1.SctParameters sct_params = 1;
   // Community Pool module parameters.
   core.component.community_pool.v1alpha1.CommunityPoolParameters community_pool_params = 2;
   // Governance module parameters.
