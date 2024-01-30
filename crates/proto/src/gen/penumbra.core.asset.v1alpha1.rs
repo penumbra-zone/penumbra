@@ -82,6 +82,8 @@ pub struct DenomMetadata {
     /// the asset ID on Penumbra for this denomination.
     #[prost(message, optional, tag = "1984")]
     pub penumbra_asset_id: ::core::option::Option<AssetId>,
+    #[prost(message, repeated, tag = "1985")]
+    pub images: ::prost::alloc::vec::Vec<AssetImage>,
 }
 impl ::prost::Name for DenomMetadata {
     const NAME: &'static str = "DenomMetadata";
@@ -193,6 +195,49 @@ pub mod value_view {
 }
 impl ::prost::Name for ValueView {
     const NAME: &'static str = "ValueView";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
+    }
+}
+/// An image related to an asset.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetImage {
+    /// The URI of the image in PNG format.
+    #[prost(string, tag = "1")]
+    pub png: ::prost::alloc::string::String,
+    /// The URI of the image in SVG format.
+    #[prost(string, tag = "2")]
+    pub svg: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub theme: ::core::option::Option<asset_image::Theme>,
+}
+/// Nested message and enum types in `AssetImage`.
+pub mod asset_image {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Theme {
+        /// Should be in hex format, `^#\[0-9a-fA-F\]{6}$`.
+        #[prost(string, tag = "1")]
+        pub primary_color_hex: ::prost::alloc::string::String,
+        #[prost(bool, tag = "2")]
+        pub circle: bool,
+        #[prost(bool, tag = "3")]
+        pub dark_mode: bool,
+    }
+    impl ::prost::Name for Theme {
+        const NAME: &'static str = "Theme";
+        const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.asset.v1alpha1.AssetImage.{}", Self::NAME
+            )
+        }
+    }
+}
+impl ::prost::Name for AssetImage {
+    const NAME: &'static str = "AssetImage";
     const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)

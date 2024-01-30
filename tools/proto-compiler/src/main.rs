@@ -128,11 +128,13 @@ fn main() -> anyhow::Result<()> {
 
     pbjson_build::Builder::new()
         .register_descriptors(&cnidarium_descriptor_set)?
+        .ignore_unknown_fields()
         .out_dir(&cnidarium_target_dir)
         .build(&[".penumbra"])?;
 
     pbjson_build::Builder::new()
         .register_descriptors(&descriptor_set)?
+        .ignore_unknown_fields()
         .out_dir(&target_dir)
         // These are all excluded because they're part of the Tendermint proxy,
         // so they use `tendermint` types that may not be Serialize/Deserialize,

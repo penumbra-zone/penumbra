@@ -52,6 +52,8 @@ message DenomMetadata {
 
   // the asset ID on Penumbra for this denomination.
   AssetId penumbra_asset_id = 1984;
+
+  repeated AssetImage images = 1985;
 }
 
 // DenomUnit represents a struct that describes a given denomination unit of the basic token.
@@ -96,4 +98,20 @@ message ValueView {
     KnownDenom known_denom = 1;
     UnknownDenom unknown_denom = 2;
   }
+}
+
+// An image related to an asset.
+message AssetImage {
+  // The URI of the image in PNG format.
+  string png = 1;
+  // The URI of the image in SVG format.
+  string svg = 2;
+  
+  message Theme {
+    // Should be in hex format, `^#[0-9a-fA-F]{6}$`.
+    string primary_color_hex = 1;
+    bool circle = 2;
+    bool dark_mode = 3;
+  }
+  Theme theme = 3;
 }
