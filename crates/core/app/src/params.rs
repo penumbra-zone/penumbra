@@ -18,7 +18,6 @@ pub mod change;
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_id: String,
-    pub chain_params: ChainParameters,
     pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
     pub fee_params: FeeParameters,
@@ -41,7 +40,7 @@ impl TryFrom<pb::AppParameters> for AppParameters {
             chain_id: msg.chain_id,
             community_pool_params: msg
                 .community_pool_params
-                .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool params"))?
+                .ok_or_else(|| anyhow::anyhow!("proto response missing community pool params"))?
                 .try_into()?,
             distributions_params: msg
                 .distributions_params
