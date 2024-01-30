@@ -8,6 +8,29 @@ import "penumbra/core/num/v1alpha1/num.proto";
 import "penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
+// Configuration data for the shielded pool component.
+message ShieldedPoolParameters {
+  FmdParameters fmd_params = 1;
+}
+
+// Genesis data for the shielded pool component.
+message GenesisContent {
+  message Allocation {
+    penumbra.core.num.v1alpha1.Amount amount = 1;
+    string denom = 2;
+    penumbra.core.keys.v1alpha1.Address address = 3;
+  }
+
+  // The allocations present at genesis
+  repeated Allocation allocations = 2;
+}
+
+// Parameters for Fuzzy Message Detection
+message FmdParameters {
+  uint32 precision_bits = 1;
+  uint64 as_of_block_height = 2;
+}
+
 message Note {
   asset.v1alpha1.Value value = 1;
   bytes rseed = 2;
@@ -185,22 +208,4 @@ message DenomMetadataByIdResponse {
   //
   // If the requested asset was unknown, this field will not be present.
   core.asset.v1alpha1.DenomMetadata denom_metadata = 1;
-}
-
-// Genesis data for the shielded pool component.
-message GenesisContent {
-  message Allocation {
-    penumbra.core.num.v1alpha1.Amount amount = 1;
-    string denom = 2;
-    penumbra.core.keys.v1alpha1.Address address = 3;
-  }
-
-  // The allocations present at genesis
-  repeated Allocation allocations = 2;
-}
-
-// Parameters for Fuzzy Message Detection
-message FmdParameters {
-  uint32 precision_bits = 1;
-  uint64 as_of_block_height = 2;
 }
