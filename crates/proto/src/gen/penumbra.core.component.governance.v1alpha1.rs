@@ -1100,11 +1100,9 @@ impl ::prost::Name for GenesisContent {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChangedAppParameters {
-    /// Chain module parameters.
+    /// Sct module parameters.
     #[prost(message, optional, tag = "1")]
-    pub chain_params: ::core::option::Option<
-        super::super::chain::v1alpha1::ChainParameters,
-    >,
+    pub sct_params: ::core::option::Option<super::super::sct::v1alpha1::SctParameters>,
     /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
     pub community_pool_params: ::core::option::Option<
@@ -1271,6 +1269,26 @@ pub struct NextProposalIdResponse {
 }
 impl ::prost::Name for NextProposalIdResponse {
     const NAME: &'static str = "NextProposalIdResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// The ratio between two numbers, used in governance to describe vote thresholds and quorums.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Ratio {
+    /// The numerator.
+    #[prost(uint64, tag = "1")]
+    pub numerator: u64,
+    /// The denominator.
+    #[prost(uint64, tag = "2")]
+    pub denominator: u64,
+}
+impl ::prost::Name for Ratio {
+    const NAME: &'static str = "Ratio";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

@@ -39,10 +39,10 @@ impl ::prost::Name for TransactionsByHeightResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParameters {
-    /// Chain module parameters.
+    /// Sct module parameters.
     #[prost(message, optional, tag = "1")]
-    pub chain_params: ::core::option::Option<
-        super::super::component::chain::v1alpha1::ChainParameters,
+    pub sct_params: ::core::option::Option<
+        super::super::component::sct::v1alpha1::SctParameters,
     >,
     /// Community Pool module parameters.
     #[prost(message, optional, tag = "2")]
@@ -162,10 +162,10 @@ pub struct GenesisContent {
     pub ibc_content: ::core::option::Option<
         super::super::component::ibc::v1alpha1::GenesisContent,
     >,
-    /// Chain module genesis state.
+    /// Sct module genesis state.
     #[prost(message, optional, tag = "5")]
-    pub chain_content: ::core::option::Option<
-        super::super::component::chain::v1alpha1::GenesisContent,
+    pub sct_content: ::core::option::Option<
+        super::super::component::sct::v1alpha1::GenesisContent,
     >,
     /// Community Pool module genesis state.
     #[prost(message, optional, tag = "6")]

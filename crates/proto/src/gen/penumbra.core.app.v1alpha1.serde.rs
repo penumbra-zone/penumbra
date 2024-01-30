@@ -6,7 +6,7 @@ impl serde::Serialize for AppParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.chain_params.is_some() {
+        if self.sct_params.is_some() {
             len += 1;
         }
         if self.community_pool_params.is_some() {
@@ -31,8 +31,8 @@ impl serde::Serialize for AppParameters {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.AppParameters", len)?;
-        if let Some(v) = self.chain_params.as_ref() {
-            struct_ser.serialize_field("chainParams", v)?;
+        if let Some(v) = self.sct_params.as_ref() {
+            struct_ser.serialize_field("sctParams", v)?;
         }
         if let Some(v) = self.community_pool_params.as_ref() {
             struct_ser.serialize_field("communityPoolParams", v)?;
@@ -65,8 +65,8 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_params",
-            "chainParams",
+            "sct_params",
+            "sctParams",
             "community_pool_params",
             "communityPoolParams",
             "governance_params",
@@ -85,7 +85,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainParams,
+            SctParams,
             CommunityPoolParams,
             GovernanceParams,
             IbcParams,
@@ -115,7 +115,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainParams" | "chain_params" => Ok(GeneratedField::ChainParams),
+                            "sctParams" | "sct_params" => Ok(GeneratedField::SctParams),
                             "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
                             "governanceParams" | "governance_params" => Ok(GeneratedField::GovernanceParams),
                             "ibcParams" | "ibc_params" => Ok(GeneratedField::IbcParams),
@@ -142,7 +142,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_params__ = None;
+                let mut sct_params__ = None;
                 let mut community_pool_params__ = None;
                 let mut governance_params__ = None;
                 let mut ibc_params__ = None;
@@ -152,11 +152,11 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                 let mut funding_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainParams => {
-                            if chain_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainParams"));
+                        GeneratedField::SctParams => {
+                            if sct_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sctParams"));
                             }
-                            chain_params__ = map_.next_value()?;
+                            sct_params__ = map_.next_value()?;
                         }
                         GeneratedField::CommunityPoolParams => {
                             if community_pool_params__.is_some() {
@@ -206,7 +206,7 @@ impl<'de> serde::Deserialize<'de> for AppParameters {
                     }
                 }
                 Ok(AppParameters {
-                    chain_params: chain_params__,
+                    sct_params: sct_params__,
                     community_pool_params: community_pool_params__,
                     governance_params: governance_params__,
                     ibc_params: ibc_params__,
@@ -547,7 +547,7 @@ impl serde::Serialize for GenesisContent {
         if self.ibc_content.is_some() {
             len += 1;
         }
-        if self.chain_content.is_some() {
+        if self.sct_content.is_some() {
             len += 1;
         }
         if self.community_pool_content.is_some() {
@@ -575,8 +575,8 @@ impl serde::Serialize for GenesisContent {
         if let Some(v) = self.ibc_content.as_ref() {
             struct_ser.serialize_field("ibcContent", v)?;
         }
-        if let Some(v) = self.chain_content.as_ref() {
-            struct_ser.serialize_field("chainContent", v)?;
+        if let Some(v) = self.sct_content.as_ref() {
+            struct_ser.serialize_field("sctContent", v)?;
         }
         if let Some(v) = self.community_pool_content.as_ref() {
             struct_ser.serialize_field("communityPoolContent", v)?;
@@ -608,8 +608,8 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             "governanceContent",
             "ibc_content",
             "ibcContent",
-            "chain_content",
-            "chainContent",
+            "sct_content",
+            "sctContent",
             "community_pool_content",
             "communityPoolContent",
             "fee_content",
@@ -626,7 +626,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             ShieldedPoolContent,
             GovernanceContent,
             IbcContent,
-            ChainContent,
+            SctContent,
             CommunityPoolContent,
             FeeContent,
             DistributionsContent,
@@ -657,7 +657,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             "shieldedPoolContent" | "shielded_pool_content" => Ok(GeneratedField::ShieldedPoolContent),
                             "governanceContent" | "governance_content" => Ok(GeneratedField::GovernanceContent),
                             "ibcContent" | "ibc_content" => Ok(GeneratedField::IbcContent),
-                            "chainContent" | "chain_content" => Ok(GeneratedField::ChainContent),
+                            "sctContent" | "sct_content" => Ok(GeneratedField::SctContent),
                             "communityPoolContent" | "community_pool_content" => Ok(GeneratedField::CommunityPoolContent),
                             "feeContent" | "fee_content" => Ok(GeneratedField::FeeContent),
                             "distributionsContent" | "distributions_content" => Ok(GeneratedField::DistributionsContent),
@@ -685,7 +685,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 let mut shielded_pool_content__ = None;
                 let mut governance_content__ = None;
                 let mut ibc_content__ = None;
-                let mut chain_content__ = None;
+                let mut sct_content__ = None;
                 let mut community_pool_content__ = None;
                 let mut fee_content__ = None;
                 let mut distributions_content__ = None;
@@ -716,11 +716,11 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             }
                             ibc_content__ = map_.next_value()?;
                         }
-                        GeneratedField::ChainContent => {
-                            if chain_content__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainContent"));
+                        GeneratedField::SctContent => {
+                            if sct_content__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sctContent"));
                             }
-                            chain_content__ = map_.next_value()?;
+                            sct_content__ = map_.next_value()?;
                         }
                         GeneratedField::CommunityPoolContent => {
                             if community_pool_content__.is_some() {
@@ -756,7 +756,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     shielded_pool_content: shielded_pool_content__,
                     governance_content: governance_content__,
                     ibc_content: ibc_content__,
-                    chain_content: chain_content__,
+                    sct_content: sct_content__,
                     community_pool_content: community_pool_content__,
                     fee_content: fee_content__,
                     distributions_content: distributions_content__,
