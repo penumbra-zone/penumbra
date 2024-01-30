@@ -44,7 +44,7 @@ penumbra-fee = { path = "../fee", default-features = false }
 penumbra-funding = { path = "../funding", default-features = false }
 penumbra-ibc = { path = "../ibc", default-features = false }
 penumbra-distributions = { path = "../distributions", default-features = false }
-penumbra-chain = { path = "../chain", default-features = false }
+#penumbra-chain = { path = "../chain", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
 penumbra-keys = { path = "../../../core/keys", default-features = false }
 penumbra-txhash = { path = "../../../core/txhash", default-features = false }
