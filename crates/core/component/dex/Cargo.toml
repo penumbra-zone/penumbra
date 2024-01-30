@@ -10,7 +10,6 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
     "penumbra-shielded-pool/component",
     "penumbra-fee/component",
     "tokio",

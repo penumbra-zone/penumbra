@@ -658,13 +658,13 @@ pub trait StateReadExt: StateRead {
         Ok(ChainId::from_string(&cid_str).version())
     }
 
-        /// Returns true if the chain is halted (or will be halted momentarily).
-        async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
-            Ok(self
-                .nonverifiable_get_raw(&state_key::halted(total_halt_count))
-                .await?
-                .is_some())
-        }
+    /// Returns true if the chain is halted (or will be halted momentarily).
+    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
+        Ok(self
+            .nonverifiable_get_raw(&state_key::halted(total_halt_count))
+            .await?
+            .is_some())
+    }
 
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {

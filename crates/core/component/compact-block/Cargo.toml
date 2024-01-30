@@ -10,7 +10,6 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
     "tonic",
     "tokio-stream",
     "tokio",

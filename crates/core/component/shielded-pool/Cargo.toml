@@ -11,7 +11,6 @@ component = [
     "cnidarium",
     "penumbra-proto/cnidarium",
     "penumbra-ibc/component",
-    "penumbra-chain/component",
     "penumbra-sct/component",
     "tonic",
 ]

@@ -60,7 +60,7 @@ trait DistributionManager: StateWriteExt {
     /// Compute the total new issuance of staking tokens for this epoch.
     async fn compute_new_issuance(&self) -> Result<Amount> {
         use penumbra_sct::component::EpochRead;
-        
+
         let current_block_height = self.get_block_height().await?;
         let current_epoch = self.current_epoch().await?;
         let num_blocks = current_block_height
