@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_sct::component::EpochRead;
 
 use std::sync::Arc;
@@ -9,8 +8,7 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    action_handler::ActionHandler, component::StakingImpl as _, rate::RateData, validator,
-    StateReadExt as _,
+    action_handler::ActionHandler, component::StakingImpl as _, rate::RateData, validator, StateReadExt as _
 };
 
 #[async_trait]

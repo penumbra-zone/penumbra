@@ -5,7 +5,6 @@ use async_stream::try_stream;
 use cnidarium::{StateDelta, Storage};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
     core::component::dex::v1alpha1::{
         query_service_server::QueryService, simulate_trade_request::routing,

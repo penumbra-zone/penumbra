@@ -391,7 +391,7 @@ mod tests {
             Ok("mock_chain_id".to_string())
         }
 
-        async fn get_revision_number<S: StateRead>(state: S) -> Result<u64> {
+        async fn get_revision_number<S: StateRead>(_state: S) -> Result<u64> {
             Ok(0u64)
         }
 
@@ -400,14 +400,7 @@ mod tests {
         }
 
         async fn get_block_timestamp<S: StateRead>(state: S) -> Result<tendermint::Time> {
-            let timestamp_string = state.get_block_timestamp().await?;
-            let timestamp_string: String = state
-                .get_proto(penumbra_chain::state_key::block_timestamp())
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("Missing block_timestamp"))?;
-
-            Ok(Time::from_str(&timestamp_string)
-                .context("block_timestamp was an invalid RFC3339 time string")?)
+            state.get_block_timestamp().await
         }
     }
 

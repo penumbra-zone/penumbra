@@ -5,8 +5,7 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 
 use crate::{
-    action_handler::ActionHandler, component::StateWriteExt as _, event, validator, Delegate,
-    StateReadExt as _,
+    action_handler::ActionHandler, component::StateWriteExt as _, event, validator, Delegate, StateReadExt as _
 };
 
 #[async_trait]

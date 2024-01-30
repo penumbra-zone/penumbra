@@ -9,12 +9,14 @@ use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use ibc_types::core::client::ClientId;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ClientStateWriteExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::{component::StateReadExt as _, Nullifier};
+use penumbra_sct::{
+    component::{EpochRead, StateReadExt as _},
+    Nullifier,
+};
 use penumbra_shielded_pool::component::SupplyRead;
 use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
 use penumbra_tct as tct;
@@ -39,7 +41,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// committing the block.
     async fn is_upgrade_height(&self) -> Result<bool> {
         let Some(next_upgrade_height) = self
-            .nonverifiable_get_raw(state_key::next_upgrade().as_bytes())
+            .nonverifiable_get_raw(state_key::upgrades::next_upgrade().as_bytes())
             .await?
         else {
             return Ok(false);
@@ -574,8 +576,12 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .is_some()
     }
 
-    fn is_chain_halted(&self, total_halt_count: u64) -> u64 {
-        self.get_proto(state_key::halt_count()).unwrap_or_default()
+    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
+        Ok(total_halt_count
+            >= self
+                .get_proto(state_key::halt::halt_count())
+                .await?
+                .unwrap_or_default())
     }
 }
 
@@ -995,7 +1001,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         // ...and signal that a halt should occur if the halt count is fresh (`is_chain_halted` will
         // check against the total number of expected chain halts to determine whether a halt should
         // actually occur).
-        self.nonverifiable_put_raw(state_key::halted(halt_count).to_vec(), vec![]);
+        self.nonverifiable_put_raw(state_key::halt::halt_flag(halt_count).to_vec(), vec![]);
 
         Ok(())
     }

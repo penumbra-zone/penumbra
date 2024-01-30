@@ -3,7 +3,7 @@ use penumbra_asset::asset;
 use penumbra_proto::core::component::shielded_pool::v1alpha1::{
     query_service_server::QueryService, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
 };
-use penumbra_sct::component::StateReadExt as _;
+
 use tonic::Status;
 use tracing::instrument;
 

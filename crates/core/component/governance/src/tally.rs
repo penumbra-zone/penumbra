@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign};
+use std::{
+    cmp::Ordering, fmt::{Display, Formatter}, ops::{Add, AddAssign}, str::FromStr
+};
 
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
 
