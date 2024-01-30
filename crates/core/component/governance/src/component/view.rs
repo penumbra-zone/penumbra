@@ -583,6 +583,13 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
                 .await?
                 .unwrap_or_default())
     }
+
+    async fn halt_count(&self) -> Result<u64> {
+        Ok(self
+            .get_proto(state_key::halt::halt_count())
+            .await?
+            .unwrap_or_default())
+    }
 }
 
 impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -990,19 +997,9 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
 
     /// Signals to the consensus worker to halt after the next commit.
     async fn signal_halt(&mut self) -> Result<()> {
-        let halt_count = self.chain_halt_count().await?;
+        let halt_count = self.halt_count().await?;
 
-        // Increment the current halt count unconditionally...
-        self.put_proto(
-            state_key::counters::halt_count().to_string(),
-            halt_count + 1,
-        );
-
-        // ...and signal that a halt should occur if the halt count is fresh (`is_chain_halted` will
-        // check against the total number of expected chain halts to determine whether a halt should
-        // actually occur).
-        self.nonverifiable_put_raw(state_key::halt::halt_flag(halt_count).to_vec(), vec![]);
-
+        self.put_proto(state_key::halt::halt_count().to_string(), halt_count + 1);
         Ok(())
     }
 }

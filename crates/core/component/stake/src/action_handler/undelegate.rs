@@ -6,7 +6,8 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
-    action_handler::ActionHandler, component::StateWriteExt as _, event, StateReadExt as _, Undelegate
+    action_handler::ActionHandler, component::StateWriteExt as _, event, StateReadExt as _,
+    Undelegate,
 };
 
 #[async_trait]

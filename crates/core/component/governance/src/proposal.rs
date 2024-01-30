@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;

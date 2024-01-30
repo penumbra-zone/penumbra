@@ -146,8 +146,4 @@ pub mod halt {
     pub fn halt_count() -> &'static str {
         "governance/counters/halt_count"
     }
-
-    pub fn halt_flag(counter: u64) -> String {
-        format!("governance/counters/halt_flag/{counter}")
-    }
 }

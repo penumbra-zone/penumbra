@@ -7,8 +7,8 @@ use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 use penumbra_sct::component::EpochRead;
 
 use crate::undelegate_claim::UndelegateClaimProofPublic;
-use crate::{StateReadExt as _, UndelegateClaim};
 use crate::{action_handler::ActionHandler, UnbondingToken};
+use crate::{StateReadExt as _, UndelegateClaim};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {
