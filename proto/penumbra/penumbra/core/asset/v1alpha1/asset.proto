@@ -50,6 +50,13 @@ message DenomMetadata {
   // be the same as the display.
   string symbol = 6;
 
+  // These are used by the CSDK but we do not use them, and in our opinion
+  // they should be deprecated there too.
+  reserved 7;
+  reserved "uri", "URI";
+  reserved 8;
+  reserved "uri_hash", "URIHash";
+
   // the asset ID on Penumbra for this denomination.
   AssetId penumbra_asset_id = 1984;
 
@@ -106,7 +113,7 @@ message AssetImage {
   string png = 1;
   // The URI of the image in SVG format.
   string svg = 2;
-  
+
   message Theme {
     // Should be in hex format, `^#[0-9a-fA-F]{6}$`.
     string primary_color_hex = 1;
