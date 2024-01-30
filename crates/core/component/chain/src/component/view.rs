@@ -7,7 +7,7 @@ use ibc_types::core::connection::ChainId;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::Time;
 
-use crate::{state_key, Epoch};
+use crate::state_key;
 
 /// This trait provides read access to chain-related parts of the Penumbra
 /// state store.
@@ -22,38 +22,31 @@ pub trait StateReadExt: StateRead {
             .is_some()
     }
 
-    /// Gets the app chain parameters from the JMT.
-    async fn get_chain_params(&self) -> Result<ChainParameters> {
-        self.get(state_key::chain_params())
-            .await?
-            .ok_or_else(|| anyhow!("Missing ChainParameters"))
-    }
-
     /// Gets the current epoch for the chain.
-    async fn get_current_epoch(&self) -> Result<Epoch> {
-        // Get the height
-        let height = self.get_block_height().await?;
+    // async fn get_current_epoch(&self) -> Result<Epoch> {
+    //     // Get the height
+    //     let height = self.get_block_height().await?;
 
-        self.get(&state_key::epoch_by_height(height))
-            .await?
-            .ok_or_else(|| anyhow!("missing epoch for current height"))
-    }
+    //     self.get(&state_key::epoch_by_height(height))
+    //         .await?
+    //         .ok_or_else(|| anyhow!("missing epoch for current height"))
+    // }
 
     /// Gets the epoch duration for the chain.
-    async fn get_epoch_duration(&self) -> Result<u64> {
-        // this might be a bit wasteful -- does it matter?  who knows, at this
-        // point. but having it be a separate method means we can do a narrower
-        // load later if we want
-        self.get_chain_params()
-            .await
-            .map(|params| params.epoch_duration)
-    }
+    //async fn get_epoch_duration(&self) -> Result<u64> {
+    //    // this might be a bit wasteful -- does it matter?  who knows, at this
+    //    // point. but having it be a separate method means we can do a narrower
+    //    // load later if we want
+    //    self.get_chain_params()
+    //        .await
+    //        .map(|params| params.epoch_duration)
+    //}
 
-    async fn get_epoch_for_height(&self, height: u64) -> Result<Epoch> {
-        self.get(&state_key::epoch_by_height(height))
-            .await?
-            .ok_or_else(|| anyhow!("missing epoch for height"))
-    }
+    // async fn get_epoch_for_height(&self, height: u64) -> Result<Epoch> {
+    //     self.get(&state_key::epoch_by_height(height))
+    //         .await?
+    //         .ok_or_else(|| anyhow!("missing epoch for height"))
+    // }
 
     /// Gets the chain ID.
     async fn get_chain_id(&self) -> Result<String> {
@@ -177,14 +170,14 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
-    /// Writes the provided chain parameters to the JMT.
-    fn put_chain_params(&mut self, params: ChainParameters) {
-        // Note that the chain parameters have been updated:
-        self.object_put(state_key::chain_params_updated(), ());
+    // /// Writes the provided chain parameters to the JMT.
+    // fn put_chain_params(&mut self, params: ChainParameters) {
+    //     // Note that the chain parameters have been updated:
+    //     self.object_put(state_key::chain_params_updated(), ());
 
-        // Change the chain parameters:
-        self.put(state_key::chain_params().into(), params)
-    }
+    //     // Change the chain parameters:
+    //     self.put(state_key::chain_params().into(), params)
+    // }
 
     /// Writes the block height to the JMT
     fn put_block_height(&mut self, height: u64) {
