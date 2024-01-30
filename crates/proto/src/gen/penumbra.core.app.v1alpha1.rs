@@ -82,6 +82,11 @@ pub struct AppParameters {
     pub funding_params: ::core::option::Option<
         super::super::component::funding::v1alpha1::FundingParameters,
     >,
+    /// Shielded pool module parameters.
+    #[prost(message, optional, tag = "10")]
+    pub shielded_pool_params: ::core::option::Option<
+        super::super::component::shielded_pool::v1alpha1::ShieldedPoolParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";
