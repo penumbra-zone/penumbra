@@ -21,13 +21,19 @@ impl TryFrom<pb::ShieldedPoolParameters> for ShieldedPoolParameters {
 
     fn try_from(msg: pb::ShieldedPoolParameters) -> anyhow::Result<Self> {
         Ok(ShieldedPoolParameters {
-
+            fmd_parameters: msg
+                .fmd_parameters
+                .ok_or_else(|| anyhow::anyhow!("missing fmd_parameters"))?
+                .try_into()?,
+            s,
         })
     }
 }
 
 impl From<ShieldedPoolParameters> for pb::ShieldedPoolParameters {
-    fn from(_params: ShieldedPoolParameters) -> Self {
-        pb::ShieldedPoolParameters {}
+    fn from(params: ShieldedPoolParameters) -> Self {
+        pb::ShieldedPoolParameters {
+            fmd_parameters: Some(params.fmd_parameters.into()),
+        }
     }
 }

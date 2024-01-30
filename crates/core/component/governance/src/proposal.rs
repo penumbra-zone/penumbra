@@ -10,6 +10,8 @@ use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
 use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
@@ -423,13 +425,13 @@ impl ProposalPayload {
     into = "pb::ChangedAppParameters"
 )]
 pub struct ChangedAppParameters {
-    pub chain_params: Option<ChainParameters>,
     pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
     pub fee_params: Option<FeeParameters>,
     pub funding_params: Option<FundingParameters>,
     pub governance_params: Option<GovernanceParameters>,
+    pub shielded_pool_params: Option<ShieldedPoolParameters>,
     pub stake_params: Option<StakeParameters>,
 }
 
@@ -442,7 +444,6 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
-            chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
             community_pool_params: msg
                 .community_pool_params
                 .map(TryInto::try_into)
@@ -455,6 +456,11 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
             funding_params: msg.funding_params.map(TryInto::try_into).transpose()?,
             governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
             ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
+            sct_params: msg.sct_params.map(TryInto::try_into).transpose()?,
+            shielded_pool_params: msg
+                .shielded_pool_params
+                .map(TryInto::try_into)
+                .transpose()?,
             stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
         })
     }
@@ -463,13 +469,14 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
-            chain_params: params.chain_params.map(Into::into),
             community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
             funding_params: params.funding_params.map(Into::into),
             governance_params: params.governance_params.map(Into::into),
             ibc_params: params.ibc_params.map(Into::into),
+            sct_params: params.sct_params.map(Into::into),
+            shielded_pool_params: params.shielded_pool_params.map(Into::into),
             stake_params: params.stake_params.map(Into::into),
         }
     }
