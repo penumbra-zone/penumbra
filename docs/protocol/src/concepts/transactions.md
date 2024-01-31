@@ -35,7 +35,7 @@ pool](../stake/undelegation.md), consuming delegation tokens from the
 transaction's value balance and producing new notes recording the appropriate
 amount of unbonded stake;
 
-- **Commission** descriptions are used by validators to [sweep commission on
+- **Commission** descriptions are used by validators to [claim commission on
 staking rewards](../stake/validator-rewards.md) into shielded notes,
 adding unbonded stake to the transaction's value balance;
 
@@ -61,7 +61,7 @@ description leaves the value balance unchanged.
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
-- **Sweep** descriptions perform the second phase of
+- **SwapClaim** descriptions perform the second phase of
 [ZSwap](../zswap.md), allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
