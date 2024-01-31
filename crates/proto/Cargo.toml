@@ -11,6 +11,8 @@ decaf377-rdsa = { version = "0.7" }
 bytes = { version = "1", features = ["serde"] }
 prost = "0.12.3"
 tonic = { version = "0.10", optional = true }
+tower = { version = "0.4", features = ["full"], optional = true }
+http-body = { version = "0.4.5", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 hex = "0.4"
@@ -39,4 +41,5 @@ anyhow = "1"
 
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
+box-grpc = ["dep:http-body", "dep:tonic", "dep:tower"]
 cnidarium = ["dep:cnidarium"]

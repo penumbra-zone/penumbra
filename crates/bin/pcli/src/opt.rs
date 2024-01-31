@@ -1,5 +1,4 @@
 use crate::{
-    box_grpc_svc,
     config::{CustodyConfig, PcliConfig},
     terminal::ActualTerminal,
     App, Command,
@@ -9,6 +8,7 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use penumbra_custody::soft_kms::SoftKms;
+use penumbra_proto::box_grpc_svc;
 use penumbra_proto::{
     custody::v1alpha1::{
         custody_protocol_service_client::CustodyProtocolServiceClient,
