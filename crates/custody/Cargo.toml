@@ -15,7 +15,6 @@ decaf377 = "0.5"
 decaf377-rdsa = "0.7"
 decaf377-frost = { path = "../crypto/decaf377-frost" }
 decaf377-ka = { path = "../crypto/decaf377-ka" }
-#penumbra-chain = { path = "../core/component/chain" }
 penumbra-keys = { path = "../core/keys" }
 penumbra-txhash = { path = "../core/txhash" }
 penumbra-proto = { path = "../proto", features = ["rpc"] }

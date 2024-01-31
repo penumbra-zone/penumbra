@@ -32,7 +32,6 @@ parallel = [
 # Workspace dependencies
 penumbra-proto = { path = "../../../proto", default-features = false }
 cnidarium = { path = "../../../cnidarium", optional = true }
-#penumbra-chain = { path = "../chain", default-features = false }
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
