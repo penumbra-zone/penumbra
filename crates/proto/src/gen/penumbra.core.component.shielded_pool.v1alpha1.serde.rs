@@ -526,10 +526,16 @@ impl serde::Serialize for GenesisContent {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if self.shielded_pool_params.is_some() {
+            len += 1;
+        }
         if !self.allocations.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.GenesisContent", len)?;
+        if let Some(v) = self.shielded_pool_params.as_ref() {
+            struct_ser.serialize_field("shieldedPoolParams", v)?;
+        }
         if !self.allocations.is_empty() {
             struct_ser.serialize_field("allocations", &self.allocations)?;
         }
@@ -543,11 +549,14 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "shielded_pool_params",
+            "shieldedPoolParams",
             "allocations",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            ShieldedPoolParams,
             Allocations,
             __SkipField__,
         }
@@ -571,6 +580,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                         E: serde::de::Error,
                     {
                         match value {
+                            "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
                             "allocations" => Ok(GeneratedField::Allocations),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -591,9 +601,16 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 where
                     V: serde::de::MapAccess<'de>,
             {
+                let mut shielded_pool_params__ = None;
                 let mut allocations__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
+                        GeneratedField::ShieldedPoolParams => {
+                            if shielded_pool_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("shieldedPoolParams"));
+                            }
+                            shielded_pool_params__ = map_.next_value()?;
+                        }
                         GeneratedField::Allocations => {
                             if allocations__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("allocations"));
@@ -606,6 +623,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     }
                 }
                 Ok(GenesisContent {
+                    shielded_pool_params: shielded_pool_params__,
                     allocations: allocations__.unwrap_or_default(),
                 })
             }

@@ -18,8 +18,10 @@ impl ::prost::Name for ShieldedPoolParameters {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisContent {
+    #[prost(message, optional, tag = "1")]
+    pub shielded_pool_params: ::core::option::Option<ShieldedPoolParameters>,
     /// The allocations present at genesis
-    #[prost(message, repeated, tag = "2")]
+    #[prost(message, repeated, tag = "3")]
     pub allocations: ::prost::alloc::vec::Vec<genesis_content::Allocation>,
 }
 /// Nested message and enum types in `GenesisContent`.

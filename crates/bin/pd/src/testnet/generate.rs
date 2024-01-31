@@ -8,8 +8,9 @@ use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
 use penumbra_sct::genesis::Content as SctContent;
 use penumbra_sct::params::SctParameters;
-use penumbra_shielded_pool::genesis::{
-    self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent,
+use penumbra_shielded_pool::{
+    genesis::{self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent},
+    params::ShieldedPoolParameters,
 };
 use penumbra_stake::{
     genesis::Content as StakeContent, params::StakeParameters, validator::Validator,
@@ -213,7 +214,7 @@ impl TestnetConfig {
                 governance_params: gov_params,
             },
             shielded_pool_content: ShieldedPoolContent {
-                shielded_pool_params: shielded_pool_genesis::FmdParameters::default(),
+                shielded_pool_params: ShieldedPoolParameters::default(),
                 allocations: allocations.clone(),
             },
             sct_content: SctContent {
