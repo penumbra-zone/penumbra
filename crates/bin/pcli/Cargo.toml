@@ -30,7 +30,7 @@ parallel = [
 
 [dependencies]
 # Workspace dependencies
-penumbra-proto = { path = "../../proto", features = ["rpc"] }
+penumbra-proto = { path = "../../proto", features = ["rpc", "box-grpc"] }
 penumbra-tct = { path = "../../crypto/tct" }
 penumbra-num = { path = "../../core/num", default-features = false }
 penumbra-asset = { path = "../../core/asset", default-features = false }
