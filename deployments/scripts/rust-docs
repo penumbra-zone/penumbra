@@ -36,7 +36,6 @@ cargo +nightly doc --no-deps \
   -p cnidarium-component \
   -p penumbra-app \
   -p penumbra-asset \
-  -p penumbra-chain \
   -p penumbra-custody \
   -p penumbra-community-pool \
   -p penumbra-dex \
