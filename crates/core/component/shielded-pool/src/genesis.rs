@@ -5,11 +5,15 @@ mod allocation;
 
 pub use allocation::Allocation;
 
+use crate::params::ShieldedPoolParameters;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(try_from = "pb::GenesisContent", into = "pb::GenesisContent")]
 pub struct Content {
     /// The initial token allocations.
     pub allocations: Vec<Allocation>,
+    /// The initial FMD parameters.
+    pub shielded_pool_params: ShieldedPoolParameters,
 }
 
 impl DomainType for Content {
@@ -34,6 +38,7 @@ impl TryFrom<pb::GenesisContent> for Content {
                 .into_iter()
                 .map(TryInto::try_into)
                 .collect::<Result<_, _>>()?,
+            shielded_pool_params: msg.shielded_pool_params.try_into()?,
         })
     }
 }
@@ -41,6 +46,7 @@ impl TryFrom<pb::GenesisContent> for Content {
 impl Default for Content {
     fn default() -> Self {
         Self {
+            shielded_pool_params: ShieldedPoolParameters::default(),
             allocations: vec![
                 Allocation {
                     raw_amount: 1000u128.into(),

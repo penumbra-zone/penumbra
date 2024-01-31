@@ -213,6 +213,7 @@ impl TestnetConfig {
                 governance_params: gov_params,
             },
             shielded_pool_content: ShieldedPoolContent {
+                shielded_pool_params: shielded_pool_genesis::FmdParameters::default(),
                 allocations: allocations.clone(),
             },
             sct_content: SctContent {
