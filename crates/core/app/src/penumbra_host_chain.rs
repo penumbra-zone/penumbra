@@ -4,8 +4,8 @@ use penumbra_sct::component::EpochRead;
 
 use crate::app::StateReadExt;
 
-/// The implementation of HostInterface for Penumbra. This encapsulates all of the chain-specific
-/// data that the ibc implementation needs.
+/// The implementation of [`penumbr_ibc::component::HostInterface`] for Penumbra.
+/// It encapsulates all of the chain-specific data that the ibc implementation needs.
 #[derive(Clone)]
 pub struct PenumbraHost {}
 
