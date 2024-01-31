@@ -1,8 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-// TODO(erwan): remove in polish MERGEBLOCK
-// use ibc_types::core::ics02_client::client_def::AnyClient;
-// use ibc_types::core::ics02_client::client_def::ClientDef;
 use cnidarium::{StateRead, StateWrite};
 use ibc_types::{
     core::{
