@@ -35,7 +35,6 @@ penumbra-tct = { path = "../../crypto/tct" }
 penumbra-num = { path = "../../core/num", default-features = false }
 penumbra-asset = { path = "../../core/asset", default-features = false }
 penumbra-keys = { path = "../../core/keys", default-features = false }
-#penumbra-chain = { path = "../../core/component/chain", default-features = false }
 penumbra-shielded-pool = { path = "../../core/component/shielded-pool", default-features = false }
 penumbra-governance = { path = "../../core/component/governance", default-features = false }
 penumbra-stake = { path = "../../core/component/stake", default-features = false }

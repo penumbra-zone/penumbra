@@ -489,7 +489,7 @@ mod tests {
         // equivalent.
         let mut state = Arc::new(StateDelta::new(()));
         {
-            // TODO: this is copied out of App::init_chain, can we put it in penumbra-chain or sth?
+            // TODO: this is copied out of App::init_chain, can we put it somewhere else?
             let mut state_tx = state.try_begin_transaction().unwrap();
             state_tx.put_block_height(0);
             state_tx.put_epoch_by_height(

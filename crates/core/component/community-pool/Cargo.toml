@@ -20,7 +20,6 @@ docsrs = []
 cnidarium = { path = "../../../cnidarium", optional = true }
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-proto = { path = "../../../proto", default-features = false }
-#penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
 penumbra-asset = { path = "../../../core/asset", default-features = false }
