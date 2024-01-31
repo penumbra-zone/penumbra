@@ -342,7 +342,8 @@ pub trait EpochManager: StateWrite {
 impl<T: StateWrite + ?Sized> EpochManager for T {}
 
 #[async_trait]
-pub trait SctParameterWriter: StateWrite { // MERGEBLOCK(erwan): rename
+pub trait SctParameterWriter: StateWrite {
+    // MERGEBLOCK(erwan): rename
     /// Writes the SCT parameters to the JMT
     fn put_sct_params(&mut self, params: SctParameters) {
         self.put(state_key::sct_params().to_string(), params);

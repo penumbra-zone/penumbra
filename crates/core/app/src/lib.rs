@@ -19,7 +19,7 @@ use once_cell::sync::Lazy;
 pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string(),
-       COMETBFT_SUBSTORE_PREFIX.to_string(),
+        COMETBFT_SUBSTORE_PREFIX.to_string(),
     ]
 });
 

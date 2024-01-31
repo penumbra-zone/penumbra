@@ -14,8 +14,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod change;
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq
-)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_id: String,

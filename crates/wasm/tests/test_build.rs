@@ -16,7 +16,7 @@ mod tests {
     use penumbra_proto::{
         core::{
             asset::v1alpha1::Value,
-            component::{shielded_pool::v1alpha1::FmdParameters},
+            component::shielded_pool::v1alpha1::FmdParameters,
             keys::v1alpha1::{Address, AddressIndex},
             transaction::v1alpha1::{MemoPlaintext, TransactionPlan as tp},
         },

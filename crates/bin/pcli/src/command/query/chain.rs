@@ -156,8 +156,7 @@ impl ChainCmd {
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
-                chain_id: app_params
-                    .chain_id
+                chain_id: app_params.chain_id,
             })
             .await?
             .into_inner()
