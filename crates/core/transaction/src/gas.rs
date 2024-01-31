@@ -4,15 +4,13 @@ use penumbra_dex::{
 };
 use penumbra_fee::Gas;
 use penumbra_ibc::IbcRelay;
-use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };
 
 use penumbra_governance::{
-    DelegatorVote, ProposalDepositClaim, ProposalKind, ProposalSubmit, ProposalWithdraw,
-    ValidatorVote,
+    DelegatorVote, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 
 use crate::{
