@@ -1,4 +1,9 @@
 // Implementation of a pd component for the staking system.
+use penumbra_distributions::component::StateReadExt as _;
+use penumbra_sct::{
+    component::{EpochManager, EpochRead},
+    epoch::Epoch,
+};
 use std::{
     collections::{BTreeMap, BTreeSet},
     future::Future,
@@ -17,13 +22,8 @@ use async_trait::async_trait;
 use cnidarium_component::Component;
 use futures::{FutureExt, StreamExt, TryStreamExt};
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_chain::{
-    component::{StateReadExt as _, StateWriteExt as _},
-    Epoch,
-};
 
 use cnidarium::{StateRead, StateWrite};
-use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
 use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
@@ -723,7 +723,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// unbonding target has been reached.
     #[instrument(skip(self))]
     async fn process_validator_unbondings(&mut self) -> Result<()> {
-        let current_epoch = self.get_current_epoch().await?;
+        let current_epoch = self.current_epoch().await?;
 
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
@@ -1236,7 +1236,7 @@ impl Component for Staking {
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
         let epoch_ending = state
-            .get_current_epoch()
+            .current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
         state.end_epoch(epoch_ending).await?;
@@ -1514,7 +1514,7 @@ pub trait StateReadExt: StateRead {
     /// This is the minimum of the default unbonding epoch and the validator's
     /// unbonding epoch.
     async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
-        let current_epoch = self.get_current_epoch().await?;
+        let current_epoch = self.current_epoch().await?;
         let unbonding_delay = self
             .compute_unbonding_delay_for_validator(current_epoch, id)
             .await?;
@@ -1715,7 +1715,7 @@ pub trait StateWriteExt: StateWrite {
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
     ) -> Result<()> {
-        let current_epoch_index = self.epoch().await?.index;
+        let current_epoch_index = self.current_epoch().await?.index;
 
         let current_penalty = self
             .penalty_in_epoch(identity_key, current_epoch_index)

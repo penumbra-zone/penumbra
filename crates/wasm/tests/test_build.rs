@@ -3,6 +3,7 @@ extern crate penumbra_wasm;
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use penumbra_sct::params::SctParameters;
     use serde::{Deserialize, Serialize};
     use serde_json;
     use wasm_bindgen::JsValue;
@@ -17,7 +18,7 @@ mod tests {
     use penumbra_proto::{
         core::{
             asset::v1alpha1::Value,
-            component::{chain::v1alpha1::ChainParameters, shielded_pool::v1alpha1::FmdParameters},
+            component::shielded_pool::v1alpha1::FmdParameters,
             keys::v1alpha1::{Address, AddressIndex},
             transaction::v1alpha1::{MemoPlaintext, TransactionPlan as tp},
         },
@@ -105,8 +106,8 @@ mod tests {
         };
 
         // Sample chain and fmd parameters.
-        let chain_params = ChainParameters {
-            chain_id: "penumbra-testnet-iapetus".to_string(),
+        let chain_id = "penumbra-testnet-iapetus".to_string();
+        let sct_params = SctParameters {
             epoch_duration: 5u64,
         };
 
@@ -116,14 +117,16 @@ mod tests {
         };
 
         // Serialize the parameters into `JsValue`.
-        let js_chain_params_value: JsValue = serde_wasm_bindgen::to_value(&chain_params).unwrap();
+        let js_chain_id_value: JsValue = serde_wasm_bindgen::to_value(&chain_id).unwrap();
+        let js_sct_params_value: JsValue = serde_wasm_bindgen::to_value(&sct_params).unwrap();
         let js_fmd_params_value: JsValue = serde_wasm_bindgen::to_value(&fmd_params).unwrap();
         let js_constants_params_value: JsValue = serde_wasm_bindgen::to_value(&constants).unwrap();
 
         // Construct `WasmPlanner` instance.
         let mut wasm_planner = WasmPlanner::new(
             js_constants_params_value,
-            js_chain_params_value,
+            js_chain_id_value,
+            js_sct_params_value,
             js_fmd_params_value,
         )
         .await

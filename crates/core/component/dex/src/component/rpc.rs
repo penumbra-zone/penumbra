@@ -5,7 +5,6 @@ use async_stream::try_stream;
 use cnidarium::{StateDelta, Storage};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
     core::component::dex::v1alpha1::{
         query_service_server::QueryService, simulate_trade_request::routing,
@@ -72,10 +71,6 @@ impl QueryService for Server {
         request: tonic::Request<ArbExecutionRequest>,
     ) -> Result<tonic::Response<ArbExecutionResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let height = request_inner.height;
 
@@ -99,10 +94,6 @@ impl QueryService for Server {
         request: tonic::Request<ArbExecutionsRequest>,
     ) -> Result<tonic::Response<Self::ArbExecutionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;
@@ -153,10 +144,7 @@ impl QueryService for Server {
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -185,10 +173,6 @@ impl QueryService for Server {
         request: tonic::Request<SwapExecutionRequest>,
     ) -> Result<tonic::Response<SwapExecutionResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -216,10 +200,7 @@ impl QueryService for Server {
         request: tonic::Request<SwapExecutionsRequest>,
     ) -> Result<tonic::Response<Self::SwapExecutionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
         let request_inner = request.into_inner();
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;

@@ -21,7 +21,6 @@ members = [
   "crates/core/keys",
   "crates/core/asset",
   "crates/core/txhash",
-  "crates/core/component/chain",
   "crates/core/component/shielded-pool",
   "crates/core/component/governance",
   "crates/core/component/ibc",

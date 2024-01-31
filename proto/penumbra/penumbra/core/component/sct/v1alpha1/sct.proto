@@ -3,6 +3,26 @@ package penumbra.core.component.sct.v1alpha1;
 
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
+// Configuration data for the SCT component.
+message SctParameters {
+  // The default duration of each epoch, in number of blocks.
+  uint64 epoch_duration = 1;
+}
+
+// Sct-specific genesis content.
+message GenesisContent {
+  // The SctParameters present at genesis.
+  SctParameters sct_params = 1;
+}
+
+// An epoch is a sequentially numbered collection of contiguous blocks.
+message Epoch {
+  // The unique index of the epoch.
+  uint64 index = 1;
+  // The starting height for the epoch.
+  uint64 start_height = 2;
+}
+
 // Metadata describing the source of a commitment in the state commitment tree.
 //
 // This message allows clients to track provenance of state commitments, and to
@@ -81,6 +101,15 @@ message EventBlockRoot {
   crypto.tct.v1alpha1.MerkleRoot root = 1;
   uint64 height = 2;
 }
+message EpochByHeightRequest {
+  uint64 height = 1;
+}
+
+message EpochByHeightResponse {
+  Epoch epoch = 1;
+}
 
 // Query operations for the SCT component.
-service QueryService {}
+service QueryService {
+  rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
+}

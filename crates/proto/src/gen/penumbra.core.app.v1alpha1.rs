@@ -39,45 +39,53 @@ impl ::prost::Name for TransactionsByHeightResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AppParameters {
-    /// Chain module parameters.
-    #[prost(message, optional, tag = "1")]
-    pub chain_params: ::core::option::Option<
-        super::super::component::chain::v1alpha1::ChainParameters,
+    /// The chain identifier.
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
+    /// Sct module parameters.
+    #[prost(message, optional, tag = "2")]
+    pub sct_params: ::core::option::Option<
+        super::super::component::sct::v1alpha1::SctParameters,
     >,
     /// Community Pool module parameters.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "3")]
     pub community_pool_params: ::core::option::Option<
         super::super::component::community_pool::v1alpha1::CommunityPoolParameters,
     >,
     /// Governance module parameters.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "4")]
     pub governance_params: ::core::option::Option<
         super::super::component::governance::v1alpha1::GovernanceParameters,
     >,
     /// IBC module parameters.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "5")]
     pub ibc_params: ::core::option::Option<
         super::super::component::ibc::v1alpha1::IbcParameters,
     >,
     /// Stake module parameters.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "6")]
     pub stake_params: ::core::option::Option<
         super::super::component::stake::v1alpha1::StakeParameters,
     >,
     /// Fee module parameters.
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "7")]
     pub fee_params: ::core::option::Option<
         super::super::component::fee::v1alpha1::FeeParameters,
     >,
     /// Distributions module parameters.
-    #[prost(message, optional, tag = "7")]
+    #[prost(message, optional, tag = "8")]
     pub distributions_params: ::core::option::Option<
         super::super::component::distributions::v1alpha1::DistributionsParameters,
     >,
     /// Funding module parameters.
-    #[prost(message, optional, tag = "8")]
+    #[prost(message, optional, tag = "9")]
     pub funding_params: ::core::option::Option<
         super::super::component::funding::v1alpha1::FundingParameters,
+    >,
+    /// Shielded pool module parameters.
+    #[prost(message, optional, tag = "10")]
+    pub shielded_pool_params: ::core::option::Option<
+        super::super::component::shielded_pool::v1alpha1::ShieldedPoolParameters,
     >,
 }
 impl ::prost::Name for AppParameters {
@@ -142,48 +150,51 @@ impl ::prost::Name for GenesisAppState {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisContent {
+    /// The initial chain identifier.
+    #[prost(string, tag = "1")]
+    pub chain_id: ::prost::alloc::string::String,
     /// Stake module genesis state.
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag = "2")]
     pub stake_content: ::core::option::Option<
         super::super::component::stake::v1alpha1::GenesisContent,
     >,
     /// Shielded pool module genesis state.
-    #[prost(message, optional, tag = "2")]
+    #[prost(message, optional, tag = "3")]
     pub shielded_pool_content: ::core::option::Option<
         super::super::component::shielded_pool::v1alpha1::GenesisContent,
     >,
     /// Governance module genesis state.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "4")]
     pub governance_content: ::core::option::Option<
         super::super::component::governance::v1alpha1::GenesisContent,
     >,
     /// IBC module genesis state.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "5")]
     pub ibc_content: ::core::option::Option<
         super::super::component::ibc::v1alpha1::GenesisContent,
     >,
-    /// Chain module genesis state.
-    #[prost(message, optional, tag = "5")]
-    pub chain_content: ::core::option::Option<
-        super::super::component::chain::v1alpha1::GenesisContent,
+    /// Sct module genesis state.
+    #[prost(message, optional, tag = "6")]
+    pub sct_content: ::core::option::Option<
+        super::super::component::sct::v1alpha1::GenesisContent,
     >,
     /// Community Pool module genesis state.
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "7")]
     pub community_pool_content: ::core::option::Option<
         super::super::component::community_pool::v1alpha1::GenesisContent,
     >,
     /// Fee module genesis state.
-    #[prost(message, optional, tag = "7")]
+    #[prost(message, optional, tag = "8")]
     pub fee_content: ::core::option::Option<
         super::super::component::fee::v1alpha1::GenesisContent,
     >,
     /// Distributions module genesis state.
-    #[prost(message, optional, tag = "8")]
+    #[prost(message, optional, tag = "9")]
     pub distributions_content: ::core::option::Option<
         super::super::component::distributions::v1alpha1::GenesisContent,
     >,
     /// Funding module genesis state.
-    #[prost(message, optional, tag = "9")]
+    #[prost(message, optional, tag = "10")]
     pub funding_content: ::core::option::Option<
         super::super::component::funding::v1alpha1::GenesisContent,
     >,

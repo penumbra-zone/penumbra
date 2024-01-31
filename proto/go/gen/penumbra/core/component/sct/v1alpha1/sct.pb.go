@@ -21,6 +21,162 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Configuration data for the SCT component.
+type SctParameters struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The default duration of each epoch, in number of blocks.
+	EpochDuration uint64 `protobuf:"varint,1,opt,name=epoch_duration,json=epochDuration,proto3" json:"epoch_duration,omitempty"`
+}
+
+func (x *SctParameters) Reset() {
+	*x = SctParameters{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SctParameters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SctParameters) ProtoMessage() {}
+
+func (x *SctParameters) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SctParameters.ProtoReflect.Descriptor instead.
+func (*SctParameters) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SctParameters) GetEpochDuration() uint64 {
+	if x != nil {
+		return x.EpochDuration
+	}
+	return 0
+}
+
+// Sct-specific genesis content.
+type GenesisContent struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The SctParameters present at genesis.
+	SctParams *SctParameters `protobuf:"bytes,1,opt,name=sct_params,json=sctParams,proto3" json:"sct_params,omitempty"`
+}
+
+func (x *GenesisContent) Reset() {
+	*x = GenesisContent{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GenesisContent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenesisContent) ProtoMessage() {}
+
+func (x *GenesisContent) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenesisContent.ProtoReflect.Descriptor instead.
+func (*GenesisContent) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GenesisContent) GetSctParams() *SctParameters {
+	if x != nil {
+		return x.SctParams
+	}
+	return nil
+}
+
+// An epoch is a sequentially numbered collection of contiguous blocks.
+type Epoch struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The unique index of the epoch.
+	Index uint64 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	// The starting height for the epoch.
+	StartHeight uint64 `protobuf:"varint,2,opt,name=start_height,json=startHeight,proto3" json:"start_height,omitempty"`
+}
+
+func (x *Epoch) Reset() {
+	*x = Epoch{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Epoch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Epoch) ProtoMessage() {}
+
+func (x *Epoch) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Epoch.ProtoReflect.Descriptor instead.
+func (*Epoch) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Epoch) GetIndex() uint64 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *Epoch) GetStartHeight() uint64 {
+	if x != nil {
+		return x.StartHeight
+	}
+	return 0
+}
+
 // Metadata describing the source of a commitment in the state commitment tree.
 //
 // This message allows clients to track provenance of state commitments, and to
@@ -43,7 +199,7 @@ type CommitmentSource struct {
 func (x *CommitmentSource) Reset() {
 	*x = CommitmentSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -56,7 +212,7 @@ func (x *CommitmentSource) String() string {
 func (*CommitmentSource) ProtoMessage() {}
 
 func (x *CommitmentSource) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -69,7 +225,7 @@ func (x *CommitmentSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitmentSource.ProtoReflect.Descriptor instead.
 func (*CommitmentSource) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3}
 }
 
 func (m *CommitmentSource) GetSource() isCommitmentSource_Source {
@@ -159,7 +315,7 @@ type Nullifier struct {
 func (x *Nullifier) Reset() {
 	*x = Nullifier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[1]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -172,7 +328,7 @@ func (x *Nullifier) String() string {
 func (*Nullifier) ProtoMessage() {}
 
 func (x *Nullifier) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[1]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -185,7 +341,7 @@ func (x *Nullifier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Nullifier.ProtoReflect.Descriptor instead.
 func (*Nullifier) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{1}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Nullifier) GetInner() []byte {
@@ -208,7 +364,7 @@ type NullificationInfo struct {
 func (x *NullificationInfo) Reset() {
 	*x = NullificationInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[2]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -221,7 +377,7 @@ func (x *NullificationInfo) String() string {
 func (*NullificationInfo) ProtoMessage() {}
 
 func (x *NullificationInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[2]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -234,7 +390,7 @@ func (x *NullificationInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NullificationInfo.ProtoReflect.Descriptor instead.
 func (*NullificationInfo) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{2}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *NullificationInfo) GetId() []byte {
@@ -265,7 +421,7 @@ type EventCommitment struct {
 func (x *EventCommitment) Reset() {
 	*x = EventCommitment{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -278,7 +434,7 @@ func (x *EventCommitment) String() string {
 func (*EventCommitment) ProtoMessage() {}
 
 func (x *EventCommitment) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -291,7 +447,7 @@ func (x *EventCommitment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventCommitment.ProtoReflect.Descriptor instead.
 func (*EventCommitment) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *EventCommitment) GetCommitment() *v1alpha1.StateCommitment {
@@ -328,7 +484,7 @@ type EventAnchor struct {
 func (x *EventAnchor) Reset() {
 	*x = EventAnchor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[4]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -341,7 +497,7 @@ func (x *EventAnchor) String() string {
 func (*EventAnchor) ProtoMessage() {}
 
 func (x *EventAnchor) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[4]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -354,7 +510,7 @@ func (x *EventAnchor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventAnchor.ProtoReflect.Descriptor instead.
 func (*EventAnchor) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{4}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *EventAnchor) GetAnchor() *v1alpha1.MerkleRoot {
@@ -384,7 +540,7 @@ type EventEpochRoot struct {
 func (x *EventEpochRoot) Reset() {
 	*x = EventEpochRoot{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[5]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -397,7 +553,7 @@ func (x *EventEpochRoot) String() string {
 func (*EventEpochRoot) ProtoMessage() {}
 
 func (x *EventEpochRoot) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[5]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +566,7 @@ func (x *EventEpochRoot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventEpochRoot.ProtoReflect.Descriptor instead.
 func (*EventEpochRoot) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{5}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *EventEpochRoot) GetRoot() *v1alpha1.MerkleRoot {
@@ -440,7 +596,7 @@ type EventBlockRoot struct {
 func (x *EventBlockRoot) Reset() {
 	*x = EventBlockRoot{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[6]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -453,7 +609,7 @@ func (x *EventBlockRoot) String() string {
 func (*EventBlockRoot) ProtoMessage() {}
 
 func (x *EventBlockRoot) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[6]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,7 +622,7 @@ func (x *EventBlockRoot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventBlockRoot.ProtoReflect.Descriptor instead.
 func (*EventBlockRoot) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{6}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *EventBlockRoot) GetRoot() *v1alpha1.MerkleRoot {
@@ -483,6 +639,100 @@ func (x *EventBlockRoot) GetHeight() uint64 {
 	return 0
 }
 
+type EpochByHeightRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Height uint64 `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (x *EpochByHeightRequest) Reset() {
+	*x = EpochByHeightRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EpochByHeightRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EpochByHeightRequest) ProtoMessage() {}
+
+func (x *EpochByHeightRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EpochByHeightRequest.ProtoReflect.Descriptor instead.
+func (*EpochByHeightRequest) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *EpochByHeightRequest) GetHeight() uint64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
+type EpochByHeightResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Epoch *Epoch `protobuf:"bytes,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+}
+
+func (x *EpochByHeightResponse) Reset() {
+	*x = EpochByHeightResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EpochByHeightResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EpochByHeightResponse) ProtoMessage() {}
+
+func (x *EpochByHeightResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EpochByHeightResponse.ProtoReflect.Descriptor instead.
+func (*EpochByHeightResponse) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *EpochByHeightResponse) GetEpoch() *Epoch {
+	if x != nil {
+		return x.Epoch
+	}
+	return nil
+}
+
 // The state commitment was included in the genesis state.
 type CommitmentSource_Genesis struct {
 	state         protoimpl.MessageState
@@ -493,7 +743,7 @@ type CommitmentSource_Genesis struct {
 func (x *CommitmentSource_Genesis) Reset() {
 	*x = CommitmentSource_Genesis{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[7]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -506,7 +756,7 @@ func (x *CommitmentSource_Genesis) String() string {
 func (*CommitmentSource_Genesis) ProtoMessage() {}
 
 func (x *CommitmentSource_Genesis) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[7]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -519,7 +769,7 @@ func (x *CommitmentSource_Genesis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitmentSource_Genesis.ProtoReflect.Descriptor instead.
 func (*CommitmentSource_Genesis) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0, 0}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3, 0}
 }
 
 // The commitment was created by a transaction.
@@ -542,7 +792,7 @@ type CommitmentSource_Transaction struct {
 func (x *CommitmentSource_Transaction) Reset() {
 	*x = CommitmentSource_Transaction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[8]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -555,7 +805,7 @@ func (x *CommitmentSource_Transaction) String() string {
 func (*CommitmentSource_Transaction) ProtoMessage() {}
 
 func (x *CommitmentSource_Transaction) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[8]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -568,7 +818,7 @@ func (x *CommitmentSource_Transaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitmentSource_Transaction.ProtoReflect.Descriptor instead.
 func (*CommitmentSource_Transaction) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0, 1}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3, 1}
 }
 
 func (x *CommitmentSource_Transaction) GetId() []byte {
@@ -591,7 +841,7 @@ type CommitmentSource_FundingStreamReward struct {
 func (x *CommitmentSource_FundingStreamReward) Reset() {
 	*x = CommitmentSource_FundingStreamReward{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[9]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -604,7 +854,7 @@ func (x *CommitmentSource_FundingStreamReward) String() string {
 func (*CommitmentSource_FundingStreamReward) ProtoMessage() {}
 
 func (x *CommitmentSource_FundingStreamReward) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[9]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +867,7 @@ func (x *CommitmentSource_FundingStreamReward) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use CommitmentSource_FundingStreamReward.ProtoReflect.Descriptor instead.
 func (*CommitmentSource_FundingStreamReward) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0, 2}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3, 2}
 }
 
 func (x *CommitmentSource_FundingStreamReward) GetEpochIndex() uint64 {
@@ -637,7 +887,7 @@ type CommitmentSource_CommunityPoolOutput struct {
 func (x *CommitmentSource_CommunityPoolOutput) Reset() {
 	*x = CommitmentSource_CommunityPoolOutput{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[10]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -650,7 +900,7 @@ func (x *CommitmentSource_CommunityPoolOutput) String() string {
 func (*CommitmentSource_CommunityPoolOutput) ProtoMessage() {}
 
 func (x *CommitmentSource_CommunityPoolOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[10]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -663,7 +913,7 @@ func (x *CommitmentSource_CommunityPoolOutput) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use CommitmentSource_CommunityPoolOutput.ProtoReflect.Descriptor instead.
 func (*CommitmentSource_CommunityPoolOutput) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0, 3}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3, 3}
 }
 
 // The commitment was created by an inbound ICS20 transfer.
@@ -683,7 +933,7 @@ type CommitmentSource_Ics20Transfer struct {
 func (x *CommitmentSource_Ics20Transfer) Reset() {
 	*x = CommitmentSource_Ics20Transfer{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[11]
+		mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -696,7 +946,7 @@ func (x *CommitmentSource_Ics20Transfer) String() string {
 func (*CommitmentSource_Ics20Transfer) ProtoMessage() {}
 
 func (x *CommitmentSource_Ics20Transfer) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[11]
+	mi := &file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -709,7 +959,7 @@ func (x *CommitmentSource_Ics20Transfer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommitmentSource_Ics20Transfer.ProtoReflect.Descriptor instead.
 func (*CommitmentSource_Ics20Transfer) Descriptor() ([]byte, []int) {
-	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{0, 4}
+	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP(), []int{3, 4}
 }
 
 func (x *CommitmentSource_Ics20Transfer) GetPacketSeq() uint64 {
@@ -743,7 +993,21 @@ var file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDesc = []byte{
 	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76, 0x31,
 	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x1a, 0x26, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
 	0x2f, 0x63, 0x72, 0x79, 0x70, 0x74, 0x6f, 0x2f, 0x74, 0x63, 0x74, 0x2f, 0x76, 0x31, 0x61, 0x6c,
-	0x70, 0x68, 0x61, 0x31, 0x2f, 0x74, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xb6,
+	0x70, 0x68, 0x61, 0x31, 0x2f, 0x74, 0x63, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x36,
+	0x0a, 0x0d, 0x53, 0x63, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x12,
+	0x25, 0x0a, 0x0e, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0d, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x44, 0x75,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x64, 0x0a, 0x0e, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69,
+	0x73, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x52, 0x0a, 0x0a, 0x73, 0x63, 0x74, 0x5f,
+	0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x70,
+	0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
+	0x68, 0x61, 0x31, 0x2e, 0x53, 0x63, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72,
+	0x73, 0x52, 0x09, 0x73, 0x63, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x40, 0x0a, 0x05,
+	0x45, 0x70, 0x6f, 0x63, 0x68, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x21, 0x0a, 0x0c, 0x73,
+	0x74, 0x61, 0x72, 0x74, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x04, 0x52, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0xb6,
 	0x06, 0x0a, 0x10, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x6d, 0x65, 0x6e, 0x74, 0x53, 0x6f, 0x75,
 	0x72, 0x63, 0x65, 0x12, 0x66, 0x0a, 0x0b, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69,
 	0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x42, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
@@ -834,29 +1098,47 @@ var file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDesc = []byte{
 	0x74, 0x6f, 0x2e, 0x74, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
 	0x4d, 0x65, 0x72, 0x6b, 0x6c, 0x65, 0x52, 0x6f, 0x6f, 0x74, 0x52, 0x04, 0x72, 0x6f, 0x6f, 0x74,
 	0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04,
-	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x32, 0x0e, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x42, 0xca, 0x02, 0x0a, 0x28, 0x63, 0x6f, 0x6d,
-	0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63,
-	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x08, 0x53, 0x63, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50,
-	0x01, 0x5a, 0x5f, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65,
-	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a, 0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75,
-	0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65,
-	0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f,
-	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2f, 0x73, 0x63, 0x74, 0x2f, 0x76, 0x31,
-	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x73, 0x63, 0x74, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
-	0x61, 0x31, 0xa2, 0x02, 0x04, 0x50, 0x43, 0x43, 0x53, 0xaa, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75,
-	0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
-	0x65, 0x6e, 0x74, 0x2e, 0x53, 0x63, 0x74, 0x2e, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
-	0xca, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65,
-	0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x53, 0x63, 0x74, 0x5c, 0x56,
-	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2, 0x02, 0x30, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62,
-	0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
-	0x74, 0x5c, 0x53, 0x63, 0x74, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47,
-	0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x28, 0x50, 0x65, 0x6e,
-	0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43, 0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x43, 0x6f, 0x6d,
-	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x3a, 0x3a, 0x53, 0x63, 0x74, 0x3a, 0x3a, 0x56, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x2e, 0x0a, 0x14, 0x45, 0x70, 0x6f, 0x63,
+	0x68, 0x42, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
+	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x5a, 0x0a, 0x15, 0x45, 0x70, 0x6f, 0x63,
+	0x68, 0x42, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x41, 0x0a, 0x05, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x2b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65,
+	0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76,
+	0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x05, 0x65,
+	0x70, 0x6f, 0x63, 0x68, 0x32, 0x99, 0x01, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65,
+	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x88, 0x01, 0x0a, 0x0d, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x42,
+	0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x45,
+	0x70, 0x6f, 0x63, 0x68, 0x42, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x3b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63,
+	0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x73, 0x63,
+	0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x45, 0x70, 0x6f, 0x63, 0x68,
+	0x42, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x42, 0xca, 0x02, 0x0a, 0x28, 0x63, 0x6f, 0x6d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
+	0x2e, 0x73, 0x63, 0x74, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x42, 0x08, 0x53,
+	0x63, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x5f, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2d, 0x7a,
+	0x6f, 0x6e, 0x65, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2f, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2f, 0x63, 0x6f, 0x72, 0x65, 0x2f, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2f, 0x73, 0x63, 0x74, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x3b, 0x73,
+	0x63, 0x74, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xa2, 0x02, 0x04, 0x50, 0x43, 0x43,
+	0x53, 0xaa, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x43, 0x6f, 0x72,
+	0x65, 0x2e, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x53, 0x63, 0x74, 0x2e,
+	0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xca, 0x02, 0x24, 0x50, 0x65, 0x6e, 0x75, 0x6d,
+	0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x5c, 0x53, 0x63, 0x74, 0x5c, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0xe2,
+	0x02, 0x30, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x5c, 0x43, 0x6f, 0x72, 0x65, 0x5c,
+	0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x5c, 0x53, 0x63, 0x74, 0x5c, 0x56, 0x31,
+	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x74, 0x61, 0xea, 0x02, 0x28, 0x50, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x3a, 0x3a, 0x43,
+	0x6f, 0x72, 0x65, 0x3a, 0x3a, 0x43, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x3a, 0x3a,
+	0x53, 0x63, 0x74, 0x3a, 0x3a, 0x56, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -871,39 +1153,48 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescGZIP() []byte {
 	return file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDescData
 }
 
-var file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_penumbra_core_component_sct_v1alpha1_sct_proto_goTypes = []interface{}{
-	(*CommitmentSource)(nil),                     // 0: penumbra.core.component.sct.v1alpha1.CommitmentSource
-	(*Nullifier)(nil),                            // 1: penumbra.core.component.sct.v1alpha1.Nullifier
-	(*NullificationInfo)(nil),                    // 2: penumbra.core.component.sct.v1alpha1.NullificationInfo
-	(*EventCommitment)(nil),                      // 3: penumbra.core.component.sct.v1alpha1.EventCommitment
-	(*EventAnchor)(nil),                          // 4: penumbra.core.component.sct.v1alpha1.EventAnchor
-	(*EventEpochRoot)(nil),                       // 5: penumbra.core.component.sct.v1alpha1.EventEpochRoot
-	(*EventBlockRoot)(nil),                       // 6: penumbra.core.component.sct.v1alpha1.EventBlockRoot
-	(*CommitmentSource_Genesis)(nil),             // 7: penumbra.core.component.sct.v1alpha1.CommitmentSource.Genesis
-	(*CommitmentSource_Transaction)(nil),         // 8: penumbra.core.component.sct.v1alpha1.CommitmentSource.Transaction
-	(*CommitmentSource_FundingStreamReward)(nil), // 9: penumbra.core.component.sct.v1alpha1.CommitmentSource.FundingStreamReward
-	(*CommitmentSource_CommunityPoolOutput)(nil), // 10: penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput
-	(*CommitmentSource_Ics20Transfer)(nil),       // 11: penumbra.core.component.sct.v1alpha1.CommitmentSource.Ics20Transfer
-	(*v1alpha1.StateCommitment)(nil),             // 12: penumbra.crypto.tct.v1alpha1.StateCommitment
-	(*v1alpha1.MerkleRoot)(nil),                  // 13: penumbra.crypto.tct.v1alpha1.MerkleRoot
+	(*SctParameters)(nil),                        // 0: penumbra.core.component.sct.v1alpha1.SctParameters
+	(*GenesisContent)(nil),                       // 1: penumbra.core.component.sct.v1alpha1.GenesisContent
+	(*Epoch)(nil),                                // 2: penumbra.core.component.sct.v1alpha1.Epoch
+	(*CommitmentSource)(nil),                     // 3: penumbra.core.component.sct.v1alpha1.CommitmentSource
+	(*Nullifier)(nil),                            // 4: penumbra.core.component.sct.v1alpha1.Nullifier
+	(*NullificationInfo)(nil),                    // 5: penumbra.core.component.sct.v1alpha1.NullificationInfo
+	(*EventCommitment)(nil),                      // 6: penumbra.core.component.sct.v1alpha1.EventCommitment
+	(*EventAnchor)(nil),                          // 7: penumbra.core.component.sct.v1alpha1.EventAnchor
+	(*EventEpochRoot)(nil),                       // 8: penumbra.core.component.sct.v1alpha1.EventEpochRoot
+	(*EventBlockRoot)(nil),                       // 9: penumbra.core.component.sct.v1alpha1.EventBlockRoot
+	(*EpochByHeightRequest)(nil),                 // 10: penumbra.core.component.sct.v1alpha1.EpochByHeightRequest
+	(*EpochByHeightResponse)(nil),                // 11: penumbra.core.component.sct.v1alpha1.EpochByHeightResponse
+	(*CommitmentSource_Genesis)(nil),             // 12: penumbra.core.component.sct.v1alpha1.CommitmentSource.Genesis
+	(*CommitmentSource_Transaction)(nil),         // 13: penumbra.core.component.sct.v1alpha1.CommitmentSource.Transaction
+	(*CommitmentSource_FundingStreamReward)(nil), // 14: penumbra.core.component.sct.v1alpha1.CommitmentSource.FundingStreamReward
+	(*CommitmentSource_CommunityPoolOutput)(nil), // 15: penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput
+	(*CommitmentSource_Ics20Transfer)(nil),       // 16: penumbra.core.component.sct.v1alpha1.CommitmentSource.Ics20Transfer
+	(*v1alpha1.StateCommitment)(nil),             // 17: penumbra.crypto.tct.v1alpha1.StateCommitment
+	(*v1alpha1.MerkleRoot)(nil),                  // 18: penumbra.crypto.tct.v1alpha1.MerkleRoot
 }
 var file_penumbra_core_component_sct_v1alpha1_sct_proto_depIdxs = []int32{
-	8,  // 0: penumbra.core.component.sct.v1alpha1.CommitmentSource.transaction:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Transaction
-	11, // 1: penumbra.core.component.sct.v1alpha1.CommitmentSource.ics_20_transfer:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Ics20Transfer
-	9,  // 2: penumbra.core.component.sct.v1alpha1.CommitmentSource.funding_stream_reward:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.FundingStreamReward
-	10, // 3: penumbra.core.component.sct.v1alpha1.CommitmentSource.community_pool_output:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput
-	7,  // 4: penumbra.core.component.sct.v1alpha1.CommitmentSource.genesis:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Genesis
-	12, // 5: penumbra.core.component.sct.v1alpha1.EventCommitment.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
-	0,  // 6: penumbra.core.component.sct.v1alpha1.EventCommitment.source:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource
-	13, // 7: penumbra.core.component.sct.v1alpha1.EventAnchor.anchor:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
-	13, // 8: penumbra.core.component.sct.v1alpha1.EventEpochRoot.root:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
-	13, // 9: penumbra.core.component.sct.v1alpha1.EventBlockRoot.root:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	0,  // 0: penumbra.core.component.sct.v1alpha1.GenesisContent.sct_params:type_name -> penumbra.core.component.sct.v1alpha1.SctParameters
+	13, // 1: penumbra.core.component.sct.v1alpha1.CommitmentSource.transaction:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Transaction
+	16, // 2: penumbra.core.component.sct.v1alpha1.CommitmentSource.ics_20_transfer:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Ics20Transfer
+	14, // 3: penumbra.core.component.sct.v1alpha1.CommitmentSource.funding_stream_reward:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.FundingStreamReward
+	15, // 4: penumbra.core.component.sct.v1alpha1.CommitmentSource.community_pool_output:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.CommunityPoolOutput
+	12, // 5: penumbra.core.component.sct.v1alpha1.CommitmentSource.genesis:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource.Genesis
+	17, // 6: penumbra.core.component.sct.v1alpha1.EventCommitment.commitment:type_name -> penumbra.crypto.tct.v1alpha1.StateCommitment
+	3,  // 7: penumbra.core.component.sct.v1alpha1.EventCommitment.source:type_name -> penumbra.core.component.sct.v1alpha1.CommitmentSource
+	18, // 8: penumbra.core.component.sct.v1alpha1.EventAnchor.anchor:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
+	18, // 9: penumbra.core.component.sct.v1alpha1.EventEpochRoot.root:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
+	18, // 10: penumbra.core.component.sct.v1alpha1.EventBlockRoot.root:type_name -> penumbra.crypto.tct.v1alpha1.MerkleRoot
+	2,  // 11: penumbra.core.component.sct.v1alpha1.EpochByHeightResponse.epoch:type_name -> penumbra.core.component.sct.v1alpha1.Epoch
+	10, // 12: penumbra.core.component.sct.v1alpha1.QueryService.EpochByHeight:input_type -> penumbra.core.component.sct.v1alpha1.EpochByHeightRequest
+	11, // 13: penumbra.core.component.sct.v1alpha1.QueryService.EpochByHeight:output_type -> penumbra.core.component.sct.v1alpha1.EpochByHeightResponse
+	13, // [13:14] is the sub-list for method output_type
+	12, // [12:13] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_sct_v1alpha1_sct_proto_init() }
@@ -913,7 +1204,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitmentSource); i {
+			switch v := v.(*SctParameters); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -925,7 +1216,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Nullifier); i {
+			switch v := v.(*GenesisContent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -937,7 +1228,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NullificationInfo); i {
+			switch v := v.(*Epoch); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -949,7 +1240,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EventCommitment); i {
+			switch v := v.(*CommitmentSource); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -961,7 +1252,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EventAnchor); i {
+			switch v := v.(*Nullifier); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -973,7 +1264,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EventEpochRoot); i {
+			switch v := v.(*NullificationInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -985,7 +1276,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EventBlockRoot); i {
+			switch v := v.(*EventCommitment); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -997,7 +1288,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitmentSource_Genesis); i {
+			switch v := v.(*EventAnchor); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1009,7 +1300,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitmentSource_Transaction); i {
+			switch v := v.(*EventEpochRoot); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1021,7 +1312,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitmentSource_FundingStreamReward); i {
+			switch v := v.(*EventBlockRoot); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1033,7 +1324,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CommitmentSource_CommunityPoolOutput); i {
+			switch v := v.(*EpochByHeightRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1045,6 +1336,66 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*EpochByHeightResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CommitmentSource_Genesis); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CommitmentSource_Transaction); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CommitmentSource_FundingStreamReward); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CommitmentSource_CommunityPoolOutput); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CommitmentSource_Ics20Transfer); i {
 			case 0:
 				return &v.state
@@ -1057,7 +1408,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			}
 		}
 	}
-	file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[0].OneofWrappers = []interface{}{
+	file_penumbra_core_component_sct_v1alpha1_sct_proto_msgTypes[3].OneofWrappers = []interface{}{
 		(*CommitmentSource_Transaction_)(nil),
 		(*CommitmentSource_Ics_20Transfer)(nil),
 		(*CommitmentSource_FundingStreamReward_)(nil),
@@ -1070,7 +1421,7 @@ func file_penumbra_core_component_sct_v1alpha1_sct_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_component_sct_v1alpha1_sct_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

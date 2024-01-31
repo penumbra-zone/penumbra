@@ -19,11 +19,9 @@ use once_cell::sync::Lazy;
 pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string(),
-        penumbra_chain::COMETBFT_SUBSTORE_PREFIX.to_string(),
+        COMETBFT_SUBSTORE_PREFIX.to_string(),
     ]
 });
-
-pub const APP_VERSION: u64 = 1;
 
 pub mod app;
 pub mod genesis;
@@ -32,6 +30,10 @@ pub mod params;
 pub mod metrics;
 pub mod rpc;
 pub use self::metrics::register_metrics;
+
+pub const APP_VERSION: u64 = 1;
+/// The substore prefix used for storing histori CometBFT block data.
+pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 
 #[cfg(test)]
 mod tests;

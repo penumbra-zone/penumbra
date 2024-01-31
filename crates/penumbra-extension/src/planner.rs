@@ -8,7 +8,6 @@ use anyhow::{anyhow, Result};
 use rand_core::{CryptoRng, RngCore};
 
 use penumbra_asset::{asset::DenomMetadata, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_chain::params::ChainParameters;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -431,14 +430,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Clears the contents of the planner, which can be re-used.
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
-        chain_params: &ChainParameters,
+        chain_id: String,
         fmd_params: &fmd::Parameters,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
         self_address: Address,
     ) -> anyhow::Result<TransactionPlan> {
         // Fill in the chain id based on the view service
-        self.plan.transaction_parameters.chain_id = chain_params.chain_id.clone();
+        self.plan.transaction_parameters.chain_id = chain_id;
 
         // Add the required spends to the planner
         for record in spendable_notes {

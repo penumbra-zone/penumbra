@@ -4,6 +4,38 @@ use penumbra_tct::{Root, StateCommitment};
 
 use crate::Nullifier;
 
+pub fn sct_params() -> &'static str {
+    "sct/params"
+}
+
+pub fn sct_params_updated() -> &'static str {
+    "sct/sct_params_updated"
+}
+
+pub mod block_manager {
+    pub fn block_height() -> &'static str {
+        "sct/block_manager/block_height"
+    }
+
+    pub fn block_timestamp() -> &'static str {
+        "sct/block_manager/block_timestamp"
+    }
+}
+
+pub mod epoch_manager {
+    pub fn epoch_by_height(height: u64) -> String {
+        format!("sct/epoch_manager/epoch_by_height/{}", height)
+    }
+
+    pub fn epoch_change_at_height(height: u64) -> String {
+        format!("sct/epoch_manager/pending_epoch_changes/{}", height)
+    }
+
+    pub fn end_epoch_early() -> &'static str {
+        "sct/epoch_manager/end_epoch_early"
+    }
+}
+
 pub fn spent_nullifier_lookup(nullifier: &Nullifier) -> String {
     format!("sct/nf/{nullifier}")
 }

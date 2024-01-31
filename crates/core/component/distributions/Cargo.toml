@@ -10,7 +10,7 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
+    "penumbra-sct/component",
 ]
 default = ["component"]
 docsrs = []
@@ -18,12 +18,13 @@ docsrs = []
 [dependencies]
 
 # Workspace dependencies
+cnidarium = { path = "../../../cnidarium", optional = true }
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
-penumbra-chain = { path = "../chain", default-features = false }
+penumbra-asset = { path = "../../../core/asset", default-features = false }
+#penumbra-chain = { path = "../chain", default-features = false }
 penumbra-num = { path = "../../../core/num", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }
-penumbra-asset = { path = "../../../core/asset", default-features = false }
-cnidarium = { path = "../../../cnidarium", optional = true }
+penumbra-sct = { path = "../sct", default-features = false }
 
 # Crates.io deps
 async-trait = "0.1.52"

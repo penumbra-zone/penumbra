@@ -16,7 +16,7 @@ penumbra-asset = { path = "../asset" }
 penumbra-keys = { path = "../keys" }
 penumbra-txhash = { path = "../txhash" }
 penumbra-num = { path = "../num" }
-penumbra-chain = { path = "../component/chain", features = ["component"] }
+#penumbra-chain = { path = "../component/chain", features = ["component"] }
 penumbra-shielded-pool = { path = "../component/shielded-pool", features = [
     "component",
 ] }

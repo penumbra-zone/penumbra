@@ -97,14 +97,15 @@ impl ProposalKindCmd {
             ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
                 old: Box::new(app_params.as_changed_params()),
                 new: Box::new(ChangedAppParameters {
-                    chain_params: None,
                     community_pool_params: None,
+                    distributions_params: None,
                     ibc_params: None,
-                    stake_params: None,
                     fee_params: None,
                     funding_params: None,
                     governance_params: None,
-                    distributions_params: None,
+                    sct_params: None,
+                    shielded_pool_params: None,
+                    stake_params: None,
                 }),
             },
             ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {

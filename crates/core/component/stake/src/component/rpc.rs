@@ -3,7 +3,6 @@ use std::pin::Pin;
 use async_stream::try_stream;
 use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
     core::component::stake::v1alpha1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
@@ -41,14 +40,6 @@ impl QueryService for Server {
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during validator info request: {e}"
-                ))
-            })?;
 
         let validators = state
             .validator_definitions() // TODO(erwan): think through a UX for defined validators. Then we can remove `validator_list` entirely.
@@ -88,10 +79,6 @@ impl QueryService for Server {
         request: tonic::Request<ValidatorStatusRequest>,
     ) -> Result<tonic::Response<ValidatorStatusResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let id = request
             .into_inner()
@@ -117,11 +104,6 @@ impl QueryService for Server {
         request: tonic::Request<ValidatorPenaltyRequest>,
     ) -> Result<tonic::Response<ValidatorPenaltyResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-
         let request = request.into_inner();
         let id = request
             .identity_key
@@ -145,10 +127,6 @@ impl QueryService for Server {
         request: tonic::Request<CurrentValidatorRateRequest>,
     ) -> Result<tonic::Response<CurrentValidatorRateResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let identity_key = request
             .into_inner()
             .identity_key

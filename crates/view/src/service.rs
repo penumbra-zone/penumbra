@@ -505,7 +505,7 @@ impl ViewProtocolService for ViewService {
                 swap_plaintext: swap_record.swap,
                 position: swap_record.position,
                 output_data: swap_record.output_data,
-                epoch_duration: app_params.chain_params.epoch_duration,
+                epoch_duration: app_params.sct_params.epoch_duration,
                 proof_blinding_r: Fq::rand(&mut OsRng),
                 proof_blinding_s: Fq::rand(&mut OsRng),
             });

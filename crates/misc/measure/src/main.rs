@@ -204,7 +204,7 @@ impl Opt {
 
                 let mut stream = cb_client
                     .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                        chain_id: params.chain_params.chain_id,
+                        chain_id: params.chain_id,
                         start_height,
                         end_height,
                         keep_alive: false,

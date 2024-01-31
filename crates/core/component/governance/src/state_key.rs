@@ -135,3 +135,15 @@ pub fn proposal_started() -> &'static str {
 pub fn governance_params_updated() -> &'static str {
     "governance/governance_params_updated"
 }
+
+pub mod upgrades {
+    pub fn next_upgrade() -> &'static str {
+        "governance/upgrades/next_upgrade"
+    }
+}
+
+pub mod halt {
+    pub fn halt_count() -> &'static str {
+        "governance/counters/halt_count"
+    }
+}

@@ -5,7 +5,6 @@ use anyhow::Context;
 use async_stream::try_stream;
 use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::governance::v1alpha1::AllTalliedDelegatorVotesForProposalRequest;
 use penumbra_proto::core::component::governance::v1alpha1::AllTalliedDelegatorVotesForProposalResponse;
@@ -52,10 +51,6 @@ impl QueryService for Server {
         request: tonic::Request<ProposalInfoRequest>,
     ) -> Result<tonic::Response<ProposalInfoResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
         let start_block_height = state
@@ -76,16 +71,12 @@ impl QueryService for Server {
         }))
     }
 
-    #[instrument(skip(self, request))]
+    #[instrument(skip(self, _request))]
     async fn next_proposal_id(
         &self,
-        request: tonic::Request<NextProposalIdRequest>,
+        _request: tonic::Request<NextProposalIdRequest>,
     ) -> Result<tonic::Response<NextProposalIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
 
         let next_proposal_id: u64 = state
             .get_proto(state_key::next_proposal_id())
@@ -104,10 +95,6 @@ impl QueryService for Server {
         request: tonic::Request<ProposalDataRequest>,
     ) -> Result<tonic::Response<ProposalDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
         let start_block_height = state
@@ -177,10 +164,6 @@ impl QueryService for Server {
         request: tonic::Request<ProposalRateDataRequest>,
     ) -> Result<tonic::Response<Self::ProposalRateDataStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
         let s = state.prefix(&state_key::all_rate_data_at_proposal_start(proposal_id));
@@ -209,10 +192,6 @@ impl QueryService for Server {
         request: tonic::Request<ProposalListRequest>,
     ) -> Result<tonic::Response<Self::ProposalListStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
 
         let proposal_id_list: Vec<u64> = if request.into_inner().inactive {
             let next = state.next_proposal_id().await.map_err(|e| {
@@ -315,10 +294,6 @@ impl QueryService for Server {
         request: tonic::Request<ValidatorVotesRequest>,
     ) -> Result<tonic::Response<Self::ValidatorVotesStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
 
         let proposal_id = request.into_inner().proposal_id;
 
@@ -353,10 +328,6 @@ impl QueryService for Server {
         request: tonic::Request<VotingPowerAtProposalStartRequest>,
     ) -> Result<tonic::Response<VotingPowerAtProposalStartResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
         let request = request.into_inner();
         let proposal_id = request.proposal_id;
         let identity_key: IdentityKey = request
@@ -405,10 +376,6 @@ impl QueryService for Server {
         request: tonic::Request<AllTalliedDelegatorVotesForProposalRequest>,
     ) -> Result<tonic::Response<Self::AllTalliedDelegatorVotesForProposalStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::invalid_argument(format!("chain_id not OK: {e}")))?;
         let proposal_id = request.into_inner().proposal_id;
 
         let s = state.prefix::<Tally>(&state_key::all_tallied_delegator_votes_for_proposal(

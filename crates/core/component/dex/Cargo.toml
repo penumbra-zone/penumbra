@@ -10,7 +10,6 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
     "penumbra-shielded-pool/component",
     "penumbra-fee/component",
     "tokio",
@@ -33,7 +32,7 @@ parallel = [
 # Workspace dependencies
 penumbra-proto = { path = "../../../proto", default-features = false }
 cnidarium = { path = "../../../cnidarium", optional = true }
-penumbra-chain = { path = "../chain", default-features = false }
+#penumbra-chain = { path = "../chain", default-features = false }
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-sct = { path = "../sct", default-features = false }
