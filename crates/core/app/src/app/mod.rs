@@ -20,9 +20,9 @@ use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::{EpochManager, EpochRead, StateReadExt as _};
+use penumbra_sct::component::{EpochManager, EpochRead, SctParameterWriter, StateReadExt as _};
 use penumbra_sct::epoch::Epoch;
-use penumbra_shielded_pool::component::ShieldedPool;
+use penumbra_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_transaction::Transaction;
 use prost::Message as _;
@@ -633,9 +633,7 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_chain_id(&self) -> Result<String> {
-        self.get_app_params()
-            .await
-            .map(|params| params.chain_id)
+        self.get_app_params().await.map(|params| params.chain_id)
     }
 
     /// Checks a provided chain_id against the chain state.

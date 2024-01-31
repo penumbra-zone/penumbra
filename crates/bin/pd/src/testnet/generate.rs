@@ -4,9 +4,10 @@
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
 use penumbra_app::{genesis, params::AppParameters};
-use penumbra_chain::{genesis::Content as ChainContent, params::ChainParameters};
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
+use penumbra_sct::genesis::Content as SctContent;
+use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::genesis::{
     self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent,
 };
@@ -197,6 +198,7 @@ impl TestnetConfig {
         let default_app_params = AppParameters::default();
 
         let app_state = genesis::Content {
+            chain_id: chain_id.to_string(),
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
                 stake_params: StakeParameters {
@@ -213,12 +215,10 @@ impl TestnetConfig {
             shielded_pool_content: ShieldedPoolContent {
                 allocations: allocations.clone(),
             },
-            chain_content: ChainContent {
-                chain_params: ChainParameters {
-                    chain_id: chain_id.to_string(),
-                    // Fall back to chain param defaults
+            sct_content: SctContent {
+                sct_params: SctParameters {
                     epoch_duration: epoch_duration
-                        .unwrap_or(default_app_params.chain_params.epoch_duration),
+                        .unwrap_or(default_app_params.sct_params.epoch_duration),
                 },
             },
             ..Default::default()
@@ -244,8 +244,6 @@ impl TestnetConfig {
         let genesis = Genesis {
             genesis_time,
             chain_id: app_state
-                .chain_content
-                .chain_params
                 .chain_id
                 .parse::<tendermint::chain::Id>()
                 .context("failed to parseto create chain ID")?,

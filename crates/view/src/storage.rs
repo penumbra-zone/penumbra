@@ -5,7 +5,6 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
@@ -24,8 +23,8 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_sct::{CommitmentSource, Nullifier};
-use penumbra_shielded_pool::{fmd, note, Note, Rseed};
+use penumbra_sct::{params::SctParameters, CommitmentSource, Nullifier};
+use penumbra_shielded_pool::{fmd, note, params::ShieldedPoolParameters, Note, Rseed};
 use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
@@ -199,12 +198,6 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
-            tx.execute(
-                "INSERT INTO chain_params (bytes) VALUES (?1)",
-                [chain_params_bytes],
-            )?;
-
             let community_pool_params_bytes =
                 &CommunityPoolParameters::encode_to_vec(&params.community_pool_params)[..];
             tx.execute(
@@ -239,6 +232,18 @@ impl Storage {
                 [governance_params_bytes],
             )?;
 
+            let sct_params_bytes = &SctParameters::encode_to_vec(&params.sct_params)[..];
+            tx.execute(
+                "INSERT INTO sct_params (bytes) VALUES (?1)",
+                [sct_params_bytes],
+            )?;
+
+            let shielded_params_bytes =
+                &ShieldedPoolParameters::encode_to_vec(&params.shielded_pool_params)[..];
+            tx.execute(
+                "INSERT INTO shielded_pool_params (bytes) VALUES (?1)",
+                [shielded_params_bytes],
+            )?;
             let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
             tx.execute(
                 "INSERT INTO stake_params (bytes) VALUES (?1)",
@@ -579,12 +584,7 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let chain_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing chain params"))?;
-
+            let chain_id = todo!("MERGEBLOCK(erwan): hrm... maybe we refactor this to be a KV ");
             let community_pool_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM community_pool_params LIMIT 1")?
@@ -608,25 +608,34 @@ impl Storage {
                 .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing fee params"))?;
-
             let funding_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM funding_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing funding params"))?;
-
             let ibc_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing ibc params"))?;
+            let sct_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM sct_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing sct params"))?;
+            let shielded_pool_bytes = pool
+                .get()?
+                .prepare_cached("SELECT bytes FROM shielded_pool_params LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
+                .ok_or_else(|| anyhow!("missing shielded pool params"))?;
             let stake_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
                 .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
                 .ok_or_else(|| anyhow!("missing stake params"))?;
+
             Ok(AppParameters {
-                chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
+                chain_id,
                 community_pool_params: CommunityPoolParameters::decode(
                     community_pool_bytes.as_slice(),
                 )?,
@@ -637,6 +646,10 @@ impl Storage {
                 funding_params: FundingParameters::decode(funding_bytes.as_slice())?,
                 governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
                 ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
+                sct_params: SctParameters::decode(sct_bytes.as_slice())?,
+                shielded_pool_params: ShieldedPoolParameters::decode(
+                    shielded_pool_bytes.as_slice(),
+                )?,
                 stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
             })
         })
@@ -1388,30 +1401,7 @@ impl Storage {
             let mut dbtx = lock.transaction()?;
 
             if let Some(params) = new_app_parameters {
-               // Update the various parameter structures.
-                let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
-                dbtx.execute(
-                    "UPDATE chain_params SET bytes = ?1",
-                    [chain_params_bytes],
-                )?;
 
-                let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
-                dbtx.execute(
-                    "UPDATE stake_params SET bytes = ?1",
-                    [stake_params_bytes],
-                )?;
-
-                let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
-                dbtx.execute(
-                    "UPDATE ibc_params SET bytes = ?1",
-                    [ibc_params_bytes],
-                )?;
-
-                let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
-                dbtx.execute(
-                    "UPDATE fee_params SET bytes = ?1",
-                    [fee_params_bytes],
-                )?;
 
                 let community_pool_params_bytes = &CommunityPoolParameters::encode_to_vec(&params.community_pool_params)[..];
                 dbtx.execute(
@@ -1425,12 +1415,32 @@ impl Storage {
                     [distributions_params_bytes],
                 )?;
 
+                let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
+                dbtx.execute(
+                    "UPDATE fee_params SET bytes = ?1",
+                    [fee_params_bytes],
+                )?;
+
+
                 let governance_params_bytes =
                     &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
                 dbtx.execute(
                     "UPDATE governance_params SET bytes = ?1",
                     [governance_params_bytes],
                 )?;
+
+                let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
+                dbtx.execute(
+                    "UPDATE ibc_params SET bytes = ?1",
+                    [ibc_params_bytes],
+                )?;
+
+                let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
+                dbtx.execute(
+                    "UPDATE stake_params SET bytes = ?1",
+                    [stake_params_bytes],
+                )?;
+
             }
 
             // Insert new note records into storage

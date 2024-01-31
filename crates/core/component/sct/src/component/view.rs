@@ -262,24 +262,6 @@ impl<T: StateWrite + ?Sized> SctManager for T {}
 //#[async_trait(?Send)]
 #[async_trait]
 trait StateWriteExt: StateWrite {
-    /* TODO(erwan): move this to a dedicated trait */
-    // Signals that the epoch should end this block.
-    fn signal_end_epoch(&mut self) {
-        self.object_put(state_key::epoch_manager::end_epoch_early(), true)
-    }
-
-    /// Writes the block height to the JMT
-    fn put_block_height(&mut self, height: u64) {
-        self.put_proto(state_key::block_manager::block_height().to_string(), height)
-    }
-
-    /// Writes the epoch for the current height
-    fn put_epoch_by_height(&mut self, height: u64, epoch: Epoch) {
-        self.put(state_key::epoch_manager::epoch_by_height(height), epoch)
-    }
-
-    /* ***************************** */
-
     // Set the state commitment tree in memory, but without committing to it in the nonverifiable
     // storage (very cheap).
     fn put_state_commitment_tree(&mut self, tree: tct::Tree) {
@@ -358,3 +340,13 @@ pub trait EpochManager: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> EpochManager for T {}
+
+#[async_trait]
+pub trait SctParameterWriter: StateWrite { // MERGEBLOCK(erwan): rename
+    /// Writes the SCT parameters to the JMT
+    fn put_sct_params(&mut self, params: SctParameters) {
+        self.put(state_key::sct_params().to_string(), params);
+        self.object_put(state_key::sct_params_updated(), ())
+    }
+}
+impl<T: StateWrite + ?Sized> SctParameterWriter for T {}

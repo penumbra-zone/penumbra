@@ -5,11 +5,11 @@ use std::{
 };
 
 use anyhow::Result;
+use penumbra_sct::params::SctParameters;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -471,7 +471,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
         // Gather all the information needed from the view service
-        let chain_params = view.app_params().await?.chain_params;
+        let app_params = view.app_params().await?;
+        let chain_id = app_params.chain_id.clone();
+        let sct_params = app_params.sct_params.clone();
         let fmd_params = view.fmd_parameters().await?;
 
         // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
@@ -496,7 +498,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let self_address = view.address_by_index(source).await?;
         self.plan_with_spendable_and_votable_notes(
-            &chain_params,
+            chain_id,
+            &sct_params,
             &fmd_params,
             spendable_notes,
             voting_notes,
@@ -512,7 +515,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Clears the contents of the planner, which can be re-used.
     #[instrument(skip(
         self,
-        chain_params,
+        chain_id,
+        sct_params,
         fmd_params,
         self_address,
         spendable_notes,
@@ -520,7 +524,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ))]
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
-        chain_params: &ChainParameters,
+        chain_id: String,
+        sct_params: &SctParameters,
         fmd_params: &fmd::Parameters,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
@@ -529,7 +534,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         tracing::debug!(plan = ?self.plan, balance = ?self.balance, "finalizing transaction");
 
         // Fill in the chain id based on the view service
-        self.plan.transaction_parameters.chain_id = chain_params.chain_id.clone();
+        self.plan.transaction_parameters.chain_id = chain_id;
 
         // Add the required spends to the planner
         for record in spendable_notes {

@@ -6,8 +6,8 @@ use penumbra_proto::{
     core::app::v1alpha1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    core::component::chain::v1alpha1::{
-        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+    core::component::sct::v1alpha1::{
+        query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
     },
     core::component::stake::v1alpha1::{
         query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
@@ -63,10 +63,10 @@ impl ChainCmd {
         table.load_preset(presets::NOTHING);
         table
             .set_header(vec!["", ""])
-            .add_row(vec!["Chain ID", &params.chain_params.chain_id])
+            .add_row(vec!["Chain ID", &params.chain_id])
             .add_row(vec![
                 "Epoch Duration",
-                &format!("{}", params.chain_params.epoch_duration),
+                &format!("{}", params.sct_params.epoch_duration),
             ])
             .add_row(vec![
                 "Unbonding Epochs",
@@ -130,7 +130,7 @@ impl ChainCmd {
             .ok_or_else(|| anyhow!("missing sync_info"))?
             .latest_block_height;
 
-        let mut client = ChainQueryServiceClient::new(channel.clone());
+        let mut client = SctQueryServiceClient::new(channel.clone());
         let current_epoch: u64 = client
             .epoch_by_height(tonic::Request::new(EpochByHeightRequest {
                 height: current_block_height.clone(),
@@ -157,9 +157,7 @@ impl ChainCmd {
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
                 chain_id: app_params
-                    .chain_params
-                    .ok_or_else(|| anyhow::anyhow!("missing chain_params in app params"))?
-                    .chain_id,
+                    .chain_id
             })
             .await?
             .into_inner()

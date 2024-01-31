@@ -22,3 +22,11 @@ pub fn pending_notes() -> &'static str {
 pub fn pending_rolled_up_payloads() -> &'static str {
     "shielded_pool/pending_rolled_up_payloads"
 }
+
+pub fn shielded_pool_params() -> &'static str {
+    "shielded_pool/params"
+}
+
+pub fn shielded_pool_params_updated() -> &'static str {
+    "shielded_pool/params_updated"
+}

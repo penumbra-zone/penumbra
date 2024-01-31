@@ -38,7 +38,7 @@ impl CommunityPoolCmd {
         });
 
         let mut client = CommunityPoolQueryServiceClient::new(app.pd_channel().await?);
-        let chain_id = app.view().app_params().await?.chain_params.chain_id;
+        let chain_id = app.view().app_params().await?.chain_id;
         let balances = client
             .community_pool_asset_balances(CommunityPoolAssetBalancesRequest {
                 chain_id,

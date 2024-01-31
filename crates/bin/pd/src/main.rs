@@ -186,7 +186,6 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_proto::core::{
                 app::v1alpha1::query_service_server::QueryServiceServer as AppQueryServiceServer,
                 component::{
-                    chain::v1alpha1::query_service_server::QueryServiceServer as ChainQueryServiceServer,
                     compact_block::v1alpha1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
                     dex::v1alpha1::query_service_server::QueryServiceServer as DexQueryServiceServer,
                     governance::v1alpha1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
@@ -199,7 +198,6 @@ async fn main() -> anyhow::Result<()> {
 
             use cnidarium::rpc::Server as StorageServer;
             use penumbra_app::rpc::Server as AppServer;
-            use penumbra_chain::component::rpc::Server as ChainServer;
             use penumbra_compact_block::component::rpc::Server as CompactBlockServer;
             use penumbra_dex::component::rpc::Server as DexServer;
             use penumbra_governance::component::rpc::Server as GovernanceServer;
@@ -239,9 +237,6 @@ async fn main() -> anyhow::Result<()> {
                     storage.clone(),
                 ))))
                 .add_service(we(AppQueryServiceServer::new(AppServer::new(
-                    storage.clone(),
-                ))))
-                .add_service(we(ChainQueryServiceServer::new(ChainServer::new(
                     storage.clone(),
                 ))))
                 .add_service(we(CompactBlockQueryServiceServer::new(

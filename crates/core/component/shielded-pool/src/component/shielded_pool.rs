@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::{fmd, genesis};
+use crate::params::ShieldedPoolParameters;
+use crate::{fmd, genesis, state_key};
 use anyhow::anyhow;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -87,6 +88,17 @@ pub trait StateReadExt: StateRead {
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
+
+    async fn get_shielded_pool_params(&self) -> Result<ShieldedPoolParameters> {
+        self.get(state_key::shielded_pool_params())
+            .await?
+            .ok_or_else(|| anyhow!("Missing ShieldedPoolParameters"))
+    }
+
+    fn shielded_pool_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::shielded_pool_params_updated())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -94,8 +106,15 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 /// Extension trait providing write access to shielded pool data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
+    fn put_shielded_pool_params(&mut self, params: ShieldedPoolParameters) {
+        self.object_put(crate::state_key::shielded_pool_params_updated(), ());
+        self.put(crate::state_key::shielded_pool_params().into(), params)
+    }
+
     /// Writes the current FMD parameters to the JMT.
     fn put_current_fmd_parameters(&mut self, params: fmd::Parameters) {
+        // MERGEBLOCK(erwan): read through the update mechanism for FMD params
+        // do we need to flag that shielded pool params were updated?
         self.put(fmd::state_key::parameters::current().into(), params)
     }
 

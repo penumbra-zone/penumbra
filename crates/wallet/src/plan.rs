@@ -147,8 +147,8 @@ where
     // if they do, check if the associated notes are unspent
     // if they are, decrypt the SwapCiphertext in the Swap action and construct a SwapClaim
 
-    let chain_params = view.app_params().await?.chain_params;
-    let epoch_duration = chain_params.clone().epoch_duration;
+    let app_params = view.app_params().await?;
+    let epoch_duration = app_params.sct_params.epoch_duration;
 
     let unclaimed_swaps = view.unclaimed_swaps().await?;
 
@@ -160,7 +160,7 @@ where
 
         let mut plan = TransactionPlan {
             transaction_parameters: TransactionParameters {
-                chain_id: chain_params.clone().chain_id,
+                chain_id: app_params.clone().chain_id,
                 fee: swap_plaintext.claim_fee.clone(),
                 ..Default::default()
             },
