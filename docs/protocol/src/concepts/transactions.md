@@ -35,10 +35,6 @@ pool](../stake/undelegation.md), consuming delegation tokens from the
 transaction's value balance and producing new notes recording the appropriate
 amount of unbonded stake;
 
-- **Commission** descriptions are used by validators to [claim commission on
-staking rewards](../stake/validator-rewards.md) into shielded notes,
-adding unbonded stake to the transaction's value balance;
-
 #### Governance
 
 - **CreateProposal** descriptions are used to [propose measures for on-chain
