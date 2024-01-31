@@ -345,13 +345,10 @@ impl GasCost for ProposalSubmit {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
             // will use the encoded size of the complete transaction to calculate the block space.
             block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a ProposalSubmit the compact block is only modified if the proposal type is a `ParameterChange`.
-            compact_block_space: match self.proposal.kind() {
-                ProposalKind::ParameterChange => std::mem::size_of::<SctParameters>() as u64, // TODO(erwan): placeholder MERGEBLOCK
-                _ => 0u64,
-            },
+            // In the case of a proposal submission, the compact block cost is zero.
+            // The compact block is only modified it the proposal is ratified.
+            // And when that's the case, the cost is mutualized.
+            compact_block_space: 0,
             // There are some checks performed to validate the proposed state changes, so we include a constant verification cost,
             // smaller than a zk-SNARK verification cost.
             verification: 100,
