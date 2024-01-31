@@ -9,10 +9,7 @@ use std::path::PathBuf;
 use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{genesis, SUBSTORE_PREFIXES};
-use penumbra_chain::{
-    component::{StateReadExt, StateWriteExt},
-    genesis::Content as ChainContent,
-};
+use penumbra_sct::component::{EpochManager, EpochRead};
 use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
 
 use crate::testnet::generate::TestnetConfig;
@@ -64,15 +61,10 @@ impl Migration {
                 let root_hash = migrated_state.root_hash().await.expect("can get root hash");
                 let app_hash: RootHash = root_hash.into();
                 tracing::info!(?root_hash, "root hash from snapshot (post-upgrade)");
-                let chain_params = migrated_state
-                    .get_chain_params()
-                    .await
-                    .expect("can get chain params");
 
                 /* ---------- generate genesis ------------  */
                 let validators = migrated_state.validator_definitions().await?;
                 let app_state = genesis::Content {
-                    chain_content: ChainContent { chain_params },
                     stake_content: StakeContent {
                         validators: validators.into_iter().map(Into::into).collect(),
                         ..Default::default()

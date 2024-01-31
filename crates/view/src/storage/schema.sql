@@ -4,19 +4,12 @@ CREATE TABLE schema_hash (schema_hash TEXT NOT NULL);
 -- The client version that created this database
 CREATE TABLE client_version (client_version TEXT NOT NULL);
 
--- Application state, stored in single-row tables
-CREATE TABLE chain_params (bytes BLOB NOT NULL);
-CREATE TABLE community_pool_params (bytes BLOB NOT NULL);
-CREATE TABLE distributions_params (bytes BLOB NOT NULL);
-CREATE TABLE fee_params (bytes BLOB NOT NULL);
-CREATE TABLE funding_params (bytes BLOB NOT NULL);
-CREATE TABLE governance_params (bytes BLOB NOT NULL);
-CREATE TABLE ibc_params (bytes BLOB NOT NULL);
-CREATE TABLE stake_params (bytes BLOB NOT NULL);
+-- General-purpose blob storage
+CREATE TABLE kv (
+    k                       TEXT PRIMARY KEY NOT NULL,
+    v                       BLOB NOT NULL
+);
 
-CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
-CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
-CREATE TABLE gas_prices (bytes BLOB NOT NULL);
 CREATE TABLE sync_height (height BIGINT NOT NULL);
 
 -- used for storing a cache of known assets

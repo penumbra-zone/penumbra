@@ -236,7 +236,7 @@ impl serde::Serialize for ChangedAppParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.chain_params.is_some() {
+        if self.sct_params.is_some() {
             len += 1;
         }
         if self.community_pool_params.is_some() {
@@ -260,9 +260,12 @@ impl serde::Serialize for ChangedAppParameters {
         if self.funding_params.is_some() {
             len += 1;
         }
+        if self.shielded_pool_params.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ChangedAppParameters", len)?;
-        if let Some(v) = self.chain_params.as_ref() {
-            struct_ser.serialize_field("chainParams", v)?;
+        if let Some(v) = self.sct_params.as_ref() {
+            struct_ser.serialize_field("sctParams", v)?;
         }
         if let Some(v) = self.community_pool_params.as_ref() {
             struct_ser.serialize_field("communityPoolParams", v)?;
@@ -285,6 +288,9 @@ impl serde::Serialize for ChangedAppParameters {
         if let Some(v) = self.funding_params.as_ref() {
             struct_ser.serialize_field("fundingParams", v)?;
         }
+        if let Some(v) = self.shielded_pool_params.as_ref() {
+            struct_ser.serialize_field("shieldedPoolParams", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -295,8 +301,8 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_params",
-            "chainParams",
+            "sct_params",
+            "sctParams",
             "community_pool_params",
             "communityPoolParams",
             "governance_params",
@@ -311,11 +317,13 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             "distributionsParams",
             "funding_params",
             "fundingParams",
+            "shielded_pool_params",
+            "shieldedPoolParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainParams,
+            SctParams,
             CommunityPoolParams,
             GovernanceParams,
             IbcParams,
@@ -323,6 +331,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             FeeParams,
             DistributionsParams,
             FundingParams,
+            ShieldedPoolParams,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -345,7 +354,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainParams" | "chain_params" => Ok(GeneratedField::ChainParams),
+                            "sctParams" | "sct_params" => Ok(GeneratedField::SctParams),
                             "communityPoolParams" | "community_pool_params" => Ok(GeneratedField::CommunityPoolParams),
                             "governanceParams" | "governance_params" => Ok(GeneratedField::GovernanceParams),
                             "ibcParams" | "ibc_params" => Ok(GeneratedField::IbcParams),
@@ -353,6 +362,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             "feeParams" | "fee_params" => Ok(GeneratedField::FeeParams),
                             "distributionsParams" | "distributions_params" => Ok(GeneratedField::DistributionsParams),
                             "fundingParams" | "funding_params" => Ok(GeneratedField::FundingParams),
+                            "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -372,7 +382,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_params__ = None;
+                let mut sct_params__ = None;
                 let mut community_pool_params__ = None;
                 let mut governance_params__ = None;
                 let mut ibc_params__ = None;
@@ -380,13 +390,14 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 let mut fee_params__ = None;
                 let mut distributions_params__ = None;
                 let mut funding_params__ = None;
+                let mut shielded_pool_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainParams => {
-                            if chain_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainParams"));
+                        GeneratedField::SctParams => {
+                            if sct_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sctParams"));
                             }
-                            chain_params__ = map_.next_value()?;
+                            sct_params__ = map_.next_value()?;
                         }
                         GeneratedField::CommunityPoolParams => {
                             if community_pool_params__.is_some() {
@@ -430,13 +441,19 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             }
                             funding_params__ = map_.next_value()?;
                         }
+                        GeneratedField::ShieldedPoolParams => {
+                            if shielded_pool_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("shieldedPoolParams"));
+                            }
+                            shielded_pool_params__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
                 Ok(ChangedAppParameters {
-                    chain_params: chain_params__,
+                    sct_params: sct_params__,
                     community_pool_params: community_pool_params__,
                     governance_params: governance_params__,
                     ibc_params: ibc_params__,
@@ -444,6 +461,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     fee_params: fee_params__,
                     distributions_params: distributions_params__,
                     funding_params: funding_params__,
+                    shielded_pool_params: shielded_pool_params__,
                 })
             }
         }
@@ -5571,6 +5589,124 @@ impl<'de> serde::Deserialize<'de> for ProposalWithdraw {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.ProposalWithdraw", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for Ratio {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.numerator != 0 {
+            len += 1;
+        }
+        if self.denominator != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Ratio", len)?;
+        if self.numerator != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("numerator", ToString::to_string(&self.numerator).as_str())?;
+        }
+        if self.denominator != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("denominator", ToString::to_string(&self.denominator).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Ratio {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "numerator",
+            "denominator",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Numerator,
+            Denominator,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "numerator" => Ok(GeneratedField::Numerator),
+                            "denominator" => Ok(GeneratedField::Denominator),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = Ratio;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1alpha1.Ratio")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Ratio, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut numerator__ = None;
+                let mut denominator__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Numerator => {
+                            if numerator__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("numerator"));
+                            }
+                            numerator__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Denominator => {
+                            if denominator__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denominator"));
+                            }
+                            denominator__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(Ratio {
+                    numerator: numerator__.unwrap_or_default(),
+                    denominator: denominator__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1alpha1.Ratio", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Tally {

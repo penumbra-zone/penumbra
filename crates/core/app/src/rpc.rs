@@ -1,5 +1,4 @@
 use cnidarium::Storage;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::{
     query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
     TransactionsByHeightRequest, TransactionsByHeightResponse,

@@ -1,16 +1,39 @@
 use cnidarium::Storage;
-use penumbra_proto::core::component::sct::v1alpha1::query_service_server::QueryService;
+use penumbra_proto::core::component::sct::v1alpha1::{
+    query_service_server::QueryService, EpochByHeightRequest, EpochByHeightResponse,
+};
+use tonic::Status;
+use tracing::instrument;
+
+use super::EpochRead;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
-    _storage: Storage,
+    storage: Storage,
 }
 
 impl Server {
-    pub fn new(_storage: Storage) -> Self {
-        Self { _storage }
+    pub fn new(storage: Storage) -> Self {
+        Self { storage }
     }
 }
 
 #[tonic::async_trait]
-impl QueryService for Server {}
+impl QueryService for Server {
+    #[instrument(skip(self, request))]
+    async fn epoch_by_height(
+        &self,
+        request: tonic::Request<EpochByHeightRequest>,
+    ) -> Result<tonic::Response<EpochByHeightResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let epoch = state
+            .epoch_by_height(request.get_ref().height)
+            .await
+            .map_err(|e| tonic::Status::unknown(format!("could not get epoch for height: {e}")))?;
+
+        Ok(tonic::Response::new(EpochByHeightResponse {
+            epoch: Some(epoch.into()),
+        }))
+    }
+}

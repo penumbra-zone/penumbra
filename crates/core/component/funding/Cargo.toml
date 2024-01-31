@@ -10,7 +10,6 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
     "penumbra-community-pool/component",
     "penumbra-distributions/component",
     "penumbra-sct/component",
@@ -26,7 +25,7 @@ docsrs = []
 # Workspace dependencies
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-asset = { path = "../../asset" }
-penumbra-chain = { path = "../chain", default-features = false }
+#penumbra-chain = { path = "../chain", default-features = false }
 penumbra-community-pool = { path = "../community-pool", default-features = false }
 penumbra-distributions = { path = "../distributions", default-features = false }
 penumbra-proto = { path = "../../../proto", default-features = false }

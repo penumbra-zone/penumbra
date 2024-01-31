@@ -312,7 +312,7 @@ impl DexCmd {
     ) -> Result<()> {
         let mut client = ShieldedPoolQueryServiceClient::new(app.pd_channel().await?);
 
-        let chain_id = app.view().app_params().await?.chain_params.chain_id;
+        let chain_id = app.view().app_params().await?.chain_id;
 
         let outputs = self
             .get_batch_outputs(app, chain_id.clone(), height, trading_pair)
@@ -408,7 +408,7 @@ impl DexCmd {
             }
             DexCmd::AllPositions { include_closed } => {
                 let client = DexQueryServiceClient::new(app.pd_channel().await?);
-                let chain_id = app.view().app_params().await?.chain_params.chain_id;
+                let chain_id = app.view().app_params().await?.chain_id;
 
                 let positions_stream = self
                     .get_all_liquidity_positions(client.clone(), *include_closed, Some(chain_id))

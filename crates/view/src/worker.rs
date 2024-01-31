@@ -186,7 +186,7 @@ impl Worker {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
-        let chain_id = self.storage.app_params().await?.chain_params.chain_id;
+        let chain_id = self.storage.app_params().await?.chain_id;
 
         let start_height = self
             .storage

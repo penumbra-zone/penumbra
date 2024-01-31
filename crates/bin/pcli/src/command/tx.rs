@@ -34,10 +34,6 @@ use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
-        chain::v1alpha1::{
-            query_service_client::QueryServiceClient as ChainQueryServiceClient,
-            EpochByHeightRequest,
-        },
         dex::v1alpha1::{
             query_service_client::QueryServiceClient as DexQueryServiceClient,
             LiquidityPositionByIdRequest, PositionId,
@@ -46,6 +42,9 @@ use penumbra_proto::{
             query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
             NextProposalIdRequest, ProposalDataRequest, ProposalInfoRequest, ProposalInfoResponse,
             ProposalRateDataRequest,
+        },
+        sct::v1alpha1::{
+            query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
         },
         stake::v1alpha1::{
             query_service_client::QueryServiceClient as StakeQueryServiceClient,
@@ -518,7 +517,7 @@ impl TxCmd {
                         swap_plaintext,
                         position: swap_record.position,
                         output_data: swap_record.output_data,
-                        epoch_duration: params.chain_params.epoch_duration,
+                        epoch_duration: params.sct_params.epoch_duration,
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
                     })
@@ -622,7 +621,7 @@ impl TxCmd {
                     .context("view service must be initialized")?;
 
                 let current_height = view.status().await?.full_sync_height;
-                let mut client = ChainQueryServiceClient::new(channel.clone());
+                let mut client = SctQueryServiceClient::new(channel.clone());
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
                         height: current_height,
@@ -666,7 +665,7 @@ impl TxCmd {
                         let mut client = StakeQueryServiceClient::new(channel.clone());
                         let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
-                                chain_id: params.chain_params.chain_id.to_string(),
+                                chain_id: params.chain_id.to_string(),
                                 identity_key: Some(validator_identity.into()),
                                 start_epoch_index,
                                 end_epoch_index,
@@ -773,7 +772,7 @@ impl TxCmd {
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let next_proposal_id: u64 = client
                     .next_proposal_id(NextProposalIdRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                        chain_id: app.view().app_params().await?.chain_id,
                     })
                     .await?
                     .into_inner()
@@ -800,7 +799,7 @@ impl TxCmd {
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let proposal = client
                     .proposal_data(ProposalDataRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                        chain_id: app.view().app_params().await?.chain_id,
                         proposal_id: *proposal_id,
                     })
                     .await?
@@ -870,7 +869,7 @@ impl TxCmd {
                     start_position,
                 } = client
                     .proposal_info(ProposalInfoRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                        chain_id: app.view().app_params().await?.chain_id,
                         proposal_id,
                     })
                     .await?
@@ -879,7 +878,7 @@ impl TxCmd {
 
                 let mut rate_data_stream = client
                     .proposal_rate_data(ProposalRateDataRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
+                        chain_id: app.view().app_params().await?.chain_id,
                         proposal_id,
                     })
                     .await?
@@ -1169,7 +1168,7 @@ impl TxCmd {
                     // Fetch the information regarding the position from the view service.
                     let position = client
                         .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                            chain_id: params.chain_params.chain_id.to_string(),
+                            chain_id: params.chain_id.to_string(),
                             position_id: Some(position_id.into()),
                         })
                         .await?
@@ -1222,7 +1221,7 @@ impl TxCmd {
                 // Fetch the information regarding the position from the view service.
                 let position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                        chain_id: params.chain_params.chain_id.to_string(),
+                        chain_id: params.chain_id.to_string(),
                         position_id: Some(PositionId::from(*position_id)),
                     })
                     .await?

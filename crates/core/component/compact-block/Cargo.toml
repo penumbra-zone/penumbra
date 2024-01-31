@@ -10,7 +10,6 @@ component = [
     "cnidarium-component",
     "cnidarium",
     "penumbra-proto/cnidarium",
-    "penumbra-chain/component",
     "tonic",
     "tokio-stream",
     "tokio",
@@ -27,7 +26,7 @@ cnidarium = { path = "../../../cnidarium", optional = true }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-proof-params = { path = "../../../crypto/proof-params", default-features = false }
 cnidarium-component = { path = "../../../cnidarium-component", optional = true }
-penumbra-chain = { path = "../chain", default-features = false }
+#penumbra-chain = { path = "../chain", default-features = false }
 penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
 penumbra-dex = { path = "../dex", default-features = false }
 penumbra-ibc = { path = "../ibc", default-features = false }

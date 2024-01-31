@@ -23,7 +23,7 @@ pub mod rpc;
 pub use view::StateReadExt;
 pub use view::StateWriteExt;
 
-use penumbra_chain::component::StateReadExt as _;
+use penumbra_sct::component::EpochRead;
 
 pub struct Governance {}
 

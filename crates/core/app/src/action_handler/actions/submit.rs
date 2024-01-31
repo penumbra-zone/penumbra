@@ -10,12 +10,11 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
 use penumbra_asset::STAKING_TOKEN_DENOM;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_community_pool::component::StateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
-use penumbra_sct::component::StateReadExt as _;
+use penumbra_sct::component::{EpochRead, StateReadExt as _};
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use penumbra_transaction::plan::TransactionPlan;

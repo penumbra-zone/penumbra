@@ -1,12 +1,12 @@
 use anyhow::anyhow;
 use ark_ff::UniformRand;
 use decaf377::Fq;
+use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::fmd;
 use rand_core::OsRng;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use penumbra_chain::params::ChainParameters;
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
     core::{
@@ -28,9 +28,15 @@ use crate::utils;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {
+    /// The planner instance that will resolve the transaction plan
     planner: Planner<OsRng>,
+    /// The storage instance that will be used to fetch the necessary notes
     storage: IndexedDBStorage,
-    chain_params: ChainParameters,
+    /// The chain ID that the planner will use to resolve the transaction plan
+    chain_id: String,
+    /// Sct configuration parameters
+    sct_params: SctParameters,
+    /// The fuzzy message detection parameters
     fmd_params: fmd::Parameters,
 }
 
@@ -40,13 +46,15 @@ impl WasmPlanner {
     /// Function opens a connection to indexedDb
     /// Arguments:
     ///     idb_constants: `IndexedDbConstants`
-    ///     chain_params: `ChainParams`
+    ///     chain_id: `String`
+    ///     sct_parameters: `SctParameters`
     ///     fmd_params: `penumbra_shielded_pool::fmd::Parameters`
     /// Returns: `WasmPlanner`
     #[wasm_bindgen]
     pub async fn new(
         idb_constants: JsValue,
-        chain_params: JsValue,
+        chain_id: JsValue,
+        sct_params: JsValue,
         fmd_params: JsValue,
     ) -> WasmResult<WasmPlanner> {
         utils::set_panic_hook();
@@ -55,7 +63,8 @@ impl WasmPlanner {
         let planner = WasmPlanner {
             planner: Planner::new(OsRng),
             storage: IndexedDBStorage::new(constants).await?,
-            chain_params: serde_wasm_bindgen::from_value(chain_params)?,
+            chain_id: serde_wasm_bindgen::from_value(chain_id)?,
+            sct_params: serde_wasm_bindgen::from_value(sct_params)?,
             fmd_params: serde_wasm_bindgen::from_value(fmd_params)?,
         };
         Ok(planner)
@@ -152,7 +161,7 @@ impl WasmPlanner {
             swap_plaintext: swap_record.swap,
             position: swap_record.position,
             output_data: swap_record.output_data,
-            epoch_duration: self.chain_params.epoch_duration,
+            epoch_duration: self.sct_params.epoch_duration,
             proof_blinding_r: Fq::rand(&mut OsRng),
             proof_blinding_s: Fq::rand(&mut OsRng),
         };
@@ -229,7 +238,7 @@ impl WasmPlanner {
         // Plan the transaction using the gathered information
         let refund_address_proto: Address = serde_wasm_bindgen::from_value(refund_address)?;
         let plan = self.planner.plan_with_spendable_and_votable_notes(
-            &self.chain_params,
+            self.chain_id.clone(),
             &self.fmd_params,
             spendable_notes,
             Vec::new(),

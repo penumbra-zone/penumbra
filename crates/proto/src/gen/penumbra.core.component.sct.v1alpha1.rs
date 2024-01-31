@@ -1,3 +1,51 @@
+/// Configuration data for the SCT component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SctParameters {
+    /// The default duration of each epoch, in number of blocks.
+    #[prost(uint64, tag = "1")]
+    pub epoch_duration: u64,
+}
+impl ::prost::Name for SctParameters {
+    const NAME: &'static str = "SctParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// Sct-specific genesis content.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The SctParameters present at genesis.
+    #[prost(message, optional, tag = "1")]
+    pub sct_params: ::core::option::Option<SctParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+/// An epoch is a sequentially numbered collection of contiguous blocks.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Epoch {
+    /// The unique index of the epoch.
+    #[prost(uint64, tag = "1")]
+    pub index: u64,
+    /// The starting height for the epoch.
+    #[prost(uint64, tag = "2")]
+    pub start_height: u64,
+}
+impl ::prost::Name for Epoch {
+    const NAME: &'static str = "Epoch";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Metadata describing the source of a commitment in the state commitment tree.
 ///
 /// This message allows clients to track provenance of state commitments, and to
@@ -225,6 +273,32 @@ impl ::prost::Name for EventBlockRoot {
         ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EpochByHeightRequest {
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+}
+impl ::prost::Name for EpochByHeightRequest {
+    const NAME: &'static str = "EpochByHeightRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EpochByHeightResponse {
+    #[prost(message, optional, tag = "1")]
+    pub epoch: ::core::option::Option<Epoch>,
+}
+impl ::prost::Name for EpochByHeightResponse {
+    const NAME: &'static str = "EpochByHeightResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.sct.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.sct.v1alpha1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -312,6 +386,36 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+        pub async fn epoch_by_height(
+            &mut self,
+            request: impl tonic::IntoRequest<super::EpochByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::EpochByHeightResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.sct.v1alpha1.QueryService/EpochByHeight",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.sct.v1alpha1.QueryService",
+                        "EpochByHeight",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -321,7 +425,15 @@ pub mod query_service_server {
     use tonic::codegen::*;
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
-    pub trait QueryService: Send + Sync + 'static {}
+    pub trait QueryService: Send + Sync + 'static {
+        async fn epoch_by_height(
+            &self,
+            request: tonic::Request<super::EpochByHeightRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::EpochByHeightResponse>,
+            tonic::Status,
+        >;
+    }
     /// Query operations for the SCT component.
     #[derive(Debug)]
     pub struct QueryServiceServer<T: QueryService> {
@@ -402,6 +514,52 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
+                "/penumbra.core.component.sct.v1alpha1.QueryService/EpochByHeight" => {
+                    #[allow(non_camel_case_types)]
+                    struct EpochByHeightSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::EpochByHeightRequest>
+                    for EpochByHeightSvc<T> {
+                        type Response = super::EpochByHeightResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::EpochByHeightRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::epoch_by_height(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = EpochByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 _ => {
                     Box::pin(async move {
                         Ok(

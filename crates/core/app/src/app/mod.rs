@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use cnidarium_component::Component;
+use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
@@ -20,7 +20,9 @@ use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
-use penumbra_shielded_pool::component::ShieldedPool;
+use penumbra_sct::component::{EpochManager, EpochRead, SctParameterWriter, StateReadExt as _};
+use penumbra_sct::epoch::Epoch;
+use penumbra_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
 use penumbra_transaction::Transaction;
 use prost::Message as _;
@@ -94,15 +96,16 @@ impl App {
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
-            genesis::AppState::Content(app_state) => {
-                state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
+            genesis::AppState::Content(genesis) => {
+                state_tx.put_chain_id(genesis.chain_id.clone());
+                state_tx.put_sct_params(genesis.sct_content.sct_params.clone()); // TODO(erwan): promote Sct to component?
 
                 // The genesis block height is 0
                 state_tx.put_block_height(0);
 
                 state_tx.put_epoch_by_height(
                     0,
-                    penumbra_chain::Epoch {
+                    Epoch {
                         index: 0,
                         start_height: 0,
                     },
@@ -112,31 +115,30 @@ impl App {
                 // the epoch by height in end_block, and end_block isn't called after init_chain.
                 state_tx.put_epoch_by_height(
                     1,
-                    penumbra_chain::Epoch {
+                    Epoch {
                         index: 0,
                         start_height: 0,
                     },
                 );
 
-                ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
-                    .await;
-                Distributions::init_chain(&mut state_tx, Some(&app_state.distributions_content))
+                ShieldedPool::init_chain(&mut state_tx, Some(&genesis.shielded_pool_content)).await;
+                Distributions::init_chain(&mut state_tx, Some(&genesis.distributions_content))
                     .await;
                 Staking::init_chain(
                     &mut state_tx,
                     Some(&(
-                        app_state.stake_content.clone(),
-                        app_state.shielded_pool_content.clone(),
+                        genesis.stake_content.clone(),
+                        genesis.shielded_pool_content.clone(),
                     )),
                 )
                 .await;
-                Ibc::init_chain(&mut state_tx, Some(&app_state.ibc_content)).await;
+                Ibc::init_chain(&mut state_tx, Some(&genesis.ibc_content)).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
-                CommunityPool::init_chain(&mut state_tx, Some(&app_state.community_pool_content))
+                CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
-                Governance::init_chain(&mut state_tx, Some(&app_state.governance_content)).await;
-                Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
-                Funding::init_chain(&mut state_tx, Some(&app_state.funding_content)).await;
+                Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
+                Fee::init_chain(&mut state_tx, Some(&genesis.fee_content)).await;
+                Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
 
                 state_tx
                     .finish_block(state_tx.app_params_updated())
@@ -233,9 +235,6 @@ impl App {
             tracing::info!(?app_params, "applying pending app parameters");
             // The app parameters are sparse so only those which are `Some` need
             // updating here
-            if let Some(chain_params) = app_params.new.chain_params {
-                state_tx.put_chain_params(chain_params);
-            }
             if let Some(community_pool_params) = app_params.new.community_pool_params {
                 state_tx.put_community_pool_params(community_pool_params);
             }
@@ -253,6 +252,12 @@ impl App {
             }
             if let Some(ibc_params) = app_params.new.ibc_params {
                 state_tx.put_ibc_params(ibc_params);
+            }
+            if let Some(shielded_pool_params) = app_params.new.shielded_pool_params {
+                state_tx.put_shielded_pool_params(shielded_pool_params);
+            }
+            if let Some(sct_params) = app_params.new.sct_params {
+                state_tx.put_sct_params(sct_params);
             }
             if let Some(stake_params) = app_params.new.stake_params {
                 state_tx.put_stake_params(stake_params);
@@ -456,7 +461,7 @@ impl App {
             .await
             .expect("able to get block height in end_block");
         let current_epoch = state_tx
-            .epoch()
+            .current_epoch()
             .await
             .expect("able to get current epoch in end_block");
 
@@ -519,7 +524,7 @@ impl App {
             // set the epoch for the next block
             state_tx.put_epoch_by_height(
                 current_height + 1,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: current_epoch.index + 1,
                     start_height: current_height + 1,
                 },
@@ -615,35 +620,77 @@ const TOTAL_HALT_COUNT: u64 = 0;
 pub trait StateReadExt: StateRead {
     /// Returns true if the app parameters have been changed in this block.
     fn app_params_updated(&self) -> bool {
-        self.chain_params_updated()
-            || self.community_pool_params_updated()
+        self.community_pool_params_updated()
             || self.distributions_params_updated()
             || self.ibc_params_updated()
             || self.fee_params_updated()
             || self.funding_params_updated()
             || self.governance_params_updated()
+            || self.sct_params_updated()
+            || self.shielded_pool_params_updated()
             || self.stake_params_updated()
+    }
+
+    async fn get_chain_id(&self) -> Result<String> {
+        let raw_chain_id = self
+            .get_raw(state_key::data::chain_id())
+            .await?
+            .expect("chain id is always set");
+
+        Ok(String::from_utf8_lossy(&raw_chain_id).to_string())
+    }
+
+    /// Checks a provided chain_id against the chain state.
+    ///
+    /// Passes through if the provided chain_id is empty or matches, and
+    /// otherwise errors.
+    async fn check_chain_id(&self, provided: &str) -> Result<()> {
+        let chain_id = self
+            .get_chain_id()
+            .await
+            .context(format!("error getting chain id: '{provided}'"))?;
+        if provided.is_empty() || provided == chain_id {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "provided chain_id {} does not match chain_id {}",
+                provided,
+                chain_id
+            ))
+        }
+    }
+
+    /// Gets the chain revision number, from the chain ID
+    async fn get_revision_number(&self) -> Result<u64> {
+        let cid_str = self.get_chain_id().await?;
+
+        Ok(ChainId::from_string(&cid_str).version())
     }
 
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
-        let chain_params = self.get_chain_params().await?;
-        let community_pool_params = self.get_community_pool_params().await?;
+        let chain_id = self.get_chain_id().await?;
+        let community_pool_params: penumbra_community_pool::params::CommunityPoolParameters =
+            self.get_community_pool_params().await?;
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
         let fee_params = self.get_fee_params().await?;
         let funding_params = self.get_funding_params().await?;
         let governance_params = self.get_governance_params().await?;
+        let sct_params = self.get_sct_params().await?;
+        let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
 
         Ok(AppParameters {
-            chain_params,
+            chain_id,
             community_pool_params,
             distributions_params,
             fee_params,
             funding_params,
             governance_params,
             ibc_params,
+            sct_params,
+            shielded_pool_params,
             stake_params,
         })
     }
@@ -653,7 +700,9 @@ pub trait StateReadExt: StateRead {
         block_height: u64,
     ) -> Result<TransactionsByHeightResponse> {
         let transactions = match self
-            .nonverifiable_get_raw(state_key::transactions_by_height(block_height).as_bytes())
+            .nonverifiable_get_raw(
+                state_key::cometbft_data::transactions_by_height(block_height).as_bytes(),
+            )
             .await?
         {
             Some(transactions) => transactions,
@@ -674,7 +723,7 @@ impl<
             + penumbra_governance::component::StateReadExt
             + penumbra_fee::component::StateReadExt
             + penumbra_community_pool::component::StateReadExt
-            + penumbra_chain::component::StateReadExt
+            + penumbra_sct::component::EpochRead
             + penumbra_ibc::component::StateReadExt
             + penumbra_distributions::component::StateReadExt
             + ?Sized,
@@ -684,6 +733,11 @@ impl<
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Sets the chain ID.
+    fn put_chain_id(&mut self, chain_id: String) {
+        self.put_raw(state_key::data::chain_id().into(), chain_id.into_bytes());
+    }
+
     /// Stores the transactions that occurred during a CometBFT block.
     /// This is used to create a durable transaction log for clients to retrieve;
     /// the CometBFT `get_block_by_height` RPC call will only return data for blocks
@@ -702,7 +756,7 @@ pub trait StateWriteExt: StateWrite {
             .collect();
 
         self.nonverifiable_put_raw(
-            state_key::transactions_by_height(height).into(),
+            state_key::cometbft_data::transactions_by_height(height).into(),
             transactions_response.encode_to_vec(),
         );
         Ok(())

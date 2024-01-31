@@ -1,20 +1,20 @@
-use penumbra_proto::{penumbra::core::component::chain::v1alpha1 as pb_chain, DomainType};
+use penumbra_proto::penumbra::core::component::sct::v1alpha1 as pb;
+use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 
-/// Penumbra groups blocks into epochs and restricts validator changes to epoch boundaries.
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb_chain::Epoch", into = "pb_chain::Epoch")]
+#[serde(try_from = "pb::Epoch", into = "pb::Epoch")]
 pub struct Epoch {
     pub index: u64,
     pub start_height: u64,
 }
 
 impl DomainType for Epoch {
-    type Proto = pb_chain::Epoch;
+    type Proto = pb::Epoch;
 }
 
-impl From<pb_chain::Epoch> for Epoch {
-    fn from(msg: pb_chain::Epoch) -> Self {
+impl From<pb::Epoch> for Epoch {
+    fn from(msg: pb::Epoch) -> Self {
         Epoch {
             index: msg.index,
             start_height: msg.start_height,
@@ -22,9 +22,9 @@ impl From<pb_chain::Epoch> for Epoch {
     }
 }
 
-impl From<Epoch> for pb_chain::Epoch {
+impl From<Epoch> for pb::Epoch {
     fn from(epoch: Epoch) -> Self {
-        pb_chain::Epoch {
+        pb::Epoch {
             index: epoch.index,
             start_height: epoch.start_height,
         }

@@ -63,8 +63,7 @@ impl From<StakeParameters> for pb::StakeParameters {
     }
 }
 
-// TODO: defaults are implemented here as well as in the
-// `pd::main`
+// TODO: defaults are implemented here as well as in pd
 impl Default for StakeParameters {
     fn default() -> Self {
         Self {
