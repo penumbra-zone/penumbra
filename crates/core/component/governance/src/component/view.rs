@@ -578,7 +578,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
     async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
         Ok(total_halt_count
-            >= self
+            < self
                 .get_proto(state_key::halt::halt_count())
                 .await?
                 .unwrap_or_default())
