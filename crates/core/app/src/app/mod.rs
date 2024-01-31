@@ -98,8 +98,7 @@ impl App {
         match app_state {
             genesis::AppState::Content(genesis) => {
                 state_tx.put_chain_id(genesis.chain_id.clone());
-                // MERGEBLOCK: chain id init and shielded pool
-                //                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
+                state_tx.put_sct_params(genesis.sct_content.sct_params.clone()); // TODO(erwan): promote Sct to component?
 
                 // The genesis block height is 0
                 state_tx.put_block_height(0);
