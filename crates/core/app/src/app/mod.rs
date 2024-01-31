@@ -96,7 +96,8 @@ impl App {
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
-            genesis::AppState::Content(app_state) => {
+            genesis::AppState::Content(genesis) => {
+                state_tx.put_chain_id(genesis.chain_id.clone());
                 // MERGEBLOCK: chain id init and shielded pool
                 //                 state_tx.put_chain_params(app_state.chain_content.chain_params.clone());
 
@@ -121,25 +122,24 @@ impl App {
                     },
                 );
 
-                ShieldedPool::init_chain(&mut state_tx, Some(&app_state.shielded_pool_content))
-                    .await;
-                Distributions::init_chain(&mut state_tx, Some(&app_state.distributions_content))
+                ShieldedPool::init_chain(&mut state_tx, Some(&genesis.shielded_pool_content)).await;
+                Distributions::init_chain(&mut state_tx, Some(&genesis.distributions_content))
                     .await;
                 Staking::init_chain(
                     &mut state_tx,
                     Some(&(
-                        app_state.stake_content.clone(),
-                        app_state.shielded_pool_content.clone(),
+                        genesis.stake_content.clone(),
+                        genesis.shielded_pool_content.clone(),
                     )),
                 )
                 .await;
-                Ibc::init_chain(&mut state_tx, Some(&app_state.ibc_content)).await;
+                Ibc::init_chain(&mut state_tx, Some(&genesis.ibc_content)).await;
                 Dex::init_chain(&mut state_tx, Some(&())).await;
-                CommunityPool::init_chain(&mut state_tx, Some(&app_state.community_pool_content))
+                CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
-                Governance::init_chain(&mut state_tx, Some(&app_state.governance_content)).await;
-                Fee::init_chain(&mut state_tx, Some(&app_state.fee_content)).await;
-                Funding::init_chain(&mut state_tx, Some(&app_state.funding_content)).await;
+                Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
+                Fee::init_chain(&mut state_tx, Some(&genesis.fee_content)).await;
+                Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
 
                 state_tx
                     .finish_block(state_tx.app_params_updated())
@@ -633,7 +633,12 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_chain_id(&self) -> Result<String> {
-        self.get_app_params().await.map(|params| params.chain_id)
+        let raw_chain_id = self
+            .get_raw(state_key::data::chain_id())
+            .await?
+            .expect("chain id is always set");
+
+        Ok(String::from_utf8_lossy(&raw_chain_id).to_string())
     }
 
     /// Checks a provided chain_id against the chain state.
@@ -666,7 +671,8 @@ pub trait StateReadExt: StateRead {
     /// Returns the set of app parameters
     async fn get_app_params(&self) -> Result<AppParameters> {
         let chain_id = self.get_chain_id().await?;
-        let community_pool_params = self.get_community_pool_params().await?;
+        let community_pool_params: penumbra_community_pool::params::CommunityPoolParameters =
+            self.get_community_pool_params().await?;
         let distributions_params = self.get_distributions_params().await?;
         let ibc_params = self.get_ibc_params().await?;
         let fee_params = self.get_fee_params().await?;
@@ -728,6 +734,11 @@ impl<
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
+    /// Sets the chain ID.
+    fn put_chain_id(&mut self, chain_id: String) {
+        self.put_raw(state_key::data::chain_id().into(), chain_id.into_bytes());
+    }
+
     /// Stores the transactions that occurred during a CometBFT block.
     /// This is used to create a durable transaction log for clients to retrieve;
     /// the CometBFT `get_block_by_height` RPC call will only return data for blocks

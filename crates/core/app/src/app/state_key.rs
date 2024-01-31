@@ -4,6 +4,12 @@ pub mod genesis {
     }
 }
 
+pub mod data {
+    pub fn chain_id() -> &'static str {
+        "application/data/chain_id"
+    }
+}
+
 pub mod cometbft_data {
     use crate::COMETBFT_SUBSTORE_PREFIX;
 
