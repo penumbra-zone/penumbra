@@ -44,6 +44,7 @@ penumbra-app = { path = "../../core/app" }
 penumbra-custody = { path = "../../custody" }
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
+penumbra-auto-https = { path = "../../util/auto-https" }
 
 # Penumbra dependencies
 decaf377 = { version = "0.5", features = ["parallel"] }
@@ -126,8 +127,6 @@ atty = "0.2"
 fs_extra = "1.3.0"
 
 axum-server = { version = "0.4.7", features = ["tls-rustls"] }
-rustls = "0.20.9"
-rustls-acme = { version = "0.6.0", features = ["axum"] }
 
 [dev-dependencies]
 penumbra-proof-params = { path = "../../crypto/proof-params", features = [
