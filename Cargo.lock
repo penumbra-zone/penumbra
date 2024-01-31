@@ -4766,6 +4766,7 @@ dependencies = [
  "pbjson-types",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auto-https",
  "penumbra-compact-block",
  "penumbra-custody",
  "penumbra-dex",
@@ -4790,8 +4791,6 @@ dependencies = [
  "regex",
  "reqwest",
  "rocksdb",
- "rustls 0.20.9",
- "rustls-acme",
  "serde",
  "serde_json",
  "serde_with 1.14.0",
@@ -4960,6 +4959,18 @@ dependencies = [
  "serde_with 3.5.1",
  "sha2 0.10.8",
  "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "penumbra-auto-https"
+version = "0.65.0-alpha.1"
+dependencies = [
+ "anyhow",
+ "axum-server",
+ "futures",
+ "rustls 0.20.9",
+ "rustls-acme",
  "tracing",
 ]
 

@@ -37,6 +37,7 @@ members = [
   "crates/custody",
   "crates/wallet",
   "crates/view",
+  "crates/util/auto-https",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
   "crates/bin/pd",
