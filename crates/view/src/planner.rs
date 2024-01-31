@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::Result;
-use penumbra_sct::params::SctParameters;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -473,7 +472,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Gather all the information needed from the view service
         let app_params = view.app_params().await?;
         let chain_id = app_params.chain_id.clone();
-        let sct_params = app_params.sct_params.clone();
         let fmd_params = view.fmd_parameters().await?;
 
         // Calculate the gas that needs to be paid for the transaction based on the configured gas prices.
@@ -499,7 +497,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let self_address = view.address_by_index(source).await?;
         self.plan_with_spendable_and_votable_notes(
             chain_id,
-            &sct_params,
             &fmd_params,
             spendable_notes,
             voting_notes,
@@ -516,7 +513,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(
         self,
         chain_id,
-        sct_params,
         fmd_params,
         self_address,
         spendable_notes,
@@ -525,7 +521,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn plan_with_spendable_and_votable_notes(
         &mut self,
         chain_id: String,
-        sct_params: &SctParameters,
         fmd_params: &fmd::Parameters,
         spendable_notes: Vec<SpendableNoteRecord>,
         votable_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,

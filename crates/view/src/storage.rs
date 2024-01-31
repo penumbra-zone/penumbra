@@ -584,7 +584,7 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let chain_id = todo!("MERGEBLOCK(erwan): hrm... maybe we refactor this to be a KV ");
+            let chain_id = "MERGEBLOCK(erwan): hrm... maybe we refactor this to be a KV ".to_string();
             let community_pool_bytes = pool
                 .get()?
                 .prepare_cached("SELECT bytes FROM community_pool_params LIMIT 1")?
