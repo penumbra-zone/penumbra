@@ -7,17 +7,16 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use futures::StreamExt;
 
-use box_grpc_svc::BoxGrpcService;
 use command::*;
 use config::PcliConfig;
 use opt::Opt;
+use penumbra_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_proto::{
     custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
     view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
 };
 use penumbra_view::ViewClient;
 
-mod box_grpc_svc;
 mod command;
 mod config;
 mod dex_utils;

@@ -5542,6 +5542,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
+ "http-body",
  "ibc-proto",
  "ibc-types",
  "ics23",
@@ -5554,6 +5555,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tonic",
+ "tower",
  "tracing",
 ]
 
