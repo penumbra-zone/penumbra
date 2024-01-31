@@ -3,18 +3,13 @@ use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use penumbra_app::{app::App, params::AppParameters};
+use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
 };
-use penumbra_distributions::params::DistributionsParameters;
-use penumbra_fee::{FeeParameters, GasPrices};
-use penumbra_funding::FundingParameters;
-use penumbra_governance::params::GovernanceParameters;
-use penumbra_ibc::params::IBCParameters;
+use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
@@ -24,8 +19,8 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_sct::{params::SctParameters, CommitmentSource, Nullifier};
-use penumbra_shielded_pool::{fmd, note, params::ShieldedPoolParameters, Note, Rseed};
-use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
+use penumbra_shielded_pool::{fmd, note, Note, Rseed};
+use penumbra_stake::{params::DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use r2d2_sqlite::{
