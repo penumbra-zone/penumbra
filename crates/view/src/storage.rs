@@ -18,9 +18,9 @@ use penumbra_proto::{
     },
     DomainType,
 };
-use penumbra_sct::{params::SctParameters, CommitmentSource, Nullifier};
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{fmd, note, Note, Rseed};
-use penumbra_stake::{params::DelegationToken, IdentityKey};
+use penumbra_stake::{DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
 use r2d2_sqlite::{
@@ -28,7 +28,8 @@ use r2d2_sqlite::{
     SqliteConnectionManager,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
+use std::str::FromStr;
+use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
 use tct::StateCommitment;
 use tokio::{
     sync::broadcast::{self, error::RecvError},
