@@ -3,13 +3,13 @@
 Transactions describe an atomic collection of changes to the ledger state.  Each
 transaction consists of a sequence of *descriptions* for various actions[^1].
 Each description adds or subtracts (typed) value from the transaction's value
-balance, which must net to zero.  Penumbra adapts the *Spend* and *Output* actions from Sapling, and adds many new descriptions to support additional functionality:
+balance, which must net to zero.
 
 Penumbra adapts Sapling's *Spend*, which
 spends a note and adds to the transaction's value balance, and
 *Output*, which creates a new note and subtracts from the
-transaction's value balance, and adds many new descriptions to support
-additional functionality:
+transaction's value balance. Penumbra also adds many new descriptions
+to support additional functionality:
 
 #### Transfers
 
