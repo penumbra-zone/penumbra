@@ -293,7 +293,7 @@ async fn main() -> anyhow::Result<()> {
             let grpc_server = match grpc_auto_https {
                 Some(domain) => {
                     let (acceptor, acme_worker) =
-                        pd::auto_https::axum_acceptor(pd_home, domain, !acme_staging);
+                        penumbra_auto_https::axum_acceptor(pd_home, domain, !acme_staging);
                     // TODO(kate): we should eventually propagate errors from the ACME worker task.
                     tokio::spawn(acme_worker);
                     spawn_grpc_server!(grpc_server.acceptor(acceptor))
