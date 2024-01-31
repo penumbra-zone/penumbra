@@ -15,6 +15,7 @@ message ShieldedPoolParameters {
 
 // Genesis data for the shielded pool component.
 message GenesisContent {
+  ShieldedPoolParameters shielded_pool_params = 1;
   message Allocation {
     penumbra.core.num.v1alpha1.Amount amount = 1;
     string denom = 2;
@@ -22,7 +23,7 @@ message GenesisContent {
   }
 
   // The allocations present at genesis
-  repeated Allocation allocations = 2;
+  repeated Allocation allocations = 3;
 }
 
 // Parameters for Fuzzy Message Detection
