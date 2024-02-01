@@ -74,14 +74,14 @@ impl Component for Sct {
 pub trait StateReadExt: StateRead {
     /// Gets the fee parameters from the JMT.
     async fn get_sct_params(&self) -> Result<SctParameters> {
-        self.get(state_key::sct_params())
+        self.get(state_key::config::sct_params())
             .await?
             .ok_or_else(|| anyhow!("Missing SctParameters"))
     }
 
     /// Indicates if the sct parameters have been updated in this block.
     fn sct_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::sct_params_updated())
+        self.object_get::<()>(state_key::config::sct_params_updated())
             .is_some()
     }
 
@@ -102,8 +102,8 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
     fn put_sct_params(&mut self, params: SctParameters) {
-        self.put(state_key::sct_params().to_string(), params);
-        self.object_put(state_key::sct_params_updated(), ())
+        self.put(state_key::config::sct_params().to_string(), params);
+        self.object_put(state_key::config::sct_params_updated(), ())
     }
 }
 

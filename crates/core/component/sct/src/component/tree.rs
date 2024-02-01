@@ -17,12 +17,12 @@ pub trait SctRead: StateRead {
     /// it exists.
     async fn get_sct(&self) -> tct::Tree {
         // If we have a cached tree, use that.
-        if let Some(tree) = self.object_get(state_key::cached_state_commitment_tree()) {
+        if let Some(tree) = self.object_get(state_key::cache::cached_state_commitment_tree()) {
             return tree;
         }
 
         match self
-            .nonverifiable_get_raw(state_key::state_commitment_tree().as_bytes())
+            .nonverifiable_get_raw(state_key::tree::state_commitment_tree().as_bytes())
             .await
             .expect("able to retrieve state commitment tree from nonverifiable storage")
         {
@@ -36,18 +36,20 @@ pub trait SctRead: StateRead {
     /// Return the SCT root for the given height, if it exists.
     /// If the height is not found, return `None`.
     async fn get_anchor_by_height(&self, height: u64) -> Result<Option<tct::Root>> {
-        self.get(&state_key::anchor_by_height(height)).await
+        self.get(&state_key::tree::anchor_by_height(height)).await
     }
 
     /// Return metadata on the specified nullifier, if it has been spent.
     async fn spend_info(&self, nullifier: Nullifier) -> Result<Option<NullificationInfo>> {
-        self.get(&state_key::spent_nullifier_lookup(&nullifier))
-            .await
+        self.get(&state_key::nullifier_set::spent_nullifier_lookup(
+            &nullifier,
+        ))
+        .await
     }
 
     /// Return the set of nullifiers that have been spent in the current block.
     fn pending_nullifiers(&self) -> im::Vector<Nullifier> {
-        self.object_get(state_key::pending_nullifiers())
+        self.object_get(state_key::nullifier_set::pending_nullifiers())
             .unwrap_or_default()
     }
 }
@@ -72,10 +74,10 @@ pub trait SctManager: StateWrite {
         let sct_anchor = sct.root();
 
         // Write the anchor as a key, so we can check claimed anchors...
-        self.put_proto(state_key::anchor_lookup(sct_anchor), height);
+        self.put_proto(state_key::tree::anchor_lookup(sct_anchor), height);
         // ... and as a value, so we can check SCT consistency.
         // TODO: can we move this out to NV storage?
-        self.put(state_key::anchor_by_height(height), sct_anchor);
+        self.put(state_key::tree::anchor_by_height(height), sct_anchor);
 
         self.record_proto(event::anchor(height, sct_anchor));
         self.record_proto(event::block_root(height, block_root));
@@ -120,7 +122,7 @@ pub trait SctManager: StateWrite {
         // double spends), as well as in the CompactBlock (so that clients
         // can learn that their note was spent).
         self.put(
-            state_key::spent_nullifier_lookup(&nullifier),
+            state_key::nullifier_set::spent_nullifier_lookup(&nullifier),
             // We don't use the value for validity checks, but writing the source
             // here lets us find out what transaction spent the nullifier.
             NullificationInfo {
@@ -134,7 +136,7 @@ pub trait SctManager: StateWrite {
         // Record the nullifier to be inserted into the compact block
         let mut nullifiers = self.pending_nullifiers();
         nullifiers.push_back(nullifier);
-        self.object_put(state_key::pending_nullifiers(), nullifiers);
+        self.object_put(state_key::nullifier_set::pending_nullifiers(), nullifiers);
     }
 
     /// Seal the current block in the SCT, and produce an epoch root if
@@ -173,7 +175,7 @@ pub trait SctManager: StateWrite {
     // Set the state commitment tree in memory, but without committing to it in the nonverifiable
     // storage (very cheap).
     fn write_sct_cache(&mut self, tree: tct::Tree) {
-        self.object_put(state_key::cached_state_commitment_tree(), tree);
+        self.object_put(state_key::cache::cached_state_commitment_tree(), tree);
     }
 
     /// Persist the object-store SCT instance to nonverifiable storage.
@@ -184,12 +186,13 @@ pub trait SctManager: StateWrite {
     /// This method panics if a serialization failure occurs.
     fn persist_sct_cache(&mut self) {
         // If the cached tree is dirty, flush it to storage
-        if let Some(tree) = self.object_get::<tct::Tree>(state_key::cached_state_commitment_tree())
+        if let Some(tree) =
+            self.object_get::<tct::Tree>(state_key::cache::cached_state_commitment_tree())
         {
             let bytes = bincode::serialize(&tree)
                 .expect("able to serialize state commitment tree to bincode");
             self.nonverifiable_put_raw(
-                state_key::state_commitment_tree().as_bytes().to_vec(),
+                state_key::tree::state_commitment_tree().as_bytes().to_vec(),
                 bytes,
             );
         }
@@ -206,7 +209,7 @@ pub trait VerificationExt: StateRead {
         }
 
         if let Some(anchor_height) = self
-            .get_proto::<u64>(&state_key::anchor_lookup(anchor))
+            .get_proto::<u64>(&state_key::tree::anchor_lookup(anchor))
             .await?
         {
             tracing::debug!(?anchor, ?anchor_height, "anchor is valid");
@@ -221,7 +224,9 @@ pub trait VerificationExt: StateRead {
 
     async fn check_nullifier_unspent(&self, nullifier: Nullifier) -> Result<()> {
         if let Some(info) = self
-            .get::<NullificationInfo>(&state_key::spent_nullifier_lookup(&nullifier))
+            .get::<NullificationInfo>(&state_key::nullifier_set::spent_nullifier_lookup(
+                &nullifier,
+            ))
             .await?
         {
             anyhow::bail!(

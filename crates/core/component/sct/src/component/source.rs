@@ -8,14 +8,14 @@ use crate::{state_key, CommitmentSource};
 pub trait SourceContext: StateWrite {
     fn put_current_source(&mut self, source: Option<CommitmentSource>) {
         if let Some(source) = source {
-            self.object_put(state_key::current_source(), source)
+            self.object_put(state_key::ambient::current_source(), source)
         } else {
-            self.object_delete(state_key::current_source())
+            self.object_delete(state_key::ambient::current_source())
         }
     }
 
     fn get_current_source(&self) -> Option<CommitmentSource> {
-        self.object_get(state_key::current_source())
+        self.object_get(state_key::ambient::current_source())
     }
 
     /// Sets a mock source, for testing.
