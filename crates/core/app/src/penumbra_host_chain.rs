@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use penumbra_ibc::component::HostInterface;
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 
 use crate::app::StateReadExt;
 

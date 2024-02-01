@@ -8,7 +8,11 @@ use penumbra_txhash::TransactionContext;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::{EpochRead, SctManager as _, SourceContext, StateReadExt as _};
+use penumbra_sct::component::{
+    source::SourceContext,
+    tree::{SctManager, VerificationExt},
+    StateReadExt as _,
+};
 use penumbra_shielded_pool::component::NoteManager;
 
 use crate::{
@@ -43,7 +47,7 @@ impl ActionHandler for SwapClaim {
 
         // 1. Validate the epoch duration passed in the swap claim matches
         // what we know.
-        let epoch_duration = state.get_epoch_duration().await?;
+        let epoch_duration = state.get_epoch_duration_parameter().await?;
         let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
             anyhow::bail!("provided epoch duration does not match chain epoch duration");

@@ -1,7 +1,7 @@
 // Implementation of a pd component for the staking system.
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_sct::{
-    component::{EpochManager, EpochRead},
+    component::clock::{EpochManager, EpochRead},
     epoch::Epoch,
 };
 use std::{
@@ -165,7 +165,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         // triggered by epoch transitions themselves, or don't immediately affect the active
         // validator set.
         if let (Active, Defined | Disabled | Jailed | Tombstoned) = (old_state, new_state) {
-            self.signal_end_epoch();
+            self.set_end_epoch_flag();
         }
 
         match (old_state, new_state) {
@@ -723,7 +723,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
     /// unbonding target has been reached.
     #[instrument(skip(self))]
     async fn process_validator_unbondings(&mut self) -> Result<()> {
-        let current_epoch = self.current_epoch().await?;
+        let current_epoch = self.get_current_epoch().await?;
 
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
@@ -1133,7 +1133,7 @@ impl Component for Staking {
                     .await
                     .expect("should be able to get initial block height");
                 let starting_epoch = state
-                    .epoch_by_height(starting_height)
+                    .get_epoch_by_height(starting_height)
                     .await
                     .expect("should be able to get initial epoch");
                 let epoch_index = starting_epoch.index;
@@ -1236,7 +1236,7 @@ impl Component for Staking {
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
         let epoch_ending = state
-            .current_epoch()
+            .get_current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
         state.end_epoch(epoch_ending).await?;
@@ -1514,7 +1514,7 @@ pub trait StateReadExt: StateRead {
     /// This is the minimum of the default unbonding epoch and the validator's
     /// unbonding epoch.
     async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
-        let current_epoch = self.current_epoch().await?;
+        let current_epoch = self.get_current_epoch().await?;
         let unbonding_delay = self
             .compute_unbonding_delay_for_validator(current_epoch, id)
             .await?;
@@ -1715,7 +1715,7 @@ pub trait StateWriteExt: StateWrite {
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
     ) -> Result<()> {
-        let current_epoch_index = self.current_epoch().await?.index;
+        let current_epoch_index = self.get_current_epoch().await?.index;
 
         let current_penalty = self
             .penalty_in_epoch(identity_key, current_epoch_index)

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_sct::{component::SctManager as _, CommitmentSource};
+use penumbra_sct::{component::tree::SctManager, CommitmentSource};
 use penumbra_tct as tct;
 use tracing::instrument;
 

@@ -6,7 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::SourceContext as _;
+use penumbra_sct::component::source::SourceContext;
 
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},

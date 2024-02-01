@@ -14,7 +14,7 @@ use penumbra_ibc::component::ClientStateWriteExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::{
-    component::{EpochRead, StateReadExt as _},
+    component::{clock::EpochRead, tree::SctRead},
     Nullifier,
 };
 use penumbra_shielded_pool::component::SupplyRead;

@@ -9,6 +9,7 @@ edition = "2021"
 [features]
 component = [
     "cnidarium",
+    "cnidarium-component",
     "penumbra-proto/cnidarium",
     "tonic",
 ]
@@ -19,6 +20,7 @@ docsrs = []
 [dependencies]
 # Workspace dependencies
 cnidarium = { path = "../../../cnidarium", optional = true }
+cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-keys = { path = "../../../core/keys", default-features = false }

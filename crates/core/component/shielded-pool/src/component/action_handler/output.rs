@@ -6,7 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 use penumbra_proof_params::OUTPUT_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
-use penumbra_sct::component::SourceContext;
+use penumbra_sct::component::source::SourceContext;
 
 use crate::{component::NoteManager, event, output::OutputProofPublic, Output};
 

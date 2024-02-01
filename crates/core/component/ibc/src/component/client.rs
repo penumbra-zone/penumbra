@@ -369,7 +369,7 @@ mod tests {
     use cnidarium::{ArcStateDeltaExt, StateDelta};
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
-    use penumbra_sct::component::{EpochManager as _, EpochRead};
+    use penumbra_sct::component::clock::{EpochManager as _, EpochRead};
     use std::str::FromStr;
     use tendermint::Time;
 

@@ -1,7 +1,7 @@
 use ark_ff::UniformRand;
 use penumbra_compact_block::component::CompactBlockManager as _;
 use penumbra_sct::{
-    component::{EpochManager, EpochRead, SourceContext as _},
+    component::{clock::EpochManager, source::SourceContext as _, StateReadExt as _},
     epoch::Epoch,
 };
 use std::{ops::Deref, sync::Arc};
@@ -94,7 +94,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // To do this, we need to have an auth path for the swap nft note, which
     // means we have to synchronize a client's view of the test chain's SCT
     // state.
-    let epoch_duration = state.get_epoch_duration().await?;
+    let epoch_duration = state.get_epoch_duration_parameter().await?;
     let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
     // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
     client.sync_to(1, state.deref()).await?;
@@ -205,7 +205,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     state_tx.apply();
 
     // 6. Create a SwapClaim action
-    let epoch_duration = state.get_epoch_duration().await.unwrap();
+    let epoch_duration = state.get_epoch_duration_parameter().await.unwrap();
     let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
     client.sync_to(1, state.deref()).await.unwrap();
 
