@@ -5,7 +5,7 @@ use penumbra_proto::core::component::sct::v1alpha1::{
 use tonic::Status;
 use tracing::instrument;
 
-use super::EpochRead;
+use super::clock::EpochRead;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -28,7 +28,7 @@ impl QueryService for Server {
         let state = self.storage.latest_snapshot();
 
         let epoch = state
-            .epoch_by_height(request.get_ref().height)
+            .get_epoch_by_height(request.get_ref().height)
             .await
             .map_err(|e| tonic::Status::unknown(format!("could not get epoch for height: {e}")))?;
 
