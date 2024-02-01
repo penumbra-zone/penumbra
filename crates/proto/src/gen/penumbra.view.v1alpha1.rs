@@ -166,17 +166,14 @@ pub struct TransactionPlannerRequest {
     /// The expiry height for the requested TransactionPlan
     #[prost(uint64, tag = "1")]
     pub expiry_height: u64,
-    /// The fee for the requested TransactionPlan, if any.
-    #[prost(message, optional, tag = "2")]
-    pub fee: ::core::option::Option<super::super::core::component::fee::v1alpha1::Fee>,
     /// The memo for the requested TransactionPlan.
     /// The memo must be unspecified unless `outputs` is nonempty.
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag = "4")]
     pub memo: ::core::option::Option<
         super::super::core::transaction::v1alpha1::MemoPlaintext,
     >,
     /// If present, only spends funds from the given account.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "5")]
     pub source: ::core::option::Option<super::super::core::keys::v1alpha1::AddressIndex>,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
@@ -209,6 +206,8 @@ pub struct TransactionPlannerRequest {
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
     >,
+    #[prost(oneof = "transaction_planner_request::FeeOption", tags = "2, 3")]
+    pub fee_option: ::core::option::Option<transaction_planner_request::FeeOption>,
 }
 /// Nested message and enum types in `TransactionPlannerRequest`.
 pub mod transaction_planner_request {
@@ -397,6 +396,16 @@ pub mod transaction_planner_request {
                 "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
             )
         }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum FeeOption {
+        /// The fee for the requested TransactionPlan, if any.
+        #[prost(message, tag = "2")]
+        Fee(super::super::super::core::component::fee::v1alpha1::Fee),
+        /// The fee tier for the requested TransactionPlan, if any.
+        #[prost(message, tag = "3")]
+        FeeTier(super::super::super::core::component::fee::v1alpha1::FeeTier),
     }
 }
 impl ::prost::Name for TransactionPlannerRequest {
