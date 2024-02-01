@@ -31,44 +31,61 @@ if ! getent passwd | grep -q "^penumbra:" ; then
 fi
 
 # Take down running service prior to maintenance.
+echo "Stopping running services..."
 sudo systemctl stop cometbft penumbra
 
 # Pluck out recently built `pd` from packaged container.
 # We reuse existing build artifacts to ensure what's deployed it what was built,
 # and it has the nice benefit of being faster, because we don't have to rebuild
 # the same gitref on a slower remote host.
-# TODO: local container storage will grow indefinitely; only a problem for preview, but handle it.
+echo "Fetching latest version of pd..."
 container_img="ghcr.io/penumbra-zone/penumbra:${PENUMBRA_VERSION}"
 podman pull "$container_img"
-container_id="$(podman run "$container_img" sleep infinity)"
+container_id="$(podman run --detach "$container_img" sleep infinity)"
 f="$(mktemp)"
 podman cp "${container_id}:/usr/bin/pd" "$f"
 podman kill "$container_id"
 sudo mv -v -f "$f" /usr/local/bin/pd
 
+# Clean up container storage, which will grow indefinitely; mostly only a problem for preview,
+# but we still don't want to fill up disks.
+podman system prune --force
+
 # Back up ACME dir, so we don't hit ratelimit requesting new certs.
+sudo rm -rf /opt/penumbra-ci
 acme_cache="/home/penumbra/.penumbra/testnet_data/node0/pd/tokio_rustls_acme_cache"
 if [[ -d "$acme_cache" ]]; then
-    sudo rm -rf /opt/penumbra-ci
+    echo "Backing up ACME certificate directory..."
     sudo mkdir -p /opt/penumbra-ci
     sudo mv "$acme_cache" /opt/penumbra-ci/
 else
-    >&2 echo "ERROR: ACME cache directory not found: $acme_cache"
-    exit 4
+    >&2 echo "WARNING: ACME cache directory not found: $acme_cache"
+    # don't exit
+    # exit 4
 fi
 
 # The pd operations must be run specifically as "penumbra" user.
 # Nuke state, rejoin.
+echo "Resetting node state..."
 sudo -u penumbra pd testnet unsafe-reset-all
-sudo -u penumbra pd testnet join "$pd_bootstrap_url"
-# Restore ACME dir prior to service start
-sudo mv -v "/opt/penumbra-ci/$(basename "$acme_cache")" "$acme_cache"
+# Using "oumuamua" has moniker to connote that this node is "out there", i.e. separate
+# from the standard fullnode deployments, and also it's cutely technically a celestial body.
+sudo -u penumbra pd testnet join --moniker oumuamua "$pd_bootstrap_url"
+
+# ACME cache dir may not be present, e.g. on a first deploy.
+if [[ -d "/opt/penumbra-ci/$(basename "$acme_cache")" ]] ; then
+    echo "Restoring ACME dir prior to service start..."
+    sudo mv -v "/opt/penumbra-ci/$(basename "$acme_cache")" "$acme_cache"
+fi
 sudo chown -R penumbra: /home/penumbra/.penumbra
 
 # Bring service back up.
+echo "Bringing services back up..."
 sudo systemctl daemon-reload
 sudo systemctl restart penumbra cometbft
-# Verify that the services are in fact running, else exit non-zero.
+echo "Verifying that the services are running:"
 sleep 5
+printf 'penumbra: '
 sudo systemctl is-active penumbra
+printf 'cometbft: '
 sudo systemctl is-active cometbft

@@ -32,6 +32,6 @@ fi
 #   3) systemd service files for pd & cometbft
 #
 # As for the script that's being execute on the target, we'll copy that up from local context.
-scp ./deployments/scripts/redeploy-ci-fullnode-via-remote "${ci_ssh_host}:"
+scp ./deployments/scripts/redeploy-ci-fullnode-via-remote "ci@${ci_ssh_host}:"
 ssh -l ci "$ci_ssh_host" sudo mv redeploy-ci-fullnode-via-remote /usr/local/bin/redeploy-ci-fullnode-via-remote
-ssh -l ci "$ci_ssh_host" sudo /usr/local/bin/redeploy-ci-fullnode-via-remote
+ssh -l ci "$ci_ssh_host" sudo /usr/local/bin/redeploy-ci-fullnode-via-remote "$PENUMBRA_VERSION" "$PENUMBRA_ENVIRONMENT"
