@@ -185,13 +185,19 @@ message BroadcastTransactionResponse {
 message TransactionPlannerRequest {
   // The expiry height for the requested TransactionPlan
   uint64 expiry_height = 1;
-  // The fee for the requested TransactionPlan, if any.
-  core.component.fee.v1alpha1.Fee fee = 2;
+
+  oneof fee_option {
+    // The fee for the requested TransactionPlan, if any.
+    core.component.fee.v1alpha1.Fee fee = 2;
+    // The fee tier for the requested TransactionPlan, if any.
+    core.component.fee.v1alpha1.FeeTier fee_tier = 3;
+  };
+
   // The memo for the requested TransactionPlan.
   // The memo must be unspecified unless `outputs` is nonempty.
-  core.transaction.v1alpha1.MemoPlaintext memo = 3;
+  core.transaction.v1alpha1.MemoPlaintext memo = 4;
   // If present, only spends funds from the given account.
-  core.keys.v1alpha1.AddressIndex source = 4;
+  core.keys.v1alpha1.AddressIndex source = 5;
 
   // Request contents
   repeated Output outputs = 20;
