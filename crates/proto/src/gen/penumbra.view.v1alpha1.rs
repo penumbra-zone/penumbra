@@ -168,12 +168,12 @@ pub struct TransactionPlannerRequest {
     pub expiry_height: u64,
     /// The memo for the requested TransactionPlan.
     /// The memo must be unspecified unless `outputs` is nonempty.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag = "3")]
     pub memo: ::core::option::Option<
         super::super::core::transaction::v1alpha1::MemoPlaintext,
     >,
     /// If present, only spends funds from the given account.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag = "4")]
     pub source: ::core::option::Option<super::super::core::keys::v1alpha1::AddressIndex>,
     /// Request contents
     #[prost(message, repeated, tag = "20")]
@@ -206,8 +206,9 @@ pub struct TransactionPlannerRequest {
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
     >,
-    #[prost(oneof = "transaction_planner_request::FeeOption", tags = "2, 3")]
-    pub fee_option: ::core::option::Option<transaction_planner_request::FeeOption>,
+    /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
+    #[prost(oneof = "transaction_planner_request::FeeMode", tags = "100, 101")]
+    pub fee_mode: ::core::option::Option<transaction_planner_request::FeeMode>,
 }
 /// Nested message and enum types in `TransactionPlannerRequest`.
 pub mod transaction_planner_request {
@@ -397,15 +398,16 @@ pub mod transaction_planner_request {
             )
         }
     }
+    /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum FeeOption {
-        /// The fee for the requested TransactionPlan, if any.
-        #[prost(message, tag = "2")]
-        Fee(super::super::super::core::component::fee::v1alpha1::Fee),
-        /// The fee tier for the requested TransactionPlan, if any.
-        #[prost(message, tag = "3")]
-        FeeTier(super::super::super::core::component::fee::v1alpha1::FeeTier),
+    pub enum FeeMode {
+        /// Automatically compute a fee based on gas use.
+        #[prost(message, tag = "100")]
+        AutoFee(super::super::super::core::component::fee::v1alpha1::FeeTier),
+        /// A manually set fee, rather than automatically computing a fee based on gas use.
+        #[prost(message, tag = "101")]
+        ManualFee(super::super::super::core::component::fee::v1alpha1::Fee),
     }
 }
 impl ::prost::Name for TransactionPlannerRequest {

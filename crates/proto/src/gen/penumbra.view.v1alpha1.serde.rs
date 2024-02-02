@@ -5438,7 +5438,7 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.position_withdraws.is_empty() {
             len += 1;
         }
-        if self.fee_option.is_some() {
+        if self.fee_mode.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1alpha1.TransactionPlannerRequest", len)?;
@@ -5482,13 +5482,13 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.position_withdraws.is_empty() {
             struct_ser.serialize_field("positionWithdraws", &self.position_withdraws)?;
         }
-        if let Some(v) = self.fee_option.as_ref() {
+        if let Some(v) = self.fee_mode.as_ref() {
             match v {
-                transaction_planner_request::FeeOption::Fee(v) => {
-                    struct_ser.serialize_field("fee", v)?;
+                transaction_planner_request::FeeMode::AutoFee(v) => {
+                    struct_ser.serialize_field("autoFee", v)?;
                 }
-                transaction_planner_request::FeeOption::FeeTier(v) => {
-                    struct_ser.serialize_field("feeTier", v)?;
+                transaction_planner_request::FeeMode::ManualFee(v) => {
+                    struct_ser.serialize_field("manualFee", v)?;
                 }
             }
         }
@@ -5522,9 +5522,10 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "positionCloses",
             "position_withdraws",
             "positionWithdraws",
-            "fee",
-            "fee_tier",
-            "feeTier",
+            "auto_fee",
+            "autoFee",
+            "manual_fee",
+            "manualFee",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -5542,8 +5543,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             PositionOpens,
             PositionCloses,
             PositionWithdraws,
-            Fee,
-            FeeTier,
+            AutoFee,
+            ManualFee,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -5579,8 +5580,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
                             "positionCloses" | "position_closes" => Ok(GeneratedField::PositionCloses),
                             "positionWithdraws" | "position_withdraws" => Ok(GeneratedField::PositionWithdraws),
-                            "fee" => Ok(GeneratedField::Fee),
-                            "feeTier" | "fee_tier" => Ok(GeneratedField::FeeTier),
+                            "autoFee" | "auto_fee" => Ok(GeneratedField::AutoFee),
+                            "manualFee" | "manual_fee" => Ok(GeneratedField::ManualFee),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -5613,7 +5614,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut position_opens__ = None;
                 let mut position_closes__ = None;
                 let mut position_withdraws__ = None;
-                let mut fee_option__ = None;
+                let mut fee_mode__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ExpiryHeight => {
@@ -5696,18 +5697,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             position_withdraws__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::Fee => {
-                            if fee_option__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fee"));
+                        GeneratedField::AutoFee => {
+                            if fee_mode__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("autoFee"));
                             }
-                            fee_option__ = map_.next_value::<::std::option::Option<_>>()?.map(transaction_planner_request::FeeOption::Fee)
+                            fee_mode__ = map_.next_value::<::std::option::Option<_>>()?.map(transaction_planner_request::FeeMode::AutoFee)
 ;
                         }
-                        GeneratedField::FeeTier => {
-                            if fee_option__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("feeTier"));
+                        GeneratedField::ManualFee => {
+                            if fee_mode__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("manualFee"));
                             }
-                            fee_option__ = map_.next_value::<::std::option::Option<_>>()?.map(transaction_planner_request::FeeOption::FeeTier)
+                            fee_mode__ = map_.next_value::<::std::option::Option<_>>()?.map(transaction_planner_request::FeeMode::ManualFee)
 ;
                         }
                         GeneratedField::__SkipField__ => {
@@ -5729,7 +5730,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     position_opens: position_opens__.unwrap_or_default(),
                     position_closes: position_closes__.unwrap_or_default(),
                     position_withdraws: position_withdraws__.unwrap_or_default(),
-                    fee_option: fee_option__,
+                    fee_mode: fee_mode__,
                 })
             }
         }
