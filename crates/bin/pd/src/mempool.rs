@@ -60,11 +60,7 @@ impl Mempool {
             Ok(events) => {
                 let elapsed = start.elapsed();
                 tracing::info!(?elapsed, "tx accepted");
-                metrics::increment_counter!(
-                    metrics::MEMPOOL_CHECKTX_TOTAL,
-                    "kind" => kind_str,
-                    "code" => "0"
-                );
+                metrics::counter!(metrics::MEMPOOL_CHECKTX_TOTAL, "kind" => kind_str, "code" => "0").increment(1);
                 Ok(Response::CheckTx(CheckTxRsp {
                     events,
                     ..Default::default()
@@ -73,11 +69,7 @@ impl Mempool {
             Err(e) => {
                 let elapsed = start.elapsed();
                 tracing::info!(?e, ?elapsed, "tx rejected");
-                metrics::increment_counter!(
-                    metrics::MEMPOOL_CHECKTX_TOTAL,
-                    "kind" => kind_str,
-                    "code" => "1"
-                );
+                metrics::counter!(metrics::MEMPOOL_CHECKTX_TOTAL, "kind" => kind_str, "code" => "1").increment(1);
                 Ok(Response::CheckTx(CheckTxRsp {
                     code: 1.into(),
                     // Use the alternate format specifier to include the chain of error causes.

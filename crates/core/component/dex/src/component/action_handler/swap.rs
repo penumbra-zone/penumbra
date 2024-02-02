@@ -62,7 +62,7 @@ impl ActionHandler for Swap {
             .await;
 
         metrics::histogram!(
-            crate::component::metrics::DEX_SWAP_DURATION,
+            crate::component::metrics::DEX_SWAP_DURATION).record(
             swap_start.elapsed()
         );
         state.record_proto(event::swap(self));
