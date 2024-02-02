@@ -4,7 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
 use penumbra_asset::{asset, Value};
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{ExecutionCircuitBreaker, SwapExecution};

@@ -1,5 +1,4 @@
 [package]
-# TODO: merge with tct crate under a `component` feature flag?
 name = "penumbra-sct"
 version = "0.65.0-alpha.1"
 edition = "2021"
@@ -9,7 +8,9 @@ edition = "2021"
 [features]
 component = [
     "cnidarium",
+    "cnidarium-component",
     "penumbra-proto/cnidarium",
+    "penumbra-proto/rpc",
     "tonic",
 ]
 default = ["std", "component"]
@@ -19,6 +20,7 @@ docsrs = []
 [dependencies]
 # Workspace dependencies
 cnidarium = { path = "../../../cnidarium", optional = true }
+cnidarium-component = { path = "../../../cnidarium-component", optional = true }
 penumbra-proto = { path = "../../../proto", default-features = false }
 penumbra-tct = { path = "../../../crypto/tct" }
 penumbra-keys = { path = "../../../core/keys", default-features = false }

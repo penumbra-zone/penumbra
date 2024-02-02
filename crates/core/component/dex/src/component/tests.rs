@@ -33,7 +33,7 @@ pub trait TempStorageExt: Sized {
 #[async_trait]
 impl TempStorageExt for TempStorage {
     async fn apply_minimal_genesis(self) -> anyhow::Result<Self> {
-        use penumbra_sct::component::EpochManager as _;
+        use penumbra_sct::component::clock::EpochManager as _;
         let mut state = StateDelta::new(self.latest_snapshot());
 
         state.put_block_height(0);

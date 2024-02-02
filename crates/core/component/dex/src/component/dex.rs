@@ -6,7 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
 use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -41,7 +41,7 @@ impl Component for Dex {
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
-        let current_epoch = state.current_epoch().await.expect("epoch is set");
+        let current_epoch = state.get_current_epoch().await.expect("epoch is set");
 
         // For each batch swap during the block, calculate clearing prices and set in the JMT.
         for (trading_pair, swap_flows) in state.swap_flows() {

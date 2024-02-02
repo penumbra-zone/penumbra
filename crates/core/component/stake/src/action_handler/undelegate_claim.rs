@@ -4,7 +4,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 
 use crate::undelegate_claim::UndelegateClaimProofPublic;
 use crate::{action_handler::ActionHandler, UnbondingToken};
@@ -32,7 +32,7 @@ impl ActionHandler for UndelegateClaim {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         // If the validator delegation pool is bonded, or unbonding, check that enough epochs
         // have elapsed to claim the unbonding tokens:
-        let current_epoch = state.current_epoch().await?;
+        let current_epoch = state.get_current_epoch().await?;
         let unbonding_epoch = state
             .compute_unbonding_epoch_for_validator(&self.body.validator_identity)
             .await?;

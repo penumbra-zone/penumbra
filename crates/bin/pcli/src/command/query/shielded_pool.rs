@@ -31,13 +31,13 @@ impl ShieldedPool {
     pub fn key(&self) -> String {
         use penumbra_sct::state_key as sct_state_key;
         match self {
-            ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
+            ShieldedPool::Anchor { height } => sct_state_key::tree::anchor_by_height(*height),
             ShieldedPool::CompactBlock { .. } => {
                 unreachable!("should be handled at outer level via rpc");
             }
-            ShieldedPool::Commitment { commitment } => sct_state_key::note_source(commitment),
+            ShieldedPool::Commitment { commitment } => sct_state_key::tree::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => {
-                sct_state_key::spent_nullifier_lookup(nullifier)
+                sct_state_key::nullifier_set::spent_nullifier_lookup(nullifier)
             }
         }
     }

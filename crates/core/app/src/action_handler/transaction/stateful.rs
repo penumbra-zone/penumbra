@@ -1,23 +1,16 @@
 use anyhow::Result;
 use cnidarium::StateRead;
 use penumbra_fee::component::StateReadExt as _;
-use penumbra_sct::component::{EpochRead, StateReadExt as _};
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::tree::VerificationExt;
 use penumbra_shielded_pool::component::StateReadExt as _;
 use penumbra_shielded_pool::fmd;
 use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::Transaction;
 
-pub(super) async fn claimed_anchor_is_valid<S: StateRead>(
-    state: S,
-    transaction: &Transaction,
-) -> Result<()> {
-    state.check_claimed_anchor(transaction.anchor).await
-}
+const FMD_GRACE_PERIOD_BLOCKS: u64 = 10;
 
-pub(super) async fn fmd_parameters_valid<S: StateRead>(
-    state: S,
-    transaction: &Transaction,
-) -> Result<()> {
+pub async fn fmd_parameters_valid<S: StateRead>(state: S, transaction: &Transaction) -> Result<()> {
     let previous_fmd_parameters = state
         .get_previous_fmd_parameters()
         .await
@@ -34,8 +27,6 @@ pub(super) async fn fmd_parameters_valid<S: StateRead>(
         height,
     )
 }
-
-const FMD_GRACE_PERIOD_BLOCKS: u64 = 10;
 
 pub fn fmd_precision_within_grace_period(
     tx: &Transaction,
@@ -64,7 +55,14 @@ pub fn fmd_precision_within_grace_period(
     Ok(())
 }
 
-pub(super) async fn fee_greater_than_base_fee<S: StateRead>(
+pub async fn claimed_anchor_is_valid<S: StateRead>(
+    state: S,
+    transaction: &Transaction,
+) -> Result<()> {
+    state.check_claimed_anchor(transaction.anchor).await
+}
+
+pub async fn fee_greater_than_base_fee<S: StateRead>(
     state: S,
     transaction: &Transaction,
 ) -> Result<()> {
