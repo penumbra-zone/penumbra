@@ -15,31 +15,26 @@ pub use metrics::*;
 
 /// Registers all metrics used by this crate.
 pub fn register_metrics() {
-    register_histogram!(DEX_ARB_DURATION);
     describe_histogram!(
         DEX_ARB_DURATION,
         Unit::Seconds,
         "The time spent computing arbitrage during endblock phase"
     );
-    register_histogram!(DEX_BATCH_DURATION);
     describe_histogram!(
         DEX_BATCH_DURATION,
         Unit::Seconds,
         "The time spent executing batches within the DEX"
     );
-    register_histogram!(DEX_PATH_SEARCH_DURATION);
     describe_histogram!(
         DEX_PATH_SEARCH_DURATION,
         Unit::Seconds,
         "The time spent searching for paths while executing trades within the DEX"
     );
-    register_histogram!(DEX_ROUTE_FILL_DURATION);
     describe_histogram!(
         DEX_ROUTE_FILL_DURATION,
         Unit::Seconds,
         "The time spent filling routes while executing trades within the DEX"
     );
-    register_histogram!(DEX_SWAP_DURATION);
     describe_histogram!(
         DEX_SWAP_DURATION,
         Unit::Seconds,

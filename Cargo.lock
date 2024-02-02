@@ -1496,7 +1496,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "parking_lot 0.12.1",
  "pbjson 0.5.1",
@@ -4063,6 +4063,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77b9e10a211c839210fd7f99954bda26e5f8e26ec686ad68da6a32df7c80e782"
+dependencies = [
+ "ahash 0.8.7",
+ "portable-atomic",
+]
+
+[[package]]
 name = "metrics-exporter-prometheus"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4071,7 +4081,7 @@ dependencies = [
  "hyper",
  "indexmap 1.9.3",
  "ipnet",
- "metrics",
+ "metrics 0.19.0",
  "metrics-util",
  "parking_lot 0.11.2",
  "quanta",
@@ -4099,7 +4109,7 @@ checksum = "91c0b6603313b4625101251a1c0749df7deef27ab410d430d79f2fcb9d8480aa"
 dependencies = [
  "itoa",
  "lockfree-object-pool",
- "metrics",
+ "metrics 0.19.0",
  "metrics-util",
  "once_cell",
  "tracing",
@@ -4119,7 +4129,7 @@ dependencies = [
  "crossbeam-utils",
  "hashbrown 0.11.2",
  "indexmap 1.9.3",
- "metrics",
+ "metrics 0.19.0",
  "num_cpus",
  "ordered-float",
  "parking_lot 0.11.2",
@@ -4695,7 +4705,7 @@ dependencies = [
  "http-body",
  "ibc-proto",
  "ibc-types",
- "metrics",
+ "metrics 0.22.0",
  "parking_lot 0.12.1",
  "penumbra-app",
  "penumbra-asset",
@@ -4758,7 +4768,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics",
+ "metrics 0.22.0",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
  "metrics-util",
@@ -4884,7 +4894,7 @@ dependencies = [
  "ibc-types",
  "im",
  "jmt",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "parking_lot 0.12.1",
  "penumbra-asset",
@@ -5032,7 +5042,7 @@ dependencies = [
  "cnidarium-component",
  "futures",
  "hex",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
@@ -5065,7 +5075,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "im",
- "metrics",
+ "metrics 0.22.0",
  "penumbra-community-pool",
  "penumbra-dex",
  "penumbra-fee",
@@ -5146,7 +5156,7 @@ dependencies = [
  "hex",
  "im",
  "itertools 0.11.0",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "parking_lot 0.12.1",
  "pbjson-types",
@@ -5227,7 +5237,7 @@ dependencies = [
  "cnidarium-component",
  "decaf377 0.5.0",
  "decaf377-rdsa",
- "metrics",
+ "metrics 0.22.0",
  "penumbra-asset",
  "penumbra-num",
  "penumbra-proto",
@@ -5283,7 +5293,7 @@ dependencies = [
  "futures",
  "ibc-types",
  "im",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
@@ -5328,7 +5338,7 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "ics23",
- "metrics",
+ "metrics 0.22.0",
  "num-traits",
  "once_cell",
  "pbjson-types",
@@ -5557,7 +5567,7 @@ dependencies = [
  "decaf377-rdsa",
  "hex",
  "im",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "penumbra-keys",
  "penumbra-proto",
@@ -5596,7 +5606,7 @@ dependencies = [
  "hex",
  "ibc-types",
  "im",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "penumbra-asset",
  "penumbra-ibc",
@@ -5644,7 +5654,7 @@ dependencies = [
  "futures",
  "hex",
  "im",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "penumbra-asset",
  "penumbra-community-pool",
@@ -5754,7 +5764,7 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "metrics",
+ "metrics 0.22.0",
  "pbjson-types",
  "penumbra-proto",
  "penumbra-transaction",
@@ -5878,7 +5888,7 @@ dependencies = [
  "genawaiter",
  "hex",
  "ibc-types",
- "metrics",
+ "metrics 0.22.0",
  "once_cell",
  "parking_lot 0.12.1",
  "penumbra-app",
@@ -6144,6 +6154,12 @@ dependencies = [
  "opaque-debug",
  "universal-hash",
 ]
+
+[[package]]
+name = "portable-atomic"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 
 [[package]]
 name = "poseidon-parameters"

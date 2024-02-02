@@ -55,7 +55,7 @@ pub trait PathSearch: StateRead + Clone + 'static {
         let spill_price = spill.map(|p| p.price);
         tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
         metrics::histogram!(
-            crate::component::metrics::DEX_PATH_SEARCH_DURATION,
+            crate::component::metrics::DEX_PATH_SEARCH_DURATION).record(
             path_start.elapsed()
         );
 

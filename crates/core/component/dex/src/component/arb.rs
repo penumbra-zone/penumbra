@@ -130,7 +130,7 @@ pub trait Arbitrage: StateWrite + Sized {
             },
         );
         metrics::histogram!(
-            crate::component::metrics::DEX_ARB_DURATION,
+            crate::component::metrics::DEX_ARB_DURATION).record(
             arb_start.elapsed()
         );
         return Ok(Value {
