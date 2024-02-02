@@ -185,8 +185,7 @@ message BroadcastTransactionResponse {
 message TransactionPlannerRequest {
   // The expiry height for the requested TransactionPlan
   uint64 expiry_height = 1;
-  // The fee for the requested TransactionPlan, if any.
-  core.component.fee.v1alpha1.Fee fee = 2;
+
   // The memo for the requested TransactionPlan.
   // The memo must be unspecified unless `outputs` is nonempty.
   core.transaction.v1alpha1.MemoPlaintext memo = 3;
@@ -204,6 +203,14 @@ message TransactionPlannerRequest {
   repeated PositionOpen position_opens = 70;
   repeated PositionClose position_closes = 71;
   repeated PositionWithdraw position_withdraws = 72;
+
+  // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
+  oneof fee_mode {
+    // Automatically compute a fee based on gas use.
+    core.component.fee.v1alpha1.FeeTier auto_fee = 100;
+    // A manually set fee, rather than automatically computing a fee based on gas use.
+    core.component.fee.v1alpha1.Fee manual_fee = 101;
+  };
 
   // Request message subtypes
   message Output {

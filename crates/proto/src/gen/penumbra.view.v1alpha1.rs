@@ -166,9 +166,6 @@ pub struct TransactionPlannerRequest {
     /// The expiry height for the requested TransactionPlan
     #[prost(uint64, tag = "1")]
     pub expiry_height: u64,
-    /// The fee for the requested TransactionPlan, if any.
-    #[prost(message, optional, tag = "2")]
-    pub fee: ::core::option::Option<super::super::core::component::fee::v1alpha1::Fee>,
     /// The memo for the requested TransactionPlan.
     /// The memo must be unspecified unless `outputs` is nonempty.
     #[prost(message, optional, tag = "3")]
@@ -209,6 +206,9 @@ pub struct TransactionPlannerRequest {
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
     >,
+    /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
+    #[prost(oneof = "transaction_planner_request::FeeMode", tags = "100, 101")]
+    pub fee_mode: ::core::option::Option<transaction_planner_request::FeeMode>,
 }
 /// Nested message and enum types in `TransactionPlannerRequest`.
 pub mod transaction_planner_request {
@@ -397,6 +397,17 @@ pub mod transaction_planner_request {
                 "penumbra.view.v1alpha1.TransactionPlannerRequest.{}", Self::NAME
             )
         }
+    }
+    /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum FeeMode {
+        /// Automatically compute a fee based on gas use.
+        #[prost(message, tag = "100")]
+        AutoFee(super::super::super::core::component::fee::v1alpha1::FeeTier),
+        /// A manually set fee, rather than automatically computing a fee based on gas use.
+        #[prost(message, tag = "101")]
+        ManualFee(super::super::super::core::component::fee::v1alpha1::Fee),
     }
 }
 impl ::prost::Name for TransactionPlannerRequest {
