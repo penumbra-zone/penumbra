@@ -451,7 +451,7 @@ async fn sct_divergence_check(
 
     let value = client
         .key_value(penumbra_proto::cnidarium::v1alpha1::KeyValueRequest {
-            key: sct_state_key::anchor_by_height(height),
+            key: sct_state_key::tree::anchor_by_height(height),
             ..Default::default()
         })
         .await?

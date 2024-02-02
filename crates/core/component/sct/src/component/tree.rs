@@ -232,7 +232,7 @@ pub trait VerificationExt: StateRead {
             anyhow::bail!(
                 "nullifier {} was already spent in {:?}",
                 nullifier,
-                hex::encode(&info.id),
+                hex::encode(info.id),
             );
         }
         Ok(())

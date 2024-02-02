@@ -42,7 +42,7 @@ impl Component for Sct {
                     },
                 );
             }
-            None => {}
+            None => { /* no-op until an upgrade occurs */ }
         }
     }
 
