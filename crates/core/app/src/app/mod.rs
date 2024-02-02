@@ -254,7 +254,9 @@ impl App {
                 state_tx.put_ibc_params(ibc_params);
             }
             if let Some(shielded_pool_params) = app_params.new.shielded_pool_params {
-                state_tx.put_shielded_pool_params(shielded_pool_params);
+                state_tx
+                    .put_shielded_pool_params(shielded_pool_params)
+                    .await;
             }
             if let Some(sct_params) = app_params.new.sct_params {
                 state_tx.put_sct_params(sct_params);

@@ -26,11 +26,9 @@ impl Component for ShieldedPool {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
             Some(genesis) => {
-                // MERGEBLOCK(erwan): the handling of those parameters is a bit weird.
-                // rationalize it before merging
-                state.put_shielded_pool_params(genesis.shielded_pool_params.clone());
-                state.put_current_fmd_parameters(fmd::Parameters::default());
-                state.put_previous_fmd_parameters(fmd::Parameters::default());
+                state
+                    .put_shielded_pool_params(genesis.shielded_pool_params.clone())
+                    .await;
 
                 // Register a denom for each asset in the genesis state
                 for allocation in &genesis.allocations {
@@ -79,17 +77,23 @@ impl Component for ShieldedPool {
 /// Extension trait providing read access to shielded pool data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
+    /// Retrieve the current FMD parameters.
+    ///
+    /// # Errors
+    /// Returns an error if the current FMD parameters are not present.
     async fn get_current_fmd_parameters(&self) -> Result<fmd::Parameters> {
         self.get(fmd::state_key::parameters::current())
             .await?
             .ok_or_else(|| anyhow!("Missing FmdParameters"))
     }
 
-    /// Gets the previous FMD parameters from the JMT.
-    async fn get_previous_fmd_parameters(&self) -> Result<fmd::Parameters> {
+    /// Retrieve the previous FMD parameters.
+    /// Returns `None` if the previous FMD parameters are not present e.g.
+    /// if the chain is at height 0.
+    async fn get_previous_fmd_parameters(&self) -> Option<fmd::Parameters> {
         self.get(fmd::state_key::parameters::previous())
-            .await?
-            .ok_or_else(|| anyhow!("Missing FmdParameters"))
+            .await
+            .expect("deserialization does not fail")
     }
 
     async fn get_shielded_pool_params(&self) -> Result<ShieldedPoolParameters> {
@@ -109,21 +113,30 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 /// Extension trait providing write access to shielded pool data.
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
-    fn put_shielded_pool_params(&mut self, params: ShieldedPoolParameters) {
+    /// Write the shielded pool component parameters, updating the FMD indices.
+    async fn put_shielded_pool_params(&mut self, params: ShieldedPoolParameters) {
         self.object_put(crate::state_key::shielded_pool_params_updated(), ());
-        self.put(crate::state_key::shielded_pool_params().into(), params)
-    }
+        self.put(
+            crate::state_key::shielded_pool_params().into(),
+            params.clone(),
+        );
 
-    /// Writes the current FMD parameters to the JMT.
-    fn put_current_fmd_parameters(&mut self, params: fmd::Parameters) {
-        // MERGEBLOCK(erwan): read through the update mechanism for FMD params
-        // do we need to flag that shielded pool params were updated?
-        self.put(fmd::state_key::parameters::current().into(), params)
-    }
-
-    /// Writes the previous FMD parameters to the JMT.
-    fn put_previous_fmd_parameters(&mut self, params: fmd::Parameters) {
-        self.put(fmd::state_key::parameters::previous().into(), params)
+        // Update the FMD parameters, tracking both the current and previous values.
+        // We store the previous FMD parameters to allow txs to validate even if their
+        // clue precision bits follows a slightly outdated FMD spec.
+        // See:  [`penumbra_app::action_handler::transaction::stateful::FMD_GRACE_PERIOD_BLOCKS`]
+        let previous_fmd_params = self
+            .get_previous_fmd_parameters()
+            .await
+            .unwrap_or_else(|| params.fmd_params.clone());
+        self.put(
+            fmd::state_key::parameters::previous().into(),
+            previous_fmd_params,
+        );
+        self.put(
+            fmd::state_key::parameters::current().into(),
+            params.fmd_params,
+        );
     }
 }
 
