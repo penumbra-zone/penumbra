@@ -14,7 +14,8 @@ ark-serialize = "0.4.2"
 blake2b_simd = "0.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 # decaf377 = { version = "0.5", default_features = false }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", default_features = false }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", default_features = false }
+decaf377 = { workspace = true }
 penumbra-dex = { path = "../../core/component/dex/" }
 penumbra-community-pool = { path = "../../core/component/community-pool/", features = [
     "component",

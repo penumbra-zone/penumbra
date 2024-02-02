@@ -6,6 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-decaf377_outdated = { package = "decaf377", version = "0.5" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+decaf377 = { workspace = true }
+penumbra-keys = { path = "../core/keys", default-features = false }
+penumbra-shielded-pool = { path = "../core/component/shielded-pool/" }
 
+[dev-dependencies]
+penumbra-proof-params = { path = "../crypto/proof-params", features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+] }

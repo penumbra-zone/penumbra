@@ -33,7 +33,8 @@ bytes = "1"
 bincode = "1.3.3"
 ark-std = { version = "0.4", default_features = false }
 # decaf377 = { version = "0.5" }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+decaf377 = { workspace = true }
 tokio = { version = "1.21.1", features = ["full"] }
 tower = { version = "0.4", features = ["full"] }
 tonic = "0.10"

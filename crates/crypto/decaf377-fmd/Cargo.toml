@@ -7,7 +7,8 @@ edition = "2018"
 
 [dependencies]
 # decaf377 = "0.5"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+decaf377 = { workspace = true }
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
 thiserror = "1"

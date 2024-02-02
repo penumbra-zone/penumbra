@@ -51,6 +51,16 @@ members = [
   "tools/summonerd", "crates/core/component/funding", "crates/old-backend",
 ]
 
+[workspace.dependencies]
+decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+poseidon377 = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-deps", features = ["r1cs"] }
+
+# Outdated backend
+# decaf377 = { version = "0.5", features = ["r1cs"] }
+# decaf377-rdsa = { version = "0.7" }
+# poseidon377 = { version = "0.6", features = ["r1cs"] }
+
 # Optimize for small binaries in just the wasm crate.
 [profile.release.package.penumbra-wasm]
 opt-level = "s"

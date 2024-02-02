@@ -55,9 +55,11 @@ penumbra-tct = { path = "../../../crypto/tct" }
 
 # Penumbra dependencies
 # decaf377 = { version = "0.5", features = ["r1cs"] }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+decaf377 = { workspace = true }
+decaf377-rdsa = { workspace = true }
 # decaf377-rdsa = { version = "0.7" }
-decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+# decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
 ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }

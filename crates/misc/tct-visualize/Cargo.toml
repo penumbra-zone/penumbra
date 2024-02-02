@@ -9,7 +9,8 @@ edition = "2021"
 # We are visualizing the TCT, so we need to import it
 penumbra-tct = { path = "../../crypto/tct", features = ["arbitrary"] }
 # decaf377 = "0.5"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps" }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps" }
+decaf377 = { workspace = true }
 
 # Dependencies for live-view server
 tokio = { version = "1", features = ["full"] }

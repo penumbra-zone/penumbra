@@ -28,7 +28,8 @@ clap = { version = "3", features = ["derive", "env", "color"] }
 chrono = "0.4"
 console-subscriber = "0.2"
 # decaf377 = "0.5"
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["arkworks"] }
+decaf377 = { workspace = true }
 futures = "0.3.28"
 hex = "0.4"
 http-body = "0.4.5"

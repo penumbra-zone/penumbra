@@ -22,6 +22,5 @@ penumbra-stake = { path = "../../crates/core/component/stake/", features = [
 ] }
 ark-groth16 = "0.4"
 ark-serialize = "0.4"
-# decaf377 = { version = "0.5", features = ["r1cs"] }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+decaf377 = { workspace = true }
 rand_core = "0.6.4"

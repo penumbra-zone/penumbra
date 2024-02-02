@@ -12,9 +12,7 @@ penumbra-asset = { path = "../core/asset/" }
 penumbra-keys = { path = "../core/keys/" }
 
 # Git deps
-# decaf377 = { version = "0.5", features = ["r1cs"] }
-# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
-decaf377 = { path = "../../../decaf377", features = ["r1cs", "arkworks"] }
+decaf377 = { workspace = true }
 
 # Crates.io deps
 ark-ec = "0.4.2"
@@ -48,7 +46,8 @@ penumbra-sct = { path = "../core/component/sct/" }
 decaf377-fmd = { path = "../crypto/decaf377-fmd/" }
 decaf377-ka = { path = "../crypto/decaf377-ka/" }
 # decaf377-rdsa = "0.7"
-decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+# decaf377-rdsa = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+decaf377-rdsa = { workspace = true }
 penumbra-proof-params = { path = "../crypto/proof-params", features = [
     "bundled-proving-keys",
     "download-proving-keys",
