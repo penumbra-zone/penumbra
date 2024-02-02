@@ -123,6 +123,7 @@ async fn main() -> anyhow::Result<()> {
                 ?abci_bind,
                 ?grpc_bind,
                 ?grpc_auto_https,
+                ?acme_staging,
                 ?metrics_bind,
                 %cometbft_addr,
                 ?enable_expensive_rpc,

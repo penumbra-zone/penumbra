@@ -61,7 +61,7 @@ pub enum RootCommand {
         /// if you're trying out the `--grpc-auto-https` option for the first time,
         /// to validate your configuration, before subjecting yourself to production
         /// ratelimits. This option has no effect if `--grpc-auto-https` is not set.
-        #[clap(long, display_order = 201, default_value = "false")]
+        #[clap(long, display_order = 201)]
         acme_staging: bool,
         /// Bind the metrics endpoint to this socket.
         #[clap(
