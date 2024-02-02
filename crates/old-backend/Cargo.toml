@@ -9,6 +9,8 @@ edition = "2021"
 decaf377 = { workspace = true }
 penumbra-keys = { path = "../core/keys", default-features = false }
 penumbra-shielded-pool = { path = "../core/component/shielded-pool/" }
+penumbra-dex = { path = "../core/component/dex"}
+rand_core = "0.6.4"
 
 [dev-dependencies]
 penumbra-proof-params = { path = "../crypto/proof-params", features = [
