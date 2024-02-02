@@ -174,8 +174,8 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
                 .try_into()?,
             epoch_duration: msg.epoch_duration,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes).expect("deserialize"),
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes).expect("deserialize"),
         })
     }
 }

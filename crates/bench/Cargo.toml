@@ -13,7 +13,8 @@ penumbra-keys = { path = "../core/keys/" }
 
 # Git deps
 # decaf377 = { version = "0.5", features = ["r1cs"] }
-decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+# decaf377 = { git = "https://github.com/penumbra-zone/decaf377", branch = "update-deps", features = ["r1cs", "arkworks"] }
+decaf377 = { path = "../../../decaf377", features = ["r1cs", "arkworks"] }
 
 # Crates.io deps
 ark-ec = "0.4.2"

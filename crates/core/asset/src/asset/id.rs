@@ -80,7 +80,7 @@ impl TryFrom<[u8; 32]> for Id {
     type Error = anyhow::Error;
 
     fn try_from(bytes: [u8; 32]) -> Result<Id, Self::Error> {
-        Ok(Id(Fq::from_bytes(bytes)?))
+        Ok(Id(Fq::from_bytes(bytes).expect("expected deserialize")))
     }
 }
 

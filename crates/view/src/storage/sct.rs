@@ -66,7 +66,7 @@ impl Read for TreeStore<'_, '_> {
             .map(|bytes| {
                 <[u8; 32]>::try_from(bytes)
                     .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                    .and_then(|array| Hash::from_bytes(array).map_err(Into::into))
+                    .and_then(|array| (Ok(Hash::from_bytes(array).expect("expect deserialize"))))
             })
             .transpose()
     }
@@ -96,10 +96,11 @@ impl Read for TreeStore<'_, '_> {
                         let position: i64 = row.get("position")?;
                         let height: u8 = row.get("height")?;
                         let hash: Vec<u8> = row.get("hash")?;
-                        let hash = <[u8; 32]>::try_from(hash)
-                            .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                            .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
-                        anyhow::Ok((Position::from(position as u64), height, hash))
+                        unimplemented!();
+                        // let hash = <[u8; 32]>::try_from(hash)
+                        //     .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
+                        //     .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
+                        // anyhow::Ok((Position::from(position as u64), height, hash))
                     })
                     .context("couldn't query database")
                 {

@@ -160,9 +160,9 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
             rseed: Rseed(msg.rseed.as_slice().try_into()?),
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?)?,
-            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?)?,
-            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?)?,
+            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?).expect("expect deserialize"),
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?).expect("expect deserialize"),
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?).expect("expect deserialize"),
         })
     }
 }

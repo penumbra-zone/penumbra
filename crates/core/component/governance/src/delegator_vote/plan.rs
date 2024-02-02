@@ -203,9 +203,9 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                     .randomizer
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
-            )?,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            ).expect("expect deserialize"),
+            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes).expect("deserialize"),
+            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes).expect("deserialize"),
         })
     }
 }

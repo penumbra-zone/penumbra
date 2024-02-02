@@ -159,10 +159,10 @@ impl TryFrom<pb::SpendPlan> for SpendPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing note"))?
                 .try_into()?,
             position: msg.position.into(),
-            randomizer: Fr::from_bytes(msg.randomizer.as_slice().try_into()?)?,
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?)?,
-            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?)?,
-            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?)?,
+            randomizer: Fr::from_bytes(msg.randomizer.as_slice().try_into()?).expect("expect deserialize"),
+            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?).expect("expect deserialize"),
+            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?).expect("expect deserialize"),
+            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?).expect("expect deserialize"),
         })
     }
 }
