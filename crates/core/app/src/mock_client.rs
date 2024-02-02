@@ -4,7 +4,7 @@ use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_dex::swap::SwapPlaintext;
 use penumbra_keys::FullViewingKey;
-use penumbra_sct::component::StateReadExt as _;
+use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
 
@@ -42,7 +42,7 @@ impl MockClient {
             let (latest_height, root) = self.latest_height_and_sct_root();
             anyhow::ensure!(latest_height == height, "latest height should be updated");
             let expected_root = state
-                .anchor_by_height(height)
+                .get_anchor_by_height(height)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing sct anchor for height {}", height))?;
             anyhow::ensure!(

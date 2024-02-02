@@ -5,7 +5,7 @@ use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_governance::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 use penumbra_transaction::Transaction;
 
 // Note: These should live in `penumbra-governance` in the `StateReadExt` and `StateWriteExt`

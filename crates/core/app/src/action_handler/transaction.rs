@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_sct::{component::SourceContext as _, CommitmentSource};
+use penumbra_sct::{component::source::SourceContext, CommitmentSource};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};

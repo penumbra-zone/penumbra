@@ -5550,6 +5550,7 @@ dependencies = [
  "blake2b_simd 0.5.11",
  "bytes",
  "cnidarium",
+ "cnidarium-component",
  "decaf377 0.5.0",
  "decaf377-rdsa",
  "hex",

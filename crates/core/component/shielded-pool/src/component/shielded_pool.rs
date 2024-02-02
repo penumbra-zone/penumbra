@@ -26,7 +26,7 @@ impl Component for ShieldedPool {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
             Some(genesis) => {
-                // MERGEBLOCK(erwan): the handling of those parameters is a bit weird.
+                // TODO(erwan): the handling of those parameters is a bit weird.
                 // rationalize it before merging
                 state.put_shielded_pool_params(genesis.shielded_pool_params.clone());
                 state.put_current_fmd_parameters(fmd::Parameters::default());

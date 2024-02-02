@@ -7,7 +7,7 @@ use penumbra_proto::core::component::compact_block::v1alpha1::{
     query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
     CompactBlockRequest, CompactBlockResponse,
 };
-use penumbra_sct::component::EpochRead;
+use penumbra_sct::component::clock::EpochRead;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};

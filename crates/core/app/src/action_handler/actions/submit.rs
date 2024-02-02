@@ -14,7 +14,8 @@ use penumbra_community_pool::component::StateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::DomainType;
-use penumbra_sct::component::{EpochRead, StateReadExt as _};
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use penumbra_transaction::plan::TransactionPlan;
@@ -293,7 +294,7 @@ impl ActionHandler for ProposalSubmit {
 
         // Compute the effective starting TCT position for the proposal, by rounding the current
         // position down to the start of the block.
-        let Some(sct_position) = state.state_commitment_tree().await.position() else {
+        let Some(sct_position) = state.get_sct().await.position() else {
             anyhow::bail!("state commitment tree is full");
         };
         // All proposals start are considered to start at the beginning of the block, because this

@@ -9,7 +9,7 @@ use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};
 use penumbra_num::Amount;
 use penumbra_sct::{
-    component::{EpochManager, SourceContext},
+    component::{clock::EpochManager, source::SourceContext},
     epoch::Epoch,
 };
 use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};

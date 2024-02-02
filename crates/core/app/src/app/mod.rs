@@ -20,7 +20,9 @@ use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::{EpochManager, EpochRead, SctParameterWriter, StateReadExt as _};
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::sct::Sct;
+use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
 use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
@@ -98,29 +100,7 @@ impl App {
         match app_state {
             genesis::AppState::Content(genesis) => {
                 state_tx.put_chain_id(genesis.chain_id.clone());
-                state_tx.put_sct_params(genesis.sct_content.sct_params.clone()); // TODO(erwan): promote Sct to component?
-
-                // The genesis block height is 0
-                state_tx.put_block_height(0);
-
-                state_tx.put_epoch_by_height(
-                    0,
-                    Epoch {
-                        index: 0,
-                        start_height: 0,
-                    },
-                );
-
-                // We need to set the epoch for the first block as well, since we set
-                // the epoch by height in end_block, and end_block isn't called after init_chain.
-                state_tx.put_epoch_by_height(
-                    1,
-                    Epoch {
-                        index: 0,
-                        start_height: 0,
-                    },
-                );
-
+                Sct::init_chain(&mut state_tx, Some(&genesis.sct_content)).await;
                 ShieldedPool::init_chain(&mut state_tx, Some(&genesis.shielded_pool_content)).await;
                 Distributions::init_chain(&mut state_tx, Some(&genesis.distributions_content))
                     .await;
@@ -219,11 +199,6 @@ impl App {
     pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
 
-        // store the block height
-        state_tx.put_block_height(begin_block.header.height.into());
-        // store the block time
-        state_tx.put_block_timestamp(begin_block.header.time);
-
         // If a app parameter change is scheduled for this block, apply it here, before any other
         // component has executed. This ensures that app parameter changes are consistently
         // applied precisely at the boundary between blocks:
@@ -266,6 +241,7 @@ impl App {
 
         // Run each of the begin block handlers for each component, in sequence:
         let mut arc_state_tx = Arc::new(state_tx);
+        Sct::begin_block(&mut arc_state_tx, begin_block).await;
         ShieldedPool::begin_block(&mut arc_state_tx, begin_block).await;
         Distributions::begin_block(&mut arc_state_tx, begin_block).await;
         Ibc::begin_block::<PenumbraHost, StateDelta<Arc<StateDelta<cnidarium::Snapshot>>>>(
@@ -461,17 +437,17 @@ impl App {
             .await
             .expect("able to get block height in end_block");
         let current_epoch = state_tx
-            .current_epoch()
+            .get_current_epoch()
             .await
             .expect("able to get current epoch in end_block");
 
         let is_end_epoch = current_epoch.is_scheduled_epoch_end(
             current_height,
             state_tx
-                .get_epoch_duration()
+                .get_epoch_duration_parameter()
                 .await
                 .expect("able to get epoch duration in end_block"),
-        ) || state_tx.epoch_ending_early();
+        ) || state_tx.is_epoch_ending_early().await;
 
         // If a chain upgrade is scheduled for this block, we trigger an early epoch change
         // so that the upgraded chain starts at a clean epoch boundary.
@@ -522,7 +498,8 @@ impl App {
                 .expect("must be able to finish compact block");
 
             // set the epoch for the next block
-            state_tx.put_epoch_by_height(
+            penumbra_sct::component::clock::EpochManager::put_epoch_by_height(
+                &mut state_tx,
                 current_height + 1,
                 Epoch {
                     index: current_epoch.index + 1,
@@ -533,7 +510,11 @@ impl App {
             self.apply(state_tx)
         } else {
             // set the epoch for the next block
-            state_tx.put_epoch_by_height(current_height + 1, current_epoch);
+            penumbra_sct::component::clock::EpochManager::put_epoch_by_height(
+                &mut state_tx,
+                current_height + 1,
+                current_epoch,
+            );
 
             state_tx
                 .finish_block(state_tx.app_params_updated())
@@ -723,7 +704,7 @@ impl<
             + penumbra_governance::component::StateReadExt
             + penumbra_fee::component::StateReadExt
             + penumbra_community_pool::component::StateReadExt
-            + penumbra_sct::component::EpochRead
+            + penumbra_sct::component::clock::EpochRead
             + penumbra_ibc::component::StateReadExt
             + penumbra_distributions::component::StateReadExt
             + ?Sized,
