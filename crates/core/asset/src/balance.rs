@@ -395,7 +395,7 @@ impl std::ops::Add for BalanceVar {
 
 #[cfg(test)]
 mod test {
-    use crate::{asset::DenomMetadata, STAKING_TOKEN_ASSET_ID};
+    use crate::{asset::Metadata, STAKING_TOKEN_ASSET_ID};
     use ark_ff::Zero;
     use decaf377::Fr;
     use once_cell::sync::Lazy;
@@ -492,7 +492,7 @@ mod test {
     }
 
     // Two sample denom/asset id pairs, for testing
-    static DENOM_1: Lazy<DenomMetadata> = Lazy::new(|| {
+    static DENOM_1: Lazy<Metadata> = Lazy::new(|| {
         crate::asset::Cache::with_known_assets()
             .get_unit("cube")
             .unwrap()
@@ -500,7 +500,7 @@ mod test {
     });
     static ASSET_ID_1: Lazy<Id> = Lazy::new(|| DENOM_1.id());
 
-    static DENOM_2: Lazy<DenomMetadata> = Lazy::new(|| {
+    static DENOM_2: Lazy<Metadata> = Lazy::new(|| {
         crate::asset::Cache::with_known_assets()
             .get_unit("nala")
             .unwrap()

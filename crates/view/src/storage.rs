@@ -4,7 +4,7 @@ use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use penumbra_app::params::AppParameters;
-use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
+use penumbra_asset::{asset, asset::Id, asset::Metadata, Value};
 use penumbra_dex::{
     lp::position::{self, Position, State},
     TradingPair,
@@ -755,7 +755,7 @@ impl Storage {
         }
     }
 
-    pub async fn all_assets(&self) -> anyhow::Result<Vec<DenomMetadata>> {
+    pub async fn all_assets(&self) -> anyhow::Result<Vec<Metadata>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -776,7 +776,7 @@ impl Storage {
         .await?
     }
 
-    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<DenomMetadata>> {
+    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Metadata>> {
         let id = id.to_bytes().to_vec();
 
         let pool = self.pool.clone();
@@ -800,7 +800,7 @@ impl Storage {
 
     // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
     // where `\` is the escape character.
-    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<DenomMetadata>> {
+    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<Metadata>> {
         let pattern = pattern.to_owned();
 
         let pool = self.pool.clone();
@@ -999,7 +999,7 @@ impl Storage {
         }).await?
     }
 
-    pub async fn record_asset(&self, asset: DenomMetadata) -> anyhow::Result<()> {
+    pub async fn record_asset(&self, asset: Metadata) -> anyhow::Result<()> {
         let asset_id = asset.id().to_bytes().to_vec();
         let denom = asset.base_denom().denom;
 

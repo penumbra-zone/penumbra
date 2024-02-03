@@ -3,7 +3,7 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_asset::{asset, asset::DenomMetadata, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
@@ -17,7 +17,7 @@ use penumbra_proto::core::component::{
     },
     shielded_pool::v1alpha1::{
         query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-        DenomMetadataByIdRequest,
+        AssetMetadataByIdRequest,
     },
 };
 use penumbra_view::ViewClient;
@@ -318,8 +318,8 @@ impl DexCmd {
             .get_batch_outputs(app, chain_id.clone(), height, trading_pair)
             .await?;
 
-        let asset_1: DenomMetadata = client
-            .denom_metadata_by_id(DenomMetadataByIdRequest {
+        let asset_1: Metadata = client
+            .asset_metadata_by_id(AssetMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_1().into()),
                 chain_id: chain_id.clone(),
             })
@@ -328,8 +328,8 @@ impl DexCmd {
             .denom_metadata
             .context("denom metadata for asset 1 not found")?
             .try_into()?;
-        let asset_2: DenomMetadata = client
-            .denom_metadata_by_id(DenomMetadataByIdRequest {
+        let asset_2: Metadata = client
+            .asset_metadata_by_id(AssetMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
                 chain_id: chain_id.clone(),
             })

@@ -585,222 +585,6 @@ impl<'de> serde::Deserialize<'de> for Denom {
         deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.Denom", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DenomMetadata {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.description.is_empty() {
-            len += 1;
-        }
-        if !self.denom_units.is_empty() {
-            len += 1;
-        }
-        if !self.base.is_empty() {
-            len += 1;
-        }
-        if !self.display.is_empty() {
-            len += 1;
-        }
-        if !self.name.is_empty() {
-            len += 1;
-        }
-        if !self.symbol.is_empty() {
-            len += 1;
-        }
-        if self.penumbra_asset_id.is_some() {
-            len += 1;
-        }
-        if !self.images.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.DenomMetadata", len)?;
-        if !self.description.is_empty() {
-            struct_ser.serialize_field("description", &self.description)?;
-        }
-        if !self.denom_units.is_empty() {
-            struct_ser.serialize_field("denomUnits", &self.denom_units)?;
-        }
-        if !self.base.is_empty() {
-            struct_ser.serialize_field("base", &self.base)?;
-        }
-        if !self.display.is_empty() {
-            struct_ser.serialize_field("display", &self.display)?;
-        }
-        if !self.name.is_empty() {
-            struct_ser.serialize_field("name", &self.name)?;
-        }
-        if !self.symbol.is_empty() {
-            struct_ser.serialize_field("symbol", &self.symbol)?;
-        }
-        if let Some(v) = self.penumbra_asset_id.as_ref() {
-            struct_ser.serialize_field("penumbraAssetId", v)?;
-        }
-        if !self.images.is_empty() {
-            struct_ser.serialize_field("images", &self.images)?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for DenomMetadata {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "description",
-            "denom_units",
-            "denomUnits",
-            "base",
-            "display",
-            "name",
-            "symbol",
-            "penumbra_asset_id",
-            "penumbraAssetId",
-            "images",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            Description,
-            DenomUnits,
-            Base,
-            Display,
-            Name,
-            Symbol,
-            PenumbraAssetId,
-            Images,
-            __SkipField__,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "description" => Ok(GeneratedField::Description),
-                            "denomUnits" | "denom_units" => Ok(GeneratedField::DenomUnits),
-                            "base" => Ok(GeneratedField::Base),
-                            "display" => Ok(GeneratedField::Display),
-                            "name" => Ok(GeneratedField::Name),
-                            "symbol" => Ok(GeneratedField::Symbol),
-                            "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
-                            "images" => Ok(GeneratedField::Images),
-                            _ => Ok(GeneratedField::__SkipField__),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DenomMetadata;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.asset.v1alpha1.DenomMetadata")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DenomMetadata, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut description__ = None;
-                let mut denom_units__ = None;
-                let mut base__ = None;
-                let mut display__ = None;
-                let mut name__ = None;
-                let mut symbol__ = None;
-                let mut penumbra_asset_id__ = None;
-                let mut images__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::Description => {
-                            if description__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("description"));
-                            }
-                            description__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::DenomUnits => {
-                            if denom_units__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("denomUnits"));
-                            }
-                            denom_units__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::Base => {
-                            if base__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("base"));
-                            }
-                            base__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::Display => {
-                            if display__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("display"));
-                            }
-                            display__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::Name => {
-                            if name__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("name"));
-                            }
-                            name__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::Symbol => {
-                            if symbol__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("symbol"));
-                            }
-                            symbol__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::PenumbraAssetId => {
-                            if penumbra_asset_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("penumbraAssetId"));
-                            }
-                            penumbra_asset_id__ = map_.next_value()?;
-                        }
-                        GeneratedField::Images => {
-                            if images__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("images"));
-                            }
-                            images__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::__SkipField__ => {
-                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
-                        }
-                    }
-                }
-                Ok(DenomMetadata {
-                    description: description__.unwrap_or_default(),
-                    denom_units: denom_units__.unwrap_or_default(),
-                    base: base__.unwrap_or_default(),
-                    display: display__.unwrap_or_default(),
-                    name: name__.unwrap_or_default(),
-                    symbol: symbol__.unwrap_or_default(),
-                    penumbra_asset_id: penumbra_asset_id__,
-                    images: images__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.DenomMetadata", FIELDS, GeneratedVisitor)
-    }
-}
 impl serde::Serialize for DenomUnit {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -930,6 +714,222 @@ impl<'de> serde::Deserialize<'de> for DenomUnit {
             }
         }
         deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.DenomUnit", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for Metadata {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.description.is_empty() {
+            len += 1;
+        }
+        if !self.denom_units.is_empty() {
+            len += 1;
+        }
+        if !self.base.is_empty() {
+            len += 1;
+        }
+        if !self.display.is_empty() {
+            len += 1;
+        }
+        if !self.name.is_empty() {
+            len += 1;
+        }
+        if !self.symbol.is_empty() {
+            len += 1;
+        }
+        if self.penumbra_asset_id.is_some() {
+            len += 1;
+        }
+        if !self.images.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.Metadata", len)?;
+        if !self.description.is_empty() {
+            struct_ser.serialize_field("description", &self.description)?;
+        }
+        if !self.denom_units.is_empty() {
+            struct_ser.serialize_field("denomUnits", &self.denom_units)?;
+        }
+        if !self.base.is_empty() {
+            struct_ser.serialize_field("base", &self.base)?;
+        }
+        if !self.display.is_empty() {
+            struct_ser.serialize_field("display", &self.display)?;
+        }
+        if !self.name.is_empty() {
+            struct_ser.serialize_field("name", &self.name)?;
+        }
+        if !self.symbol.is_empty() {
+            struct_ser.serialize_field("symbol", &self.symbol)?;
+        }
+        if let Some(v) = self.penumbra_asset_id.as_ref() {
+            struct_ser.serialize_field("penumbraAssetId", v)?;
+        }
+        if !self.images.is_empty() {
+            struct_ser.serialize_field("images", &self.images)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Metadata {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "description",
+            "denom_units",
+            "denomUnits",
+            "base",
+            "display",
+            "name",
+            "symbol",
+            "penumbra_asset_id",
+            "penumbraAssetId",
+            "images",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Description,
+            DenomUnits,
+            Base,
+            Display,
+            Name,
+            Symbol,
+            PenumbraAssetId,
+            Images,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "description" => Ok(GeneratedField::Description),
+                            "denomUnits" | "denom_units" => Ok(GeneratedField::DenomUnits),
+                            "base" => Ok(GeneratedField::Base),
+                            "display" => Ok(GeneratedField::Display),
+                            "name" => Ok(GeneratedField::Name),
+                            "symbol" => Ok(GeneratedField::Symbol),
+                            "penumbraAssetId" | "penumbra_asset_id" => Ok(GeneratedField::PenumbraAssetId),
+                            "images" => Ok(GeneratedField::Images),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = Metadata;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.asset.v1alpha1.Metadata")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Metadata, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut description__ = None;
+                let mut denom_units__ = None;
+                let mut base__ = None;
+                let mut display__ = None;
+                let mut name__ = None;
+                let mut symbol__ = None;
+                let mut penumbra_asset_id__ = None;
+                let mut images__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Description => {
+                            if description__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("description"));
+                            }
+                            description__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::DenomUnits => {
+                            if denom_units__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("denomUnits"));
+                            }
+                            denom_units__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Base => {
+                            if base__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("base"));
+                            }
+                            base__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Display => {
+                            if display__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("display"));
+                            }
+                            display__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Name => {
+                            if name__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("name"));
+                            }
+                            name__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Symbol => {
+                            if symbol__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("symbol"));
+                            }
+                            symbol__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::PenumbraAssetId => {
+                            if penumbra_asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("penumbraAssetId"));
+                            }
+                            penumbra_asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::Images => {
+                            if images__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("images"));
+                            }
+                            images__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(Metadata {
+                    description: description__.unwrap_or_default(),
+                    denom_units: denom_units__.unwrap_or_default(),
+                    base: base__.unwrap_or_default(),
+                    display: display__.unwrap_or_default(),
+                    name: name__.unwrap_or_default(),
+                    symbol: symbol__.unwrap_or_default(),
+                    penumbra_asset_id: penumbra_asset_id__,
+                    images: images__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.Metadata", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for Value {

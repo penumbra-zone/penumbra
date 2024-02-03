@@ -5,7 +5,7 @@ use indexed_db_futures::{
     prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
     IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,
 };
-use penumbra_asset::asset::{DenomMetadata, Id};
+use penumbra_asset::asset::{Id, Metadata};
 use penumbra_proto::{
     crypto::tct::v1alpha1::StateCommitment,
     view::v1alpha1::{NotesRequest, SwapRecord},
@@ -139,7 +139,7 @@ impl IndexedDBStorage {
         }
     }
 
-    pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<DenomMetadata>> {
+    pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<Metadata>> {
         let tx = self.db.transaction_on_one(&self.constants.tables.assets)?;
         let store = tx.object_store(&self.constants.tables.assets)?;
 

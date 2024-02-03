@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_asset::asset::{self, DenomMetadata};
+use penumbra_asset::asset::{self, Metadata};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
@@ -15,7 +15,7 @@ pub trait SupplyRead: StateRead {
         self.get(&state_key::token_supply(asset_id)).await
     }
 
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<DenomMetadata>> {
+    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Metadata>> {
         self.get(&state_key::denom_by_asset(asset_id)).await
     }
 }
@@ -26,7 +26,7 @@ impl<T: StateRead + ?Sized> SupplyRead for T {}
 pub trait SupplyWrite: StateWrite {
     // TODO: why not make this infallible and synchronous?
     #[instrument(skip(self))]
-    async fn register_denom(&mut self, denom: &DenomMetadata) -> Result<()> {
+    async fn register_denom(&mut self, denom: &Metadata) -> Result<()> {
         let id = denom.id();
         if self.denom_by_asset(&id).await?.is_some() {
             tracing::debug!(?denom, ?id, "skipping existing denom");

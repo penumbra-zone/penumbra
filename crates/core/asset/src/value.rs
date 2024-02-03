@@ -16,7 +16,7 @@ use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::asset::{AssetIdVar, Cache, DenomMetadata, Id, REGISTRY};
+use crate::asset::{AssetIdVar, Cache, Id, Metadata, REGISTRY};
 
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
@@ -38,14 +38,8 @@ pub struct Value {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::ValueView", into = "pb::ValueView")]
 pub enum ValueView {
-    KnownDenom {
-        amount: Amount,
-        denom: DenomMetadata,
-    },
-    UnknownDenom {
-        amount: Amount,
-        asset_id: Id,
-    },
+    KnownDenom { amount: Amount, denom: Metadata },
+    UnknownDenom { amount: Amount, asset_id: Id },
 }
 
 impl ValueView {
@@ -62,7 +56,7 @@ impl ValueView {
 
 impl Value {
     /// Convert this `Value` into a `ValueView` with the given `Denom`.
-    pub fn view_with_denom(&self, denom: DenomMetadata) -> anyhow::Result<ValueView> {
+    pub fn view_with_denom(&self, denom: Metadata) -> anyhow::Result<ValueView> {
         if self.asset_id == denom.id() {
             Ok(ValueView::KnownDenom {
                 amount: self.amount,

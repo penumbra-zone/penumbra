@@ -7,7 +7,7 @@ use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use penumbra_asset::asset::{DenomMetadata, Id};
+use penumbra_asset::asset::{Id, Metadata};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
@@ -33,7 +33,7 @@ pub struct ViewServer {
     fvk: FullViewingKey,
     notes: BTreeMap<note::StateCommitment, SpendableNoteRecord>,
     swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
-    denoms: BTreeMap<Id, DenomMetadata>,
+    denoms: BTreeMap<Id, Metadata>,
     sct: Tree,
     storage: IndexedDBStorage,
     last_position: Option<StoredPosition>,
