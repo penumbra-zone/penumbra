@@ -34,8 +34,8 @@ message Denom {
   string denom = 1;
 }
 
-// DenomMetadata represents a struct that describes a basic token.
-message DenomMetadata {
+// Describes metadata about a given asset.
+message Metadata {
   string description = 1;
   // denom_units represents the list of DenomUnit's for a given coin
   repeated DenomUnit denom_units = 2;
@@ -95,7 +95,7 @@ message ValueView {
   // A value whose asset ID has a known denomination.
   message KnownDenom {
     core.num.v1alpha1.Amount amount = 1;
-    DenomMetadata denom = 2;
+    Metadata denom = 2;
   }
   message UnknownDenom {
     core.num.v1alpha1.Amount amount = 1;

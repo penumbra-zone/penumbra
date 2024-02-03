@@ -1,6 +1,6 @@
 use ibc_types::core::{channel::ChannelId, channel::PortId, client::Height as IbcHeight};
 use penumbra_asset::{
-    asset::{self, DenomMetadata},
+    asset::{self, Metadata},
     Balance, Value,
 };
 use penumbra_keys::Address;
@@ -21,7 +21,7 @@ use penumbra_ibc::component::packet::{IBCPacket, Unchecked};
 pub struct Ics20Withdrawal {
     // a transparent value consisting of an amount and a denom.
     pub amount: Amount,
-    pub denom: asset::DenomMetadata,
+    pub denom: asset::Metadata,
     // the address on the destination chain to send the transfer to
     pub destination_chain_address: String,
     // a "sender" penumbra address to use to return funds from this withdrawal.
@@ -116,7 +116,7 @@ impl TryFrom<pb::Ics20Withdrawal> for Ics20Withdrawal {
                 .amount
                 .ok_or_else(|| anyhow::anyhow!("missing amount"))?
                 .try_into()?,
-            denom: DenomMetadata::default_for(
+            denom: Metadata::default_for(
                 &s.denom
                     .ok_or_else(|| anyhow::anyhow!("missing denom metadata"))?
                     .try_into()?,

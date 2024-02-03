@@ -14,7 +14,7 @@ use crate::IdentityKey;
 pub struct UnbondingToken {
     validator_identity: IdentityKey,
     start_epoch_index: u64,
-    base_denom: asset::DenomMetadata,
+    base_denom: asset::Metadata,
 }
 
 impl UnbondingToken {
@@ -34,7 +34,7 @@ impl UnbondingToken {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn denom(&self) -> asset::DenomMetadata {
+    pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 
@@ -58,10 +58,10 @@ impl UnbondingToken {
     }
 }
 
-impl TryFrom<asset::DenomMetadata> for UnbondingToken {
+impl TryFrom<asset::Metadata> for UnbondingToken {
     type Error = anyhow::Error;
 
-    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::Metadata) -> Result<Self, Self::Error> {
         let base_string = base_denom.to_string();
 
         // Note: this regex must be in sync with both asset::REGISTRY

@@ -8,7 +8,7 @@ pub struct IbcToken {
     port_id: PortId,
     original_denom: String,
 
-    base_denom: asset::DenomMetadata,
+    base_denom: asset::Metadata,
 }
 
 impl IbcToken {
@@ -29,7 +29,7 @@ impl IbcToken {
     }
 
     /// Get the base denomination for this IBC token.
-    pub fn denom(&self) -> asset::DenomMetadata {
+    pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 

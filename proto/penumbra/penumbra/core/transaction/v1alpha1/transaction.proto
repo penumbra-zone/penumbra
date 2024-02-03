@@ -110,7 +110,7 @@ message TransactionPerspective {
   // Any relevant address views.
   repeated keys.v1alpha1.AddressView address_views = 4;
   // Any relevant denoms for viewed assets.
-  repeated asset.v1alpha1.DenomMetadata denoms = 5;
+  repeated asset.v1alpha1.Metadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
   txhash.v1alpha1.TransactionId transaction_id = 6;
 }

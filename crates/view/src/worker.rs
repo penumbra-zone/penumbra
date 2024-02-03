@@ -19,7 +19,7 @@ use penumbra_proto::{
             },
             shielded_pool::v1alpha1::{
                 query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-                DenomMetadataByIdRequest,
+                AssetMetadataByIdRequest,
             },
         },
     },
@@ -331,7 +331,7 @@ impl Worker {
 
                         let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
                         if let Some(denom_metadata) = client
-                            .denom_metadata_by_id(DenomMetadataByIdRequest {
+                            .asset_metadata_by_id(AssetMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
                                 chain_id: chain_id.clone(),
                             })

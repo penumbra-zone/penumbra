@@ -46,7 +46,7 @@ use penumbra_proto::{
         self as pb,
         view_protocol_service_client::ViewProtocolServiceClient,
         view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        AppParametersResponse, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
+        AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse, StatusResponse,
         SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
     },
@@ -1567,10 +1567,10 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
-    async fn denom_metadata_by_id(
+    async fn asset_metadata_by_id(
         &self,
-        request: Request<DenomMetadataByIdRequest>,
-    ) -> Result<Response<DenomMetadataByIdResponse>, Status> {
+        request: Request<AssetMetadataByIdRequest>,
+    ) -> Result<Response<AssetMetadataByIdResponse>, Status> {
         let asset_id = request
             .into_inner()
             .asset_id
@@ -1584,7 +1584,7 @@ impl ViewProtocolService for ViewService {
             .await
             .map_err(|e| Status::internal(format!("Error retrieving asset by id: {e:#}")))?;
 
-        Ok(Response::new(DenomMetadataByIdResponse {
+        Ok(Response::new(AssetMetadataByIdResponse {
             denom_metadata: metadata.map(Into::into),
         }))
     }

@@ -1,7 +1,7 @@
 use cnidarium::Storage;
 use penumbra_asset::asset;
 use penumbra_proto::core::component::shielded_pool::v1alpha1::{
-    query_service_server::QueryService, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
+    query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
 };
 
 use tonic::Status;
@@ -23,10 +23,10 @@ impl Server {
 #[tonic::async_trait]
 impl QueryService for Server {
     #[instrument(skip(self, request))]
-    async fn denom_metadata_by_id(
+    async fn asset_metadata_by_id(
         &self,
-        request: tonic::Request<DenomMetadataByIdRequest>,
-    ) -> Result<tonic::Response<DenomMetadataByIdResponse>, Status> {
+        request: tonic::Request<AssetMetadataByIdRequest>,
+    ) -> Result<tonic::Response<AssetMetadataByIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
 
         let request = request.into_inner();
@@ -44,7 +44,7 @@ impl QueryService for Server {
         let rsp = match denom {
             Some(denom) => {
                 tracing::debug!(?id, ?denom, "found denom");
-                DenomMetadataByIdResponse {
+                AssetMetadataByIdResponse {
                     denom_metadata: Some(denom.into()),
                 }
             }

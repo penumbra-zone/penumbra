@@ -3,7 +3,7 @@ use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-use crate::asset::{denom_metadata, DenomMetadata, Unit};
+use crate::asset::{denom_metadata, Metadata, Unit};
 
 use super::denom_metadata::Inner;
 
@@ -49,7 +49,7 @@ impl Registry {
     ///
     /// If the denomination is unknown, returns `Some` with the parsed base
     /// denomination and default display denomination (base = display).
-    pub fn parse_denom(&self, raw_denom: &str) -> Option<DenomMetadata> {
+    pub fn parse_denom(&self, raw_denom: &str) -> Option<Metadata> {
         // We hope that our regexes are disjoint (TODO: add code to test this)
         // so that there will only ever be one match from the RegexSet.
 
@@ -64,7 +64,7 @@ impl Registry {
                 .map(|m| m.as_str())
                 .unwrap_or("");
 
-            Some(DenomMetadata {
+            Some(Metadata {
                 inner: Arc::new(self.constructors[base_index](data)),
             })
         } else if self.display_set.matches(raw_denom).iter().next().is_some() {
@@ -72,7 +72,7 @@ impl Registry {
             None
         } else {
             // 3. Fallthrough: create default base denom
-            Some(DenomMetadata {
+            Some(Metadata {
                 inner: Arc::new(Inner::new(raw_denom.to_string(), Vec::new())),
             })
         }

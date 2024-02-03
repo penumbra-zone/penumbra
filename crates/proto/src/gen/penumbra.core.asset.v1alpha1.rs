@@ -56,10 +56,10 @@ impl ::prost::Name for Denom {
         ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
     }
 }
-/// DenomMetadata represents a struct that describes a basic token.
+/// Describes metadata about a given asset.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DenomMetadata {
+pub struct Metadata {
     #[prost(string, tag = "1")]
     pub description: ::prost::alloc::string::String,
     /// denom_units represents the list of DenomUnit's for a given coin
@@ -85,8 +85,8 @@ pub struct DenomMetadata {
     #[prost(message, repeated, tag = "1985")]
     pub images: ::prost::alloc::vec::Vec<AssetImage>,
 }
-impl ::prost::Name for DenomMetadata {
-    const NAME: &'static str = "DenomMetadata";
+impl ::prost::Name for Metadata {
+    const NAME: &'static str = "Metadata";
     const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.asset.v1alpha1.{}", Self::NAME)
@@ -156,7 +156,7 @@ pub mod value_view {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
         #[prost(message, optional, tag = "2")]
-        pub denom: ::core::option::Option<super::DenomMetadata>,
+        pub denom: ::core::option::Option<super::Metadata>,
     }
     impl ::prost::Name for KnownDenom {
         const NAME: &'static str = "KnownDenom";
