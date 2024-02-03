@@ -387,7 +387,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Perform an ICS-20 withdrawal
     #[instrument(skip(self))]
     pub fn ics20_withdrawal(&mut self, withdrawal: Ics20Withdrawal) -> &mut Self {
-        self.action(ActionPlan::Withdrawal(withdrawal));
+        self.action(ActionPlan::Ics20Withdrawal(withdrawal));
         self
     }
 

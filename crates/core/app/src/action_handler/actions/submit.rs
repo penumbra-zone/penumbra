@@ -127,7 +127,7 @@ impl ActionHandler for ProposalSubmit {
                         | PositionRewardClaim(_)
                         | CommunityPoolSpend(_)
                         | CommunityPoolOutput(_)
-                        | Withdrawal(_)
+                        | Ics20Withdrawal(_)
                         | CommunityPoolDeposit(_) => {
                             // These actions are all valid for Community Pool spend proposals, because they
                             // don't require proving, so they don't represent a DoS vector.

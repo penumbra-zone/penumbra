@@ -252,7 +252,7 @@ message ActionPlan {
     component.governance.v1alpha1.DelegatorVotePlan delegator_vote = 21;
     component.governance.v1alpha1.ProposalDepositClaim proposal_deposit_claim = 22;
 
-    component.ibc.v1alpha1.Ics20Withdrawal withdrawal = 23;
+    component.ibc.v1alpha1.Ics20Withdrawal ics20_withdrawal = 200;
 
     component.dex.v1alpha1.PositionOpen position_open = 30;
     component.dex.v1alpha1.PositionClose position_close = 31;
