@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-component = ["cnidarium-component", "cnidarium", "penumbra-proto/cnidarium"]
+component = [
+    "cnidarium-component",
+    "cnidarium",
+    "penumbra-proto/cnidarium",
+    "tonic",
+]
 default = ["std", "component"]
 std = ["ark-ff/std"]
 docsrs = []
@@ -35,3 +40,6 @@ blake2b_simd = "0.5"
 bytes = "1"
 rand_core = { version = "0.6.3", features = ["getrandom"] }
 rand = "0.8"
+
+# Component dependencies
+tonic = { version = "0.10", optional = true }

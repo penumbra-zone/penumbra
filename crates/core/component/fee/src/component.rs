@@ -1,3 +1,4 @@
+pub mod rpc;
 mod view;
 
 use std::sync::Arc;
@@ -22,7 +23,8 @@ impl Component for Fee {
         match app_state {
             Some(genesis) => {
                 state.put_fee_params(genesis.fee_params.clone());
-                state.put_gas_prices(genesis.gas_prices);
+                // Put the initial gas prices
+                state.put_gas_prices(genesis.fee_params.fixed_gas_prices);
             }
             None => { /* perform upgrade specific check */ }
         }

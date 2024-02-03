@@ -1,3 +1,171 @@
+impl serde::Serialize for CurrentGasPricesRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.CurrentGasPricesRequest", len)?;
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for CurrentGasPricesRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                            Ok(GeneratedField::__SkipField__)
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = CurrentGasPricesRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.fee.v1alpha1.CurrentGasPricesRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CurrentGasPricesRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                }
+                Ok(CurrentGasPricesRequest {
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.fee.v1alpha1.CurrentGasPricesRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for CurrentGasPricesResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.gas_prices.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.CurrentGasPricesResponse", len)?;
+        if let Some(v) = self.gas_prices.as_ref() {
+            struct_ser.serialize_field("gasPrices", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for CurrentGasPricesResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "gas_prices",
+            "gasPrices",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            GasPrices,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "gasPrices" | "gas_prices" => Ok(GeneratedField::GasPrices),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = CurrentGasPricesResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.fee.v1alpha1.CurrentGasPricesResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CurrentGasPricesResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut gas_prices__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::GasPrices => {
+                            if gas_prices__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("gasPrices"));
+                            }
+                            gas_prices__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(CurrentGasPricesResponse {
+                    gas_prices: gas_prices__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.fee.v1alpha1.CurrentGasPricesResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for Fee {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -118,8 +286,14 @@ impl serde::Serialize for FeeParameters {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let len = 0;
-        let struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.FeeParameters", len)?;
+        let mut len = 0;
+        if self.fixed_gas_prices.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.FeeParameters", len)?;
+        if let Some(v) = self.fixed_gas_prices.as_ref() {
+            struct_ser.serialize_field("fixedGasPrices", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -130,10 +304,13 @@ impl<'de> serde::Deserialize<'de> for FeeParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "fixed_gas_prices",
+            "fixedGasPrices",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            FixedGasPrices,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -155,7 +332,10 @@ impl<'de> serde::Deserialize<'de> for FeeParameters {
                     where
                         E: serde::de::Error,
                     {
-                            Ok(GeneratedField::__SkipField__)
+                        match value {
+                            "fixedGasPrices" | "fixed_gas_prices" => Ok(GeneratedField::FixedGasPrices),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -173,10 +353,22 @@ impl<'de> serde::Deserialize<'de> for FeeParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                while map_.next_key::<GeneratedField>()?.is_some() {
-                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                let mut fixed_gas_prices__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::FixedGasPrices => {
+                            if fixed_gas_prices__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fixedGasPrices"));
+                            }
+                            fixed_gas_prices__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
                 }
                 Ok(FeeParameters {
+                    fixed_gas_prices: fixed_gas_prices__,
                 })
             }
         }
@@ -531,15 +723,9 @@ impl serde::Serialize for GenesisContent {
         if self.fee_params.is_some() {
             len += 1;
         }
-        if self.gas_prices.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.fee.v1alpha1.GenesisContent", len)?;
         if let Some(v) = self.fee_params.as_ref() {
             struct_ser.serialize_field("feeParams", v)?;
-        }
-        if let Some(v) = self.gas_prices.as_ref() {
-            struct_ser.serialize_field("gasPrices", v)?;
         }
         struct_ser.end()
     }
@@ -553,14 +739,11 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
         const FIELDS: &[&str] = &[
             "fee_params",
             "feeParams",
-            "gas_prices",
-            "gasPrices",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             FeeParams,
-            GasPrices,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -584,7 +767,6 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     {
                         match value {
                             "feeParams" | "fee_params" => Ok(GeneratedField::FeeParams),
-                            "gasPrices" | "gas_prices" => Ok(GeneratedField::GasPrices),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -605,7 +787,6 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut fee_params__ = None;
-                let mut gas_prices__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::FeeParams => {
@@ -614,12 +795,6 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             }
                             fee_params__ = map_.next_value()?;
                         }
-                        GeneratedField::GasPrices => {
-                            if gas_prices__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("gasPrices"));
-                            }
-                            gas_prices__ = map_.next_value()?;
-                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -627,7 +802,6 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 }
                 Ok(GenesisContent {
                     fee_params: fee_params__,
-                    gas_prices: gas_prices__,
                 })
             }
         }
