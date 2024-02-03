@@ -307,7 +307,7 @@ impl TransactionPlan {
 
     pub fn ics20_withdrawals(&self) -> impl Iterator<Item = &Ics20Withdrawal> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::Withdrawal(v) = action {
+            if let ActionPlan::Ics20Withdrawal(v) = action {
                 Some(v)
             } else {
                 None

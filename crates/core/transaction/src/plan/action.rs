@@ -77,7 +77,7 @@ pub enum ActionPlan {
     CommunityPoolOutput(CommunityPoolOutput),
     CommunityPoolDeposit(CommunityPoolDeposit),
 
-    Withdrawal(Ics20Withdrawal),
+    Ics20Withdrawal(Ics20Withdrawal),
 }
 
 impl ActionPlan {
@@ -159,7 +159,7 @@ impl ActionPlan {
             CommunityPoolOutput(plan) => Action::CommunityPoolOutput(plan.clone()),
             CommunityPoolDeposit(plan) => Action::CommunityPoolDeposit(plan.clone()),
             // Fixme: action name
-            Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
+            Ics20Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
         })
     }
 
@@ -185,7 +185,7 @@ impl ActionPlan {
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
             PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
-            Withdrawal(withdrawal) => withdrawal.balance(),
+            Ics20Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
@@ -216,7 +216,7 @@ impl ActionPlan {
             CommunityPoolSpend(_) => Fr::zero(),
             CommunityPoolOutput(_) => Fr::zero(),
             CommunityPoolDeposit(_) => Fr::zero(),
-            Withdrawal(_) => Fr::zero(),
+            Ics20Withdrawal(_) => Fr::zero(),
         }
     }
 
@@ -246,7 +246,7 @@ impl ActionPlan {
             CommunityPoolSpend(plan) => plan.effect_hash(),
             CommunityPoolOutput(plan) => plan.effect_hash(),
             CommunityPoolDeposit(plan) => plan.effect_hash(),
-            Withdrawal(plan) => plan.effect_hash(),
+            Ics20Withdrawal(plan) => plan.effect_hash(),
         }
     }
 }
@@ -345,7 +345,7 @@ impl From<PositionRewardClaimPlan> for ActionPlan {
 
 impl From<Ics20Withdrawal> for ActionPlan {
     fn from(inner: Ics20Withdrawal) -> ActionPlan {
-        ActionPlan::Withdrawal(inner)
+        ActionPlan::Ics20Withdrawal(inner)
     }
 }
 
@@ -427,8 +427,8 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::CommunityPoolOutput(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::CommunityPoolOutput(inner.into())),
             },
-            ActionPlan::Withdrawal(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::Withdrawal(inner.into())),
+            ActionPlan::Ics20Withdrawal(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::Ics20Withdrawal(inner.into())),
             },
         }
     }
@@ -503,8 +503,8 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::CommunityPoolOutput(inner) => {
                 Ok(ActionPlan::CommunityPoolOutput(inner.try_into()?))
             }
-            pb_t::action_plan::Action::Withdrawal(inner) => {
-                Ok(ActionPlan::Withdrawal(inner.try_into()?))
+            pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
+                Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
             }
         }
     }
