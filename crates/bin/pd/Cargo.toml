@@ -32,6 +32,7 @@ penumbra-stake = { path = "../../core/component/stake", features = [
     "parallel",
 ] }
 penumbra-sct = { path = "../../core/component/sct" }
+penumbra-fee = { path = "../../core/component/fee" }
 penumbra-dex = { path = "../../core/component/dex", features = ["parallel"] }
 penumbra-governance = { path = "../../core/component/governance", features = [
     "parallel",

@@ -38,12 +38,28 @@ message FeeTier {
 }
 
 // Fee component configuration data.
-message FeeParameters {}
+message FeeParameters {
+  // Fixed gas prices used to compute transactions' base fees.
+  //
+  // In the future, this should be removed and replaced with parameters for dynamic gas pricing.
+  GasPrices fixed_gas_prices = 1;
+}
 
 // Fee-specific genesis content.
 message GenesisContent {
   // The FeeParameters present at genesis.
   FeeParameters fee_params = 1;
-  // The initial gas prices.
-  GasPrices gas_prices = 2;
+}
+
+// Query operations for the fee component.
+service QueryService {
+  // Get the current gas prices.
+  rpc CurrentGasPrices(CurrentGasPricesRequest) returns (CurrentGasPricesResponse);
+}
+
+message CurrentGasPricesRequest {}
+
+message CurrentGasPricesResponse {
+  // The current gas prices.
+  GasPrices gas_prices = 1;
 }

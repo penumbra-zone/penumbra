@@ -130,6 +130,28 @@ impl tower::Service<http::Request<Body>> for DexSimulationProxy {
 }
 
 #[derive(Clone)]
+pub struct FeeQueryProxy(pub Channel);
+
+impl NamedService for FeeQueryProxy {
+    const NAME: &'static str = "penumbra.core.component.fee.v1alpha1.QueryService";
+}
+
+impl tower::Service<http::Request<Body>> for FeeQueryProxy {
+    type Response = http::Response<BoxBody>;
+    type Error = Infallible;
+    type Future =
+        Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: http::Request<Body>) -> Self::Future {
+        proxy(self.0.clone(), req)
+    }
+}
+
+#[derive(Clone)]
 pub struct SctQueryProxy(pub Channel);
 
 impl NamedService for SctQueryProxy {
