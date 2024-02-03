@@ -5,12 +5,8 @@ use clap::Parser;
 use tracing::Instrument;
 use tracing_subscriber::EnvFilter;
 
-use penumbra_app::params::AppParameters;
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
-    penumbra::core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
-    },
     penumbra::core::component::compact_block::v1alpha1::{
         query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
         CompactBlockRangeRequest,
@@ -109,7 +105,6 @@ impl Opt {
                             let mut stream = client
                                 .compact_block_range(tonic::Request::new(
                                     CompactBlockRangeRequest {
-                                        chain_id: String::new(),
                                         start_height,
                                         end_height,
                                         keep_alive: true,
@@ -154,7 +149,6 @@ impl Opt {
 
                         let mut stream = client
                             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                                chain_id: String::new(),
                                 start_height,
                                 end_height,
                                 keep_alive: true,
@@ -188,23 +182,13 @@ impl Opt {
                     .connect()
                     .await?;
 
-                let mut app_client = AppQueryServiceClient::new(channel.clone());
                 let mut cb_client = CompactBlockQueryServiceClient::new(channel.clone());
-
-                let params: AppParameters = app_client
-                    .app_parameters(tonic::Request::new(AppParametersRequest {
-                        chain_id: String::new(),
-                    }))
-                    .await?
-                    .into_inner()
-                    .try_into()?;
 
                 let end_height = self.latest_known_block_height().await?.0;
                 let start_height = if skip_genesis { 1 } else { 0 };
 
                 let mut stream = cb_client
                     .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                        chain_id: params.chain_id,
                         start_height,
                         end_height,
                         keep_alive: false,

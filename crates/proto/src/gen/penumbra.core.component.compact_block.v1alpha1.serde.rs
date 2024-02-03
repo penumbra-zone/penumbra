@@ -265,9 +265,6 @@ impl serde::Serialize for CompactBlockRangeRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.start_height != 0 {
             len += 1;
         }
@@ -278,9 +275,6 @@ impl serde::Serialize for CompactBlockRangeRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.compact_block.v1alpha1.CompactBlockRangeRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
@@ -302,8 +296,6 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "start_height",
             "startHeight",
             "end_height",
@@ -314,7 +306,6 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             StartHeight,
             EndHeight,
             KeepAlive,
@@ -340,7 +331,6 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "endHeight" | "end_height" => Ok(GeneratedField::EndHeight),
                             "keepAlive" | "keep_alive" => Ok(GeneratedField::KeepAlive),
@@ -363,18 +353,11 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut start_height__ = None;
                 let mut end_height__ = None;
                 let mut keep_alive__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
@@ -403,7 +386,6 @@ impl<'de> serde::Deserialize<'de> for CompactBlockRangeRequest {
                     }
                 }
                 Ok(CompactBlockRangeRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     start_height: start_height__.unwrap_or_default(),
                     end_height: end_height__.unwrap_or_default(),
                     keep_alive: keep_alive__.unwrap_or_default(),

@@ -655,17 +655,9 @@ impl TxCmd {
                         let start_epoch_index = token.start_epoch_index();
                         let end_epoch_index = current_epoch.index;
 
-                        let params = app
-                            .view
-                            .as_mut()
-                            .context("view service must be initialized")?
-                            .app_params()
-                            .await?;
-
                         let mut client = StakeQueryServiceClient::new(channel.clone());
                         let penalty: Penalty = client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
-                                chain_id: params.chain_id.to_string(),
                                 identity_key: Some(validator_identity.into()),
                                 start_epoch_index,
                                 end_epoch_index,
@@ -771,9 +763,7 @@ impl TxCmd {
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let next_proposal_id: u64 = client
-                    .next_proposal_id(NextProposalIdRequest {
-                        chain_id: app.view().app_params().await?.chain_id,
-                    })
+                    .next_proposal_id(NextProposalIdRequest {})
                     .await?
                     .into_inner()
                     .next_proposal_id;
@@ -799,7 +789,6 @@ impl TxCmd {
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let proposal = client
                     .proposal_data(ProposalDataRequest {
-                        chain_id: app.view().app_params().await?.chain_id,
                         proposal_id: *proposal_id,
                     })
                     .await?
@@ -868,19 +857,13 @@ impl TxCmd {
                     start_block_height,
                     start_position,
                 } = client
-                    .proposal_info(ProposalInfoRequest {
-                        chain_id: app.view().app_params().await?.chain_id,
-                        proposal_id,
-                    })
+                    .proposal_info(ProposalInfoRequest { proposal_id })
                     .await?
                     .into_inner();
                 let start_position = start_position.into();
 
                 let mut rate_data_stream = client
-                    .proposal_rate_data(ProposalRateDataRequest {
-                        chain_id: app.view().app_params().await?.chain_id,
-                        proposal_id,
-                    })
+                    .proposal_rate_data(ProposalRateDataRequest { proposal_id })
                     .await?
                     .into_inner();
 
@@ -1153,20 +1136,12 @@ impl TxCmd {
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
                 for position_id in owned_position_ids {
                     // Withdraw the position
 
                     // Fetch the information regarding the position from the view service.
                     let position = client
                         .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                            chain_id: params.chain_id.to_string(),
                             position_id: Some(position_id.into()),
                         })
                         .await?
@@ -1209,17 +1184,9 @@ impl TxCmd {
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
-
                 // Fetch the information regarding the position from the view service.
                 let position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                        chain_id: params.chain_id.to_string(),
                         position_id: Some(PositionId::from(*position_id)),
                     })
                     .await?

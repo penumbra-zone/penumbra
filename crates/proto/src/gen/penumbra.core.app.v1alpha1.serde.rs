@@ -263,14 +263,8 @@ impl serde::Serialize for AppParametersRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.AppParametersRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.AppParametersRequest", len)?;
         struct_ser.end()
     }
 }
@@ -281,13 +275,10 @@ impl<'de> serde::Deserialize<'de> for AppParametersRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -309,10 +300,7 @@ impl<'de> serde::Deserialize<'de> for AppParametersRequest {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
-                            _ => Ok(GeneratedField::__SkipField__),
-                        }
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -330,22 +318,10 @@ impl<'de> serde::Deserialize<'de> for AppParametersRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::__SkipField__ => {
-                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(AppParametersRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                 })
             }
         }
@@ -829,16 +805,10 @@ impl serde::Serialize for TransactionsByHeightRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.block_height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1alpha1.TransactionsByHeightRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.block_height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("blockHeight", ToString::to_string(&self.block_height).as_str())?;
@@ -853,15 +823,12 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "block_height",
             "blockHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             BlockHeight,
             __SkipField__,
         }
@@ -885,7 +852,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "blockHeight" | "block_height" => Ok(GeneratedField::BlockHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -906,16 +872,9 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut block_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::BlockHeight => {
                             if block_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("blockHeight"));
@@ -930,7 +889,6 @@ impl<'de> serde::Deserialize<'de> for TransactionsByHeightRequest {
                     }
                 }
                 Ok(TransactionsByHeightRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     block_height: block_height__.unwrap_or_default(),
                 })
             }

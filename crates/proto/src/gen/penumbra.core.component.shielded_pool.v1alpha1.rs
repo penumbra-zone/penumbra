@@ -539,9 +539,6 @@ impl ::prost::Name for OutputPlan {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AssetMetadataByIdRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The asset id to request information on.
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,

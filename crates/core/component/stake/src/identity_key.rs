@@ -71,7 +71,6 @@ impl From<IdentityKey> for CurrentValidatorRateRequest {
     fn from(k: IdentityKey) -> Self {
         CurrentValidatorRateRequest {
             identity_key: Some(k.into()),
-            chain_id: Default::default(),
         }
     }
 }

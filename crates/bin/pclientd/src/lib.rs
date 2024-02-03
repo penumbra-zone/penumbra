@@ -154,9 +154,7 @@ impl Opt {
         let mut client = AppQueryServiceClient::connect(grpc_url.to_string()).await?;
 
         let params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: String::new(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .try_into()?;

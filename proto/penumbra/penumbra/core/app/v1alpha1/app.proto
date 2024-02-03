@@ -22,8 +22,6 @@ service QueryService {
 
 // Requests the list of all transactions that occurred within a given block.
 message TransactionsByHeightRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The block height to retrieve.
   uint64 block_height = 2;
 }
@@ -61,8 +59,6 @@ message AppParameters {
 
 // Requests the global configuration data for the app.
 message AppParametersRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
 }
 
 message AppParametersResponse {

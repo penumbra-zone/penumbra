@@ -49,9 +49,7 @@ impl ChainCmd {
     pub async fn print_app_params(&self, app: &mut App) -> Result<()> {
         let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
         let params: AppParameters = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .app_parameters
@@ -141,22 +139,11 @@ impl ChainCmd {
             .context("failed to find EpochByHeight message")?
             .index;
 
-        let mut client = AppQueryServiceClient::new(channel.clone());
-        let app_params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
-            .await?
-            .into_inner()
-            .app_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?;
-
         // Fetch validators.
         let mut client = StakeQueryServiceClient::new(channel.clone());
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
-                chain_id: app_params.chain_id,
             })
             .await?
             .into_inner()
