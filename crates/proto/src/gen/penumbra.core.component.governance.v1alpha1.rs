@@ -836,9 +836,6 @@ impl ::prost::Name for Proposal {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalInfoRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -874,9 +871,6 @@ impl ::prost::Name for ProposalInfoResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalDataRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -927,9 +921,6 @@ impl ::prost::Name for ProposalDataResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalRateDataRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -963,9 +954,6 @@ impl ::prost::Name for ProposalRateDataResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProposalListRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// Whether to include proposals that are no longer active.;
     ///
     /// TODO: we could filter by starting block height here?
@@ -1014,9 +1002,6 @@ impl ::prost::Name for ProposalListResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorVotesRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -1176,9 +1161,6 @@ impl ::prost::Name for ChangedAppParametersSet {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VotingPowerAtProposalStartRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -1219,9 +1201,6 @@ impl ::prost::Name for VotingPowerAtProposalStartResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AllTalliedDelegatorVotesForProposalRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The proposal id to request information on.
     #[prost(uint64, tag = "2")]
     pub proposal_id: u64,
@@ -1258,11 +1237,7 @@ impl ::prost::Name for AllTalliedDelegatorVotesForProposalResponse {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NextProposalIdRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-}
+pub struct NextProposalIdRequest {}
 impl ::prost::Name for NextProposalIdRequest {
     const NAME: &'static str = "NextProposalIdRequest";
     const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";

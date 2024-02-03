@@ -6,16 +6,10 @@ impl serde::Serialize for AllTalliedDelegatorVotesForProposalRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -30,15 +24,12 @@ impl<'de> serde::Deserialize<'de> for AllTalliedDelegatorVotesForProposalRequest
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             __SkipField__,
         }
@@ -62,7 +53,6 @@ impl<'de> serde::Deserialize<'de> for AllTalliedDelegatorVotesForProposalRequest
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -83,16 +73,9 @@ impl<'de> serde::Deserialize<'de> for AllTalliedDelegatorVotesForProposalRequest
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -107,7 +90,6 @@ impl<'de> serde::Deserialize<'de> for AllTalliedDelegatorVotesForProposalRequest
                     }
                 }
                 Ok(AllTalliedDelegatorVotesForProposalRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                 })
             }
@@ -2068,14 +2050,8 @@ impl serde::Serialize for NextProposalIdRequest {
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.NextProposalIdRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
+        let len = 0;
+        let struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.NextProposalIdRequest", len)?;
         struct_ser.end()
     }
 }
@@ -2086,13 +2062,10 @@ impl<'de> serde::Deserialize<'de> for NextProposalIdRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2114,10 +2087,7 @@ impl<'de> serde::Deserialize<'de> for NextProposalIdRequest {
                     where
                         E: serde::de::Error,
                     {
-                        match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
-                            _ => Ok(GeneratedField::__SkipField__),
-                        }
+                            Ok(GeneratedField::__SkipField__)
                     }
                 }
                 deserializer.deserialize_identifier(GeneratedVisitor)
@@ -2135,22 +2105,10 @@ impl<'de> serde::Deserialize<'de> for NextProposalIdRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::__SkipField__ => {
-                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
-                        }
-                    }
+                while map_.next_key::<GeneratedField>()?.is_some() {
+                    let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                 }
                 Ok(NextProposalIdRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                 })
             }
         }
@@ -3192,16 +3150,10 @@ impl serde::Serialize for ProposalDataRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalDataRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -3216,15 +3168,12 @@ impl<'de> serde::Deserialize<'de> for ProposalDataRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             __SkipField__,
         }
@@ -3248,7 +3197,6 @@ impl<'de> serde::Deserialize<'de> for ProposalDataRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -3269,16 +3217,9 @@ impl<'de> serde::Deserialize<'de> for ProposalDataRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -3293,7 +3234,6 @@ impl<'de> serde::Deserialize<'de> for ProposalDataRequest {
                     }
                 }
                 Ok(ProposalDataRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                 })
             }
@@ -3635,16 +3575,10 @@ impl serde::Serialize for ProposalInfoRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalInfoRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -3659,15 +3593,12 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             __SkipField__,
         }
@@ -3691,7 +3622,6 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -3712,16 +3642,9 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -3736,7 +3659,6 @@ impl<'de> serde::Deserialize<'de> for ProposalInfoRequest {
                     }
                 }
                 Ok(ProposalInfoRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                 })
             }
@@ -3872,16 +3794,10 @@ impl serde::Serialize for ProposalListRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.inactive {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalListRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.inactive {
             struct_ser.serialize_field("inactive", &self.inactive)?;
         }
@@ -3895,14 +3811,11 @@ impl<'de> serde::Deserialize<'de> for ProposalListRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "inactive",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Inactive,
             __SkipField__,
         }
@@ -3926,7 +3839,6 @@ impl<'de> serde::Deserialize<'de> for ProposalListRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "inactive" => Ok(GeneratedField::Inactive),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -3947,16 +3859,9 @@ impl<'de> serde::Deserialize<'de> for ProposalListRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut inactive__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Inactive => {
                             if inactive__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("inactive"));
@@ -3969,7 +3874,6 @@ impl<'de> serde::Deserialize<'de> for ProposalListRequest {
                     }
                 }
                 Ok(ProposalListRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     inactive: inactive__.unwrap_or_default(),
                 })
             }
@@ -4643,16 +4547,10 @@ impl serde::Serialize for ProposalRateDataRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ProposalRateDataRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -4667,15 +4565,12 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             __SkipField__,
         }
@@ -4699,7 +4594,6 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -4720,16 +4614,9 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -4744,7 +4631,6 @@ impl<'de> serde::Deserialize<'de> for ProposalRateDataRequest {
                     }
                 }
                 Ok(ProposalRateDataRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                 })
             }
@@ -6212,16 +6098,10 @@ impl serde::Serialize for ValidatorVotesRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.ValidatorVotesRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -6236,15 +6116,12 @@ impl<'de> serde::Deserialize<'de> for ValidatorVotesRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             __SkipField__,
         }
@@ -6268,7 +6145,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorVotesRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -6289,16 +6165,9 @@ impl<'de> serde::Deserialize<'de> for ValidatorVotesRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -6313,7 +6182,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorVotesRequest {
                     }
                 }
                 Ok(ValidatorVotesRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                 })
             }
@@ -6616,9 +6484,6 @@ impl serde::Serialize for VotingPowerAtProposalStartRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.proposal_id != 0 {
             len += 1;
         }
@@ -6626,9 +6491,6 @@ impl serde::Serialize for VotingPowerAtProposalStartRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.proposal_id != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proposalId", ToString::to_string(&self.proposal_id).as_str())?;
@@ -6646,8 +6508,6 @@ impl<'de> serde::Deserialize<'de> for VotingPowerAtProposalStartRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "proposal_id",
             "proposalId",
             "identity_key",
@@ -6656,7 +6516,6 @@ impl<'de> serde::Deserialize<'de> for VotingPowerAtProposalStartRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ProposalId,
             IdentityKey,
             __SkipField__,
@@ -6681,7 +6540,6 @@ impl<'de> serde::Deserialize<'de> for VotingPowerAtProposalStartRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "proposalId" | "proposal_id" => Ok(GeneratedField::ProposalId),
                             "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -6703,17 +6561,10 @@ impl<'de> serde::Deserialize<'de> for VotingPowerAtProposalStartRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut proposal_id__ = None;
                 let mut identity_key__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ProposalId => {
                             if proposal_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("proposalId"));
@@ -6734,7 +6585,6 @@ impl<'de> serde::Deserialize<'de> for VotingPowerAtProposalStartRequest {
                     }
                 }
                 Ok(VotingPowerAtProposalStartRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     proposal_id: proposal_id__.unwrap_or_default(),
                     identity_key: identity_key__,
                 })

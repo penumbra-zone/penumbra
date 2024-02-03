@@ -27,10 +27,6 @@ impl QueryService for Server {
         request: tonic::Request<TransactionsByHeightRequest>,
     ) -> Result<tonic::Response<TransactionsByHeightResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let block_height = request_inner.block_height;
 
@@ -42,22 +38,14 @@ impl QueryService for Server {
         Ok(tonic::Response::new(tx_response))
     }
 
-    #[instrument(skip(self, request))]
+    #[instrument(skip(self, _request))]
     async fn app_parameters(
         &self,
-        request: tonic::Request<AppParametersRequest>,
+        _request: tonic::Request<AppParametersRequest>,
     ) -> Result<tonic::Response<AppParametersResponse>, Status> {
         let state = self.storage.latest_snapshot();
         // We map the error here to avoid including `tonic` as a dependency
         // in the `chain` crate, to support its compilation to wasm.
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during app parameters lookup: {e}"
-                ))
-            })?;
 
         let app_parameters = state.get_app_params().await.map_err(|e| {
             tonic::Status::unavailable(format!("error getting app parameters: {e}"))

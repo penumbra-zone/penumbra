@@ -818,9 +818,6 @@ impl ::prost::Name for PositionRewardClaimPlan {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchSwapOutputDataRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "2")]
     pub height: u64,
     #[prost(message, optional, tag = "3")]
@@ -849,9 +846,6 @@ impl ::prost::Name for BatchSwapOutputDataResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecutionRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "2")]
     pub height: u64,
     #[prost(message, optional, tag = "3")]
@@ -880,9 +874,6 @@ impl ::prost::Name for SwapExecutionResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ArbExecutionRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(uint64, tag = "2")]
     pub height: u64,
 }
@@ -911,9 +902,6 @@ impl ::prost::Name for ArbExecutionResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SwapExecutionsRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// If present, only return swap executions occurring after the given height.
     #[prost(uint64, tag = "2")]
     pub start_height: u64,
@@ -951,9 +939,6 @@ impl ::prost::Name for SwapExecutionsResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ArbExecutionsRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// If present, only return arb executions occurring after the given height.
     #[prost(uint64, tag = "2")]
     pub start_height: u64,
@@ -986,9 +971,6 @@ impl ::prost::Name for ArbExecutionsResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// If true, include closed and withdrawn positions.
     #[prost(bool, tag = "4")]
     pub include_closed: bool,
@@ -1016,9 +998,6 @@ impl ::prost::Name for LiquidityPositionsResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionByIdRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub position_id: ::core::option::Option<PositionId>,
 }
@@ -1045,9 +1024,6 @@ impl ::prost::Name for LiquidityPositionByIdResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByIdRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, repeated, tag = "2")]
     pub position_id: ::prost::alloc::vec::Vec<PositionId>,
 }
@@ -1074,9 +1050,6 @@ impl ::prost::Name for LiquidityPositionsByIdResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LiquidityPositionsByPriceRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The directed trading pair to request positions for
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<DirectedTradingPair>,
@@ -1107,9 +1080,6 @@ impl ::prost::Name for LiquidityPositionsByPriceResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SpreadRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub trading_pair: ::core::option::Option<TradingPair>,
 }

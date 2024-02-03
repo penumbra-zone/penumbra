@@ -596,9 +596,6 @@ impl ::prost::Name for Penalty {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorInfoRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// Whether or not to return inactive validators
     #[prost(bool, tag = "2")]
     pub show_inactive: bool,
@@ -626,9 +623,6 @@ impl ::prost::Name for ValidatorInfoResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorStatusRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
         super::super::super::keys::v1alpha1::IdentityKey,
@@ -658,9 +652,6 @@ impl ::prost::Name for ValidatorStatusResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorPenaltyRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
         super::super::super::keys::v1alpha1::IdentityKey,
@@ -693,9 +684,6 @@ impl ::prost::Name for ValidatorPenaltyResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CurrentValidatorRateRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
     pub identity_key: ::core::option::Option<
         super::super::super::keys::v1alpha1::IdentityKey,

@@ -329,8 +329,6 @@ service QueryService {
 }
 
 message ProposalInfoRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
 }
@@ -343,8 +341,6 @@ message ProposalInfoResponse {
 }
 
 message ProposalDataRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
 }
@@ -366,8 +362,6 @@ message ProposalDataResponse {
 
 // Requests the validator rate data for a proposal.
 message ProposalRateDataRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
 }
@@ -379,8 +373,6 @@ message ProposalRateDataResponse {
 
 // Requests the list of all proposals.
 message ProposalListRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // Whether to include proposals that are no longer active.;
   bool inactive = 2;
   // TODO: we could filter by starting block height here?
@@ -402,8 +394,6 @@ message ProposalListResponse {
 
 // Requests the list of all validator votes for a given proposal.
 message ValidatorVotesRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
 }
@@ -469,8 +459,6 @@ message ChangedAppParametersSet {
 }
 
 message VotingPowerAtProposalStartRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
   // The validator identity key to request information on.
@@ -486,8 +474,6 @@ message VotingPowerAtProposalStartResponse {
 }
 
 message AllTalliedDelegatorVotesForProposalRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The proposal id to request information on.
   uint64 proposal_id = 2;
 }
@@ -500,8 +486,6 @@ message AllTalliedDelegatorVotesForProposalResponse {
 }
 
 message NextProposalIdRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
 }
 
 message NextProposalIdResponse {

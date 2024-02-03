@@ -36,9 +36,6 @@ impl ::prost::Name for GenesisContent {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommunityPoolAssetBalancesRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// (Optional): The specific asset balances to retrieve, if excluded all will be returned.
     #[prost(message, repeated, tag = "2")]
     pub asset_ids: ::prost::alloc::vec::Vec<
