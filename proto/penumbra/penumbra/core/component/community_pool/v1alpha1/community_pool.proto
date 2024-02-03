@@ -22,8 +22,6 @@ service QueryService {
 
 // Requests the list of all asset balances associated with the Community Pool.
 message CommunityPoolAssetBalancesRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // (Optional): The specific asset balances to retrieve, if excluded all will be returned.
   repeated asset.v1alpha1.AssetId asset_ids = 2;
 }

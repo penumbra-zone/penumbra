@@ -235,8 +235,6 @@ service QueryService {
 
 // Requests information on the chain's validators.
 message ValidatorInfoRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // Whether or not to return inactive validators
   bool show_inactive = 2;
 }
@@ -246,8 +244,6 @@ message ValidatorInfoResponse {
 }
 
 message ValidatorStatusRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   core.keys.v1alpha1.IdentityKey identity_key = 2;
 }
 
@@ -257,8 +253,6 @@ message ValidatorStatusResponse {
 
 // Requests the compounded penalty for a validator over a range of epochs.
 message ValidatorPenaltyRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   core.keys.v1alpha1.IdentityKey identity_key = 2;
   uint64 start_epoch_index = 3;
   uint64 end_epoch_index = 4;
@@ -269,8 +263,6 @@ message ValidatorPenaltyResponse {
 }
 
 message CurrentValidatorRateRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   core.keys.v1alpha1.IdentityKey identity_key = 2;
 }
 

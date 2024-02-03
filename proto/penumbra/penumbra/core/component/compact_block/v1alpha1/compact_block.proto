@@ -63,8 +63,6 @@ service QueryService {
 
 // Requests a range of compact block data.
 message CompactBlockRangeRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The start height of the range.
   uint64 start_height = 2;
   // The end height of the range, defaults to the latest block height.

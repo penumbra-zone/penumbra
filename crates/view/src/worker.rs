@@ -186,8 +186,6 @@ impl Worker {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
-        let chain_id = self.storage.app_params().await?.chain_id;
-
         let start_height = self
             .storage
             .last_sync_height()
@@ -198,7 +196,6 @@ impl Worker {
         let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                chain_id: chain_id.clone(),
                 start_height,
                 end_height: 0,
                 // Instruct the server to keep feeding us blocks as they're created.
@@ -333,7 +330,6 @@ impl Worker {
                         if let Some(denom_metadata) = client
                             .asset_metadata_by_id(AssetMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
-                                chain_id: chain_id.clone(),
                             })
                             .await?
                             .into_inner()

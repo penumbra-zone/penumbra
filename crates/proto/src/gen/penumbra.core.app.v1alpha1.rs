@@ -2,9 +2,6 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TransactionsByHeightRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The block height to retrieve.
     #[prost(uint64, tag = "2")]
     pub block_height: u64,
@@ -98,11 +95,7 @@ impl ::prost::Name for AppParameters {
 /// Requests the global configuration data for the app.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AppParametersRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
-}
+pub struct AppParametersRequest {}
 impl ::prost::Name for AppParametersRequest {
     const NAME: &'static str = "AppParametersRequest";
     const PACKAGE: &'static str = "penumbra.core.app.v1alpha1";

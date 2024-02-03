@@ -21,8 +21,6 @@ service QueryService {
 //
 // Proofs are only supported by key.
 message KeyValueRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // If set, the key to fetch from storage.
   string key = 2;
   // whether to return a proof
@@ -41,8 +39,6 @@ message KeyValueResponse {
 
 // Performs a prefixed key-value query, by string prefix.
 message PrefixValueRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The prefix to fetch subkeys from storage.
   string prefix = 2;
 }

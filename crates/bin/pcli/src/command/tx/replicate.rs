@@ -200,7 +200,6 @@ impl ConstantProduct {
         let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
         let spread_data = client
             .spread(SpreadRequest {
-                chain_id: "".to_string(),
                 trading_pair: Some(self.pair.into_directed_trading_pair().to_canonical().into()),
             })
             .await?

@@ -38,10 +38,8 @@ impl CommunityPoolCmd {
         });
 
         let mut client = CommunityPoolQueryServiceClient::new(app.pd_channel().await?);
-        let chain_id = app.view().app_params().await?.chain_id;
         let balances = client
             .community_pool_asset_balances(CommunityPoolAssetBalancesRequest {
-                chain_id,
                 asset_ids: asset_id.map_or_else(std::vec::Vec::new, |id| vec![id.into()]),
             })
             .await?

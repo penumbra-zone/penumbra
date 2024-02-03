@@ -6,16 +6,10 @@ impl serde::Serialize for ArbExecutionRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.ArbExecutionRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -30,14 +24,11 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "height",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Height,
             __SkipField__,
         }
@@ -61,7 +52,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "height" => Ok(GeneratedField::Height),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -82,16 +72,9 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
@@ -106,7 +89,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionRequest {
                     }
                 }
                 Ok(ArbExecutionRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     height: height__.unwrap_or_default(),
                 })
             }
@@ -238,9 +220,6 @@ impl serde::Serialize for ArbExecutionsRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.start_height != 0 {
             len += 1;
         }
@@ -248,9 +227,6 @@ impl serde::Serialize for ArbExecutionsRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.ArbExecutionsRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
@@ -269,8 +245,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "start_height",
             "startHeight",
             "end_height",
@@ -279,7 +253,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionsRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             StartHeight,
             EndHeight,
             __SkipField__,
@@ -304,7 +277,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionsRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "endHeight" | "end_height" => Ok(GeneratedField::EndHeight),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -326,17 +298,10 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut start_height__ = None;
                 let mut end_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
@@ -359,7 +324,6 @@ impl<'de> serde::Deserialize<'de> for ArbExecutionsRequest {
                     }
                 }
                 Ok(ArbExecutionsRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     start_height: start_height__.unwrap_or_default(),
                     end_height: end_height__.unwrap_or_default(),
                 })
@@ -868,9 +832,6 @@ impl serde::Serialize for BatchSwapOutputDataRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.height != 0 {
             len += 1;
         }
@@ -878,9 +839,6 @@ impl serde::Serialize for BatchSwapOutputDataRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.BatchSwapOutputDataRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -898,8 +856,6 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "height",
             "trading_pair",
             "tradingPair",
@@ -907,7 +863,6 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Height,
             TradingPair,
             __SkipField__,
@@ -932,7 +887,6 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "height" => Ok(GeneratedField::Height),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -954,17 +908,10 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut height__ = None;
                 let mut trading_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
@@ -985,7 +932,6 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataRequest {
                     }
                 }
                 Ok(BatchSwapOutputDataRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     height: height__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                 })
@@ -1924,16 +1870,10 @@ impl serde::Serialize for LiquidityPositionByIdRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.position_id.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.LiquidityPositionByIdRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
         }
@@ -1947,15 +1887,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionByIdRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "position_id",
             "positionId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             PositionId,
             __SkipField__,
         }
@@ -1979,7 +1916,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionByIdRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -2000,16 +1936,9 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionByIdRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut position_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::PositionId => {
                             if position_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionId"));
@@ -2022,7 +1951,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionByIdRequest {
                     }
                 }
                 Ok(LiquidityPositionByIdRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     position_id: position_id__,
                 })
             }
@@ -2133,16 +2061,10 @@ impl serde::Serialize for LiquidityPositionsByIdRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if !self.position_id.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.LiquidityPositionsByIdRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if !self.position_id.is_empty() {
             struct_ser.serialize_field("positionId", &self.position_id)?;
         }
@@ -2156,15 +2078,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByIdRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "position_id",
             "positionId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             PositionId,
             __SkipField__,
         }
@@ -2188,7 +2107,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByIdRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -2209,16 +2127,9 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByIdRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut position_id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::PositionId => {
                             if position_id__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("positionId"));
@@ -2231,7 +2142,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByIdRequest {
                     }
                 }
                 Ok(LiquidityPositionsByIdRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     position_id: position_id__.unwrap_or_default(),
                 })
             }
@@ -2342,9 +2252,6 @@ impl serde::Serialize for LiquidityPositionsByPriceRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.trading_pair.is_some() {
             len += 1;
         }
@@ -2352,9 +2259,6 @@ impl serde::Serialize for LiquidityPositionsByPriceRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.LiquidityPositionsByPriceRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.trading_pair.as_ref() {
             struct_ser.serialize_field("tradingPair", v)?;
         }
@@ -2372,8 +2276,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "trading_pair",
             "tradingPair",
             "limit",
@@ -2381,7 +2283,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             TradingPair,
             Limit,
             __SkipField__,
@@ -2406,7 +2307,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "limit" => Ok(GeneratedField::Limit),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -2428,17 +2328,10 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut trading_pair__ = None;
                 let mut limit__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::TradingPair => {
                             if trading_pair__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("tradingPair"));
@@ -2459,7 +2352,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceRequest {
                     }
                 }
                 Ok(LiquidityPositionsByPriceRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                     limit: limit__.unwrap_or_default(),
                 })
@@ -2571,16 +2463,10 @@ impl serde::Serialize for LiquidityPositionsRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.include_closed {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.LiquidityPositionsRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.include_closed {
             struct_ser.serialize_field("includeClosed", &self.include_closed)?;
         }
@@ -2594,15 +2480,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "include_closed",
             "includeClosed",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             IncludeClosed,
             __SkipField__,
         }
@@ -2626,7 +2509,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "includeClosed" | "include_closed" => Ok(GeneratedField::IncludeClosed),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -2647,16 +2529,9 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut include_closed__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::IncludeClosed => {
                             if include_closed__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("includeClosed"));
@@ -2669,7 +2544,6 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsRequest {
                     }
                 }
                 Ok(LiquidityPositionsRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     include_closed: include_closed__.unwrap_or_default(),
                 })
             }
@@ -4591,16 +4465,10 @@ impl serde::Serialize for SpreadRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.trading_pair.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.SpreadRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.trading_pair.as_ref() {
             struct_ser.serialize_field("tradingPair", v)?;
         }
@@ -4614,15 +4482,12 @@ impl<'de> serde::Deserialize<'de> for SpreadRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "trading_pair",
             "tradingPair",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             TradingPair,
             __SkipField__,
         }
@@ -4646,7 +4511,6 @@ impl<'de> serde::Deserialize<'de> for SpreadRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -4667,16 +4531,9 @@ impl<'de> serde::Deserialize<'de> for SpreadRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut trading_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::TradingPair => {
                             if trading_pair__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("tradingPair"));
@@ -4689,7 +4546,6 @@ impl<'de> serde::Deserialize<'de> for SpreadRequest {
                     }
                 }
                 Ok(SpreadRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                 })
             }
@@ -6199,9 +6055,6 @@ impl serde::Serialize for SwapExecutionRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.height != 0 {
             len += 1;
         }
@@ -6209,9 +6062,6 @@ impl serde::Serialize for SwapExecutionRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.SwapExecutionRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -6229,8 +6079,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "height",
             "trading_pair",
             "tradingPair",
@@ -6238,7 +6086,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Height,
             TradingPair,
             __SkipField__,
@@ -6263,7 +6110,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "height" => Ok(GeneratedField::Height),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -6285,17 +6131,10 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut height__ = None;
                 let mut trading_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Height => {
                             if height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("height"));
@@ -6316,7 +6155,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionRequest {
                     }
                 }
                 Ok(SwapExecutionRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     height: height__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                 })
@@ -6429,9 +6267,6 @@ impl serde::Serialize for SwapExecutionsRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.start_height != 0 {
             len += 1;
         }
@@ -6442,9 +6277,6 @@ impl serde::Serialize for SwapExecutionsRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1alpha1.SwapExecutionsRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.start_height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
@@ -6466,8 +6298,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionsRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "start_height",
             "startHeight",
             "end_height",
@@ -6478,7 +6308,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionsRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             StartHeight,
             EndHeight,
             TradingPair,
@@ -6504,7 +6333,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionsRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
                             "endHeight" | "end_height" => Ok(GeneratedField::EndHeight),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
@@ -6527,18 +6355,11 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionsRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut start_height__ = None;
                 let mut end_height__ = None;
                 let mut trading_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::StartHeight => {
                             if start_height__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("startHeight"));
@@ -6567,7 +6388,6 @@ impl<'de> serde::Deserialize<'de> for SwapExecutionsRequest {
                     }
                 }
                 Ok(SwapExecutionsRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     start_height: start_height__.unwrap_or_default(),
                     end_height: end_height__.unwrap_or_default(),
                     trading_pair: trading_pair__,

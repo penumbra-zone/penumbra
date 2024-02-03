@@ -432,16 +432,10 @@ impl serde::Serialize for CurrentValidatorRateRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.identity_key.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.CurrentValidatorRateRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.identity_key.as_ref() {
             struct_ser.serialize_field("identityKey", v)?;
         }
@@ -455,15 +449,12 @@ impl<'de> serde::Deserialize<'de> for CurrentValidatorRateRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "identity_key",
             "identityKey",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             IdentityKey,
             __SkipField__,
         }
@@ -487,7 +478,6 @@ impl<'de> serde::Deserialize<'de> for CurrentValidatorRateRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -508,16 +498,9 @@ impl<'de> serde::Deserialize<'de> for CurrentValidatorRateRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut identity_key__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::IdentityKey => {
                             if identity_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identityKey"));
@@ -530,7 +513,6 @@ impl<'de> serde::Deserialize<'de> for CurrentValidatorRateRequest {
                     }
                 }
                 Ok(CurrentValidatorRateRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     identity_key: identity_key__,
                 })
             }
@@ -3102,16 +3084,10 @@ impl serde::Serialize for ValidatorInfoRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.show_inactive {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.ValidatorInfoRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if self.show_inactive {
             struct_ser.serialize_field("showInactive", &self.show_inactive)?;
         }
@@ -3125,15 +3101,12 @@ impl<'de> serde::Deserialize<'de> for ValidatorInfoRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "show_inactive",
             "showInactive",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             ShowInactive,
             __SkipField__,
         }
@@ -3157,7 +3130,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorInfoRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "showInactive" | "show_inactive" => Ok(GeneratedField::ShowInactive),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -3178,16 +3150,9 @@ impl<'de> serde::Deserialize<'de> for ValidatorInfoRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut show_inactive__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::ShowInactive => {
                             if show_inactive__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("showInactive"));
@@ -3200,7 +3165,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorInfoRequest {
                     }
                 }
                 Ok(ValidatorInfoRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     show_inactive: show_inactive__.unwrap_or_default(),
                 })
             }
@@ -3408,9 +3372,6 @@ impl serde::Serialize for ValidatorPenaltyRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.identity_key.is_some() {
             len += 1;
         }
@@ -3421,9 +3382,6 @@ impl serde::Serialize for ValidatorPenaltyRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.ValidatorPenaltyRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.identity_key.as_ref() {
             struct_ser.serialize_field("identityKey", v)?;
         }
@@ -3445,8 +3403,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorPenaltyRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "identity_key",
             "identityKey",
             "start_epoch_index",
@@ -3457,7 +3413,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorPenaltyRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             IdentityKey,
             StartEpochIndex,
             EndEpochIndex,
@@ -3483,7 +3438,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorPenaltyRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "endEpochIndex" | "end_epoch_index" => Ok(GeneratedField::EndEpochIndex),
@@ -3506,18 +3460,11 @@ impl<'de> serde::Deserialize<'de> for ValidatorPenaltyRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut identity_key__ = None;
                 let mut start_epoch_index__ = None;
                 let mut end_epoch_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::IdentityKey => {
                             if identity_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identityKey"));
@@ -3546,7 +3493,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorPenaltyRequest {
                     }
                 }
                 Ok(ValidatorPenaltyRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     identity_key: identity_key__,
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     end_epoch_index: end_epoch_index__.unwrap_or_default(),
@@ -3991,16 +3937,10 @@ impl serde::Serialize for ValidatorStatusRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if self.identity_key.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1alpha1.ValidatorStatusRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if let Some(v) = self.identity_key.as_ref() {
             struct_ser.serialize_field("identityKey", v)?;
         }
@@ -4014,15 +3954,12 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatusRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "identity_key",
             "identityKey",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             IdentityKey,
             __SkipField__,
         }
@@ -4046,7 +3983,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatusRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -4067,16 +4003,9 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatusRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut identity_key__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::IdentityKey => {
                             if identity_key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("identityKey"));
@@ -4089,7 +4018,6 @@ impl<'de> serde::Deserialize<'de> for ValidatorStatusRequest {
                     }
                 }
                 Ok(ValidatorStatusRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     identity_key: identity_key__,
                 })
             }

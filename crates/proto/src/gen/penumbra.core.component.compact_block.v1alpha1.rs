@@ -141,9 +141,6 @@ impl ::prost::Name for StatePayload {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CompactBlockRangeRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The start height of the range.
     #[prost(uint64, tag = "2")]
     pub start_height: u64,

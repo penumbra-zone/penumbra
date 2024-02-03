@@ -198,8 +198,6 @@ service QueryService {
 
 // Requests information on an asset by asset id
 message AssetMetadataByIdRequest {
-  // The expected chain id (empty string if no expectation).
-  string chain_id = 1;
   // The asset id to request information on.
   core.asset.v1alpha1.AssetId asset_id = 2;
 }

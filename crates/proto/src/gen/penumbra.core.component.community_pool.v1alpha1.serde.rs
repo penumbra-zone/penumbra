@@ -6,16 +6,10 @@ impl serde::Serialize for CommunityPoolAssetBalancesRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if !self.asset_ids.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.community_pool.v1alpha1.CommunityPoolAssetBalancesRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if !self.asset_ids.is_empty() {
             struct_ser.serialize_field("assetIds", &self.asset_ids)?;
         }
@@ -29,15 +23,12 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "asset_ids",
             "assetIds",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             AssetIds,
             __SkipField__,
         }
@@ -61,7 +52,6 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "assetIds" | "asset_ids" => Ok(GeneratedField::AssetIds),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -82,16 +72,9 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut asset_ids__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::AssetIds => {
                             if asset_ids__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("assetIds"));
@@ -104,7 +87,6 @@ impl<'de> serde::Deserialize<'de> for CommunityPoolAssetBalancesRequest {
                     }
                 }
                 Ok(CommunityPoolAssetBalancesRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     asset_ids: asset_ids__.unwrap_or_default(),
                 })
             }

@@ -6,9 +6,6 @@ impl serde::Serialize for KeyValueRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if !self.key.is_empty() {
             len += 1;
         }
@@ -16,9 +13,6 @@ impl serde::Serialize for KeyValueRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.KeyValueRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if !self.key.is_empty() {
             struct_ser.serialize_field("key", &self.key)?;
         }
@@ -35,15 +29,12 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "key",
             "proof",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Key,
             Proof,
             __SkipField__,
@@ -68,7 +59,6 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "key" => Ok(GeneratedField::Key),
                             "proof" => Ok(GeneratedField::Proof),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -90,17 +80,10 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut key__ = None;
                 let mut proof__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Key => {
                             if key__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("key"));
@@ -119,7 +102,6 @@ impl<'de> serde::Deserialize<'de> for KeyValueRequest {
                     }
                 }
                 Ok(KeyValueRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     key: key__.unwrap_or_default(),
                     proof: proof__.unwrap_or_default(),
                 })
@@ -346,16 +328,10 @@ impl serde::Serialize for PrefixValueRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.chain_id.is_empty() {
-            len += 1;
-        }
         if !self.prefix.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.cnidarium.v1alpha1.PrefixValueRequest", len)?;
-        if !self.chain_id.is_empty() {
-            struct_ser.serialize_field("chainId", &self.chain_id)?;
-        }
         if !self.prefix.is_empty() {
             struct_ser.serialize_field("prefix", &self.prefix)?;
         }
@@ -369,14 +345,11 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "chain_id",
-            "chainId",
             "prefix",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ChainId,
             Prefix,
             __SkipField__,
         }
@@ -400,7 +373,6 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "chainId" | "chain_id" => Ok(GeneratedField::ChainId),
                             "prefix" => Ok(GeneratedField::Prefix),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -421,16 +393,9 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut chain_id__ = None;
                 let mut prefix__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ChainId => {
-                            if chain_id__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("chainId"));
-                            }
-                            chain_id__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::Prefix => {
                             if prefix__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("prefix"));
@@ -443,7 +408,6 @@ impl<'de> serde::Deserialize<'de> for PrefixValueRequest {
                     }
                 }
                 Ok(PrefixValueRequest {
-                    chain_id: chain_id__.unwrap_or_default(),
                     prefix: prefix__.unwrap_or_default(),
                 })
             }

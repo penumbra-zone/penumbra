@@ -84,9 +84,7 @@ impl Storage {
 
         let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
         let params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: String::new(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .try_into()?;
@@ -1256,9 +1254,7 @@ impl Storage {
             let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
             Some(
                 client
-                    .app_parameters(tonic::Request::new(AppParametersRequest {
-                        chain_id: String::new(),
-                    }))
+                    .app_parameters(tonic::Request::new(AppParametersRequest {}))
                     .await?
                     .into_inner()
                     .try_into()?,

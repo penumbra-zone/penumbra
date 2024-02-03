@@ -4,9 +4,6 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct KeyValueRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// If set, the key to fetch from storage.
     #[prost(string, tag = "2")]
     pub key: ::prost::alloc::string::String,
@@ -62,9 +59,6 @@ impl ::prost::Name for KeyValueResponse {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PrefixValueRequest {
-    /// The expected chain id (empty string if no expectation).
-    #[prost(string, tag = "1")]
-    pub chain_id: ::prost::alloc::string::String,
     /// The prefix to fetch subkeys from storage.
     #[prost(string, tag = "2")]
     pub prefix: ::prost::alloc::string::String,
