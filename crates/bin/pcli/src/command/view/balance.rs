@@ -118,7 +118,7 @@ fn format_return_address(return_address: &Option<penumbra_keys::AddressView>) ->
     match return_address {
         None => "Unknown".to_owned(),
         Some(AddressView::Opaque { address }) => address.display_short_form(),
-        Some(AddressView::Visible { index, .. }) => {
+        Some(AddressView::Decoded { index, .. }) => {
             if index.is_ephemeral() {
                 format!("[account {} (IBC deposit address)]", index.account)
             } else {
