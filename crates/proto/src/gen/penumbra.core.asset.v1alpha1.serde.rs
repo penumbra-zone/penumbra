@@ -1059,11 +1059,11 @@ impl serde::Serialize for ValueView {
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.ValueView", len)?;
         if let Some(v) = self.value_view.as_ref() {
             match v {
-                value_view::ValueView::KnownDenom(v) => {
-                    struct_ser.serialize_field("knownDenom", v)?;
+                value_view::ValueView::KnownAssetId(v) => {
+                    struct_ser.serialize_field("knownAssetId", v)?;
                 }
-                value_view::ValueView::UnknownDenom(v) => {
-                    struct_ser.serialize_field("unknownDenom", v)?;
+                value_view::ValueView::UnknownAssetId(v) => {
+                    struct_ser.serialize_field("unknownAssetId", v)?;
                 }
             }
         }
@@ -1077,16 +1077,16 @@ impl<'de> serde::Deserialize<'de> for ValueView {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "known_denom",
-            "knownDenom",
-            "unknown_denom",
-            "unknownDenom",
+            "known_asset_id",
+            "knownAssetId",
+            "unknown_asset_id",
+            "unknownAssetId",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            KnownDenom,
-            UnknownDenom,
+            KnownAssetId,
+            UnknownAssetId,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1109,8 +1109,8 @@ impl<'de> serde::Deserialize<'de> for ValueView {
                         E: serde::de::Error,
                     {
                         match value {
-                            "knownDenom" | "known_denom" => Ok(GeneratedField::KnownDenom),
-                            "unknownDenom" | "unknown_denom" => Ok(GeneratedField::UnknownDenom),
+                            "knownAssetId" | "known_asset_id" => Ok(GeneratedField::KnownAssetId),
+                            "unknownAssetId" | "unknown_asset_id" => Ok(GeneratedField::UnknownAssetId),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1133,18 +1133,18 @@ impl<'de> serde::Deserialize<'de> for ValueView {
                 let mut value_view__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::KnownDenom => {
+                        GeneratedField::KnownAssetId => {
                             if value_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("knownDenom"));
+                                return Err(serde::de::Error::duplicate_field("knownAssetId"));
                             }
-                            value_view__ = map_.next_value::<::std::option::Option<_>>()?.map(value_view::ValueView::KnownDenom)
+                            value_view__ = map_.next_value::<::std::option::Option<_>>()?.map(value_view::ValueView::KnownAssetId)
 ;
                         }
-                        GeneratedField::UnknownDenom => {
+                        GeneratedField::UnknownAssetId => {
                             if value_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("unknownDenom"));
+                                return Err(serde::de::Error::duplicate_field("unknownAssetId"));
                             }
-                            value_view__ = map_.next_value::<::std::option::Option<_>>()?.map(value_view::ValueView::UnknownDenom)
+                            value_view__ = map_.next_value::<::std::option::Option<_>>()?.map(value_view::ValueView::UnknownAssetId)
 ;
                         }
                         GeneratedField::__SkipField__ => {
@@ -1160,7 +1160,7 @@ impl<'de> serde::Deserialize<'de> for ValueView {
         deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.ValueView", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for value_view::KnownDenom {
+impl serde::Serialize for value_view::KnownAssetId {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1171,20 +1171,20 @@ impl serde::Serialize for value_view::KnownDenom {
         if self.amount.is_some() {
             len += 1;
         }
-        if self.denom.is_some() {
+        if self.metadata.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.ValueView.KnownDenom", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.ValueView.KnownAssetId", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
-        if let Some(v) = self.denom.as_ref() {
-            struct_ser.serialize_field("denom", v)?;
+        if let Some(v) = self.metadata.as_ref() {
+            struct_ser.serialize_field("metadata", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
+impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1192,13 +1192,13 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
     {
         const FIELDS: &[&str] = &[
             "amount",
-            "denom",
+            "metadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Amount,
-            Denom,
+            Metadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1222,7 +1222,7 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
                     {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
-                            "denom" => Ok(GeneratedField::Denom),
+                            "metadata" => Ok(GeneratedField::Metadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1232,18 +1232,18 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = value_view::KnownDenom;
+            type Value = value_view::KnownAssetId;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.asset.v1alpha1.ValueView.KnownDenom")
+                formatter.write_str("struct penumbra.core.asset.v1alpha1.ValueView.KnownAssetId")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<value_view::KnownDenom, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<value_view::KnownAssetId, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut amount__ = None;
-                let mut denom__ = None;
+                let mut metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Amount => {
@@ -1252,27 +1252,27 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownDenom {
                             }
                             amount__ = map_.next_value()?;
                         }
-                        GeneratedField::Denom => {
-                            if denom__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("denom"));
+                        GeneratedField::Metadata => {
+                            if metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("metadata"));
                             }
-                            denom__ = map_.next_value()?;
+                            metadata__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
                     }
                 }
-                Ok(value_view::KnownDenom {
+                Ok(value_view::KnownAssetId {
                     amount: amount__,
-                    denom: denom__,
+                    metadata: metadata__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.ValueView.KnownDenom", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.ValueView.KnownAssetId", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for value_view::UnknownDenom {
+impl serde::Serialize for value_view::UnknownAssetId {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1286,7 +1286,7 @@ impl serde::Serialize for value_view::UnknownDenom {
         if self.asset_id.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.ValueView.UnknownDenom", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1alpha1.ValueView.UnknownAssetId", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
@@ -1296,7 +1296,7 @@ impl serde::Serialize for value_view::UnknownDenom {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
+impl<'de> serde::Deserialize<'de> for value_view::UnknownAssetId {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1345,13 +1345,13 @@ impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = value_view::UnknownDenom;
+            type Value = value_view::UnknownAssetId;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.asset.v1alpha1.ValueView.UnknownDenom")
+                formatter.write_str("struct penumbra.core.asset.v1alpha1.ValueView.UnknownAssetId")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<value_view::UnknownDenom, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<value_view::UnknownAssetId, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1376,12 +1376,12 @@ impl<'de> serde::Deserialize<'de> for value_view::UnknownDenom {
                         }
                     }
                 }
-                Ok(value_view::UnknownDenom {
+                Ok(value_view::UnknownAssetId {
                     amount: amount__,
                     asset_id: asset_id__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.ValueView.UnknownDenom", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.asset.v1alpha1.ValueView.UnknownAssetId", FIELDS, GeneratedVisitor)
     }
 }
