@@ -658,21 +658,9 @@ pub struct Proposal {
     /// A natural-language description of the effect of the proposal and its justification.
     #[prost(string, tag = "2")]
     pub description: ::prost::alloc::string::String,
-    /// The different kinds of proposal. Only one of these should be set.
-    #[prost(message, optional, tag = "5")]
-    pub signaling: ::core::option::Option<proposal::Signaling>,
-    #[prost(message, optional, tag = "6")]
-    pub emergency: ::core::option::Option<proposal::Emergency>,
-    #[prost(message, optional, tag = "7")]
-    pub parameter_change: ::core::option::Option<proposal::ParameterChange>,
-    #[prost(message, optional, tag = "8")]
-    pub community_pool_spend: ::core::option::Option<proposal::CommunityPoolSpend>,
-    #[prost(message, optional, tag = "9")]
-    pub upgrade_plan: ::core::option::Option<proposal::UpgradePlan>,
-    #[prost(message, optional, tag = "10")]
-    pub freeze_ibc_client: ::core::option::Option<proposal::FreezeIbcClient>,
-    #[prost(message, optional, tag = "11")]
-    pub unfreeze_ibc_client: ::core::option::Option<proposal::UnfreezeIbcClient>,
+    /// The proposal's payload.
+    #[prost(oneof = "proposal::Payload", tags = "5, 6, 7, 8, 9, 10, 11")]
+    pub payload: ::core::option::Option<proposal::Payload>,
 }
 /// Nested message and enum types in `Proposal`.
 pub mod proposal {
@@ -815,6 +803,25 @@ pub mod proposal {
                 "penumbra.core.component.governance.v1alpha1.Proposal.{}", Self::NAME
             )
         }
+    }
+    /// The proposal's payload.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Payload {
+        #[prost(message, tag = "5")]
+        Signaling(Signaling),
+        #[prost(message, tag = "6")]
+        Emergency(Emergency),
+        #[prost(message, tag = "7")]
+        ParameterChange(ParameterChange),
+        #[prost(message, tag = "8")]
+        CommunityPoolSpend(CommunityPoolSpend),
+        #[prost(message, tag = "9")]
+        UpgradePlan(UpgradePlan),
+        #[prost(message, tag = "10")]
+        FreezeIbcClient(FreezeIbcClient),
+        #[prost(message, tag = "11")]
+        UnfreezeIbcClient(UnfreezeIbcClient),
     }
 }
 impl ::prost::Name for Proposal {

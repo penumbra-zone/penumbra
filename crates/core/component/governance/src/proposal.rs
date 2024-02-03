@@ -42,47 +42,49 @@ impl From<Proposal> for pb::Proposal {
             description: inner.description,
             ..Default::default() // We're about to fill in precisely one of the fields for the payload
         };
-        match inner.payload {
+        use pb::proposal::Payload;
+        let payload = match inner.payload {
             ProposalPayload::Signaling { commit } => {
-                proposal.signaling = Some(pb::proposal::Signaling {
+                Some(Payload::Signaling(pb::proposal::Signaling {
                     commit: if let Some(c) = commit {
                         c
                     } else {
                         String::default()
                     },
-                });
+                }))
             }
             ProposalPayload::Emergency { halt_chain } => {
-                proposal.emergency = Some(pb::proposal::Emergency { halt_chain });
+                Some(Payload::Emergency(pb::proposal::Emergency { halt_chain }))
             }
             ProposalPayload::ParameterChange { old, new } => {
-                proposal.parameter_change = Some(pb::proposal::ParameterChange {
+                Some(Payload::ParameterChange(pb::proposal::ParameterChange {
                     old_parameters: Some((*old).into()),
                     new_parameters: Some((*new).into()),
-                });
+                }))
             }
-            ProposalPayload::CommunityPoolSpend { transaction_plan } => {
-                proposal.community_pool_spend = Some(pb::proposal::CommunityPoolSpend {
+            ProposalPayload::CommunityPoolSpend { transaction_plan } => Some(
+                Payload::CommunityPoolSpend(pb::proposal::CommunityPoolSpend {
                     transaction_plan: Some(pbjson_types::Any {
                         type_url: TRANSACTION_PLAN_TYPE_URL.to_owned(),
                         value: transaction_plan.into(),
                     }),
-                });
-            }
+                }),
+            ),
             ProposalPayload::UpgradePlan { height } => {
-                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
+                Some(Payload::UpgradePlan(pb::proposal::UpgradePlan { height }))
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
-                proposal.freeze_ibc_client = Some(pb::proposal::FreezeIbcClient {
+                Some(Payload::FreezeIbcClient(pb::proposal::FreezeIbcClient {
                     client_id: client_id.into(),
-                });
+                }))
             }
-            ProposalPayload::UnfreezeIbcClient { client_id } => {
-                proposal.unfreeze_ibc_client = Some(pb::proposal::UnfreezeIbcClient {
+            ProposalPayload::UnfreezeIbcClient { client_id } => Some(Payload::UnfreezeIbcClient(
+                pb::proposal::UnfreezeIbcClient {
                     client_id: client_id.into(),
-                });
-            }
-        }
+                },
+            )),
+        };
+        proposal.payload = payload;
         proposal
     }
 }
@@ -91,24 +93,26 @@ impl TryFrom<pb::Proposal> for Proposal {
     type Error = anyhow::Error;
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
+        use pb::proposal::Payload;
         Ok(Proposal {
             id: inner.id,
             title: inner.title,
             description: inner.description,
-            payload: if let Some(signaling) = inner.signaling {
-                ProposalPayload::Signaling {
+            payload: match inner
+                .payload
+                .ok_or_else(|| anyhow::anyhow!("missing proposal payload"))?
+            {
+                Payload::Signaling(signaling) => ProposalPayload::Signaling {
                     commit: if signaling.commit.is_empty() {
                         None
                     } else {
                         Some(signaling.commit)
                     },
-                }
-            } else if let Some(emergency) = inner.emergency {
-                ProposalPayload::Emergency {
+                },
+                Payload::Emergency(emergency) => ProposalPayload::Emergency {
                     halt_chain: emergency.halt_chain,
-                }
-            } else if let Some(parameter_change) = inner.parameter_change {
-                ProposalPayload::ParameterChange {
+                },
+                Payload::ParameterChange(parameter_change) => ProposalPayload::ParameterChange {
                     old: Box::new(
                         parameter_change
                             .old_parameters
@@ -121,28 +125,34 @@ impl TryFrom<pb::Proposal> for Proposal {
                             .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
                             .try_into()?,
                     ),
+                },
+                Payload::CommunityPoolSpend(community_pool_spend) => {
+                    ProposalPayload::CommunityPoolSpend {
+                        transaction_plan: {
+                            let transaction_plan = community_pool_spend
+                                .transaction_plan
+                                .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
+                            if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
+                                anyhow::bail!(
+                                    "unknown transaction plan type url: {}",
+                                    transaction_plan.type_url
+                                );
+                            }
+                            transaction_plan.value.to_vec()
+                        },
+                    }
                 }
-            } else if let Some(community_pool_spend) = inner.community_pool_spend {
-                ProposalPayload::CommunityPoolSpend {
-                    transaction_plan: {
-                        let transaction_plan = community_pool_spend
-                            .transaction_plan
-                            .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
-                        if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
-                            anyhow::bail!(
-                                "unknown transaction plan type url: {}",
-                                transaction_plan.type_url
-                            );
-                        }
-                        transaction_plan.value.to_vec()
-                    },
-                }
-            } else if let Some(upgrade_plan) = inner.upgrade_plan {
-                ProposalPayload::UpgradePlan {
+                Payload::UpgradePlan(upgrade_plan) => ProposalPayload::UpgradePlan {
                     height: upgrade_plan.height,
+                },
+                Payload::FreezeIbcClient(freeze_ibc_client) => ProposalPayload::FreezeIbcClient {
+                    client_id: freeze_ibc_client.client_id,
+                },
+                Payload::UnfreezeIbcClient(unfreeze_ibc_client) => {
+                    ProposalPayload::UnfreezeIbcClient {
+                        client_id: unfreeze_ibc_client.client_id,
+                    }
                 }
-            } else {
-                anyhow::bail!("missing proposal payload or unknown proposal type");
             },
         })
     }
