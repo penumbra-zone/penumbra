@@ -12,8 +12,8 @@ use config::PcliConfig;
 use opt::Opt;
 use penumbra_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_proto::{
-    custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
-    view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
+    custody::v1alpha1::custody_service_client::CustodyServiceClient,
+    view::v1alpha1::view_service_client::ViewServiceClient,
 };
 use penumbra_view::ViewClient;
 
@@ -34,8 +34,8 @@ pub struct App {
     /// view will be `None` when a command indicates that it can be run offline via
     /// `.offline()` and Some(_) otherwise. Assuming `.offline()` has been implemenented
     /// correctly, this can be unwrapped safely.
-    pub view: Option<ViewProtocolServiceClient<BoxGrpcService>>,
-    pub custody: CustodyProtocolServiceClient<BoxGrpcService>,
+    pub view: Option<ViewServiceClient<BoxGrpcService>>,
+    pub custody: CustodyServiceClient<BoxGrpcService>,
     pub config: PcliConfig,
 }
 

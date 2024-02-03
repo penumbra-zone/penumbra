@@ -260,8 +260,8 @@ impl<T: Terminal> Threshold<T> {
 }
 
 #[async_trait]
-impl<T: Terminal + Sync + Send + 'static>
-    pb::custody_protocol_service_server::CustodyProtocolService for Threshold<T>
+impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodyService
+    for Threshold<T>
 {
     async fn authorize(
         &self,

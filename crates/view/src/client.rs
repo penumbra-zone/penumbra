@@ -15,8 +15,8 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1alpha1::{
-    self as pb, view_protocol_service_client::ViewProtocolServiceClient,
-    BroadcastTransactionResponse, WitnessRequest,
+    self as pb, view_service_client::ViewServiceClient, BroadcastTransactionResponse,
+    WitnessRequest,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
@@ -37,7 +37,7 @@ pub(crate) type BroadcastStatusStream = Pin<
 /// responsible for synchronizing and scanning the public chain state with one
 /// or more full viewing keys.
 ///
-/// This trait is a wrapper around the proto-generated [`ViewProtocolServiceClient`]
+/// This trait is a wrapper around the proto-generated [`ViewServiceClient`]
 /// that serves two goals:
 ///
 /// 1. It can use domain types rather than proto-generated types, avoiding conversions;
@@ -312,7 +312,7 @@ pub trait ViewClient {
 // amount of problems, because non-`Send` futures don't compose well, but as long
 // as we're calling the method within an async block on a local mutable variable,
 // it should be fine.
-impl<T> ViewClient for ViewProtocolServiceClient<T>
+impl<T> ViewClient for ViewServiceClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody> + Clone + Send + 'static,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
@@ -364,7 +364,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::app_parameters(
+            let rsp = ViewServiceClient::app_parameters(
                 &mut self2,
                 tonic::Request::new(pb::AppParametersRequest {}),
             );
@@ -378,7 +378,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::gas_prices(
+            let rsp = ViewServiceClient::gas_prices(
                 &mut self2,
                 tonic::Request::new(pb::GasPricesRequest {}),
             );
@@ -396,7 +396,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let parameters = ViewProtocolServiceClient::fmd_parameters(
+            let parameters = ViewServiceClient::fmd_parameters(
                 &mut self2,
                 tonic::Request::new(pb::FmdParametersRequest {}),
             );
@@ -472,7 +472,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let note_commitment_response = ViewProtocolServiceClient::note_by_commitment(
+            let note_commitment_response = ViewServiceClient::note_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::NoteByCommitmentRequest {
                     note_commitment: Some(note_commitment.into()),
@@ -496,7 +496,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Vec<(Id, Amount)>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let req = ViewProtocolServiceClient::balances(
+            let req = ViewServiceClient::balances(
                 &mut self2,
                 tonic::Request::new(pb::BalancesRequest {
                     account_filter: Some(address_index.into()),
@@ -536,7 +536,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let swap_commitment_response = ViewProtocolServiceClient::swap_by_commitment(
+            let swap_commitment_response = ViewServiceClient::swap_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::SwapByCommitmentRequest {
                     swap_commitment: Some(swap_commitment.into()),
@@ -562,7 +562,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let spendable_note = ViewProtocolServiceClient::note_by_commitment(
+            let spendable_note = ViewServiceClient::note_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::NoteByCommitmentRequest {
                     note_commitment: Some(note_commitment.into()),
@@ -585,7 +585,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<bool>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::nullifier_status(
+            let rsp = ViewServiceClient::nullifier_status(
                 &mut self2,
                 tonic::Request::new(pb::NullifierStatusRequest {
                     nullifier: Some(nullifier.into()),
@@ -605,7 +605,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::nullifier_status(
+            let rsp = ViewServiceClient::nullifier_status(
                 &mut self2,
                 tonic::Request::new(pb::NullifierStatusRequest {
                     nullifier: Some(nullifier.into()),
@@ -647,7 +647,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::assets(
+            let rsp = ViewServiceClient::assets(
                 &mut self2,
                 tonic::Request::new(pb::AssetsRequest {
                     ..Default::default()
@@ -677,7 +677,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::owned_position_ids(
+            let rsp = ViewServiceClient::owned_position_ids(
                 &mut self2,
                 tonic::Request::new(pb::OwnedPositionIdsRequest {
                     trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
@@ -707,7 +707,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::transaction_info_by_hash(
+            let rsp = ViewServiceClient::transaction_info_by_hash(
                 &mut self2,
                 tonic::Request::new(pb::TransactionInfoByHashRequest {
                     id: Some(id.into()),
@@ -814,7 +814,7 @@ where
     ) -> BroadcastStatusStream {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::broadcast_transaction(
+            let rsp = ViewServiceClient::broadcast_transaction(
                 &mut self2,
                 tonic::Request::new(pb::BroadcastTransactionRequest {
                     transaction: Some(transaction.into()),
@@ -897,7 +897,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let swaps_response = ViewProtocolServiceClient::unclaimed_swaps(
+            let swaps_response = ViewServiceClient::unclaimed_swaps(
                 &mut self2,
                 tonic::Request::new(pb::UnclaimedSwapsRequest {}),
             );

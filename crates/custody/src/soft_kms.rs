@@ -38,7 +38,7 @@ impl SoftKms {
 }
 
 #[async_trait]
-impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
+impl pb::custody_service_server::CustodyService for SoftKms {
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,

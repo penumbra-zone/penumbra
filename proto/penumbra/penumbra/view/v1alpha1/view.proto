@@ -16,11 +16,11 @@ import "penumbra/core/transaction/v1alpha1/transaction.proto";
 import "penumbra/core/txhash/v1alpha1/txhash.proto";
 import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
-// The view protocol is used by a view client, who wants to do some
+// The view RPC is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
 // responsible for synchronizing and scanning the public chain state with one or
 // more full viewing keys.
-service ViewProtocolService {
+service ViewService {
   // Get current status of chain sync
   rpc Status(StatusRequest) returns (StatusResponse);
 

@@ -16,10 +16,10 @@ use penumbra_proto::{
     core::app::v1alpha1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    custody::v1alpha1::custody_protocol_service_server::CustodyProtocolServiceServer,
-    view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer,
+    custody::v1alpha1::custody_service_server::CustodyServiceServer,
+    view::v1alpha1::view_service_server::ViewServiceServer,
 };
-use penumbra_view::{Storage, ViewService};
+use penumbra_view::{Storage, ViewServer};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -317,13 +317,10 @@ impl Opt {
                 let compact_block_query_proxy = CompactBlockQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service = ViewProtocolServiceServer::new(
-                    ViewService::new(storage, config.grpc_url).await?,
-                );
+                let view_service =
+                    ViewServiceServer::new(ViewServer::new(storage, config.grpc_url).await?);
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
-                    CustodyProtocolServiceServer::new(SoftKms::new(
-                        kms_config.spend_key.clone().into(),
-                    ))
+                    CustodyServiceServer::new(SoftKms::new(kms_config.spend_key.clone().into()))
                 });
 
                 let server = Server::builder()
