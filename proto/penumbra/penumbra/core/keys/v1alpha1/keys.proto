@@ -19,16 +19,18 @@ message Address {
 }
 
 message AddressView {
-  message Visible {
+  // A decoded address, with information about the address index and wallet ID visible.
+  message Decoded {
     Address address = 1;
     AddressIndex index = 2;
     WalletId wallet_id = 3;
   }
+  // An opaque address, with no information about the address index or wallet ID visible.
   message Opaque {
     Address address = 1;
   }
   oneof address_view {
-    Visible visible = 1;
+    Decoded decoded = 1;
     Opaque opaque = 2;
   }
 }

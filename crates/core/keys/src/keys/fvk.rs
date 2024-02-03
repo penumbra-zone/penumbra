@@ -57,7 +57,7 @@ impl FullViewingKey {
         // WART: this can't cleanly forward to a method on the IVK,
         // because the IVK doesn't know the WalletId.
         if self.incoming().views_address(&address) {
-            AddressView::Visible {
+            AddressView::Decoded {
                 index: self.incoming().index_for_diversifier(address.diversifier()),
                 wallet_id: self.wallet_id(),
                 address,

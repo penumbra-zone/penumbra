@@ -93,7 +93,7 @@ type AddressView struct {
 
 	// Types that are assignable to AddressView:
 	//
-	//	*AddressView_Visible_
+	//	*AddressView_Decoded_
 	//	*AddressView_Opaque_
 	AddressView isAddressView_AddressView `protobuf_oneof:"address_view"`
 }
@@ -137,9 +137,9 @@ func (m *AddressView) GetAddressView() isAddressView_AddressView {
 	return nil
 }
 
-func (x *AddressView) GetVisible() *AddressView_Visible {
-	if x, ok := x.GetAddressView().(*AddressView_Visible_); ok {
-		return x.Visible
+func (x *AddressView) GetDecoded() *AddressView_Decoded {
+	if x, ok := x.GetAddressView().(*AddressView_Decoded_); ok {
+		return x.Decoded
 	}
 	return nil
 }
@@ -155,15 +155,15 @@ type isAddressView_AddressView interface {
 	isAddressView_AddressView()
 }
 
-type AddressView_Visible_ struct {
-	Visible *AddressView_Visible `protobuf:"bytes,1,opt,name=visible,proto3,oneof"`
+type AddressView_Decoded_ struct {
+	Decoded *AddressView_Decoded `protobuf:"bytes,1,opt,name=decoded,proto3,oneof"`
 }
 
 type AddressView_Opaque_ struct {
 	Opaque *AddressView_Opaque `protobuf:"bytes,2,opt,name=opaque,proto3,oneof"`
 }
 
-func (*AddressView_Visible_) isAddressView_AddressView() {}
+func (*AddressView_Decoded_) isAddressView_AddressView() {}
 
 func (*AddressView_Opaque_) isAddressView_AddressView() {}
 
@@ -600,7 +600,8 @@ func (x *ConsensusKey) GetInner() []byte {
 	return nil
 }
 
-type AddressView_Visible struct {
+// A decoded address, with information about the address index and wallet ID visible.
+type AddressView_Decoded struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -610,8 +611,8 @@ type AddressView_Visible struct {
 	WalletId *WalletId     `protobuf:"bytes,3,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
 }
 
-func (x *AddressView_Visible) Reset() {
-	*x = AddressView_Visible{}
+func (x *AddressView_Decoded) Reset() {
+	*x = AddressView_Decoded{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_penumbra_core_keys_v1alpha1_keys_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -619,13 +620,13 @@ func (x *AddressView_Visible) Reset() {
 	}
 }
 
-func (x *AddressView_Visible) String() string {
+func (x *AddressView_Decoded) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AddressView_Visible) ProtoMessage() {}
+func (*AddressView_Decoded) ProtoMessage() {}
 
-func (x *AddressView_Visible) ProtoReflect() protoreflect.Message {
+func (x *AddressView_Decoded) ProtoReflect() protoreflect.Message {
 	mi := &file_penumbra_core_keys_v1alpha1_keys_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -637,32 +638,33 @@ func (x *AddressView_Visible) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AddressView_Visible.ProtoReflect.Descriptor instead.
-func (*AddressView_Visible) Descriptor() ([]byte, []int) {
+// Deprecated: Use AddressView_Decoded.ProtoReflect.Descriptor instead.
+func (*AddressView_Decoded) Descriptor() ([]byte, []int) {
 	return file_penumbra_core_keys_v1alpha1_keys_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *AddressView_Visible) GetAddress() *Address {
+func (x *AddressView_Decoded) GetAddress() *Address {
 	if x != nil {
 		return x.Address
 	}
 	return nil
 }
 
-func (x *AddressView_Visible) GetIndex() *AddressIndex {
+func (x *AddressView_Decoded) GetIndex() *AddressIndex {
 	if x != nil {
 		return x.Index
 	}
 	return nil
 }
 
-func (x *AddressView_Visible) GetWalletId() *WalletId {
+func (x *AddressView_Decoded) GetWalletId() *WalletId {
 	if x != nil {
 		return x.WalletId
 	}
 	return nil
 }
 
+// An opaque address, with no information about the address index or wallet ID visible.
 type AddressView_Opaque struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -722,17 +724,17 @@ var file_penumbra_core_keys_v1alpha1_keys_proto_rawDesc = []byte{
 	0x05, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x12, 0x1f, 0x0a, 0x0b, 0x61, 0x6c, 0x74, 0x5f, 0x62, 0x65,
 	0x63, 0x68, 0x33, 0x32, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x61, 0x6c, 0x74,
 	0x42, 0x65, 0x63, 0x68, 0x33, 0x32, 0x6d, 0x22, 0xd1, 0x03, 0x0a, 0x0b, 0x41, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x56, 0x69, 0x65, 0x77, 0x12, 0x4c, 0x0a, 0x07, 0x76, 0x69, 0x73, 0x69, 0x62,
-	0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x30, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
+	0x65, 0x73, 0x73, 0x56, 0x69, 0x65, 0x77, 0x12, 0x4c, 0x0a, 0x07, 0x64, 0x65, 0x63, 0x6f, 0x64,
+	0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x30, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d,
 	0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6b, 0x65, 0x79, 0x73, 0x2e, 0x76, 0x31,
 	0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x56, 0x69,
-	0x65, 0x77, 0x2e, 0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x48, 0x00, 0x52, 0x07, 0x76, 0x69,
-	0x73, 0x69, 0x62, 0x6c, 0x65, 0x12, 0x49, 0x0a, 0x06, 0x6f, 0x70, 0x61, 0x71, 0x75, 0x65, 0x18,
+	0x65, 0x77, 0x2e, 0x44, 0x65, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x48, 0x00, 0x52, 0x07, 0x64, 0x65,
+	0x63, 0x6f, 0x64, 0x65, 0x64, 0x12, 0x49, 0x0a, 0x06, 0x6f, 0x70, 0x61, 0x71, 0x75, 0x65, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61,
 	0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6b, 0x65, 0x79, 0x73, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
 	0x68, 0x61, 0x31, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x56, 0x69, 0x65, 0x77, 0x2e,
 	0x4f, 0x70, 0x61, 0x71, 0x75, 0x65, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x70, 0x61, 0x71, 0x75, 0x65,
-	0x1a, 0xce, 0x01, 0x0a, 0x07, 0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x12, 0x3e, 0x0a, 0x07,
+	0x1a, 0xce, 0x01, 0x0a, 0x07, 0x44, 0x65, 0x63, 0x6f, 0x64, 0x65, 0x64, 0x12, 0x3e, 0x0a, 0x07,
 	0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e,
 	0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x6b, 0x65,
 	0x79, 0x73, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x41, 0x64, 0x64, 0x72,
@@ -818,15 +820,15 @@ var file_penumbra_core_keys_v1alpha1_keys_proto_goTypes = []interface{}{
 	(*IdentityKey)(nil),         // 8: penumbra.core.keys.v1alpha1.IdentityKey
 	(*GovernanceKey)(nil),       // 9: penumbra.core.keys.v1alpha1.GovernanceKey
 	(*ConsensusKey)(nil),        // 10: penumbra.core.keys.v1alpha1.ConsensusKey
-	(*AddressView_Visible)(nil), // 11: penumbra.core.keys.v1alpha1.AddressView.Visible
+	(*AddressView_Decoded)(nil), // 11: penumbra.core.keys.v1alpha1.AddressView.Decoded
 	(*AddressView_Opaque)(nil),  // 12: penumbra.core.keys.v1alpha1.AddressView.Opaque
 }
 var file_penumbra_core_keys_v1alpha1_keys_proto_depIdxs = []int32{
-	11, // 0: penumbra.core.keys.v1alpha1.AddressView.visible:type_name -> penumbra.core.keys.v1alpha1.AddressView.Visible
+	11, // 0: penumbra.core.keys.v1alpha1.AddressView.decoded:type_name -> penumbra.core.keys.v1alpha1.AddressView.Decoded
 	12, // 1: penumbra.core.keys.v1alpha1.AddressView.opaque:type_name -> penumbra.core.keys.v1alpha1.AddressView.Opaque
-	0,  // 2: penumbra.core.keys.v1alpha1.AddressView.Visible.address:type_name -> penumbra.core.keys.v1alpha1.Address
-	7,  // 3: penumbra.core.keys.v1alpha1.AddressView.Visible.index:type_name -> penumbra.core.keys.v1alpha1.AddressIndex
-	5,  // 4: penumbra.core.keys.v1alpha1.AddressView.Visible.wallet_id:type_name -> penumbra.core.keys.v1alpha1.WalletId
+	0,  // 2: penumbra.core.keys.v1alpha1.AddressView.Decoded.address:type_name -> penumbra.core.keys.v1alpha1.Address
+	7,  // 3: penumbra.core.keys.v1alpha1.AddressView.Decoded.index:type_name -> penumbra.core.keys.v1alpha1.AddressIndex
+	5,  // 4: penumbra.core.keys.v1alpha1.AddressView.Decoded.wallet_id:type_name -> penumbra.core.keys.v1alpha1.WalletId
 	0,  // 5: penumbra.core.keys.v1alpha1.AddressView.Opaque.address:type_name -> penumbra.core.keys.v1alpha1.Address
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
@@ -974,7 +976,7 @@ func file_penumbra_core_keys_v1alpha1_keys_proto_init() {
 			}
 		}
 		file_penumbra_core_keys_v1alpha1_keys_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddressView_Visible); i {
+			switch v := v.(*AddressView_Decoded); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -999,7 +1001,7 @@ func file_penumbra_core_keys_v1alpha1_keys_proto_init() {
 		}
 	}
 	file_penumbra_core_keys_v1alpha1_keys_proto_msgTypes[1].OneofWrappers = []interface{}{
-		(*AddressView_Visible_)(nil),
+		(*AddressView_Decoded_)(nil),
 		(*AddressView_Opaque_)(nil),
 	}
 	type x struct{}

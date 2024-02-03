@@ -78,7 +78,7 @@ fn format_opaque_bytes(bytes: &[u8]) -> String {
 // propose moving this to core/keys/src/address/view.rs
 fn format_address_view(address_view: &AddressView) -> String {
     match address_view {
-        AddressView::Visible {
+        AddressView::Decoded {
             address: _,
             index,
             wallet_id: _,
