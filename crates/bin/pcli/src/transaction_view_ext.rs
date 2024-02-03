@@ -101,11 +101,14 @@ fn format_address_view(address_view: &AddressView) -> String {
 // propose moving this to core/asset/src/value.rs
 fn format_value_view(value_view: &ValueView) -> String {
     match value_view {
-        ValueView::KnownDenom { amount, denom } => {
+        ValueView::KnownAssetId {
+            amount,
+            metadata: denom,
+        } => {
             let unit = denom.default_unit();
             format!("{}{}", unit.format_value(*amount), unit)
         }
-        ValueView::UnknownDenom { amount, asset_id } => {
+        ValueView::UnknownAssetId { amount, asset_id } => {
             format!("{}{}", amount, asset_id)
         }
     }
@@ -130,7 +133,9 @@ fn format_asset_id(asset_id: &Id) -> String {
 // propose moving this to core/asset/src/value.rs
 fn value_view_amount(value_view: &ValueView) -> Amount {
     match value_view {
-        ValueView::KnownDenom { amount, .. } | ValueView::UnknownDenom { amount, .. } => *amount,
+        ValueView::KnownAssetId { amount, .. } | ValueView::UnknownAssetId { amount, .. } => {
+            *amount
+        }
     }
 }
 
