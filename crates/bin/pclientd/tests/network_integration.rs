@@ -20,10 +20,8 @@ use penumbra_custody::soft_kms;
 use penumbra_keys::test_keys;
 use penumbra_proto::{
     core::{component::fee::v1alpha1::Fee, component::ibc::v1alpha1::IbcRelay},
-    custody::v1alpha1::{
-        custody_protocol_service_client::CustodyProtocolServiceClient, AuthorizeRequest,
-    },
-    penumbra::view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
+    custody::v1alpha1::{custody_service_client::CustodyServiceClient, AuthorizeRequest},
+    penumbra::view::v1alpha1::view_service_client::ViewServiceClient,
     view::v1alpha1::{
         broadcast_transaction_response::Status as BroadcastStatus,
         witness_and_build_response::Status as WitnessAndBuildStatus, BroadcastTransactionRequest,
@@ -83,8 +81,8 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let channel = tonic::transport::Channel::from_static("http://127.0.0.1:8081")
         .connect()
         .await?;
-    let mut view_client = ViewProtocolServiceClient::new(channel.clone());
-    let mut custody_client = CustodyProtocolServiceClient::new(channel.clone());
+    let mut view_client = ViewServiceClient::new(channel.clone());
+    let mut custody_client = CustodyServiceClient::new(channel.clone());
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
@@ -264,8 +262,8 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     let channel = tonic::transport::Channel::from_static("http://127.0.0.1:8081")
         .connect()
         .await?;
-    let mut view_client = ViewProtocolServiceClient::new(channel.clone());
-    let mut custody_client = CustodyProtocolServiceClient::new(channel.clone());
+    let mut view_client = ViewServiceClient::new(channel.clone());
+    let mut custody_client = CustodyServiceClient::new(channel.clone());
 
     // 4. Use the view protocol to wait for it to sync.
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)

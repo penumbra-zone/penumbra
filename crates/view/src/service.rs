@@ -44,8 +44,8 @@ use penumbra_proto::{
     view::v1alpha1::broadcast_transaction_response::Status as BroadcastStatus,
     view::v1alpha1::{
         self as pb,
-        view_protocol_service_client::ViewProtocolServiceClient,
-        view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
+        view_service_client::ViewServiceClient,
+        view_service_server::{ViewService, ViewServiceServer},
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
         FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse, StatusResponse,
         SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
@@ -66,13 +66,13 @@ type BroadcastTransactionStream = Pin<
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
-/// The [`ViewService`] implements the Tonic-derived [`ViewProtocol`] trait,
+/// The [`ViewServer`] implements the Tonic-derived [`ViewService`] trait,
 /// so it can be used as a gRPC server, or called directly.  It spawns a task
 /// internally that performs synchronization and scanning.  The
-/// [`ViewService`] can be cloned; each clone will read from the same shared
+/// [`ViewServer`] can be cloned; each clone will read from the same shared
 /// state, but there will only be a single scanning task.
 #[derive(Clone)]
-pub struct ViewService {
+pub struct ViewServer {
     storage: Storage,
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
@@ -85,7 +85,7 @@ pub struct ViewService {
     sync_height_rx: watch::Receiver<u64>,
 }
 
-impl ViewService {
+impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
@@ -340,7 +340,7 @@ impl ViewService {
 }
 
 #[async_trait]
-impl ViewProtocolService for ViewService {
+impl ViewService for ViewServer {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NotesResponse, tonic::Status>> + Send>>;
     type NotesForVotingStream = Pin<
@@ -621,8 +621,7 @@ impl ViewProtocolService for ViewService {
             );
         }
 
-        let mut client_of_self =
-            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
+        let mut client_of_self = ViewServiceClient::new(ViewServiceServer::new(self.clone()));
 
         let source = prq
             .source

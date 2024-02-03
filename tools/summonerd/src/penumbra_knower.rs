@@ -3,7 +3,7 @@ use camino::Utf8Path;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
-use penumbra_view::{Storage, ViewService};
+use penumbra_view::{Storage, ViewServer};
 use url::Url;
 
 /// Knows things about a running penumbra system, requires internet connectivity
@@ -15,7 +15,7 @@ pub struct PenumbraKnower {
     storage: Storage,
     // Not sure if storing this is necessary, but seems like a good idea to avoid things getting
     // dropped on the floor
-    _view: ViewService,
+    _view: ViewServer,
 }
 
 impl PenumbraKnower {
@@ -28,7 +28,7 @@ impl PenumbraKnower {
         node: Url,
     ) -> Result<Self> {
         let storage = Storage::load_or_initialize(Some(storage_path), fvk, node.clone()).await?;
-        let view = ViewService::new(storage.clone(), node).await?;
+        let view = ViewServer::new(storage.clone(), node).await?;
         Ok(Self {
             storage,
             _view: view,
