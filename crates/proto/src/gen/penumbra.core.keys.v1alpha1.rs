@@ -32,9 +32,10 @@ pub struct AddressView {
 }
 /// Nested message and enum types in `AddressView`.
 pub mod address_view {
+    /// A decoded address, with information about the address index and wallet ID visible.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Visible {
+    pub struct Decoded {
         #[prost(message, optional, tag = "1")]
         pub address: ::core::option::Option<super::Address>,
         #[prost(message, optional, tag = "2")]
@@ -42,8 +43,8 @@ pub mod address_view {
         #[prost(message, optional, tag = "3")]
         pub wallet_id: ::core::option::Option<super::WalletId>,
     }
-    impl ::prost::Name for Visible {
-        const NAME: &'static str = "Visible";
+    impl ::prost::Name for Decoded {
+        const NAME: &'static str = "Decoded";
         const PACKAGE: &'static str = "penumbra.core.keys.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -51,6 +52,7 @@ pub mod address_view {
             )
         }
     }
+    /// An opaque address, with no information about the address index or wallet ID visible.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Opaque {
@@ -70,7 +72,7 @@ pub mod address_view {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum AddressView {
         #[prost(message, tag = "1")]
-        Visible(Visible),
+        Decoded(Decoded),
         #[prost(message, tag = "2")]
         Opaque(Opaque),
     }
