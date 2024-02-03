@@ -2067,12 +2067,12 @@ impl serde::Serialize for ShieldedPoolParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.fmd_params.is_some() {
+        if self.fixed_fmd_params.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.ShieldedPoolParameters", len)?;
-        if let Some(v) = self.fmd_params.as_ref() {
-            struct_ser.serialize_field("fmdParams", v)?;
+        if let Some(v) = self.fixed_fmd_params.as_ref() {
+            struct_ser.serialize_field("fixedFmdParams", v)?;
         }
         struct_ser.end()
     }
@@ -2084,13 +2084,13 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "fmd_params",
-            "fmdParams",
+            "fixed_fmd_params",
+            "fixedFmdParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            FmdParams,
+            FixedFmdParams,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2113,7 +2113,7 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                         E: serde::de::Error,
                     {
                         match value {
-                            "fmdParams" | "fmd_params" => Ok(GeneratedField::FmdParams),
+                            "fixedFmdParams" | "fixed_fmd_params" => Ok(GeneratedField::FixedFmdParams),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2133,14 +2133,14 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut fmd_params__ = None;
+                let mut fixed_fmd_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::FmdParams => {
-                            if fmd_params__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("fmdParams"));
+                        GeneratedField::FixedFmdParams => {
+                            if fixed_fmd_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fixedFmdParams"));
                             }
-                            fmd_params__ = map_.next_value()?;
+                            fixed_fmd_params__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2148,7 +2148,7 @@ impl<'de> serde::Deserialize<'de> for ShieldedPoolParameters {
                     }
                 }
                 Ok(ShieldedPoolParameters {
-                    fmd_params: fmd_params__,
+                    fixed_fmd_params: fixed_fmd_params__,
                 })
             }
         }

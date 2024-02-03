@@ -10,7 +10,7 @@ import "penumbra/crypto/tct/v1alpha1/tct.proto";
 
 // Configuration data for the shielded pool component.
 message ShieldedPoolParameters {
-  FmdParameters fmd_params = 1;
+  FmdParameters fixed_fmd_params = 1;
 }
 
 // Genesis data for the shielded pool component.

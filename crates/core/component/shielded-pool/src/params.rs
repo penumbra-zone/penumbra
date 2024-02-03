@@ -11,7 +11,7 @@ use crate::fmd;
     into = "pb::ShieldedPoolParameters"
 )]
 pub struct ShieldedPoolParameters {
-    pub fmd_params: fmd::Parameters,
+    pub fixed_fmd_params: fmd::Parameters,
 }
 
 impl DomainType for ShieldedPoolParameters {
@@ -23,8 +23,8 @@ impl TryFrom<pb::ShieldedPoolParameters> for ShieldedPoolParameters {
 
     fn try_from(msg: pb::ShieldedPoolParameters) -> anyhow::Result<Self> {
         Ok(ShieldedPoolParameters {
-            fmd_params: msg
-                .fmd_params
+            fixed_fmd_params: msg
+                .fixed_fmd_params
                 .ok_or_else(|| anyhow::anyhow!("missing fmd_parameters"))?
                 .try_into()?,
         })
@@ -34,7 +34,7 @@ impl TryFrom<pb::ShieldedPoolParameters> for ShieldedPoolParameters {
 impl From<ShieldedPoolParameters> for pb::ShieldedPoolParameters {
     fn from(params: ShieldedPoolParameters) -> Self {
         pb::ShieldedPoolParameters {
-            fmd_params: Some(params.fmd_params.into()),
+            fixed_fmd_params: Some(params.fixed_fmd_params.into()),
         }
     }
 }
