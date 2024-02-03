@@ -3,7 +3,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShieldedPoolParameters {
     #[prost(message, optional, tag = "1")]
-    pub fmd_params: ::core::option::Option<FmdParameters>,
+    pub fixed_fmd_params: ::core::option::Option<FmdParameters>,
 }
 impl ::prost::Name for ShieldedPoolParameters {
     const NAME: &'static str = "ShieldedPoolParameters";
