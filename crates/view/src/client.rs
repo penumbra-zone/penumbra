@@ -6,7 +6,7 @@ use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
-use penumbra_asset::asset::{self, DenomMetadata, Id};
+use penumbra_asset::asset::{self, Id, Metadata};
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
@@ -658,8 +658,8 @@ where
 
             let assets = pb_assets
                 .into_iter()
-                .map(DenomMetadata::try_from)
-                .collect::<anyhow::Result<Vec<DenomMetadata>>>()?;
+                .map(Metadata::try_from)
+                .collect::<anyhow::Result<Vec<Metadata>>>()?;
 
             Ok(assets.into_iter().collect())
         }

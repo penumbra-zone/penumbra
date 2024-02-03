@@ -20,13 +20,14 @@ use crate::{
 };
 
 use super::Denom;
+
 /// An asset denomination's metadata.
 ///
 /// Each denomination has a unique [`Id`] and base unit, and may also
 /// have other display units.
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(try_from = "pb::DenomMetadata", into = "pb::DenomMetadata")]
-pub struct DenomMetadata {
+#[serde(try_from = "pb::Metadata", into = "pb::Metadata")]
+pub struct Metadata {
     pub(super) inner: Arc<Inner>,
 }
 
@@ -49,13 +50,13 @@ pub(super) struct Inner {
     symbol: String,
 }
 
-impl DomainType for DenomMetadata {
-    type Proto = pb::DenomMetadata;
+impl DomainType for Metadata {
+    type Proto = pb::Metadata;
 }
 
-impl From<&Inner> for pb::DenomMetadata {
+impl From<&Inner> for pb::Metadata {
     fn from(inner: &Inner) -> Self {
-        pb::DenomMetadata {
+        pb::Metadata {
             description: inner.description.clone(),
             base: inner.base_denom.clone(),
             display: inner.units[inner.display_index].denom.clone(),
@@ -68,10 +69,10 @@ impl From<&Inner> for pb::DenomMetadata {
     }
 }
 
-impl TryFrom<pb::DenomMetadata> for Inner {
+impl TryFrom<pb::Metadata> for Inner {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::Metadata) -> Result<Self, Self::Error> {
         let base_denom = value.base;
         ensure!(
             !base_denom.is_empty(),
@@ -133,24 +134,24 @@ impl TryFrom<pb::DenomMetadata> for Inner {
     }
 }
 
-impl From<DenomMetadata> for pb::DenomMetadata {
-    fn from(dn: DenomMetadata) -> Self {
+impl From<Metadata> for pb::Metadata {
+    fn from(dn: Metadata) -> Self {
         dn.inner.as_ref().into()
     }
 }
 
-impl TryFrom<pb::DenomMetadata> for DenomMetadata {
+impl TryFrom<pb::Metadata> for Metadata {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::Metadata) -> Result<Self, Self::Error> {
         let inner = Inner::try_from(value)?;
-        Ok(DenomMetadata {
+        Ok(Metadata {
             inner: Arc::new(inner),
         })
     }
 }
 
-impl TryFrom<&str> for DenomMetadata {
+impl TryFrom<&str> for Metadata {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -160,7 +161,7 @@ impl TryFrom<&str> for DenomMetadata {
     }
 }
 
-impl TryFrom<AssetsResponse> for DenomMetadata {
+impl TryFrom<AssetsResponse> for Metadata {
     type Error = anyhow::Error;
 
     fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
@@ -254,7 +255,7 @@ impl Inner {
     }
 }
 
-impl DenomMetadata {
+impl Metadata {
     /// Return the [`Id`] associated with this denomination.
     pub fn id(&self) -> Id {
         self.inner.id
@@ -330,7 +331,7 @@ impl DenomMetadata {
         self.inner.base_denom.starts_with(prefix)
     }
 
-    pub fn default_for(denom: &Denom) -> Option<DenomMetadata> {
+    pub fn default_for(denom: &Denom) -> Option<Metadata> {
         REGISTRY.parse_denom(&denom.denom)
     }
 
@@ -353,53 +354,53 @@ impl DenomMetadata {
     }
 }
 
-impl From<DenomMetadata> for Id {
-    fn from(base: DenomMetadata) -> Id {
+impl From<Metadata> for Id {
+    fn from(base: Metadata) -> Id {
         base.id()
     }
 }
 
-impl Hash for DenomMetadata {
+impl Hash for Metadata {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.inner.base_denom.hash(state);
     }
 }
 
-impl PartialEq for DenomMetadata {
+impl PartialEq for Metadata {
     fn eq(&self, other: &Self) -> bool {
         self.inner.base_denom.eq(&other.inner.base_denom)
     }
 }
 
-impl Eq for DenomMetadata {}
+impl Eq for Metadata {}
 
-impl PartialOrd for DenomMetadata {
+impl PartialOrd for Metadata {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for DenomMetadata {
+impl Ord for Metadata {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.inner.base_denom.cmp(&other.inner.base_denom)
     }
 }
 
-impl Debug for DenomMetadata {
+impl Debug for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
-impl Display for DenomMetadata {
+impl Display for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
 impl Unit {
-    pub fn base(&self) -> DenomMetadata {
-        DenomMetadata {
+    pub fn base(&self) -> Metadata {
+        Metadata {
             inner: self.inner.clone(),
         }
     }
@@ -560,7 +561,7 @@ mod tests {
           }
         "#;
 
-        let _metadata: super::DenomMetadata = serde_json::from_str(SOME_COSMOS_JSON).unwrap();
+        let _metadata: super::Metadata = serde_json::from_str(SOME_COSMOS_JSON).unwrap();
 
         // uncomment to see what our subset looks like
         //let json2 = serde_json::to_string_pretty(&_metadata).unwrap();

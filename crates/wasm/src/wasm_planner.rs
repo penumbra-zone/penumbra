@@ -10,7 +10,7 @@ use wasm_bindgen::JsValue;
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
     core::{
-        asset::v1alpha1::{DenomMetadata, Value},
+        asset::v1alpha1::{Metadata as AssetMetadata, Value},
         component::fee::v1alpha1::{Fee, FeeTier, GasPrices},
         component::ibc::v1alpha1::Ics20Withdrawal,
         keys::v1alpha1::{Address, AddressIndex},
@@ -186,7 +186,7 @@ impl WasmPlanner {
         utils::set_panic_hook();
 
         let input_value_proto: Value = serde_wasm_bindgen::from_value(input_value)?;
-        let into_denom_proto: DenomMetadata = serde_wasm_bindgen::from_value(into_denom)?;
+        let into_denom_proto: AssetMetadata = serde_wasm_bindgen::from_value(into_denom)?;
         let swap_claim_fee_proto: Fee = serde_wasm_bindgen::from_value(swap_claim_fee)?;
         let claim_address_proto: Address = serde_wasm_bindgen::from_value(claim_address)?;
 

@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, ops::Deref, sync::Arc};
 
-use super::{denom_metadata, DenomMetadata, Id, REGISTRY};
+use super::{denom_metadata, Id, Metadata, REGISTRY};
 use crate::asset::denom_metadata::Unit;
 
 /// On-chain data structures only record a fixed-size [`Id`], so this type
@@ -12,12 +12,12 @@ use crate::asset::denom_metadata::Unit;
 /// String>` with the string representations of the base denominations.
 #[derive(Clone, Default, Debug)]
 pub struct Cache {
-    cache: BTreeMap<Id, DenomMetadata>,
+    cache: BTreeMap<Id, Metadata>,
     units: BTreeMap<String, Unit>,
 }
 
 impl Cache {
-    pub fn get_by_id(&self, id: Id) -> Option<DenomMetadata> {
+    pub fn get_by_id(&self, id: Id) -> Option<Metadata> {
         self.cache.get(&id).cloned()
     }
 
@@ -25,7 +25,7 @@ impl Cache {
         self.units.get(raw_denom).cloned()
     }
 
-    fn _try_populate(&mut self, _raw_denom: &str) -> anyhow::Result<Option<DenomMetadata>> {
+    fn _try_populate(&mut self, _raw_denom: &str) -> anyhow::Result<Option<Metadata>> {
         // First try to parse the raw denom string as a specific denom unit of some kind, to see if already present in the cache
 
         // Ok(if let Some(unit) = self._get_unit(raw_denom) {
@@ -57,7 +57,7 @@ impl Cache {
         let mut cache = Cache::default();
 
         let known_assets = vec![
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "upenumbra".to_string(),
                     vec![
@@ -72,7 +72,7 @@ impl Cache {
                     ],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "ugn".to_string(),
                     vec![
@@ -87,7 +87,7 @@ impl Cache {
                     ],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "ugm".to_string(),
                     vec![
@@ -102,7 +102,7 @@ impl Cache {
                     ],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "wtest_usd".to_string(),
                     vec![denom_metadata::BareDenomUnit {
@@ -111,7 +111,7 @@ impl Cache {
                     }],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "test_sat".to_string(),
                     vec![denom_metadata::BareDenomUnit {
@@ -120,7 +120,7 @@ impl Cache {
                     }],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "utest_atom".to_string(),
                     vec![
@@ -135,7 +135,7 @@ impl Cache {
                     ],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "utest_osmo".to_string(),
                     vec![
@@ -150,7 +150,7 @@ impl Cache {
                     ],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "uubtc".to_string(),
                     vec![denom_metadata::BareDenomUnit {
@@ -159,7 +159,7 @@ impl Cache {
                     }],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "ucube".to_string(),
                     vec![denom_metadata::BareDenomUnit {
@@ -168,7 +168,7 @@ impl Cache {
                     }],
                 )),
             },
-            DenomMetadata {
+            Metadata {
                 inner: Arc::new(denom_metadata::Inner::new(
                     "unala".to_string(),
                     vec![
@@ -194,14 +194,14 @@ impl Cache {
 // Implementing Deref but not DerefMut means people get unlimited read access,
 // but can only write into the cache through approved methods.
 impl Deref for Cache {
-    type Target = BTreeMap<Id, DenomMetadata>;
+    type Target = BTreeMap<Id, Metadata>;
 
     fn deref(&self) -> &Self::Target {
         &self.cache
     }
 }
 
-impl From<Cache> for BTreeMap<Id, DenomMetadata> {
+impl From<Cache> for BTreeMap<Id, Metadata> {
     fn from(cache: Cache) -> Self {
         cache
             .cache
@@ -211,10 +211,10 @@ impl From<Cache> for BTreeMap<Id, DenomMetadata> {
     }
 }
 
-impl TryFrom<BTreeMap<Id, DenomMetadata>> for Cache {
+impl TryFrom<BTreeMap<Id, Metadata>> for Cache {
     type Error = anyhow::Error;
 
-    fn try_from(map: BTreeMap<Id, DenomMetadata>) -> Result<Self, Self::Error> {
+    fn try_from(map: BTreeMap<Id, Metadata>) -> Result<Self, Self::Error> {
         let mut cache = BTreeMap::default();
         let mut units: BTreeMap<String, Unit> = BTreeMap::default();
         for (provided_id, denom) in map.into_iter() {
@@ -240,10 +240,10 @@ impl TryFrom<BTreeMap<Id, DenomMetadata>> for Cache {
 
 // BaseDenom already has a validated Id, so by implementing Extend<BaseDenom> we
 // can ensure we don't insert any invalid Ids
-impl Extend<DenomMetadata> for Cache {
+impl Extend<Metadata> for Cache {
     fn extend<T>(&mut self, iter: T)
     where
-        T: IntoIterator<Item = DenomMetadata>,
+        T: IntoIterator<Item = Metadata>,
     {
         for denom in iter {
             let id = denom.id();
@@ -256,8 +256,8 @@ impl Extend<DenomMetadata> for Cache {
     }
 }
 
-impl FromIterator<DenomMetadata> for Cache {
-    fn from_iter<T: IntoIterator<Item = DenomMetadata>>(iter: T) -> Self {
+impl FromIterator<Metadata> for Cache {
+    fn from_iter<T: IntoIterator<Item = Metadata>>(iter: T) -> Self {
         let mut cache = Cache::default();
         cache.extend(iter);
         cache

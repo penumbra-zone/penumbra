@@ -26,7 +26,7 @@ use rand_core::OsRng;
 use regex::Regex;
 
 use liquidity_position::PositionCmd;
-use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
@@ -1028,9 +1028,7 @@ impl TxCmd {
                     timeout_timestamp = current_time_u64_ms + 1.728e14 as u64;
                 }
 
-                fn parse_denom_and_amount(
-                    value_str: &str,
-                ) -> anyhow::Result<(Amount, DenomMetadata)> {
+                fn parse_denom_and_amount(value_str: &str) -> anyhow::Result<(Amount, Metadata)> {
                     let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
                     if let Some(captures) = denom_re.captures(value_str) {
                         let numeric_str = captures.get(1).expect("matched regex").as_str();

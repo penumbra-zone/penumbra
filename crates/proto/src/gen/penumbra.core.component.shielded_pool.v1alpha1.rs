@@ -538,7 +538,7 @@ impl ::prost::Name for OutputPlan {
 /// Requests information on an asset by asset id
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DenomMetadataByIdRequest {
+pub struct AssetMetadataByIdRequest {
     /// The expected chain id (empty string if no expectation).
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
@@ -546,8 +546,8 @@ pub struct DenomMetadataByIdRequest {
     #[prost(message, optional, tag = "2")]
     pub asset_id: ::core::option::Option<super::super::super::asset::v1alpha1::AssetId>,
 }
-impl ::prost::Name for DenomMetadataByIdRequest {
-    const NAME: &'static str = "DenomMetadataByIdRequest";
+impl ::prost::Name for AssetMetadataByIdRequest {
+    const NAME: &'static str = "AssetMetadataByIdRequest";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -557,17 +557,17 @@ impl ::prost::Name for DenomMetadataByIdRequest {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct DenomMetadataByIdResponse {
+pub struct AssetMetadataByIdResponse {
     /// If present, information on the requested asset.
     ///
     /// If the requested asset was unknown, this field will not be present.
     #[prost(message, optional, tag = "1")]
     pub denom_metadata: ::core::option::Option<
-        super::super::super::asset::v1alpha1::DenomMetadata,
+        super::super::super::asset::v1alpha1::Metadata,
     >,
 }
-impl ::prost::Name for DenomMetadataByIdResponse {
-    const NAME: &'static str = "DenomMetadataByIdResponse";
+impl ::prost::Name for AssetMetadataByIdResponse {
+    const NAME: &'static str = "AssetMetadataByIdResponse";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -662,11 +662,11 @@ pub mod query_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn denom_metadata_by_id(
+        pub async fn asset_metadata_by_id(
             &mut self,
-            request: impl tonic::IntoRequest<super::DenomMetadataByIdRequest>,
+            request: impl tonic::IntoRequest<super::AssetMetadataByIdRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::DenomMetadataByIdResponse>,
+            tonic::Response<super::AssetMetadataByIdResponse>,
             tonic::Status,
         > {
             self.inner
@@ -680,14 +680,14 @@ pub mod query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.core.component.shielded_pool.v1alpha1.QueryService/DenomMetadataById",
+                "/penumbra.core.component.shielded_pool.v1alpha1.QueryService/AssetMetadataById",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
                         "penumbra.core.component.shielded_pool.v1alpha1.QueryService",
-                        "DenomMetadataById",
+                        "AssetMetadataById",
                     ),
                 );
             self.inner.unary(req, path, codec).await
@@ -702,11 +702,11 @@ pub mod query_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
-        async fn denom_metadata_by_id(
+        async fn asset_metadata_by_id(
             &self,
-            request: tonic::Request<super::DenomMetadataByIdRequest>,
+            request: tonic::Request<super::AssetMetadataByIdRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::DenomMetadataByIdResponse>,
+            tonic::Response<super::AssetMetadataByIdResponse>,
             tonic::Status,
         >;
     }
@@ -790,25 +790,25 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.core.component.shielded_pool.v1alpha1.QueryService/DenomMetadataById" => {
+                "/penumbra.core.component.shielded_pool.v1alpha1.QueryService/AssetMetadataById" => {
                     #[allow(non_camel_case_types)]
-                    struct DenomMetadataByIdSvc<T: QueryService>(pub Arc<T>);
+                    struct AssetMetadataByIdSvc<T: QueryService>(pub Arc<T>);
                     impl<
                         T: QueryService,
-                    > tonic::server::UnaryService<super::DenomMetadataByIdRequest>
-                    for DenomMetadataByIdSvc<T> {
-                        type Response = super::DenomMetadataByIdResponse;
+                    > tonic::server::UnaryService<super::AssetMetadataByIdRequest>
+                    for AssetMetadataByIdSvc<T> {
+                        type Response = super::AssetMetadataByIdResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::DenomMetadataByIdRequest>,
+                            request: tonic::Request<super::AssetMetadataByIdRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as QueryService>::denom_metadata_by_id(&inner, request)
+                                <T as QueryService>::asset_metadata_by_id(&inner, request)
                                     .await
                             };
                             Box::pin(fut)
@@ -821,7 +821,7 @@ pub mod query_service_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = DenomMetadataByIdSvc(inner);
+                        let method = AssetMetadataByIdSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

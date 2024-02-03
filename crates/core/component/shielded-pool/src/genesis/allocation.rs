@@ -1,5 +1,5 @@
 use penumbra_asset::{
-    asset::{self, DenomMetadata, Unit},
+    asset::{self, Metadata, Unit},
     Value,
 };
 use penumbra_keys::Address;
@@ -20,7 +20,7 @@ pub struct Allocation {
 }
 
 impl Allocation {
-    pub fn denom(&self) -> DenomMetadata {
+    pub fn denom(&self) -> Metadata {
         self.unit().base()
     }
 

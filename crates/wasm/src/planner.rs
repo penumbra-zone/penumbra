@@ -7,7 +7,7 @@ use std::{
 use anyhow::{anyhow, Result};
 use rand_core::{CryptoRng, RngCore};
 
-use penumbra_asset::{asset::DenomMetadata, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset::Metadata, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     lp::plan::PositionWithdrawPlan,
@@ -232,7 +232,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn swap(
         &mut self,
         input_value: Value,
-        into_denom: DenomMetadata,
+        into_denom: Metadata,
         swap_claim_fee: Fee,
         claim_address: Address,
     ) -> Result<&mut Self> {

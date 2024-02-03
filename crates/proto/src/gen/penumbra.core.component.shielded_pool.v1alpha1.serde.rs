@@ -1,4 +1,4 @@
-impl serde::Serialize for DenomMetadataByIdRequest {
+impl serde::Serialize for AssetMetadataByIdRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -12,7 +12,7 @@ impl serde::Serialize for DenomMetadataByIdRequest {
         if self.asset_id.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdRequest", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
         }
@@ -22,7 +22,7 @@ impl serde::Serialize for DenomMetadataByIdRequest {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DenomMetadataByIdRequest {
+impl<'de> serde::Deserialize<'de> for AssetMetadataByIdRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -72,13 +72,13 @@ impl<'de> serde::Deserialize<'de> for DenomMetadataByIdRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DenomMetadataByIdRequest;
+            type Value = AssetMetadataByIdRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest")
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdRequest")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DenomMetadataByIdRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -103,16 +103,16 @@ impl<'de> serde::Deserialize<'de> for DenomMetadataByIdRequest {
                         }
                     }
                 }
-                Ok(DenomMetadataByIdRequest {
+                Ok(AssetMetadataByIdRequest {
                     chain_id: chain_id__.unwrap_or_default(),
                     asset_id: asset_id__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for DenomMetadataByIdResponse {
+impl serde::Serialize for AssetMetadataByIdResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -123,14 +123,14 @@ impl serde::Serialize for DenomMetadataByIdResponse {
         if self.denom_metadata.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdResponse", len)?;
         if let Some(v) = self.denom_metadata.as_ref() {
             struct_ser.serialize_field("denomMetadata", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for DenomMetadataByIdResponse {
+impl<'de> serde::Deserialize<'de> for AssetMetadataByIdResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -176,13 +176,13 @@ impl<'de> serde::Deserialize<'de> for DenomMetadataByIdResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = DenomMetadataByIdResponse;
+            type Value = AssetMetadataByIdResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse")
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdResponse")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DenomMetadataByIdResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AssetMetadataByIdResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -200,12 +200,12 @@ impl<'de> serde::Deserialize<'de> for DenomMetadataByIdResponse {
                         }
                     }
                 }
-                Ok(DenomMetadataByIdResponse {
+                Ok(AssetMetadataByIdResponse {
                     denom_metadata: denom_metadata__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1alpha1.DenomMetadataByIdResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1alpha1.AssetMetadataByIdResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventOutput {

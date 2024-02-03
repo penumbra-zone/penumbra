@@ -9,7 +9,7 @@ mod value;
 pub use balance::Balance;
 pub use value::{Value, ValueVar, ValueView};
 
-pub static STAKING_TOKEN_DENOM: Lazy<asset::DenomMetadata> = Lazy::new(|| {
+pub static STAKING_TOKEN_DENOM: Lazy<asset::Metadata> = Lazy::new(|| {
     asset::Cache::with_known_assets()
         .get_unit("upenumbra")
         .expect("unable to get upenumbra denom, which should be hardcoded")
