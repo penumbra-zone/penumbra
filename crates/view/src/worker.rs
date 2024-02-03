@@ -384,22 +384,20 @@ impl Worker {
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
-        self.run_inner().await.map_err(|e| {
-            tracing::info!(?e, "view worker error");
-            self.error_slot
-                .lock()
-                .expect("no race conditions on worker error slot lock")
-                .replace(e);
-            anyhow::anyhow!("view worker error")
-        })
-    }
-
-    async fn run_inner(&mut self) -> anyhow::Result<()> {
-        // For now, this can be outside of the loop, because assets are only
-        // created at genesis. In the future, we'll want to have a way for
-        // clients to learn about assets as they're created.
-        self.sync().await?;
-        Ok(())
+        loop {
+            // Do a single sync run, recording any errors.
+            if let Err(e) = self.sync().await {
+                tracing::error!(?e, "view worker error");
+                self.error_slot
+                    .lock()
+                    .expect("mutex is not poisoned")
+                    .replace(e);
+            }
+            // Sleep 10s (maybe later use exponential backoff?)
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            // Clear the error slot before retrying.
+            *self.error_slot.lock().expect("mutex is not poisoned") = None;
+        }
     }
 }
 
