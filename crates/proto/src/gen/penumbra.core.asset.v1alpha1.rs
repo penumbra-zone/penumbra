@@ -133,14 +133,6 @@ impl ::prost::Name for Value {
     }
 }
 /// Represents a value of a known or unknown denomination.
-///
-/// Note: unlike some other View types, we don't just store the underlying
-/// `Value` message together with an additional `Denom`.  Instead, we record
-/// either an `Amount` and `Denom` (only) or an `Amount` and `AssetId`.  This is
-/// because we don't want to allow a situation where the supplied `Denom` doesn't
-/// match the `AssetId`, and a consumer of the API that doesn't check is tricked.
-/// This way, the `Denom` will always match, because the consumer is forced to
-/// recompute it themselves if they want it.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueView {
@@ -149,17 +141,17 @@ pub struct ValueView {
 }
 /// Nested message and enum types in `ValueView`.
 pub mod value_view {
-    /// A value whose asset ID has a known denomination.
+    /// A value whose asset ID is known and has metadata.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct KnownDenom {
+    pub struct KnownAssetId {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
         #[prost(message, optional, tag = "2")]
-        pub denom: ::core::option::Option<super::Metadata>,
+        pub metadata: ::core::option::Option<super::Metadata>,
     }
-    impl ::prost::Name for KnownDenom {
-        const NAME: &'static str = "KnownDenom";
+    impl ::prost::Name for KnownAssetId {
+        const NAME: &'static str = "KnownAssetId";
         const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -167,16 +159,17 @@ pub mod value_view {
             )
         }
     }
+    /// A value whose asset ID is unknown, with no metadata.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct UnknownDenom {
+    pub struct UnknownAssetId {
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::super::super::num::v1alpha1::Amount>,
         #[prost(message, optional, tag = "2")]
         pub asset_id: ::core::option::Option<super::AssetId>,
     }
-    impl ::prost::Name for UnknownDenom {
-        const NAME: &'static str = "UnknownDenom";
+    impl ::prost::Name for UnknownAssetId {
+        const NAME: &'static str = "UnknownAssetId";
         const PACKAGE: &'static str = "penumbra.core.asset.v1alpha1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -188,9 +181,9 @@ pub mod value_view {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum ValueView {
         #[prost(message, tag = "1")]
-        KnownDenom(KnownDenom),
+        KnownAssetId(KnownAssetId),
         #[prost(message, tag = "2")]
-        UnknownDenom(UnknownDenom),
+        UnknownAssetId(UnknownAssetId),
     }
 }
 impl ::prost::Name for ValueView {
