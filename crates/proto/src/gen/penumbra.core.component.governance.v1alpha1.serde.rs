@@ -2273,25 +2273,7 @@ impl serde::Serialize for Proposal {
         if !self.description.is_empty() {
             len += 1;
         }
-        if self.signaling.is_some() {
-            len += 1;
-        }
-        if self.emergency.is_some() {
-            len += 1;
-        }
-        if self.parameter_change.is_some() {
-            len += 1;
-        }
-        if self.community_pool_spend.is_some() {
-            len += 1;
-        }
-        if self.upgrade_plan.is_some() {
-            len += 1;
-        }
-        if self.freeze_ibc_client.is_some() {
-            len += 1;
-        }
-        if self.unfreeze_ibc_client.is_some() {
+        if self.payload.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1alpha1.Proposal", len)?;
@@ -2305,26 +2287,30 @@ impl serde::Serialize for Proposal {
         if !self.description.is_empty() {
             struct_ser.serialize_field("description", &self.description)?;
         }
-        if let Some(v) = self.signaling.as_ref() {
-            struct_ser.serialize_field("signaling", v)?;
-        }
-        if let Some(v) = self.emergency.as_ref() {
-            struct_ser.serialize_field("emergency", v)?;
-        }
-        if let Some(v) = self.parameter_change.as_ref() {
-            struct_ser.serialize_field("parameterChange", v)?;
-        }
-        if let Some(v) = self.community_pool_spend.as_ref() {
-            struct_ser.serialize_field("communityPoolSpend", v)?;
-        }
-        if let Some(v) = self.upgrade_plan.as_ref() {
-            struct_ser.serialize_field("upgradePlan", v)?;
-        }
-        if let Some(v) = self.freeze_ibc_client.as_ref() {
-            struct_ser.serialize_field("freezeIbcClient", v)?;
-        }
-        if let Some(v) = self.unfreeze_ibc_client.as_ref() {
-            struct_ser.serialize_field("unfreezeIbcClient", v)?;
+        if let Some(v) = self.payload.as_ref() {
+            match v {
+                proposal::Payload::Signaling(v) => {
+                    struct_ser.serialize_field("signaling", v)?;
+                }
+                proposal::Payload::Emergency(v) => {
+                    struct_ser.serialize_field("emergency", v)?;
+                }
+                proposal::Payload::ParameterChange(v) => {
+                    struct_ser.serialize_field("parameterChange", v)?;
+                }
+                proposal::Payload::CommunityPoolSpend(v) => {
+                    struct_ser.serialize_field("communityPoolSpend", v)?;
+                }
+                proposal::Payload::UpgradePlan(v) => {
+                    struct_ser.serialize_field("upgradePlan", v)?;
+                }
+                proposal::Payload::FreezeIbcClient(v) => {
+                    struct_ser.serialize_field("freezeIbcClient", v)?;
+                }
+                proposal::Payload::UnfreezeIbcClient(v) => {
+                    struct_ser.serialize_field("unfreezeIbcClient", v)?;
+                }
+            }
         }
         struct_ser.end()
     }
@@ -2419,13 +2405,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                 let mut id__ = None;
                 let mut title__ = None;
                 let mut description__ = None;
-                let mut signaling__ = None;
-                let mut emergency__ = None;
-                let mut parameter_change__ = None;
-                let mut community_pool_spend__ = None;
-                let mut upgrade_plan__ = None;
-                let mut freeze_ibc_client__ = None;
-                let mut unfreeze_ibc_client__ = None;
+                let mut payload__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Id => {
@@ -2449,46 +2429,53 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                             description__ = Some(map_.next_value()?);
                         }
                         GeneratedField::Signaling => {
-                            if signaling__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("signaling"));
                             }
-                            signaling__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::Signaling)
+;
                         }
                         GeneratedField::Emergency => {
-                            if emergency__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("emergency"));
                             }
-                            emergency__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::Emergency)
+;
                         }
                         GeneratedField::ParameterChange => {
-                            if parameter_change__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("parameterChange"));
                             }
-                            parameter_change__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::ParameterChange)
+;
                         }
                         GeneratedField::CommunityPoolSpend => {
-                            if community_pool_spend__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("communityPoolSpend"));
                             }
-                            community_pool_spend__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::CommunityPoolSpend)
+;
                         }
                         GeneratedField::UpgradePlan => {
-                            if upgrade_plan__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("upgradePlan"));
                             }
-                            upgrade_plan__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::UpgradePlan)
+;
                         }
                         GeneratedField::FreezeIbcClient => {
-                            if freeze_ibc_client__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("freezeIbcClient"));
                             }
-                            freeze_ibc_client__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::FreezeIbcClient)
+;
                         }
                         GeneratedField::UnfreezeIbcClient => {
-                            if unfreeze_ibc_client__.is_some() {
+                            if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("unfreezeIbcClient"));
                             }
-                            unfreeze_ibc_client__ = map_.next_value()?;
+                            payload__ = map_.next_value::<::std::option::Option<_>>()?.map(proposal::Payload::UnfreezeIbcClient)
+;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2499,13 +2486,7 @@ impl<'de> serde::Deserialize<'de> for Proposal {
                     id: id__.unwrap_or_default(),
                     title: title__.unwrap_or_default(),
                     description: description__.unwrap_or_default(),
-                    signaling: signaling__,
-                    emergency: emergency__,
-                    parameter_change: parameter_change__,
-                    community_pool_spend: community_pool_spend__,
-                    upgrade_plan: upgrade_plan__,
-                    freeze_ibc_client: freeze_ibc_client__,
-                    unfreeze_ibc_client: unfreeze_ibc_client__,
+                    payload: payload__,
                 })
             }
         }

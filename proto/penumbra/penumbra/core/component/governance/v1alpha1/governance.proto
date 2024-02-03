@@ -240,14 +240,16 @@ message Proposal {
   // A natural-language description of the effect of the proposal and its justification.
   string description = 2;
 
-  // The different kinds of proposal. Only one of these should be set.
-  Signaling signaling = 5;
-  Emergency emergency = 6;
-  ParameterChange parameter_change = 7;
-  CommunityPoolSpend community_pool_spend = 8;
-  UpgradePlan upgrade_plan = 9;
-  FreezeIbcClient freeze_ibc_client = 10;
-  UnfreezeIbcClient unfreeze_ibc_client = 11;
+  // The proposal's payload.
+  oneof payload {
+    Signaling signaling = 5;
+    Emergency emergency = 6;
+    ParameterChange parameter_change = 7;
+    CommunityPoolSpend community_pool_spend = 8;
+    UpgradePlan upgrade_plan = 9;
+    FreezeIbcClient freeze_ibc_client = 10;
+    UnfreezeIbcClient unfreeze_ibc_client = 11;
+  }
 
   // A signaling proposal is meant to register a vote on-chain, but does not have an automatic
   // effect when passed.
