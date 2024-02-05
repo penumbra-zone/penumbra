@@ -13,6 +13,7 @@ use std::{
 };
 use validator::BondingState::*;
 
+pub mod action_handler;
 pub mod metrics;
 pub mod rpc;
 pub use self::metrics::register_metrics;

@@ -8,10 +8,6 @@ mod current_consensus_keys;
 mod event;
 mod uptime;
 
-// TODO: move into component mod like other component crates
-#[cfg(feature = "component")]
-mod action_handler;
-
 #[cfg(feature = "component")]
 pub mod component;
 
