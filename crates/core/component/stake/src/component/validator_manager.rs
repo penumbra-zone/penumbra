@@ -1,32 +1,12 @@
 use crate::component::metrics;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use futures::{FutureExt, StreamExt, TryStreamExt};
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
-use penumbra_distributions::component::StateReadExt as _;
-use penumbra_sct::{
-    component::clock::{EpochManager, EpochRead},
-    epoch::Epoch,
-};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    future::Future,
-    pin::Pin,
-    str::FromStr,
-};
+use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use validator::BondingState::*;
 
-use cnidarium::{StateRead, StateWrite};
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
-use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
-use sha2::{Digest, Sha256};
-use tendermint::validator::Update;
-use tendermint::{
-    abci::types::{CommitInfo, Misbehavior},
-    block, PublicKey,
-};
-use tracing::{instrument, Instrument};
+use cnidarium::StateWrite;
+use penumbra_proto::StateWriteProto;
+use tracing::instrument;
 
 use crate::{
     component::StateWriteExt as _,
@@ -91,18 +71,12 @@ pub(crate) trait ValidatorManager: StateWrite {
         old_state: validator::State,
         new_state: validator::State,
     ) -> Result<()> {
-        let state_key = state_key::state_by_validator(identity_key).to_owned();
-
-        // Doing a single tuple match, rather than matching on substates,
-        // ensures we exhaustively cover all possible state transitions.
         use validator::State::*;
+        let validator_state_path = state_key::state_by_validator(identity_key);
 
-        // Whenever a validator transitions out of the active state to a disabled, jailed, or
-        // tombstoned state, this means that we need to explicitly signal the end of an epoch,
-        // because there has been a change to the validator set outside of a normal epoch
-        // transition. All other validator state transitions (including from active to inactive) are
-        // triggered by epoch transitions themselves, or don't immediately affect the active
-        // validator set.
+        // Validator state transitions are usually triggered by an epoch transition. The exception
+        // to this rule is when a validator exits the active set. In this case, we want to end the
+        // current epoch early in order to hold that validator transitions happen at epoch boundaries.
         if let (Active, Defined | Disabled | Jailed | Tombstoned) = (old_state, new_state) {
             self.set_end_epoch_flag();
         }
@@ -143,7 +117,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                 let power = self.validator_power(identity_key).await;
 
                 // Finally, set the validator to be active.
-                self.put(state_key, Active);
+                self.put(validator_state_path, Active);
 
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
 
@@ -166,7 +140,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                     },
                 );
 
-                self.put(state_key, new_state);
+                self.put(validator_state_path, new_state);
 
                 metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
             }
@@ -177,20 +151,20 @@ pub(crate) trait ValidatorManager: StateWrite {
 
                 // Here, we don't have anything to do, only allow the validator to return to society.
                 tracing::debug!(validator_identity = %identity_key, "releasing validator from jail");
-                self.put(state_key, Inactive);
+                self.put(validator_state_path, Inactive);
             }
             (Disabled, Inactive) => {
                 // The validator was disabled by its operator, and was re-enabled. Since its
                 // delegation pool was sufficiently large, it is considered inactive.
                 tracing::debug!(validator_identity = %identity_key, "disabled validator has become inactive");
-                self.put(state_key, Inactive);
+                self.put(validator_state_path, Inactive);
             }
             (Inactive | Jailed, Disabled) => {
                 // The validator was disabled by its operator.
 
                 // We record that the validator was disabled, so delegations to it are not processed.
                 tracing::debug!(validator_identity = %identity_key, validator_state = ?old_state, "validator has been disabled");
-                self.put(state_key, Disabled);
+                self.put(validator_state_path, Disabled);
             }
             (Active, Jailed) => {
                 // An active validator has committed misbehavior (e.g. failing to sign a block),
@@ -217,7 +191,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                 );
 
                 // Finally, set the validator to be jailed.
-                self.put(state_key, Jailed);
+                self.put(validator_state_path, Jailed);
             }
             (Active, Defined) => {
                 // The validator was part of the active set, but its delegation pool fell below
@@ -234,7 +208,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                     },
                 );
                 self.remove_consensus_set_index(identity_key);
-                self.put(state_key, Defined);
+                self.put(validator_state_path, Defined);
             }
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
                 // We have processed evidence of byzantine behavior for this validator.
@@ -257,7 +231,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                 self.remove_consensus_set_index(identity_key);
 
                 // Finally, set the validator to be tombstoned.
-                self.put(state_key, Tombstoned);
+                self.put(validator_state_path, Tombstoned);
             }
             /* ****** bad transitions ******* */
             (Defined | Jailed | Disabled, Active) => {
