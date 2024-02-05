@@ -1,17 +1,19 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, pin::Pin};
 
 use crate::{
     component::metrics,
     rate::{BaseRateData, RateData},
-    validator::Validator,
+    validator::{State, Validator},
     DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::StreamExt as _;
+use futures::{Future, FutureExt, StreamExt as _};
 use penumbra_num::Amount;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_shielded_pool::component::SupplyRead as _;
+use penumbra_sct::{
+    component::clock::{EpochManager, EpochRead},
+};
+use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
 use tokio::task::JoinSet;
@@ -30,7 +32,7 @@ use crate::{
 use penumbra_asset::asset;
 
 #[async_trait]
-pub(crate) trait ValidatorManager: StateWrite {
+pub trait ValidatorManager: StateWrite {
     /// Perform a state transition for the specified validator and new state.
     /// Initial validator state is defined using [`add_validator`]
     ///                                                                      
@@ -64,9 +66,12 @@ pub(crate) trait ValidatorManager: StateWrite {
         identity_key: &IdentityKey,
         new_state: validator::State,
     ) -> Result<()> {
-        let old_state = self.validator_state(identity_key).await?.ok_or_else(|| {
-            anyhow::anyhow!("validator state not found for validator {}", identity_key)
-        })?;
+        let old_state = self
+            .get_validator_state(identity_key)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!("validator state not found for validator {}", identity_key)
+            })?;
 
         // Delegating to an inner method here lets us create a span that has both states,
         // without having to manage span entry/exit in async code.
@@ -128,7 +133,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                     ),
                 );
 
-                let power = self.validator_power(identity_key).await;
+                let power = self.get_validator_power(identity_key).await;
 
                 // Finally, set the validator to be active.
                 self.put(validator_state_path, Active);
@@ -361,6 +366,77 @@ pub(crate) trait ValidatorManager: StateWrite {
         .await
     }
 
+    /// Record a new validator definition and prime its initial state.
+    /// This method is used for both genesis and post-genesis validators.
+    /// In the former case, the validator starts in `[validator::State::Active]`
+    /// state, while in the latter case, it starts in `[validator::State::Defined]`.
+    ///
+    /// # Errors
+    /// This method errors if the initial state is not one of the two valid
+    /// initial states. Or if the voting power is negative.
+    async fn add_validator_inner(
+        &mut self,
+        validator: Validator,
+        initial_rate_data: RateData,
+        initial_state: validator::State,
+        initial_bonding_state: validator::BondingState,
+        initial_voting_power: Amount,
+    ) -> Result<()> {
+        tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
+        if !matches!(initial_state, State::Defined | State::Active) {
+            anyhow::bail!(
+                "validator (identity_key={}) cannot have initial_state={:?}",
+                validator.identity_key,
+                initial_state
+            )
+        }
+        // TODO(erwan): add more guards for voting power and nonsensical initial states.
+        // in a separate PR, will move this up closer to `add_validator` - i don't want to
+        // clutter the diff for now.
+        let id = validator.identity_key.clone();
+
+        // First, we record the validator definition in the general validator index:
+        self.put(
+            state_key::validators::definitions::by_id(&id),
+            validator.clone(),
+        );
+        // Then, we create a mapping from the validator's consensus key to its
+        // identity key, so we can look up the validator by its consensus key, and
+        // vice-versa.
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+            .await;
+        // We register the validator's delegation token in the token registry...
+        self.register_denom(&DelegationToken::from(&id).denom())
+            .await?;
+        // ... and its reward rate data in the JMT.
+        self.set_validator_rates(&id, initial_rate_data);
+
+        // We initialize the validator's state, power, and bonding state.
+        self.set_initial_validator_state(&id, initial_state)?;
+        self.set_validator_power(&id, initial_voting_power)?;
+        self.set_validator_bonding_state(&id, initial_bonding_state);
+
+        // For genesis validators, we also need to add them to the consensus set index.
+        if initial_state == validator::State::Active {
+            self.add_consensus_set_index(&id);
+        }
+
+        // Finally, update metrics for the new validator.
+        match initial_state {
+            validator::State::Active => {
+                metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+            }
+            validator::State::Defined => {
+                metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0);
+            }
+            _ => unreachable!("the initial state was validated by the guard condition"),
+        };
+
+        metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
+
+        Ok(())
+    }
+
     /// Update a validator definition
     #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
     async fn update_validator(&mut self, validator: Validator) -> Result<()> {
@@ -369,7 +445,7 @@ pub(crate) trait ValidatorManager: StateWrite {
         tracing::debug!(definition = ?validator, "updating validator definition");
         let id = &validator.identity_key;
         let current_state = self
-            .validator_state(id)
+            .get_validator_state(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
 
@@ -385,7 +461,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                 // inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
                 let current_validator_rate = self
-                    .current_validator_rate(id)
+                    .get_validator_rate(id)
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
                 let delegation_token_supply = self
@@ -406,7 +482,7 @@ pub(crate) trait ValidatorManager: StateWrite {
                 // If the validator has enough stake, it will become inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
                 let validator_rate_data = self
-                    .current_validator_rate(id)
+                    .get_validator_rate(id)
                     .await?
                     .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
                 let delegation_pool_size = self
@@ -465,7 +541,7 @@ pub(crate) trait ValidatorManager: StateWrite {
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
-            let state = self.validator_state(&identity_key);
+            let state = self.get_validator_state(&identity_key);
             let uptime = self.validator_uptime(&identity_key);
             let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
@@ -532,6 +608,7 @@ pub(crate) trait ValidatorManager: StateWrite {
         Ok(())
     }
 
+
     /// Process evidence of byzantine behavior from CometBFT.
     ///
     /// # Errors
@@ -556,10 +633,15 @@ impl<T: StateWrite + ?Sized> ValidatorManager for T {}
 
 #[async_trait]
 pub trait ValidatorDataRead: StateRead {
-    async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<validator::Info>> {
-        let validator = self.validator(identity_key).await?;
-        let status = self.validator_status(identity_key).await?;
-        let rate_data = self.current_validator_rate(identity_key).await?;
+    // TODO(erwan): feels like this should be rm'd...
+    async fn get_validator_info(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<validator::Info>> {
+        let validator = self.get_validator_definition(identity_key).await?;
+        let status = self.get_validator_status(identity_key).await?;
+        let rate_data = self.get_validator_rate(identity_key).await?;
+
         match (validator, status, rate_data) {
             (Some(validator), Some(status), Some(rate_data)) => Ok(Some(validator::Info {
                 validator,
@@ -570,14 +652,14 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    fn validator_state(
+    fn get_validator_state(
         &self,
         identity_key: &IdentityKey,
     ) -> DomainFuture<validator::State, Self::GetRawFut> {
         self.get(&state_key::state_by_validator(identity_key))
     }
 
-    async fn validator_bonding_state(
+    async fn get_validator_bonding_state(
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::BondingState>> {
@@ -586,13 +668,13 @@ pub trait ValidatorDataRead: StateRead {
     }
 
     /// Convenience method to assemble a [`ValidatorStatus`].
-    async fn validator_status(
+    async fn get_validator_status(
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
-        let bonding_state = self.validator_bonding_state(identity_key).await?;
-        let state = self.validator_state(identity_key).await?;
-        let power = self.validator_power(identity_key).await?;
+        let bonding_state = self.get_validator_bonding_state(identity_key).await?;
+        let state = self.get_validator_state(identity_key).await?;
+        let power = self.get_validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
         match (state, power, bonding_state) {
             (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
@@ -603,6 +685,29 @@ pub trait ValidatorDataRead: StateRead {
             })),
             _ => Ok(None),
         }
+    }
+
+    fn get_validator_rate(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
+        self.get(&state_key::current_rate_by_validator(identity_key))
+            .boxed()
+    }
+
+    fn get_validator_power(
+        &self,
+        validator: &IdentityKey,
+    ) -> DomainFuture<Amount, Self::GetRawFut> {
+        self.get(&state_key::power_by_validator(validator))
+    }
+
+    async fn get_validator_definition(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<Validator>> {
+        self.get(&state_key::validators::definitions::by_id(identity_key))
+            .await
     }
 }
 

@@ -64,7 +64,7 @@ impl Component for Funding {
         let funding_queue = state.funding_queue().unwrap_or_default();
         let funding_queue_len = funding_queue.len();
 
-        let Some(base_rate) = state.previous_base_rate() else {
+        let Some(base_rate) = state.get_previous_base_rate() else {
             tracing::error!("the ending epoch's base rate has not beed found in object storage, computing rewards is not possible");
             return Ok(());
         };

@@ -49,7 +49,7 @@ impl QueryService for Server {
         let show_inactive = request.get_ref().show_inactive;
         let s = try_stream! {
             for v in validators {
-                let info = state.validator_info(&v.identity_key)
+                let info = state.get_validator_info(&v.identity_key)
                     .await?
                     .expect("known validator must be present");
                 // Slashed and inactive validators are not shown by default.
@@ -88,7 +88,7 @@ impl QueryService for Server {
             .map_err(|_| Status::invalid_argument("invalid identity key"))?;
 
         let status = state
-            .validator_status(&id)
+            .get_validator_status(&id)
             .await
             .map_err(|e| Status::unavailable(format!("error getting validator status: {e}")))?
             .ok_or_else(|| Status::not_found("validator not found"))?;
@@ -135,7 +135,7 @@ impl QueryService for Server {
             .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
 
         let rate_data = state
-            .current_validator_rate(&identity_key)
+            .get_validator_rate(&identity_key)
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 

@@ -135,7 +135,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // We are transitioning to the next epoch, so the "current" base rate in
         // the state is now the previous base rate.
-        let prev_base_rate = self.current_base_rate().await?;
+        let prev_base_rate = self.get_current_base_rate().await?;
 
         tracing::debug!(
             "fetching the issuance budget for this epoch from the distributions component"
@@ -186,13 +186,13 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         while let Some(validator_identity) = validator_stream.next().await {
             let identity_key = validator_identity?;
-            let validator = self.validator(&identity_key).await?.ok_or_else(|| {
+            let validator = self.get_validator_definition(&identity_key).await?.ok_or_else(|| {
                 anyhow::anyhow!("validator (identity={}) is present in consensus set index but its definition was not found in the JMT", &identity_key)
             })?;
 
             // Grab the current validator state.
             let validator_state = self
-                .validator_state(&validator.identity_key)
+                .get_validator_state(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity={}) is present in consensus set index but its state was not found in the JMT", &validator.identity_key)
@@ -201,7 +201,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
             // We are transitioning to the next epoch, so the "current" validator
             // rate in the state is now the previous validator rate.
             let prev_validator_rate = self
-                .current_validator_rate(&validator.identity_key)
+                .get_validator_rate(&validator.identity_key)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity={}) is present in consensus set index but its rate data was not found in the JMT", &validator.identity_key)
@@ -397,11 +397,11 @@ pub(crate) trait StakingImpl: StateWriteExt {
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
             let state = self
-                .validator_state(&identity_key)
+                .get_validator_state(&identity_key)
                 .await?
                 .context("should be able to fetch validator state")?;
             let power = self
-                .validator_power(&identity_key)
+                .get_validator_power(&identity_key)
                 .await?
                 .unwrap_or_default();
             if matches!(state, validator::State::Active | validator::State::Inactive) {
@@ -447,7 +447,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
             let state = self
-                .validator_bonding_state(&identity_key)
+                .get_validator_bonding_state(&identity_key)
                 .await?
                 .context("should be able to fetch validator bonding state")?;
 
@@ -499,8 +499,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
-            let state = self.validator_state(&identity_key);
-            let power = self.validator_power(&identity_key);
+            let state = self.get_validator_state(&identity_key);
+            let power = self.get_validator_power(&identity_key);
             let consensus_key = self.validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
@@ -637,33 +637,17 @@ pub trait StateReadExt: StateRead {
         Ok(compounded)
     }
 
-    async fn current_base_rate(&self) -> Result<BaseRateData> {
+    async fn get_current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::current_base_rate())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
-    fn previous_base_rate(&self) -> Option<BaseRateData> {
+    fn get_previous_base_rate(&self) -> Option<BaseRateData> {
         self.object_get(state_key::previous_base_rate())
     }
 
     // This is a normal fn returning a boxed future so it can be 'static with no inferred lifetime bound
-    fn current_validator_rate(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
-        self.get(&state_key::current_rate_by_validator(identity_key))
-            .boxed()
-    }
-
-    fn validator_power(&self, validator: &IdentityKey) -> DomainFuture<Amount, Self::GetRawFut> {
-        self.get(&state_key::power_by_validator(validator))
-    }
-
-    async fn validator(&self, identity_key: &IdentityKey) -> Result<Option<Validator>> {
-        self.get(&state_key::validators::definitions::by_id(identity_key))
-            .await
-    }
 
     // TODO(erwan): we pull the entire validator definition instead of tracking
     // the consensus key separately.  If we did, not only could we save on deserialization
@@ -685,7 +669,7 @@ pub trait StateReadExt: StateRead {
             .get(&state_key::validator_id_by_consensus_key(ck))
             .await?
         {
-            self.validator(&identity_key).await
+            self.get_validator_definition(&identity_key).await
         } else {
             return Ok(None);
         }
@@ -769,7 +753,7 @@ pub trait StateReadExt: StateRead {
         current_epoch: Epoch,
         validator_identity: &IdentityKey,
     ) -> Result<u64> {
-        let Some(val_bonding_state) = self.validator_bonding_state(validator_identity).await?
+        let Some(val_bonding_state) = self.get_validator_bonding_state(validator_identity).await?
         else {
             anyhow::bail!(
                 "validator bonding state not tracked (validator_identity={})",
@@ -1043,7 +1027,7 @@ pub trait StateWriteExt: StateWrite {
         while let Some(validator_identity) = validator_stream.next().await {
             let validator_identity = validator_identity?;
             let validator_state = self
-                .validator_state(&validator_identity)
+                .get_validator_state(&validator_identity)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its state was not found", validator_identity)
@@ -1058,7 +1042,7 @@ pub trait StateWriteExt: StateWrite {
                 .expect("delegation token should be known");
 
             let validator_rate = self
-                .current_validator_rate(&validator_identity)
+                .get_validator_rate(&validator_identity)
                 .await?
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its rate data was not found", validator_identity)

@@ -22,7 +22,7 @@ impl ActionHandler for Delegate {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let d = self;
         let next_rate_data = state
-            .current_validator_rate(&d.validator_identity)
+            .get_validator_rate(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("unknown validator identity {}", d.validator_identity))?
             .clone();
@@ -42,11 +42,11 @@ impl ActionHandler for Delegate {
         // - the validator definition is "enabled" by the operator
         // - the validator is not jailed or tombstoned
         let validator = state
-            .validator(&d.validator_identity)
+            .get_validator_definition(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
         let validator_state = state
-            .validator_state(&d.validator_identity)
+            .get_validator_state(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
@@ -108,7 +108,7 @@ impl ActionHandler for Delegate {
         // want to avoid having to iterate over all defined validators at all.
         // See #2921 for more details.
         let validator_state = state
-            .validator_state(&self.validator_identity)
+            .get_validator_state(&self.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 

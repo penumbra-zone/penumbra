@@ -19,6 +19,8 @@ use super::{validator_manager::ValidatorManager as _, StakingImpl as _, StateWri
 
 pub struct Staking {}
 
+impl Staking {}
+
 #[async_trait]
 impl Component for Staking {
     type AppState = (

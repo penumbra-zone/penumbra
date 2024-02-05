@@ -357,7 +357,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         identity_key: &IdentityKey,
         governance_key: &GovernanceKey,
     ) -> Result<()> {
-        if let Some(validator) = self.validator(identity_key).await? {
+        if let Some(validator) = self.get_validator_definition(identity_key).await? {
             if validator.governance_key != *governance_key {
                 anyhow::bail!(
                     "governance key {} does not match validator {}",
@@ -629,12 +629,12 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
 
-            let state = self.validator_state(&identity_key);
-            let rate_data = self.current_validator_rate(&identity_key);
+            let state = self.get_validator_state(&identity_key);
+            let rate_data = self.get_validator_rate(&identity_key);
             let power: penumbra_proto::state::future::DomainFuture<
                 Amount,
                 <Self as StateRead>::GetRawFut,
-            > = self.validator_power(&identity_key);
+            > = self.get_validator_power(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
