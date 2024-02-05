@@ -25,7 +25,9 @@ use penumbra_sct::component::sct::Sct;
 use penumbra_sct::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_sct::epoch::Epoch;
 use penumbra_shielded_pool::component::{ShieldedPool, StateReadExt as _, StateWriteExt as _};
-use penumbra_stake::component::{Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates};
+use penumbra_stake::component::{
+    Staking, StateReadExt as _, StateWriteExt as _, ValidatorUpdates,
+};
 use penumbra_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};

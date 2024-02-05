@@ -263,8 +263,7 @@ pub struct BaseRateData {
 }
 
 impl BaseRateData {
-    /// Compute the base rate data for the epoch following the current one,
-    /// given the next epoch's base reward rate.
+    /// Compute the next epoch's base rate.
     pub fn next_epoch(&self, next_base_reward_rate: Amount) -> BaseRateData {
         // Setup:
         let prev_base_exchange_rate = U128x128::from(self.base_exchange_rate);
@@ -411,4 +410,6 @@ mod tests {
         let slashed = rate_data.slash(penalty);
         assert_eq!(slashed.validator_exchange_rate, 1_8000_0000u128.into());
     }
+
+
 }
