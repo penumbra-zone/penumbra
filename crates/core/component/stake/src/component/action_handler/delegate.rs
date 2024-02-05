@@ -5,7 +5,10 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 
-use crate::{component::StateWriteExt as _, event, validator, Delegate, StateReadExt as _};
+use crate::{
+    component::StateWriteExt as _, component::validator_manager::ValidatorManager, event, validator, Delegate,
+    StateReadExt as _,
+};
 
 #[async_trait]
 impl ActionHandler for Delegate {
@@ -90,7 +93,6 @@ impl ActionHandler for Delegate {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        use crate::component::StakingImpl;
         use crate::validator;
 
         tracing::debug!(?self, "queuing delegation for next epoch");
