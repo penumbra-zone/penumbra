@@ -410,6 +410,4 @@ mod tests {
         let slashed = rate_data.slash(penalty);
         assert_eq!(slashed.validator_exchange_rate, 1_8000_0000u128.into());
     }
-
-
 }

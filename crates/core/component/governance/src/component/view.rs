@@ -18,7 +18,9 @@ use penumbra_sct::{
     Nullifier,
 };
 use penumbra_shielded_pool::component::SupplyRead;
-use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
+use penumbra_stake::{
+    component::validator_manager::ValidatorDataRead, DelegationToken, GovernanceKey, IdentityKey,
+};
 use penumbra_tct as tct;
 use tokio::task::JoinSet;
 use tracing::instrument;
@@ -629,7 +631,10 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
 
             let state = self.validator_state(&identity_key);
             let rate_data = self.current_validator_rate(&identity_key);
-            let power = self.validator_power(&identity_key);
+            let power: penumbra_proto::state::future::DomainFuture<
+                Amount,
+                <Self as StateRead>::GetRawFut,
+            > = self.validator_power(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?

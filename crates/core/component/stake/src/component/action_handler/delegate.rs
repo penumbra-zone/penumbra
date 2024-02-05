@@ -6,8 +6,9 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 
 use crate::{
-    component::StateWriteExt as _, component::validator_manager::ValidatorManager, event, validator, Delegate,
-    StateReadExt as _,
+    component::validator_manager::ValidatorManager,
+    component::{validator_manager::ValidatorDataRead, StateWriteExt as _},
+    event, validator, Delegate, StateReadExt as _,
 };
 
 #[async_trait]

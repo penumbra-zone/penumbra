@@ -1,17 +1,24 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    component::metrics, rate::{BaseRateData, RateData}, validator::Validator, DelegationToken
+    component::metrics,
+    rate::{BaseRateData, RateData},
+    validator::Validator,
+    DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use futures::StreamExt as _;
 use penumbra_num::Amount;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_shielded_pool::component::SupplyRead as _;
+use sha2::{Digest as _, Sha256};
+use tendermint::abci::types::{CommitInfo, Misbehavior};
+use tokio::task::JoinSet;
 use validator::BondingState::*;
 
-use cnidarium::StateWrite;
-use penumbra_proto::StateWriteProto;
+use cnidarium::{StateRead, StateWrite};
+use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
 use tracing::instrument;
 
 use crate::{
@@ -435,6 +442,168 @@ pub(crate) trait ValidatorManager: StateWrite {
 
         Ok(())
     }
+
+    #[instrument(skip(self, last_commit_info))]
+    async fn track_uptime(&mut self, last_commit_info: &CommitInfo) -> Result<()> {
+        // Note: this probably isn't the correct height for the LastCommitInfo,
+        // which is about the *last* commit, but at least it'll be consistent,
+        // which is all we need to count signatures.
+        let height = self.get_block_height().await?;
+        let params = self.get_stake_params().await?;
+
+        // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
+        let did_address_vote = last_commit_info
+            .votes
+            .iter()
+            .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
+            .collect::<BTreeMap<[u8; 20], bool>>();
+
+        // Since we don't have a lookup from "addresses" to identity keys,
+        // iterate over our app's validators, and match them up with the vote data.
+        // We can fetch all the data required for processing each validator concurrently:
+        let mut js = JoinSet::new();
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
+            let state = self.validator_state(&identity_key);
+            let uptime = self.validator_uptime(&identity_key);
+            let consensus_key = self.validator_consensus_key(&identity_key);
+            js.spawn(async move {
+                let state = state
+                    .await?
+                    .expect("every known validator must have a recorded state");
+
+                match state {
+                    validator::State::Active => {
+                        // If the validator is active, we need its consensus key and current uptime data:
+                        Ok(Some((
+                            identity_key,
+                            consensus_key
+                                .await?
+                                .expect("every known validator must have a recorded consensus key"),
+                            uptime
+                                .await?
+                                .expect("every known validator must have a recorded uptime"),
+                        )))
+                    }
+                    _ => {
+                        // Otherwise, we don't need to track its uptime, and there's no data to fetch.
+                        anyhow::Ok(None)
+                    }
+                }
+            });
+        }
+        // Now process the data we fetched concurrently.
+        // Note that this will process validator uptime changes in a random order, but because they are all
+        // independent, this doesn't introduce any nondeterminism into the complete state change.
+        while let Some(data) = js.join_next().await.transpose()? {
+            if let Some((identity_key, consensus_key, mut uptime)) = data? {
+                // for some reason last_commit_info has truncated sha256 hashes
+                let addr: [u8; 20] =
+                    Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20].try_into()?;
+
+                let voted = did_address_vote
+                    .get(&addr)
+                    .cloned()
+                    // If the height is `1`, then the `LastCommitInfo` refers to the genesis block,
+                    // which has no signers -- so we'll mark all validators as having signed.
+                    // https://github.com/penumbra-zone/penumbra/issues/1050
+                    .unwrap_or(height == 1);
+
+                tracing::debug!(
+                    ?voted,
+                    num_missed_blocks = ?uptime.num_missed_blocks(),
+                    ?identity_key,
+                    ?params.missed_blocks_maximum,
+                    "recorded vote info"
+                );
+                metrics::gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
+
+                uptime.mark_height_as_signed(height, voted)?;
+                if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
+                    self.set_validator_state(&identity_key, validator::State::Jailed)
+                        .await?;
+                } else {
+                    self.set_validator_uptime(&identity_key, uptime);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Process evidence of byzantine behavior from CometBFT.
+    ///
+    /// # Errors
+    /// Returns an error if the validator is not found in the JMT.
+    async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
+        let validator = self
+            .validator_by_tendermint_address(&evidence.validator.address)
+            .await?
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "attempted to slash unknown validator with evidence={:?}",
+                    evidence
+                )
+            })?;
+
+        self.set_validator_state(&validator.identity_key, validator::State::Tombstoned)
+            .await
+    }
 }
 
 impl<T: StateWrite + ?Sized> ValidatorManager for T {}
+
+#[async_trait]
+pub trait ValidatorDataRead: StateRead {
+    async fn validator_info(&self, identity_key: &IdentityKey) -> Result<Option<validator::Info>> {
+        let validator = self.validator(identity_key).await?;
+        let status = self.validator_status(identity_key).await?;
+        let rate_data = self.current_validator_rate(identity_key).await?;
+        match (validator, status, rate_data) {
+            (Some(validator), Some(status), Some(rate_data)) => Ok(Some(validator::Info {
+                validator,
+                status,
+                rate_data,
+            })),
+            _ => Ok(None),
+        }
+    }
+
+    fn validator_state(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> DomainFuture<validator::State, Self::GetRawFut> {
+        self.get(&state_key::state_by_validator(identity_key))
+    }
+
+    async fn validator_bonding_state(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<validator::BondingState>> {
+        self.get(&state_key::bonding_state_by_validator(identity_key))
+            .await
+    }
+
+    /// Convenience method to assemble a [`ValidatorStatus`].
+    async fn validator_status(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Result<Option<validator::Status>> {
+        let bonding_state = self.validator_bonding_state(identity_key).await?;
+        let state = self.validator_state(identity_key).await?;
+        let power = self.validator_power(identity_key).await?;
+        let identity_key = identity_key.clone();
+        match (state, power, bonding_state) {
+            (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
+                identity_key,
+                state,
+                voting_power,
+                bonding_state,
+            })),
+            _ => Ok(None),
+        }
+    }
+}
+
+impl<T: StateRead + ?Sized> ValidatorDataRead for T {}

@@ -8,8 +8,8 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    component::action_handler::ActionHandler, component::{validator_manager::ValidatorManager as _, }, rate::RateData, validator,
-    StateReadExt as _,
+    component::action_handler::ActionHandler, component::validator_manager::ValidatorManager as _,
+    rate::RateData, validator, StateReadExt as _,
 };
 
 #[async_trait]
