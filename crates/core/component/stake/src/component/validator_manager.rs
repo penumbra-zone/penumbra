@@ -1,7 +1,13 @@
-use crate::component::metrics;
+use std::collections::BTreeMap;
+
+use crate::{
+    component::metrics, rate::{BaseRateData, RateData}, validator::Validator, DelegationToken
+};
 use anyhow::Result;
 use async_trait::async_trait;
+use penumbra_num::Amount;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_shielded_pool::component::SupplyRead as _;
 use validator::BondingState::*;
 
 use cnidarium::StateWrite;
@@ -14,6 +20,7 @@ use crate::{
     validator::{self},
     IdentityKey, Penalty, StateReadExt as _, Uptime,
 };
+use penumbra_asset::asset;
 
 #[async_trait]
 pub(crate) trait ValidatorManager: StateWrite {
@@ -281,6 +288,150 @@ pub(crate) trait ValidatorManager: StateWrite {
             Jailed => metrics::increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
             Tombstoned => metrics::increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
         };
+
+        Ok(())
+    }
+
+    /// Add a validator during genesis, which will start in Active
+    /// state with power assigned.
+    async fn add_genesis_validator(
+        &mut self,
+        genesis_allocations: &BTreeMap<asset::Id, Amount>,
+        genesis_base_rate: &BaseRateData,
+        validator: Validator,
+    ) -> Result<()> {
+        let initial_rate_data = RateData {
+            identity_key: validator.identity_key.clone(),
+            epoch_index: genesis_base_rate.epoch_index,
+            validator_reward_rate: 0u128.into(),
+            validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
+        };
+
+        // The initial allocations to the validator are specified in `genesis_allocations`.
+        // We use these to determine the initial voting power for each validator.
+        let delegation_id = DelegationToken::from(validator.identity_key.clone()).id();
+        let total_delegation_tokens = genesis_allocations
+            .get(&delegation_id)
+            .copied()
+            .unwrap_or(0u64.into());
+        let power = initial_rate_data.voting_power(total_delegation_tokens);
+
+        self.add_validator_inner(
+            validator.clone(),
+            initial_rate_data,
+            // All genesis validators start in the "Active" state:
+            validator::State::Active,
+            // All genesis validators start in the "Bonded" bonding state:
+            validator::BondingState::Bonded,
+            power,
+        )
+        .await?;
+
+        // We also need to start tracking uptime of new validators, because they
+        // start in the active state, so we need to bundle in the effects of the
+        // Inactive -> Active state transition.
+        self.set_validator_uptime(
+            &validator.identity_key,
+            Uptime::new(0, self.signed_blocks_window_len().await? as usize),
+        );
+
+        Ok(())
+    }
+
+    /// Add a validator after genesis, which will start in a [`validator::State::Defined`]
+    /// state with zero voting power, and unbonded delegation tokens. This is the default
+    /// "initial" state for a validator.
+    async fn add_validator(&mut self, validator: Validator, rate_data: RateData) -> Result<()> {
+        // We don't immediately report the validator voting power to CometBFT
+        // until it becomes active.
+        self.add_validator_inner(
+            validator.clone(),
+            rate_data,
+            validator::State::Defined,
+            validator::BondingState::Unbonded,
+            0u128.into(),
+        )
+        .await
+    }
+
+    /// Update a validator definition
+    #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
+    async fn update_validator(&mut self, validator: Validator) -> Result<()> {
+        use validator::State::*;
+
+        tracing::debug!(definition = ?validator, "updating validator definition");
+        let id = &validator.identity_key;
+        let current_state = self
+            .validator_state(id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+
+        tracing::debug!(?current_state, ?validator.enabled, "updating validator state");
+
+        match (current_state, validator.enabled) {
+            (Active | Inactive | Jailed | Defined | Disabled, false) => {
+                // The operator has disabled their validator.
+                self.set_validator_state(id, Disabled).await?;
+            }
+            (Disabled, true) => {
+                // The operator has re-enabled their validator, if it has enough stake it will become
+                // inactive, otherwise it will become defined.
+                let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
+                let current_validator_rate = self
+                    .current_validator_rate(id)
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let delegation_token_supply = self
+                    .token_supply(&DelegationToken::from(id).id())
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let unbonded_amount =
+                    current_validator_rate.unbonded_amount(delegation_token_supply);
+
+                if unbonded_amount >= min_validator_stake {
+                    self.set_validator_state(id, Inactive).await?;
+                } else {
+                    self.set_validator_state(id, Defined).await?;
+                }
+            }
+            (Jailed, true) => {
+                // Treat updates to jailed validators as unjail requests.
+                // If the validator has enough stake, it will become inactive, otherwise it will become defined.
+                let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
+                let validator_rate_data = self
+                    .current_validator_rate(id)
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let delegation_pool_size = self
+                    .token_supply(&DelegationToken::from(id).id())
+                    .await?
+                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+
+                let unbonded_pool_size = validator_rate_data.unbonded_amount(delegation_pool_size);
+
+                if unbonded_pool_size.value() >= min_validator_stake.value() {
+                    self.set_validator_state(id, Inactive).await?;
+                } else {
+                    self.set_validator_state(id, Defined).await?;
+                }
+            }
+            (Active | Inactive, true) => {
+                // This validator update does not affect the validator's state.
+            }
+            (Defined, true) => {
+                // This validator update does not affect the validator's state.
+            }
+            (Tombstoned, _) => {
+                // Ignore updates to tombstoned validators.
+            }
+        }
+
+        // Update the consensus key lookup, in case the validator rotated their
+        // consensus key.
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+            .await;
+
+        self.put(state_key::validators::definitions::by_id(id), validator);
 
         Ok(())
     }

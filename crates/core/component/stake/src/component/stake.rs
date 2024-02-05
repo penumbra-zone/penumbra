@@ -15,7 +15,7 @@ use crate::{
     rate::BaseRateData, state_key, validator::Validator, CurrentConsensusKeys, StateReadExt as _,
 };
 
-use super::{StakingImpl as _, StateWriteExt as _};
+use super::{validator_manager::ValidatorManager as _, StakingImpl as _, StateWriteExt as _};
 
 pub struct Staking {}
 

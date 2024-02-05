@@ -8,7 +8,7 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    component::action_handler::ActionHandler, component::StakingImpl as _, rate::RateData, validator,
+    component::action_handler::ActionHandler, component::{validator_manager::ValidatorManager as _, }, rate::RateData, validator,
     StateReadExt as _,
 };
 
