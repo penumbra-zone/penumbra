@@ -8,8 +8,10 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    component::action_handler::ActionHandler, component::validator_manager::{ValidatorDataRead, ValidatorManager as _},
-    rate::RateData, validator, StateReadExt as _,
+    component::action_handler::ActionHandler,
+    component::validator_manager::{ValidatorDataRead, ValidatorManager as _},
+    rate::RateData,
+    validator, StateReadExt as _,
 };
 
 #[async_trait]
@@ -61,7 +63,10 @@ impl ActionHandler for validator::Definition {
 
         // Check that the sequence numbers of the updated validators is correct...
         // Check whether we are redefining an existing validator.
-        if let Some(existing_v) = state.get_validator_definition(&v.validator.identity_key).await? {
+        if let Some(existing_v) = state
+            .get_validator_definition(&v.validator.identity_key)
+            .await?
+        {
             // Ensure that the highest existing sequence number is less than
             // the new sequence number.
             let current_seq = existing_v.sequence_number;

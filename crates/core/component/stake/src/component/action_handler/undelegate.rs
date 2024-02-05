@@ -6,8 +6,9 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
-    component::action_handler::ActionHandler, component::{validator_manager::ValidatorDataRead, StateWriteExt as _}, event,
-    Undelegate,
+    component::action_handler::ActionHandler,
+    component::{validator_manager::ValidatorDataRead, StateWriteExt as _},
+    event, Undelegate,
 };
 
 #[async_trait]
