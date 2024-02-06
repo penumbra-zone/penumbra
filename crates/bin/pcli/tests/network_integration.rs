@@ -25,7 +25,7 @@ use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
 use penumbra_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
-use penumbra_proto::core::transaction::v1alpha1::TransactionView as ProtoTransactionView;
+use penumbra_proto::core::transaction::v1::TransactionView as ProtoTransactionView;
 use penumbra_transaction::view::TransactionView;
 
 // The number "1020" is chosen so that this is bigger than u64::MAX

@@ -13,13 +13,13 @@ use penumbra_proof_setup::all::{
 };
 use penumbra_proof_setup::single::log::Hashable;
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
-    tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
+    tools::summoning::v1::{
         participate_request::{Identify, Msg as RequestMsg},
         participate_response::{Confirm, ContributeNow, Msg as ResponseMsg},
         ParticipateRequest, ParticipateResponse,
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_transaction::memo::MemoPlaintext;
 use penumbra_view::Planner;

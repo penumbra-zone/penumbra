@@ -1,4 +1,4 @@
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pbt, DomainType};
+use penumbra_proto::{core::component::shielded_pool::v1 as pbt, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{NoteView, Spend};

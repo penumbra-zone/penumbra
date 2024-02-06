@@ -12,7 +12,7 @@ use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 

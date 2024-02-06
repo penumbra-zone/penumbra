@@ -80,7 +80,7 @@ impl ViewServer {
 
     /// Scans block for notes, swaps
     /// Returns true if the block contains new notes, swaps or false if the block is empty for us
-    ///     compact_block: `v1alpha1::CompactBlock`
+    ///     compact_block: `v1::CompactBlock`
     /// Scan results are saved in-memory rather than returned
     /// Use `flush_updates()` to get the scan results
     /// Returns: `bool`
@@ -88,7 +88,7 @@ impl ViewServer {
     pub async fn scan_block(&mut self, compact_block: JsValue) -> WasmResult<bool> {
         utils::set_panic_hook();
 
-        let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
+        let block_proto: penumbra_proto::core::component::compact_block::v1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
         let block: CompactBlock = block_proto.try_into()?;

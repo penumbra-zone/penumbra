@@ -1,5 +1,5 @@
 use cnidarium::Storage;
-use penumbra_proto::core::app::v1alpha1::{
+use penumbra_proto::core::app::v1::{
     query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
     TransactionsByHeightRequest, TransactionsByHeightResponse,
 };

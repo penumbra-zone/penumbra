@@ -12,7 +12,7 @@ use penumbra_fee::Fee;
 use penumbra_governance::{proposal_state, Proposal, ValidatorVote};
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::view::v1alpha1::NotesRequest;
+use penumbra_proto::view::v1::NotesRequest;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
 use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan, TransactionParameters};

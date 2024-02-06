@@ -22,7 +22,7 @@ use penumbra_governance::{
 
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb_t, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
@@ -408,7 +408,7 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
-                    penumbra_proto::core::component::dex::v1alpha1::PositionWithdrawPlan,
+                    penumbra_proto::core::component::dex::v1::PositionWithdrawPlan,
                 >::into(
                     inner
                 ))),

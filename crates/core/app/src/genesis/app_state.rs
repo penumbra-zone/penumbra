@@ -4,7 +4,7 @@ use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_funding::genesis::Content as FundingContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_ibc::genesis::Content as IBCContent;
-use penumbra_proto::{penumbra::core::app::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::app::v1 as pb, DomainType};
 use penumbra_sct::genesis::Content as SctContent;
 use penumbra_shielded_pool::genesis::Content as ShieldedPoolContent;
 use penumbra_stake::genesis::Content as StakeContent;

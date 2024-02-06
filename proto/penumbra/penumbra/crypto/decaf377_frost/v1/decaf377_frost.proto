@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package penumbra.crypto.decaf377_frost.v1;
+
+// A commitment to a polynomial, as a list of group elements.
+message VerifiableSecretSharingCommitment {
+  // Each of these bytes should be the serialization of a group element.
+  repeated bytes elements = 1;
+}
+
+// The public package sent in round 1 of the DKG protocol.
+message DKGRound1Package {
+  // A commitment to the polynomial for secret sharing.
+  VerifiableSecretSharingCommitment commitment = 1;
+  // A proof of knowledge of the underlying secret being shared.
+  bytes proof_of_knowledge = 2;
+}
+
+// A share of the final signing key.
+message SigningShare {
+  // These bytes should be a valid scalar.
+  bytes scalar = 1;
+}
+
+// The per-participant package sent in round 2 of the DKG protocol.
+message DKGRound2Package {
+  // This is the share we're sending to that participant.
+  SigningShare signing_share = 1;
+}
+
+// Represents a commitment to a nonce value.
+message NonceCommitment {
+  // These bytes should be a valid group element.
+  bytes element = 1;
+}
+
+// Represents the commitments to nonces needed for signing.
+message SigningCommitments {
+  // One nonce to hide them.
+  NonceCommitment hiding = 1;
+  // Another to bind them.
+  NonceCommitment binding = 2;
+}
+
+// A share of the final signature. These get aggregated to make the actual thing.
+message SignatureShare {
+  // These bytes should be a valid scalar.
+  bytes scalar = 1;
+}

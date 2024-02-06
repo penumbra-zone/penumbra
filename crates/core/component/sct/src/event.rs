@@ -1,7 +1,7 @@
 use penumbra_tct as tct;
 use tct::builder::{block, epoch};
 
-use penumbra_proto::core::component::sct::v1alpha1 as pb;
+use penumbra_proto::core::component::sct::v1 as pb;
 
 use crate::CommitmentSource;
 

@@ -37,8 +37,8 @@ where
 // This should only be done here in cases where the domain type lives in a crate
 // that shouldn't depend on the Penumbra proto framework.
 
-use crate::penumbra::core::component::ibc::v1alpha1::IbcRelay;
-use crate::penumbra::crypto::decaf377_rdsa::v1alpha1::{
+use crate::penumbra::core::component::ibc::v1::IbcRelay;
+use crate::penumbra::crypto::decaf377_rdsa::v1::{
     BindingSignature, SpendAuthSignature, SpendVerificationKey,
 };
 
@@ -100,7 +100,7 @@ impl TryFrom<SpendVerificationKey> for VerificationKey<SpendAuth> {
 }
 
 // Fuzzy Message Detection
-use crate::penumbra::crypto::decaf377_fmd::v1alpha1::Clue as ProtoClue;
+use crate::penumbra::crypto::decaf377_fmd::v1::Clue as ProtoClue;
 use decaf377_fmd::Clue;
 
 impl DomainType for Clue {
@@ -132,13 +132,13 @@ impl TryFrom<ProtoClue> for Clue {
 // The tendermint-rs PublicKey type already has a tendermint-proto type;
 // this redefines its proto, because the encodings are consensus-critical
 // and we don't vendor all of the tendermint protos.
-use crate::penumbra::core::keys::v1alpha1::ConsensusKey;
+use crate::penumbra::core::keys::v1::ConsensusKey;
 
 impl DomainType for tendermint::PublicKey {
     type Proto = ConsensusKey;
 }
 
-impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1alpha1::ConsensusKey {
+impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1::ConsensusKey {
     fn from(v: tendermint::PublicKey) -> Self {
         Self {
             inner: v.to_bytes(),
@@ -146,9 +146,9 @@ impl From<tendermint::PublicKey> for crate::penumbra::core::keys::v1alpha1::Cons
     }
 }
 
-impl TryFrom<crate::core::keys::v1alpha1::ConsensusKey> for tendermint::PublicKey {
+impl TryFrom<crate::core::keys::v1::ConsensusKey> for tendermint::PublicKey {
     type Error = anyhow::Error;
-    fn try_from(value: crate::core::keys::v1alpha1::ConsensusKey) -> Result<Self, Self::Error> {
+    fn try_from(value: crate::core::keys::v1::ConsensusKey) -> Result<Self, Self::Error> {
         Self::from_raw_ed25519(value.inner.as_slice())
             .ok_or_else(|| anyhow::anyhow!("invalid ed25519 key"))
     }

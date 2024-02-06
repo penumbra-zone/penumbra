@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// The state of a validator in the validator state machine.

@@ -1,4 +1,4 @@
-use penumbra_proto::penumbra::core::component::fee::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::fee::v1 as pb;
 
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};

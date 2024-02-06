@@ -9,9 +9,7 @@ use anyhow::{ensure, Context};
 use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    penumbra::core::asset::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType,
-};
+use penumbra_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{

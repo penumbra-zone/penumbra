@@ -4,7 +4,7 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{penumbra::crypto::tct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};

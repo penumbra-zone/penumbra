@@ -1,7 +1,7 @@
 //! A basic software key management system that stores keys in memory but
 //! presents as an asynchronous signer.
 
-use penumbra_proto::custody::v1alpha1::{self as pb, AuthorizeResponse};
+use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};

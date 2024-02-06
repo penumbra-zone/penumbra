@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::{Context, Result};
 use penumbra_dex::swap::SwapPayload;
-use penumbra_proto::penumbra::core::component::compact_block::v1alpha1::{self as pb};
+use penumbra_proto::penumbra::core::component::compact_block::v1::{self as pb};
 use penumbra_shielded_pool::{note, NotePayload};
 
 use serde::{Deserialize, Serialize};

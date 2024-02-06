@@ -17,12 +17,12 @@ mod tests {
     use penumbra_extension::storage::IndexedDBStorage;
     use penumbra_proto::{
         core::{
-            asset::v1alpha1::Value,
-            component::shielded_pool::v1alpha1::FmdParameters,
-            keys::v1alpha1::{Address, AddressIndex},
-            transaction::v1alpha1::{MemoPlaintext, TransactionPlan as tp},
+            asset::v1::Value,
+            component::shielded_pool::v1::FmdParameters,
+            keys::v1::{Address, AddressIndex},
+            transaction::v1::{MemoPlaintext, TransactionPlan as tp},
         },
-        view::v1alpha1::SpendableNoteRecord,
+        view::v1::SpendableNoteRecord,
     };
     use penumbra_tct::{structure::Hash, Forgotten};
     use penumbra_transaction::{

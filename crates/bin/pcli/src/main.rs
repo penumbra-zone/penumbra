@@ -12,8 +12,8 @@ use config::PcliConfig;
 use opt::Opt;
 use penumbra_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_proto::{
-    custody::v1alpha1::custody_service_client::CustodyServiceClient,
-    view::v1alpha1::view_service_client::ViewServiceClient,
+    custody::v1::custody_service_client::CustodyServiceClient,
+    view::v1::view_service_client::ViewServiceClient,
 };
 use penumbra_view::ViewClient;
 

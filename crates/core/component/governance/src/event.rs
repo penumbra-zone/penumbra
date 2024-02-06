@@ -1,4 +1,4 @@
-use penumbra_proto::penumbra::core::component::governance::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::governance::v1 as pb;
 
 use crate::{
     DelegatorVote, Proposal, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,

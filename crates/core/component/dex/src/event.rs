@@ -7,7 +7,7 @@ use crate::{
     swap_claim::SwapClaim,
 };
 
-use penumbra_proto::penumbra::core::component::dex::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::dex::v1 as pb;
 
 pub fn swap(swap: &Swap) -> pb::EventSwap {
     pb::EventSwap {

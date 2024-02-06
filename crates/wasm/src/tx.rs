@@ -11,8 +11,8 @@ use wasm_bindgen::JsValue;
 
 use penumbra_keys::keys::SpendKey;
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::transaction::v1alpha1 as pb;
-use penumbra_proto::core::transaction::v1alpha1::{TransactionPerspective, TransactionView};
+use penumbra_proto::core::transaction::v1 as pb;
+use penumbra_proto::core::transaction::v1::{TransactionPerspective, TransactionView};
 use penumbra_proto::DomainType;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::plan::TransactionPlan;

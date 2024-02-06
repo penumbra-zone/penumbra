@@ -23,8 +23,7 @@ use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::component::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto,
-    StateWriteProto,
+    penumbra::core::component::ibc::v1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
 use penumbra_sct::CommitmentSource;
 

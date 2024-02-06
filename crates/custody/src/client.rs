@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures::FutureExt;
-use penumbra_proto::custody::v1alpha1::custody_service_client::CustodyServiceClient;
-use penumbra_proto::custody::v1alpha1::AuthorizeResponse;
+use penumbra_proto::custody::v1::custody_service_client::CustodyServiceClient;
+use penumbra_proto::custody::v1::AuthorizeResponse;
 use std::{future::Future, pin::Pin};
 
 use tonic::codegen::Bytes;

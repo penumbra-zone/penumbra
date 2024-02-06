@@ -6,14 +6,14 @@ use async_stream::try_stream;
 use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_num::Amount;
-use penumbra_proto::core::component::governance::v1alpha1::AllTalliedDelegatorVotesForProposalRequest;
-use penumbra_proto::core::component::governance::v1alpha1::AllTalliedDelegatorVotesForProposalResponse;
-use penumbra_proto::core::component::governance::v1alpha1::NextProposalIdRequest;
-use penumbra_proto::core::component::governance::v1alpha1::NextProposalIdResponse;
-use penumbra_proto::core::component::governance::v1alpha1::VotingPowerAtProposalStartRequest;
-use penumbra_proto::core::component::governance::v1alpha1::VotingPowerAtProposalStartResponse;
+use penumbra_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalRequest;
+use penumbra_proto::core::component::governance::v1::AllTalliedDelegatorVotesForProposalResponse;
+use penumbra_proto::core::component::governance::v1::NextProposalIdRequest;
+use penumbra_proto::core::component::governance::v1::NextProposalIdResponse;
+use penumbra_proto::core::component::governance::v1::VotingPowerAtProposalStartRequest;
+use penumbra_proto::core::component::governance::v1::VotingPowerAtProposalStartResponse;
 use penumbra_proto::{
-    core::component::governance::v1alpha1::{
+    core::component::governance::v1::{
         query_service_server::QueryService, ProposalDataRequest, ProposalDataResponse,
         ProposalInfoRequest, ProposalInfoResponse, ProposalListRequest, ProposalListResponse,
         ProposalRateDataRequest, ProposalRateDataResponse, ValidatorVotesRequest,

@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 /// An asset denomination.
 ///

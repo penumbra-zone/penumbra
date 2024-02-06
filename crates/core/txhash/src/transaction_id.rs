@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use penumbra_proto::{penumbra::core::txhash::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::txhash::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A transaction ID (hash), the Sha256 hash used by Tendermint to identify transactions.

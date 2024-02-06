@@ -1,6 +1,6 @@
 //! Distributed key generation without a trusted dealer.
 use anyhow::anyhow;
-use penumbra_proto::crypto::decaf377_frost::v1alpha1 as pb;
+use penumbra_proto::crypto::decaf377_frost::v1 as pb;
 
 // Copied from frost-ed25519 ("MIT or Apache-2.0") (more or less)
 
