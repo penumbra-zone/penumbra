@@ -19,13 +19,14 @@ use penumbra_sct::{
 };
 use penumbra_shielded_pool::component::SupplyRead;
 use penumbra_stake::{
-    component::validator_handler::ValidatorDataRead, DelegationToken, GovernanceKey, IdentityKey,
+    component::{validator_handler::ValidatorDataRead, ConsensusIndexRead},
+    DelegationToken, GovernanceKey, IdentityKey,
 };
 use penumbra_tct as tct;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
+use penumbra_stake::{rate::RateData, validator};
 
 use crate::{
     params::GovernanceParameters,

@@ -1,14 +1,17 @@
-use std::{collections::BTreeMap, pin::Pin};
+use std::collections::BTreeMap;
 
 use crate::{
-    component::{metrics, validator_handler::ValidatorStore, ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
+    component::{
+        metrics, validator_handler::ValidatorStore, ConsensusIndexRead, ConsensusIndexWrite,
+        RateDataWrite,
+    },
     rate::{BaseRateData, RateData},
     validator::{State, Validator},
     DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::{Future, FutureExt, StreamExt as _};
+use futures::StreamExt as _;
 use penumbra_num::Amount;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
@@ -17,8 +20,8 @@ use tendermint::abci::types::{CommitInfo, Misbehavior};
 use tokio::task::JoinSet;
 use validator::BondingState::*;
 
-use cnidarium::{StateRead, StateWrite};
-use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
+use cnidarium::StateWrite;
+use penumbra_proto::StateWriteProto;
 use tracing::instrument;
 
 use crate::{
@@ -27,7 +30,7 @@ use crate::{
     component::StateWriteExt as _,
     state_key,
     validator::{self},
-    IdentityKey, Penalty, StateReadExt as _, Uptime,
+    IdentityKey, Penalty, Uptime,
 };
 use penumbra_asset::asset;
 

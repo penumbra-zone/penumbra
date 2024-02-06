@@ -12,42 +12,31 @@ pub use stake::Staking;
 pub const MAX_VOTING_POWER: u128 = 1152921504606846975;
 pub const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
 
-// pub use self::metrics::register_metrics;
+pub use self::metrics::register_metrics;
 
-use penumbra_distributions::component::StateReadExt as _;
-use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    future::Future,
-    pin::Pin,
-    str::FromStr,
-};
-use validator::BondingState::*;
+use penumbra_sct::component::clock::EpochRead;
+use std::{collections::BTreeMap, pin::Pin, str::FromStr};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use futures::{FutureExt, StreamExt, TryStreamExt};
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use futures::{StreamExt, TryStreamExt};
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
-use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
+use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_shielded_pool::component::SupplyRead;
 use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tokio::task::JoinSet;
-use tracing::{instrument, Instrument};
+use tracing::instrument;
 
 use crate::{
     component::validator_handler::ValidatorDataRead,
-    component::validator_handler::ValidatorManager,
     params::StakeParameters,
-    rate::{BaseRateData, RateData},
+    rate::BaseRateData,
     state_key,
-    validator::{self, State, Validator},
-    CurrentConsensusKeys, DelegationChanges, FundingStreams, Penalty, Uptime,
-    {DelegationToken, IdentityKey},
+    validator::{self},
+    DelegationChanges, FundingStreams, Penalty, {DelegationToken, IdentityKey},
 };
 use crate::{Delegate, Undelegate};
 use once_cell::sync::Lazy;
@@ -213,6 +202,7 @@ pub trait StateWriteExt: StateWrite {
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
+#[async_trait]
 pub trait StakingDataInternalRead: StateRead {
     async fn get_penalty_in_epoch(
         &self,
@@ -239,7 +229,7 @@ pub trait StakingDataInternalRead: StateRead {
     }
 
     fn compute_compounded_penalty(penalties: Vec<Penalty>) -> Penalty {
-        let mut compounded = Penalty::from_percent(0);
+        let compounded = Penalty::from_percent(0);
         penalties
             .into_iter()
             .fold(compounded, |acc, penalty| acc.compound(penalty))

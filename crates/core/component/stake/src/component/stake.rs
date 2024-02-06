@@ -15,7 +15,10 @@ use crate::{
     rate::BaseRateData, state_key, validator::Validator, CurrentConsensusKeys, StateReadExt as _,
 };
 
-use super::{epoch_handler::EpochHandler, validator_handler::ValidatorManager, RateDataWrite, StateWriteExt as _};
+use super::{
+    epoch_handler::EpochHandler, validator_handler::ValidatorManager, RateDataWrite,
+    StateWriteExt as _,
+};
 
 pub struct Staking {}
 

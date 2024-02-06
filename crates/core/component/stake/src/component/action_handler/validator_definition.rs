@@ -9,7 +9,7 @@ use penumbra_proto::DomainType;
 
 use crate::{
     component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
-    component::validator_handler::ValidatorManager, rate::RateData, validator, 
+    component::validator_handler::ValidatorManager, rate::RateData, validator,
 };
 
 #[async_trait]

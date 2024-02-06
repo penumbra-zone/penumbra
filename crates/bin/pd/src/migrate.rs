@@ -10,7 +10,9 @@ use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{genesis, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
+use penumbra_stake::{
+    component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
+};
 
 use crate::testnet::generate::TestnetConfig;
 

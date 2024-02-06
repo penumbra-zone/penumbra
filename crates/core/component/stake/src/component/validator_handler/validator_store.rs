@@ -1,26 +1,15 @@
-use std::{collections::BTreeMap, pin::Pin};
+use std::pin::Pin;
 
 use crate::{
-    component::metrics,
-    rate::{BaseRateData, RateData},
+    rate::RateData,
     validator::{State, Validator},
-    DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::{Future, FutureExt, StreamExt as _};
+use futures::{Future, FutureExt, TryStreamExt};
 use penumbra_num::Amount;
-use penumbra_sct::{
-    component::clock::{EpochManager, EpochRead},
-    epoch::Epoch,
-};
-use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
-use sha2::{Digest as _, Sha256};
-use tendermint::{
-    abci::types::{CommitInfo, Misbehavior},
-    PublicKey,
-};
-use tokio::task::JoinSet;
+use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
+use tendermint::PublicKey;
 use validator::BondingState::*;
 
 use cnidarium::{StateRead, StateWrite};
@@ -30,12 +19,10 @@ use tracing::instrument;
 use crate::component::MAX_VOTING_POWER;
 use crate::{
     component::StateReadExt as _,
-    component::StateWriteExt as _,
     state_key,
     validator::{self},
-    IdentityKey, Penalty, StateReadExt as _, Uptime,
+    IdentityKey, Uptime,
 };
-use penumbra_asset::asset;
 #[async_trait]
 pub trait ValidatorDataRead: StateRead {
     async fn get_validator_info(

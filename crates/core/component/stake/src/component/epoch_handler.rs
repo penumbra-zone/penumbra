@@ -1,22 +1,19 @@
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-};
+use std::collections::{BTreeMap, BTreeSet};
 use validator::BondingState::*;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures::{FutureExt, StreamExt, };
+use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
-use sha2::{Digest, Sha256};
 use tendermint::validator::Update;
-use tendermint::{block, PublicKey};
+use tendermint::PublicKey;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -25,15 +22,10 @@ use crate::{
         validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
         ConsensusUpdateWrite, RateDataWrite, StakingDataInternalRead, FP_SCALING_FACTOR,
     },
-    params::StakeParameters,
-    rate::{BaseRateData, RateData},
-    state_key,
-    validator::{self, State, Validator},
-    CurrentConsensusKeys, DelegationChanges, DelegationToken, FundingStreams, IdentityKey, Penalty,
-    StateReadExt, Uptime,
+    validator::{self},
+    CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty, StateReadExt,
 };
-use crate::{Delegate, Undelegate};
-use once_cell::sync::Lazy;
+use crate::{state_key, Delegate, Undelegate};
 
 use super::{ConsensusIndexRead, StateWriteExt};
 
