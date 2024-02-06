@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::{
     component::{
         metrics, stake::ConsensusIndexRead, stake::ConsensusIndexWrite, stake::RateDataWrite,
-        validator_handler::ValidatorStore,
+        validator_handler::ValidatorDataWrite,
     },
     rate::{BaseRateData, RateData},
     validator::{State, Validator},

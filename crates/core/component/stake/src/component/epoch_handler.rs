@@ -20,7 +20,7 @@ use tracing::{instrument, Instrument};
 use crate::{
     component::{
         stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
-        validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
+        validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorDataWrite},
         SlashingData, FP_SCALING_FACTOR,
     },
     validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
