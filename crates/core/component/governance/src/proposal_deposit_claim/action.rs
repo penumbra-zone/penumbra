@@ -13,7 +13,7 @@ use crate::proposal_state::{Outcome, Withdrawn};
 use crate::ProposalNft;
 
 /// A claim for the initial submission deposit for a proposal.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(
     try_from = "pb::ProposalDepositClaim",
     into = "pb::ProposalDepositClaim"

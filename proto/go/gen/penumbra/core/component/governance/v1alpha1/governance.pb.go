@@ -2785,6 +2785,390 @@ func (x *Ratio) GetDenominator() uint64 {
 	return 0
 }
 
+type EventDelegatorVote struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The delegator vote.
+	Vote *DelegatorVote `protobuf:"bytes,1,opt,name=vote,proto3" json:"vote,omitempty"`
+}
+
+func (x *EventDelegatorVote) Reset() {
+	*x = EventDelegatorVote{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[40]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventDelegatorVote) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventDelegatorVote) ProtoMessage() {}
+
+func (x *EventDelegatorVote) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[40]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventDelegatorVote.ProtoReflect.Descriptor instead.
+func (*EventDelegatorVote) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *EventDelegatorVote) GetVote() *DelegatorVote {
+	if x != nil {
+		return x.Vote
+	}
+	return nil
+}
+
+type EventProposalDepositClaim struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The deposit claim body.
+	DepositClaim *ProposalDepositClaim `protobuf:"bytes,1,opt,name=deposit_claim,json=depositClaim,proto3" json:"deposit_claim,omitempty"`
+}
+
+func (x *EventProposalDepositClaim) Reset() {
+	*x = EventProposalDepositClaim{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[41]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventProposalDepositClaim) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventProposalDepositClaim) ProtoMessage() {}
+
+func (x *EventProposalDepositClaim) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[41]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventProposalDepositClaim.ProtoReflect.Descriptor instead.
+func (*EventProposalDepositClaim) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *EventProposalDepositClaim) GetDepositClaim() *ProposalDepositClaim {
+	if x != nil {
+		return x.DepositClaim
+	}
+	return nil
+}
+
+type EventValidatorVote struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The validator vote.
+	Vote *ValidatorVote `protobuf:"bytes,1,opt,name=vote,proto3" json:"vote,omitempty"`
+}
+
+func (x *EventValidatorVote) Reset() {
+	*x = EventValidatorVote{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[42]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventValidatorVote) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventValidatorVote) ProtoMessage() {}
+
+func (x *EventValidatorVote) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[42]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventValidatorVote.ProtoReflect.Descriptor instead.
+func (*EventValidatorVote) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *EventValidatorVote) GetVote() *ValidatorVote {
+	if x != nil {
+		return x.Vote
+	}
+	return nil
+}
+
+type EventProposalWithdraw struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Details on the withdrawn proposal.
+	Withdraw *ProposalWithdraw `protobuf:"bytes,1,opt,name=withdraw,proto3" json:"withdraw,omitempty"`
+}
+
+func (x *EventProposalWithdraw) Reset() {
+	*x = EventProposalWithdraw{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[43]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventProposalWithdraw) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventProposalWithdraw) ProtoMessage() {}
+
+func (x *EventProposalWithdraw) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[43]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventProposalWithdraw.ProtoReflect.Descriptor instead.
+func (*EventProposalWithdraw) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *EventProposalWithdraw) GetWithdraw() *ProposalWithdraw {
+	if x != nil {
+		return x.Withdraw
+	}
+	return nil
+}
+
+type EventProposalSubmit struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Details on the submitted proposal.
+	Submit *ProposalSubmit `protobuf:"bytes,1,opt,name=submit,proto3" json:"submit,omitempty"`
+}
+
+func (x *EventProposalSubmit) Reset() {
+	*x = EventProposalSubmit{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[44]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventProposalSubmit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventProposalSubmit) ProtoMessage() {}
+
+func (x *EventProposalSubmit) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[44]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventProposalSubmit.ProtoReflect.Descriptor instead.
+func (*EventProposalSubmit) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *EventProposalSubmit) GetSubmit() *ProposalSubmit {
+	if x != nil {
+		return x.Submit
+	}
+	return nil
+}
+
+type EventEnactProposal struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The enacted proposal.
+	Proposal *Proposal `protobuf:"bytes,1,opt,name=proposal,proto3" json:"proposal,omitempty"`
+}
+
+func (x *EventEnactProposal) Reset() {
+	*x = EventEnactProposal{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[45]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventEnactProposal) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventEnactProposal) ProtoMessage() {}
+
+func (x *EventEnactProposal) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[45]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventEnactProposal.ProtoReflect.Descriptor instead.
+func (*EventEnactProposal) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *EventEnactProposal) GetProposal() *Proposal {
+	if x != nil {
+		return x.Proposal
+	}
+	return nil
+}
+
+type EventProposalFailed struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The failed proposal.
+	Proposal *Proposal `protobuf:"bytes,1,opt,name=proposal,proto3" json:"proposal,omitempty"`
+}
+
+func (x *EventProposalFailed) Reset() {
+	*x = EventProposalFailed{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[46]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventProposalFailed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventProposalFailed) ProtoMessage() {}
+
+func (x *EventProposalFailed) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[46]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventProposalFailed.ProtoReflect.Descriptor instead.
+func (*EventProposalFailed) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *EventProposalFailed) GetProposal() *Proposal {
+	if x != nil {
+		return x.Proposal
+	}
+	return nil
+}
+
+type EventProposalSlashed struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The slashed proposal.
+	Proposal *Proposal `protobuf:"bytes,1,opt,name=proposal,proto3" json:"proposal,omitempty"`
+}
+
+func (x *EventProposalSlashed) Reset() {
+	*x = EventProposalSlashed{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[47]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EventProposalSlashed) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventProposalSlashed) ProtoMessage() {}
+
+func (x *EventProposalSlashed) ProtoReflect() protoreflect.Message {
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[47]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventProposalSlashed.ProtoReflect.Descriptor instead.
+func (*EventProposalSlashed) Descriptor() ([]byte, []int) {
+	return file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *EventProposalSlashed) GetProposal() *Proposal {
+	if x != nil {
+		return x.Proposal
+	}
+	return nil
+}
+
 type DelegatorVoteView_Visible struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2797,7 +3181,7 @@ type DelegatorVoteView_Visible struct {
 func (x *DelegatorVoteView_Visible) Reset() {
 	*x = DelegatorVoteView_Visible{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[40]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2810,7 +3194,7 @@ func (x *DelegatorVoteView_Visible) String() string {
 func (*DelegatorVoteView_Visible) ProtoMessage() {}
 
 func (x *DelegatorVoteView_Visible) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[40]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2851,7 +3235,7 @@ type DelegatorVoteView_Opaque struct {
 func (x *DelegatorVoteView_Opaque) Reset() {
 	*x = DelegatorVoteView_Opaque{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[41]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2864,7 +3248,7 @@ func (x *DelegatorVoteView_Opaque) String() string {
 func (*DelegatorVoteView_Opaque) ProtoMessage() {}
 
 func (x *DelegatorVoteView_Opaque) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[41]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2897,7 +3281,7 @@ type ProposalState_Voting struct {
 func (x *ProposalState_Voting) Reset() {
 	*x = ProposalState_Voting{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[42]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2910,7 +3294,7 @@ func (x *ProposalState_Voting) String() string {
 func (*ProposalState_Voting) ProtoMessage() {}
 
 func (x *ProposalState_Voting) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[42]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2939,7 +3323,7 @@ type ProposalState_Withdrawn struct {
 func (x *ProposalState_Withdrawn) Reset() {
 	*x = ProposalState_Withdrawn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[43]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2952,7 +3336,7 @@ func (x *ProposalState_Withdrawn) String() string {
 func (*ProposalState_Withdrawn) ProtoMessage() {}
 
 func (x *ProposalState_Withdrawn) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[43]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2987,7 +3371,7 @@ type ProposalState_Finished struct {
 func (x *ProposalState_Finished) Reset() {
 	*x = ProposalState_Finished{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[44]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3000,7 +3384,7 @@ func (x *ProposalState_Finished) String() string {
 func (*ProposalState_Finished) ProtoMessage() {}
 
 func (x *ProposalState_Finished) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[44]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3035,7 +3419,7 @@ type ProposalState_Claimed struct {
 func (x *ProposalState_Claimed) Reset() {
 	*x = ProposalState_Claimed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[45]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3048,7 +3432,7 @@ func (x *ProposalState_Claimed) String() string {
 func (*ProposalState_Claimed) ProtoMessage() {}
 
 func (x *ProposalState_Claimed) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[45]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3084,7 +3468,7 @@ type ProposalOutcome_Withdrawn struct {
 func (x *ProposalOutcome_Withdrawn) Reset() {
 	*x = ProposalOutcome_Withdrawn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[46]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3097,7 +3481,7 @@ func (x *ProposalOutcome_Withdrawn) String() string {
 func (*ProposalOutcome_Withdrawn) ProtoMessage() {}
 
 func (x *ProposalOutcome_Withdrawn) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[46]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3130,7 +3514,7 @@ type ProposalOutcome_Passed struct {
 func (x *ProposalOutcome_Passed) Reset() {
 	*x = ProposalOutcome_Passed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[47]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3143,7 +3527,7 @@ func (x *ProposalOutcome_Passed) String() string {
 func (*ProposalOutcome_Passed) ProtoMessage() {}
 
 func (x *ProposalOutcome_Passed) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[47]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3172,7 +3556,7 @@ type ProposalOutcome_Failed struct {
 func (x *ProposalOutcome_Failed) Reset() {
 	*x = ProposalOutcome_Failed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[48]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3185,7 +3569,7 @@ func (x *ProposalOutcome_Failed) String() string {
 func (*ProposalOutcome_Failed) ProtoMessage() {}
 
 func (x *ProposalOutcome_Failed) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[48]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3221,7 +3605,7 @@ type ProposalOutcome_Slashed struct {
 func (x *ProposalOutcome_Slashed) Reset() {
 	*x = ProposalOutcome_Slashed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[49]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3234,7 +3618,7 @@ func (x *ProposalOutcome_Slashed) String() string {
 func (*ProposalOutcome_Slashed) ProtoMessage() {}
 
 func (x *ProposalOutcome_Slashed) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[49]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3273,7 +3657,7 @@ type Proposal_Signaling struct {
 func (x *Proposal_Signaling) Reset() {
 	*x = Proposal_Signaling{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[50]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3286,7 +3670,7 @@ func (x *Proposal_Signaling) String() string {
 func (*Proposal_Signaling) ProtoMessage() {}
 
 func (x *Proposal_Signaling) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[50]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3326,7 +3710,7 @@ type Proposal_Emergency struct {
 func (x *Proposal_Emergency) Reset() {
 	*x = Proposal_Emergency{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[51]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3339,7 +3723,7 @@ func (x *Proposal_Emergency) String() string {
 func (*Proposal_Emergency) ProtoMessage() {}
 
 func (x *Proposal_Emergency) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[51]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3382,7 +3766,7 @@ type Proposal_ParameterChange struct {
 func (x *Proposal_ParameterChange) Reset() {
 	*x = Proposal_ParameterChange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[52]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3395,7 +3779,7 @@ func (x *Proposal_ParameterChange) String() string {
 func (*Proposal_ParameterChange) ProtoMessage() {}
 
 func (x *Proposal_ParameterChange) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[52]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3442,7 +3826,7 @@ type Proposal_CommunityPoolSpend struct {
 func (x *Proposal_CommunityPoolSpend) Reset() {
 	*x = Proposal_CommunityPoolSpend{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[53]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3455,7 +3839,7 @@ func (x *Proposal_CommunityPoolSpend) String() string {
 func (*Proposal_CommunityPoolSpend) ProtoMessage() {}
 
 func (x *Proposal_CommunityPoolSpend) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[53]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3491,7 +3875,7 @@ type Proposal_UpgradePlan struct {
 func (x *Proposal_UpgradePlan) Reset() {
 	*x = Proposal_UpgradePlan{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[54]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3504,7 +3888,7 @@ func (x *Proposal_UpgradePlan) String() string {
 func (*Proposal_UpgradePlan) ProtoMessage() {}
 
 func (x *Proposal_UpgradePlan) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[54]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3541,7 +3925,7 @@ type Proposal_FreezeIbcClient struct {
 func (x *Proposal_FreezeIbcClient) Reset() {
 	*x = Proposal_FreezeIbcClient{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[55]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[63]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3554,7 +3938,7 @@ func (x *Proposal_FreezeIbcClient) String() string {
 func (*Proposal_FreezeIbcClient) ProtoMessage() {}
 
 func (x *Proposal_FreezeIbcClient) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[55]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[63]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3591,7 +3975,7 @@ type Proposal_UnfreezeIbcClient struct {
 func (x *Proposal_UnfreezeIbcClient) Reset() {
 	*x = Proposal_UnfreezeIbcClient{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[56]
+		mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3604,7 +3988,7 @@ func (x *Proposal_UnfreezeIbcClient) String() string {
 func (*Proposal_UnfreezeIbcClient) ProtoMessage() {}
 
 func (x *Proposal_UnfreezeIbcClient) ProtoReflect() protoreflect.Message {
-	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[56]
+	mi := &file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4288,7 +4672,62 @@ var file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDesc = 
 	0x61, 0x74, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x6e, 0x75, 0x6d, 0x65,
 	0x72, 0x61, 0x74, 0x6f, 0x72, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x6e, 0x6f, 0x6d, 0x69, 0x6e,
 	0x61, 0x74, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x64, 0x65, 0x6e, 0x6f,
-	0x6d, 0x69, 0x6e, 0x61, 0x74, 0x6f, 0x72, 0x32, 0xcd, 0x0a, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72,
+	0x6d, 0x69, 0x6e, 0x61, 0x74, 0x6f, 0x72, 0x22, 0x64, 0x0a, 0x12, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x44, 0x65, 0x6c, 0x65, 0x67, 0x61, 0x74, 0x6f, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x4e, 0x0a,
+	0x04, 0x76, 0x6f, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3a, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67, 0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x67, 0x61,
+	0x74, 0x6f, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x04, 0x76, 0x6f, 0x74, 0x65, 0x22, 0x83, 0x01,
+	0x0a, 0x19, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x44,
+	0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x12, 0x66, 0x0a, 0x0d, 0x64,
+	0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x5f, 0x63, 0x6c, 0x61, 0x69, 0x6d, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x41, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f,
+	0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67, 0x6f, 0x76,
+	0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31,
+	0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x44, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74,
+	0x43, 0x6c, 0x61, 0x69, 0x6d, 0x52, 0x0c, 0x64, 0x65, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x43, 0x6c,
+	0x61, 0x69, 0x6d, 0x22, 0x64, 0x0a, 0x12, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x4e, 0x0a, 0x04, 0x76, 0x6f, 0x74,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x3a, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62,
+	0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x2e, 0x67, 0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61,
+	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x56,
+	0x6f, 0x74, 0x65, 0x52, 0x04, 0x76, 0x6f, 0x74, 0x65, 0x22, 0x72, 0x0a, 0x15, 0x45, 0x76, 0x65,
+	0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x57, 0x69, 0x74, 0x68, 0x64, 0x72,
+	0x61, 0x77, 0x12, 0x59, 0x0a, 0x08, 0x77, 0x69, 0x74, 0x68, 0x64, 0x72, 0x61, 0x77, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x3d, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67,
+	0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x57, 0x69, 0x74, 0x68, 0x64,
+	0x72, 0x61, 0x77, 0x52, 0x08, 0x77, 0x69, 0x74, 0x68, 0x64, 0x72, 0x61, 0x77, 0x22, 0x6a, 0x0a,
+	0x13, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x53, 0x75,
+	0x62, 0x6d, 0x69, 0x74, 0x12, 0x53, 0x0a, 0x06, 0x73, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e,
+	0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67,
+	0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x53, 0x75, 0x62, 0x6d, 0x69,
+	0x74, 0x52, 0x06, 0x73, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x22, 0x67, 0x0a, 0x12, 0x45, 0x76, 0x65,
+	0x6e, 0x74, 0x45, 0x6e, 0x61, 0x63, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x12,
+	0x51, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x35, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72,
+	0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67, 0x6f, 0x76, 0x65,
+	0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x61, 0x6c, 0x22, 0x68, 0x0a, 0x13, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x61, 0x6c, 0x46, 0x61, 0x69, 0x6c, 0x65, 0x64, 0x12, 0x51, 0x0a, 0x08, 0x70, 0x72, 0x6f,
+	0x70, 0x6f, 0x73, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x35, 0x2e, 0x70, 0x65,
+	0x6e, 0x75, 0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x2e, 0x67, 0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65,
+	0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x61, 0x6c, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x22, 0x69, 0x0a, 0x14,
+	0x45, 0x76, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x53, 0x6c, 0x61,
+	0x73, 0x68, 0x65, 0x64, 0x12, 0x51, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x35, 0x2e, 0x70, 0x65, 0x6e, 0x75, 0x6d, 0x62, 0x72,
+	0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
+	0x2e, 0x67, 0x6f, 0x76, 0x65, 0x72, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x61, 0x6c,
+	0x70, 0x68, 0x61, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x52, 0x08, 0x70,
+	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x61, 0x6c, 0x32, 0xcd, 0x0a, 0x0a, 0x0c, 0x51, 0x75, 0x65, 0x72,
 	0x79, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x93, 0x01, 0x0a, 0x0c, 0x50, 0x72, 0x6f,
 	0x70, 0x6f, 0x73, 0x61, 0x6c, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x40, 0x2e, 0x70, 0x65, 0x6e, 0x75,
 	0x6d, 0x62, 0x72, 0x61, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
@@ -4414,7 +4853,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDescGZ
 }
 
 var file_penumbra_core_component_governance_v1alpha1_governance_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes = make([]protoimpl.MessageInfo, 65)
 var file_penumbra_core_component_governance_v1alpha1_governance_proto_goTypes = []interface{}{
 	(Vote_Vote)(0),                                      // 0: penumbra.core.component.governance.v1alpha1.Vote.Vote
 	(*ZKDelegatorVoteProof)(nil),                        // 1: penumbra.core.component.governance.v1alpha1.ZKDelegatorVoteProof
@@ -4457,142 +4896,158 @@ var file_penumbra_core_component_governance_v1alpha1_governance_proto_goTypes = 
 	(*NextProposalIdRequest)(nil),                       // 38: penumbra.core.component.governance.v1alpha1.NextProposalIdRequest
 	(*NextProposalIdResponse)(nil),                      // 39: penumbra.core.component.governance.v1alpha1.NextProposalIdResponse
 	(*Ratio)(nil),                                       // 40: penumbra.core.component.governance.v1alpha1.Ratio
-	(*DelegatorVoteView_Visible)(nil),                   // 41: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible
-	(*DelegatorVoteView_Opaque)(nil),                    // 42: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque
-	(*ProposalState_Voting)(nil),                        // 43: penumbra.core.component.governance.v1alpha1.ProposalState.Voting
-	(*ProposalState_Withdrawn)(nil),                     // 44: penumbra.core.component.governance.v1alpha1.ProposalState.Withdrawn
-	(*ProposalState_Finished)(nil),                      // 45: penumbra.core.component.governance.v1alpha1.ProposalState.Finished
-	(*ProposalState_Claimed)(nil),                       // 46: penumbra.core.component.governance.v1alpha1.ProposalState.Claimed
-	(*ProposalOutcome_Withdrawn)(nil),                   // 47: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
-	(*ProposalOutcome_Passed)(nil),                      // 48: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Passed
-	(*ProposalOutcome_Failed)(nil),                      // 49: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed
-	(*ProposalOutcome_Slashed)(nil),                     // 50: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed
-	(*Proposal_Signaling)(nil),                          // 51: penumbra.core.component.governance.v1alpha1.Proposal.Signaling
-	(*Proposal_Emergency)(nil),                          // 52: penumbra.core.component.governance.v1alpha1.Proposal.Emergency
-	(*Proposal_ParameterChange)(nil),                    // 53: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange
-	(*Proposal_CommunityPoolSpend)(nil),                 // 54: penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend
-	(*Proposal_UpgradePlan)(nil),                        // 55: penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan
-	(*Proposal_FreezeIbcClient)(nil),                    // 56: penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient
-	(*Proposal_UnfreezeIbcClient)(nil),                  // 57: penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient
-	(*v1alpha1.Amount)(nil),                             // 58: penumbra.core.num.v1alpha1.Amount
-	(*v1alpha11.SpendAuthSignature)(nil),                // 59: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
-	(*v1alpha12.IdentityKey)(nil),                       // 60: penumbra.core.keys.v1alpha1.IdentityKey
-	(*v1alpha12.GovernanceKey)(nil),                     // 61: penumbra.core.keys.v1alpha1.GovernanceKey
-	(*v1alpha13.Value)(nil),                             // 62: penumbra.core.asset.v1alpha1.Value
-	(*v1alpha14.Nullifier)(nil),                         // 63: penumbra.core.component.sct.v1alpha1.Nullifier
-	(*v1alpha11.SpendVerificationKey)(nil),              // 64: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey
-	(*v1alpha15.Note)(nil),                              // 65: penumbra.core.component.shielded_pool.v1alpha1.Note
-	(*v1alpha12.Address)(nil),                           // 66: penumbra.core.keys.v1alpha1.Address
-	(*v1alpha16.RateData)(nil),                          // 67: penumbra.core.component.stake.v1alpha1.RateData
-	(*v1alpha14.SctParameters)(nil),                     // 68: penumbra.core.component.sct.v1alpha1.SctParameters
-	(*v1alpha17.CommunityPoolParameters)(nil),           // 69: penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters
-	(*v1alpha18.IbcParameters)(nil),                     // 70: penumbra.core.component.ibc.v1alpha1.IbcParameters
-	(*v1alpha16.StakeParameters)(nil),                   // 71: penumbra.core.component.stake.v1alpha1.StakeParameters
-	(*v1alpha19.FeeParameters)(nil),                     // 72: penumbra.core.component.fee.v1alpha1.FeeParameters
-	(*v1alpha110.DistributionsParameters)(nil),          // 73: penumbra.core.component.distributions.v1alpha1.DistributionsParameters
-	(*v1alpha111.FundingParameters)(nil),                // 74: penumbra.core.component.funding.v1alpha1.FundingParameters
-	(*v1alpha15.ShieldedPoolParameters)(nil),            // 75: penumbra.core.component.shielded_pool.v1alpha1.ShieldedPoolParameters
-	(*v1alpha15.NoteView)(nil),                          // 76: penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	(*anypb.Any)(nil),                                   // 77: google.protobuf.Any
+	(*EventDelegatorVote)(nil),                          // 41: penumbra.core.component.governance.v1alpha1.EventDelegatorVote
+	(*EventProposalDepositClaim)(nil),                   // 42: penumbra.core.component.governance.v1alpha1.EventProposalDepositClaim
+	(*EventValidatorVote)(nil),                          // 43: penumbra.core.component.governance.v1alpha1.EventValidatorVote
+	(*EventProposalWithdraw)(nil),                       // 44: penumbra.core.component.governance.v1alpha1.EventProposalWithdraw
+	(*EventProposalSubmit)(nil),                         // 45: penumbra.core.component.governance.v1alpha1.EventProposalSubmit
+	(*EventEnactProposal)(nil),                          // 46: penumbra.core.component.governance.v1alpha1.EventEnactProposal
+	(*EventProposalFailed)(nil),                         // 47: penumbra.core.component.governance.v1alpha1.EventProposalFailed
+	(*EventProposalSlashed)(nil),                        // 48: penumbra.core.component.governance.v1alpha1.EventProposalSlashed
+	(*DelegatorVoteView_Visible)(nil),                   // 49: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible
+	(*DelegatorVoteView_Opaque)(nil),                    // 50: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque
+	(*ProposalState_Voting)(nil),                        // 51: penumbra.core.component.governance.v1alpha1.ProposalState.Voting
+	(*ProposalState_Withdrawn)(nil),                     // 52: penumbra.core.component.governance.v1alpha1.ProposalState.Withdrawn
+	(*ProposalState_Finished)(nil),                      // 53: penumbra.core.component.governance.v1alpha1.ProposalState.Finished
+	(*ProposalState_Claimed)(nil),                       // 54: penumbra.core.component.governance.v1alpha1.ProposalState.Claimed
+	(*ProposalOutcome_Withdrawn)(nil),                   // 55: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
+	(*ProposalOutcome_Passed)(nil),                      // 56: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Passed
+	(*ProposalOutcome_Failed)(nil),                      // 57: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed
+	(*ProposalOutcome_Slashed)(nil),                     // 58: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed
+	(*Proposal_Signaling)(nil),                          // 59: penumbra.core.component.governance.v1alpha1.Proposal.Signaling
+	(*Proposal_Emergency)(nil),                          // 60: penumbra.core.component.governance.v1alpha1.Proposal.Emergency
+	(*Proposal_ParameterChange)(nil),                    // 61: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange
+	(*Proposal_CommunityPoolSpend)(nil),                 // 62: penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend
+	(*Proposal_UpgradePlan)(nil),                        // 63: penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan
+	(*Proposal_FreezeIbcClient)(nil),                    // 64: penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient
+	(*Proposal_UnfreezeIbcClient)(nil),                  // 65: penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient
+	(*v1alpha1.Amount)(nil),                             // 66: penumbra.core.num.v1alpha1.Amount
+	(*v1alpha11.SpendAuthSignature)(nil),                // 67: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
+	(*v1alpha12.IdentityKey)(nil),                       // 68: penumbra.core.keys.v1alpha1.IdentityKey
+	(*v1alpha12.GovernanceKey)(nil),                     // 69: penumbra.core.keys.v1alpha1.GovernanceKey
+	(*v1alpha13.Value)(nil),                             // 70: penumbra.core.asset.v1alpha1.Value
+	(*v1alpha14.Nullifier)(nil),                         // 71: penumbra.core.component.sct.v1alpha1.Nullifier
+	(*v1alpha11.SpendVerificationKey)(nil),              // 72: penumbra.crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey
+	(*v1alpha15.Note)(nil),                              // 73: penumbra.core.component.shielded_pool.v1alpha1.Note
+	(*v1alpha12.Address)(nil),                           // 74: penumbra.core.keys.v1alpha1.Address
+	(*v1alpha16.RateData)(nil),                          // 75: penumbra.core.component.stake.v1alpha1.RateData
+	(*v1alpha14.SctParameters)(nil),                     // 76: penumbra.core.component.sct.v1alpha1.SctParameters
+	(*v1alpha17.CommunityPoolParameters)(nil),           // 77: penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters
+	(*v1alpha18.IbcParameters)(nil),                     // 78: penumbra.core.component.ibc.v1alpha1.IbcParameters
+	(*v1alpha16.StakeParameters)(nil),                   // 79: penumbra.core.component.stake.v1alpha1.StakeParameters
+	(*v1alpha19.FeeParameters)(nil),                     // 80: penumbra.core.component.fee.v1alpha1.FeeParameters
+	(*v1alpha110.DistributionsParameters)(nil),          // 81: penumbra.core.component.distributions.v1alpha1.DistributionsParameters
+	(*v1alpha111.FundingParameters)(nil),                // 82: penumbra.core.component.funding.v1alpha1.FundingParameters
+	(*v1alpha15.ShieldedPoolParameters)(nil),            // 83: penumbra.core.component.shielded_pool.v1alpha1.ShieldedPoolParameters
+	(*v1alpha15.NoteView)(nil),                          // 84: penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	(*anypb.Any)(nil),                                   // 85: google.protobuf.Any
 }
 var file_penumbra_core_component_governance_v1alpha1_governance_proto_depIdxs = []int32{
 	19, // 0: penumbra.core.component.governance.v1alpha1.ProposalSubmit.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
-	58, // 1: penumbra.core.component.governance.v1alpha1.ProposalSubmit.deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	58, // 2: penumbra.core.component.governance.v1alpha1.ProposalDepositClaim.deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	66, // 1: penumbra.core.component.governance.v1alpha1.ProposalSubmit.deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	66, // 2: penumbra.core.component.governance.v1alpha1.ProposalDepositClaim.deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
 	17, // 3: penumbra.core.component.governance.v1alpha1.ProposalDepositClaim.outcome:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome
 	7,  // 4: penumbra.core.component.governance.v1alpha1.ValidatorVote.body:type_name -> penumbra.core.component.governance.v1alpha1.ValidatorVoteBody
-	59, // 5: penumbra.core.component.governance.v1alpha1.ValidatorVote.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
+	67, // 5: penumbra.core.component.governance.v1alpha1.ValidatorVote.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
 	15, // 6: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.vote:type_name -> penumbra.core.component.governance.v1alpha1.Vote
-	60, // 7: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	61, // 8: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.governance_key:type_name -> penumbra.core.keys.v1alpha1.GovernanceKey
+	68, // 7: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	69, // 8: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.governance_key:type_name -> penumbra.core.keys.v1alpha1.GovernanceKey
 	6,  // 9: penumbra.core.component.governance.v1alpha1.ValidatorVoteBody.reason:type_name -> penumbra.core.component.governance.v1alpha1.ValidatorVoteReason
 	9,  // 10: penumbra.core.component.governance.v1alpha1.DelegatorVote.body:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVoteBody
-	59, // 11: penumbra.core.component.governance.v1alpha1.DelegatorVote.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
+	67, // 11: penumbra.core.component.governance.v1alpha1.DelegatorVote.auth_sig:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendAuthSignature
 	1,  // 12: penumbra.core.component.governance.v1alpha1.DelegatorVote.proof:type_name -> penumbra.core.component.governance.v1alpha1.ZKDelegatorVoteProof
 	15, // 13: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.vote:type_name -> penumbra.core.component.governance.v1alpha1.Vote
-	62, // 14: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	58, // 15: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	63, // 16: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.nullifier:type_name -> penumbra.core.component.sct.v1alpha1.Nullifier
-	64, // 17: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.rk:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey
-	41, // 18: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.visible:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible
-	42, // 19: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.opaque:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque
+	70, // 14: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	66, // 15: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	71, // 16: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.nullifier:type_name -> penumbra.core.component.sct.v1alpha1.Nullifier
+	72, // 17: penumbra.core.component.governance.v1alpha1.DelegatorVoteBody.rk:type_name -> penumbra.crypto.decaf377_rdsa.v1alpha1.SpendVerificationKey
+	49, // 18: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.visible:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible
+	50, // 19: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.opaque:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque
 	15, // 20: penumbra.core.component.governance.v1alpha1.DelegatorVotePlan.vote:type_name -> penumbra.core.component.governance.v1alpha1.Vote
-	65, // 21: penumbra.core.component.governance.v1alpha1.DelegatorVotePlan.staked_note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Note
-	58, // 22: penumbra.core.component.governance.v1alpha1.DelegatorVotePlan.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	62, // 23: penumbra.core.component.governance.v1alpha1.CommunityPoolDeposit.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	62, // 24: penumbra.core.component.governance.v1alpha1.CommunityPoolSpend.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	62, // 25: penumbra.core.component.governance.v1alpha1.CommunityPoolOutput.value:type_name -> penumbra.core.asset.v1alpha1.Value
-	66, // 26: penumbra.core.component.governance.v1alpha1.CommunityPoolOutput.address:type_name -> penumbra.core.keys.v1alpha1.Address
+	73, // 21: penumbra.core.component.governance.v1alpha1.DelegatorVotePlan.staked_note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.Note
+	66, // 22: penumbra.core.component.governance.v1alpha1.DelegatorVotePlan.unbonded_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	70, // 23: penumbra.core.component.governance.v1alpha1.CommunityPoolDeposit.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	70, // 24: penumbra.core.component.governance.v1alpha1.CommunityPoolSpend.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	70, // 25: penumbra.core.component.governance.v1alpha1.CommunityPoolOutput.value:type_name -> penumbra.core.asset.v1alpha1.Value
+	74, // 26: penumbra.core.component.governance.v1alpha1.CommunityPoolOutput.address:type_name -> penumbra.core.keys.v1alpha1.Address
 	0,  // 27: penumbra.core.component.governance.v1alpha1.Vote.vote:type_name -> penumbra.core.component.governance.v1alpha1.Vote.Vote
-	43, // 28: penumbra.core.component.governance.v1alpha1.ProposalState.voting:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Voting
-	44, // 29: penumbra.core.component.governance.v1alpha1.ProposalState.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Withdrawn
-	45, // 30: penumbra.core.component.governance.v1alpha1.ProposalState.finished:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Finished
-	46, // 31: penumbra.core.component.governance.v1alpha1.ProposalState.claimed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Claimed
-	48, // 32: penumbra.core.component.governance.v1alpha1.ProposalOutcome.passed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Passed
-	49, // 33: penumbra.core.component.governance.v1alpha1.ProposalOutcome.failed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed
-	50, // 34: penumbra.core.component.governance.v1alpha1.ProposalOutcome.slashed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed
-	51, // 35: penumbra.core.component.governance.v1alpha1.Proposal.signaling:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.Signaling
-	52, // 36: penumbra.core.component.governance.v1alpha1.Proposal.emergency:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.Emergency
-	53, // 37: penumbra.core.component.governance.v1alpha1.Proposal.parameter_change:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange
-	54, // 38: penumbra.core.component.governance.v1alpha1.Proposal.community_pool_spend:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend
-	55, // 39: penumbra.core.component.governance.v1alpha1.Proposal.upgrade_plan:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan
-	56, // 40: penumbra.core.component.governance.v1alpha1.Proposal.freeze_ibc_client:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient
-	57, // 41: penumbra.core.component.governance.v1alpha1.Proposal.unfreeze_ibc_client:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient
+	51, // 28: penumbra.core.component.governance.v1alpha1.ProposalState.voting:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Voting
+	52, // 29: penumbra.core.component.governance.v1alpha1.ProposalState.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Withdrawn
+	53, // 30: penumbra.core.component.governance.v1alpha1.ProposalState.finished:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Finished
+	54, // 31: penumbra.core.component.governance.v1alpha1.ProposalState.claimed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState.Claimed
+	56, // 32: penumbra.core.component.governance.v1alpha1.ProposalOutcome.passed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Passed
+	57, // 33: penumbra.core.component.governance.v1alpha1.ProposalOutcome.failed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed
+	58, // 34: penumbra.core.component.governance.v1alpha1.ProposalOutcome.slashed:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed
+	59, // 35: penumbra.core.component.governance.v1alpha1.Proposal.signaling:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.Signaling
+	60, // 36: penumbra.core.component.governance.v1alpha1.Proposal.emergency:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.Emergency
+	61, // 37: penumbra.core.component.governance.v1alpha1.Proposal.parameter_change:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange
+	62, // 38: penumbra.core.component.governance.v1alpha1.Proposal.community_pool_spend:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend
+	63, // 39: penumbra.core.component.governance.v1alpha1.Proposal.upgrade_plan:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.UpgradePlan
+	64, // 40: penumbra.core.component.governance.v1alpha1.Proposal.freeze_ibc_client:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.FreezeIbcClient
+	65, // 41: penumbra.core.component.governance.v1alpha1.Proposal.unfreeze_ibc_client:type_name -> penumbra.core.component.governance.v1alpha1.Proposal.UnfreezeIbcClient
 	19, // 42: penumbra.core.component.governance.v1alpha1.ProposalDataResponse.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
 	16, // 43: penumbra.core.component.governance.v1alpha1.ProposalDataResponse.state:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState
-	58, // 44: penumbra.core.component.governance.v1alpha1.ProposalDataResponse.proposal_deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
-	67, // 45: penumbra.core.component.governance.v1alpha1.ProposalRateDataResponse.rate_data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
+	66, // 44: penumbra.core.component.governance.v1alpha1.ProposalDataResponse.proposal_deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	75, // 45: penumbra.core.component.governance.v1alpha1.ProposalRateDataResponse.rate_data:type_name -> penumbra.core.component.stake.v1alpha1.RateData
 	19, // 46: penumbra.core.component.governance.v1alpha1.ProposalListResponse.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
 	16, // 47: penumbra.core.component.governance.v1alpha1.ProposalListResponse.state:type_name -> penumbra.core.component.governance.v1alpha1.ProposalState
 	15, // 48: penumbra.core.component.governance.v1alpha1.ValidatorVotesResponse.vote:type_name -> penumbra.core.component.governance.v1alpha1.Vote
-	60, // 49: penumbra.core.component.governance.v1alpha1.ValidatorVotesResponse.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	58, // 50: penumbra.core.component.governance.v1alpha1.GovernanceParameters.proposal_deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
+	68, // 49: penumbra.core.component.governance.v1alpha1.ValidatorVotesResponse.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	66, // 50: penumbra.core.component.governance.v1alpha1.GovernanceParameters.proposal_deposit_amount:type_name -> penumbra.core.num.v1alpha1.Amount
 	30, // 51: penumbra.core.component.governance.v1alpha1.GenesisContent.governance_params:type_name -> penumbra.core.component.governance.v1alpha1.GovernanceParameters
-	68, // 52: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.sct_params:type_name -> penumbra.core.component.sct.v1alpha1.SctParameters
-	69, // 53: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.community_pool_params:type_name -> penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters
+	76, // 52: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.sct_params:type_name -> penumbra.core.component.sct.v1alpha1.SctParameters
+	77, // 53: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.community_pool_params:type_name -> penumbra.core.component.community_pool.v1alpha1.CommunityPoolParameters
 	30, // 54: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.governance_params:type_name -> penumbra.core.component.governance.v1alpha1.GovernanceParameters
-	70, // 55: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.ibc_params:type_name -> penumbra.core.component.ibc.v1alpha1.IbcParameters
-	71, // 56: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.stake_params:type_name -> penumbra.core.component.stake.v1alpha1.StakeParameters
-	72, // 57: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.fee_params:type_name -> penumbra.core.component.fee.v1alpha1.FeeParameters
-	73, // 58: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.distributions_params:type_name -> penumbra.core.component.distributions.v1alpha1.DistributionsParameters
-	74, // 59: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.funding_params:type_name -> penumbra.core.component.funding.v1alpha1.FundingParameters
-	75, // 60: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.shielded_pool_params:type_name -> penumbra.core.component.shielded_pool.v1alpha1.ShieldedPoolParameters
+	78, // 55: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.ibc_params:type_name -> penumbra.core.component.ibc.v1alpha1.IbcParameters
+	79, // 56: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.stake_params:type_name -> penumbra.core.component.stake.v1alpha1.StakeParameters
+	80, // 57: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.fee_params:type_name -> penumbra.core.component.fee.v1alpha1.FeeParameters
+	81, // 58: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.distributions_params:type_name -> penumbra.core.component.distributions.v1alpha1.DistributionsParameters
+	82, // 59: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.funding_params:type_name -> penumbra.core.component.funding.v1alpha1.FundingParameters
+	83, // 60: penumbra.core.component.governance.v1alpha1.ChangedAppParameters.shielded_pool_params:type_name -> penumbra.core.component.shielded_pool.v1alpha1.ShieldedPoolParameters
 	32, // 61: penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet.old:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
 	32, // 62: penumbra.core.component.governance.v1alpha1.ChangedAppParametersSet.new:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
-	60, // 63: penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	68, // 63: penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartRequest.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
 	18, // 64: penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalResponse.tally:type_name -> penumbra.core.component.governance.v1alpha1.Tally
-	60, // 65: penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalResponse.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
-	8,  // 66: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible.delegator_vote:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVote
-	76, // 67: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
-	8,  // 68: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque.delegator_vote:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVote
-	17, // 69: penumbra.core.component.governance.v1alpha1.ProposalState.Finished.outcome:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome
-	17, // 70: penumbra.core.component.governance.v1alpha1.ProposalState.Claimed.outcome:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome
-	47, // 71: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
-	47, // 72: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
-	32, // 73: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange.old_parameters:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
-	32, // 74: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange.new_parameters:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
-	77, // 75: penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend.transaction_plan:type_name -> google.protobuf.Any
-	20, // 76: penumbra.core.component.governance.v1alpha1.QueryService.ProposalInfo:input_type -> penumbra.core.component.governance.v1alpha1.ProposalInfoRequest
-	26, // 77: penumbra.core.component.governance.v1alpha1.QueryService.ProposalList:input_type -> penumbra.core.component.governance.v1alpha1.ProposalListRequest
-	22, // 78: penumbra.core.component.governance.v1alpha1.QueryService.ProposalData:input_type -> penumbra.core.component.governance.v1alpha1.ProposalDataRequest
-	38, // 79: penumbra.core.component.governance.v1alpha1.QueryService.NextProposalId:input_type -> penumbra.core.component.governance.v1alpha1.NextProposalIdRequest
-	28, // 80: penumbra.core.component.governance.v1alpha1.QueryService.ValidatorVotes:input_type -> penumbra.core.component.governance.v1alpha1.ValidatorVotesRequest
-	34, // 81: penumbra.core.component.governance.v1alpha1.QueryService.VotingPowerAtProposalStart:input_type -> penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartRequest
-	36, // 82: penumbra.core.component.governance.v1alpha1.QueryService.AllTalliedDelegatorVotesForProposal:input_type -> penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalRequest
-	24, // 83: penumbra.core.component.governance.v1alpha1.QueryService.ProposalRateData:input_type -> penumbra.core.component.governance.v1alpha1.ProposalRateDataRequest
-	21, // 84: penumbra.core.component.governance.v1alpha1.QueryService.ProposalInfo:output_type -> penumbra.core.component.governance.v1alpha1.ProposalInfoResponse
-	27, // 85: penumbra.core.component.governance.v1alpha1.QueryService.ProposalList:output_type -> penumbra.core.component.governance.v1alpha1.ProposalListResponse
-	23, // 86: penumbra.core.component.governance.v1alpha1.QueryService.ProposalData:output_type -> penumbra.core.component.governance.v1alpha1.ProposalDataResponse
-	39, // 87: penumbra.core.component.governance.v1alpha1.QueryService.NextProposalId:output_type -> penumbra.core.component.governance.v1alpha1.NextProposalIdResponse
-	29, // 88: penumbra.core.component.governance.v1alpha1.QueryService.ValidatorVotes:output_type -> penumbra.core.component.governance.v1alpha1.ValidatorVotesResponse
-	35, // 89: penumbra.core.component.governance.v1alpha1.QueryService.VotingPowerAtProposalStart:output_type -> penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartResponse
-	37, // 90: penumbra.core.component.governance.v1alpha1.QueryService.AllTalliedDelegatorVotesForProposal:output_type -> penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalResponse
-	25, // 91: penumbra.core.component.governance.v1alpha1.QueryService.ProposalRateData:output_type -> penumbra.core.component.governance.v1alpha1.ProposalRateDataResponse
-	84, // [84:92] is the sub-list for method output_type
-	76, // [76:84] is the sub-list for method input_type
-	76, // [76:76] is the sub-list for extension type_name
-	76, // [76:76] is the sub-list for extension extendee
-	0,  // [0:76] is the sub-list for field type_name
+	68, // 65: penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalResponse.identity_key:type_name -> penumbra.core.keys.v1alpha1.IdentityKey
+	8,  // 66: penumbra.core.component.governance.v1alpha1.EventDelegatorVote.vote:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVote
+	4,  // 67: penumbra.core.component.governance.v1alpha1.EventProposalDepositClaim.deposit_claim:type_name -> penumbra.core.component.governance.v1alpha1.ProposalDepositClaim
+	5,  // 68: penumbra.core.component.governance.v1alpha1.EventValidatorVote.vote:type_name -> penumbra.core.component.governance.v1alpha1.ValidatorVote
+	3,  // 69: penumbra.core.component.governance.v1alpha1.EventProposalWithdraw.withdraw:type_name -> penumbra.core.component.governance.v1alpha1.ProposalWithdraw
+	2,  // 70: penumbra.core.component.governance.v1alpha1.EventProposalSubmit.submit:type_name -> penumbra.core.component.governance.v1alpha1.ProposalSubmit
+	19, // 71: penumbra.core.component.governance.v1alpha1.EventEnactProposal.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
+	19, // 72: penumbra.core.component.governance.v1alpha1.EventProposalFailed.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
+	19, // 73: penumbra.core.component.governance.v1alpha1.EventProposalSlashed.proposal:type_name -> penumbra.core.component.governance.v1alpha1.Proposal
+	8,  // 74: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible.delegator_vote:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVote
+	84, // 75: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Visible.note:type_name -> penumbra.core.component.shielded_pool.v1alpha1.NoteView
+	8,  // 76: penumbra.core.component.governance.v1alpha1.DelegatorVoteView.Opaque.delegator_vote:type_name -> penumbra.core.component.governance.v1alpha1.DelegatorVote
+	17, // 77: penumbra.core.component.governance.v1alpha1.ProposalState.Finished.outcome:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome
+	17, // 78: penumbra.core.component.governance.v1alpha1.ProposalState.Claimed.outcome:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome
+	55, // 79: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Failed.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
+	55, // 80: penumbra.core.component.governance.v1alpha1.ProposalOutcome.Slashed.withdrawn:type_name -> penumbra.core.component.governance.v1alpha1.ProposalOutcome.Withdrawn
+	32, // 81: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange.old_parameters:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
+	32, // 82: penumbra.core.component.governance.v1alpha1.Proposal.ParameterChange.new_parameters:type_name -> penumbra.core.component.governance.v1alpha1.ChangedAppParameters
+	85, // 83: penumbra.core.component.governance.v1alpha1.Proposal.CommunityPoolSpend.transaction_plan:type_name -> google.protobuf.Any
+	20, // 84: penumbra.core.component.governance.v1alpha1.QueryService.ProposalInfo:input_type -> penumbra.core.component.governance.v1alpha1.ProposalInfoRequest
+	26, // 85: penumbra.core.component.governance.v1alpha1.QueryService.ProposalList:input_type -> penumbra.core.component.governance.v1alpha1.ProposalListRequest
+	22, // 86: penumbra.core.component.governance.v1alpha1.QueryService.ProposalData:input_type -> penumbra.core.component.governance.v1alpha1.ProposalDataRequest
+	38, // 87: penumbra.core.component.governance.v1alpha1.QueryService.NextProposalId:input_type -> penumbra.core.component.governance.v1alpha1.NextProposalIdRequest
+	28, // 88: penumbra.core.component.governance.v1alpha1.QueryService.ValidatorVotes:input_type -> penumbra.core.component.governance.v1alpha1.ValidatorVotesRequest
+	34, // 89: penumbra.core.component.governance.v1alpha1.QueryService.VotingPowerAtProposalStart:input_type -> penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartRequest
+	36, // 90: penumbra.core.component.governance.v1alpha1.QueryService.AllTalliedDelegatorVotesForProposal:input_type -> penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalRequest
+	24, // 91: penumbra.core.component.governance.v1alpha1.QueryService.ProposalRateData:input_type -> penumbra.core.component.governance.v1alpha1.ProposalRateDataRequest
+	21, // 92: penumbra.core.component.governance.v1alpha1.QueryService.ProposalInfo:output_type -> penumbra.core.component.governance.v1alpha1.ProposalInfoResponse
+	27, // 93: penumbra.core.component.governance.v1alpha1.QueryService.ProposalList:output_type -> penumbra.core.component.governance.v1alpha1.ProposalListResponse
+	23, // 94: penumbra.core.component.governance.v1alpha1.QueryService.ProposalData:output_type -> penumbra.core.component.governance.v1alpha1.ProposalDataResponse
+	39, // 95: penumbra.core.component.governance.v1alpha1.QueryService.NextProposalId:output_type -> penumbra.core.component.governance.v1alpha1.NextProposalIdResponse
+	29, // 96: penumbra.core.component.governance.v1alpha1.QueryService.ValidatorVotes:output_type -> penumbra.core.component.governance.v1alpha1.ValidatorVotesResponse
+	35, // 97: penumbra.core.component.governance.v1alpha1.QueryService.VotingPowerAtProposalStart:output_type -> penumbra.core.component.governance.v1alpha1.VotingPowerAtProposalStartResponse
+	37, // 98: penumbra.core.component.governance.v1alpha1.QueryService.AllTalliedDelegatorVotesForProposal:output_type -> penumbra.core.component.governance.v1alpha1.AllTalliedDelegatorVotesForProposalResponse
+	25, // 99: penumbra.core.component.governance.v1alpha1.QueryService.ProposalRateData:output_type -> penumbra.core.component.governance.v1alpha1.ProposalRateDataResponse
+	92, // [92:100] is the sub-list for method output_type
+	84, // [84:92] is the sub-list for method input_type
+	84, // [84:84] is the sub-list for extension type_name
+	84, // [84:84] is the sub-list for extension extendee
+	0,  // [0:84] is the sub-list for field type_name
 }
 
 func init() { file_penumbra_core_component_governance_v1alpha1_governance_proto_init() }
@@ -5082,7 +5537,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DelegatorVoteView_Visible); i {
+			switch v := v.(*EventDelegatorVote); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5094,7 +5549,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DelegatorVoteView_Opaque); i {
+			switch v := v.(*EventProposalDepositClaim); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5106,7 +5561,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalState_Voting); i {
+			switch v := v.(*EventValidatorVote); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5118,7 +5573,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalState_Withdrawn); i {
+			switch v := v.(*EventProposalWithdraw); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5130,7 +5585,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalState_Finished); i {
+			switch v := v.(*EventProposalSubmit); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5142,7 +5597,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalState_Claimed); i {
+			switch v := v.(*EventEnactProposal); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5154,7 +5609,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalOutcome_Withdrawn); i {
+			switch v := v.(*EventProposalFailed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5166,7 +5621,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalOutcome_Passed); i {
+			switch v := v.(*EventProposalSlashed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5178,7 +5633,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalOutcome_Failed); i {
+			switch v := v.(*DelegatorVoteView_Visible); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5190,7 +5645,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProposalOutcome_Slashed); i {
+			switch v := v.(*DelegatorVoteView_Opaque); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5202,7 +5657,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_Signaling); i {
+			switch v := v.(*ProposalState_Voting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5214,7 +5669,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_Emergency); i {
+			switch v := v.(*ProposalState_Withdrawn); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5226,7 +5681,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_ParameterChange); i {
+			switch v := v.(*ProposalState_Finished); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5238,7 +5693,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_CommunityPoolSpend); i {
+			switch v := v.(*ProposalState_Claimed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5250,7 +5705,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_UpgradePlan); i {
+			switch v := v.(*ProposalOutcome_Withdrawn); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5262,7 +5717,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Proposal_FreezeIbcClient); i {
+			switch v := v.(*ProposalOutcome_Passed); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5274,6 +5729,102 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			}
 		}
 		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProposalOutcome_Failed); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProposalOutcome_Slashed); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_Signaling); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[59].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_Emergency); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[60].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_ParameterChange); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[61].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_CommunityPoolSpend); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_UpgradePlan); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[63].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Proposal_FreezeIbcClient); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_penumbra_core_component_governance_v1alpha1_governance_proto_msgTypes[64].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Proposal_UnfreezeIbcClient); i {
 			case 0:
 				return &v.state
@@ -5316,7 +5867,7 @@ func file_penumbra_core_component_governance_v1alpha1_governance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_penumbra_core_component_governance_v1alpha1_governance_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   57,
+			NumMessages:   65,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

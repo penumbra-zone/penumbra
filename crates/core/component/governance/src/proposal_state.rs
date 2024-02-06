@@ -131,7 +131,7 @@ impl TryFrom<pb::ProposalState> for State {
 // This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
 // doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
 // empty string.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy)]
 #[serde(
     try_from = "pb::ProposalOutcome",
     into = "pb::ProposalOutcome",
@@ -189,7 +189,7 @@ impl<W> Outcome<W> {
 // This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
 // doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
 // empty string.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum Withdrawn<W> {
     No,
     WithReason { reason: W },

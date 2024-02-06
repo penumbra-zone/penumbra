@@ -1283,6 +1283,134 @@ impl ::prost::Name for Ratio {
         )
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDelegatorVote {
+    /// The delegator vote.
+    #[prost(message, optional, tag = "1")]
+    pub vote: ::core::option::Option<DelegatorVote>,
+}
+impl ::prost::Name for EventDelegatorVote {
+    const NAME: &'static str = "EventDelegatorVote";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalDepositClaim {
+    /// The deposit claim body.
+    #[prost(message, optional, tag = "1")]
+    pub deposit_claim: ::core::option::Option<ProposalDepositClaim>,
+}
+impl ::prost::Name for EventProposalDepositClaim {
+    const NAME: &'static str = "EventProposalDepositClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorVote {
+    /// The validator vote.
+    #[prost(message, optional, tag = "1")]
+    pub vote: ::core::option::Option<ValidatorVote>,
+}
+impl ::prost::Name for EventValidatorVote {
+    const NAME: &'static str = "EventValidatorVote";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalWithdraw {
+    /// Details on the withdrawn proposal.
+    #[prost(message, optional, tag = "1")]
+    pub withdraw: ::core::option::Option<ProposalWithdraw>,
+}
+impl ::prost::Name for EventProposalWithdraw {
+    const NAME: &'static str = "EventProposalWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalSubmit {
+    /// Details on the submitted proposal.
+    #[prost(message, optional, tag = "1")]
+    pub submit: ::core::option::Option<ProposalSubmit>,
+}
+impl ::prost::Name for EventProposalSubmit {
+    const NAME: &'static str = "EventProposalSubmit";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventEnactProposal {
+    /// The enacted proposal.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+}
+impl ::prost::Name for EventEnactProposal {
+    const NAME: &'static str = "EventEnactProposal";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalFailed {
+    /// The failed proposal.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+}
+impl ::prost::Name for EventProposalFailed {
+    const NAME: &'static str = "EventProposalFailed";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventProposalSlashed {
+    /// The slashed proposal.
+    #[prost(message, optional, tag = "1")]
+    pub proposal: ::core::option::Option<Proposal>,
+}
+impl ::prost::Name for EventProposalSlashed {
+    const NAME: &'static str = "EventProposalSlashed";
+    const PACKAGE: &'static str = "penumbra.core.component.governance.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.governance.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
