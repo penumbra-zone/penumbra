@@ -314,7 +314,7 @@ func (x *NoteView) GetAddress() *v1alpha11.AddressView {
 }
 
 // An encrypted note.
-// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+// 176 = 80(address) + 16(amount) + 32(asset ID) + 32(rseed) + 16(MAC) bytes.
 type NoteCiphertext struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -374,7 +374,7 @@ type NotePayload struct {
 	// The encoding of an ephemeral public key. 32 bytes.
 	EphemeralKey []byte `protobuf:"bytes,2,opt,name=ephemeral_key,json=ephemeralKey,proto3" json:"ephemeral_key,omitempty"`
 	// An encryption of the newly created note.
-	// 132 = 1(type) + 11(d) + 8(amount) + 32(asset_id) + 32(rcm) + 32(pk_d) + 16(MAC) bytes.
+	// 176 = 80(address) + 16(amount) + 32(asset ID) + 32(rseed) + 16(MAC) bytes.
 	EncryptedNote *NoteCiphertext `protobuf:"bytes,3,opt,name=encrypted_note,json=encryptedNote,proto3" json:"encrypted_note,omitempty"`
 }
 
