@@ -5,7 +5,7 @@ use penumbra_proof_setup::all::{
     Phase1CeremonyCRS, Phase1CeremonyContribution, Phase1RawCeremonyContribution,
     Phase2CeremonyCRS, Phase2CeremonyContribution, Phase2RawCeremonyContribution,
 };
-use penumbra_proto::tools::summoning::v1alpha1::{
+use penumbra_proto::tools::summoning::v1::{
     participate_request::Contribution as PBContribution, CeremonyCrs,
 };
 

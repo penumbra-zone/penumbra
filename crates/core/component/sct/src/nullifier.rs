@@ -8,7 +8,7 @@ use poseidon377::hash_3;
 
 use once_cell::sync::Lazy;
 use penumbra_keys::keys::{NullifierKey, NullifierKeyVar};
-use penumbra_proto::{core::component::sct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::sct::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord, Serialize, Deserialize)]

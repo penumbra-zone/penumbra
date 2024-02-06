@@ -1,4 +1,4 @@
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 pub mod state_key;

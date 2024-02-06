@@ -2,7 +2,7 @@ use anyhow::{Context, Error};
 
 use penumbra_keys::keys::FullViewingKey;
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{note, Note, NoteCiphertext};

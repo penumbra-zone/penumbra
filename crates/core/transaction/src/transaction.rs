@@ -16,7 +16,7 @@ use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, Valid
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
-    core::transaction::v1alpha1::{self as pbt},
+    core::transaction::v1::{self as pbt},
     DomainType, Message,
 };
 use penumbra_sct::Nullifier;

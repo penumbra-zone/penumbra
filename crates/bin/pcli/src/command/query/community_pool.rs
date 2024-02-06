@@ -3,8 +3,8 @@ use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_asset::Value;
 use penumbra_proto::{
-    core::component::community_pool::v1alpha1::CommunityPoolAssetBalancesRequest,
-    penumbra::core::component::community_pool::v1alpha1::query_service_client::QueryServiceClient as CommunityPoolQueryServiceClient,
+    core::component::community_pool::v1::CommunityPoolAssetBalancesRequest,
+    penumbra::core::component::community_pool::v1::query_service_client::QueryServiceClient as CommunityPoolQueryServiceClient,
 };
 use penumbra_view::ViewClient;
 use std::io::{stdout, Write};

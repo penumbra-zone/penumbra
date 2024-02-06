@@ -8,7 +8,7 @@ use aes::Aes128;
 use anyhow::Context;
 use ark_ff::PrimeField;
 use derivative::Derivative;
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 

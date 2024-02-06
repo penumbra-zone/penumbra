@@ -10,10 +10,10 @@ use penumbra_dex::{lp::position::Position, DirectedUnitPair};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
-    core::component::dex::v1alpha1::{
+    core::component::dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_view::{Planner, ViewClient};
 

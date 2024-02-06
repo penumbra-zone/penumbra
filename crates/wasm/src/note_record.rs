@@ -1,5 +1,5 @@
 use penumbra_keys::{keys::AddressIndex, AddressView};
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;

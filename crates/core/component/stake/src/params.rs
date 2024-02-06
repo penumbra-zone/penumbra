@@ -1,5 +1,5 @@
 use penumbra_num::Amount;
-use penumbra_proto::core::component::stake::v1alpha1 as pb;
+use penumbra_proto::core::component::stake::v1 as pb;
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 

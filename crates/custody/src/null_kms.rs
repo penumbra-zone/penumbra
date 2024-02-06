@@ -1,7 +1,7 @@
 //! A basic software key management system that stores keys in memory but
 //! presents as an asynchronous signer.
 
-use penumbra_proto::custody::v1alpha1::{self as pb};
+use penumbra_proto::custody::v1::{self as pb};
 use tonic::{async_trait, Request, Response, Status};
 
 /// A "null KMS" that has no keys and errors on any requests.

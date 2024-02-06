@@ -1,7 +1,7 @@
 use anyhow::Result;
 use penumbra_asset::Value;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Contains the summary data of a trade, for client consumption.

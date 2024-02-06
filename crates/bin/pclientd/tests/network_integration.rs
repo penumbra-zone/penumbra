@@ -19,10 +19,10 @@ use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_custody::soft_kms;
 use penumbra_keys::test_keys;
 use penumbra_proto::{
-    core::{component::fee::v1alpha1::Fee, component::ibc::v1alpha1::IbcRelay},
-    custody::v1alpha1::{custody_service_client::CustodyServiceClient, AuthorizeRequest},
-    penumbra::view::v1alpha1::view_service_client::ViewServiceClient,
-    view::v1alpha1::{
+    core::{component::fee::v1::Fee, component::ibc::v1::IbcRelay},
+    custody::v1::{custody_service_client::CustodyServiceClient, AuthorizeRequest},
+    penumbra::view::v1::view_service_client::ViewServiceClient,
+    view::v1::{
         broadcast_transaction_response::Status as BroadcastStatus,
         witness_and_build_response::Status as WitnessAndBuildStatus, BroadcastTransactionRequest,
         TransactionPlannerRequest, WitnessAndBuildRequest,
@@ -96,7 +96,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     // Here we don't want to use the Penumbra Rust libraries much, because
     // we're executing as if we were a Go program that had to construct all these
     // protos manually, with no access to Penumbra crypto.
-    use penumbra_proto::view::v1alpha1::transaction_planner_request as tpr;
+    use penumbra_proto::view::v1::transaction_planner_request as tpr;
 
     // Specifically, pretend we're relaying IBC messages, so pull one in:
 
@@ -277,8 +277,8 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     // Here we don't want to use the Penumbra Rust libraries much, because
     // we're executing as if we were a Go program that had to construct all these
     // protos manually, with no access to Penumbra crypto.
-    use penumbra_proto::core::num::v1alpha1 as num;
-    use penumbra_proto::view::v1alpha1::transaction_planner_request as tpr;
+    use penumbra_proto::core::num::v1 as num;
+    use penumbra_proto::view::v1::transaction_planner_request as tpr;
 
     // 5.1. Generate a transaction plan performing a swap. Since there are no liquidity positions
     // on this test network, we'll expect to get all our inputs back.

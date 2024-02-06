@@ -1,7 +1,7 @@
 use penumbra_proto::{
-    core::component::stake::v1alpha1::CurrentValidatorRateRequest,
+    core::component::stake::v1::CurrentValidatorRateRequest,
     // TODO: why is this not in the keys crate?
-    core::keys::v1alpha1 as pb,
+    core::keys::v1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
     DomainType,
 };

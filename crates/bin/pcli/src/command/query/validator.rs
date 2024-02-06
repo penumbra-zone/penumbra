@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_num::Amount;
-use penumbra_proto::core::component::stake::v1alpha1::{
+use penumbra_proto::core::component::stake::v1::{
     query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
 };
 use penumbra_stake::{

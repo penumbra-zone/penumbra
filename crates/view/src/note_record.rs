@@ -1,6 +1,6 @@
 use penumbra_asset::Value;
 use penumbra_keys::{keys::AddressIndex, Address, AddressView};
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_tct as tct;

@@ -1,0 +1,576 @@
+syntax = "proto3";
+
+package penumbra.view.v1;
+
+import "penumbra/core/app/v1/app.proto";
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
+import "penumbra/core/component/fee/v1/fee.proto";
+import "penumbra/core/component/ibc/v1/ibc.proto";
+import "penumbra/core/component/sct/v1/sct.proto";
+import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/keys/v1/keys.proto";
+import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/transaction/v1/transaction.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/tct/v1/tct.proto";
+
+// The view RPC is used by a view client, who wants to do some
+// transaction-related actions, to request data from a view service, which is
+// responsible for synchronizing and scanning the public chain state with one or
+// more full viewing keys.
+service ViewService {
+  // Get current status of chain sync
+  rpc Status(StatusRequest) returns (StatusResponse);
+
+  // Stream sync status updates until the view service has caught up with the chain.
+  // Returns a stream of `StatusStreamResponse`s.
+  rpc StatusStream(StatusStreamRequest) returns (stream StatusStreamResponse);
+
+  // Queries for notes that have been accepted by the chain.
+  // Returns a stream of `NotesResponse`s.
+  rpc Notes(NotesRequest) returns (stream NotesResponse);
+
+  // Returns a stream of `NotesForVotingResponse`s.
+  rpc NotesForVoting(NotesForVotingRequest) returns (stream NotesForVotingResponse);
+
+  // Queries for metadata about known assets.
+  // Returns a stream of `AssetsResponse`s.
+  rpc Assets(AssetsRequest) returns (stream AssetsResponse);
+
+  // Query for metadata about a specific asset, by asset ID.
+  //
+  // This is the same as the method on the shielded pool's `QueryService`, but exposing it
+  // here allows a view server to provide more specific or opinionated asset metadata -- like
+  // using an asset registry to provide tickers, symbols, etc.
+  rpc AssetMetadataById(AssetMetadataByIdRequest) returns (AssetMetadataByIdResponse);
+
+  // Query for the current app parameters.
+  rpc AppParameters(AppParametersRequest) returns (AppParametersResponse);
+
+  // Query for the current gas prices.
+  rpc GasPrices(GasPricesRequest) returns (GasPricesResponse);
+
+  // Query for the current FMD parameters.
+  rpc FMDParameters(FMDParametersRequest) returns (FMDParametersResponse);
+
+  // Query for an address given an address index
+  rpc AddressByIndex(AddressByIndexRequest) returns (AddressByIndexResponse);
+
+  // Query for wallet id
+  rpc WalletId(WalletIdRequest) returns (WalletIdResponse);
+
+  // Query for an address given an address index
+  rpc IndexByAddress(IndexByAddressRequest) returns (IndexByAddressResponse);
+
+  // Query for an ephemeral address
+  rpc EphemeralAddress(EphemeralAddressRequest) returns (EphemeralAddressResponse);
+
+  // Query for balance of a given address.
+  // Returns a stream of `BalancesResponses`.
+  rpc Balances(BalancesRequest) returns (stream BalancesResponse);
+
+  // Query for a note by its note commitment, optionally waiting until the note is detected.
+  rpc NoteByCommitment(NoteByCommitmentRequest) returns (NoteByCommitmentResponse);
+
+  // Query for a swap by its swap commitment, optionally waiting until the swap is detected.
+  rpc SwapByCommitment(SwapByCommitmentRequest) returns (SwapByCommitmentResponse);
+
+  // Query for all unclaimed swaps.
+  rpc UnclaimedSwaps(UnclaimedSwapsRequest) returns (stream UnclaimedSwapsResponse);
+
+  // Query for whether a nullifier has been spent, optionally waiting until it is spent.
+  rpc NullifierStatus(NullifierStatusRequest) returns (NullifierStatusResponse);
+
+  // Query for a given transaction by its hash.
+  rpc TransactionInfoByHash(TransactionInfoByHashRequest) returns (TransactionInfoByHashResponse);
+
+  // Query for the full transactions in the given range of blocks.
+  // Returns a stream of `TransactionInfoResponse`s.
+  rpc TransactionInfo(TransactionInfoRequest) returns (stream TransactionInfoResponse);
+
+  // Query for owned position IDs for the given trading pair and in the given position state.
+  rpc OwnedPositionIds(OwnedPositionIdsRequest) returns (stream OwnedPositionIdsResponse);
+
+  // Translates a high-level intent ("send X funds to Y address") into a complete transaction plan.
+  rpc TransactionPlanner(TransactionPlannerRequest) returns (TransactionPlannerResponse);
+
+  // Returns authentication data for the given transaction plan.
+  //
+  // This method takes a complete transaction plan, so that the client can get a
+  // consistent set of authentication paths to a common root for the entire
+  // transaction.  (Otherwise, if a client made multiple requests, the wallet
+  // service could have advanced the state commitment tree  between queries).
+  rpc Witness(WitnessRequest) returns (WitnessResponse);
+
+  // Like `Witness`, but immediately uses the witness data to build (prove) the transaction.
+  //
+  // This method is useful for clients that can't easily do proving themselves, either because
+  // they're not written in Rust and can't easily import the proving code, or because they don't
+  // have access to proving keys, or some other reason.
+  //
+  // This method streams status updates to the caller before finally returning the transaction.
+  rpc WitnessAndBuild(WitnessAndBuildRequest) returns (stream WitnessAndBuildResponse);
+
+  // Authorize a transaction plan and build the transaction.
+  //
+  // This method is only supported on view servers that have access to a custody
+  // service.  Otherwise, it will fail.
+  //
+  // Penumbra's transaction authorization mechanism is designed so transactions
+  // can be signed and built (proved) concurrently. This allows implementations
+  // to, e.g., start proving optimistically while presenting the user with an
+  // approval dialog.
+  //
+  // This method streams status updates to the caller before finally returning the transaction.
+  rpc AuthorizeAndBuild(AuthorizeAndBuildRequest) returns (stream AuthorizeAndBuildResponse);
+
+  // Broadcast a transaction to the network, optionally waiting for full confirmation.
+  //
+  // This method streams status updates to the caller before finally returning confirmation.
+  rpc BroadcastTransaction(BroadcastTransactionRequest) returns (stream BroadcastTransactionResponse);
+}
+
+message AuthorizeAndBuildRequest {
+  // The transaction plan to authorize and build.
+  core.transaction.v1.TransactionPlan transaction_plan = 1;
+}
+
+message AuthorizeAndBuildResponse {
+  // Signals that building is in progress.
+  message BuildProgress {
+    // An approximate progress of the build, from 0 to 1.
+    float progress = 1;
+  }
+  // Signals that the transaction is complete.
+  message Complete {
+    // The finished transaction.
+    penumbra.core.transaction.v1.Transaction transaction = 1;
+  }
+  oneof status {
+    BuildProgress build_progress = 1;
+    Complete complete = 2;
+  }
+}
+
+message BroadcastTransactionRequest {
+  // The transaction to broadcast.
+  core.transaction.v1.Transaction transaction = 1;
+  // If true, wait for the view service to detect the transaction during sync.
+  bool await_detection = 2;
+}
+
+message BroadcastTransactionResponse {
+  // Signals that the transaction was broadcast successfully (but has not been confirmed).
+  message BroadcastSuccess {
+    // The hash of the transaction that was broadcast.
+    core.txhash.v1.TransactionId id = 1;
+  }
+  // Signals that the transaction has been confirmed on-chain and detected by the view server.
+  //
+  // Will not be sent unless await_detection was true.
+  message Confirmed {
+    // The hash of the transaction that was broadcast.
+    core.txhash.v1.TransactionId id = 1;
+    // The height in which the transaction was detected as included in the chain, if any.
+    uint64 detection_height = 2;
+  }
+  oneof status {
+    BroadcastSuccess broadcast_success = 1;
+    Confirmed confirmed = 2;
+  }
+}
+
+message TransactionPlannerRequest {
+  // The expiry height for the requested TransactionPlan
+  uint64 expiry_height = 1;
+
+  // The memo for the requested TransactionPlan.
+  // The memo must be unspecified unless `outputs` is nonempty.
+  core.transaction.v1.MemoPlaintext memo = 3;
+  // If present, only spends funds from the given account.
+  core.keys.v1.AddressIndex source = 4;
+
+  // Request contents
+  repeated Output outputs = 20;
+  repeated Swap swaps = 30;
+  repeated SwapClaim swap_claims = 31;
+  repeated Delegate delegations = 40;
+  repeated Undelegate undelegations = 50;
+  repeated penumbra.core.component.ibc.v1.IbcRelay ibc_relay_actions = 60;
+  repeated penumbra.core.component.ibc.v1.Ics20Withdrawal ics20_withdrawals = 61;
+  repeated PositionOpen position_opens = 70;
+  repeated PositionClose position_closes = 71;
+  repeated PositionWithdraw position_withdraws = 72;
+
+  // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
+  oneof fee_mode {
+    // Automatically compute a fee based on gas use.
+    core.component.fee.v1.FeeTier auto_fee = 100;
+    // A manually set fee, rather than automatically computing a fee based on gas use.
+    core.component.fee.v1.Fee manual_fee = 101;
+  };
+
+  // Request message subtypes
+  message Output {
+    // The amount and denomination in which the Output is issued.
+    core.asset.v1.Value value = 1;
+    // The address to which Output will be sent.
+    core.keys.v1.Address address = 2;
+  }
+  message Swap {
+    // The input amount and denomination to be traded in the Swap.
+    core.asset.v1.Value value = 1;
+    // The denomination to be received as a Output of the Swap.
+    core.asset.v1.AssetId target_asset = 2;
+    // The pre-paid fee to be paid for claiming the Swap outputs.
+    core.component.fee.v1.Fee fee = 3;
+    // The address to which swap claim output will be sent.
+    core.keys.v1.Address claim_address = 4;
+  }
+  message SwapClaim {
+    // SwapCommitment to identify the Swap to be claimed.
+    // Use the commitment from the Swap message:
+    // penumbra.core.component.dex.v1.Swap.body.payload.commitment.
+    crypto.tct.v1.StateCommitment swap_commitment = 1;
+  }
+  message Delegate {
+    core.num.v1.Amount amount = 1;
+    core.component.stake.v1.RateData rate_data = 3;
+  }
+  message Undelegate {
+    core.asset.v1.Value value = 1;
+    core.component.stake.v1.RateData rate_data = 2;
+  }
+  message PositionOpen {
+    // Contains the data defining the position, sufficient to compute its `PositionId`.
+    //
+    // Positions are immutable, so the `PositionData` (and hence the `PositionId`)
+    // are unchanged over the entire lifetime of the position.
+    core.component.dex.v1.Position position = 1;
+  }
+  message PositionClose {
+    // The position to close.
+    core.component.dex.v1.PositionId position_id = 1;
+  }
+  message PositionWithdraw {
+    // The position to withdraw.
+    core.component.dex.v1.PositionId position_id = 1;
+    // The position's final reserves.
+    core.component.dex.v1.Reserves reserves = 2;
+    // The trading pair of the position.
+    core.component.dex.v1.TradingPair trading_pair = 3;
+  }
+}
+
+message TransactionPlannerResponse {
+  core.transaction.v1.TransactionPlan plan = 1;
+}
+
+message AddressByIndexRequest {
+  core.keys.v1.AddressIndex address_index = 1;
+}
+
+message AddressByIndexResponse {
+  core.keys.v1.Address address = 1;
+}
+
+message WalletIdRequest {}
+
+message WalletIdResponse {
+  core.keys.v1.WalletId wallet_id = 1;
+}
+
+message IndexByAddressRequest {
+  core.keys.v1.Address address = 1;
+}
+
+message IndexByAddressResponse {
+  // Will be absent if given an address not viewable by this viewing service
+  core.keys.v1.AddressIndex address_index = 1;
+}
+
+message EphemeralAddressRequest {
+  core.keys.v1.AddressIndex address_index = 1;
+}
+
+message EphemeralAddressResponse {
+  core.keys.v1.Address address = 1;
+}
+
+message BalancesRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 1;
+  // If present, filter balances to only include the specified asset ID.
+  core.asset.v1.AssetId asset_id_filter = 2;
+}
+
+message BalancesResponse {
+  core.keys.v1.AddressIndex account = 1;
+  core.asset.v1.Value balance = 2;
+}
+
+// Requests sync status of the view service.
+message StatusRequest {}
+
+// Returns the status of the view service and whether it is synchronized with the chain state.
+message StatusResponse {
+  // The height the view service has synchronized to so far when doing a full linear sync
+  uint64 full_sync_height = 1;
+  // The height the view service has synchronized to so far when doing a partial sync
+  uint64 partial_sync_height = 2;
+  // Whether the view service is catching up with the chain state
+  bool catching_up = 3;
+}
+
+// Requests streaming updates on the sync height until the view service is synchronized.
+message StatusStreamRequest {}
+
+// A streaming sync status update
+message StatusStreamResponse {
+  // The latest known block height
+  uint64 latest_known_block_height = 1;
+  // The height the view service has synchronized to so far when doing a full linear sync
+  uint64 full_sync_height = 2;
+  // The height the view service has synchronized to so far when doing a partial sync
+  uint64 partial_sync_height = 3;
+}
+
+// A query for notes known by the view service.
+//
+// This message uses the fact that all proto fields are optional
+// to allow various filtering on the returned notes.
+message NotesRequest {
+  // If set, return spent notes as well as unspent notes.
+  bool include_spent = 2;
+
+  // If set, only return notes with the specified asset id.
+  core.asset.v1.AssetId asset_id = 3;
+
+  // If set, only return notes with the specified address incore.component.dex.v1.
+  core.keys.v1.AddressIndex address_index = 4;
+
+  // If set, stop returning notes once the total exceeds this amount.
+  //
+  // Ignored if `asset_id` is unset or if `include_spent` is set.
+  core.num.v1.Amount amount_to_spend = 6;
+}
+
+// A query for notes to be used for voting on a proposal.
+message NotesForVotingRequest {
+  // The starting height of the proposal.
+  uint64 votable_at_height = 1;
+
+  // If set, only return notes with the specified asset id.
+  core.keys.v1.AddressIndex address_index = 3;
+}
+
+message WitnessRequest {
+  // The transaction plan to witness
+  core.transaction.v1.TransactionPlan transaction_plan = 3;
+}
+
+message WitnessResponse {
+  core.transaction.v1.WitnessData witness_data = 1;
+}
+
+message WitnessAndBuildRequest {
+  penumbra.core.transaction.v1.TransactionPlan transaction_plan = 1;
+  penumbra.core.transaction.v1.AuthorizationData authorization_data = 2;
+}
+
+message WitnessAndBuildResponse {
+  // Signals that building is in progress.
+  message BuildProgress {
+    // An approximate progress of the build, from 0 to 1.
+    float progress = 1;
+  }
+  // Signals that the transaction is complete.
+  message Complete {
+    // The finished transaction.
+    penumbra.core.transaction.v1.Transaction transaction = 1;
+  }
+  oneof status {
+    BuildProgress build_progress = 1;
+    Complete complete = 2;
+  }
+}
+
+// Requests all assets known to the view service.
+message AssetsRequest {
+  // If set to false (default), returns all assets, regardless of whether the rest of the fields of
+  // the request indicate a filter.
+  bool filtered = 1;
+  // Include these specific denominations in the response.
+  repeated core.asset.v1.Denom include_specific_denominations = 2;
+  // Include all delegation tokens, to any validator, in the response.
+  bool include_delegation_tokens = 3;
+  // Include all unbonding tokens, from any validator, in the response.
+  bool include_unbonding_tokens = 4;
+  // Include all LP NFTs in the response.
+  bool include_lp_nfts = 5;
+  // Include all proposal NFTs in the response.
+  bool include_proposal_nfts = 6;
+  // Include all voting receipt tokens in the response.
+  bool include_voting_receipt_tokens = 7;
+}
+
+// Requests all assets known to the view service.
+message AssetsResponse {
+  core.asset.v1.Metadata denom_metadata = 2;
+}
+
+// Requests the current app parameters from the view service.
+message AppParametersRequest {}
+
+message AppParametersResponse {
+  core.app.v1.AppParameters parameters = 1;
+}
+
+// Requests the current gas prices from the view service.
+message GasPricesRequest {}
+
+message GasPricesResponse {
+  core.component.fee.v1.GasPrices gas_prices = 1;
+}
+
+// Requests the current FMD parameters from the view service.
+message FMDParametersRequest {}
+
+message FMDParametersResponse {
+  core.component.shielded_pool.v1.FmdParameters parameters = 1;
+}
+
+message NoteByCommitmentRequest {
+  crypto.tct.v1.StateCommitment note_commitment = 2;
+  // If set to true, waits to return until the requested note is detected.
+  bool await_detection = 3;
+}
+
+message NoteByCommitmentResponse {
+  SpendableNoteRecord spendable_note = 1;
+}
+
+message SwapByCommitmentRequest {
+  crypto.tct.v1.StateCommitment swap_commitment = 2;
+  // If set to true, waits to return until the requested swap is detected.
+  bool await_detection = 3;
+}
+
+message SwapByCommitmentResponse {
+  SwapRecord swap = 1;
+}
+
+message UnclaimedSwapsRequest {}
+
+message UnclaimedSwapsResponse {
+  SwapRecord swap = 1;
+}
+
+message NullifierStatusRequest {
+  core.component.sct.v1.Nullifier nullifier = 2;
+  bool await_detection = 3;
+}
+
+message NullifierStatusResponse {
+  bool spent = 1;
+}
+
+message TransactionInfoByHashRequest {
+  // The transaction hash to query for.
+  core.txhash.v1.TransactionId id = 2;
+}
+
+message TransactionInfoRequest {
+  // If present, return only transactions after this height.
+  uint64 start_height = 1;
+  // If present, return only transactions before this height.
+  uint64 end_height = 2;
+}
+
+message TransactionInfo {
+  // The height the transaction was included in a block, if known.
+  uint64 height = 1;
+  // The hash of the transaction.
+  core.txhash.v1.TransactionId id = 2;
+  // The transaction data itself.
+  core.transaction.v1.Transaction transaction = 3;
+  // The transaction perspective, as seen by this view server.
+  core.transaction.v1.TransactionPerspective perspective = 4;
+  // A precomputed transaction view of `transaction` from `perspective`, included for convenience of clients that don't have support for viewing transactions on their own.
+  core.transaction.v1.TransactionView view = 5;
+}
+
+message TransactionInfoResponse {
+  TransactionInfo tx_info = 1;
+}
+
+message TransactionInfoByHashResponse {
+  TransactionInfo tx_info = 1;
+}
+
+message NotesResponse {
+  SpendableNoteRecord note_record = 1;
+}
+
+message NotesForVotingResponse {
+  SpendableNoteRecord note_record = 1;
+  core.keys.v1.IdentityKey identity_key = 2;
+}
+
+// A note plaintext with associated metadata about its status.
+message SpendableNoteRecord {
+  // The note commitment, identifying the note.
+  crypto.tct.v1.StateCommitment note_commitment = 1;
+  // The note plaintext itself.
+  core.component.shielded_pool.v1.Note note = 2;
+  // A precomputed decryption of the note's address incore.component.dex.v1.
+  core.keys.v1.AddressIndex address_index = 3;
+  // The note's nullifier.
+  core.component.sct.v1.Nullifier nullifier = 4;
+  // The height at which the note was created.
+  uint64 height_created = 5;
+  // Records whether the note was spent (and if so, at what height).
+  uint64 height_spent = 6;
+  // The note position.
+  uint64 position = 7;
+  // The source of the note
+  core.component.sct.v1.CommitmentSource source = 8;
+  // The sender's return address, if known.
+  core.keys.v1.AddressView return_address = 9;
+}
+
+message SwapRecord {
+  crypto.tct.v1.StateCommitment swap_commitment = 1;
+  core.component.dex.v1.SwapPlaintext swap = 2;
+  uint64 position = 3;
+  core.component.sct.v1.Nullifier nullifier = 4;
+  core.component.dex.v1.BatchSwapOutputData output_data = 5;
+  uint64 height_claimed = 6;
+  core.component.sct.v1.CommitmentSource source = 7;
+}
+
+message OwnedPositionIdsRequest {
+  // If present, return only positions with this position state.
+  core.component.dex.v1.PositionState position_state = 1;
+  // If present, return only positions for this trading pair.
+  core.component.dex.v1.TradingPair trading_pair = 2;
+}
+
+message OwnedPositionIdsResponse {
+  core.component.dex.v1.PositionId position_id = 1;
+}
+
+// Requests information on an asset by asset id
+message AssetMetadataByIdRequest {
+  // The asset id to request information on.
+  core.asset.v1.AssetId asset_id = 2;
+}
+
+message AssetMetadataByIdResponse {
+  // If present, information on the requested asset.
+  //
+  // If the requested asset was unknown, this field will not be present.
+  core.asset.v1.Metadata denom_metadata = 1;
+}

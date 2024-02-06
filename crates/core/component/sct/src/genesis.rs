@@ -1,5 +1,5 @@
 use anyhow::Context;
-use penumbra_proto::{penumbra::core::component::sct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::sct::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::params::SctParameters;

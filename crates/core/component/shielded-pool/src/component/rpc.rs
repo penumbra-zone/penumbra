@@ -1,6 +1,6 @@
 use cnidarium::Storage;
 use penumbra_asset::asset;
-use penumbra_proto::core::component::shielded_pool::v1alpha1::{
+use penumbra_proto::core::component::shielded_pool::v1::{
     query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
 };
 

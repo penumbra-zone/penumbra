@@ -2,9 +2,9 @@ use anyhow::Context;
 use futures::{FutureExt, TryStreamExt};
 use penumbra_fee::GasPrices;
 use penumbra_proto::{
-    util::tendermint_proxy::v1alpha1::tendermint_proxy_service_client::TendermintProxyServiceClient,
-    view::v1alpha1::broadcast_transaction_response::Status as BroadcastStatus,
-    view::v1alpha1::GasPricesRequest, DomainType,
+    util::tendermint_proxy::v1::tendermint_proxy_service_client::TendermintProxyServiceClient,
+    view::v1::broadcast_transaction_response::Status as BroadcastStatus,
+    view::v1::GasPricesRequest, DomainType,
 };
 use penumbra_transaction::{
     gas::GasCost, plan::TransactionPlan, txhash::TransactionId, Transaction,

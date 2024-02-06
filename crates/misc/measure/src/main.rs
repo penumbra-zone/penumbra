@@ -7,11 +7,11 @@ use tracing_subscriber::EnvFilter;
 
 use penumbra_compact_block::CompactBlock;
 use penumbra_proto::{
-    penumbra::core::component::compact_block::v1alpha1::{
+    penumbra::core::component::compact_block::v1::{
         query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
         CompactBlockRangeRequest,
     },
-    penumbra::util::tendermint_proxy::v1alpha1::{
+    penumbra::util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
     Message,

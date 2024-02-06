@@ -1,9 +1,9 @@
 // Autogen code isn't clippy clean:
 #[allow(clippy::unwrap_used)]
 pub mod proto {
-    pub mod v1alpha1 {
-        include!("gen/penumbra.cnidarium.v1alpha1.rs");
-        include!("gen/penumbra.cnidarium.v1alpha1.serde.rs");
+    pub mod v1 {
+        include!("gen/penumbra.cnidarium.v1.rs");
+        include!("gen/penumbra.cnidarium.v1.serde.rs");
     }
 
     // https://github.com/penumbra-zone/penumbra/issues/3038#issuecomment-1722534133
@@ -22,7 +22,7 @@ impl Server {
 use std::pin::Pin;
 
 use crate::read::StateRead;
-use crate::rpc::proto::v1alpha1::{
+use crate::rpc::proto::v1::{
     key_value_response::Value, query_service_server::QueryService, watch_response as wr,
     KeyValueRequest, KeyValueResponse, PrefixValueRequest, PrefixValueResponse, WatchRequest,
     WatchResponse,

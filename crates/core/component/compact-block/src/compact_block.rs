@@ -4,8 +4,8 @@ use anyhow::Result;
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
 use penumbra_fee::GasPrices;
 use penumbra_proto::{
-    core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
-    penumbra::core::component::compact_block::v1alpha1 as pb, DomainType,
+    core::component::compact_block::v1::CompactBlockRangeResponse,
+    penumbra::core::component::compact_block::v1 as pb, DomainType,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::fmd;

@@ -13,7 +13,7 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::app::v1alpha1::{
+    core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
     DomainType,
@@ -834,7 +834,7 @@ impl Storage {
         };
 
         // If set, only return notes with the specified asset id.
-        // core.crypto.v1alpha1.AssetId asset_id = 3;
+        // core.crypto.v1.AssetId asset_id = 3;
         let asset_clause = asset_id
             .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
             .unwrap_or_else(|| "asset_id".to_string());

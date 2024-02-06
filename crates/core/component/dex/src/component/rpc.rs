@@ -6,7 +6,7 @@ use cnidarium::{StateDelta, Storage};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
-    core::component::dex::v1alpha1::{
+    core::component::dex::v1::{
         query_service_server::QueryService, simulate_trade_request::routing,
         simulate_trade_request::routing::Setting, simulate_trade_request::Routing,
         simulation_service_server::SimulationService, ArbExecutionRequest, ArbExecutionResponse,
@@ -469,11 +469,9 @@ impl QueryService for Server {
             }
         };
         Ok(tonic::Response::new(
-            s.map_ok(
-                |p: penumbra_proto::core::component::dex::v1alpha1::Position| {
-                    LiquidityPositionsByIdResponse { data: Some(p) }
-                },
-            )
+            s.map_ok(|p: penumbra_proto::core::component::dex::v1::Position| {
+                LiquidityPositionsByIdResponse { data: Some(p) }
+            })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!(
                     "error getting position value from storage: {e}"

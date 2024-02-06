@@ -3,16 +3,16 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
 use penumbra_proto::{
-    core::app::v1alpha1::{
+    core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    core::component::sct::v1alpha1::{
+    core::component::sct::v1::{
         query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
     },
-    core::component::stake::v1alpha1::{
+    core::component::stake::v1::{
         query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
     },
-    util::tendermint_proxy::v1alpha1::{
+    util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
 };

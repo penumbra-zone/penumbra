@@ -1,6 +1,6 @@
 use anyhow::Error;
 use penumbra_fee::Fee;
-use penumbra_proto::core::transaction::v1alpha1 as pbt;
+use penumbra_proto::core::transaction::v1 as pbt;
 use penumbra_proto::DomainType;
 use penumbra_txhash::{EffectHash, EffectingData};
 

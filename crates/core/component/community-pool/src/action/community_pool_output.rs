@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::Address;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 use penumbra_txhash::{EffectHash, EffectingData};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

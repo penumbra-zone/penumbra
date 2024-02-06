@@ -4,8 +4,7 @@ use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::component::dex::v1alpha1 as pbc, penumbra::core::component::dex::v1alpha1 as pb,
-    DomainType,
+    core::component::dex::v1 as pbc, penumbra::core::component::dex::v1 as pb, DomainType,
 };
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};

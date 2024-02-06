@@ -4,7 +4,7 @@ use async_stream::try_stream;
 use cnidarium::Storage;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_proto::{
-    core::component::stake::v1alpha1::{
+    core::component::stake::v1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
         CurrentValidatorRateResponse, ValidatorInfoRequest, ValidatorInfoResponse,
         ValidatorPenaltyRequest, ValidatorPenaltyResponse, ValidatorStatusRequest,
