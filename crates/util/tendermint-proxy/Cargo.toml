@@ -16,7 +16,7 @@ chrono = { version = "0.4", default-features = false, features = ["serde"] }
 futures = "0.3"
 hex = "0.4"
 http = "0.2"
-metrics = "0.19.0"
+metrics = "0.22"
 pbjson-types = "0.6"
 pin-project = "1"
 pin-project-lite = "0.2.9"

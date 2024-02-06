@@ -21,7 +21,6 @@ pub fn register_metrics() {
     // This will register metrics for all components.
     penumbra_app::register_metrics();
 
-    register_counter!(MEMPOOL_CHECKTX_TOTAL);
     describe_counter!(
         MEMPOOL_CHECKTX_TOTAL,
         Unit::Count,

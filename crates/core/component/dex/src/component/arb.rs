@@ -129,10 +129,8 @@ pub trait Arbitrage: StateWrite + Sized {
                 },
             },
         );
-        metrics::histogram!(
-            crate::component::metrics::DEX_ARB_DURATION,
-            arb_start.elapsed()
-        );
+        metrics::histogram!(crate::component::metrics::DEX_ARB_DURATION)
+            .record(arb_start.elapsed());
         return Ok(Value {
             amount: arb_profit,
             asset_id: arb_token,

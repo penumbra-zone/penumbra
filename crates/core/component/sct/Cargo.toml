@@ -35,7 +35,7 @@ ark-r1cs-std = { version = "0.4", default-features = false }
 ark-relations = "0.4"
 ark-ff = { version = "0.4", default_features = false }
 ark-serialize = "0.4"
-metrics = "0.19.0"
+metrics = "0.22"
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
 anyhow = "1"

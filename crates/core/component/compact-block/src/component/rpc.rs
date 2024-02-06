@@ -143,7 +143,7 @@ impl QueryService for Server {
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
                     tx_blocks.send(Ok(compact_block.into())).await?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
 
                 // If the client didn't request a keep-alive, we're done.
@@ -175,7 +175,7 @@ impl QueryService for Server {
                         .send(Ok(block.into()))
                         .await
                         .map_err(|_| tonic::Status::cancelled("client closed connection"))?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
 
                 // Ensure that we don't hold a reference to the snapshot indefinitely
@@ -204,7 +204,7 @@ impl QueryService for Server {
                         .send(Ok(block.into()))
                         .await
                         .map_err(|_| tonic::Status::cancelled("channel closed"))?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
             }
             .map_err(|e| async move {
@@ -240,13 +240,13 @@ struct CompactBlockConnectionCounter {}
 
 impl CompactBlockConnectionCounter {
     pub fn new() -> Self {
-        metrics::increment_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
+        metrics::gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS).increment(1.0);
         CompactBlockConnectionCounter {}
     }
 }
 
 impl Drop for CompactBlockConnectionCounter {
     fn drop(&mut self) {
-        metrics::decrement_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
+        metrics::gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS).decrement(1.0);
     }
 }

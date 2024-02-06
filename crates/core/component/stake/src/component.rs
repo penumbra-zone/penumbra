@@ -206,7 +206,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
                 // Finally, set the validator to be active.
                 self.put(state_key, Active);
 
-                metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string());
 
                 tracing::debug!(validator_identity = %identity_key, voting_power = ?power, "validator has become active");
             }
@@ -229,7 +229,7 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
                 self.put(state_key, new_state);
 
-                metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string());
             }
             (Jailed, Inactive) => {
                 // After getting jailed, a validator can be released from jail when its operator
@@ -353,20 +353,20 @@ pub(crate) trait StakingImpl: StateWriteExt {
 
         // Update the validator metrics once the state transition has been applied.
         match old_state {
-            Defined => metrics::decrement_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
-            Inactive => metrics::decrement_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => metrics::decrement_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => metrics::decrement_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => metrics::decrement_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => metrics::decrement_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+            Defined => metrics::gauge!(metrics::DEFINED_VALIDATORS).decrement(1.0),
+            Inactive => metrics::gauge!(metrics::INACTIVE_VALIDATORS).decrement(1.0),
+            Active => metrics::gauge!(metrics::ACTIVE_VALIDATORS).decrement(1.0),
+            Disabled => metrics::gauge!(metrics::DISABLED_VALIDATORS).decrement(1.0),
+            Jailed => metrics::gauge!(metrics::JAILED_VALIDATORS).decrement(1.0),
+            Tombstoned => metrics::gauge!(metrics::TOMBSTONED_VALIDATORS).decrement(1.0),
         };
         match new_state {
-            Defined => metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0),
-            Inactive => metrics::increment_gauge!(metrics::INACTIVE_VALIDATORS, 1.0),
-            Active => metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0),
-            Disabled => metrics::increment_gauge!(metrics::DISABLED_VALIDATORS, 1.0),
-            Jailed => metrics::increment_gauge!(metrics::JAILED_VALIDATORS, 1.0),
-            Tombstoned => metrics::increment_gauge!(metrics::TOMBSTONED_VALIDATORS, 1.0),
+            Defined => metrics::gauge!(metrics::DEFINED_VALIDATORS).increment(1.0),
+            Inactive => metrics::gauge!(metrics::INACTIVE_VALIDATORS).increment(1.0),
+            Active => metrics::gauge!(metrics::ACTIVE_VALIDATORS).increment(1.0),
+            Disabled => metrics::gauge!(metrics::DISABLED_VALIDATORS).increment(1.0),
+            Jailed => metrics::gauge!(metrics::JAILED_VALIDATORS).increment(1.0),
+            Tombstoned => metrics::gauge!(metrics::TOMBSTONED_VALIDATORS).increment(1.0),
         };
 
         Ok(())
@@ -934,7 +934,8 @@ pub(crate) trait StakingImpl: StateWriteExt {
                     ?params.missed_blocks_maximum,
                     "recorded vote info"
                 );
-                metrics::gauge!(metrics::MISSED_BLOCKS, uptime.num_missed_blocks() as f64, "identity_key" => identity_key.to_string());
+                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
+                    .increment(uptime.num_missed_blocks() as f64);
 
                 uptime.mark_height_as_signed(height, voted)?;
                 if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
@@ -1697,15 +1698,15 @@ pub trait StateWriteExt: StateWrite {
         // Finally, update metrics for the new validator.
         match initial_state {
             validator::State::Active => {
-                metrics::increment_gauge!(metrics::ACTIVE_VALIDATORS, 1.0);
+                metrics::gauge!(metrics::ACTIVE_VALIDATORS).increment(1.0);
             }
             validator::State::Defined => {
-                metrics::increment_gauge!(metrics::DEFINED_VALIDATORS, 1.0);
+                metrics::gauge!(metrics::DEFINED_VALIDATORS).increment(1.0);
             }
             _ => unreachable!("the initial state was validated by the guard condition"),
         };
 
-        metrics::gauge!(metrics::MISSED_BLOCKS, 0.0, "identity_key" => id.to_string());
+        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => id.to_string());
 
         Ok(())
     }
