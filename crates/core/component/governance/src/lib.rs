@@ -34,7 +34,7 @@ pub mod voting_receipt_token;
 pub use proposal_nft::ProposalNft;
 pub use voting_receipt_token::VotingReceiptToken;
 
-pub(crate) mod event;
+pub mod event;
 
 mod metrics;
 pub use crate::metrics::register_metrics;

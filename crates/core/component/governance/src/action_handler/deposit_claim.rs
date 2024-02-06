@@ -3,10 +3,12 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::action_handler::ActionHandler;
 use crate::component::{StateReadExt as _, StateWriteExt as _};
+use crate::event;
 use crate::{
     proposal_state::Outcome, proposal_state::State as ProposalState, ProposalDepositClaim,
     ProposalNft,
@@ -67,6 +69,8 @@ impl ActionHandler for ProposalDepositClaim {
 
             // Set the proposal state to claimed
             state.put_proposal_state(*proposal, ProposalState::Claimed { outcome });
+
+            state.record_proto(event::proposal_deposit_claim(self));
         } else {
             anyhow::bail!("proposal {} is not in finished state", proposal);
         }

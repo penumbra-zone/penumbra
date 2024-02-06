@@ -6,10 +6,11 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use decaf377::Fr;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
+use penumbra_proto::StateWriteProto as _;
 use penumbra_txhash::TransactionContext;
 
 use crate::{
-    DelegatorVote, DelegatorVoteBody, DelegatorVoteProofPublic,
+    event, DelegatorVote, DelegatorVoteBody, DelegatorVoteProofPublic,
     {component::StateWriteExt, StateReadExt},
 };
 use cnidarium_component::ActionHandler;
@@ -109,6 +110,8 @@ impl ActionHandler for DelegatorVote {
         state
             .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)
             .await?;
+
+        state.record_proto(event::delegator_vote(self));
 
         Ok(())
     }

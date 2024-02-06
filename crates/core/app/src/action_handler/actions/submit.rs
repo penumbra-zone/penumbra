@@ -13,7 +13,7 @@ use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_community_pool::component::StateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::SupplyWrite;
@@ -27,6 +27,7 @@ use crate::community_pool_ext::CommunityPoolStateWriteExt;
 use crate::params::AppParameters;
 use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
+    event,
     proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
     ProposalNft, ProposalSubmit, VotingReceiptToken,
@@ -305,6 +306,8 @@ impl ActionHandler for ProposalSubmit {
         // Since there was a proposal submitted, ensure we track this so that clients can retain
         // state needed to vote as delegators
         state.mark_proposal_started();
+
+        state.record_proto(event::proposal_submit(self));
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 
