@@ -11,13 +11,13 @@ use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     self as proto,
     core::{
-        app::v1alpha1::query_service_client::QueryServiceClient as AppQueryServiceClient,
+        app::v1::query_service_client::QueryServiceClient as AppQueryServiceClient,
         component::{
-            compact_block::v1alpha1::{
+            compact_block::v1::{
                 query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
                 CompactBlockRangeRequest,
             },
-            shielded_pool::v1alpha1::{
+            shielded_pool::v1::{
                 query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
                 AssetMetadataByIdRequest,
             },
@@ -26,7 +26,7 @@ use penumbra_proto::{
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use proto::core::app::v1alpha1::TransactionsByHeightRequest;
+use proto::core::app::v1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use url::Url;
@@ -435,16 +435,14 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::{
-        cnidarium::v1alpha1::query_service_client::QueryServiceClient, DomainType,
-    };
+    use penumbra_proto::{cnidarium::v1::query_service_client::QueryServiceClient, DomainType};
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
     tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
-        .key_value(penumbra_proto::cnidarium::v1alpha1::KeyValueRequest {
+        .key_value(penumbra_proto::cnidarium::v1::KeyValueRequest {
             key: sct_state_key::tree::anchor_by_height(height),
             ..Default::default()
         })

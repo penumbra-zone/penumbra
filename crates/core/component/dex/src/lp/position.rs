@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context};
 use penumbra_asset::asset;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::component::dex::v1alpha1 as pb, serializers::bech32str, DomainType,
+    penumbra::core::component::dex::v1 as pb, serializers::bech32str, DomainType,
 };
 use rand_core::CryptoRngCore;
 use serde::{Deserialize, Serialize};

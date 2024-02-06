@@ -18,7 +18,7 @@ use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
-use penumbra_proto::core::app::v1alpha1::TransactionsByHeightResponse;
+use penumbra_proto::core::app::v1::TransactionsByHeightResponse;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::sct::Sct;
@@ -728,7 +728,7 @@ pub trait StateWriteExt: StateWrite {
     async fn put_block_transaction(
         &mut self,
         height: u64,
-        transaction: penumbra_proto::core::transaction::v1alpha1::Transaction,
+        transaction: penumbra_proto::core::transaction::v1::Transaction,
     ) -> Result<()> {
         // Extend the existing transactions with the new one.
         let mut transactions_response = self.transactions_by_height(height).await?;

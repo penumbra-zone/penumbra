@@ -4,7 +4,7 @@ use ark_ff::{UniformRand, Zero};
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 

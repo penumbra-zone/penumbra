@@ -33,16 +33,16 @@ use penumbra_keys::{
     Address,
 };
 use penumbra_num::Amount;
-use penumbra_proto::view::v1alpha1::broadcast_transaction_response::{BroadcastSuccess, Confirmed};
-use penumbra_proto::view::v1alpha1::BroadcastTransactionResponse;
-use penumbra_proto::view::v1alpha1::{WalletIdRequest, WalletIdResponse};
+use penumbra_proto::view::v1::broadcast_transaction_response::{BroadcastSuccess, Confirmed};
+use penumbra_proto::view::v1::BroadcastTransactionResponse;
+use penumbra_proto::view::v1::{WalletIdRequest, WalletIdResponse};
 use penumbra_proto::{
-    util::tendermint_proxy::v1alpha1::{
+    util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
-    view::v1alpha1::broadcast_transaction_response::Status as BroadcastStatus,
-    view::v1alpha1::{
+    view::v1::broadcast_transaction_response::Status as BroadcastStatus,
+    view::v1::{
         self as pb,
         view_service_client::ViewServiceClient,
         view_service_server::{ViewService, ViewServiceServer},

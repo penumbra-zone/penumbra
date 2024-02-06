@@ -9,7 +9,7 @@ use ibc_proto::ibc::core::connection::v1::{QueryConnectionRequest, QueryConnecti
 use ibc_types::core::channel::ChannelEnd;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 
-use penumbra_proto::cnidarium::v1alpha1::{
+use penumbra_proto::cnidarium::v1::{
     query_service_client::QueryServiceClient as StorageQueryServiceClient, KeyValueRequest,
 };
 use penumbra_proto::DomainType;

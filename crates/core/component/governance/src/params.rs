@@ -1,6 +1,6 @@
 use anyhow::Context;
 use penumbra_num::Amount;
-use penumbra_proto::core::component::governance::v1alpha1 as pb;
+use penumbra_proto::core::component::governance::v1 as pb;
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 

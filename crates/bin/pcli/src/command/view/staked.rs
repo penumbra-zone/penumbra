@@ -7,7 +7,7 @@ use tonic::transport::Channel;
 
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::component::stake::v1alpha1::{
+use penumbra_proto::core::component::stake::v1::{
     query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
 };
 use penumbra_stake::{validator, DelegationToken};

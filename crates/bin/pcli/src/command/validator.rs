@@ -13,7 +13,7 @@ use penumbra_governance::{
 };
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{
-    core::component::stake::v1alpha1::Validator as ProtoValidator, DomainType, Message,
+    core::component::stake::v1::Validator as ProtoValidator, DomainType, Message,
 };
 use penumbra_stake::{
     validator,

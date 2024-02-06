@@ -1,7 +1,7 @@
 use decaf377::Bls12_377;
 
 use ark_groth16::{PreparedVerifyingKey, ProvingKey};
-use penumbra_proto::{core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::stake::v1 as pb, DomainType};
 
 use decaf377::{Fq, Fr};
 use penumbra_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};

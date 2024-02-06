@@ -1,0 +1,10 @@
+syntax = "proto3";
+package penumbra.core.component.funding.v1;
+
+// Funding component configuration data.
+message FundingParameters {}
+
+// Genesis data for the funding component.
+message GenesisContent {
+  FundingParameters funding_params = 1;
+}

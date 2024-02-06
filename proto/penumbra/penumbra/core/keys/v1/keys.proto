@@ -1,0 +1,75 @@
+syntax = "proto3";
+package penumbra.core.keys.v1;
+
+// A Penumbra address. An address in Penumbra is a Bech32m-encoded
+// string, with the human-readable prefix (HRP) `penumbrav2t`.
+message Address {
+  // The bytes of the address. Must be represented as a series of
+  // `uint8` (i.e. values 0 through 255), with a length of 80 elements.
+  bytes inner = 1;
+
+  // Alternatively, a Bech32m-encoded string representation of the `inner`
+  // bytes.
+  //
+  // NOTE: implementations are not required to support parsing this field.
+  // Implementations should prefer to encode the bytes in all messages they
+  // produce. Implementations must not accept messages with both `inner` and
+  // `alt_bech32m` set.
+  string alt_bech32m = 2;
+}
+
+message AddressView {
+  // A decoded address, with information about the address index and wallet ID visible.
+  message Decoded {
+    Address address = 1;
+    AddressIndex index = 2;
+    WalletId wallet_id = 3;
+  }
+  // An opaque address, with no information about the address index or wallet ID visible.
+  message Opaque {
+    Address address = 1;
+  }
+  oneof address_view {
+    Decoded decoded = 1;
+    Opaque opaque = 2;
+  }
+}
+
+message PayloadKey {
+  bytes inner = 1;
+}
+
+message SpendKey {
+  bytes inner = 1;
+}
+
+message FullViewingKey {
+  bytes inner = 1;
+}
+
+message WalletId {
+  bytes inner = 1;
+}
+
+message Diversifier {
+  bytes inner = 1;
+}
+
+message AddressIndex {
+  uint32 account = 2;
+  bytes randomizer = 3;
+}
+
+// A validator's identity key (decaf377-rdsa spendauth verification key).
+message IdentityKey {
+  bytes ik = 1;
+}
+
+// A validator's governance key (decaf377-rdsa spendauth verification key).
+message GovernanceKey {
+  bytes gk = 1;
+}
+
+message ConsensusKey {
+  bytes inner = 1;
+}

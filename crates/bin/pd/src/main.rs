@@ -24,8 +24,8 @@ use pd::{
     },
 };
 use penumbra_app::{PenumbraHost, SUBSTORE_PREFIXES};
-use penumbra_proto::core::component::dex::v1alpha1::simulation_service_server::SimulationServiceServer;
-use penumbra_proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyServiceServer;
+use penumbra_proto::core::component::dex::v1::simulation_service_server::SimulationServiceServer;
+use penumbra_proto::util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_tendermint_proxy::TendermintProxy;
 use penumbra_tower_trace::remote_addr;
 use rand::Rng;
@@ -183,17 +183,17 @@ async fn main() -> anyhow::Result<()> {
             // its components' query services into a single `Routes` and then
             // just add that to the gRPC server.
 
-            use cnidarium::rpc::proto::v1alpha1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
+            use cnidarium::rpc::proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
             use penumbra_proto::core::{
-                app::v1alpha1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+                app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
                 component::{
-                    compact_block::v1alpha1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
-                    dex::v1alpha1::query_service_server::QueryServiceServer as DexQueryServiceServer,
-                    fee::v1alpha1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
-                    governance::v1alpha1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
-                    sct::v1alpha1::query_service_server::QueryServiceServer as SctQueryServiceServer,
-                    shielded_pool::v1alpha1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
-                    stake::v1alpha1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+                    compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                    dex::v1::query_service_server::QueryServiceServer as DexQueryServiceServer,
+                    fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
+                    governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                    sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                    shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                    stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
                 },
             };
             use tonic_web::enable as we;

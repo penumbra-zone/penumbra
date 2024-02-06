@@ -10,12 +10,10 @@ use directories::ProjectDirs;
 use penumbra_custody::soft_kms::SoftKms;
 use penumbra_proto::box_grpc_svc;
 use penumbra_proto::{
-    custody::v1alpha1::{
+    custody::v1::{
         custody_service_client::CustodyServiceClient, custody_service_server::CustodyServiceServer,
     },
-    view::v1alpha1::{
-        view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
-    },
+    view::v1::{view_service_client::ViewServiceClient, view_service_server::ViewServiceServer},
 };
 use penumbra_view::ViewServer;
 use tracing_subscriber::EnvFilter;

@@ -34,24 +34,24 @@ use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
-        dex::v1alpha1::{
+        dex::v1::{
             query_service_client::QueryServiceClient as DexQueryServiceClient,
             LiquidityPositionByIdRequest, PositionId,
         },
-        governance::v1alpha1::{
+        governance::v1::{
             query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
             NextProposalIdRequest, ProposalDataRequest, ProposalInfoRequest, ProposalInfoResponse,
             ProposalRateDataRequest,
         },
-        sct::v1alpha1::{
+        sct::v1::{
             query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
         },
-        stake::v1alpha1::{
+        stake::v1::{
             query_service_client::QueryServiceClient as StakeQueryServiceClient,
             ValidatorPenaltyRequest,
         },
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;

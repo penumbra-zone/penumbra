@@ -3,7 +3,7 @@ use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 use serde::{Deserialize, Serialize};

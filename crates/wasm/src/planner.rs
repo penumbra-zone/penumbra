@@ -26,8 +26,8 @@ use penumbra_governance::{
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proto::core::keys::v1alpha1::AddressIndex;
-use penumbra_proto::view::v1alpha1::{NotesForVotingRequest, NotesRequest};
+use penumbra_proto::core::keys::v1::AddressIndex;
+use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{fmd, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator};
 use penumbra_stake::{IdentityKey, UndelegateClaimPlan};

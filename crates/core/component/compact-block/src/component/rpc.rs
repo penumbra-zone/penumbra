@@ -3,7 +3,7 @@ use std::pin::Pin;
 use anyhow::bail;
 use cnidarium::Storage;
 use futures::{StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_proto::core::component::compact_block::v1alpha1::{
+use penumbra_proto::core::component::compact_block::v1::{
     query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
     CompactBlockRequest, CompactBlockResponse,
 };

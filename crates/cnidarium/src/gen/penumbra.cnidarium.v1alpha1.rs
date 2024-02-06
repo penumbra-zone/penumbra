@@ -13,9 +13,9 @@ pub struct KeyValueRequest {
 }
 impl ::prost::Name for KeyValueRequest {
     const NAME: &'static str = "KeyValueRequest";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -40,19 +40,19 @@ pub mod key_value_response {
     }
     impl ::prost::Name for Value {
         const NAME: &'static str = "Value";
-        const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.cnidarium.v1alpha1.KeyValueResponse.{}", Self::NAME
+                "penumbra.cnidarium.v1.KeyValueResponse.{}", Self::NAME
             )
         }
     }
 }
 impl ::prost::Name for KeyValueResponse {
     const NAME: &'static str = "KeyValueResponse";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 /// Performs a prefixed key-value query, by string prefix.
@@ -65,9 +65,9 @@ pub struct PrefixValueRequest {
 }
 impl ::prost::Name for PrefixValueRequest {
     const NAME: &'static str = "PrefixValueRequest";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -80,9 +80,9 @@ pub struct PrefixValueResponse {
 }
 impl ::prost::Name for PrefixValueResponse {
     const NAME: &'static str = "PrefixValueResponse";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 /// Requests a stream of new key-value pairs that have been committed to the state.
@@ -106,9 +106,9 @@ pub struct WatchRequest {
 }
 impl ::prost::Name for WatchRequest {
     const NAME: &'static str = "WatchRequest";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 /// A key-value pair that has been committed to the state.
@@ -139,10 +139,10 @@ pub mod watch_response {
     }
     impl ::prost::Name for KeyValue {
         const NAME: &'static str = "KeyValue";
-        const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.cnidarium.v1alpha1.WatchResponse.{}", Self::NAME
+                "penumbra.cnidarium.v1.WatchResponse.{}", Self::NAME
             )
         }
     }
@@ -161,10 +161,10 @@ pub mod watch_response {
     }
     impl ::prost::Name for NvKeyValue {
         const NAME: &'static str = "NvKeyValue";
-        const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+        const PACKAGE: &'static str = "penumbra.cnidarium.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
-                "penumbra.cnidarium.v1alpha1.WatchResponse.{}", Self::NAME
+                "penumbra.cnidarium.v1.WatchResponse.{}", Self::NAME
             )
         }
     }
@@ -180,9 +180,9 @@ pub mod watch_response {
 }
 impl ::prost::Name for WatchResponse {
     const NAME: &'static str = "WatchResponse";
-    const PACKAGE: &'static str = "penumbra.cnidarium.v1alpha1";
+    const PACKAGE: &'static str = "penumbra.cnidarium.v1";
     fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.cnidarium.v1alpha1.{}", Self::NAME)
+        ::prost::alloc::format!("penumbra.cnidarium.v1.{}", Self::NAME)
     }
 }
 /// Generated client implementations.
@@ -291,13 +291,13 @@ pub mod query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.cnidarium.v1alpha1.QueryService/KeyValue",
+                "/penumbra.cnidarium.v1.QueryService/KeyValue",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "penumbra.cnidarium.v1alpha1.QueryService",
+                        "penumbra.cnidarium.v1.QueryService",
                         "KeyValue",
                     ),
                 );
@@ -323,13 +323,13 @@ pub mod query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.cnidarium.v1alpha1.QueryService/PrefixValue",
+                "/penumbra.cnidarium.v1.QueryService/PrefixValue",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new(
-                        "penumbra.cnidarium.v1alpha1.QueryService",
+                        "penumbra.cnidarium.v1.QueryService",
                         "PrefixValue",
                     ),
                 );
@@ -354,12 +354,12 @@ pub mod query_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/penumbra.cnidarium.v1alpha1.QueryService/Watch",
+                "/penumbra.cnidarium.v1.QueryService/Watch",
             );
             let mut req = request.into_request();
             req.extensions_mut()
                 .insert(
-                    GrpcMethod::new("penumbra.cnidarium.v1alpha1.QueryService", "Watch"),
+                    GrpcMethod::new("penumbra.cnidarium.v1.QueryService", "Watch"),
                 );
             self.inner.server_streaming(req, path, codec).await
         }
@@ -488,7 +488,7 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/penumbra.cnidarium.v1alpha1.QueryService/KeyValue" => {
+                "/penumbra.cnidarium.v1.QueryService/KeyValue" => {
                     #[allow(non_camel_case_types)]
                     struct KeyValueSvc<T: QueryService>(pub Arc<T>);
                     impl<
@@ -534,7 +534,7 @@ pub mod query_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.cnidarium.v1alpha1.QueryService/PrefixValue" => {
+                "/penumbra.cnidarium.v1.QueryService/PrefixValue" => {
                     #[allow(non_camel_case_types)]
                     struct PrefixValueSvc<T: QueryService>(pub Arc<T>);
                     impl<
@@ -581,7 +581,7 @@ pub mod query_service_server {
                     };
                     Box::pin(fut)
                 }
-                "/penumbra.cnidarium.v1alpha1.QueryService/Watch" => {
+                "/penumbra.cnidarium.v1.QueryService/Watch" => {
                     #[allow(non_camel_case_types)]
                     struct WatchSvc<T: QueryService>(pub Arc<T>);
                     impl<
@@ -666,6 +666,6 @@ pub mod query_service_server {
         }
     }
     impl<T: QueryService> tonic::server::NamedService for QueryServiceServer<T> {
-        const NAME: &'static str = "penumbra.cnidarium.v1alpha1.QueryService";
+        const NAME: &'static str = "penumbra.cnidarium.v1.QueryService";
     }
 }

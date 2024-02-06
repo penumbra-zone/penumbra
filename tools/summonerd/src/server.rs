@@ -1,5 +1,5 @@
 use penumbra_keys::Address;
-use penumbra_proto::penumbra::tools::summoning::v1alpha1::{
+use penumbra_proto::penumbra::tools::summoning::v1::{
     self as pb, ceremony_coordinator_service_server as server,
     participate_request::{Identify, Msg},
 };

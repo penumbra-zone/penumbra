@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]

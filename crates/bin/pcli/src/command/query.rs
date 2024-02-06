@@ -118,7 +118,7 @@ impl QueryCmd {
 
         // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
         if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
-            use penumbra_proto::core::component::compact_block::v1alpha1::{
+            use penumbra_proto::core::component::compact_block::v1::{
                 query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
                 CompactBlockRequest,
             };
@@ -150,10 +150,10 @@ impl QueryCmd {
             QueryCmd::Key { key } => key.clone(),
         };
 
-        use penumbra_proto::cnidarium::v1alpha1::query_service_client::QueryServiceClient;
+        use penumbra_proto::cnidarium::v1::query_service_client::QueryServiceClient;
         let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
-        let req = penumbra_proto::cnidarium::v1alpha1::KeyValueRequest {
+        let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
             key: key.clone(),
             ..Default::default()
         };
@@ -210,12 +210,12 @@ impl QueryCmd {
 // this code (not just this function, the whole module) is pretty shitty,
 // but that's maybe okay for the moment. it exists to consume the rpc.
 async fn watch(key_regex: String, nv_key_regex: String, app: &mut App) -> Result<()> {
-    use penumbra_proto::cnidarium::v1alpha1::{
+    use penumbra_proto::cnidarium::v1::{
         query_service_client::QueryServiceClient, watch_response as wr,
     };
     let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
-    let req = penumbra_proto::cnidarium::v1alpha1::WatchRequest {
+    let req = penumbra_proto::cnidarium::v1::WatchRequest {
         key_regex,
         nv_key_regex,
     };

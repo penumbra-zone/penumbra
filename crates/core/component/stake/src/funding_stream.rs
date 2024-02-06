@@ -1,6 +1,6 @@
 use penumbra_keys::Address;
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::rate::{BaseRateData, FP_SCALING_FACTOR};

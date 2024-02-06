@@ -1,4 +1,4 @@
-use penumbra_proto::{custody::v1alpha1 as pb, DomainType};
+use penumbra_proto::{custody::v1 as pb, DomainType};
 use penumbra_transaction::plan::TransactionPlan;
 use serde::{Deserialize, Serialize};
 

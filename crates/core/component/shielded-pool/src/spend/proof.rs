@@ -18,7 +18,7 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 

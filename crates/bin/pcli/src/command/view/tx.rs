@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use penumbra_proto::{util::tendermint_proxy::v1alpha1::GetTxRequest, DomainType};
+use penumbra_proto::{util::tendermint_proxy::v1::GetTxRequest, DomainType};
 use penumbra_transaction::Transaction;
 use penumbra_view::{TransactionInfo, ViewClient};
 

@@ -6,7 +6,7 @@ use penumbra_asset::{
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::component::ibc::v1alpha1::{self as pb, FungibleTokenPacketData},
+    penumbra::core::component::ibc::v1::{self as pb, FungibleTokenPacketData},
     DomainType,
 };
 use penumbra_txhash::{EffectHash, EffectingData};

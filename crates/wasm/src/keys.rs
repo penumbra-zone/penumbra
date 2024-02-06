@@ -11,7 +11,7 @@ use penumbra_proof_params::{
     NULLIFIER_DERIVATION_PROOF_PROVING_KEY, OUTPUT_PROOF_PROVING_KEY, SPEND_PROOF_PROVING_KEY,
     SWAPCLAIM_PROOF_PROVING_KEY, SWAP_PROOF_PROVING_KEY,
 };
-use penumbra_proto::{core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{core::keys::v1 as pb, serializers::bech32str, DomainType};
 use wasm_bindgen_futures::js_sys::Uint8Array;
 
 use crate::error::WasmResult;

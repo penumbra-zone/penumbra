@@ -1,7 +1,7 @@
 use std::{iter::Sum, ops::Add};
 
 use penumbra_num::Amount;
-use penumbra_proto::{core::component::fee::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::fee::v1 as pb, DomainType};
 
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real

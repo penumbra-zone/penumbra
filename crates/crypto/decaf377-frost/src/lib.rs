@@ -8,7 +8,7 @@
 
 use anyhow::anyhow;
 use frost_core::frost;
-use penumbra_proto::crypto::decaf377_frost::v1alpha1 as pb;
+use penumbra_proto::crypto::decaf377_frost::v1 as pb;
 use std::collections::{BTreeMap, HashMap};
 
 /// A FROST-related error.

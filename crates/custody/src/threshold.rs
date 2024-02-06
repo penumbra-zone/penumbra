@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{
-    custody::v1alpha1::{self as pb},
+    custody::v1::{self as pb},
     DomainType,
 };
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};

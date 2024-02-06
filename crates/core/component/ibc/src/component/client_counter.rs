@@ -1,6 +1,6 @@
 use ibc_types::core::client::Height;
 use ibc_types::core::connection::ConnectionId;
-use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::ibc::v1 as pb, DomainType};
 
 #[derive(Clone, Debug)]
 pub struct ClientCounter(pub u64);

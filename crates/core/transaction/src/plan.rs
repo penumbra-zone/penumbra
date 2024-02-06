@@ -14,7 +14,7 @@ use penumbra_governance::{
 };
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{Address, FullViewingKey, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use penumbra_txhash::{EffectHash, EffectingData};

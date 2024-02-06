@@ -13,7 +13,7 @@ use penumbra_proof_setup::{
     single::log::Hashable,
 };
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::{
         self as pb, participate_request::Contribution as PBContribution,
     },
     Message,

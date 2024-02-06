@@ -2,12 +2,12 @@ use anyhow::{Context, Result};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::{
         self as pb,
         participate_request::Msg as RequestMsg,
         participate_response::{ContributeNow, Msg as ResponseMsg, Position},
     },
-    tools::summoning::v1alpha1::{
+    tools::summoning::v1::{
         participate_response::Confirm, ParticipateRequest, ParticipateResponse,
     },
 };

@@ -7,7 +7,7 @@ use chacha20poly1305::{
 use decaf377::FieldExt;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
-use penumbra_proto::core::keys::v1alpha1::{self as pb};
+use penumbra_proto::core::keys::v1::{self as pb};
 use penumbra_tct::StateCommitment;
 use rand::{CryptoRng, RngCore};
 

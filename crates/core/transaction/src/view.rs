@@ -1,7 +1,7 @@
 use anyhow::Context;
 use decaf377_rdsa::{Binding, Signature};
 use penumbra_keys::AddressView;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
+use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 
 use serde::{Deserialize, Serialize};
 

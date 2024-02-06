@@ -9,7 +9,7 @@ use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
@@ -32,7 +32,7 @@ pub struct Proposal {
 }
 
 /// The protobuf type URL for a transaction plan.
-pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
+pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1.TransactionPlan";
 
 impl From<Proposal> for pb::Proposal {
     fn from(inner: Proposal) -> pb::Proposal {

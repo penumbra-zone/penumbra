@@ -9,13 +9,13 @@ use penumbra_dex::{
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_proto::core::component::{
-    dex::v1alpha1::{
+    dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient,
         simulation_service_client::SimulationServiceClient, ArbExecutionRequest,
         BatchSwapOutputDataRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
         LiquidityPositionsRequest, SimulateTradeRequest, SwapExecutionRequest,
     },
-    shielded_pool::v1alpha1::{
+    shielded_pool::v1::{
         query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
         AssetMetadataByIdRequest,
     },
@@ -154,7 +154,7 @@ impl DexCmd {
         input: Value,
         output: asset::Id,
     ) -> Result<SwapExecution> {
-        use penumbra_proto::core::component::dex::v1alpha1::simulate_trade_request::{
+        use penumbra_proto::core::component::dex::v1::simulate_trade_request::{
             routing::Setting, Routing,
         };
         let mut client = SimulationServiceClient::new(app.pd_channel().await?);

@@ -14,7 +14,7 @@ use penumbra_dex::{
 use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::view::v1alpha1::{
+use penumbra_proto::view::v1::{
     self as pb, view_service_client::ViewServiceClient, BroadcastTransactionResponse,
     WitnessRequest,
 };

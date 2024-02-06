@@ -10,13 +10,13 @@ use wasm_bindgen::JsValue;
 use penumbra_dex::swap_claim::SwapClaimPlan;
 use penumbra_proto::{
     core::{
-        asset::v1alpha1::{Metadata as AssetMetadata, Value},
-        component::fee::v1alpha1::{Fee, FeeTier, GasPrices},
-        component::ibc::v1alpha1::Ics20Withdrawal,
-        keys::v1alpha1::{Address, AddressIndex},
-        transaction::v1alpha1::MemoPlaintext,
+        asset::v1::{Metadata as AssetMetadata, Value},
+        component::fee::v1::{Fee, FeeTier, GasPrices},
+        component::ibc::v1::Ics20Withdrawal,
+        keys::v1::{Address, AddressIndex},
+        transaction::v1::MemoPlaintext,
     },
-    crypto::tct::v1alpha1::StateCommitment,
+    crypto::tct::v1::StateCommitment,
     DomainType,
 };
 

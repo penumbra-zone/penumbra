@@ -1,6 +1,6 @@
 use penumbra_proto::{
-    core::component::stake::v1alpha1::ValidatorInfoResponse,
-    penumbra::core::component::stake::v1alpha1 as pb, DomainType,
+    core::component::stake::v1::ValidatorInfoResponse, penumbra::core::component::stake::v1 as pb,
+    DomainType,
 };
 use serde::{Deserialize, Serialize};
 
