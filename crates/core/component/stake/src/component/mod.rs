@@ -1,3 +1,19 @@
+pub mod action_handler;
+pub mod metrics;
+pub mod rpc;
+pub mod validator_handler;
+
+mod epoch_handler;
+mod stake;
+
+pub use stake::Staking;
+// Max validator power is 1152921504606846975 (i64::MAX / 8)
+// https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
+pub const MAX_VOTING_POWER: u128 = 1152921504606846975;
+pub const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
+
+// pub use self::metrics::register_metrics;
+
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
 use std::{
@@ -7,16 +23,6 @@ use std::{
     str::FromStr,
 };
 use validator::BondingState::*;
-
-pub mod action_handler;
-pub mod metrics;
-pub mod rpc;
-pub mod validator_manager;
-pub use self::metrics::register_metrics;
-
-mod stake;
-
-pub use stake::Staking;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
@@ -34,7 +40,8 @@ use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
 use crate::{
-    component::validator_manager::{ValidatorDataRead, ValidatorManager as _},
+    component::validator_handler::ValidatorDataRead,
+    component::validator_handler::ValidatorManager,
     params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
@@ -45,26 +52,7 @@ use crate::{
 use crate::{Delegate, Undelegate};
 use once_cell::sync::Lazy;
 
-// Max validator power is 1152921504606846975 (i64::MAX / 8)
-// https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
-const MAX_VOTING_POWER: u128 = 1152921504606846975;
-
-pub(crate) const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
-
-/// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
-/// This should really be a refined type upstream, but we can't currently upstream
-/// to tendermint-rs, for process reasons, and shouldn't do our own tendermint data
-/// modeling, so this is an interim hack.
-fn validator_address(ck: &PublicKey) -> [u8; 20] {
-    let ck_bytes = ck.to_bytes();
-    let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
-        .try_into()
-        .expect("Sha256 digest should be 20-bytes long");
-
-    addr
-}
-
-pub trait ValidatorUpdates: StateRead {
+pub trait ConsensusUpdateRead: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
     ///
     /// Set during `end_block`.
@@ -74,9 +62,9 @@ pub trait ValidatorUpdates: StateRead {
     }
 }
 
-impl<T: StateRead + ?Sized> ValidatorUpdates for T {}
+impl<T: StateRead + ?Sized> ConsensusUpdateRead for T {}
 
-trait PutValidatorUpdates: StateWrite {
+trait ConsensusUpdateWrite: StateWrite {
     fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
@@ -86,509 +74,11 @@ trait PutValidatorUpdates: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> PutValidatorUpdates for T {}
-
-#[async_trait]
-pub(crate) trait StakingImpl: StateWriteExt {
-    #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
-    /// Process the end of an epoch for the staking component.
-    async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
-        let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
-
-        // Collect all the delegation changes that occurred in the epoch we are ending.
-        let mut delegations_by_validator = BTreeMap::<IdentityKey, Vec<Delegate>>::new();
-        let mut undelegations_by_validator = BTreeMap::<IdentityKey, Vec<Undelegate>>::new();
-
-        let end_height = self.get_block_height().await?;
-
-        for height in epoch_to_end.start_height..=end_height {
-            let changes = self
-                .delegation_changes(
-                    height
-                        .try_into()
-                        .context("should be able to convert u64 into block height")?,
-                )
-                .await?;
-            for d in changes.delegations {
-                delegations_by_validator
-                    .entry(d.validator_identity.clone())
-                    .or_default()
-                    .push(d);
-            }
-            for u in changes.undelegations {
-                undelegations_by_validator
-                    .entry(u.validator_identity.clone())
-                    .or_default()
-                    .push(u);
-            }
-        }
-
-        tracing::debug!(
-            total_delegations = ?delegations_by_validator.values().map(|v| v.len())
-                .sum::<usize>(),
-            total_undelegations = ?undelegations_by_validator.values().map(|v| v.len())
-                .sum::<usize>(),
-                epoch_start_height = epoch_to_end.start_height,
-                epoch_end_height = end_height,
-                "calculated delegation changes for epoch"
-        );
-
-        // We are transitioning to the next epoch, so the "current" base rate in
-        // the state is now the previous base rate.
-        let prev_base_rate = self.get_current_base_rate().await?;
-
-        tracing::debug!(
-            "fetching the issuance budget for this epoch from the distributions component"
-        );
-        // Fetch the issuance budget for the epoch we are ending.
-        let issuance_budget_for_epoch = self
-            .get_staking_token_issuance_for_epoch()
-            .expect("issuance budget is always set by the distributions component");
-
-        // Compute the base reward rate for the upcoming epoch based on the total amount
-        // of active stake and the issuance budget given to us by the distribution component.
-        let total_active_stake_previous_epoch = self.total_active_stake().await?;
-
-        tracing::debug!(
-            ?total_active_stake_previous_epoch,
-            ?issuance_budget_for_epoch,
-            "computing base rate for the upcoming epoch"
-        );
-        let base_reward_rate =
-            U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
-                .expect("total active stake is nonzero");
-        let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
-            .expect("base reward rate is around one")
-            .round_down()
-            .try_into()
-            .expect("rounded to an integral value");
-        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch");
-
-        let next_base_rate = prev_base_rate.next_epoch(base_reward_rate);
-        tracing::debug!(
-            ?prev_base_rate,
-            ?next_base_rate,
-            ?base_reward_rate,
-            ?total_active_stake_previous_epoch,
-            ?issuance_budget_for_epoch,
-            "calculated base rate for the upcoming epoch"
-        );
-
-        // Set the next base rate as the new "current" base rate.
-        self.set_base_rate(next_base_rate.clone());
-        // We cache the previous base rate in the state, so that other components
-        // can use it in their end-epoch procesisng (e.g. funding for staking rewards).
-        self.set_prev_base_rate(prev_base_rate.clone());
-
-        let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
-
-        let mut validator_stream = self.consensus_set_stream()?;
-
-        while let Some(validator_identity) = validator_stream.next().await {
-            let identity_key = validator_identity?;
-            let validator = self.get_validator_definition(&identity_key).await?.ok_or_else(|| {
-                anyhow::anyhow!("validator (identity={}) is present in consensus set index but its definition was not found in the JMT", &identity_key)
-            })?;
-
-            // Grab the current validator state.
-            let validator_state = self
-                .get_validator_state(&validator.identity_key)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator (identity={}) is present in consensus set index but its state was not found in the JMT", &validator.identity_key)
-                })?;
-
-            // We are transitioning to the next epoch, so the "current" validator
-            // rate in the state is now the previous validator rate.
-            let prev_validator_rate = self
-                .get_validator_rate(&validator.identity_key)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!("validator (identity={}) is present in consensus set index but its rate data was not found in the JMT", &validator.identity_key)
-                })?;
-
-            // First, apply any penalty recorded in the epoch we are ending.
-            let penalty = self
-                .penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
-                .await?
-                .unwrap_or(Penalty::from_percent(0));
-            let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
-
-            // Then compute the next validator rate, accounting for funding streams and validator state.
-            let next_validator_rate = prev_validator_rate_with_penalty.next_epoch(
-                &next_base_rate,
-                validator.funding_streams.as_ref(),
-                &validator_state,
-            );
-
-            let total_delegations = delegations_by_validator
-                .get(&validator.identity_key)
-                .into_iter()
-                .flat_map(|ds| ds.iter().map(|d| d.delegation_amount.value()))
-                .sum::<u128>();
-            let total_undelegations = undelegations_by_validator
-                .get(&validator.identity_key)
-                .into_iter()
-                .flat_map(|us| us.iter().map(|u| u.delegation_amount.value()))
-                .sum::<u128>();
-
-            // In theory, the maximum amount of delegation tokens is the total supply of staking tokens.
-            // In practice, this is unlikely to happen, but even if it did, we anticipate that the total
-            // supply of staking token is << 10^32 (2^107) tokens with a unit denomination of 10^6 (2^20),
-            // so there should be ample room to cast this to an i128.
-            let delegation_delta = (total_delegations as i128) - (total_undelegations as i128);
-
-            tracing::debug!(
-                validator = ?validator.identity_key,
-                total_delegations,
-                total_undelegations,
-                delegation_delta,
-                "net delegation change for validator's pool for the epoch"
-            );
-
-            // Delegations and undelegations created in the previous epoch were created
-            // with the prev_validator_rate.  To compute the staking delta, we need to take
-            // an absolute value and then re-apply the sign, since .unbonded_amount operates
-            // on unsigned values.
-            let absolute_delegation_change = Amount::from(delegation_delta.unsigned_abs());
-            let absolute_unbonded_amount =
-                prev_validator_rate.unbonded_amount(absolute_delegation_change);
-
-            let delegation_token_id = DelegationToken::from(&validator.identity_key).id();
-
-            // Staking tokens are being delegated, so the staking token supply decreases and
-            // the delegation token supply increases.
-            if delegation_delta > 0 {
-                tracing::debug!(
-                    validator = ?validator.identity_key,
-                    "staking tokens are being delegated, so the staking token supply decreases and the delegation token supply increases");
-                self.decrease_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "failed to decrease staking token supply by {}",
-                            absolute_unbonded_amount
-                        )
-                    })?;
-                self.increase_token_supply(&delegation_token_id, absolute_delegation_change)
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "failed to increase delegation token supply by {}",
-                            absolute_delegation_change
-                        )
-                    })?;
-            } else if delegation_delta < 0 {
-                tracing::debug!(
-                    validator = ?validator.identity_key,
-                    "staking tokens are being undelegated, so the staking token supply increases and the delegation token supply decreases");
-                // Vice-versa: staking tokens are being undelegated, so the staking token supply
-                // increases and the delegation token supply decreases.
-                self.increase_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "failed to increase staking token supply by {}",
-                            absolute_unbonded_amount
-                        )
-                    })?;
-                self.decrease_token_supply(&delegation_token_id, absolute_delegation_change)
-                    .await
-                    .with_context(|| {
-                        format!(
-                            "failed to decrease delegation token supply by {}",
-                            absolute_delegation_change
-                        )
-                    })?;
-            } else {
-                tracing::debug!(
-                    validator = ?validator.identity_key,
-                    "no change in delegation, no change in token supply")
-            }
-
-            // Get the updated delegation token supply for use calculating voting power.
-            let delegation_token_supply = self
-                .token_supply(&delegation_token_id)
-                .await?
-                .expect("delegation token should be known");
-
-            // Calculate the voting power in the newly beginning epoch
-            let voting_power = next_validator_rate.voting_power(delegation_token_supply.into());
-
-            tracing::debug!(
-                validator = ?validator.identity_key,
-                validator_delegation_pool = ?delegation_token_supply,
-                validator_power = ?voting_power,
-                "calculated validator's voting power for the upcoming epoch"
-            );
-
-            // Update the state of the validator within the validator set
-            // with the newly starting epoch's calculated voting rate and power.
-            self.set_validator_rates(&validator.identity_key, next_validator_rate.clone());
-            self.set_validator_power(&validator.identity_key, voting_power)?;
-
-            // The epoch is ending, so we check if this validator was active and if so
-            // we queue its [`FundingStreams`] for processing by the funding component.
-            if matches!(validator_state, validator::State::Active) {
-                // Here we collect funding data to create a record that the funding component
-                // can "pull". We do this because by the time the funding component is executed
-                // the validator set has possibly changed (e.g. a new validator enter the active
-                // set).
-                funding_queue.push((
-                    validator.identity_key.clone(),
-                    validator.funding_streams.clone(),
-                    delegation_token_supply,
-                ));
-            }
-
-            // We want to know if the validator has enough stake delegated to it to remain
-            // in the consensus set. In order to do this, we need to know what is the "absolute"
-            // (i.e. unbonded) amount corresponding to the validator's delegation pool.
-            let delegation_token_denom = DelegationToken::from(&validator.identity_key).denom();
-            let validator_unbonded_amount =
-                next_validator_rate.unbonded_amount(delegation_token_supply);
-
-            tracing::debug!(
-                validator_identity = %validator.identity_key,
-                validator_delegation_pool = ?delegation_token_supply,
-                validator_unbonded_amount = ?validator_unbonded_amount,
-                "calculated validator's unbonded amount for the upcoming epoch"
-            );
-
-            if validator_unbonded_amount < min_validator_stake {
-                tracing::debug!(
-                    validator_identity = %validator.identity_key,
-                    validator_unbonded_amount = ?validator_unbonded_amount,
-                    min_validator_stake = ?min_validator_stake,
-                    "validator's unbonded amount is below the minimum stake threshold, transitioning to defined"
-                );
-                self.set_validator_state(&validator.identity_key, validator::State::Defined)
-                    .await?;
-            }
-
-            tracing::debug!(validator_identity = %validator.identity_key,
-                previous_epoch_validator_rate= ?prev_validator_rate,
-                next_epoch_validator_rate = ?next_validator_rate,
-                delegation_denom = ?delegation_token_denom,
-                ?delegation_token_supply,
-                "validator's end-epoch has been processed");
-        }
-
-        // We have collected the funding streams for all validators, so we can now
-        // record them for the funding component to process.
-        self.queue_staking_rewards(funding_queue);
-
-        // Now that all the voting power has been calculated for the upcoming epoch,
-        // we can determine which validators are Active for the next epoch.
-        self.process_validator_unbondings().await?;
-        self.set_active_and_inactive_validators().await?;
-        Ok(())
-    }
-
-    /// Called during `end_epoch`. Will perform state transitions to validators based
-    /// on changes to voting power that occurred in this epoch.
-    async fn set_active_and_inactive_validators(&mut self) -> Result<()> {
-        // A list of all active and inactive validators, with nonzero voting power.
-        let mut validators_by_power = Vec::new();
-        // A list of validators with zero power, who must be inactive.
-        let mut zero_power = Vec::new();
-
-        let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
-            let state = self
-                .get_validator_state(&identity_key)
-                .await?
-                .context("should be able to fetch validator state")?;
-            let power = self
-                .get_validator_power(&identity_key)
-                .await?
-                .unwrap_or_default();
-            if matches!(state, validator::State::Active | validator::State::Inactive) {
-                if power == Amount::zero() {
-                    zero_power.push((identity_key, power));
-                } else {
-                    validators_by_power.push((identity_key, power));
-                }
-            }
-        }
-
-        // Sort by voting power descending.
-        validators_by_power.sort_by(|a, b| b.1.cmp(&a.1));
-
-        // The top `limit` validators with nonzero power become active.
-        // All other validators become inactive.
-        let limit = self.get_stake_params().await?.active_validator_limit as usize;
-        let active = validators_by_power.iter().take(limit);
-        let inactive = validators_by_power
-            .iter()
-            .skip(limit)
-            .chain(zero_power.iter());
-
-        for (v, _) in active {
-            self.set_validator_state(v, validator::State::Active)
-                .await?;
-        }
-        for (v, _) in inactive {
-            self.set_validator_state(v, validator::State::Inactive)
-                .await?;
-        }
-
-        Ok(())
-    }
-
-    /// Process all `Unbonding` validators, transitioning them to `Unbonded` if their
-    /// unbonding target has been reached.
-    #[instrument(skip(self))]
-    async fn process_validator_unbondings(&mut self) -> Result<()> {
-        let current_epoch = self.get_current_epoch().await?;
-
-        let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
-            let state = self
-                .get_validator_bonding_state(&identity_key)
-                .await?
-                .context("should be able to fetch validator bonding state")?;
-
-            match state {
-                Bonded => continue,
-                Unbonded => continue,
-                Unbonding { unbonds_at_epoch } => {
-                    if current_epoch.index >= unbonds_at_epoch {
-                        // The validator's delegation pool has finished unbonding, so we
-                        // transition it to the Unbonded state.
-                        let _ = self
-                            .set_validator_bonding_state(
-                                &identity_key,
-                                validator::BondingState::Unbonded,
-                            )
-                            // Instrument the call with a span that includes the validator ID,
-                            // since our current span doesn't have any per-validator information.
-                            .instrument(tracing::debug_span!("unbonding", ?identity_key));
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Materializes the entire current validator set as a Tendermint update.
-    ///
-    /// This re-defines all validators every time, to simplify the code compared to
-    /// trying to track delta updates.
-    #[instrument(skip(self))]
-    async fn build_tendermint_validator_updates(&mut self) -> Result<()> {
-        let current_consensus_keys: CurrentConsensusKeys = self
-            .get(state_key::current_consensus_keys())
-            .await?
-            .expect("current consensus keys must be present");
-        let current_consensus_keys = current_consensus_keys
-            .consensus_keys
-            .into_iter()
-            .collect::<BTreeSet<_>>();
-
-        let mut voting_power_by_consensus_key = BTreeMap::<PublicKey, Amount>::new();
-
-        // First, build a mapping of consensus key to voting power for all known validators.
-
-        // Using a JoinSet, run each validator's state queries concurrently.
-        let mut js: JoinSet<std::prelude::v1::Result<(PublicKey, Amount), anyhow::Error>> =
-            JoinSet::new();
-        let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
-            let state = self.get_validator_state(&identity_key);
-            let power = self.get_validator_power(&identity_key);
-            let consensus_key = self.validator_consensus_key(&identity_key);
-            js.spawn(async move {
-                let state = state
-                    .await?
-                    .expect("every known validator must have a recorded state");
-                // Compute the effective power of this validator; this is the
-                // validator power, clamped to zero for all non-Active validators.
-                let effective_power = if matches!(state, validator::State::Active) {
-                    power
-                        .await?
-                        .expect("every active validator must have a recorded power")
-                } else {
-                    Amount::zero()
-                };
-
-                let consensus_key = consensus_key
-                    .await?
-                    .expect("every known validator must have a recorded consensus key");
-
-                anyhow::Ok((consensus_key, effective_power))
-            });
-        }
-        // Now collect the computed results into the lookup table.
-        while let Some(pair) = js.join_next().await.transpose()? {
-            let (consensus_key, effective_power) = pair?;
-            voting_power_by_consensus_key.insert(consensus_key, effective_power);
-        }
-
-        // Next, filter that mapping to exclude any zero-power validators, UNLESS they
-        // were already known to Tendermint.
-        voting_power_by_consensus_key.retain(|consensus_key, voting_power| {
-            *voting_power > Amount::zero() || current_consensus_keys.contains(consensus_key)
-        });
-
-        // Finally, tell tendermint to delete any known consensus keys not otherwise updated
-        for ck in current_consensus_keys.iter() {
-            voting_power_by_consensus_key
-                .entry(*ck)
-                .or_insert(Amount::zero());
-        }
-
-        // Save the validator updates to send to Tendermint.
-        let tendermint_validator_updates = voting_power_by_consensus_key
-            .iter()
-            .map(|(consensus_key, power)| {
-                Ok(Update {
-                    pub_key: *consensus_key,
-                    // Note: Since the maxim
-                    power: ((*power).value() as u64).try_into()?,
-                })
-            })
-            .collect::<Result<Vec<_>>>()?;
-        self.put_tendermint_validator_updates(tendermint_validator_updates);
-
-        // Record the new consensus keys we will have told tendermint about.
-        let updated_consensus_keys = CurrentConsensusKeys {
-            consensus_keys: voting_power_by_consensus_key
-                .iter()
-                .filter_map(|(consensus_key, power)| {
-                    if *power != Amount::zero() {
-                        Some(*consensus_key)
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        };
-        tracing::debug!(?updated_consensus_keys);
-        self.put(
-            state_key::current_consensus_keys().to_owned(),
-            updated_consensus_keys,
-        );
-
-        Ok(())
-    }
-}
-
-impl<T: StateWrite + StateWriteExt + ?Sized> StakingImpl for T {}
+impl<T: StateWrite + ?Sized> ConsensusUpdateWrite for T {}
 
 /// Extension trait providing read access to staking data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the stake parameters have been updated in this block.
-    fn stake_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::stake_params_updated())
-            .is_some()
-    }
-
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::stake_params())
@@ -596,45 +86,26 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
+    /// Indicates if the stake parameters have been updated in this block.
+    fn stake_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::stake_params_updated())
+            .is_some()
+    }
+
+    async fn signed_blocks_window_len(&self) -> Result<u64> {
+        Ok(self.get_stake_params().await?.signed_blocks_window_len)
+    }
+
+    async fn missed_blocks_maximum(&self) -> Result<u64> {
+        Ok(self.get_stake_params().await?.missed_blocks_maximum)
+    }
+
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
-    fn get_delegation_changes(&self) -> DelegationChanges {
+    fn get_delegation_changes_tally(&self) -> DelegationChanges {
         self.object_get(state_key::internal::delegation_changes())
             .unwrap_or_default()
-    }
-
-    async fn penalty_in_epoch(
-        &self,
-        id: &IdentityKey,
-        epoch_index: u64,
-    ) -> Result<Option<Penalty>> {
-        self.get(&state_key::penalty_in_epoch(id, epoch_index))
-            .await
-    }
-
-    /// Returns the compounded penalty for the given validator over the half-open range of epochs [start, end).
-    async fn compounded_penalty_over_range(
-        &self,
-        id: &IdentityKey,
-        start: u64,
-        end: u64,
-    ) -> Result<Penalty> {
-        let prefix = state_key::penalty_in_epoch_prefix(id);
-        let all_penalties = self
-            .prefix::<Penalty>(&prefix)
-            .try_collect::<BTreeMap<String, Penalty>>()
-            .await?;
-
-        let start_key = state_key::penalty_in_epoch(id, start);
-        let end_key = state_key::penalty_in_epoch(id, end);
-
-        let mut compounded = Penalty::from_percent(0);
-        for (_key, penalty) in all_penalties.range(start_key..end_key) {
-            compounded = compounded.compound(*penalty);
-        }
-
-        Ok(compounded)
     }
 
     async fn get_current_base_rate(&self) -> Result<BaseRateData> {
@@ -647,144 +118,16 @@ pub trait StateReadExt: StateRead {
         self.object_get(state_key::previous_base_rate())
     }
 
-    // This is a normal fn returning a boxed future so it can be 'static with no inferred lifetime bound
-
-    // TODO(erwan): we pull the entire validator definition instead of tracking
-    // the consensus key separately.  If we did, not only could we save on deserialization
-    // but we could also make this a clean [`DomainFuture`].
-    fn validator_consensus_key(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
-        use futures::TryFutureExt;
-        self.get(&state_key::validators::definitions::by_id(&identity_key))
-            .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
-            .boxed()
-    }
-
-    // Tendermint validators are referenced to us by their Tendermint consensus key,
-    // but we reference them by their Penumbra identity key.
-    async fn validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
-        if let Some(identity_key) = self
-            .get(&state_key::validator_id_by_consensus_key(ck))
-            .await?
-        {
-            self.get_validator_definition(&identity_key).await
-        } else {
-            return Ok(None);
-        }
-    }
-
-    async fn validator_by_tendermint_address(
-        &self,
-        address: &[u8; 20],
-    ) -> Result<Option<Validator>> {
-        if let Some(consensus_key) = self
-            .get(&state_key::consensus_key_by_tendermint_address(address))
-            .await?
-        {
-            self.validator_by_consensus_key(&consensus_key).await
-        } else {
-            return Ok(None);
-        }
-    }
-
-    /// Returns a stream of [`IdentityKey`]s of validators that are currently in the consensus set.
-    /// This only excludes validators that do not meet the minimum validator stake requirement
-    /// (see [`StakeParameters::min_validator_stake`]).
-    fn consensus_set_stream(
-        &self,
-    ) -> Result<Pin<Box<dyn futures::Stream<Item = Result<IdentityKey>> + Send + 'static>>> {
-        Ok(self
-            .nonverifiable_prefix_raw(
-                state_key::validators::index::consensus_set::prefix().as_bytes(),
-            )
-            .map(|res| {
-                res.map(|(_, raw_identity_key)| {
-                    // TODO(erwan): is this an opportunity to extend the proto overlay?
-                    let str_identity_key = std::str::from_utf8(raw_identity_key.as_slice())
-                        .expect("state keys should only have valid identity keys");
-                    IdentityKey::from_str(str_identity_key)
-                        .expect("state keys should only have valid identity keys")
-                })
-            })
-            .boxed())
-    }
-
-    /// Returns a list of **all** known validators metadata.
-    async fn validator_definitions(&self) -> Result<Vec<Validator>> {
-        self.prefix(state_key::validators::definitions::prefix())
-            .map_ok(|(_key, validator)| validator)
-            .try_collect()
-            .await
-    }
-
     /// Returns the funding queue from object storage (end-epoch).
-    fn funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
+    fn get_funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
         self.object_get(state_key::validators::rewards::object_storage_key())
     }
 
-    async fn delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
+    async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
             .get(&state_key::delegation_changes_by_height(height.value()))
             .await?
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
-    }
-
-    fn validator_uptime(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> DomainFuture<Uptime, Self::GetRawFut> {
-        self.get(&state_key::uptime_by_validator(identity_key))
-    }
-
-    async fn signed_blocks_window_len(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.signed_blocks_window_len)
-    }
-
-    async fn missed_blocks_maximum(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.missed_blocks_maximum)
-    }
-
-    /// Compute the number of epochs that will elapse before the validator is unbonded.
-    // TODO(erwan): move this to the `ValidatorManager`
-    async fn compute_unbonding_delay_for_validator(
-        &self,
-        current_epoch: Epoch,
-        validator_identity: &IdentityKey,
-    ) -> Result<u64> {
-        let Some(val_bonding_state) = self.get_validator_bonding_state(validator_identity).await?
-        else {
-            anyhow::bail!(
-                "validator bonding state not tracked (validator_identity={})",
-                validator_identity
-            )
-        };
-
-        let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
-
-        let epoch_delay = match val_bonding_state {
-            Bonded => min_epoch_delay,
-            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
-            Unbonded => 0u64,
-        };
-
-        // When the minimum delay parameter changes, an unbonding validator may
-        // have a delay that is larger than the new minimum delay. In this case,
-        // we want to use the new minimum delay.
-        Ok(std::cmp::min(epoch_delay, min_epoch_delay))
-    }
-
-    /// Return the epoch index at which the validator will be unbonded.
-    /// This is the minimum of the default unbonding epoch and the validator's
-    /// unbonding epoch.
-    async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
-        let current_epoch = self.get_current_epoch().await?;
-        let unbonding_delay = self
-            .compute_unbonding_delay_for_validator(current_epoch, id)
-            .await?;
-        let unbonding_epoch = current_epoch.index.saturating_add(unbonding_delay);
-        Ok(unbonding_epoch)
     }
 }
 
@@ -814,14 +157,14 @@ pub trait StateWriteExt: StateWrite {
 
     /// Push an entry in the delegation queue for the current block (object-storage).
     fn push_delegation(&mut self, delegation: Delegate) {
-        let mut changes = self.get_delegation_changes();
+        let mut changes = self.get_delegation_changes_tally();
         changes.delegations.push(delegation);
         self.put_delegation_changes(changes);
     }
 
     /// Push an entry in the undelegation queue for the current block (object-storage).
     fn push_undelegation(&mut self, undelegation: Undelegate) {
-        let mut changes = self.get_delegation_changes();
+        let mut changes = self.get_delegation_changes_tally();
         changes.undelegations.push(undelegation);
         self.put_delegation_changes(changes);
     }
@@ -837,61 +180,24 @@ pub trait StateWriteExt: StateWrite {
         )
     }
 
-    #[instrument(skip(self))]
-    fn set_base_rate(&mut self, rate_data: BaseRateData) {
-        tracing::debug!("setting base rate");
-        self.put(state_key::current_base_rate().to_owned(), rate_data);
-    }
-
-    #[instrument(skip(self))]
-    fn set_prev_base_rate(&mut self, rate_data: BaseRateData) {
-        self.object_put(state_key::previous_base_rate(), rate_data);
-    }
-
-    #[instrument(skip(self))]
-    fn set_validator_power(
-        &mut self,
-        identity_key: &IdentityKey,
-        voting_power: Amount,
-    ) -> Result<()> {
-        tracing::debug!(validator_identity = ?identity_key, ?voting_power, "setting validator power");
-        if voting_power.value() > MAX_VOTING_POWER {
-            anyhow::bail!("voting power exceeds maximum")
-        }
-        self.put(state_key::power_by_validator(identity_key), voting_power);
-
-        Ok(())
-    }
-
-    #[instrument(skip(self))]
-    fn set_initial_validator_state(
-        &mut self,
-        id: &IdentityKey,
-        initial_state: State,
-    ) -> Result<()> {
-        tracing::debug!(validator_identity = %id, ?initial_state, "setting initial validator state");
-        if !matches!(initial_state, State::Active | State::Defined) {
-            anyhow::bail!("invalid initial validator state");
-        }
-
-        self.put(state_key::state_by_validator(id), initial_state);
-        Ok(())
-    }
-
-    #[instrument(skip(self))]
-    fn set_validator_rates(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
-        tracing::debug!("setting validator rates");
-        self.put(
-            state_key::current_rate_by_validator(identity_key),
-            rate_data,
-        );
-    }
-
     async fn register_consensus_key(
         &mut self,
         identity_key: &IdentityKey,
         consensus_key: &PublicKey,
     ) {
+        /// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
+        /// This should really be a refined type upstream, but we can't currently upstream
+        /// to tendermint-rs, for process reasons, and shouldn't do our own tendermint data
+        /// modeling, so this is an interim hack.
+        fn validator_address(ck: &PublicKey) -> [u8; 20] {
+            let ck_bytes = ck.to_bytes();
+            let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+                .try_into()
+                .expect("Sha256 digest should be 20-bytes long");
+
+            addr
+        }
+
         let address = validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
@@ -903,118 +209,52 @@ pub trait StateWriteExt: StateWrite {
             identity_key.clone(),
         );
     }
+}
 
-    /// Record a new validator definition and prime its initial state.
-    /// This method is used for both genesis and post-genesis validators.
-    /// In the former case, the validator starts in `[validator::State::Active]`
-    /// state, while in the latter case, it starts in `[validator::State::Defined]`.
-    ///
-    /// # Errors
-    /// This method errors if the initial state is not one of the two valid
-    /// initial states. Or if the voting power is negative.
-    async fn add_validator_inner(
-        &mut self,
-        validator: Validator,
-        initial_rate_data: RateData,
-        initial_state: validator::State,
-        initial_bonding_state: validator::BondingState,
-        initial_voting_power: Amount,
-    ) -> Result<()> {
-        tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
-        if !matches!(initial_state, State::Defined | State::Active) {
-            anyhow::bail!(
-                "validator (identity_key={}) cannot have initial_state={:?}",
-                validator.identity_key,
-                initial_state
-            )
-        }
-        // TODO(erwan): add more guards for voting power and nonsensical initial states.
-        // in a separate PR, will move this up closer to `add_validator` - i don't want to
-        // clutter the diff for now.
-        let id = validator.identity_key.clone();
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
-        // First, we record the validator definition in the general validator index:
-        self.put(
-            state_key::validators::definitions::by_id(&id),
-            validator.clone(),
-        );
-        // Then, we create a mapping from the validator's consensus key to its
-        // identity key, so we can look up the validator by its consensus key, and
-        // vice-versa.
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
-            .await;
-        // We register the validator's delegation token in the token registry...
-        self.register_denom(&DelegationToken::from(&id).denom())
-            .await?;
-        // ... and its reward rate data in the JMT.
-        self.set_validator_rates(&id, initial_rate_data);
-
-        // We initialize the validator's state, power, and bonding state.
-        self.set_initial_validator_state(&id, initial_state)?;
-        self.set_validator_power(&id, initial_voting_power)?;
-        self.set_validator_bonding_state(&id, initial_bonding_state);
-
-        // For genesis validators, we also need to add them to the consensus set index.
-        if initial_state == validator::State::Active {
-            self.add_consensus_set_index(&id);
-        }
-
-        // Finally, update metrics for the new validator.
-        match initial_state {
-            validator::State::Active => {
-                metrics::gauge!(metrics::ACTIVE_VALIDATORS).increment(1.0);
-            }
-            validator::State::Defined => {
-                metrics::gauge!(metrics::DEFINED_VALIDATORS).increment(1.0);
-            }
-            _ => unreachable!("the initial state was validated by the guard condition"),
-        };
-
-        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => id.to_string());
-
-        Ok(())
+pub trait StakingDataInternalRead: StateRead {
+    async fn get_penalty_in_epoch(
+        &self,
+        id: &IdentityKey,
+        epoch_index: u64,
+    ) -> Result<Option<Penalty>> {
+        self.get(&state_key::penalty_in_epoch(id, epoch_index))
+            .await
     }
 
-    async fn record_slashing_penalty(
-        &mut self,
-        identity_key: &IdentityKey,
-        slashing_penalty: Penalty,
-    ) -> Result<()> {
-        let current_epoch_index = self.get_current_epoch().await?.index;
-
-        let current_penalty = self
-            .penalty_in_epoch(identity_key, current_epoch_index)
-            .await?
-            .unwrap_or(Penalty::from_percent(0));
-
-        let new_penalty = current_penalty.compound(slashing_penalty);
-
-        self.put(
-            state_key::penalty_in_epoch(identity_key, current_epoch_index),
-            new_penalty,
-        );
-
-        Ok(())
+    async fn get_penalty_for_range(&self, id: &IdentityKey, start: u64, end: u64) -> Vec<Penalty> {
+        let prefix = state_key::penalty_in_epoch_prefix(id);
+        let all_penalties: BTreeMap<String, Penalty> = self
+            .prefix::<Penalty>(&prefix)
+            .try_collect()
+            .await
+            .unwrap_or_default();
+        let start_key = state_key::penalty_in_epoch(id, start);
+        let end_key = state_key::penalty_in_epoch(id, end);
+        all_penalties
+            .range(start_key..end_key)
+            .map(|(_k, v)| v.to_owned())
+            .collect()
     }
 
-    async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
-        self.put(
-            state_key::delegation_changes_by_height(height.value()),
-            changes,
-        );
+    fn compute_compounded_penalty(penalties: Vec<Penalty>) -> Penalty {
+        let mut compounded = Penalty::from_percent(0);
+        penalties
+            .into_iter()
+            .fold(compounded, |acc, penalty| acc.compound(penalty))
     }
 
-    fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put(state_key::uptime_by_validator(identity_key), uptime);
-    }
-
-    fn set_validator_bonding_state(
-        &mut self,
-        identity_key: &IdentityKey,
-        state: validator::BondingState,
-    ) {
-        tracing::debug!(?state, validator_identity = %identity_key, "set bonding state for validator");
-        self.put(state_key::bonding_state_by_validator(identity_key), state);
+    /// Returns the compounded penalty for the given validator over the half-open range of epochs [start, end).
+    async fn compounded_penalty_over_range(
+        &self,
+        id: &IdentityKey,
+        start: u64,
+        end: u64,
+    ) -> Result<Penalty> {
+        let range = self.get_penalty_for_range(id, start, end).await;
+        let compounded_penalty = Self::compute_compounded_penalty(range);
+        Ok(compounded_penalty)
     }
 
     /// Calculate the amount of stake that is delegated to the currently active validator set,
@@ -1058,7 +298,84 @@ pub trait StateWriteExt: StateWrite {
 
         Ok(total_active_stake.into())
     }
+}
 
+impl<T: StateRead + ?Sized> StakingDataInternalRead for T {}
+
+#[async_trait]
+pub trait RateDataWrite: StateWrite {
+    #[instrument(skip(self))]
+    fn set_base_rate(&mut self, rate_data: BaseRateData) {
+        tracing::debug!("setting base rate");
+        self.put(state_key::current_base_rate().to_owned(), rate_data);
+    }
+
+    #[instrument(skip(self))]
+    fn set_prev_base_rate(&mut self, rate_data: BaseRateData) {
+        self.object_put(state_key::previous_base_rate(), rate_data);
+    }
+
+    async fn record_slashing_penalty(
+        &mut self,
+        identity_key: &IdentityKey,
+        slashing_penalty: Penalty,
+    ) -> Result<()> {
+        let current_epoch_index = self.get_current_epoch().await?.index;
+
+        let current_penalty = self
+            .get_penalty_in_epoch(identity_key, current_epoch_index)
+            .await?
+            .unwrap_or(Penalty::from_percent(0));
+
+        let new_penalty = current_penalty.compound(slashing_penalty);
+
+        self.put(
+            state_key::penalty_in_epoch(identity_key, current_epoch_index),
+            new_penalty,
+        );
+
+        Ok(())
+    }
+
+    async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
+        self.put(
+            state_key::delegation_changes_by_height(height.value()),
+            changes,
+        );
+    }
+}
+
+impl<T: StateWrite + ?Sized> RateDataWrite for T {}
+
+#[async_trait]
+pub trait ConsensusIndexRead: StateRead {
+    /// Returns a stream of [`IdentityKey`]s of validators that are currently in the consensus set.
+    /// This only excludes validators that do not meet the minimum validator stake requirement
+    /// (see [`StakeParameters::min_validator_stake`]).
+    fn consensus_set_stream(
+        &self,
+    ) -> Result<Pin<Box<dyn futures::Stream<Item = Result<IdentityKey>> + Send + 'static>>> {
+        Ok(self
+            .nonverifiable_prefix_raw(
+                state_key::validators::index::consensus_set::prefix().as_bytes(),
+            )
+            .map(|res| {
+                res.map(|(_, raw_identity_key)| {
+                    // TODO(erwan): is this an opportunity to extend the proto overlay?
+                    let str_identity_key = std::str::from_utf8(raw_identity_key.as_slice())
+                        .expect("state keys should only have valid identity keys");
+                    IdentityKey::from_str(str_identity_key)
+                        .expect("state keys should only have valid identity keys")
+                })
+            })
+            .boxed())
+    }
+}
+
+impl<T: StateRead + ?Sized> ConsensusIndexRead for T {}
+
+#[async_trait]
+pub trait ConsensusIndexWrite: StateWrite {
     /// Add a validator identity to the consensus set index.
     /// The consensus set index includes any validator that has a delegation pool that
     /// is greater than [`StakeParameters::min_validator_stake`].
@@ -1086,4 +403,4 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> ConsensusIndexWrite for T {}
