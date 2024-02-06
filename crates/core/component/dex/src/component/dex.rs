@@ -63,10 +63,8 @@ impl Component for Dex {
                 )
                 .await
                 .expect("handling batch swaps is infaillible");
-            metrics::histogram!(
-                crate::component::metrics::DEX_BATCH_DURATION).record(
-                batch_start.elapsed()
-            );
+            metrics::histogram!(crate::component::metrics::DEX_BATCH_DURATION)
+                .record(batch_start.elapsed());
         }
 
         // Then, perform arbitrage:
