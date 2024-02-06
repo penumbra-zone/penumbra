@@ -69,5 +69,8 @@ jobs:
           export HELM_RELEASE='penumbra-preview'
           ./ci.sh
 
+      - name: bounce metrics
+        run: kubectl rollout restart deployment penumbra-preview-metrics
+
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-preview

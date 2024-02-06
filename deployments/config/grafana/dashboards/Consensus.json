@@ -139,7 +139,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "tendermint_consensus_missing_validators",
+          "expr": "cometbft_consensus_missing_validators",
           "legendFormat": "Missing Validators",
           "range": true,
           "refId": "A"
@@ -150,7 +150,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "tendermint_consensus_validators",
+          "expr": "cometbft_consensus_validators",
           "hide": false,
           "legendFormat": "Validators",
           "range": true,
@@ -240,7 +240,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(tendermint_consensus_latest_block_height[5m])",
+          "expr": "rate(cometbft_consensus_latest_block_height[5m])",
           "refId": "A"
         }
       ],
@@ -326,7 +326,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "tendermint_consensus_rounds",
+          "expr": "cometbft_consensus_rounds",
           "refId": "A"
         }
       ],

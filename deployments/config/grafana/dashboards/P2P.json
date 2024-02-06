@@ -138,7 +138,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "tendermint_p2p_peers",
+          "expr": "cometbft_p2p_peers",
           "refId": "A"
         }
       ],
@@ -225,7 +225,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(tendermint_p2p_peer_send_bytes_total[1m])) by (peer_id)",
+          "expr": "sum(rate(cometbft_p2p_peer_send_bytes_total[1m])) by (peer_id)",
           "refId": "A"
         },
         {
@@ -233,7 +233,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(tendermint_p2p_peer_receive_bytes_total[1m])) by(peer_id)",
+          "expr": "sum(rate(cometbft_p2p_peer_receive_bytes_total[1m])) by(peer_id)",
           "hide": false,
           "refId": "B"
         }

@@ -411,7 +411,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(tendermint_consensus_latest_block_height[5m])",
+          "expr": "rate(cometbft_consensus_latest_block_height[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -595,7 +595,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "tendermint_consensus_height",
+          "expr": "cometbft_consensus_height",
           "instant": false,
           "range": true,
           "refId": "A"
