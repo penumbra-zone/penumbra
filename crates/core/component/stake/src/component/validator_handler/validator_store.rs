@@ -135,8 +135,24 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
+    fn compute_unbonding_delay(
+        current_epoch: Epoch,
+        bonding_state: crate::validator::BondingState,
+        min_delay: u64,
+    ) -> u64 {
+        let epoch_delay = match bonding_state {
+            Bonded => min_delay,
+            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
+            Unbonded => 0u64,
+        };
+
+        // When the minimum delay parameter changes, an unbonding validator may
+        // have a delay that is larger than the new minimum delay. In this case,
+        // we want to use the new minimum delay.
+        std::cmp::min(epoch_delay, min_delay)
+    }
+
     /// Compute the number of epochs that will elapse before the validator is unbonded.
-    // TODO(erwan): move this to the `ValidatorManager`
     async fn compute_unbonding_delay_for_validator(
         &self,
         current_epoch: Epoch,
@@ -151,17 +167,11 @@ pub trait ValidatorDataRead: StateRead {
         };
 
         let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
-
-        let epoch_delay = match val_bonding_state {
-            Bonded => min_epoch_delay,
-            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
-            Unbonded => 0u64,
-        };
-
-        // When the minimum delay parameter changes, an unbonding validator may
-        // have a delay that is larger than the new minimum delay. In this case,
-        // we want to use the new minimum delay.
-        Ok(std::cmp::min(epoch_delay, min_epoch_delay))
+        Ok(Self::compute_unbonding_delay(
+            current_epoch,
+            val_bonding_state,
+            min_epoch_delay,
+        ))
     }
 
     /// Return the epoch index at which the validator will be unbonded.
