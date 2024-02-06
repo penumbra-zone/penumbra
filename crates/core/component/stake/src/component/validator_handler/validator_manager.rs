@@ -22,6 +22,8 @@ use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProt
 use tracing::instrument;
 
 use crate::{
+    component::validator_store::ValidatorDataRead,
+    component::StakingDataRead,
     component::StateWriteExt as _,
     state_key,
     validator::{self},
@@ -250,7 +252,9 @@ pub trait ValidatorManager: StateWrite {
                 // Finally, set the validator to be tombstoned.
                 self.put(validator_state_path, Tombstoned);
             }
-            /* ****** bad transitions ******* */
+            (Defined, Defined) => { /* no-op */ }
+            (Defined, Disabled) => { /* no-op */ }
+            /* Bad transitions */
             (Defined | Jailed | Disabled, Active) => {
                 anyhow::bail!(
                     "only Inactive validators can become Active: identity_key={}, state={:?}",
@@ -273,11 +277,10 @@ pub trait ValidatorManager: StateWrite {
             (Tombstoned, Defined | Disabled | Inactive | Active | Jailed | Tombstoned) => {
                 anyhow::bail!("tombstoning is permanent, identity_key={}", identity_key)
             }
+            /* Identities: no-ops */
             (Inactive, Inactive) => { /* no-op */ }
             (Disabled, Disabled) => { /* no-op */ }
             (Active, Active) => { /* no-op */ }
-            (Defined, Defined) => { /* no-op */ }
-            (Defined, Disabled) => { /* no-op */ }
             (Disabled, Defined) => { /* no-op */ }
         }
 
@@ -407,7 +410,7 @@ pub trait ValidatorManager: StateWrite {
         self.register_denom(&DelegationToken::from(&id).denom())
             .await?;
         // ... and its reward rate data in the JMT.
-        self.set_validator_rates(&id, initial_rate_data);
+        self.set_validator_rate_data(&id, initial_rate_data);
 
         // We initialize the validator's state, power, and bonding state.
         self.set_initial_validator_state(&id, initial_state)?;
@@ -540,8 +543,8 @@ pub trait ValidatorManager: StateWrite {
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
             let state = self.get_validator_state(&identity_key);
-            let uptime = self.validator_uptime(&identity_key);
-            let consensus_key = self.validator_consensus_key(&identity_key);
+            let uptime = self.get_validator_uptime(&identity_key);
+            let consensus_key = self.get_validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
@@ -612,7 +615,7 @@ pub trait ValidatorManager: StateWrite {
     /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
-            .validator_by_tendermint_address(&evidence.validator.address)
+            .get_validator_by_tendermint_address(&evidence.validator.address)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!(
@@ -627,85 +630,3 @@ pub trait ValidatorManager: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> ValidatorManager for T {}
-
-#[async_trait]
-pub trait ValidatorDataRead: StateRead {
-    // TODO(erwan): feels like this should be rm'd...
-    async fn get_validator_info(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Result<Option<validator::Info>> {
-        let validator = self.get_validator_definition(identity_key).await?;
-        let status = self.get_validator_status(identity_key).await?;
-        let rate_data = self.get_validator_rate(identity_key).await?;
-
-        match (validator, status, rate_data) {
-            (Some(validator), Some(status), Some(rate_data)) => Ok(Some(validator::Info {
-                validator,
-                status,
-                rate_data,
-            })),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_validator_state(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> DomainFuture<validator::State, Self::GetRawFut> {
-        self.get(&state_key::state_by_validator(identity_key))
-    }
-
-    async fn get_validator_bonding_state(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Result<Option<validator::BondingState>> {
-        self.get(&state_key::bonding_state_by_validator(identity_key))
-            .await
-    }
-
-    /// Convenience method to assemble a [`ValidatorStatus`].
-    async fn get_validator_status(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Result<Option<validator::Status>> {
-        let bonding_state = self.get_validator_bonding_state(identity_key).await?;
-        let state = self.get_validator_state(identity_key).await?;
-        let power = self.get_validator_power(identity_key).await?;
-        let identity_key = identity_key.clone();
-        match (state, power, bonding_state) {
-            (Some(state), Some(voting_power), Some(bonding_state)) => Ok(Some(validator::Status {
-                identity_key,
-                state,
-                voting_power,
-                bonding_state,
-            })),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_validator_rate(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
-        self.get(&state_key::current_rate_by_validator(identity_key))
-            .boxed()
-    }
-
-    fn get_validator_power(
-        &self,
-        validator: &IdentityKey,
-    ) -> DomainFuture<Amount, Self::GetRawFut> {
-        self.get(&state_key::power_by_validator(validator))
-    }
-
-    async fn get_validator_definition(
-        &self,
-        identity_key: &IdentityKey,
-    ) -> Result<Option<Validator>> {
-        self.get(&state_key::validators::definitions::by_id(identity_key))
-            .await
-    }
-}
-
-impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
