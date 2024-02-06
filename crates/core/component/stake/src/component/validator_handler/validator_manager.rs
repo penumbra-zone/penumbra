@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, pin::Pin};
 
 use crate::{
-    component::metrics,
+    component::{metrics, validator_handler::ValidatorStore, ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
     rate::{BaseRateData, RateData},
     validator::{State, Validator},
     DelegationToken,
@@ -22,8 +22,8 @@ use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProt
 use tracing::instrument;
 
 use crate::{
-    component::validator_store::ValidatorDataRead,
-    component::StakingDataRead,
+    component::validator_handler::ValidatorDataRead,
+    component::StateReadExt as _,
     component::StateWriteExt as _,
     state_key,
     validator::{self},
@@ -544,7 +544,7 @@ pub trait ValidatorManager: StateWrite {
             let identity_key = identity_key?;
             let state = self.get_validator_state(&identity_key);
             let uptime = self.get_validator_uptime(&identity_key);
-            let consensus_key = self.get_validator_consensus_key(&identity_key);
+            let consensus_key = self.fetch_validator_consensus_key(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
