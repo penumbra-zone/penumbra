@@ -33,7 +33,7 @@ pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     ]
 });
 
-/// The substore prefix used for storing histori CometBFT block data.
+/// The substore prefix used for storing historical CometBFT block data.
 pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 
 /// Temporary compat wrapper for duplicate trait impls

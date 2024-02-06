@@ -8,8 +8,8 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    action_handler::ActionHandler, component::StakingImpl as _, rate::RateData, validator,
-    StateReadExt as _,
+    component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
+    component::validator_handler::ValidatorManager, rate::RateData, validator,
 };
 
 #[async_trait]
@@ -61,7 +61,10 @@ impl ActionHandler for validator::Definition {
 
         // Check that the sequence numbers of the updated validators is correct...
         // Check whether we are redefining an existing validator.
-        if let Some(existing_v) = state.validator(&v.validator.identity_key).await? {
+        if let Some(existing_v) = state
+            .get_validator_definition(&v.validator.identity_key)
+            .await?
+        {
             // Ensure that the highest existing sequence number is less than
             // the new sequence number.
             let current_seq = existing_v.sequence_number;
@@ -75,11 +78,11 @@ impl ActionHandler for validator::Definition {
 
         // Check whether the consensus key has already been used by another validator.
         if let Some(existing_v) = state
-            .validator_by_consensus_key(&v.validator.consensus_key)
+            .get_validator_by_consensus_key(&v.validator.consensus_key)
             .await?
         {
             if v.validator.identity_key != existing_v.identity_key {
-                // This is a new validator definition, but the consensus it declares
+                // This is a new validator definition, but the consensus key it declares
                 // is used by another validator. We MUST reject this definition:
                 //
                 // 1. It prevents someone from declaring an (app-level) validator that
@@ -108,7 +111,7 @@ impl ActionHandler for validator::Definition {
             .context("should be able to get current epoch during validator definition execution")?;
 
         let validator_exists = state
-            .validator(&v.validator.identity_key)
+            .get_validator_definition(&v.validator.identity_key)
             .await
             .context("should be able to fetch validator during validator definition execution")?
             .is_some();

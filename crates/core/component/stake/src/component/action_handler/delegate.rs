@@ -3,10 +3,14 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use cnidarium_component::ActionHandler;
 
 use crate::{
-    action_handler::ActionHandler, component::StateWriteExt as _, event, validator, Delegate,
-    StateReadExt as _,
+    component::{
+        validator_handler::{ValidatorDataRead, ValidatorManager},
+        StateWriteExt as _,
+    },
+    event, validator, Delegate, StateReadExt as _,
 };
 
 #[async_trait]
@@ -20,7 +24,7 @@ impl ActionHandler for Delegate {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let d = self;
         let next_rate_data = state
-            .current_validator_rate(&d.validator_identity)
+            .get_validator_rate(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("unknown validator identity {}", d.validator_identity))?
             .clone();
@@ -40,11 +44,11 @@ impl ActionHandler for Delegate {
         // - the validator definition is "enabled" by the operator
         // - the validator is not jailed or tombstoned
         let validator = state
-            .validator(&d.validator_identity)
+            .get_validator_definition(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
         let validator_state = state
-            .validator_state(&d.validator_identity)
+            .get_validator_state(&d.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
@@ -92,7 +96,6 @@ impl ActionHandler for Delegate {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        use crate::component::StakingImpl;
         use crate::validator;
 
         tracing::debug!(?self, "queuing delegation for next epoch");
@@ -107,7 +110,7 @@ impl ActionHandler for Delegate {
         // want to avoid having to iterate over all defined validators at all.
         // See #2921 for more details.
         let validator_state = state
-            .validator_state(&self.validator_identity)
+            .get_validator_state(&self.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
