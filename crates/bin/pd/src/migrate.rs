@@ -10,7 +10,9 @@ use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{genesis, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_stake::{genesis::Content as StakeContent, StateReadExt as _};
+use penumbra_stake::{
+    component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
+};
 
 use crate::testnet::generate::TestnetConfig;
 
@@ -66,6 +68,7 @@ impl Migration {
                 let validators = migrated_state.validator_definitions().await?;
                 let app_state = genesis::Content {
                     stake_content: StakeContent {
+                        // TODO(erwan): should remove this.
                         validators: validators.into_iter().map(Into::into).collect(),
                         ..Default::default()
                     },

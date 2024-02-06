@@ -6,8 +6,9 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
-    action_handler::ActionHandler, component::StateWriteExt as _, event, StateReadExt as _,
-    Undelegate,
+    component::action_handler::ActionHandler,
+    component::{validator_handler::ValidatorDataRead, StateWriteExt as _},
+    event, Undelegate,
 };
 
 #[async_trait]
@@ -20,7 +21,7 @@ impl ActionHandler for Undelegate {
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let u = self;
         let rate_data = state
-            .current_validator_rate(&u.validator_identity)
+            .get_validator_rate(&u.validator_identity)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!("unknown validator identity {}", u.validator_identity)
