@@ -3,9 +3,10 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 
 use crate::component::StateWriteExt;
+use crate::event;
 use crate::{action_handler::ActionHandler, StateReadExt};
 use crate::{
     proposal_state::Outcome,
@@ -130,6 +131,8 @@ impl ActionHandler for ValidatorVote {
                 );
             }
         }
+
+        state.record_proto(event::validator_vote(self));
 
         Ok(())
     }

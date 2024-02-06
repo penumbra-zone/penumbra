@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use crate::genesis;
+use crate::{event, genesis};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use penumbra_proto::StateWriteProto as _;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -135,12 +136,39 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                                 tracing::warn!(proposal = %proposal_id, %error, "proposal passed but failed to enact");
                             }
                         };
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::enact_proposal(&proposal));
                     }
                     tally::Outcome::Fail => {
                         tracing::info!(proposal = %proposal_id, "proposal failed");
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::proposal_failed(&proposal));
                     }
                     tally::Outcome::Slash => {
                         tracing::info!(proposal = %proposal_id, "proposal slashed");
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::proposal_slashed(&proposal));
                     }
                 }
 

@@ -3,11 +3,13 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
     action_handler::ActionHandler,
     component::{StateReadExt as _, StateWriteExt},
+    event,
     proposal_state::State as ProposalState,
     ProposalNft, ProposalWithdraw,
 };
@@ -49,6 +51,8 @@ impl ActionHandler for ProposalWithdraw {
         state
             .register_denom(&ProposalNft::unbonding_deposit(*proposal).denom())
             .await?;
+
+        state.record_proto(event::proposal_withdraw(self));
 
         tracing::debug!(proposal = %proposal, "withdrew proposal");
 

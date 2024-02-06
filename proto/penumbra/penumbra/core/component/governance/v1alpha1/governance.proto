@@ -500,3 +500,43 @@ message Ratio {
   // The denominator.
   uint64 denominator = 2;
 }
+
+message EventDelegatorVote {
+  // The delegator vote.
+  DelegatorVote vote = 1;
+}
+
+message EventProposalDepositClaim {
+  // The deposit claim body.
+  ProposalDepositClaim deposit_claim = 1;
+}
+
+message EventValidatorVote {
+  // The validator vote.
+  ValidatorVote vote = 1;
+}
+
+message EventProposalWithdraw {
+  // Details on the withdrawn proposal.
+  ProposalWithdraw withdraw = 1;
+}
+
+message EventProposalSubmit {
+  // Details on the submitted proposal.
+  ProposalSubmit submit = 1;
+}
+
+message EventEnactProposal {
+  // The enacted proposal.
+  Proposal proposal = 1;
+}
+
+message EventProposalFailed {
+  // The failed proposal.
+  Proposal proposal = 1;
+}
+
+message EventProposalSlashed {
+  // The slashed proposal.
+  Proposal proposal = 1;
+}

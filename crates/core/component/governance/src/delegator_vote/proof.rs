@@ -294,7 +294,7 @@ impl DummyWitness for DelegatorVoteCircuit {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct DelegatorVoteProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl DelegatorVoteProof {
