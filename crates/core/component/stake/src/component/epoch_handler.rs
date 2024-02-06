@@ -19,11 +19,12 @@ use tracing::{instrument, Instrument};
 
 use crate::{
     component::{
+        stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
         validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
-        ConsensusUpdateWrite, RateDataWrite, StakingDataInternalRead, FP_SCALING_FACTOR,
+        PenaltyDataRead, FP_SCALING_FACTOR,
     },
-    validator::{self},
-    CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty, StateReadExt,
+    validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
+    StateReadExt,
 };
 use crate::{state_key, Delegate, Undelegate};
 
