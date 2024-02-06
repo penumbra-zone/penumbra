@@ -10,10 +10,16 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::{Future, FutureExt, StreamExt as _};
 use penumbra_num::Amount;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sct::{
+    component::clock::{EpochManager, EpochRead},
+    epoch::Epoch,
+};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
-use tendermint::abci::types::{CommitInfo, Misbehavior};
+use tendermint::{
+    abci::types::{CommitInfo, Misbehavior},
+    PublicKey,
+};
 use tokio::task::JoinSet;
 use validator::BondingState::*;
 
@@ -21,15 +27,15 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
 use tracing::instrument;
 
+use crate::component::MAX_VOTING_POWER;
 use crate::{
-    component::StakingDataRead,
+    component::StateReadExt as _,
     component::StateWriteExt as _,
     state_key,
     validator::{self},
     IdentityKey, Penalty, StateReadExt as _, Uptime,
 };
 use penumbra_asset::asset;
-use crate::component::MAX_VOTING_POWER;
 #[async_trait]
 pub trait ValidatorDataRead: StateRead {
     async fn get_validator_info(
@@ -113,6 +119,95 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
         self.get(&state_key::uptime_by_validator(identity_key))
+    }
+
+    // Tendermint validators are referenced to us by their Tendermint consensus key,
+    // but we reference them by their Penumbra identity key.
+    async fn get_validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
+        if let Some(identity_key) = self
+            .get(&state_key::validator_id_by_consensus_key(ck))
+            .await?
+        {
+            self.get_validator_definition(&identity_key).await
+        } else {
+            return Ok(None);
+        }
+    }
+
+    async fn get_validator_by_tendermint_address(
+        &self,
+        address: &[u8; 20],
+    ) -> Result<Option<Validator>> {
+        if let Some(consensus_key) = self
+            .get(&state_key::consensus_key_by_tendermint_address(address))
+            .await?
+        {
+            self.get_validator_by_consensus_key(&consensus_key).await
+        } else {
+            return Ok(None);
+        }
+    }
+
+    /// Compute the number of epochs that will elapse before the validator is unbonded.
+    // TODO(erwan): move this to the `ValidatorManager`
+    async fn compute_unbonding_delay_for_validator(
+        &self,
+        current_epoch: Epoch,
+        validator_identity: &IdentityKey,
+    ) -> Result<u64> {
+        let Some(val_bonding_state) = self.get_validator_bonding_state(validator_identity).await?
+        else {
+            anyhow::bail!(
+                "validator bonding state not tracked (validator_identity={})",
+                validator_identity
+            )
+        };
+
+        let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
+
+        let epoch_delay = match val_bonding_state {
+            Bonded => min_epoch_delay,
+            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
+            Unbonded => 0u64,
+        };
+
+        // When the minimum delay parameter changes, an unbonding validator may
+        // have a delay that is larger than the new minimum delay. In this case,
+        // we want to use the new minimum delay.
+        Ok(std::cmp::min(epoch_delay, min_epoch_delay))
+    }
+
+    /// Return the epoch index at which the validator will be unbonded.
+    /// This is the minimum of the default unbonding epoch and the validator's
+    /// unbonding epoch.
+    async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
+        let current_epoch = self.get_current_epoch().await?;
+        let unbonding_delay = self
+            .compute_unbonding_delay_for_validator(current_epoch, id)
+            .await?;
+        let unbonding_epoch = current_epoch.index.saturating_add(unbonding_delay);
+        Ok(unbonding_epoch)
+    }
+
+    // TODO(erwan): we pull the entire validator definition instead of tracking
+    // the consensus key separately.  If we did, not only could we save on deserialization
+    // but we could also make this a clean [`DomainFuture`].
+    fn fetch_validator_consensus_key(
+        &self,
+        identity_key: &IdentityKey,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
+        use futures::TryFutureExt;
+        self.get(&state_key::validators::definitions::by_id(&identity_key))
+            .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
+            .boxed()
+    }
+
+    /// Returns a list of **all** known validators metadata.
+    async fn validator_definitions(&self) -> Result<Vec<Validator>> {
+        self.prefix(state_key::validators::definitions::prefix())
+            .map_ok(|(_key, validator)| validator)
+            .try_collect()
+            .await
     }
 }
 
