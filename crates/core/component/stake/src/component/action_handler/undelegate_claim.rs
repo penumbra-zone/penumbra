@@ -7,7 +7,7 @@ use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 use penumbra_sct::component::clock::EpochRead;
 
 use crate::component::validator_handler::ValidatorDataRead;
-use crate::component::PenaltyDataRead;
+use crate::component::SlashingData;
 use crate::undelegate_claim::UndelegateClaimProofPublic;
 use crate::UndelegateClaim;
 use crate::{component::action_handler::ActionHandler, UnbondingToken};

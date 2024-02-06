@@ -24,8 +24,8 @@ use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
 use tracing::instrument;
 
-use super::epoch_handler::EpochHandler;
-use super::validator_handler::{ValidatorDataRead, ValidatorManager};
+use crate::component::epoch_handler::EpochHandler;
+use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
 
 pub struct Staking {}
 
@@ -323,7 +323,7 @@ pub trait StateWriteExt: StateWrite {
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
-pub trait PenaltyDataRead: StateRead {
+pub trait SlashingData: StateRead {
     async fn get_penalty_in_epoch(
         &self,
         id: &IdentityKey,
@@ -368,10 +368,10 @@ pub trait PenaltyDataRead: StateRead {
     }
 }
 
-impl<T: StateRead + ?Sized> PenaltyDataRead for T {}
+impl<T: StateRead + ?Sized> SlashingData for T {}
 
 #[async_trait]
-pub trait InternalStakingData: StateRead {
+pub(crate) trait InternalStakingData: StateRead {
     /// Calculate the amount of stake that is delegated to the currently active validator set,
     /// denominated in the staking token.
     #[instrument(skip(self))]
@@ -494,7 +494,6 @@ pub trait ConsensusIndexWrite: StateWrite {
     /// Add a validator identity to the consensus set index.
     /// The consensus set index includes any validator that has a delegation pool that
     /// is greater than [`StakeParameters::min_validator_stake`].
-    /// TODO(erwan): We should split this into an `ValidatorIndex` extension traits.
     fn add_consensus_set_index(&mut self, identity_key: &IdentityKey) {
         tracing::debug!(validator = %identity_key, "adding validator identity to consensus set index");
         self.nonverifiable_put_raw(

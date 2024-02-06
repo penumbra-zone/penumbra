@@ -15,4 +15,5 @@ pub const FP_SCALING_FACTOR: Lazy<penumbra_num::fixpoint::U128x128> =
     Lazy::new(|| 1_0000_0000u128.into());
 
 pub use self::metrics::register_metrics;
-pub use stake::{ConsensusIndexRead, PenaltyDataRead, StateReadExt, StateWriteExt};
+pub use stake::{ConsensusIndexRead, SlashingData};
+pub use stake::{StateReadExt, StateWriteExt};

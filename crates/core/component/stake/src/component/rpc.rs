@@ -15,7 +15,7 @@ use penumbra_proto::{
 use tonic::Status;
 use tracing::instrument;
 
-use super::{validator_handler::ValidatorDataRead, PenaltyDataRead};
+use super::{validator_handler::ValidatorDataRead, SlashingData};
 use crate::validator;
 
 // TODO: Hide this and only expose a Router?

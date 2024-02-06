@@ -21,7 +21,7 @@ use crate::{
     component::{
         stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
         validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
-        PenaltyDataRead, FP_SCALING_FACTOR,
+        SlashingData, FP_SCALING_FACTOR,
     },
     validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
     StateReadExt,
