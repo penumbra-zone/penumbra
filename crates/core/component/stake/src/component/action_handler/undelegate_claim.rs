@@ -6,9 +6,11 @@ use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 use penumbra_sct::component::clock::EpochRead;
 
+use crate::component::validator_handler::ValidatorDataRead;
+use crate::component::StakingDataInternalRead;
 use crate::undelegate_claim::UndelegateClaimProofPublic;
 use crate::{component::action_handler::ActionHandler, UnbondingToken};
-use crate::{StateReadExt as _, UndelegateClaim};
+use crate::{UndelegateClaim};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {

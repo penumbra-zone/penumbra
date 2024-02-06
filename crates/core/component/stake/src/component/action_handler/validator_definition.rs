@@ -8,10 +8,8 @@ use std::sync::Arc;
 use penumbra_proto::DomainType;
 
 use crate::{
-    component::action_handler::ActionHandler,
-    component::validator_manager::{ValidatorDataRead, ValidatorManager as _},
-    rate::RateData,
-    validator, StateReadExt as _,
+    component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
+    component::validator_handler::ValidatorManager, rate::RateData, validator, 
 };
 
 #[async_trait]
@@ -80,11 +78,11 @@ impl ActionHandler for validator::Definition {
 
         // Check whether the consensus key has already been used by another validator.
         if let Some(existing_v) = state
-            .validator_by_consensus_key(&v.validator.consensus_key)
+            .get_validator_by_consensus_key(&v.validator.consensus_key)
             .await?
         {
             if v.validator.identity_key != existing_v.identity_key {
-                // This is a new validator definition, but the consensus it declares
+                // This is a new validator definition, but the consensus key it declares
                 // is used by another validator. We MUST reject this definition:
                 //
                 // 1. It prevents someone from declaring an (app-level) validator that

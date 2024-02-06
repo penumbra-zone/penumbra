@@ -6,8 +6,7 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
 
 use crate::{
-    component::validator_manager::ValidatorManager,
-    component::{validator_manager::ValidatorDataRead, StateWriteExt as _},
+    component::{validator_handler::{ValidatorDataRead, ValidatorManager}, StateWriteExt as _},
     event, validator, Delegate, StateReadExt as _,
 };
 

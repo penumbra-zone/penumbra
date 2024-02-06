@@ -19,7 +19,7 @@ use penumbra_sct::{
 };
 use penumbra_shielded_pool::component::SupplyRead;
 use penumbra_stake::{
-    component::validator_manager::ValidatorDataRead, DelegationToken, GovernanceKey, IdentityKey,
+    component::validator_handler::ValidatorDataRead, DelegationToken, GovernanceKey, IdentityKey,
 };
 use penumbra_tct as tct;
 use tokio::task::JoinSet;

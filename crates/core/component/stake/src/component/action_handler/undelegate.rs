@@ -7,7 +7,7 @@ use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
     component::action_handler::ActionHandler,
-    component::{validator_manager::ValidatorDataRead, StateWriteExt as _},
+    component::{validator_handler::ValidatorDataRead, StateWriteExt as _},
     event, Undelegate,
 };
 

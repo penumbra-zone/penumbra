@@ -66,6 +66,7 @@ impl Migration {
                 let validators = migrated_state.validator_definitions().await?;
                 let app_state = genesis::Content {
                     stake_content: StakeContent {
+                        // TODO(erwan): should remove this.
                         validators: validators.into_iter().map(Into::into).collect(),
                         ..Default::default()
                     },

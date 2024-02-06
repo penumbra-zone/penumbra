@@ -2,15 +2,12 @@ use penumbra_distributions::component::StateReadExt as _;
 use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
 use std::{
     collections::{BTreeMap, BTreeSet},
-    future::Future,
-    pin::Pin,
-    str::FromStr,
 };
 use validator::BondingState::*;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
-use futures::{FutureExt, StreamExt, TryStreamExt};
+use futures::{FutureExt, StreamExt, };
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 
 use cnidarium::{StateRead, StateWrite};
@@ -24,25 +21,24 @@ use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
 use crate::{
-    component::validator_manager::ValidatorManager,
     component::{
-        validator_store::{ValidatorDataRead, ValidatorStore},
-        PutValidatorUpdates, StakingDataRead, FP_SCALING_FACTOR,
+        validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
+        ConsensusUpdateWrite, RateDataWrite, StakingDataInternalRead, FP_SCALING_FACTOR,
     },
     params::StakeParameters,
     rate::{BaseRateData, RateData},
     state_key,
     validator::{self, State, Validator},
-    CurrentConsensusKeys, DelegationChanges, FundingStreams, Penalty, StateReadExt, Uptime,
-    {DelegationToken, IdentityKey},
+    CurrentConsensusKeys, DelegationChanges, DelegationToken, FundingStreams, IdentityKey, Penalty,
+    StateReadExt, Uptime,
 };
 use crate::{Delegate, Undelegate};
 use once_cell::sync::Lazy;
 
-use super::StateWriteExt;
+use super::{ConsensusIndexRead, StateWriteExt};
 
 #[async_trait]
-pub trait EpochHandler: StateWriteExt {
+pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
     /// Process the end of an epoch for the staking component.
     async fn end_epoch(&mut self, epoch_to_end: Epoch) -> Result<()> {
@@ -531,4 +527,4 @@ pub trait EpochHandler: StateWriteExt {
     }
 }
 
-impl<T: StateWrite + StateWriteExt + ?Sized> EpochHandler for T {}
+impl<T: StateWrite + ConsensusIndexRead + ?Sized> EpochHandler for T {}

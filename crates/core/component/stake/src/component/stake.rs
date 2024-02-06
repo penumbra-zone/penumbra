@@ -15,7 +15,7 @@ use crate::{
     rate::BaseRateData, state_key, validator::Validator, CurrentConsensusKeys, StateReadExt as _,
 };
 
-use super::{validator_manager::ValidatorManager as _, StakingImpl as _, StateWriteExt as _};
+use super::{epoch_handler::EpochHandler, validator_handler::ValidatorManager, RateDataWrite, StateWriteExt as _};
 
 pub struct Staking {}
 
@@ -128,7 +128,7 @@ impl Component for Staking {
                     .height
                     .try_into()
                     .expect("should be able to convert i64 into block height"),
-                state.get_delegation_changes().clone(),
+                state.get_delegation_changes_tally().clone(),
             )
             .await;
     }

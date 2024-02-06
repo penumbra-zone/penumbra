@@ -61,7 +61,7 @@ impl Component for Funding {
         // Here, we want to process the funding rewards for the epoch that just ended. To do this,
         // we pull the funding queue that the staking component has prepared for us, as well as the
         // base rate data for the epoch that just ended.
-        let funding_queue = state.funding_queue().unwrap_or_default();
+        let funding_queue = state.get_funding_queue().unwrap_or_default();
         let funding_queue_len = funding_queue.len();
 
         let Some(base_rate) = state.get_previous_base_rate() else {
