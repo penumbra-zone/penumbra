@@ -4,27 +4,14 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
-use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
+
+use cnidarium::{StateDelta, StateRead, StateWrite};
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_community_pool::component::StateReadExt as _;
-use penumbra_ibc::component::ClientStateReadExt;
-use penumbra_keys::keys::{FullViewingKey, NullifierKey};
-use penumbra_proto::{DomainType, StateWriteProto as _};
-use penumbra_sct::component::clock::EpochRead;
-use penumbra_sct::component::tree::SctRead;
-use penumbra_shielded_pool::component::SupplyWrite;
-
-use penumbra_transaction::plan::TransactionPlan;
-use penumbra_transaction::Transaction;
-use penumbra_transaction::{AuthorizationData, WitnessData};
-
-use crate::action_handler::ActionHandler;
-use crate::community_pool_ext::CommunityPoolStateWriteExt;
-use crate::params::AppParameters;
 use penumbra_governance::{
     component::{StateReadExt as _, StateWriteExt as _},
     event,
@@ -32,6 +19,19 @@ use penumbra_governance::{
     proposal_state::State as ProposalState,
     ProposalNft, ProposalSubmit, VotingReceiptToken,
 };
+use penumbra_ibc::component::ClientStateReadExt;
+use penumbra_keys::keys::{FullViewingKey, NullifierKey};
+use penumbra_proto::{DomainType, StateWriteProto as _};
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::tree::SctRead;
+use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::Transaction;
+use penumbra_transaction::{AuthorizationData, WitnessData};
+
+use crate::action_handler::ActionHandler;
+use crate::community_pool_ext::CommunityPoolStateWriteExt;
+use crate::params::AppParameters;
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network
@@ -364,7 +364,7 @@ async fn build_community_pool_transaction(
             state_commitment_proofs: Default::default(),
         },
         &AuthorizationData {
-            effect_hash,
+            effect_hash: Some(effect_hash),
             spend_auths: Default::default(),
             delegator_vote_auths: Default::default(),
         },

@@ -1,6 +1,7 @@
 use anyhow::Result;
-use penumbra_keys::keys::SpendKey;
 use rand::{CryptoRng, RngCore};
+
+use penumbra_keys::keys::SpendKey;
 
 use crate::{plan::TransactionPlan, AuthorizationData};
 
@@ -30,7 +31,7 @@ impl TransactionPlan {
             delegator_vote_auths.push(auth_sig);
         }
         Ok(AuthorizationData {
-            effect_hash,
+            effect_hash: Some(effect_hash),
             spend_auths,
             delegator_vote_auths,
         })
