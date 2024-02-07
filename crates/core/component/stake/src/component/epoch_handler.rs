@@ -20,7 +20,7 @@ use tracing::{instrument, Instrument};
 use crate::{
     component::{
         stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
-        validator_handler::{ValidatorDataRead, ValidatorManager, ValidatorStore},
+        validator_handler::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
         SlashingData, FP_SCALING_FACTOR,
     },
     validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
@@ -152,7 +152,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             // First, apply any penalty recorded in the epoch we are ending.
             let penalty = self
                 .get_penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
-                .await?
+                .await
                 .unwrap_or(Penalty::from_percent(0));
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
