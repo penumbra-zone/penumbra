@@ -423,7 +423,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
     #[instrument(skip(self))]
     async fn build_tendermint_validator_updates(&mut self) -> Result<()> {
         let current_consensus_keys: CurrentConsensusKeys = self
-            .get(state_key::current_consensus_keys())
+            .get(state_key::consensus_update::consensus_keys())
             .await?
             .expect("current consensus keys must be present");
         let current_consensus_keys = current_consensus_keys
@@ -512,7 +512,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         };
         tracing::debug!(?updated_consensus_keys);
         self.put(
-            state_key::current_consensus_keys().to_owned(),
+            state_key::consensus_update::consensus_keys().to_owned(),
             updated_consensus_keys,
         );
 
