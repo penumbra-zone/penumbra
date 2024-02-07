@@ -66,7 +66,7 @@ jobs:
         # The script for rustdoc build requires nightly toolchain.
         uses: dtolnay/rust-toolchain@master
         with:
-          # TODO 24-02-06: this is pinned due to tkaitchuck/aHash#200.
+          # TODO 2024-02-06: this is pinned due to tkaitchuck/aHash#200, see GH3750.
           toolchain: nightly-2024-02-01
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
