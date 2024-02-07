@@ -21,7 +21,7 @@ to a local devnet.
 The [Buf Studio](https://studio.buf.build) webapp provides a polished GUI
 and [comprehensive documentation](https://buf.build/docs/bsr/studio). However,
 a significant limitation for use with Penumbra is that it lacks
-support for streaming requests, such as [`penumbra.client.v1alpha1.CompactBlockRangeRequest`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.CompactBlockRangeRequest).
+support for streaming requests, such as [`penumbra.core.component.compact_block.v1.CompactBlockRangeRequest`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.core.component.compact_block.v1#penumbra.core.component.compact_block.v1.CompactBlockRangeRequest).
 
 To get started with Buf Studio, you can use the publicly available gRPC endpoint
 from the testnet deployments run by Penumbra Labs:
@@ -37,11 +37,11 @@ Click **Send** to submit the request and view response data in the right-hand pa
 
 Regardless of which interface you choose, you can connect to an instance of `pd` running
 on your machine, which can be useful while adding new features.
-First, make sure you've [joined a testnet](https://guide.penumbra.zone/main/pd/join-testnet.html)
+First, make sure you've [joined a testnet](../pd/join-testnet.md)
 by setting up a node on your local machine. Once it's running, you can connect directly
 to the pd port via `http://localhost:8080`.
 
-Alternatively, you can use `pclientd`. First, make sure you've [configured pclientd locally](https://guide.penumbra.zone/main/pcli/pclientd.html)
+Alternatively, you can use `pclientd`. First, make sure you've [configured pclientd locally](../pclientd/configure.md)
 with your full viewing key. Once it's running, you can connect directly
 to the pclient port via `http://localhost:8081`.
 
