@@ -31,6 +31,10 @@ impl ActionHandler for validator::Definition {
             anyhow::bail!("validator description must be less than 280 characters")
         }
 
+        if self.validator.funding_streams.funding_streams.len() > 8 {
+            anyhow::bail!("validators can declare at most 8 funding streams")
+        }
+
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
         self.validator
