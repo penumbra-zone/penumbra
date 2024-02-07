@@ -1,13 +1,11 @@
 use anyhow::{anyhow, Result};
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
-use penumbra_proto::{
-    custody::v1::{self as pb},
-    DomainType,
-};
-use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use tonic::{async_trait, Request, Response, Status};
+
+use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_proto::{custody::v1 as pb, DomainType};
+use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
 
 use crate::AuthorizeRequest;
 
@@ -579,7 +577,12 @@ mod test {
                 pre_authorizations: Vec::new(),
             })
             .await?;
-        assert_eq!(plan.effect_hash(&fvk)?, authorization_data.effect_hash);
+        assert_eq!(
+            plan.effect_hash(&fvk)?,
+            authorization_data
+                .effect_hash
+                .expect("effect hash not present")
+        );
         // The transaction plan only has spends
         for (randomizer, sig) in plan
             .spend_plans()
@@ -587,9 +590,13 @@ mod test {
             .map(|x| x.randomizer)
             .zip(authorization_data.spend_auths)
         {
-            fvk.spend_verification_key()
-                .randomize(&randomizer)
-                .verify(authorization_data.effect_hash.as_bytes(), &sig)?;
+            fvk.spend_verification_key().randomize(&randomizer).verify(
+                authorization_data
+                    .effect_hash
+                    .expect("effect hash not present")
+                    .as_bytes(),
+                &sig,
+            )?;
         }
         Ok(())
     }
