@@ -46,33 +46,33 @@ pub mod validators {
 
     pub mod state {
         pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/state")
+            format!("staking/validators/data/state/{id}")
         }
     }
 
     pub mod rate {
         pub fn current_by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/rate/current")
+            format!("staking/validators/data/rate/current/{id}")
         }
         pub fn next_by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/rate/next")
+            format!("staking/validators/data/rate/next/{id}")
         }
     }
 
     pub mod power {
         pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/power")
+            format!("staking/validators/data/power/{id}")
         }
     }
     pub mod bonding_state {
         pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/bonding_state")
+            format!("staking/validators/data/bonding_state/{id}")
         }
     }
 
     pub mod uptime {
         pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/{id}/uptime")
+            format!("staking/validators/data/uptime/{id}")
         }
     }
 
@@ -101,6 +101,9 @@ pub mod penalty {
     use crate::IdentityKey;
 
     pub fn prefix(id: &IdentityKey) -> String {
+        // Note: We typically put the key at the end of the path to increase
+        // locality. Here we don't because we want to build a prefix iterator
+        // to accumulate validator penalty across epochs.
         format!("staking/penalty/{id}/")
     }
     pub fn for_id_in_epoch(id: &crate::IdentityKey, epoch_index: u64) -> String {
@@ -149,8 +152,8 @@ mod tests {
 
         assert_eq!(
             penalty::for_id_in_epoch(&ik, 791),
-            //                                     0123456789
-            format!("staking/penalty_in_epoch/{ik}/0000000791"),
+            //                            0123456789
+            format!("staking/penalty/{ik}/0000000791")
         );
     }
 
