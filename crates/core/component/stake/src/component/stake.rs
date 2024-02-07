@@ -324,13 +324,10 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
 pub trait SlashingData: StateRead {
-    async fn get_penalty_in_epoch(
-        &self,
-        id: &IdentityKey,
-        epoch_index: u64,
-    ) -> Result<Option<Penalty>> {
+    async fn get_penalty_in_epoch(&self, id: &IdentityKey, epoch_index: u64) -> Option<Penalty> {
         self.get(&state_key::penalty_in_epoch(id, epoch_index))
             .await
+            .expect("serialization error cannot happen")
     }
 
     async fn get_penalty_for_range(&self, id: &IdentityKey, start: u64, end: u64) -> Vec<Penalty> {
@@ -434,12 +431,16 @@ pub trait RateDataWrite: StateWrite {
         &mut self,
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
-    ) -> Result<()> {
-        let current_epoch_index = self.get_current_epoch().await?.index;
+    ) {
+        let current_epoch_index = self
+            .get_current_epoch()
+            .await
+            .expect("epoch has been set")
+            .index;
 
         let current_penalty = self
             .get_penalty_in_epoch(identity_key, current_epoch_index)
-            .await?
+            .await
             .unwrap_or(Penalty::from_percent(0));
 
         let new_penalty = current_penalty.compound(slashing_penalty);
@@ -448,8 +449,6 @@ pub trait RateDataWrite: StateWrite {
             state_key::penalty_in_epoch(identity_key, current_epoch_index),
             new_penalty,
         );
-
-        Ok(())
     }
 
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {

@@ -211,7 +211,7 @@ pub trait ValidatorDataRead: StateRead {
 impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
 
 #[async_trait]
-pub trait ValidatorStore: StateWrite {
+pub trait ValidatorDataWrite: StateWrite {
     fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
         self.put(state_key::uptime_by_validator(identity_key), uptime);
     }
@@ -265,4 +265,4 @@ pub trait ValidatorStore: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> ValidatorStore for T {}
+impl<T: StateWrite + ?Sized> ValidatorDataWrite for T {}
