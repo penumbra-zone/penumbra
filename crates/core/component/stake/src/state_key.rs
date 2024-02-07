@@ -79,8 +79,8 @@ pub mod validators {
     /// Tracks the funding rewards of the previously active validator set
     /// in object storage. Consumed by the funding component.
     pub mod rewards {
-        pub fn object_storage_key() -> &'static str {
-            "staking/validators/rewards"
+        pub fn staking() -> &'static str {
+            "staking/validators/staking_rewards"
         }
     }
 }

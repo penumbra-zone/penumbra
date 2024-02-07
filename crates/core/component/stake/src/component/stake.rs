@@ -229,7 +229,7 @@ pub trait StateReadExt: StateRead {
 
     /// Returns the funding queue from object storage (end-epoch).
     fn get_funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
-        self.object_get(state_key::validators::rewards::object_storage_key())
+        self.object_get(state_key::validators::rewards::staking())
     }
 
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
@@ -284,7 +284,7 @@ pub trait StateWriteExt: StateWrite {
         staking_reward_queue: Vec<(IdentityKey, FundingStreams, Amount)>,
     ) {
         self.object_put(
-            state_key::validators::rewards::object_storage_key(),
+            state_key::validators::rewards::staking(),
             staking_reward_queue,
         )
     }
