@@ -250,10 +250,10 @@ pub trait StateWriteExt: StateWrite {
     /// Writes the provided stake parameters to the JMT.
     fn put_stake_params(&mut self, params: StakeParameters) {
         // Note that the stake params have been updated:
-        self.object_put(state_key::parameters::key(), ());
+        self.object_put(state_key::parameters::updated_flag(), ());
 
         // Change the stake parameters:
-        self.put(state_key::parameters::updated_flag().into(), params)
+        self.put(state_key::parameters::key().into(), params)
     }
 
     /// Delegation changes accumulated over the course of this block, to be
