@@ -71,7 +71,7 @@ releases:
       # It's not strictly necessary to wait for node deploys, but doing so allows us to exercise
       # the public HTTPS RPC endpoint for joining, which is nice.
       - penumbra-testnet-nodes
-   values:
+    values:
       - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
       - ingressRoute:
           enabled: false
