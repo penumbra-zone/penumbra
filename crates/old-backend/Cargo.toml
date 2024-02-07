@@ -26,6 +26,7 @@ bech32 = "0.9.1"
 sha2 = "0.10.8"
 
 [dev-dependencies]
+penumbra-governance = { path = "../core/component/governance", default-features = false }
 penumbra-proof-params = { path = "../crypto/proof-params", features = [
     "bundled-proving-keys",
     "download-proving-keys",
