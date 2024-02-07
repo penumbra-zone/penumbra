@@ -152,7 +152,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             // First, apply any penalty recorded in the epoch we are ending.
             let penalty = self
                 .get_penalty_in_epoch(&validator.identity_key, epoch_to_end.index)
-                .await?
+                .await
                 .unwrap_or(Penalty::from_percent(0));
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
