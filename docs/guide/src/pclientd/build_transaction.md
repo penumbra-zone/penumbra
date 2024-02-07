@@ -4,25 +4,25 @@ Using the view and custody services to construct a transaction has four steps.
 
 ## Plan the Transaction
 
-Using the [`TransactionPlanner`](https://buf.build/penumbra-zone/penumbra/docs/60489c71c3b64f179b2537b24a587abe:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.TransactionPlanner) RPC in the view service, compute a `TransactionPlan`.
+Using the [`TransactionPlanner`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.TransactionPlanner) RPC in the view service, compute a `TransactionPlan`.
 
 This RPC translates a general intent, like "send these tokens to this address" into a fully deterministic plan of the exact transaction, with all spends and outputs, all blinding factors selected, and so on.
 
 ## Authorize the Transaction
 
 With a `TransactionPlan` in hand, use the
-[`Authorize`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.custody.v1alpha1#penumbra.custody.v1alpha1.CustodyProtocolService.Authorize)
+[`Authorize`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.custody.v1#penumbra.custody.v1.CustodyService.Authorize)
 RPC to request authorization of the transaction from the custody service.
 
 Note that authorization happens on the cleartext transaction _plan_, not the shielded transaction, so that the custodian can inspect the transaction before signing it.
 
 ## Build the Transaction
 
-With the `TransactionPlan` and `AuthorizationData` in hand, use the [`WitnessAndBuild`](https://buf.build/penumbra-zone/penumbra/docs/60489c71c3b64f179b2537b24a587abe:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.WitnessAndBuild) RPC to have the view service build the transaction, using the latest witness data to construct the ZK proofs.
+With the `TransactionPlan` and `AuthorizationData` in hand, use the [`WitnessAndBuild`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.WitnessAndBuild) RPC to have the view service build the transaction, using the latest witness data to construct the ZK proofs.
 
 ## Broadcast the Transaction
 
-With the resulting shielded `Transaction` complete, use the [`BroadcastTransaction`](https://buf.build/penumbra-zone/penumbra/docs/60489c71c3b64f179b2537b24a587abe:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.BroadcastTransaction)
+With the resulting shielded `Transaction` complete, use the [`BroadcastTransaction`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.BroadcastTransaction)
 request to broadcast the transaction to the network.
 
 The `await_detection` parameter will wait for the transaction to be confirmed

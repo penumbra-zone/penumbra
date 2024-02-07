@@ -221,4 +221,4 @@ pcli tx withdraw --to <OSMOSIS_ADDRESS> --channel <CHANNEL_ID> 5gm --timeout-hei
 Unfortunately the CLI tooling for Osmosis is cumbersome. For now, use `rly` as a user agent
 for the Osmosis testnet, as described in the [IBC dev docs](../dev/ibc.md).
 
-[Osmosis testnet]: https://docs.osmosis.zone/networks/join-testnet/
+[Osmosis testnet]: https://docs.osmosis.zone/overview/endpoints#testnet-networks
