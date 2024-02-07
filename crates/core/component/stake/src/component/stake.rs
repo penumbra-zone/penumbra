@@ -81,7 +81,7 @@ impl Component for Staking {
 
                 // First, "prime" the state with an empty set, so the build_ function can read it.
                 state.put(
-                    state_key::current_consensus_keys().to_owned(),
+                    state_key::consensus_update::consensus_keys().to_owned(),
                     CurrentConsensusKeys::default(),
                 );
 
@@ -190,14 +190,14 @@ impl<T: StateWrite + ?Sized> ConsensusUpdateWrite for T {}
 pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
-        self.get(state_key::stake_params())
+        self.get(state_key::parameters::key())
             .await?
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
     /// Indicates if the stake parameters have been updated in this block.
     fn stake_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::stake_params_updated())
+        self.object_get::<()>(state_key::parameters::updated_flag())
             .is_some()
     }
 
@@ -218,13 +218,13 @@ pub trait StateReadExt: StateRead {
     }
 
     async fn get_current_base_rate(&self) -> Result<BaseRateData> {
-        self.get(state_key::current_base_rate())
+        self.get(state_key::chain::base_rate::current())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
     fn get_previous_base_rate(&self) -> Option<BaseRateData> {
-        self.object_get(state_key::previous_base_rate())
+        self.object_get(state_key::chain::base_rate::previous())
     }
 
     /// Returns the funding queue from object storage (end-epoch).
@@ -248,10 +248,10 @@ pub trait StateWriteExt: StateWrite {
     /// Writes the provided stake parameters to the JMT.
     fn put_stake_params(&mut self, params: StakeParameters) {
         // Note that the stake params have been updated:
-        self.object_put(state_key::stake_params_updated(), ());
+        self.object_put(state_key::parameters::key(), ());
 
         // Change the stake parameters:
-        self.put(state_key::stake_params().into(), params)
+        self.put(state_key::parameters::updated_flag().into(), params)
     }
 
     /// Delegation changes accumulated over the course of this block, to be
@@ -310,11 +310,11 @@ pub trait StateWriteExt: StateWrite {
         let address = validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
-            state_key::consensus_key_by_tendermint_address(&address),
+            state_key::validators::lookup_by::cometbft_address(&address),
             consensus_key.clone(),
         );
         self.put(
-            state_key::validator_id_by_consensus_key(consensus_key),
+            state_key::validators::lookup_by::consensus_key(consensus_key),
             identity_key.clone(),
         );
     }
@@ -325,20 +325,20 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 #[async_trait]
 pub trait SlashingData: StateRead {
     async fn get_penalty_in_epoch(&self, id: &IdentityKey, epoch_index: u64) -> Option<Penalty> {
-        self.get(&state_key::penalty_in_epoch(id, epoch_index))
+        self.get(&state_key::penalty::for_id_in_epoch(id, epoch_index))
             .await
             .expect("serialization error cannot happen")
     }
 
     async fn get_penalty_for_range(&self, id: &IdentityKey, start: u64, end: u64) -> Vec<Penalty> {
-        let prefix = state_key::penalty_in_epoch_prefix(id);
+        let prefix = state_key::penalty::prefix(id);
         let all_penalties: BTreeMap<String, Penalty> = self
             .prefix::<Penalty>(&prefix)
             .try_collect()
             .await
             .unwrap_or_default();
-        let start_key = state_key::penalty_in_epoch(id, start);
-        let end_key = state_key::penalty_in_epoch(id, end);
+        let start_key = state_key::penalty::for_id_in_epoch(id, start);
+        let end_key = state_key::penalty::for_id_in_epoch(id, end);
         all_penalties
             .range(start_key..end_key)
             .map(|(_k, v)| v.to_owned())
@@ -419,12 +419,12 @@ pub trait RateDataWrite: StateWrite {
     #[instrument(skip(self))]
     fn set_base_rate(&mut self, rate_data: BaseRateData) {
         tracing::debug!("setting base rate");
-        self.put(state_key::current_base_rate().to_owned(), rate_data);
+        self.put(state_key::chain::base_rate::current().to_owned(), rate_data);
     }
 
     #[instrument(skip(self))]
     fn set_prev_base_rate(&mut self, rate_data: BaseRateData) {
-        self.object_put(state_key::previous_base_rate(), rate_data);
+        self.object_put(state_key::chain::base_rate::previous(), rate_data);
     }
 
     async fn record_slashing_penalty(
@@ -446,7 +446,7 @@ pub trait RateDataWrite: StateWrite {
         let new_penalty = current_penalty.compound(slashing_penalty);
 
         self.put(
-            state_key::penalty_in_epoch(identity_key, current_epoch_index),
+            state_key::penalty::for_id_in_epoch(identity_key, current_epoch_index),
             new_penalty,
         );
     }
@@ -471,7 +471,7 @@ pub trait ConsensusIndexRead: StateRead {
     ) -> Result<Pin<Box<dyn futures::Stream<Item = Result<IdentityKey>> + Send + 'static>>> {
         Ok(self
             .nonverifiable_prefix_raw(
-                state_key::validators::index::consensus_set::prefix().as_bytes(),
+                state_key::validators::consensus_set_index::prefix().as_bytes(),
             )
             .map(|res| {
                 res.map(|(_, raw_identity_key)| {
@@ -496,7 +496,7 @@ pub trait ConsensusIndexWrite: StateWrite {
     fn add_consensus_set_index(&mut self, identity_key: &IdentityKey) {
         tracing::debug!(validator = %identity_key, "adding validator identity to consensus set index");
         self.nonverifiable_put_raw(
-            state_key::validators::index::consensus_set::by_id(identity_key)
+            state_key::validators::consensus_set_index::by_id(identity_key)
                 .as_bytes()
                 .to_vec(),
             identity_key.to_string().as_bytes().to_vec(),
@@ -509,7 +509,7 @@ pub trait ConsensusIndexWrite: StateWrite {
     fn remove_consensus_set_index(&mut self, identity_key: &IdentityKey) {
         tracing::debug!(validator = %identity_key, "removing validator identity from consensus set index");
         self.nonverifiable_delete(
-            state_key::validators::index::consensus_set::by_id(identity_key)
+            state_key::validators::consensus_set_index::by_id(identity_key)
                 .as_bytes()
                 .to_vec(),
         );
