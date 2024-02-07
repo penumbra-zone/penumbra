@@ -213,7 +213,7 @@ pub trait StateReadExt: StateRead {
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
     fn get_delegation_changes_tally(&self) -> DelegationChanges {
-        self.object_get(state_key::internal::delegation_changes())
+        self.object_get(state_key::chain::delegation_changes::key())
             .unwrap_or_default()
     }
 
@@ -234,7 +234,9 @@ pub trait StateReadExt: StateRead {
 
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
-            .get(&state_key::delegation_changes_by_height(height.value()))
+            .get(&state_key::chain::delegation_changes::by_height(
+                height.value(),
+            ))
             .await?
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
     }
@@ -259,7 +261,7 @@ pub trait StateWriteExt: StateWrite {
     /// epoch.
     fn put_delegation_changes(&mut self, delegation_changes: DelegationChanges) {
         self.object_put(
-            state_key::internal::delegation_changes(),
+            state_key::chain::delegation_changes::key(),
             delegation_changes,
         )
     }
@@ -453,7 +455,7 @@ pub trait RateDataWrite: StateWrite {
 
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
         self.put(
-            state_key::delegation_changes_by_height(height.value()),
+            state_key::chain::delegation_changes::by_height(height.value()),
             changes,
         );
     }

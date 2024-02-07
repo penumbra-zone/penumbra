@@ -1,5 +1,3 @@
-use std::string::String;
-
 pub mod parameters {
     pub fn key() -> &'static str {
         "staking/parameters"
@@ -95,6 +93,16 @@ pub mod chain {
             "staking/chain/base_rate/previous"
         }
     }
+
+    pub mod delegation_changes {
+        pub fn key() -> &'static str {
+            "staking/delegation_changes"
+        }
+
+        pub fn by_height(height: u64) -> String {
+            format!("staking/delegation_changes/{height}")
+        }
+    }
 }
 
 pub mod penalty {
@@ -114,10 +122,6 @@ pub mod penalty {
     }
 }
 
-pub fn delegation_changes_by_height(height: u64) -> String {
-    format!("staking/delegation_changes/{height}")
-}
-
 pub mod consensus_update {
     pub fn consensus_keys() -> &'static str {
         "staking/cometbft_data/consensus_keys"
@@ -125,9 +129,6 @@ pub mod consensus_update {
 }
 
 pub(super) mod internal {
-    pub fn delegation_changes() -> &'static str {
-        "staking/delegation_changes"
-    }
 
     pub fn tendermint_validator_updates() -> &'static str {
         "staking/tendermint_validator_updates"
