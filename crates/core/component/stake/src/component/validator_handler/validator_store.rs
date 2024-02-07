@@ -47,14 +47,14 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> DomainFuture<validator::State, Self::GetRawFut> {
-        self.get(&state_key::state_by_validator(identity_key))
+        self.get(&state_key::validators::state::by_id(identity_key))
     }
 
     async fn get_validator_bonding_state(
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::BondingState>> {
-        self.get(&state_key::bonding_state_by_validator(identity_key))
+        self.get(&state_key::validators::bonding_state::by_id(identity_key))
             .await
     }
 
@@ -82,7 +82,7 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<RateData>>> + Send + 'static>> {
-        self.get(&state_key::current_rate_by_validator(identity_key))
+        self.get(&state_key::validators::rate::current_by_id(identity_key))
             .boxed()
     }
 
@@ -90,7 +90,7 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         validator: &IdentityKey,
     ) -> DomainFuture<Amount, Self::GetRawFut> {
-        self.get(&state_key::power_by_validator(validator))
+        self.get(&state_key::validators::power::by_id(validator))
     }
 
     async fn get_validator_definition(
@@ -105,14 +105,14 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
-        self.get(&state_key::uptime_by_validator(identity_key))
+        self.get(&state_key::validators::uptime::by_id(identity_key))
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
     async fn get_validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
         if let Some(identity_key) = self
-            .get(&state_key::validator_id_by_consensus_key(ck))
+            .get(&state_key::validators::lookup_by::consensus_key(ck))
             .await?
         {
             self.get_validator_definition(&identity_key).await
@@ -121,12 +121,12 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    async fn get_validator_by_tendermint_address(
+    async fn get_validator_by_cometbft_address(
         &self,
         address: &[u8; 20],
     ) -> Result<Option<Validator>> {
         if let Some(consensus_key) = self
-            .get(&state_key::consensus_key_by_tendermint_address(address))
+            .get(&state_key::validators::lookup_by::cometbft_address(address))
             .await?
         {
             self.get_validator_by_consensus_key(&consensus_key).await
@@ -213,7 +213,7 @@ impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
 #[async_trait]
 pub trait ValidatorDataWrite: StateWrite {
     fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put(state_key::uptime_by_validator(identity_key), uptime);
+        self.put(state_key::validators::uptime::by_id(identity_key), uptime);
     }
 
     fn set_validator_bonding_state(
@@ -222,7 +222,10 @@ pub trait ValidatorDataWrite: StateWrite {
         state: validator::BondingState,
     ) {
         tracing::debug!(?state, validator_identity = %identity_key, "set bonding state for validator");
-        self.put(state_key::bonding_state_by_validator(identity_key), state);
+        self.put(
+            state_key::validators::bonding_state::by_id(identity_key),
+            state,
+        );
     }
 
     #[instrument(skip(self))]
@@ -235,7 +238,10 @@ pub trait ValidatorDataWrite: StateWrite {
         if voting_power.value() > MAX_VOTING_POWER {
             anyhow::bail!("voting power exceeds maximum")
         }
-        self.put(state_key::power_by_validator(identity_key), voting_power);
+        self.put(
+            state_key::validators::power::by_id(identity_key),
+            voting_power,
+        );
 
         Ok(())
     }
@@ -251,15 +257,15 @@ pub trait ValidatorDataWrite: StateWrite {
             anyhow::bail!("invalid initial validator state");
         }
 
-        self.put(state_key::state_by_validator(id), initial_state);
+        self.put(state_key::validators::state::by_id(id), initial_state);
         Ok(())
     }
 
     #[instrument(skip(self))]
     fn set_validator_rate_data(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
-        tracing::debug!("setting validator rates");
+        tracing::debug!("setting validator rate data");
         self.put(
-            state_key::current_rate_by_validator(identity_key),
+            state_key::validators::rate::current_by_id(identity_key),
             rate_data,
         );
     }

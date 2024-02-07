@@ -94,7 +94,7 @@ pub trait ValidatorManager: StateWrite {
         new_state: validator::State,
     ) -> Result<()> {
         use validator::State::*;
-        let validator_state_path = state_key::state_by_validator(identity_key);
+        let validator_state_path = state_key::validators::state::by_id(identity_key);
 
         // Validator state transitions are usually triggered by an epoch transition. The exception
         // to this rule is when a validator exits the active set. In this case, we want to end the
@@ -637,7 +637,7 @@ pub trait ValidatorManager: StateWrite {
     /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
-            .get_validator_by_tendermint_address(&evidence.validator.address)
+            .get_validator_by_cometbft_address(&evidence.validator.address)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!(
