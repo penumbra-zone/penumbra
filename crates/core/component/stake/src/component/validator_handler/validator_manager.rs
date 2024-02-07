@@ -227,7 +227,7 @@ pub trait ValidatorManager: StateWrite {
                 self.remove_consensus_set_index(identity_key);
                 self.put(validator_state_path, Defined);
             }
-            (Defined | Disabled | Inactive | Active | Jailed | Tombstoned, Tombstoned) => {
+            (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
                 // We have processed evidence of byzantine behavior for this validator.
                 // It must be terminated and its delegation pool is slashed with a high
                 // penalty. We immediately unbond the validator's delegation pool, and
@@ -253,6 +253,14 @@ pub trait ValidatorManager: StateWrite {
 
                 // Finally, set the validator to be tombstoned.
                 self.put(validator_state_path, Tombstoned);
+            }
+            (Tombstoned, Tombstoned) => {
+                tracing::debug!(validator_identity = %identity_key, "validator is already tombstoned");
+                // See discussion in https://github.com/penumbra-zone/penumbra/pull/3761 for context.
+                // The abridged summary is that applying a misbehavior penalty enough and immediately
+                // unbonding the validator's delegation pool should be enough to deter misbehavior.
+                // Considering every single misbehavior actions as "counts" that accumulate runs the
+                // risk of cratering misconfigured validator into oblivion.
             }
             (Disabled, Defined) => {
                 self.put(validator_state_path, Defined);
