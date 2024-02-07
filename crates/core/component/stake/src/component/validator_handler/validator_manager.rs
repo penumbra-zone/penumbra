@@ -257,36 +257,48 @@ pub trait ValidatorManager: StateWrite {
                 // Finally, set the validator to be tombstoned.
                 self.put(validator_state_path, Tombstoned);
             }
-            (Defined, Defined) => { /* no-op */ }
-            (Defined, Disabled) => { /* no-op */ }
+            (Disabled, Defined) => {
+                self.put(validator_state_path, Defined);
+            }
+            (Defined, Disabled) => {
+                self.put(validator_state_path, Disabled);
+            }
+
             /* Bad transitions */
             (Defined | Jailed | Disabled, Active) => {
                 anyhow::bail!(
-                    "only Inactive validators can become Active: identity_key={}, state={:?}",
+                    "only Inactive validators can become Active: identity_key={}, old_state={:?}",
                     identity_key,
                     old_state
                 )
             }
             (Jailed, Defined) => {
                 anyhow::bail!(
-                    "only inactive validators can become defined: identity_key={}, state={:?}",
+                    "only inactive validators can become defined: identity_key={}, old_state={:?}",
                     identity_key,
                     old_state
                 )
             }
-            (Inactive | Jailed | Disabled | Defined, Jailed) => anyhow::bail!(
+            (Inactive | Disabled | Defined, Jailed) => anyhow::bail!(
                 "only active validators can get jailed: state={:?}, identity_key={}",
                 old_state,
                 identity_key
             ),
-            (Tombstoned, Defined | Disabled | Inactive | Active | Jailed | Tombstoned) => {
-                anyhow::bail!("tombstoning is permanent, identity_key={}", identity_key)
+            (Tombstoned, Defined | Disabled | Inactive | Active | Jailed) => {
+                anyhow::bail!(
+                    "tombstoning is permanent, identity_key={}, next_state={:?}",
+                    identity_key,
+                    new_state
+                )
             }
+
             /* Identities: no-ops */
+            (Defined, Defined) => { /* no-op */ }
             (Inactive, Inactive) => { /* no-op */ }
-            (Disabled, Disabled) => { /* no-op */ }
             (Active, Active) => { /* no-op */ }
-            (Disabled, Defined) => { /* no-op */ }
+            (Jailed, Jailed) => { /* no-op */ }
+            (Tombstoned, Tombstoned) => { /* no-op */ }
+            (Disabled, Disabled) => { /* no-op */ }
         }
 
         // Update the validator metrics once the state transition has been applied.
