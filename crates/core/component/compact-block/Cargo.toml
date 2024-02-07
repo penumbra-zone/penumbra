@@ -1,9 +1,7 @@
 [package]
 name = "penumbra-compact-block"
-version = "0.65.0-alpha.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [features]
 component = [
@@ -20,36 +18,33 @@ std = ["ark-ff/std"]
 docsrs = []
 
 [dependencies]
-# Workspace dependencies
-penumbra-proto = { path = "../../../proto", default-features = false }
-cnidarium = { path = "../../../cnidarium", optional = true }
-penumbra-tct = { path = "../../../crypto/tct" }
-penumbra-proof-params = { path = "../../../crypto/proof-params", default-features = false }
-cnidarium-component = { path = "../../../cnidarium-component", optional = true }
-penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
-penumbra-dex = { path = "../dex", default-features = false }
-penumbra-ibc = { path = "../ibc", default-features = false }
-penumbra-community-pool = { path = "../community-pool", default-features = false }
-penumbra-governance = { path = "../governance", default-features = false }
-penumbra-stake = { path = "../stake", default-features = false }
-penumbra-fee = { path = "../fee", default-features = false }
-penumbra-sct = { path = "../sct", default-features = false }
-
-# Crates.io dependencies
-ark-ff = { version = "0.4", default_features = false }
-decaf377-rdsa = { version = "0.7" }
-metrics = "0.22"
-serde = { version = "1", features = ["derive"] }
-tracing = "0.1"
-anyhow = "1"
-async-trait = "0.1.52"
-tendermint = "0.34.0"
-blake2b_simd = "0.5"
-bytes = "1"
-rand_core = { version = "0.6.3", features = ["getrandom"] }
-rand = "0.8"
-futures = "0.3.28"
-tonic = { version = "0.10", optional = true }
-tokio-stream = { version = "0.1", optional = true }
-tokio = { version = "1", optional = true }
-im = "15.1.0"
+penumbra-proto = {workspace = true, default-features = false}
+cnidarium = {workspace = true, optional = true, default-features = true}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = false}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-dex = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
+penumbra-community-pool = {workspace = true, default-features = false}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-fee = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+ark-ff = {workspace = true, default-features = false}
+decaf377-rdsa = {workspace = true}
+metrics = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+tracing = {workspace = true}
+anyhow = {workspace = true}
+async-trait = {workspace = true}
+tendermint = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+rand = {workspace = true}
+futures = {workspace = true}
+tonic = {workspace = true, optional = true}
+tokio-stream = {workspace = true, optional = true}
+tokio = {workspace = true, optional = true}
+im = {workspace = true}

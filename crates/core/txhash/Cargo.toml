@@ -1,13 +1,12 @@
 [package]
 name = "penumbra-txhash"
-version = "0.65.0-alpha.1"
-edition = "2021"
+version = {workspace = true}
+edition = {workspace = true}
 
 [dependencies]
-# Workspace dependencies
-penumbra-proto = { path = "../../proto", default-features = false }
-penumbra-tct = { path = "../../crypto/tct" }
-anyhow = "1"
-hex = "0.4"
-blake2b_simd = "0.5"
-serde = "1"
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+anyhow = {workspace = true}
+hex = {workspace = true}
+blake2b_simd = {workspace = true}
+serde = {workspace = true}

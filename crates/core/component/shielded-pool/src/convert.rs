@@ -6,6 +6,7 @@ use ark_groth16::{
 use ark_relations::r1cs;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
+use base64::prelude::*;
 use decaf377::{Bls12_377, FieldExt, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
@@ -210,7 +211,7 @@ impl ConvertProof {
         Ok(Self(proof_bytes))
     }
 
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.0), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?BASE64_STANDARD.encode(&self.0), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,

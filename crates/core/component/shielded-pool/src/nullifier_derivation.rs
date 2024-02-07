@@ -1,3 +1,4 @@
+use base64::prelude::*;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -155,7 +156,7 @@ impl NullifierDerivationProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.0), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?BASE64_STANDARD.encode(&self.0), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,

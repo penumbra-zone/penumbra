@@ -363,6 +363,7 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
+    use base64::prelude::*;
     use std::sync::Arc;
 
     use super::*;
@@ -529,15 +530,17 @@ mod tests {
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
-        let msg_create_client_stargaze_raw =
-            base64::decode(include_str!("./test/create_client.msg").replace('\n', "")).unwrap();
+        let msg_create_client_stargaze_raw = BASE64_STANDARD
+            .decode(include_str!("./test/create_client.msg").replace('\n', ""))
+            .unwrap();
         let msg_create_stargaze_client =
             MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
 
         // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
-        let msg_update_client_stargaze_raw =
-            base64::decode(include_str!("./test/update_client_1.msg").replace('\n', "")).unwrap();
+        let msg_update_client_stargaze_raw = BASE64_STANDARD
+            .decode(include_str!("./test/update_client_1.msg").replace('\n', ""))
+            .unwrap();
         let mut msg_update_stargaze_client =
             MsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
 
@@ -568,8 +571,9 @@ mod tests {
 
         // We've had one client update, yes. What about second client update?
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
-        let msg_update_second =
-            base64::decode(include_str!("./test/update_client_2.msg").replace('\n', "")).unwrap();
+        let msg_update_second = BASE64_STANDARD
+            .decode(include_str!("./test/update_client_2.msg").replace('\n', ""))
+            .unwrap();
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();

@@ -1,6 +1,7 @@
 use decaf377::Bls12_377;
 
 use ark_groth16::{PreparedVerifyingKey, ProvingKey};
+use base64::prelude::*;
 use penumbra_proto::{core::component::stake::v1 as pb, DomainType};
 
 use decaf377::{Fq, Fr};
@@ -65,7 +66,7 @@ impl UndelegateClaimProof {
     }
 
     /// Called to verify the proof using the provided public inputs.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?BASE64_STANDARD.encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,

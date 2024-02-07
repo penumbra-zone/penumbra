@@ -95,6 +95,8 @@ mod address_as_string {
 /// copy-paste pre-authorization keys from Go programs into the Rust config.
 // TODO: remove this after <https://github.com/penumbra-zone/ed25519-consensus/issues/7>
 mod ed25519_vec_base64 {
+    use base64::prelude::*;
+
     pub fn serialize<S: serde::Serializer>(
         keys: &[ed25519_consensus::VerificationKey],
         serializer: S,
@@ -102,7 +104,7 @@ mod ed25519_vec_base64 {
         use serde::Serialize;
         let mut base64_keys = Vec::with_capacity(keys.len());
         for key in keys {
-            base64_keys.push(base64::encode(key.as_bytes()));
+            base64_keys.push(BASE64_STANDARD.encode(key.as_bytes()));
         }
         base64_keys.serialize(serializer)
     }
@@ -116,7 +118,9 @@ mod ed25519_vec_base64 {
         let base64_keys: Vec<String> = Vec::deserialize(deserializer)?;
         let mut vks = Vec::with_capacity(base64_keys.len());
         for base64_key in base64_keys {
-            let bytes = base64::decode(base64_key).map_err(serde::de::Error::custom)?;
+            let bytes = BASE64_STANDARD
+                .decode(base64_key)
+                .map_err(serde::de::Error::custom)?;
             let vk = ed25519_consensus::VerificationKey::try_from(bytes.as_slice())
                 .map_err(serde::de::Error::custom)?;
             vks.push(vk);
