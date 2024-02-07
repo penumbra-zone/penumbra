@@ -105,26 +105,23 @@ pub trait ValidatorManager: StateWrite {
 
         match (old_state, new_state) {
             (Defined, Inactive) => {
-                // The validator has reached the minimum threshold to become
-                // part of the "greater" consensus set. We index it and will
-                // iterate over it during end-epoch processing.
+                // The validator has reached the minimum threshold to be indexed by
+                // the staking component.
                 tracing::debug!(identity_key = ?identity_key, "validator has reached minimum stake threshold to be considered inactive");
                 self.add_consensus_set_index(identity_key);
             }
             (Inactive, Defined) => {
                 // The validator has fallen below the minimum threshold to be
-                // part of the "greater" consensus set. We remove it from the
-                // index.
+                // part of the "greater" consensus set.
                 tracing::debug!(identity_key = ?identity_key, "validator has fallen below minimum stake threshold to be considered inactive");
                 self.remove_consensus_set_index(identity_key);
             }
             (Inactive, Active) => {
-                // When the validator's delegation pool is one of the largest one
-                // of the chain, its status becomes promoted to `Active`. We also
-                // say that it is part of the "active set".
+                let power = self.get_validator_power(identity_key).await;
+                tracing::debug!(validator_identity = %identity_key, voting_power = ?power, "validator has become active");
 
-                // We need to update its bonding state to `Bonded` and start tracking
-                // its uptime/liveness.
+                // The validators with the most voting power are selected to be part of the
+                // chain's "Active set".
                 self.set_validator_bonding_state(identity_key, Bonded);
 
                 // Track the validator uptime, overwriting any prior tracking data.
@@ -136,15 +133,11 @@ pub trait ValidatorManager: StateWrite {
                     ),
                 );
 
-                let power = self.get_validator_power(identity_key).await;
-
                 // Finally, set the validator to be active.
                 self.put(validator_state_path, Active);
 
                 metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
                     .increment(0.0);
-
-                tracing::debug!(validator_identity = %identity_key, voting_power = ?power, "validator has become active");
             }
             (Active, Jailed) => {
                 // An active validator has committed misbehavior (e.g. failing to sign a block),
