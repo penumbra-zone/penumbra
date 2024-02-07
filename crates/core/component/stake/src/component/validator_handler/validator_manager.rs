@@ -146,7 +146,33 @@ pub trait ValidatorManager: StateWrite {
 
                 tracing::debug!(validator_identity = %identity_key, voting_power = ?power, "validator has become active");
             }
+            (Active, Jailed) => {
+                // An active validator has committed misbehavior (e.g. failing to sign a block),
+                // we must punish it by applying a penalty to its delegation pool and start the
+                // unbonding process. We also record that the validator was jailed, so delegations
+                // to it are not processed.
+                let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
+                // Record the slashing penalty on this validator.
+                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
+                    .await?;
+
+                // The validator's delegation pool begins unbonding.  Jailed
+                // validators are not unbonded immediately, because they need to
+                // be held accountable for byzantine behavior for the entire
+                // unbonding period.
+                self.set_validator_bonding_state(
+                    identity_key,
+                    Unbonding {
+                        unbonds_at_epoch: self
+                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .await?,
+                    },
+                );
+
+                // Finally, set the validator to be jailed.
+                self.put(validator_state_path, Jailed);
+            }
             (Active, new_state @ (Inactive | Disabled)) => {
                 // When an active validator becomes inactive, or is disabled by its operator,
                 // we need to start the unbonding process for its delegation pool. We keep it
@@ -190,33 +216,7 @@ pub trait ValidatorManager: StateWrite {
                 tracing::debug!(validator_identity = %identity_key, validator_state = ?old_state, "validator has been disabled");
                 self.put(validator_state_path, Disabled);
             }
-            (Active, Jailed) => {
-                // An active validator has committed misbehavior (e.g. failing to sign a block),
-                // we must punish it by applying a penalty to its delegation pool and start the
-                // unbonding process. We also record that the validator was jailed, so delegations
-                // to it are not processed.
-                let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
-                // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
-                    .await?;
-
-                // The validator's delegation pool begins unbonding.  Jailed
-                // validators are not unbonded immediately, because they need to
-                // be held accountable for byzantine behavior for the entire
-                // unbonding period.
-                self.set_validator_bonding_state(
-                    identity_key,
-                    Unbonding {
-                        unbonds_at_epoch: self
-                            .compute_unbonding_epoch_for_validator(identity_key)
-                            .await?,
-                    },
-                );
-
-                // Finally, set the validator to be jailed.
-                self.put(validator_state_path, Jailed);
-            }
             (Active, Defined) => {
                 // The validator was part of the active set, but its delegation pool fell below
                 // the minimum threshold. We remove it from the active set and the consensus set.
