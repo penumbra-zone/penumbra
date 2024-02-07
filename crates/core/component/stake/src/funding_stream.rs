@@ -167,6 +167,8 @@ impl TryFrom<pb::FundingStream> for FundingStream {
 /// [`FundingStream`]s, and cannot exceed 10000bps (100%). This property is guaranteed by the
 /// `TryFrom<Vec<FundingStream>` implementation for [`FundingStreams`], which checks the sum, and is
 /// the only way to build a non-empty [`FundingStreams`].
+///
+/// Similarly, it's not possible to build a [`FundingStreams`] with more than 8 funding streams.
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct FundingStreams {
     funding_streams: Vec<FundingStream>,
@@ -182,12 +184,20 @@ impl FundingStreams {
     pub fn iter(&self) -> impl Iterator<Item = &FundingStream> {
         self.funding_streams.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.funding_streams.len()
+    }
 }
 
 impl TryFrom<Vec<FundingStream>> for FundingStreams {
     type Error = anyhow::Error;
 
     fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
+        if funding_streams.len() > 8 {
+            anyhow::bail!("validators can declare at most 8 funding streams");
+        }
+
         if funding_streams.iter().map(|fs| fs.rate_bps()).sum::<u16>() > 10_000 {
             anyhow::bail!("sum of funding rates exceeds 100% (10,000bps)");
         }
