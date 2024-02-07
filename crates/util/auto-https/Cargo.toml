@@ -1,20 +1,18 @@
 [package]
 name = "penumbra-auto-https"
-version = "0.65.0-alpha.1"
-authors = ["Penumbra Labs <team@penumbra.zone>"]
-edition = "2021"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
 description = "Automatic HTTPS management for Penumbra"
-repository = "https://github.com/penumbra-zone/penumbra/"
-homepage = "https://penumbra.zone"
-license = "MIT OR Apache-2.0"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
 publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "1"
-futures = "0.3"
+anyhow = {workspace = true}
+futures = {workspace = true}
 rustls = "0.20.9"
-axum-server = { version = "0.4.7", features = [] }
+axum-server = {workspace = true, features = []}
 rustls-acme = { version = "0.6.0", features = ["axum"] }
-tracing = "0.1"
+tracing = {workspace = true}

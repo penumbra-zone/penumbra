@@ -1,27 +1,21 @@
 [package]
-# A vendored copy of the unpublished `tracing-tower` crate.
 name = "penumbra-tower-trace"
-version = "0.65.0-alpha.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [dependencies]
-# Penumbra dependencies
-
-# External dependencies
-futures = "0.3"
-hex = "0.4"
-http = "0.2"
-pin-project = "1"
-pin-project-lite = "0.2.9"
-sha2 = "0.9"
-tendermint = "0.34.0"
-tendermint-proto = "0.34.0"
-tokio = { version = "1.22", features = ["full"] }
-tokio-stream = "0.1"
-tokio-util = "0.7"
-tonic = "0.10"
-tower = { version = "0.4", features = ["full"] }
-tower-service = "0.3.2"
-tracing = "0.1"
+futures = {workspace = true}
+hex = {workspace = true}
+http = {workspace = true}
+pin-project = {workspace = true}
+pin-project-lite = {workspace = true}
+sha2 = {workspace = true}
+tendermint = {workspace = true}
+tendermint-proto = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-stream = {workspace = true}
+tokio-util = {workspace = true}
+tonic = {workspace = true}
+tower = {workspace = true, features = ["full"]}
+tower-service = {workspace = true}
+tracing = {workspace = true}
