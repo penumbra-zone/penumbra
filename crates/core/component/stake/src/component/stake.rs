@@ -432,7 +432,11 @@ pub trait RateDataWrite: StateWrite {
         identity_key: &IdentityKey,
         slashing_penalty: Penalty,
     ) {
-        let current_epoch_index = self.get_current_epoch().await.expect("epoch has been set").index;
+        let current_epoch_index = self
+            .get_current_epoch()
+            .await
+            .expect("epoch has been set")
+            .index;
 
         let current_penalty = self
             .get_penalty_in_epoch(identity_key, current_epoch_index)

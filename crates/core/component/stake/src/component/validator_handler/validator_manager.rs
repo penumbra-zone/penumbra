@@ -227,16 +227,20 @@ pub trait ValidatorManager: StateWrite {
                 self.remove_consensus_set_index(identity_key);
                 self.put(validator_state_path, Defined);
             }
-            (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
+            (Defined | Disabled | Inactive | Active | Jailed | Tombstoned, Tombstoned) => {
                 // We have processed evidence of byzantine behavior for this validator.
                 // It must be terminated and its delegation pool is slashed with a high
                 // penalty. We immediately unbond the validator's delegation pool, and
                 // it is removed from the consensus set.
-                let penalty = self.get_stake_params().await?.slashing_penalty_misbehavior;
+                let misbehavior_penalty =
+                    self.get_stake_params().await?.slashing_penalty_misbehavior;
 
                 // Record the slashing penalty on this validator.
-                self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
-                    .await?;
+                self.record_slashing_penalty(
+                    identity_key,
+                    Penalty::from_bps_squared(misbehavior_penalty),
+                )
+                .await;
 
                 // Regardless of its current bonding state, the validator's
                 // delegation pool is unbonded immediately, because the
@@ -290,7 +294,6 @@ pub trait ValidatorManager: StateWrite {
             (Inactive, Inactive) => { /* no-op */ }
             (Active, Active) => { /* no-op */ }
             (Jailed, Jailed) => { /* no-op */ }
-            (Tombstoned, Tombstoned) => { /* no-op */ }
             (Disabled, Disabled) => { /* no-op */ }
         }
 
