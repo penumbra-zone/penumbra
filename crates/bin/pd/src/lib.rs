@@ -6,7 +6,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod info;
-mod mempool;
 mod metrics;
 mod snapshot;
 
@@ -17,6 +16,5 @@ pub mod testnet;
 
 pub use crate::metrics::register_metrics;
 pub use info::Info;
-pub use mempool::Mempool;
 pub use penumbra_app::app::App;
 pub use snapshot::Snapshot;
