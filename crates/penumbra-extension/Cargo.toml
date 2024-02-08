@@ -1,11 +1,9 @@
 [package]
-name = "penumbra-wasm"
-version = "0.65.0-alpha.1"
-authors = [
-    "Valentine <valentine@zpoken.io>",
-    "Gabe R. <gabe@penumbralabs.xyz"
-]
+name = "penumbra-extension"
+version = "0.1.0"
 edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -31,7 +29,6 @@ penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-fea
 penumbra-stake         = { path = "../core/component/stake", default-features = false }
 penumbra-tct           = { path = "../crypto/tct" }
 penumbra-transaction   = { path = "../core/transaction", default-features = false }
-penumbra-extension     = { path = "../penumbra-extension", default-features = false }
 
 anyhow                   = "1.0.75"
 ark-ff                   = { version = "0.4.2", features = ["std"] }
@@ -51,11 +48,3 @@ web-sys                  = { version = "0.3.64", features = ["console"] }
 [dev-dependencies]
 wasm-bindgen-test        = "0.3.37"
 serde_json               = "1.0.107"
-
-# Profiles are ignored for crates within a workspace.
-# In order to customize the profile for wasm, we must
-# either break the crate out of the workspace, or set
-# the profile options at the workspace level, affecting
-# all crates.
-# [profile.release]
-# lto = true

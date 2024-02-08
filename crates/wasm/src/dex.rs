@@ -1,5 +1,5 @@
-use crate::utils;
 use penumbra_dex::lp::position::Position;
+use penumbra_extension::utils;
 use serde_wasm_bindgen::Error;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
