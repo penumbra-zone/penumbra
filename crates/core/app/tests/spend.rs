@@ -1,9 +1,10 @@
-use std::{ops::Deref, sync::Arc};
+mod common;
 
+use self::common::TempStorageExt;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;
-use penumbra_app::{ActionHandler, TempStorageExt};
+use penumbra_app::ActionHandler;
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};
@@ -17,6 +18,7 @@ use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
 use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
 use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
 use rand_core::SeedableRng;
+use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
 
 #[tokio::test]

@@ -1,10 +1,8 @@
-use std::ops::Deref;
-
 use async_trait::async_trait;
 use cnidarium::TempStorage;
+use penumbra_app::app::App;
 use penumbra_genesis::AppState;
-
-use crate::app::App;
+use std::ops::Deref;
 
 #[async_trait]
 pub trait TempStorageExt: Sized {
