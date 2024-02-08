@@ -6,7 +6,7 @@ use penumbra_sct::{
 };
 use std::{ops::Deref, sync::Arc};
 
-use crate::{MockClient, TempStorageExt};
+use penumbra_app::{MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
 use decaf377::Fq;

@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::{ActionHandler, MockClient, TempStorageExt};
+use penumbra_app::{ActionHandler, MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;

@@ -78,3 +78,11 @@ ed25519-consensus = {workspace = true}
 rand_core = {workspace = true}
 rand_chacha = {workspace = true}
 tracing-subscriber = {workspace = true}
+
+# Enable the feature flags to get proving keys when running tests.
+[dev-dependencies.penumbra-proof-params]
+workspace = true
+features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+]

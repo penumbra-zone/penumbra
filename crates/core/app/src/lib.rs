@@ -13,9 +13,6 @@ mod mock_client;
 mod penumbra_host_chain;
 mod temp_storage_ext;
 
-#[cfg(test)]
-mod tests;
-
 pub use crate::{
     action_handler::ActionHandler, app::StateWriteExt,
     community_pool_ext::CommunityPoolStateReadExt, metrics::register_metrics,
