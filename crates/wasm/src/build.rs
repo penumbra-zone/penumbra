@@ -1,9 +1,9 @@
-use crate::error::WasmResult;
+use penumbra_extension::error::WasmResult;
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use crate::utils;
+use penumbra_extension::utils;
 use penumbra_keys::FullViewingKey;
 use penumbra_transaction::{
     plan::{ActionPlan, TransactionPlan},

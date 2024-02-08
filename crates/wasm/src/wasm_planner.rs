@@ -20,11 +20,11 @@ use penumbra_proto::{
     DomainType,
 };
 
-use crate::error::WasmResult;
-use crate::planner::Planner;
-use crate::storage::IndexedDBStorage;
-use crate::swap_record::SwapRecord;
-use crate::utils;
+use penumbra_extension::error::WasmResult;
+use penumbra_extension::planner::Planner;
+use penumbra_extension::storage::IndexedDBStorage;
+use penumbra_extension::swap_record::SwapRecord;
+use penumbra_extension::utils;
 
 #[wasm_bindgen]
 pub struct WasmPlanner {

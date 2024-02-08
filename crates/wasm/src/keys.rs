@@ -14,8 +14,8 @@ use penumbra_proof_params::{
 use penumbra_proto::{core::keys::v1 as pb, serializers::bech32str, DomainType};
 use wasm_bindgen_futures::js_sys::Uint8Array;
 
-use crate::error::WasmResult;
-use crate::utils;
+use penumbra_extension::error::WasmResult;
+use penumbra_extension::utils;
 
 /// Loads the proving key as a collection of bytes, and to sets the keys in memory
 /// dynamicaly at runtime. Failure to bundle the proving keys in the wasm binary

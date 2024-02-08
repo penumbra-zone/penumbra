@@ -13,6 +13,8 @@ mod tests {
         IdbDatabase, IdbObjectStore, IdbQuerySource, IdbTransaction, IdbTransactionMode,
     };
 
+    use penumbra_extension::error::WasmError;
+    use penumbra_extension::storage::IndexedDBStorage;
     use penumbra_proto::{
         core::{
             asset::v1::Value,
@@ -29,9 +31,7 @@ mod tests {
     };
     use penumbra_wasm::{
         build::build_action,
-        error::WasmError,
         keys::load_proving_key,
-        storage::IndexedDBStorage,
         tx::{authorize, build, build_parallel, witness},
         wasm_planner::WasmPlanner,
     };
