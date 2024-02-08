@@ -98,7 +98,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 .expect("able to retrieve value balance in ics20 withdrawal! (execute)")
                 .unwrap_or_else(Amount::zero);
 
-            let new_value_balance = existing_value_balance + withdrawal.amount;
+            let new_value_balance = existing_value_balance
+                .checked_add(&withdrawal.amount)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("overflow adding value balance in ics20 withdrawal")
+                })?;
             self.put(
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
