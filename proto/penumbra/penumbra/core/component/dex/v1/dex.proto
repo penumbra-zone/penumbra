@@ -604,3 +604,12 @@ message EventPositionExecution {
   // The reserves of asset 2 of the position after execution.
   num.v1.Amount reserves_2 = 4;
 }
+
+message EventBatchSwap {
+  // The BatchSwapOutputData containing the results of the batch swap.
+  BatchSwapOutputData batch_swap_output_data = 1;
+  // The record of execution for the batch swap in the 1 -> 2 direction.
+  SwapExecution swap_execution_1_for_2 = 2;
+  // The record of execution for the batch swap in the 2 -> 1 direction.
+  SwapExecution swap_execution_2_for_1 = 3;
+}

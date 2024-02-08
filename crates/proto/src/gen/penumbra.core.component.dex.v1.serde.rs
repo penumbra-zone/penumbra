@@ -1147,6 +1147,138 @@ impl<'de> serde::Deserialize<'de> for DirectedTradingPair {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.DirectedTradingPair", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventBatchSwap {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.batch_swap_output_data.is_some() {
+            len += 1;
+        }
+        if self.swap_execution_1_for_2.is_some() {
+            len += 1;
+        }
+        if self.swap_execution_2_for_1.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventBatchSwap", len)?;
+        if let Some(v) = self.batch_swap_output_data.as_ref() {
+            struct_ser.serialize_field("batchSwapOutputData", v)?;
+        }
+        if let Some(v) = self.swap_execution_1_for_2.as_ref() {
+            struct_ser.serialize_field("swapExecution1For2", v)?;
+        }
+        if let Some(v) = self.swap_execution_2_for_1.as_ref() {
+            struct_ser.serialize_field("swapExecution2For1", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventBatchSwap {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "batch_swap_output_data",
+            "batchSwapOutputData",
+            "swap_execution_1_for_2",
+            "swapExecution1For2",
+            "swap_execution_2_for_1",
+            "swapExecution2For1",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            BatchSwapOutputData,
+            SwapExecution1For2,
+            SwapExecution2For1,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "swapExecution1For2" | "swap_execution_1_for_2" => Ok(GeneratedField::SwapExecution1For2),
+                            "swapExecution2For1" | "swap_execution_2_for_1" => Ok(GeneratedField::SwapExecution2For1),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventBatchSwap;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventBatchSwap")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventBatchSwap, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut batch_swap_output_data__ = None;
+                let mut swap_execution_1_for_2__ = None;
+                let mut swap_execution_2_for_1__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::SwapExecution1For2 => {
+                            if swap_execution_1_for_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapExecution1For2"));
+                            }
+                            swap_execution_1_for_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::SwapExecution2For1 => {
+                            if swap_execution_2_for_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapExecution2For1"));
+                            }
+                            swap_execution_2_for_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventBatchSwap {
+                    batch_swap_output_data: batch_swap_output_data__,
+                    swap_execution_1_for_2: swap_execution_1_for_2__,
+                    swap_execution_2_for_1: swap_execution_2_for_1__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventBatchSwap", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventPositionClose {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

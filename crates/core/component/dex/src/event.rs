@@ -5,6 +5,7 @@ use crate::{
     },
     swap::Swap,
     swap_claim::SwapClaim,
+    BatchSwapOutputData, SwapExecution,
 };
 
 use penumbra_proto::penumbra::core::component::dex::v1 as pb;
@@ -33,7 +34,7 @@ pub fn position_open(position_open: &PositionOpen) -> pb::EventPositionOpen {
         trading_pair: Some(position_open.position.phi.pair.into()),
         reserves_1: Some(position_open.position.reserves.r1.into()),
         reserves_2: Some(position_open.position.reserves.r2.into()),
-        trading_fee: position_open.position.phi.component.fee.into(),
+        trading_fee: position_open.position.phi.component.fee,
     }
 }
 
@@ -63,5 +64,17 @@ pub fn position_execution(post_execution_state: Position) -> pb::EventPositionEx
         trading_pair: Some(post_execution_state.phi.pair.into()),
         reserves_1: Some(post_execution_state.reserves.r1.into()),
         reserves_2: Some(post_execution_state.reserves.r2.into()),
+    }
+}
+
+pub fn batch_swap(
+    bsod: BatchSwapOutputData,
+    swap_execution_1_for_2: Option<SwapExecution>,
+    swap_execution_2_for_1: Option<SwapExecution>,
+) -> pb::EventBatchSwap {
+    pb::EventBatchSwap {
+        batch_swap_output_data: Some(bsod.into()),
+        swap_execution_1_for_2: swap_execution_1_for_2.map(Into::into),
+        swap_execution_2_for_1: swap_execution_2_for_1.map(Into::into),
     }
 }

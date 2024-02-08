@@ -1335,6 +1335,26 @@ impl ::prost::Name for EventPositionExecution {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBatchSwap {
+    /// The BatchSwapOutputData containing the results of the batch swap.
+    #[prost(message, optional, tag = "1")]
+    pub batch_swap_output_data: ::core::option::Option<BatchSwapOutputData>,
+    /// The record of execution for the batch swap in the 1 -> 2 direction.
+    #[prost(message, optional, tag = "2")]
+    pub swap_execution_1_for_2: ::core::option::Option<SwapExecution>,
+    /// The record of execution for the batch swap in the 2 -> 1 direction.
+    #[prost(message, optional, tag = "3")]
+    pub swap_execution_2_for_1: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for EventBatchSwap {
+    const NAME: &'static str = "EventBatchSwap";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
