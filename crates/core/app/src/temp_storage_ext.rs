@@ -1,20 +1,20 @@
 use std::ops::Deref;
 
-use crate::genesis;
 use async_trait::async_trait;
 use cnidarium::TempStorage;
+use penumbra_genesis::AppState;
 
 use crate::app::App;
 
 #[async_trait]
 pub trait TempStorageExt: Sized {
-    async fn apply_genesis(self, genesis: genesis::AppState) -> anyhow::Result<Self>;
+    async fn apply_genesis(self, genesis: AppState) -> anyhow::Result<Self>;
     async fn apply_default_genesis(self) -> anyhow::Result<Self>;
 }
 
 #[async_trait]
 impl TempStorageExt for TempStorage {
-    async fn apply_genesis(self, genesis: genesis::AppState) -> anyhow::Result<Self> {
+    async fn apply_genesis(self, genesis: AppState) -> anyhow::Result<Self> {
         // Check that we haven't already applied a genesis state:
         if self.latest_version() != u64::MAX {
             anyhow::bail!("database already initialized");

@@ -49,7 +49,7 @@ members = [
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
-  "tools/summonerd", "crates/core/component/funding",
+  "tools/summonerd", "crates/core/component/funding", "crates/core/genesis",
 ]
 
 # Optimize for small binaries in just the wasm crate.
@@ -172,6 +172,7 @@ penumbra-distributions = {default-features = false, path = "crates/core/componen
 penumbra-fee = {default-features = false, path = "crates/core/component/fee"}
 penumbra-funding = {default-features = false, path = "crates/core/component/funding"}
 penumbra-governance = {default-features = false, path = "crates/core/component/governance"}
+penumbra-genesis = { path = "crates/core/genesis" }
 penumbra-ibc = {default-features = false, path = "crates/core/component/ibc"}
 penumbra-keys = {default-features = false, path = "crates/core/keys"}
 penumbra-mock-consensus = {path = "crates/test/mock-consensus"}

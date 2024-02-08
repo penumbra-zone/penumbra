@@ -4609,6 +4609,7 @@ dependencies = [
  "penumbra-custody",
  "penumbra-dex",
  "penumbra-fee",
+ "penumbra-genesis",
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
@@ -4732,6 +4733,7 @@ dependencies = [
  "penumbra-distributions",
  "penumbra-fee",
  "penumbra-funding",
+ "penumbra-genesis",
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
@@ -5097,6 +5099,24 @@ dependencies = [
  "serde",
  "tendermint",
  "tracing",
+]
+
+[[package]]
+name = "penumbra-genesis"
+version = "0.65.0"
+dependencies = [
+ "anyhow",
+ "penumbra-community-pool",
+ "penumbra-distributions",
+ "penumbra-fee",
+ "penumbra-funding",
+ "penumbra-governance",
+ "penumbra-ibc",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "serde",
 ]
 
 [[package]]

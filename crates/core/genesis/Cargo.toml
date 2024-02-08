@@ -1,0 +1,22 @@
+[package]
+name = "penumbra-genesis"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+penumbra-community-pool = { workspace = true }
+penumbra-distributions = { workspace = true }
+penumbra-fee = { workspace = true }
+penumbra-funding = { workspace = true }
+penumbra-governance = { workspace = true }
+penumbra-ibc = { workspace = true }
+penumbra-proto = { workspace = true }
+penumbra-sct = { workspace = true }
+penumbra-shielded-pool = { workspace = true }
+penumbra-stake = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
