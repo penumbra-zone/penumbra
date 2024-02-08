@@ -12,6 +12,7 @@ default = ["console_error_panic_hook"]
 mock-database = []
 
 [dependencies]
+<<<<<<< HEAD
 penumbra-asset = {workspace = true, default-features = true}
 penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
@@ -30,6 +31,29 @@ penumbra-transaction = {workspace = true, default-features = false}
 anyhow = {workspace = true}
 ark-ff = {workspace = true, features = ["std"], default-features = true}
 base64 = {workspace = true}
+=======
+penumbra-asset         = { path = "../core/asset" }
+penumbra-chain         = { path = "../core/component/chain", default-features = false }
+penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
+penumbra-dex           = { path = "../core/component/dex", default-features = false }
+penumbra-fee           = { path = "../core/component/fee", default-features = false }
+penumbra-governance    = { path = "../core/component/governance", default-features = false }
+penumbra-ibc           = { path = "../core/component/ibc", default-features = false }
+penumbra-keys          = { path = "../core/keys" }
+penumbra-num           = { path = "../core/num" }
+penumbra-proof-params  = { path = "../crypto/proof-params", default-features = false }
+penumbra-proto         = { path = "../proto", default-features = false }
+penumbra-sct           = { path = "../core/component/sct", default-features = false }
+penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false }
+penumbra-stake         = { path = "../core/component/stake", default-features = false }
+penumbra-tct           = { path = "../crypto/tct" }
+penumbra-transaction   = { path = "../core/transaction", default-features = false }
+penumbra-extension     = { path = "../penumbra-extension", default-features = false }
+
+anyhow                   = "1.0.75"
+ark-ff                   = { version = "0.4.2", features = ["std"] }
+base64                   = "0.21.2"
+>>>>>>> 0776a71da (split penumbra-wasm and penumbra-extension relevant code)
 console_error_panic_hook = { version = "0.1.7", optional = true }
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 hex = {workspace = true}
