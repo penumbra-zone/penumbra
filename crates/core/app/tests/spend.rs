@@ -1,9 +1,9 @@
 use std::{ops::Deref, sync::Arc};
 
-use penumbra_app::{ActionHandler, MockClient, TempStorageExt};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377_rdsa::SigningKey;
+use penumbra_app::{ActionHandler, MockClient, TempStorageExt};
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{test_keys, PayloadKey};

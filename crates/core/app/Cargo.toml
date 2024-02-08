@@ -75,6 +75,7 @@ ibc-proto = {workspace = true, default-features = false, features = [
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}
+penumbra-mock-consensus = {workspace = true}
 rand_core = {workspace = true}
 rand_chacha = {workspace = true}
 tracing-subscriber = {workspace = true}
