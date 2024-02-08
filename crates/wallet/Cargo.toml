@@ -1,54 +1,49 @@
 [package]
 name = "penumbra-wallet"
-version = "0.65.0-alpha.1"
-authors = ["Penumbra Labs <team@penumbra.zone>"]
-edition = "2021"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
 description = "The wallet software for the Penumbra Zone"
-repository = "https://github.com/penumbra-zone/penumbra/"
-homepage = "https://penumbra.zone"
-license = "MIT OR Apache-2.0"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
 publish = false
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-# Workspace dependencies
-penumbra-proto = { path = "../proto" }
-penumbra-tct = { path = "../crypto/tct" }
-penumbra-num = { path = "../core/num" }
-penumbra-asset = { path = "../core/asset" }
-penumbra-keys = { path = "../core/keys" }
-penumbra-dex = { path = "../core/component/dex" }
-penumbra-transaction = { path = "../core/transaction" }
-penumbra-app = { path = "../core/app" }
-penumbra-stake = { path = "../core/component/stake" }
-penumbra-governance = { path = "../core/component/governance" }
-penumbra-fee = { path = "../core/component/fee" }
-penumbra-view = { path = "../view" }
-penumbra-custody = { path = "../custody" }
-
-# External dependencies
-bytes = "1"
-bincode = "1.3.3"
-ark-std = { version = "0.4", default_features = false }
-decaf377 = { version = "0.5" }
-tokio = { version = "1.21.1", features = ["full"] }
-tower = { version = "0.4", features = ["full"] }
-tonic = "0.10"
-tracing = "0.1"
-pin-project = "1"
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
-anyhow = "1"
-hex = "0.4"
-rand_core = { version = "0.6.3", features = ["getrandom"] }
-rand = "0.8"
-
-[dev-dependencies]
-proptest = "1"
-proptest-derive = "0.3"
-once_cell = "1"
 
 [features]
 default = []
 parallel = ["penumbra-transaction/parallel"]
+
+[dependencies]
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-app = {workspace = true}
+penumbra-stake = {workspace = true, default-features = true}
+penumbra-governance = {workspace = true, default-features = true}
+penumbra-fee = {workspace = true, default-features = true}
+penumbra-view = {workspace = true}
+penumbra-custody = {workspace = true}
+bytes = {workspace = true}
+bincode = {workspace = true}
+ark-std = {workspace = true, default-features = false}
+decaf377 = {workspace = true, default-features = true}
+tokio = {workspace = true, features = ["full"]}
+tower = {workspace = true, features = ["full"]}
+tonic = {workspace = true}
+tracing = {workspace = true}
+pin-project = {workspace = true}
+serde_json = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+anyhow = {workspace = true}
+hex = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+rand = {workspace = true}
+
+[dev-dependencies]
+proptest = {workspace = true}
+proptest-derive = {workspace = true}
+once_cell = {workspace = true}

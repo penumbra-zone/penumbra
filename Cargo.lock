@@ -747,34 +747,13 @@ dependencies = [
 
 [[package]]
 name = "async-stream"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22068c0c19514942eefcfd4daf8976ef1aad84e61539f95cd200c35202f80af5"
-dependencies = [
- "async-stream-impl 0.2.1",
- "futures-core",
-]
-
-[[package]]
-name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd56dd203fef61ac097dd65721a419ddccb106b2d2b70ba60a6b529f03961a51"
 dependencies = [
- "async-stream-impl 0.3.5",
+ "async-stream-impl",
  "futures-core",
  "pin-project-lite",
-]
-
-[[package]]
-name = "async-stream-impl"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25f9db3b38af870bf7e5cc649167533b493928e50744e2c30ae350230b414670"
-dependencies = [
- "proc-macro2 1.0.76",
- "quote 1.0.35",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -848,12 +827,12 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "axum"
-version = "0.5.17"
+version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acee9fd5073ab6b045a275b3e709c163dd36c90685219cb21804a147b58dba43"
+checksum = "3b829e4e32b91e643de6eafe82b1d90675f5874230191a4ffbc1b336dec4d6bf"
 dependencies = [
  "async-trait",
- "axum-core 0.2.9",
+ "axum-core",
  "bitflags 1.3.2",
  "bytes",
  "futures-util",
@@ -862,38 +841,7 @@ dependencies = [
  "http-body",
  "hyper",
  "itoa",
- "matchit 0.5.0",
- "memchr",
- "mime",
- "percent-encoding",
- "pin-project-lite",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sync_wrapper",
- "tokio",
- "tower",
- "tower-http 0.3.5",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "axum"
-version = "0.6.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b829e4e32b91e643de6eafe82b1d90675f5874230191a4ffbc1b336dec4d6bf"
-dependencies = [
- "async-trait",
- "axum-core 0.3.4",
- "bitflags 1.3.2",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "hyper",
- "itoa",
- "matchit 0.7.3",
+ "matchit",
  "memchr",
  "mime",
  "percent-encoding",
@@ -906,22 +854,6 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tower",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
-name = "axum-core"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37e5939e02c56fecd5c017c37df4238c0a839fa76b7f97acdd7efb804fd181cc"
-dependencies = [
- "async-trait",
- "bytes",
- "futures-util",
- "http",
- "http-body",
- "mime",
  "tower-layer",
  "tower-service",
 ]
@@ -995,12 +927,6 @@ name = "base64"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
-
-[[package]]
-name = "base64"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ea22880d78093b0cbe17c89f64a7d457941e65759157ec6cb31a31d652b05e5"
 
 [[package]]
 name = "base64"
@@ -1435,17 +1361,6 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "2.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
-dependencies = [
- "bitflags 1.3.2",
- "textwrap 0.11.0",
- "unicode-width",
-]
-
-[[package]]
-name = "clap"
 version = "3.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
@@ -1458,7 +1373,7 @@ dependencies = [
  "once_cell",
  "strsim",
  "termcolor",
- "textwrap 0.16.0",
+ "textwrap",
 ]
 
 [[package]]
@@ -1499,7 +1414,7 @@ dependencies = [
  "metrics 0.22.0",
  "once_cell",
  "parking_lot 0.12.1",
- "pbjson 0.5.1",
+ "pbjson",
  "pin-project",
  "prost",
  "regex",
@@ -1716,32 +1631,6 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b01d6de93b2b6c65e17c634a26653a29d107b3c98c607c765bf38d041531cd8f"
-dependencies = [
- "atty",
- "cast",
- "clap 2.34.0",
- "criterion-plot 0.4.5",
- "csv",
- "itertools 0.10.5",
- "lazy_static",
- "num-traits",
- "oorandom",
- "plotters",
- "rayon",
- "regex",
- "serde",
- "serde_cbor",
- "serde_derive",
- "serde_json",
- "tinytemplate",
- "walkdir",
-]
-
-[[package]]
-name = "criterion"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
@@ -1750,8 +1639,8 @@ dependencies = [
  "atty",
  "cast",
  "ciborium",
- "clap 3.2.25",
- "criterion-plot 0.5.0",
+ "clap",
+ "criterion-plot",
  "itertools 0.10.5",
  "lazy_static",
  "num-traits",
@@ -1764,16 +1653,6 @@ dependencies = [
  "serde_json",
  "tinytemplate",
  "walkdir",
-]
-
-[[package]]
-name = "criterion-plot"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2673cc8207403546f45f5fd319a974b1e6983ad1a3ee7e6041650013be041876"
-dependencies = [
- "cast",
- "itertools 0.10.5",
 ]
 
 [[package]]
@@ -1934,36 +1813,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
-dependencies = [
- "darling_core 0.13.4",
- "darling_macro 0.13.4",
-]
-
-[[package]]
-name = "darling"
 version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0209d94da627ab5605dcccf08bb18afa5009cfbef48d8a8b7d7bdbc79be25c5e"
 dependencies = [
- "darling_core 0.20.3",
- "darling_macro 0.20.3",
-]
-
-[[package]]
-name = "darling_core"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
-dependencies = [
- "fnv",
- "ident_case",
- "proc-macro2 1.0.76",
- "quote 1.0.35",
- "strsim",
- "syn 1.0.109",
+ "darling_core",
+ "darling_macro",
 ]
 
 [[package]]
@@ -1982,22 +1837,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
-dependencies = [
- "darling_core 0.13.4",
- "quote 1.0.35",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "darling_macro"
 version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "836a9bbc7ad63342d6d6e7b815ccab164bc77a2d95d84bc3117a8c0d5c98e2d5"
 dependencies = [
- "darling_core 0.20.3",
+ "darling_core",
  "quote 1.0.35",
  "syn 2.0.48",
 ]
@@ -2073,8 +1917,8 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "bitvec",
- "blake2b_simd 0.5.11",
- "criterion 0.3.6",
+ "blake2b_simd 1.0.2",
+ "criterion",
  "decaf377 0.5.0",
  "proptest",
  "rand_core 0.6.4",
@@ -2087,7 +1931,7 @@ version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
  "ark-ff",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "decaf377 0.5.0",
  "decaf377-rdsa",
  "frost-core",
@@ -4014,12 +3858,6 @@ dependencies = [
 
 [[package]]
 name = "matchit"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
-
-[[package]]
-name = "matchit"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
@@ -4552,16 +4390,6 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pbjson"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "048f9ac93c1eab514f9470c4bc8d97ca2a0a236b84f45cc19d69a59fc11467f6"
-dependencies = [
- "base64 0.13.1",
- "serde",
-]
-
-[[package]]
-name = "pbjson"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1030c719b0ec2a2d25a5df729d6cff1acf3cc230bf766f4f97833591f7577b90"
@@ -4590,7 +4418,7 @@ checksum = "18f596653ba4ac51bdecbb4ef6773bc7f56042dc13927910de1684ad3d32aa12"
 dependencies = [
  "bytes",
  "chrono",
- "pbjson 0.6.0",
+ "pbjson",
  "pbjson-build",
  "prost",
  "prost-build",
@@ -4614,14 +4442,14 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "assert_cmd",
- "async-stream 0.2.1",
+ "async-stream",
  "atty",
  "base64 0.21.6",
  "bincode",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "camino",
- "clap 3.2.25",
+ "clap",
  "colored_json",
  "comfy-table",
  "decaf377 0.5.0",
@@ -4668,8 +4496,8 @@ dependencies = [
  "rpassword",
  "serde",
  "serde_json",
- "serde_with 1.14.0",
- "sha2 0.9.9",
+ "serde_with",
+ "sha2 0.10.8",
  "simple-base64",
  "tempfile",
  "tendermint",
@@ -4690,13 +4518,13 @@ version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
  "assert_cmd",
- "async-stream 0.2.1",
+ "async-stream",
  "async-trait",
  "atty",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bytes",
  "camino",
- "clap 3.2.25",
+ "clap",
  "directories",
  "ed25519-consensus",
  "futures",
@@ -4721,19 +4549,19 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_json",
- "serde_with 1.14.0",
+ "serde_with",
  "sha2 0.10.8",
  "tempfile",
  "tendermint",
  "tokio",
  "tokio-stream",
- "toml 0.5.11",
+ "toml 0.7.8",
  "tonic",
  "tonic-reflection",
  "tonic-web",
  "tower",
  "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
@@ -4743,16 +4571,16 @@ version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
  "ark-ff",
- "async-stream 0.2.1",
+ "async-stream",
  "async-trait",
  "atty",
  "axum-server",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bincode",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "chrono",
- "clap 3.2.25",
+ "clap",
  "cnidarium",
  "console-subscriber",
  "csv",
@@ -4804,8 +4632,8 @@ dependencies = [
  "rocksdb",
  "serde",
  "serde_json",
- "serde_with 1.14.0",
- "sha2 0.9.9",
+ "serde_with",
+ "sha2 0.10.8",
  "tempfile",
  "tendermint",
  "tendermint-config",
@@ -4815,14 +4643,14 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.10",
- "toml 0.5.11",
+ "toml 0.7.8",
  "tonic",
  "tonic-reflection",
  "tonic-web",
  "tower",
  "tower-abci",
  "tower-actor",
- "tower-http 0.4.4",
+ "tower-http",
  "tower-service",
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -4878,11 +4706,11 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bech32",
  "bincode",
  "bitvec",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "cnidarium",
  "cnidarium-component",
  "decaf377 0.5.0",
@@ -4923,8 +4751,8 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_unit_struct",
- "serde_with 2.3.3",
- "sha2 0.9.9",
+ "serde_with",
+ "sha2 0.10.8",
  "tempfile",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -4945,9 +4773,9 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-std",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bech32",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "decaf377 0.5.0",
  "decaf377-fmd",
@@ -4967,7 +4795,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "serde_with 3.5.1",
+ "serde_with",
  "sha2 0.10.8",
  "thiserror",
  "tracing",
@@ -4999,7 +4827,7 @@ dependencies = [
  "ark-snark",
  "ark-std",
  "bech32",
- "criterion 0.4.0",
+ "criterion",
  "decaf377 0.5.0",
  "decaf377-fmd",
  "decaf377-ka",
@@ -5036,8 +4864,8 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "base64 0.20.0",
- "blake2b_simd 0.5.11",
+ "base64 0.21.6",
+ "blake2b_simd 1.0.2",
  "cnidarium",
  "cnidarium-component",
  "futures",
@@ -5068,7 +4896,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "cnidarium",
  "cnidarium-component",
@@ -5104,8 +4932,8 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-serialize",
- "base64 0.20.0",
- "blake2b_simd 0.5.11",
+ "base64 0.21.6",
+ "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
  "decaf377 0.5.0",
@@ -5123,9 +4951,9 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with",
  "tokio",
- "toml 0.5.11",
+ "toml 0.7.8",
  "tonic",
  "tracing",
 ]
@@ -5141,11 +4969,11 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
- "async-stream 0.2.1",
+ "async-stream",
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bincode",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "cnidarium",
  "cnidarium-component",
  "decaf377 0.5.0",
@@ -5231,7 +5059,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "cnidarium",
  "cnidarium-component",
@@ -5281,10 +5109,10 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
- "async-stream 0.2.1",
+ "async-stream",
  "async-trait",
  "base64 0.21.6",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "cnidarium",
  "cnidarium-component",
@@ -5331,8 +5159,8 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "async-trait",
- "base64 0.20.0",
- "blake2b_simd 0.5.11",
+ "base64 0.21.6",
+ "blake2b_simd 1.0.2",
  "cnidarium",
  "hex",
  "ibc-proto",
@@ -5370,10 +5198,10 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-std",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bech32",
  "bip32",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
  "decaf377 0.5.0",
@@ -5411,7 +5239,7 @@ version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
  "bytesize",
- "clap 3.2.25",
+ "clap",
  "indicatif",
  "penumbra-app",
  "penumbra-compact-block",
@@ -5436,9 +5264,9 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bech32",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "decaf377 0.5.0",
  "decaf377-fmd",
@@ -5503,8 +5331,8 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
- "blake2b_simd 0.5.11",
- "criterion 0.4.0",
+ "blake2b_simd 1.0.2",
+ "criterion",
  "decaf377 0.5.0",
  "penumbra-community-pool",
  "penumbra-dex",
@@ -5535,7 +5363,7 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "ics23",
- "pbjson 0.6.0",
+ "pbjson",
  "pbjson-types",
  "pin-project",
  "prost",
@@ -5559,7 +5387,7 @@ dependencies = [
  "ark-serialize",
  "async-trait",
  "bincode",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "cnidarium",
  "cnidarium-component",
@@ -5593,8 +5421,8 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "async-trait",
- "base64 0.20.0",
- "blake2b_simd 0.5.11",
+ "base64 0.21.6",
+ "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
  "cnidarium",
@@ -5641,9 +5469,9 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
- "async-stream 0.3.5",
+ "async-stream",
  "async-trait",
- "base64 0.20.0",
+ "base64 0.21.6",
  "bech32",
  "bitvec",
  "cnidarium",
@@ -5673,8 +5501,8 @@ dependencies = [
  "regex",
  "serde",
  "serde_unit_struct",
- "serde_with 2.3.3",
- "sha2 0.9.9",
+ "serde_with",
+ "sha2 0.10.8",
  "tendermint",
  "tokio",
  "tonic",
@@ -5730,10 +5558,10 @@ name = "penumbra-tct-visualize"
 version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
- "axum 0.5.17",
+ "axum",
  "axum-server",
  "bytes",
- "clap 3.2.25",
+ "clap",
  "decaf377 0.5.0",
  "futures",
  "hex",
@@ -5751,7 +5579,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.10",
  "tonic",
- "tower-http 0.3.5",
+ "tower-http",
  "tracing-subscriber 0.3.18",
 ]
 
@@ -5770,7 +5598,7 @@ dependencies = [
  "penumbra-transaction",
  "pin-project",
  "pin-project-lite",
- "sha2 0.9.9",
+ "sha2 0.10.8",
  "tendermint",
  "tendermint-config",
  "tendermint-light-client-verifier",
@@ -5795,7 +5623,7 @@ dependencies = [
  "http",
  "pin-project",
  "pin-project-lite",
- "sha2 0.9.9",
+ "sha2 0.10.8",
  "tendermint",
  "tendermint-proto",
  "tokio",
@@ -5816,7 +5644,7 @@ dependencies = [
  "ark-serialize",
  "base64 0.21.6",
  "bech32",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
  "decaf377 0.5.0",
@@ -5853,7 +5681,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sha2 0.9.9",
+ "sha2 0.10.8",
  "thiserror",
  "tokio",
  "tracing",
@@ -5864,7 +5692,7 @@ name = "penumbra-txhash"
 version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
- "blake2b_simd 0.5.11",
+ "blake2b_simd 1.0.2",
  "hex",
  "penumbra-proto",
  "penumbra-tct",
@@ -5877,7 +5705,7 @@ version = "0.65.0-alpha.1"
 dependencies = [
  "anyhow",
  "ark-std",
- "async-stream 0.2.1",
+ "async-stream",
  "async-trait",
  "bytes",
  "camino",
@@ -5922,7 +5750,7 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
@@ -6548,10 +6376,12 @@ dependencies = [
 [[package]]
 name = "r2d2_sqlite"
 version = "0.22.0"
-source = "git+https://github.com/penumbra-zone/r2d2-sqlite.git#bcb4957c9bba34d0f22a4e84422edf8d29568e5f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99f31323d6161385f385046738df520e0e8694fa74852d35891fc0be08348ddc"
 dependencies = [
  "r2d2",
  "rusqlite",
+ "uuid 1.6.1",
 ]
 
 [[package]]
@@ -7297,16 +7127,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_cbor"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bef2ebfde456fb76bbcf9f59315333decc4fda0b2b44b420243c11e0f5ec1f5"
-dependencies = [
- "half",
- "serde",
-]
-
-[[package]]
 name = "serde_derive"
 version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7403,33 +7223,6 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "1.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
-dependencies = [
- "hex",
- "serde",
- "serde_with_macros 1.5.2",
-]
-
-[[package]]
-name = "serde_with"
-version = "2.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
-dependencies = [
- "base64 0.13.1",
- "chrono",
- "hex",
- "indexmap 1.9.3",
- "serde",
- "serde_json",
- "serde_with_macros 2.3.3",
- "time 0.3.19",
-]
-
-[[package]]
-name = "serde_with"
 version = "3.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5c9fdb6b00a489875b22efd4b78fe2b363b72265cc5f6eb2e2b9ee270e6140c"
@@ -7441,32 +7234,8 @@ dependencies = [
  "indexmap 2.1.0",
  "serde",
  "serde_json",
- "serde_with_macros 3.5.1",
+ "serde_with_macros",
  "time 0.3.19",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "1.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e182d6ec6f05393cc0e5ed1bf81ad6db3a8feedf8ee515ecdd369809bcce8082"
-dependencies = [
- "darling 0.13.4",
- "proc-macro2 1.0.76",
- "quote 1.0.35",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "serde_with_macros"
-version = "2.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "881b6f881b17d13214e5d494c939ebab463d01264ce1811e9d4ac3a882e7695f"
-dependencies = [
- "darling 0.20.3",
- "proc-macro2 1.0.76",
- "quote 1.0.35",
- "syn 2.0.48",
 ]
 
 [[package]]
@@ -7475,7 +7244,7 @@ version = "3.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dbff351eb4b33600a2e138dfa0b10b65a238ea8ff8fb2387c422c5022a3e8298"
 dependencies = [
- "darling 0.20.3",
+ "darling",
  "proc-macro2 1.0.76",
  "quote 1.0.35",
  "syn 2.0.48",
@@ -7837,11 +7606,11 @@ dependencies = [
  "askama",
  "async-trait",
  "atty",
- "axum 0.6.20",
+ "axum",
  "bytes",
  "camino",
  "chrono",
- "clap 3.2.25",
+ "clap",
  "console-subscriber",
  "decaf377 0.5.0",
  "futures",
@@ -8090,15 +7859,6 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
-
-[[package]]
-name = "textwrap"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
-dependencies = [
- "unicode-width",
-]
 
 [[package]]
 name = "textwrap"
@@ -8403,9 +8163,9 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d560933a0de61cf715926b9cac824d4c883c2c43142f787595e48280c40a1d0e"
 dependencies = [
- "async-stream 0.3.5",
+ "async-stream",
  "async-trait",
- "axum 0.6.20",
+ "axum",
  "base64 0.21.6",
  "bytes",
  "h2",
@@ -8455,7 +8215,7 @@ dependencies = [
  "pin-project",
  "tokio-stream",
  "tonic",
- "tower-http 0.4.4",
+ "tower-http",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -8518,26 +8278,6 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f873044bf02dd1e8239e9c1293ea39dad76dc594ec16185d0a1bf31d8dc8d858"
-dependencies = [
- "bitflags 1.3.2",
- "bytes",
- "futures-core",
- "futures-util",
- "http",
- "http-body",
- "http-range-header",
- "pin-project-lite",
- "tower",
- "tower-layer",
- "tower-service",
- "tracing",
-]
-
-[[package]]
-name = "tower-http"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c5bb1d698276a2443e5ecfabc1008bf15a36c12e6a7176e7bf089ea9131140"
@@ -8552,6 +8292,7 @@ dependencies = [
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
@@ -8802,6 +8543,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
 dependencies = [
  "getrandom 0.2.12",
+ "rand 0.8.5",
  "wasm-bindgen",
 ]
 
