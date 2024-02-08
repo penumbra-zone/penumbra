@@ -41,6 +41,7 @@ cargo +nightly-2024-02-01 doc --no-deps \
   -p penumbra-community-pool \
   -p penumbra-dex \
   -p penumbra-distributions \
+  -p penumbra-genesis \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \

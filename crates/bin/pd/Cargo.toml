@@ -55,6 +55,7 @@ penumbra-custody = {workspace = true}
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 penumbra-auto-https = { path = "../../util/auto-https" }
+penumbra-genesis = {workspace = true}
 decaf377 = {workspace = true, features = ["parallel"], default-features = true}
 decaf377-rdsa = {workspace = true}
 tower-abci = "0.11"

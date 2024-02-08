@@ -1,7 +1,6 @@
 use anyhow::Result;
 
 use cnidarium::Storage;
-use penumbra_app::genesis;
 use tendermint::abci::Event;
 use tendermint::v0_37::abci::{
     request, response, ConsensusRequest as Request, ConsensusResponse as Response,
@@ -104,8 +103,9 @@ impl Consensus {
     /// the database.
     async fn init_chain(&mut self, init_chain: request::InitChain) -> Result<response::InitChain> {
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let app_state: genesis::AppState = serde_json::from_slice(&init_chain.app_state_bytes)
-            .expect("can parse app_state in genesis file");
+        let app_state: penumbra_genesis::AppState =
+            serde_json::from_slice(&init_chain.app_state_bytes)
+                .expect("can parse app_state in genesis file");
 
         self.app.init_chain(&app_state).await;
 
@@ -118,13 +118,13 @@ impl Consensus {
         let validators = self.app.tendermint_validator_updates();
 
         let app_hash = match &app_state {
-            genesis::AppState::Checkpoint(h) => {
+            penumbra_genesis::AppState::Checkpoint(h) => {
                 tracing::info!(?h, "genesis state is a checkpoint");
                 // If we're starting from a checkpoint, we just need to forward the app hash
                 // back to CometBFT.
                 self.storage.latest_snapshot().root_hash().await?
             }
-            genesis::AppState::Content(_) => {
+            penumbra_genesis::AppState::Content(_) => {
                 tracing::info!("genesis state is a full configuration");
                 // Check that we haven't got a duplicated InitChain message for some reason:
                 if self.storage.latest_version() != u64::MAX {

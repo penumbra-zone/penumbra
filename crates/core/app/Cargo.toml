@@ -36,6 +36,7 @@ penumbra-ibc = {workspace = true, features = ["component"], default-features = t
 penumbra-distributions = {workspace = true, default-features = true}
 penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-genesis = {workspace = true}
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 jmt = {workspace = true}

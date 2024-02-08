@@ -3,7 +3,7 @@
 //! for Penumbra.
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_app::{genesis, params::AppParameters};
+use penumbra_app::params::AppParameters;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
 use penumbra_sct::genesis::Content as SctContent;
@@ -35,7 +35,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<genesis::AppState>,
+    pub genesis: Genesis<penumbra_genesis::AppState>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -186,7 +186,7 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_epochs: Option<u64>,
         proposal_voting_blocks: Option<u64>,
-    ) -> anyhow::Result<genesis::Content> {
+    ) -> anyhow::Result<penumbra_genesis::Content> {
         let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
 
         let gov_params = penumbra_governance::params::GovernanceParameters {
@@ -198,7 +198,7 @@ impl TestnetConfig {
         // Look up default app params, so we can fill in defaults.
         let default_app_params = AppParameters::default();
 
-        let app_state = genesis::Content {
+        let app_state = penumbra_genesis::Content {
             chain_id: chain_id.to_string(),
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
@@ -230,8 +230,8 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: genesis::Content,
-    ) -> anyhow::Result<Genesis<genesis::AppState>> {
+        app_state: penumbra_genesis::Content,
+    ) -> anyhow::Result<Genesis<penumbra_genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
@@ -272,7 +272,7 @@ impl TestnetConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state: genesis::AppState::Content(app_state),
+            app_state: penumbra_genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -282,12 +282,12 @@ impl TestnetConfig {
     }
 
     pub(crate) fn make_checkpoint(
-        genesis: Genesis<genesis::AppState>,
+        genesis: Genesis<penumbra_genesis::AppState>,
         checkpoint: Option<Vec<u8>>,
-    ) -> Genesis<genesis::AppState> {
+    ) -> Genesis<penumbra_genesis::AppState> {
         match checkpoint {
             Some(checkpoint) => Genesis {
-                app_state: genesis::AppState::Checkpoint(checkpoint),
+                app_state: penumbra_genesis::AppState::Checkpoint(checkpoint),
                 ..genesis
             },
             None => genesis,
@@ -672,7 +672,8 @@ mod tests {
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        else {
             unimplemented!("TODO: support checkpointed app state")
         };
         assert_eq!(app_state.stake_content.validators.len(), 1);
@@ -699,7 +700,8 @@ mod tests {
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        else {
             unimplemented!("TODO: support checkpointed app state")
         };
         assert_eq!(app_state.stake_content.validators.len(), 2);

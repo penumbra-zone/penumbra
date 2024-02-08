@@ -1,8 +1,8 @@
 use anyhow::Context;
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use directories::UserDirs;
-use penumbra_app::genesis::AppState;
 use penumbra_custody::soft_kms::Config as SoftKmsConfig;
+use penumbra_genesis::AppState;
 use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
 use rand::Rng;
 use rand_core::OsRng;

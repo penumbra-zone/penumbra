@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
-use penumbra_app::{genesis, SUBSTORE_PREFIXES};
+use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_stake::{
     component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
@@ -66,7 +66,7 @@ impl Migration {
 
                 /* ---------- generate genesis ------------  */
                 let validators = migrated_state.validator_definitions().await?;
-                let app_state = genesis::Content {
+                let app_state = penumbra_genesis::Content {
                     stake_content: StakeContent {
                         // TODO(erwan): should remove this.
                         validators: validators.into_iter().map(Into::into).collect(),
