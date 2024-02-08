@@ -285,8 +285,11 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         let unprefixed_denom: asset::Metadata = packet_data
             .denom
-            .replace(&prefix, "")
-            .as_str()
+            .strip_prefix(&prefix)
+            .context(format!(
+                "denom in packet didn't begin with expected prefix {}",
+                prefix
+            ))?
             .try_into()
             .context("couldnt decode denom in ICS20 transfer")?;
 
