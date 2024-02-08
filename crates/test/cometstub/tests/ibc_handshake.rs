@@ -24,6 +24,10 @@ use {
     },
 };
 
+fn builder() {
+    let _ = penumbra_cometstub::engine::Engine::builder();
+}
+
 #[ignore] // XXX(kate): this test doesn't pass yet.
 #[tokio::test]
 async fn ibc_handshake_can_be_generated() -> Result<(), Error> {

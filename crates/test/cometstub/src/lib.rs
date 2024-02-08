@@ -5,6 +5,7 @@
 //  TODO(kate):
 //  - `tests/ibc_handshake.rs` contains a starter test case to build out.
 
+pub mod engine;
 pub mod genesis;
 pub mod validator;
 

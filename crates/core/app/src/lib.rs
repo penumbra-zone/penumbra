@@ -12,6 +12,7 @@ mod community_pool_ext;
 mod mock_client;
 mod penumbra_host_chain;
 mod temp_storage_ext;
+mod mock_comet_ext;
 
 #[cfg(test)]
 mod tests;
