@@ -152,7 +152,12 @@ async fn main() -> anyhow::Result<()> {
                 }))
                 .service(tower_actor::Actor::new(10, |queue: _| {
                     let storage = storage.clone();
-                    async move { pd::Mempool::new(storage.clone(), queue).await?.run().await }
+                    async move {
+                        penumbra_app::mempool::Mempool::new(storage.clone(), queue)
+                            .await?
+                            .run()
+                            .await
+                    }
                 }));
             let info = pd::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(cometbft_addr);

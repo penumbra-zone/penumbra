@@ -22,4 +22,12 @@ pub fn register_metrics() {
     penumbra_governance::register_metrics();
     penumbra_ibc::component::register_metrics();
     penumbra_shielded_pool::component::register_metrics();
+
+    describe_counter!(
+        MEMPOOL_CHECKTX_TOTAL,
+        Unit::Count,
+        "The total number of checktx requests made to the mempool"
+    );
 }
+
+pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
