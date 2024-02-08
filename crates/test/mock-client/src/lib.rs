@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_dex::swap::SwapPlaintext;
@@ -7,6 +5,7 @@ use penumbra_keys::FullViewingKey;
 use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
+use std::collections::BTreeMap;
 
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {

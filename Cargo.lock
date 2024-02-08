@@ -4737,6 +4737,7 @@ dependencies = [
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
+ "penumbra-mock-client",
  "penumbra-mock-consensus",
  "penumbra-num",
  "penumbra-proof-params",
@@ -5271,6 +5272,20 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
+]
+
+[[package]]
+name = "penumbra-mock-client"
+version = "0.65.0"
+dependencies = [
+ "anyhow",
+ "cnidarium",
+ "penumbra-compact-block",
+ "penumbra-dex",
+ "penumbra-keys",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-tct",
 ]
 
 [[package]]

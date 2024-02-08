@@ -44,6 +44,7 @@ members = [
   "crates/bin/pclientd",
   "crates/bin/pcli",
   "crates/wasm",
+  "crates/test/mock-client",
   "crates/test/mock-consensus",
   "crates/test/tct-property-test",
   "crates/misc/measure",
@@ -175,6 +176,7 @@ penumbra-governance = {default-features = false, path = "crates/core/component/g
 penumbra-genesis = { path = "crates/core/genesis" }
 penumbra-ibc = {default-features = false, path = "crates/core/component/ibc"}
 penumbra-keys = {default-features = false, path = "crates/core/keys"}
+penumbra-mock-client = {path = "crates/test/mock-client"}
 penumbra-mock-consensus = {path = "crates/test/mock-consensus"}
 penumbra-num = {default-features = false, path = "crates/core/num"}
 penumbra-proof-params = {default-features = false, path = "crates/crypto/proof-params"}

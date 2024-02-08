@@ -1,0 +1,20 @@
+[package]
+name = "penumbra-mock-client"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = {workspace = true}
+cnidarium = {workspace = true, default-features = true}
+penumbra-compact-block = {workspace = true, default-features = true}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-sct = {workspace = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, features = [
+    "component",
+], default-features = true}
+penumbra-tct = {workspace = true, default-features = true}

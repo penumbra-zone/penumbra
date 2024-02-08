@@ -8,14 +8,13 @@ pub mod rpc;
 
 mod action_handler;
 mod community_pool_ext;
-mod mock_client;
 mod penumbra_host_chain;
 mod temp_storage_ext;
 
 pub use crate::{
     action_handler::ActionHandler, app::StateWriteExt,
     community_pool_ext::CommunityPoolStateReadExt, metrics::register_metrics,
-    mock_client::MockClient, penumbra_host_chain::PenumbraHost, temp_storage_ext::TempStorageExt,
+    penumbra_host_chain::PenumbraHost, temp_storage_ext::TempStorageExt,
 };
 
 use once_cell::sync::Lazy;
