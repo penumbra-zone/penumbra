@@ -5,7 +5,6 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod consensus;
 mod info;
 mod mempool;
 mod metrics;
@@ -17,7 +16,6 @@ pub mod migrate;
 pub mod testnet;
 
 pub use crate::metrics::register_metrics;
-pub use consensus::Consensus;
 pub use info::Info;
 pub use mempool::Mempool;
 pub use penumbra_app::app::App;

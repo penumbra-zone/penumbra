@@ -73,6 +73,8 @@ ibc-types = {workspace = true, default-features = false}
 ibc-proto = {workspace = true, default-features = false, features = [
     "server",
 ]}
+tower-actor = "0.1.0"
+tower = {workspace = true, features = ["full"]}
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}
