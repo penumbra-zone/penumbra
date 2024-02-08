@@ -4763,6 +4763,8 @@ dependencies = [
  "tendermint-proto",
  "tokio",
  "tonic",
+ "tower",
+ "tower-actor",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]

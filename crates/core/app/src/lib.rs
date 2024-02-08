@@ -2,6 +2,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod app;
+pub mod consensus;
 pub mod metrics;
 pub mod params;
 pub mod rpc;

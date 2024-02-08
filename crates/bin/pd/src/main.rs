@@ -140,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
                 .service(tower_actor::Actor::new(10, |queue: _| {
                     let storage = storage.clone();
                     async move {
-                        pd::Consensus::new(storage.clone(), queue)
+                        penumbra_app::consensus::Consensus::new(storage.clone(), queue)
                             .await?
                             .run()
                             .await
