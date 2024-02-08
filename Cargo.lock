@@ -5104,7 +5104,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-genesis"
-version = "0.65.0"
+version = "0.66.0"
 dependencies = [
  "anyhow",
  "penumbra-community-pool",
@@ -5276,7 +5276,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-mock-client"
-version = "0.65.0"
+version = "0.66.0"
 dependencies = [
  "anyhow",
  "cnidarium",
@@ -5290,7 +5290,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-mock-consensus"
-version = "0.65.0"
+version = "0.66.0"
 
 [[package]]
 name = "penumbra-num"
