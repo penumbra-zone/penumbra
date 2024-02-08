@@ -593,3 +593,14 @@ message EventPositionWithdraw {
   // The reserves of asset 2 of the withdrawn position.
   num.v1.Amount reserves_2 = 4;
 }
+
+message EventPositionExecution {
+  // The ID of the position executed against.
+  PositionId position_id = 1;
+  // The trading pair of the position executed against.
+  TradingPair trading_pair = 2;
+  // The reserves of asset 1 of the position after execution.
+  num.v1.Amount reserves_1 = 3;
+  // The reserves of asset 2 of the position after execution.
+  num.v1.Amount reserves_2 = 4;
+}

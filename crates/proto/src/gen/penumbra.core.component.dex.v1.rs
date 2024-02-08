@@ -1312,6 +1312,29 @@ impl ::prost::Name for EventPositionWithdraw {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPositionExecution {
+    /// The ID of the position executed against.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+    /// The trading pair of the position executed against.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// The reserves of asset 1 of the position after execution.
+    #[prost(message, optional, tag = "3")]
+    pub reserves_1: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 2 of the position after execution.
+    #[prost(message, optional, tag = "4")]
+    pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventPositionExecution {
+    const NAME: &'static str = "EventPositionExecution";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

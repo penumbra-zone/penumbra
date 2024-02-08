@@ -56,3 +56,12 @@ pub fn position_withdraw(
         reserves_2: Some(final_position_state.reserves.r2.into()),
     }
 }
+
+pub fn position_execution(post_execution_state: Position) -> pb::EventPositionExecution {
+    pb::EventPositionExecution {
+        position_id: Some(post_execution_state.id().into()),
+        trading_pair: Some(post_execution_state.phi.pair.into()),
+        reserves_1: Some(post_execution_state.reserves.r1.into()),
+        reserves_2: Some(post_execution_state.reserves.r2.into()),
+    }
+}

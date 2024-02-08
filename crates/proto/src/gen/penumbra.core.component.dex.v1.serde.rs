@@ -1243,6 +1243,156 @@ impl<'de> serde::Deserialize<'de> for EventPositionClose {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionClose", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventPositionExecution {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.reserves_1.is_some() {
+            len += 1;
+        }
+        if self.reserves_2.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.reserves_1.as_ref() {
+            struct_ser.serialize_field("reserves1", v)?;
+        }
+        if let Some(v) = self.reserves_2.as_ref() {
+            struct_ser.serialize_field("reserves2", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventPositionExecution {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+            "trading_pair",
+            "tradingPair",
+            "reserves_1",
+            "reserves1",
+            "reserves_2",
+            "reserves2",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+            TradingPair,
+            Reserves1,
+            Reserves2,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
+                            "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventPositionExecution;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventPositionExecution")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventPositionExecution, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                let mut trading_pair__ = None;
+                let mut reserves_1__ = None;
+                let mut reserves_2__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Reserves1 => {
+                            if reserves_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves1"));
+                            }
+                            reserves_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::Reserves2 => {
+                            if reserves_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves2"));
+                            }
+                            reserves_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventPositionExecution {
+                    position_id: position_id__,
+                    trading_pair: trading_pair__,
+                    reserves_1: reserves_1__,
+                    reserves_2: reserves_2__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventPositionOpen {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
