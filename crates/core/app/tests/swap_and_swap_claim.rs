@@ -1,31 +1,31 @@
-use ark_ff::UniformRand;
-use penumbra_compact_block::component::CompactBlockManager as _;
-use penumbra_sct::{
-    component::{clock::EpochManager, source::SourceContext as _, StateReadExt as _},
-    epoch::Epoch,
-};
-use std::{ops::Deref, sync::Arc};
+mod common;
 
+use self::common::TempStorageExt;
+use ark_ff::UniformRand;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
 use decaf377::Fq;
-use penumbra_app::TempStorageExt;
 use penumbra_asset::asset;
-use penumbra_fee::Fee;
-use penumbra_keys::{test_keys, Address};
-use penumbra_mock_client::MockClient;
-use penumbra_num::Amount;
-use penumbra_shielded_pool::component::ShieldedPool;
-use penumbra_transaction::Transaction;
-use rand_core::SeedableRng;
-use tendermint::abci;
-
+use penumbra_compact_block::component::CompactBlockManager as _;
 use penumbra_dex::{
     component::{Dex, StateReadExt as _},
     swap::{SwapPlaintext, SwapPlan},
     swap_claim::SwapClaimPlan,
     TradingPair,
 };
+use penumbra_fee::Fee;
+use penumbra_keys::{test_keys, Address};
+use penumbra_mock_client::MockClient;
+use penumbra_num::Amount;
+use penumbra_sct::{
+    component::{clock::EpochManager, source::SourceContext as _, StateReadExt as _},
+    epoch::Epoch,
+};
+use penumbra_shielded_pool::component::ShieldedPool;
+use penumbra_transaction::Transaction;
+use rand_core::SeedableRng;
+use std::{ops::Deref, sync::Arc};
+use tendermint::abci;
 
 #[tokio::test]
 async fn swap_and_swap_claim() -> anyhow::Result<()> {
