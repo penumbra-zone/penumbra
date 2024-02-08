@@ -4735,6 +4735,7 @@ dependencies = [
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
+ "penumbra-mock-consensus",
  "penumbra-num",
  "penumbra-proof-params",
  "penumbra-proto",
@@ -5251,6 +5252,10 @@ dependencies = [
  "tracing-subscriber 0.3.18",
  "url",
 ]
+
+[[package]]
+name = "penumbra-mock-consensus"
+version = "0.65.0"
 
 [[package]]
 name = "penumbra-num"
