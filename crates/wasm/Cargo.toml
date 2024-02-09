@@ -30,7 +30,8 @@ penumbra-transaction = {workspace = true, default-features = false}
 anyhow = {workspace = true}
 ark-ff = {workspace = true, features = ["std"], default-features = true}
 base64 = {workspace = true}
-penumbra-wasm = { git = "https://github.com/penumbra-zone/web.git", branch = "wasm-refactor", package = "penumbra-wasm", default-features = false }
+# penumbra-wasm = { git = "https://github.com/penumbra-zone/web.git", branch = "wasm-refactor", package = "penumbra-wasm", default-features = false }
+penumbra-extension = {workspace = true, default-features = true}
 console_error_panic_hook = { version = "0.1.7", optional = true }
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 hex = {workspace = true}

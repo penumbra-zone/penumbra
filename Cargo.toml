@@ -184,6 +184,7 @@ penumbra-tct = {default-features = false, path = "crates/crypto/tct"}
 penumbra-transaction = {default-features = false, path = "crates/core/transaction"}
 penumbra-txhash = {default-features = false, path = "crates/core/txhash"}
 penumbra-view = {path = "crates/view"}
+penumbra-extension = { path = "crates/penumbra-extension", default-features = false }
 pin-project = {version = "1.0.12"}
 pin-project-lite = {version = "0.2.9"}
 poseidon377 = {version = "0.6"}
