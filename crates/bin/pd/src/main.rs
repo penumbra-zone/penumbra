@@ -161,7 +161,7 @@ async fn main() -> anyhow::Result<()> {
                 }));
             let info = penumbra_app::info::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(cometbft_addr);
-            let snapshot = pd::Snapshot {};
+            let snapshot = penumbra_app::snapshot::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")

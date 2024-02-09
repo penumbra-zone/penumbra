@@ -8,6 +8,7 @@ pub mod mempool;
 pub mod metrics;
 pub mod params;
 pub mod rpc;
+pub mod snapshot;
 
 mod action_handler;
 mod community_pool_ext;

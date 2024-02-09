@@ -6,7 +6,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod metrics;
-mod snapshot;
 
 pub mod cli;
 pub mod events;
@@ -15,4 +14,3 @@ pub mod testnet;
 
 pub use crate::metrics::register_metrics;
 pub use penumbra_app::app::App;
-pub use snapshot::Snapshot;
