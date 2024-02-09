@@ -140,7 +140,7 @@ async fn main() -> anyhow::Result<()> {
                 .service(tower_actor::Actor::new(10, |queue: _| {
                     let storage = storage.clone();
                     async move {
-                        penumbra_app::consensus::Consensus::new(storage.clone(), queue)
+                        penumbra_app::server::consensus::Consensus::new(storage.clone(), queue)
                             .await?
                             .run()
                             .await
@@ -153,15 +153,15 @@ async fn main() -> anyhow::Result<()> {
                 .service(tower_actor::Actor::new(10, |queue: _| {
                     let storage = storage.clone();
                     async move {
-                        penumbra_app::mempool::Mempool::new(storage.clone(), queue)
+                        penumbra_app::server::mempool::Mempool::new(storage.clone(), queue)
                             .await?
                             .run()
                             .await
                     }
                 }));
-            let info = penumbra_app::info::Info::new(storage.clone());
+            let info = penumbra_app::server::info::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(cometbft_addr);
-            let snapshot = penumbra_app::snapshot::Snapshot {};
+            let snapshot = penumbra_app::server::snapshot::Snapshot {};
 
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")

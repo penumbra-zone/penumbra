@@ -2,13 +2,10 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod app;
-pub mod consensus;
-pub mod info;
-pub mod mempool;
 pub mod metrics;
 pub mod params;
 pub mod rpc;
-pub mod snapshot;
+pub mod server;
 
 mod action_handler;
 mod community_pool_ext;
