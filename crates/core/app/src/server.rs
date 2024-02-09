@@ -1,7 +1,7 @@
 //! Facilities related to the Penumbra app's ABCI server.
 
 use {
-    self::{consensus::Consensus, info::Info, mempool::Mempool, snapshot::Snapshot},
+    self::{consensus::Consensus, info::Info, mempool::Mempool, snapshot::Snapshot, events::EventIndexLayer},
     cnidarium::Storage,
     penumbra_tower_trace::trace::request_span,
     tendermint::v0_37::abci::{
@@ -14,6 +14,8 @@ pub mod consensus;
 pub mod info;
 pub mod mempool;
 pub mod snapshot;
+
+mod events;
 
 /// Returns a newly instantiated ABCI [`Server`], backed by the provided [`Storage`].
 pub fn new(
@@ -44,8 +46,7 @@ pub fn new(
             use penumbra_tower_trace::v037::RequestExt;
             req.create_span()
         }))
-        // TODO(kate): reënable this once it is pulled into the app crate.
-        // .layer(EventIndexLayer::index_all())
+        .layer(EventIndexLayer::index_all())
         .service(tower_actor::Actor::new(10, |queue: _| {
             let storage = storage.clone();
             async move { Consensus::new(storage.clone(), queue).await?.run().await }
