@@ -1147,6 +1147,254 @@ impl<'de> serde::Deserialize<'de> for DirectedTradingPair {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.DirectedTradingPair", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventArbExecution {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.height != 0 {
+            len += 1;
+        }
+        if self.swap_execution.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventArbExecution", len)?;
+        if self.height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
+        }
+        if let Some(v) = self.swap_execution.as_ref() {
+            struct_ser.serialize_field("swapExecution", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventArbExecution {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "height",
+            "swap_execution",
+            "swapExecution",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Height,
+            SwapExecution,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "height" => Ok(GeneratedField::Height),
+                            "swapExecution" | "swap_execution" => Ok(GeneratedField::SwapExecution),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventArbExecution;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventArbExecution")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventArbExecution, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut height__ = None;
+                let mut swap_execution__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Height => {
+                            if height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("height"));
+                            }
+                            height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::SwapExecution => {
+                            if swap_execution__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapExecution"));
+                            }
+                            swap_execution__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventArbExecution {
+                    height: height__.unwrap_or_default(),
+                    swap_execution: swap_execution__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventArbExecution", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventBatchSwap {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.batch_swap_output_data.is_some() {
+            len += 1;
+        }
+        if self.swap_execution_1_for_2.is_some() {
+            len += 1;
+        }
+        if self.swap_execution_2_for_1.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventBatchSwap", len)?;
+        if let Some(v) = self.batch_swap_output_data.as_ref() {
+            struct_ser.serialize_field("batchSwapOutputData", v)?;
+        }
+        if let Some(v) = self.swap_execution_1_for_2.as_ref() {
+            struct_ser.serialize_field("swapExecution1For2", v)?;
+        }
+        if let Some(v) = self.swap_execution_2_for_1.as_ref() {
+            struct_ser.serialize_field("swapExecution2For1", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventBatchSwap {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "batch_swap_output_data",
+            "batchSwapOutputData",
+            "swap_execution_1_for_2",
+            "swapExecution1For2",
+            "swap_execution_2_for_1",
+            "swapExecution2For1",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            BatchSwapOutputData,
+            SwapExecution1For2,
+            SwapExecution2For1,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "swapExecution1For2" | "swap_execution_1_for_2" => Ok(GeneratedField::SwapExecution1For2),
+                            "swapExecution2For1" | "swap_execution_2_for_1" => Ok(GeneratedField::SwapExecution2For1),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventBatchSwap;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventBatchSwap")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventBatchSwap, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut batch_swap_output_data__ = None;
+                let mut swap_execution_1_for_2__ = None;
+                let mut swap_execution_2_for_1__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::SwapExecution1For2 => {
+                            if swap_execution_1_for_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapExecution1For2"));
+                            }
+                            swap_execution_1_for_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::SwapExecution2For1 => {
+                            if swap_execution_2_for_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapExecution2For1"));
+                            }
+                            swap_execution_2_for_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventBatchSwap {
+                    batch_swap_output_data: batch_swap_output_data__,
+                    swap_execution_1_for_2: swap_execution_1_for_2__,
+                    swap_execution_2_for_1: swap_execution_2_for_1__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventBatchSwap", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventPositionClose {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1241,6 +1489,156 @@ impl<'de> serde::Deserialize<'de> for EventPositionClose {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionClose", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventPositionExecution {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        if self.trading_pair.is_some() {
+            len += 1;
+        }
+        if self.reserves_1.is_some() {
+            len += 1;
+        }
+        if self.reserves_2.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        if let Some(v) = self.trading_pair.as_ref() {
+            struct_ser.serialize_field("tradingPair", v)?;
+        }
+        if let Some(v) = self.reserves_1.as_ref() {
+            struct_ser.serialize_field("reserves1", v)?;
+        }
+        if let Some(v) = self.reserves_2.as_ref() {
+            struct_ser.serialize_field("reserves2", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventPositionExecution {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+            "trading_pair",
+            "tradingPair",
+            "reserves_1",
+            "reserves1",
+            "reserves_2",
+            "reserves2",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+            TradingPair,
+            Reserves1,
+            Reserves2,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
+                            "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
+                            "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventPositionExecution;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventPositionExecution")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventPositionExecution, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                let mut trading_pair__ = None;
+                let mut reserves_1__ = None;
+                let mut reserves_2__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::TradingPair => {
+                            if trading_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tradingPair"));
+                            }
+                            trading_pair__ = map_.next_value()?;
+                        }
+                        GeneratedField::Reserves1 => {
+                            if reserves_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves1"));
+                            }
+                            reserves_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::Reserves2 => {
+                            if reserves_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("reserves2"));
+                            }
+                            reserves_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventPositionExecution {
+                    position_id: position_id__,
+                    trading_pair: trading_pair__,
+                    reserves_1: reserves_1__,
+                    reserves_2: reserves_2__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventPositionOpen {

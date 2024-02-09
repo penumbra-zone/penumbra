@@ -11,8 +11,8 @@ use tendermint::v0_37::abci;
 use tracing::instrument;
 
 use crate::{
-    component::flow::SwapFlow, state_key, BatchSwapOutputData, DirectedTradingPair, SwapExecution,
-    TradingPair,
+    component::flow::SwapFlow, event, state_key, BatchSwapOutputData, DirectedTradingPair,
+    SwapExecution, TradingPair,
 };
 
 use super::{
@@ -183,14 +183,14 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.put(state_key::output_data(height, trading_pair), output_data);
 
         // Store the swap executions for both directions in the state as well.
-        if let Some(swap_execution) = swap_execution_1_for_2 {
+        if let Some(swap_execution) = swap_execution_1_for_2.clone() {
             let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
             self.put(
                 state_key::swap_execution(height, tp_1_for_2),
                 swap_execution,
             );
         }
-        if let Some(swap_execution) = swap_execution_2_for_1 {
+        if let Some(swap_execution) = swap_execution_2_for_1.clone() {
             let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
             self.put(
                 state_key::swap_execution(height, tp_2_for_1),
@@ -202,6 +202,13 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         let mut outputs = self.pending_batch_swap_outputs();
         outputs.insert(trading_pair, output_data);
         self.object_put(state_key::pending_outputs(), outputs);
+
+        // Also generate an ABCI event for indexing:
+        self.record_proto(event::batch_swap(
+            output_data,
+            swap_execution_1_for_2,
+            swap_execution_2_for_1,
+        ));
     }
 
     fn set_arb_execution(&mut self, height: u64, execution: SwapExecution) {

@@ -29,6 +29,7 @@ impl ActionHandler for PositionRewardClaim {
         // It's important to reject all LP actions for now, to prevent
         // inflation / minting bugs until we implement all required checks
         // (e.g., minting tokens by withdrawing reserves we don't check)
+        // TODO: add record_proto call to log event here
         Err(anyhow::anyhow!("lp rewards not supported yet"))
     }
 }
