@@ -226,5 +226,5 @@ tower = {version = "0.4.0"}
 tower-http = {version = "0.4"}
 tower-service = {version = "0.3.2"}
 tracing = {version = "0.1"}
-tracing-subscriber = {version = "0.3.17"}
+tracing-subscriber = {version = "0.3.17", features = ["env-filter"]}
 url = {version = "2.2"}

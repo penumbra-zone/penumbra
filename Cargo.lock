@@ -4682,6 +4682,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
+ "tokio-util 0.7.10",
  "tonic",
  "tower",
  "tower-abci",
@@ -5215,6 +5216,14 @@ dependencies = [
 [[package]]
 name = "penumbra-mock-consensus"
 version = "0.67.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "tap",
+ "tendermint",
+ "tower",
+ "tracing",
+]
 
 [[package]]
 name = "penumbra-num"

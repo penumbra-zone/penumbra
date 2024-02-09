@@ -18,6 +18,12 @@ impl Deref for TempStorage {
     }
 }
 
+impl AsRef<Storage> for TempStorage {
+    fn as_ref(&self) -> &Storage {
+        &self.inner
+    }
+}
+
 impl TempStorage {
     pub async fn new() -> anyhow::Result<Self> {
         let dir = tempfile::tempdir()?;
