@@ -5,7 +5,6 @@
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-mod info;
 mod metrics;
 mod snapshot;
 
@@ -15,6 +14,5 @@ pub mod migrate;
 pub mod testnet;
 
 pub use crate::metrics::register_metrics;
-pub use info::Info;
 pub use penumbra_app::app::App;
 pub use snapshot::Snapshot;

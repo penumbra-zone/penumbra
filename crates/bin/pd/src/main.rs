@@ -159,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
                             .await
                     }
                 }));
-            let info = pd::Info::new(storage.clone());
+            let info = penumbra_app::info::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(cometbft_addr);
             let snapshot = pd::Snapshot {};
 

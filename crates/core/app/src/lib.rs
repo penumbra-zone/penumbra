@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod consensus;
+pub mod info;
 pub mod mempool;
 pub mod metrics;
 pub mod params;
