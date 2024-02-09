@@ -8,3 +8,9 @@ homepage.workspace = true
 license.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
+bytes = { workspace = true }
+tendermint = { workspace = true }
+tower = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tap = "1.0.1"
