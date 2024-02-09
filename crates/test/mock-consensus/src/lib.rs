@@ -1,5 +1,6 @@
-pub struct TestNode<A> {
-    _app: A,
+pub struct TestNode<S> {
+    #[allow(dead_code)]
+    abci_server: S,
     _last_app_hash: Vec<u8>,
 }
 
@@ -35,14 +36,10 @@ impl Builder {
         todo!()
     }
 
-    // this should take the `consensus` thing from pd/main.rs
-    pub async fn init_chain<A>(self, _: A) -> TestNode<A> {
-        // https://rustdoc.penumbra.zone/main/tower_abci/v037/struct.ServerBuilder.html
-        // Engine should be parameterized by the C here
-        // init_chain should be parameterized by the C here
-        //
-        // C: Service<ConsensusRequest, Response = ConsensusResponse, Error = BoxError> + Send + Clone + 'static,
-        // C::Future: Send + 'static,
-        todo!()
+    pub async fn init_chain<S>(self, abci_server: S) -> TestNode<S> {
+        TestNode {
+            abci_server,
+            _last_app_hash: vec![],
+        }
     }
 }
