@@ -15,7 +15,6 @@ use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as Connectio
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    events::EventIndexLayer,
     migrate::Migration::SimpleMigration,
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
@@ -36,9 +35,6 @@ use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
-
-use penumbra_tower_trace::v037::RequestExt;
-use tendermint::v0_37::abci::{ConsensusRequest, MempoolRequest};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -130,51 +126,10 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            use penumbra_tower_trace::trace::request_span;
-
-            let consensus = tower::ServiceBuilder::new()
-                .layer(request_span::layer(|req: &ConsensusRequest| {
-                    req.create_span()
-                }))
-                .layer(EventIndexLayer::index_all())
-                .service(tower_actor::Actor::new(10, |queue: _| {
-                    let storage = storage.clone();
-                    async move {
-                        penumbra_app::server::consensus::Consensus::new(storage.clone(), queue)
-                            .await?
-                            .run()
-                            .await
-                    }
-                }));
-            let mempool = tower::ServiceBuilder::new()
-                .layer(request_span::layer(|req: &MempoolRequest| {
-                    req.create_span()
-                }))
-                .service(tower_actor::Actor::new(10, |queue: _| {
-                    let storage = storage.clone();
-                    async move {
-                        penumbra_app::server::mempool::Mempool::new(storage.clone(), queue)
-                            .await?
-                            .run()
-                            .await
-                    }
-                }));
-            let info = penumbra_app::server::info::Info::new(storage.clone());
             let tm_proxy = TendermintProxy::new(cometbft_addr);
-            let snapshot = penumbra_app::server::snapshot::Snapshot {};
-
             let abci_server = tokio::task::Builder::new()
                 .name("abci_server")
-                .spawn(
-                    tower_abci::v037::Server::builder()
-                        .consensus(consensus)
-                        .snapshot(snapshot)
-                        .mempool(mempool)
-                        .info(info.clone())
-                        .finish()
-                        .context("failed to build abci server")?
-                        .listen_tcp(abci_bind),
-                )
+                .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
                 .expect("failed to spawn abci server");
 
             let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
