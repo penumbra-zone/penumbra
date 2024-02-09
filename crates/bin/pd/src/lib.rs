@@ -8,7 +8,6 @@
 mod metrics;
 
 pub mod cli;
-pub mod events;
 pub mod migrate;
 pub mod testnet;
 
