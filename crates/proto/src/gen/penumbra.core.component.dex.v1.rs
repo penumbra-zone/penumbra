@@ -1355,6 +1355,23 @@ impl ::prost::Name for EventBatchSwap {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventArbExecution {
+    /// The height at which the arb execution occurred.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The record of execution for the arb execution.
+    #[prost(message, optional, tag = "2")]
+    pub swap_execution: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for EventArbExecution {
+    const NAME: &'static str = "EventArbExecution";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

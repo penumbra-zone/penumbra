@@ -78,3 +78,10 @@ pub fn batch_swap(
         swap_execution_2_for_1: swap_execution_2_for_1.map(Into::into),
     }
 }
+
+pub fn arb_execution(height: u64, swap_execution: SwapExecution) -> pb::EventArbExecution {
+    pb::EventArbExecution {
+        height,
+        swap_execution: Some(swap_execution.into()),
+    }
+}

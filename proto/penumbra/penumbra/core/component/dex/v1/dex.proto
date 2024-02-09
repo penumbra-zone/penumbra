@@ -613,3 +613,10 @@ message EventBatchSwap {
   // The record of execution for the batch swap in the 2 -> 1 direction.
   SwapExecution swap_execution_2_for_1 = 3;
 }
+
+message EventArbExecution {
+  // The height at which the arb execution occurred.
+  uint64 height = 1;
+  // The record of execution for the arb execution.
+  SwapExecution swap_execution = 2;
+}
