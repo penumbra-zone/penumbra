@@ -97,6 +97,7 @@ toml = {workspace = true, features = ["preserve_order"]}
 once_cell = {workspace = true}
 ndarray = "0.15.6"
 dialoguer = "0.10.4"
+colored = "2.1.0"
 
 [dev-dependencies]
 assert_cmd = {workspace = true}

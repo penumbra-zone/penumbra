@@ -1,6 +1,7 @@
 use std::{fs::File, io::Write};
 
 use anyhow::{Context, Result};
+use colored::Colorize;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_num::Amount;
@@ -121,7 +122,7 @@ impl ValidatorCmd {
                         v.status.bonding_state.to_string(),
                         // TODO: consider rewriting this with term colors
                         // at some point, when we get around to it
-                        format!("\x1b[1;31m{}\x1b[0m", v.validator.identity_key),
+                        v.validator.identity_key.to_string().red().to_string(),
                     ]);
                     table.add_row(vec![
                         "".into(),
@@ -129,7 +130,7 @@ impl ValidatorCmd {
                         "".into(),
                         "".into(),
                         "".into(),
-                        format!("  \x1b[1;92m{}\x1b[0m", v.validator.name),
+                        v.validator.name.to_string().bright_green().to_string(),
                     ]);
                     if *detailed {
                         table.add_row(vec![
