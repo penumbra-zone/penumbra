@@ -228,3 +228,6 @@ tower-service = {version = "0.3.2"}
 tracing = {version = "0.1"}
 tracing-subscriber = {version = "0.3.17"}
 url = {version = "2.2"}
+
+[patch.crates-io]
+tower-abci = { path = "../tower-abci" }
