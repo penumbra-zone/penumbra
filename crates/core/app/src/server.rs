@@ -1,7 +1,10 @@
 //! Facilities related to the Penumbra app's ABCI server.
 
 use {
-    self::{consensus::Consensus, info::Info, mempool::Mempool, snapshot::Snapshot, events::EventIndexLayer},
+    self::{
+        consensus::Consensus, events::EventIndexLayer, info::Info, mempool::Mempool,
+        snapshot::Snapshot,
+    },
     cnidarium::Storage,
     penumbra_tower_trace::trace::request_span,
     tendermint::v0_37::abci::{
