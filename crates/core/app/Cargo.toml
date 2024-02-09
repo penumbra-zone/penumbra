@@ -41,6 +41,7 @@ decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 jmt = {workspace = true}
 tokio = {workspace = true, features = ["full", "tracing"]}
+tokio-util = {workspace = true}
 async-trait = {workspace = true}
 tonic = {workspace = true}
 futures = {workspace = true}
