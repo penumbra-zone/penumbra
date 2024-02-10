@@ -43,17 +43,13 @@ members = [
   "crates/bin/pd",
   "crates/bin/pclientd",
   "crates/bin/pcli",
-  "crates/wasm",
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
-  "tools/summonerd", "crates/core/component/funding", "crates/penumbra-extension",
+  "tools/summonerd", 
+  "crates/core/component/funding",
 ]
-
-# Optimize for small binaries in just the wasm crate.
-[profile.release.package.penumbra-wasm]
-opt-level = "s"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
