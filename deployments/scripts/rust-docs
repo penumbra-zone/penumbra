@@ -57,7 +57,6 @@ cargo +nightly-2024-02-01 doc --no-deps \
   -p penumbra-transaction \
   -p penumbra-view \
   -p penumbra-wallet \
-  -p penumbra-wasm \
   -p pd \
   -p pclientd \
   -p pcli \
