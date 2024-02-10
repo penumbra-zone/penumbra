@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.asset.v1;
 
 import "penumbra/core/num/v1/num.proto";
+import "google/protobuf/any.proto";
 
 message BalanceCommitment {
   bytes inner = 1;
@@ -86,8 +87,36 @@ message Value {
 message ValueView {
   // A value whose asset ID is known and has metadata.
   message KnownAssetId {
+    // The amount of the value.
     core.num.v1.Amount amount = 1;
+
+    // The asset metadata describing the asset of the value.
     Metadata metadata = 2;
+
+    // Optionally, a list of equivalent values in other numeraires.
+    // 
+    // For instance, this can provide a USD-equivalent value relative to a
+    // stablecoin, or an amount of the staking token, etc.  A view server can
+    // optionally include this information to assist a frontend in displaying
+    // information about the value in a user-friendly way.
+    repeated EquivalentValue equivalent_values = 3;
+    message EquivalentValue {
+      // The equivalent amount of the parent Value in terms of the numeraire.
+      core.num.v1.Amount equivalent_amount = 1;
+      // Metadata describing the numeraire.
+      Metadata numeraire = 2;
+    }
+
+    // Optionally, extended, dynamically-typed metadata about the object this
+    // token represents.
+    // 
+    // This is left flexible to allow future extensions. For instance, a view
+    // server could augment an LPNFT with a message describing the current state
+    // of the position and its reserves, allowing a frontend to render LPNFTs
+    // with their position information (trading pair, etc). However, because
+    // this is in an extension, a frontend that does not have special handling
+    // logic would fall back on the ordinary asset metadata.
+    google.protobuf.Any extended_metadata = 4;
   }
   // A value whose asset ID is unknown, with no metadata.
   message UnknownAssetId {

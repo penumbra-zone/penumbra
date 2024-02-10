@@ -145,10 +145,55 @@ pub mod value_view {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct KnownAssetId {
+        /// The amount of the value.
         #[prost(message, optional, tag = "1")]
         pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+        /// The asset metadata describing the asset of the value.
         #[prost(message, optional, tag = "2")]
         pub metadata: ::core::option::Option<super::Metadata>,
+        /// Optionally, a list of equivalent values in other numeraires.
+        ///
+        /// For instance, this can provide a USD-equivalent value relative to a
+        /// stablecoin, or an amount of the staking token, etc.  A view server can
+        /// optionally include this information to assist a frontend in displaying
+        /// information about the value in a user-friendly way.
+        #[prost(message, repeated, tag = "3")]
+        pub equivalent_values: ::prost::alloc::vec::Vec<known_asset_id::EquivalentValue>,
+        /// Optionally, extended, dynamically-typed metadata about the object this
+        /// token represents.
+        ///
+        /// This is left flexible to allow future extensions. For instance, a view
+        /// server could augment an LPNFT with a message describing the current state
+        /// of the position and its reserves, allowing a frontend to render LPNFTs
+        /// with their position information (trading pair, etc). However, because
+        /// this is in an extension, a frontend that does not have special handling
+        /// logic would fall back on the ordinary asset metadata.
+        #[prost(message, optional, tag = "4")]
+        pub extended_metadata: ::core::option::Option<::pbjson_types::Any>,
+    }
+    /// Nested message and enum types in `KnownAssetId`.
+    pub mod known_asset_id {
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, ::prost::Message)]
+        pub struct EquivalentValue {
+            /// The equivalent amount of the parent Value in terms of the numeraire.
+            #[prost(message, optional, tag = "1")]
+            pub equivalent_amount: ::core::option::Option<
+                super::super::super::super::num::v1::Amount,
+            >,
+            /// Metadata describing the numeraire.
+            #[prost(message, optional, tag = "2")]
+            pub numeraire: ::core::option::Option<super::super::Metadata>,
+        }
+        impl ::prost::Name for EquivalentValue {
+            const NAME: &'static str = "EquivalentValue";
+            const PACKAGE: &'static str = "penumbra.core.asset.v1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "penumbra.core.asset.v1.ValueView.KnownAssetId.{}", Self::NAME
+                )
+            }
+        }
     }
     impl ::prost::Name for KnownAssetId {
         const NAME: &'static str = "KnownAssetId";
