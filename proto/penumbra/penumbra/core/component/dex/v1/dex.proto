@@ -593,3 +593,30 @@ message EventPositionWithdraw {
   // The reserves of asset 2 of the withdrawn position.
   num.v1.Amount reserves_2 = 4;
 }
+
+message EventPositionExecution {
+  // The ID of the position executed against.
+  PositionId position_id = 1;
+  // The trading pair of the position executed against.
+  TradingPair trading_pair = 2;
+  // The reserves of asset 1 of the position after execution.
+  num.v1.Amount reserves_1 = 3;
+  // The reserves of asset 2 of the position after execution.
+  num.v1.Amount reserves_2 = 4;
+}
+
+message EventBatchSwap {
+  // The BatchSwapOutputData containing the results of the batch swap.
+  BatchSwapOutputData batch_swap_output_data = 1;
+  // The record of execution for the batch swap in the 1 -> 2 direction.
+  SwapExecution swap_execution_1_for_2 = 2;
+  // The record of execution for the batch swap in the 2 -> 1 direction.
+  SwapExecution swap_execution_2_for_1 = 3;
+}
+
+message EventArbExecution {
+  // The height at which the arb execution occurred.
+  uint64 height = 1;
+  // The record of execution for the arb execution.
+  SwapExecution swap_execution = 2;
+}

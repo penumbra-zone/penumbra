@@ -32,14 +32,6 @@ impl EventIndexLayer {
         }
     }
 
-    /// Convenience constructor to force no event attributes to be indexed.
-    pub fn index_none() -> Self {
-        Self {
-            index: RegexSet::empty(),
-            no_index: RegexSet::new([""]).expect("empty regex should always parse"),
-        }
-    }
-
     fn adjust_events(&self, events: &mut [Event]) {
         for e in events.iter_mut() {
             for attr in e.attributes.iter_mut() {

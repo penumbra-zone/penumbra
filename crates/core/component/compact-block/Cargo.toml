@@ -11,6 +11,7 @@ component = [
     "tonic",
     "tokio-stream",
     "tokio",
+    "penumbra-governance/component",
 ]
 # proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component"]

@@ -55,11 +55,11 @@ penumbra-custody = {workspace = true}
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 penumbra-auto-https = { path = "../../util/auto-https" }
+penumbra-genesis = {workspace = true}
 decaf377 = {workspace = true, features = ["parallel"], default-features = true}
 decaf377-rdsa = {workspace = true}
 tower-abci = "0.11"
 jmt = {workspace = true}
-tower-actor = "0.1.0"
 tendermint-config = {workspace = true}
 tendermint-proto = {workspace = true}
 tendermint = {workspace = true}
@@ -84,6 +84,7 @@ tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true}
 tokio-util = {workspace = true, features = ["compat"]}
 tower = {workspace = true, features = ["full"]}
+tower-actor = "0.1.0"
 tower-service = {workspace = true}
 tower-http = {workspace = true}
 tracing = {workspace = true}

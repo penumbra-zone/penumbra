@@ -36,6 +36,7 @@ penumbra-ibc = {workspace = true, features = ["component"], default-features = t
 penumbra-distributions = {workspace = true, default-features = true}
 penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-genesis = {workspace = true}
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 jmt = {workspace = true}
@@ -72,9 +73,25 @@ ibc-types = {workspace = true, default-features = false}
 ibc-proto = {workspace = true, default-features = false, features = [
     "server",
 ]}
+tower = {workspace = true, features = ["full"]}
+tower-abci = "0.11"
+tower-actor = "0.1.0"
+tower-service = {workspace = true}
+penumbra-tower-trace = { path = "../../util/tower-trace" }
+ics23 = {workspace = true}
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}
+penumbra-mock-consensus = {workspace = true}
+penumbra-mock-client = {workspace = true}
 rand_core = {workspace = true}
 rand_chacha = {workspace = true}
 tracing-subscriber = {workspace = true}
+
+# Enable the feature flags to get proving keys when running tests.
+[dev-dependencies.penumbra-proof-params]
+workspace = true
+features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+]

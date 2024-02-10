@@ -30,6 +30,7 @@ jobs:
           if [[ -n "$s" ]]; then
               echo "ERROR: found modified files that should be committed:"
               echo "$s"
+              git diff | head -n 128
               exit 1
           else
               echo "OK: no uncommitted changes detected"

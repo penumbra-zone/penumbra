@@ -1312,6 +1312,66 @@ impl ::prost::Name for EventPositionWithdraw {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPositionExecution {
+    /// The ID of the position executed against.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+    /// The trading pair of the position executed against.
+    #[prost(message, optional, tag = "2")]
+    pub trading_pair: ::core::option::Option<TradingPair>,
+    /// The reserves of asset 1 of the position after execution.
+    #[prost(message, optional, tag = "3")]
+    pub reserves_1: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 2 of the position after execution.
+    #[prost(message, optional, tag = "4")]
+    pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventPositionExecution {
+    const NAME: &'static str = "EventPositionExecution";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBatchSwap {
+    /// The BatchSwapOutputData containing the results of the batch swap.
+    #[prost(message, optional, tag = "1")]
+    pub batch_swap_output_data: ::core::option::Option<BatchSwapOutputData>,
+    /// The record of execution for the batch swap in the 1 -> 2 direction.
+    #[prost(message, optional, tag = "2")]
+    pub swap_execution_1_for_2: ::core::option::Option<SwapExecution>,
+    /// The record of execution for the batch swap in the 2 -> 1 direction.
+    #[prost(message, optional, tag = "3")]
+    pub swap_execution_2_for_1: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for EventBatchSwap {
+    const NAME: &'static str = "EventBatchSwap";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventArbExecution {
+    /// The height at which the arb execution occurred.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The record of execution for the arb execution.
+    #[prost(message, optional, tag = "2")]
+    pub swap_execution: ::core::option::Option<SwapExecution>,
+}
+impl ::prost::Name for EventArbExecution {
+    const NAME: &'static str = "EventArbExecution";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

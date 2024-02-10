@@ -2,24 +2,19 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod app;
-pub mod genesis;
 pub mod metrics;
 pub mod params;
 pub mod rpc;
+pub mod server;
 
 mod action_handler;
 mod community_pool_ext;
-mod mock_client;
 mod penumbra_host_chain;
-mod temp_storage_ext;
-
-#[cfg(test)]
-mod tests;
 
 pub use crate::{
     action_handler::ActionHandler, app::StateWriteExt,
     community_pool_ext::CommunityPoolStateReadExt, metrics::register_metrics,
-    mock_client::MockClient, penumbra_host_chain::PenumbraHost, temp_storage_ext::TempStorageExt,
+    penumbra_host_chain::PenumbraHost,
 };
 
 use once_cell::sync::Lazy;

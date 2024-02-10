@@ -6,6 +6,7 @@ use std::{
     vec,
 };
 
+use crate::PenumbraHost;
 use anyhow::Context as _;
 use cnidarium::Storage;
 use futures::FutureExt;
@@ -27,7 +28,6 @@ use ibc_types::core::channel::{ChannelId, PortId};
 use ibc_types::core::client::ClientId;
 use ibc_types::core::connection::ConnectionId;
 use ibc_types::core::connection::IdentifiedConnectionEnd;
-use penumbra_app::PenumbraHost;
 use penumbra_ibc::component::ChannelStateReadExt as _;
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ConnectionStateReadExt as _;
@@ -79,7 +79,7 @@ impl Info {
             .unwrap_or_default()
             .try_into()?;
 
-        let app_version = penumbra_app::APP_VERSION;
+        let app_version = crate::APP_VERSION;
 
         tracing::info!(?info, state_version = ?state.version(), last_block_height = ?last_block_height, ?app_version,"reporting height in info query");
 

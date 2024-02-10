@@ -109,12 +109,14 @@ pub trait ValidatorManager: StateWrite {
                 // the staking component.
                 tracing::debug!(identity_key = ?identity_key, "validator has reached minimum stake threshold to be considered inactive");
                 self.add_consensus_set_index(identity_key);
+                self.put(validator_state_path, Inactive);
             }
             (Inactive, Defined) => {
                 // The validator has fallen below the minimum threshold to be
                 // part of the "greater" consensus set.
                 tracing::debug!(identity_key = ?identity_key, "validator has fallen below minimum stake threshold to be considered inactive");
                 self.remove_consensus_set_index(identity_key);
+                self.put(validator_state_path, Defined);
             }
             (Inactive, Active) => {
                 let power = self.get_validator_power(identity_key).await;
@@ -156,10 +158,10 @@ pub trait ValidatorManager: StateWrite {
                     },
                 );
 
-                self.put(validator_state_path, new_state);
-
                 metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
                     .increment(0.0);
+
+                self.put(validator_state_path, new_state);
             }
             (Jailed, Inactive) => {
                 // After getting jailed, a validator can be released from jail when its operator

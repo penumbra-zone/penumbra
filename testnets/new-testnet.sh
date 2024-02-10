@@ -77,7 +77,7 @@ done < <(cut -d' ' -f1 "osiris_addresses.txt")
 while read -r a; do
     cat <<EOM >> base_allocations.csv
 100,gm,$a
-501_000,test_usd,$a
+5001,test_usd,$a
 1,cube,$a
 2_000__000_000,upenumbra,$a
 EOM

@@ -12,10 +12,12 @@ use penumbra_num::{
     fixpoint::{Error, U128x128},
     Amount,
 };
+use penumbra_proto::StateWriteProto as _;
 use tracing::instrument;
 
 use crate::{
     component::{metrics, PositionManager, PositionRead},
+    event,
     lp::{
         position::{self, Position},
         Reserves,
@@ -402,6 +404,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     async fn save(&mut self) -> Result<()> {
         for position in &self.positions {
             self.state.put_position(position.clone()).await?;
+
+            // Create an ABCI event signaling that the position was executed against
+            self.state
+                .record_proto(event::position_execution(position.clone()));
         }
         Ok(())
     }

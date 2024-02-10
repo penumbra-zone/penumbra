@@ -14,6 +14,7 @@ use penumbra_distributions::component::{Distributions, StateReadExt as _, StateW
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
+use penumbra_genesis::AppState;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
@@ -38,7 +39,7 @@ use tracing::Instrument;
 
 use crate::action_handler::ActionHandler;
 use crate::params::AppParameters;
-use crate::{genesis, CommunityPoolStateReadExt, PenumbraHost};
+use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
 pub mod state_key;
 
@@ -94,13 +95,13 @@ impl App {
         events
     }
 
-    pub async fn init_chain(&mut self, app_state: &genesis::AppState) {
+    pub async fn init_chain(&mut self, app_state: &AppState) {
         let mut state_tx = self
             .state
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
         match app_state {
-            genesis::AppState::Content(genesis) => {
+            AppState::Content(genesis) => {
                 state_tx.put_chain_id(genesis.chain_id.clone());
                 Sct::init_chain(&mut state_tx, Some(&genesis.sct_content)).await;
                 ShieldedPool::init_chain(&mut state_tx, Some(&genesis.shielded_pool_content)).await;
@@ -127,7 +128,7 @@ impl App {
                     .await
                     .expect("must be able to finish compact block");
             }
-            genesis::AppState::Checkpoint(_) => {
+            AppState::Checkpoint(_) => {
                 ShieldedPool::init_chain(&mut state_tx, None).await;
                 Distributions::init_chain(&mut state_tx, None).await;
                 Staking::init_chain(&mut state_tx, None).await;

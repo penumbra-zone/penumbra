@@ -43,12 +43,13 @@ members = [
   "crates/bin/pd",
   "crates/bin/pclientd",
   "crates/bin/pcli",
+  "crates/test/mock-client",
+  "crates/test/mock-consensus",
   "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
   "crates/bench",
-  "tools/summonerd", 
-  "crates/core/component/funding",
+  "tools/summonerd", "crates/core/component/funding", "crates/core/genesis",
 ]
 
 # Config for 'cargo dist'
@@ -95,7 +96,7 @@ push = false
 [workspace.package]
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
-version = "0.65.0"
+version = "0.66.0"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage = "https://penumbra.zone"
 license = "MIT OR Apache-2.0"
@@ -167,8 +168,11 @@ penumbra-distributions = {default-features = false, path = "crates/core/componen
 penumbra-fee = {default-features = false, path = "crates/core/component/fee"}
 penumbra-funding = {default-features = false, path = "crates/core/component/funding"}
 penumbra-governance = {default-features = false, path = "crates/core/component/governance"}
+penumbra-genesis = { path = "crates/core/genesis" }
 penumbra-ibc = {default-features = false, path = "crates/core/component/ibc"}
 penumbra-keys = {default-features = false, path = "crates/core/keys"}
+penumbra-mock-client = {path = "crates/test/mock-client"}
+penumbra-mock-consensus = {path = "crates/test/mock-consensus"}
 penumbra-num = {default-features = false, path = "crates/core/num"}
 penumbra-proof-params = {default-features = false, path = "crates/crypto/proof-params"}
 penumbra-proof-setup = {path = "crates/crypto/proof-setup"}
