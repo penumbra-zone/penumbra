@@ -78,8 +78,8 @@ impl Default for StakeParameters {
             slashing_penalty_downtime: 1_0000,
             // 3bps -> 11% return over 365 epochs
             base_reward_rate: 3_0000,
-            // 100 penumbra
-            min_validator_stake: 100_000_000u128.into(),
+            // 1 penumbra
+            min_validator_stake: 1_000_000u128.into(),
         }
     }
 }
