@@ -3,7 +3,7 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::rate::{BaseRateData, FP_SCALING_FACTOR};
+use crate::rate::{BaseRateData, RateData, FP_SCALING_FACTOR};
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
@@ -52,35 +52,37 @@ impl FundingStream {
     /// Computes the amount of reward at the epoch boundary.
     pub fn reward_amount(
         &self,
-        epoch_to_end: &BaseRateData,
+        epoch_to_end_data: &BaseRateData,
+        validator_rate_data: &RateData,
         total_delegation_tokens: Amount,
     ) -> Amount {
         // Setup:
         let total_delegation_tokens = U128x128::from(total_delegation_tokens);
-        let prev_base_exchange_rate = U128x128::from(epoch_to_end.base_exchange_rate);
-        let prev_base_reward_rate = U128x128::from(epoch_to_end.base_reward_rate);
+        let prev_validator_exchange_rate =
+            U128x128::from(validator_rate_data.validator_exchange_rate);
+        let prev_base_reward_rate = U128x128::from(epoch_to_end_data.base_reward_rate);
         let commission_rate_bps = U128x128::from(self.rate_bps());
         let max_bps = U128x128::from(10_000u128);
 
         // The reward amount is computed as:
-        //   y_v * c_{v,e} * r_e * psi(e)
+        //   y_v * c_{v,e} * r_e * psi_v(e)
         // where:
         //   y_v = total delegation tokens for validator v
         //   c_{v,e} = commission rate for validator v, at epoch e
         //   r_e = base reward rate for epoch e
-        //   psi(e) = base exchange rate for epoch e
+        //   psi_v(e) = the validator exchange rate for epoch e
         // The commission rate is the sum of all the funding streams rate, and is capped at 100%.
         // In this method, we use a partial commission rate specific to `this` funding stream.
 
         // First, we remove the scaling factors:
         let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
-        let prev_base_exchange_rate =
-            (prev_base_exchange_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
+        let prev_validator_exchange_rate =
+            (prev_validator_exchange_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
         let prev_base_reward_rate =
             (prev_base_reward_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
 
         // Then, we compute the cumulative depreciation for this pool:
-        let staking_tokens = (total_delegation_tokens * prev_base_exchange_rate)
+        let staking_tokens = (total_delegation_tokens * prev_validator_exchange_rate)
             .expect("exchange rate is between 0 and 1");
 
         // Now, we can compute the total reward amount for this pool:

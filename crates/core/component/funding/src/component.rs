@@ -1,6 +1,7 @@
 mod state_key;
 pub mod view;
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
 
 use std::sync::Arc;
@@ -79,11 +80,23 @@ impl Component for Funding {
         for (index, (validator_identity, funding_streams, delegation_token_supply)) in
             funding_queue.into_iter().enumerate()
         {
+            let Some(validator_rate) = state.get_prev_validator_rate(&validator_identity).await
+            else {
+                tracing::error!(
+                    %validator_identity,
+                    index,
+                    funding_queue_len,
+                    ending_epoch_base_rate = ?base_rate,
+                    "the ending epoch's rate data for the validator has not been found in storage, computing rewards is not possible"
+                );
+                continue;
+            };
+
             for stream in funding_streams {
                 // We compute the reward amount for this specific funding stream, it is based
                 // on the ending epoch's rate data.
                 let reward_amount_for_stream =
-                    stream.reward_amount(&base_rate, delegation_token_supply);
+                    stream.reward_amount(&base_rate, &validator_rate, delegation_token_supply);
 
                 total_staking_rewards_for_epoch = total_staking_rewards_for_epoch
                     .saturating_add(reward_amount_for_stream.value());

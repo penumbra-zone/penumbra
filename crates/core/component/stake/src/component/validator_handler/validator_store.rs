@@ -86,6 +86,12 @@ pub trait ValidatorDataRead: StateRead {
             .boxed()
     }
 
+    async fn get_prev_validator_rate(&self, identity_key: &IdentityKey) -> Option<RateData> {
+        self.get(&state_key::validators::rate::previous_by_id(identity_key))
+            .await
+            .expect("no deserialization error expected")
+    }
+
     fn get_validator_power(
         &self,
         validator: &IdentityKey,
@@ -268,6 +274,13 @@ pub trait ValidatorDataWrite: StateWrite {
             state_key::validators::rate::current_by_id(identity_key),
             rate_data,
         );
+    }
+
+    #[instrument(skip(self))]
+    /// Persist the previous validator rate data, inclusive of accumulated penalties.
+    fn set_prev_validator_rate(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
+        let path = state_key::validators::rate::previous_by_id(identity_key);
+        self.put(path, rate_data)
     }
 }
 
