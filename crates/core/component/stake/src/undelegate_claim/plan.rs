@@ -135,12 +135,13 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .try_into()?,
             balance_blinding: Fr::from_bytes_checked(
                 msg.balance_blinding
+                    .as_slice()
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("expected 32 bytes"))?,
             )
             .map_err(|_| anyhow::anyhow!("invalid balance_blinding"))?,
-            proof_blinding_r: Fq::from_bytes_checked(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes_checked(proof_blinding_s_bytes)?,
+            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes).expect("proof_blinding_r malformed"),
+            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes).expect("proof_blinding_s malformed"),
         })
     }
 }

@@ -655,8 +655,8 @@ mod tests {
     /// Test that the `TradingFunction` fills work correctly.
     fn test_fill_trading_function() {
         let a = Id(Fq::zero());
-        let b = Id(Fq::new(1u64.into()));
-        let c = Id(Fq::new(2u64.into()));
+        let b = Id(Fq::ONE);
+        let c = Id(Fq::ONE + Fq::ONE);
 
         assert!(a < b);
         assert!(b < c);

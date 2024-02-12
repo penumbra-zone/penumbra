@@ -49,3 +49,6 @@ deployments/logs/
 # npm dependencies
 node_modules
 build
+
+# vendor
+vendor

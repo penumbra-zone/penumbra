@@ -90,7 +90,7 @@ impl TryFrom<&[u8]> for Nullifier {
 
     fn try_from(slice: &[u8]) -> Result<Nullifier, Self::Error> {
         let bytes: [u8; 32] = slice[..].try_into()?;
-        let inner = Fq::from_bytes_checked(bytes)?;
+        let inner = Fq::from_bytes_checked(&bytes).expect("convert from bytes");
         Ok(Nullifier(inner))
     }
 }

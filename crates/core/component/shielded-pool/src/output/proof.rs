@@ -158,7 +158,7 @@ impl DummyWitness for OutputCircuit {
             Rseed([1u8; 32]),
         )
         .expect("can make a note");
-        let balance_blinding = Fr::from(1);
+        let balance_blinding = Fr::from(1u64);
 
         let public = OutputProofPublic {
             note_commitment: note.commit(),

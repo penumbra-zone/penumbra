@@ -89,7 +89,7 @@ impl FullViewingKey {
         };
 
         let ivk = {
-            let ak_s = Fq::from_bytes_checked(*ak.as_ref())
+            let ak_s = Fq::from_bytes_checked(ak.as_ref())
                 .expect("verification key is valid, so its byte encoding is a decaf377 s value");
             let ivk_mod_q = poseidon377::hash_2(&IVK_DOMAIN_SEP, (nk.0, ak_s));
             ka::Secret::new_from_field(Fr::from_le_bytes_mod_order(&ivk_mod_q.to_bytes()))

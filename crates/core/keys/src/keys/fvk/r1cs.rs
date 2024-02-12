@@ -168,6 +168,6 @@ impl R1CSVar<Fq> for SpendAuthRandomizerVar {
         for (i, byte) in self.inner.iter().enumerate() {
             bytes[i] = byte.value()?;
         }
-        Ok(Fr::from_bytes_checked(bytes).expect("can convert bytes to Fr"))
+        Ok(Fr::from_bytes_checked(&bytes).expect("can convert bytes to Fr"))
     }
 }

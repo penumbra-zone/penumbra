@@ -39,7 +39,7 @@ impl Field for Decaf377ScalarField {
 
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
         Fr::from_bytes_checked(
-            TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| FieldError::MalformedScalar)?,
+            &TryInto::<[u8; 32]>::try_into(buf.clone()).map_err(|_| FieldError::MalformedScalar)?,
         )
         .map_err(|_| FieldError::MalformedScalar)
     }

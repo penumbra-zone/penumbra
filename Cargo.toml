@@ -136,7 +136,6 @@ cnidarium = {default-features = false, path = "crates/cnidarium"}
 cnidarium-component = {default-features = false, path = "crates/cnidarium-component"}
 console-subscriber = {version = "0.2"}
 criterion = {version = "0.4"}
-decaf377_old = {default-features = false, package = "decaf377", version = "0.5"}
 decaf377 = {default-features = false, git = "https://github.com/penumbra-zone/decaf377", rev = "c8f6a6c5e83736813e95277e82f546bff55ae90a"}
 decaf377-fmd = {path = "crates/crypto/decaf377-fmd"}
 decaf377-ka = {path = "crates/crypto/decaf377-ka"}

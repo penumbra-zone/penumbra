@@ -384,12 +384,12 @@ mod tests {
         };
 
         // some random-looking blinding factors
-        let b1 = Fr::from(-129).inverse().unwrap();
-        let b2 = Fr::from(-199).inverse().unwrap();
-        let b3 = Fr::from(-121).inverse().unwrap();
-        let b4 = Fr::from(-179).inverse().unwrap();
-        let b5 = Fr::from(-379).inverse().unwrap();
-        let b6 = Fr::from(-879).inverse().unwrap();
+        let b1 = Fr::from(129u64).inverse().unwrap();
+        let b2 = Fr::from(199u64).inverse().unwrap();
+        let b3 = Fr::from(121u64).inverse().unwrap();
+        let b4 = Fr::from(179u64).inverse().unwrap();
+        let b5 = Fr::from(379u64).inverse().unwrap();
+        let b6 = Fr::from(879u64).inverse().unwrap();
 
         // form commitments
         let c1 = v1.commit(b1);

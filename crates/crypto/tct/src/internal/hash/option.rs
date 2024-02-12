@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use ark_ff::{BigInteger256, Fp256};
+use decaf377::Fq;
 
 use crate::prelude::*;
 
@@ -53,9 +54,7 @@ impl From<OptionHash> for Option<Hash> {
             // We're directly constructing the hash here by coercing the bytes into the right type,
             // but this is safe because we know that the bytes are a real `Fq` and not the sentinel
             // value we just checked for
-            Some(Hash::new(Fp256::new_unchecked(BigInteger256::new(
-                hash.inner,
-            ))))
+            Some(Hash::new(Fq::from_le_limbs(hash.inner)))
         }
     }
 }
