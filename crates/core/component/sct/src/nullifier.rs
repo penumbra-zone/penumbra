@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
-use decaf377::{r1cs::FqVar, FieldExt, Fq};
+use decaf377::{r1cs::FqVar, Fq};
 use penumbra_tct as tct;
 use penumbra_tct::{r1cs::StateCommitmentVar, StateCommitment};
 use poseidon377::hash_3;
@@ -90,7 +90,7 @@ impl TryFrom<&[u8]> for Nullifier {
 
     fn try_from(slice: &[u8]) -> Result<Nullifier, Self::Error> {
         let bytes: [u8; 32] = slice[..].try_into()?;
-        let inner = Fq::from_bytes(bytes)?;
+        let inner = Fq::from_bytes_checked(bytes)?;
         Ok(Nullifier(inner))
     }
 }

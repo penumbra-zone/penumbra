@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use decaf377::Fr;
 
 #[allow(non_snake_case)]

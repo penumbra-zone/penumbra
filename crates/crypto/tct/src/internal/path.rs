@@ -234,7 +234,7 @@ mod test {
 #[error("could not decode authentication path")]
 pub struct PathDecodeError;
 
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use penumbra_proto::penumbra::crypto::tct::v1 as pb;
 use std::{
     collections::VecDeque,
@@ -332,15 +332,15 @@ where
             Ok(Node {
                 siblings: [
                     Hash::new(
-                        Fq::from_bytes(sibling_1.try_into().map_err(|_| PathDecodeError)?)
+                        Fq::from_bytes_checked(&sibling_1.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
                     Hash::new(
-                        Fq::from_bytes(sibling_2.try_into().map_err(|_| PathDecodeError)?)
+                        Fq::from_bytes_checked(&sibling_2.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
                     Hash::new(
-                        Fq::from_bytes(sibling_3.try_into().map_err(|_| PathDecodeError)?)
+                        Fq::from_bytes_checked(&sibling_3.try_into().map_err(|_| PathDecodeError)?)
                             .map_err(|_| PathDecodeError)?,
                     ),
                 ],

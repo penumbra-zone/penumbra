@@ -69,7 +69,7 @@ impl VerifyError {
 #[error("could not decode proof")]
 pub struct ProofDecodeError;
 
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use penumbra_proto::penumbra::crypto::tct::v1 as pb;
 
 impl<Tree: Height> From<Proof<Tree>> for pb::StateCommitmentProof
@@ -95,8 +95,8 @@ where
         let position = proof.position;
         let auth_path = proof.auth_path.try_into().map_err(|_| ProofDecodeError)?;
         let leaf = StateCommitment(
-            Fq::from_bytes(
-                proof
+            Fq::from_bytes_checked(
+                &proof
                     .note_commitment
                     .ok_or(ProofDecodeError)?
                     .inner

@@ -7,7 +7,7 @@ use ark_relations::r1cs;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::prelude::*;
-use decaf377::{Bls12_377, FieldExt, Fq, Fr};
+use decaf377::{Bls12_377, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
     balance::{self, commitment::BalanceCommitmentVar, BalanceVar},

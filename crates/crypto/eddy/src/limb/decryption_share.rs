@@ -1,5 +1,5 @@
 use ark_std::UniformRand;
-use decaf377::{FieldExt, Fr};
+use decaf377::Fr;
 use rand_core::{CryptoRng, RngCore};
 
 use super::Ciphertext;

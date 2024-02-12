@@ -188,7 +188,6 @@ dependencies = [
  "ark-bls12-377",
  "ark-ec",
  "ark-ff",
- "ark-r1cs-std",
  "ark-std",
 ]
 
@@ -1659,9 +1658,8 @@ checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
 
 [[package]]
 name = "decaf377"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75bb0f9fde498b60e4563c9346bbd4527d4ff4930a43c404ceb4cf63166c9ea4"
+version = "0.8.0"
+source = "git+https://github.com/penumbra-zone/decaf377?rev=c8f6a6c5e83736813e95277e82f546bff55ae90a#c8f6a6c5e83736813e95277e82f546bff55ae90a"
 dependencies = [
  "anyhow",
  "ark-bls12-377",
@@ -1674,38 +1672,14 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
+ "cfg-if",
+ "hashbrown 0.14.3",
  "hex",
  "num-bigint",
  "once_cell",
- "thiserror",
+ "subtle",
  "tracing",
- "tracing-subscriber 0.2.25",
- "zeroize",
-]
-
-[[package]]
-name = "decaf377"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a80011d442d81fccfbefb5bd0d20bf70f111ca544ffed943d335dacf6a85713"
-dependencies = [
- "anyhow",
- "ark-bls12-377",
- "ark-ec",
- "ark-ed-on-bls12-377",
- "ark-ff",
- "ark-groth16",
- "ark-r1cs-std",
- "ark-relations",
- "ark-serialize",
- "ark-snark",
- "ark-std",
- "hex",
- "num-bigint",
- "once_cell",
- "thiserror",
- "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber 0.3.18",
  "zeroize",
 ]
 
@@ -1718,7 +1692,7 @@ dependencies = [
  "bitvec",
  "blake2b_simd 1.0.2",
  "criterion",
- "decaf377 0.5.0",
+ "decaf377",
  "proptest",
  "rand_core",
  "thiserror",
@@ -1731,7 +1705,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "blake2b_simd 1.0.2",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "frost-core",
  "frost-rerandomized",
@@ -1744,7 +1718,7 @@ name = "decaf377-ka"
 version = "0.79.0-alpha.1"
 dependencies = [
  "ark-ff",
- "decaf377 0.5.0",
+ "decaf377",
  "hex",
  "proptest",
  "rand_core",
@@ -1756,14 +1730,18 @@ dependencies = [
 [[package]]
 name = "decaf377-rdsa"
 version = "0.9.0"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2356bb010273c2b6e4e928b2bb442ddaa255ec242c16ff46cf9c3811fefa5ace"
+=======
+source = "git+https://github.com/penumbra-zone/decaf377-rdsa?rev=bf11c5d1d97b6dc676aea89ac7a24f62a8e35e7#bf11c5d1d97b6dc676aea89ac7a24f62a8e35e71"
+>>>>>>> 8e0755191 (WIP)
 dependencies = [
  "ark-ff",
  "ark-serialize",
  "blake2b_simd 0.5.11",
  "byteorder",
- "decaf377 0.5.0",
+ "decaf377",
  "digest 0.9.0",
  "hex",
  "rand_core",
@@ -3652,15 +3630,6 @@ dependencies = [
 
 [[package]]
 name = "matchers"
-version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
-dependencies = [
- "regex-automata 0.1.10",
-]
-
-[[package]]
-name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
@@ -4305,7 +4274,7 @@ dependencies = [
  "colored",
  "colored_json",
  "comfy-table",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "dialoguer",
  "directories",
@@ -4441,7 +4410,7 @@ dependencies = [
  "clap",
  "cnidarium",
  "csv",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "directories",
  "ed25519-consensus",
@@ -4591,8 +4560,12 @@ dependencies = [
  "camino",
  "cnidarium",
  "cnidarium-component",
+<<<<<<< HEAD
  "decaf377 0.5.0",
  "decaf377-fmd",
+=======
+ "decaf377",
+>>>>>>> 8e0755191 (WIP)
  "decaf377-rdsa",
  "ed25519-consensus",
  "futures",
@@ -4677,7 +4650,7 @@ dependencies = [
  "bech32",
  "blake2b_simd 1.0.2",
  "bytes",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-rdsa",
  "derivative",
@@ -4784,7 +4757,7 @@ dependencies = [
  "ark-std",
  "bech32",
  "criterion",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -4891,7 +4864,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-frost",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -4933,7 +4906,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -5001,7 +4974,7 @@ dependencies = [
  "anyhow",
  "ark-ff",
  "ark-std",
- "decaf377 0.5.0",
+ "decaf377",
  "futures",
  "merlin",
  "parking_lot",
@@ -5023,7 +4996,7 @@ dependencies = [
  "bytes",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "im",
  "metrics",
@@ -5079,7 +5052,7 @@ dependencies = [
  "bytes",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "futures",
  "ibc-types",
@@ -5169,7 +5142,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -5276,7 +5249,7 @@ dependencies = [
  "bech32",
  "blake2b_simd 1.0.2",
  "bytes",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-rdsa",
  "derivative",
@@ -5311,7 +5284,7 @@ dependencies = [
  "ark-snark",
  "ark-std",
  "bech32",
- "decaf377 0.5.0",
+ "decaf377",
  "hex",
  "lazy_static",
  "num-bigint",
@@ -5341,7 +5314,12 @@ dependencies = [
  "ark-snark",
  "blake2b_simd 1.0.2",
  "criterion",
+<<<<<<< HEAD
  "decaf377 0.5.0",
+=======
+ "decaf377",
+ "penumbra-community-pool",
+>>>>>>> 8e0755191 (WIP)
  "penumbra-dex",
  "penumbra-governance",
  "penumbra-proof-params",
@@ -5403,7 +5381,7 @@ dependencies = [
  "chrono",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "hex",
  "im",
@@ -5441,7 +5419,7 @@ dependencies = [
  "chacha20poly1305",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -5494,7 +5472,7 @@ dependencies = [
  "bitvec",
  "cnidarium",
  "cnidarium-component",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-rdsa",
  "ed25519-consensus",
  "futures",
@@ -5532,14 +5510,13 @@ dependencies = [
 name = "penumbra-tct"
 version = "0.79.0-alpha.1"
 dependencies = [
- "ark-ed-on-bls12-377",
  "ark-ff",
  "ark-r1cs-std",
  "ark-relations",
  "ark-serialize",
  "async-trait",
  "blake2b_simd 1.0.2",
- "decaf377 0.5.0",
+ "decaf377",
  "derivative",
  "futures",
  "hash_hasher",
@@ -5580,7 +5557,7 @@ dependencies = [
  "axum-server",
  "bytes",
  "clap",
- "decaf377 0.5.0",
+ "decaf377",
  "futures",
  "hex",
  "include-flate",
@@ -5674,7 +5651,7 @@ dependencies = [
  "blake2b_simd 1.0.2",
  "bytes",
  "chacha20poly1305",
- "decaf377 0.5.0",
+ "decaf377",
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
@@ -5737,7 +5714,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "camino",
- "decaf377 0.5.0",
+ "decaf377",
  "digest 0.9.0",
  "ed25519-consensus",
  "futures",
@@ -5793,7 +5770,7 @@ dependencies = [
  "ark-std",
  "bincode",
  "bytes",
- "decaf377 0.5.0",
+ "decaf377",
  "hex",
  "once_cell",
  "penumbra-app",
@@ -5824,6 +5801,46 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
+=======
+name = "penumbra-wasm"
+version = "0.66.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "base64 0.21.6",
+ "console_error_panic_hook",
+ "decaf377",
+ "hex",
+ "indexed_db_futures",
+ "penumbra-asset",
+ "penumbra-compact-block",
+ "penumbra-dex",
+ "penumbra-fee",
+ "penumbra-governance",
+ "penumbra-ibc",
+ "penumbra-keys",
+ "penumbra-num",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "penumbra-tct",
+ "penumbra-transaction",
+ "rand_core 0.6.4",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "thiserror",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+ "web-sys",
+]
+
+[[package]]
+>>>>>>> 8e0755191 (WIP)
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5984,8 +6001,7 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 [[package]]
 name = "poseidon-parameters"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58236ff8bf455c13046c92f041e887c4fd0e64819387a81177d6c70ebeb41711"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=c9f73892b59a160a6455dfa9daba0e277be54ea1#c9f73892b59a160a6455dfa9daba0e277be54ea1"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5995,8 +6011,7 @@ dependencies = [
 [[package]]
 name = "poseidon-paramgen"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a69506f91189a68bff6c0e4f8c2beaf6b053430be7743059a0110477e9c28fda"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=c9f73892b59a160a6455dfa9daba0e277be54ea1#c9f73892b59a160a6455dfa9daba0e277be54ea1"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -6012,8 +6027,7 @@ dependencies = [
 [[package]]
 name = "poseidon-permutation"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a022268b53cec1e99c4bd8c81be249709e971b78a433d9f5556e31f3cd7730b0"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=c9f73892b59a160a6455dfa9daba0e277be54ea1#c9f73892b59a160a6455dfa9daba0e277be54ea1"
 dependencies = [
  "ark-ff",
  "ark-r1cs-std",
@@ -6025,8 +6039,7 @@ dependencies = [
 [[package]]
 name = "poseidon377"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11dbcae1c9e4624576dd7631a1f2419a18afeaeef104263d70b6f20256ea5b72"
+source = "git+https://github.com/penumbra-zone/poseidon377?rev=c9f73892b59a160a6455dfa9daba0e277be54ea1#c9f73892b59a160a6455dfa9daba0e277be54ea1"
 dependencies = [
  "ark-ec",
  "ark-ed-on-bls12-377",
@@ -6037,7 +6050,7 @@ dependencies = [
  "ark-serialize",
  "ark-snark",
  "ark-std",
- "decaf377 0.4.0",
+ "decaf377",
  "num-bigint",
  "once_cell",
  "poseidon-parameters",
@@ -7739,7 +7752,12 @@ dependencies = [
  "camino",
  "chrono",
  "clap",
+<<<<<<< HEAD
  "decaf377 0.5.0",
+=======
+ "console-subscriber",
+ "decaf377",
+>>>>>>> 8e0755191 (WIP)
  "futures",
  "hex",
  "http-body",
@@ -8479,17 +8497,6 @@ dependencies = [
 
 [[package]]
 name = "tracing-log"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f751112709b4e791d8ce53e32c4ed2d353565a795ce84da2285393f41557bdf2"
-dependencies = [
- "log",
- "once_cell",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-log"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee855f1f400bd0e5c02d150ae5de3840039a3f54b025156404e34c23c03f47c3"
@@ -8500,35 +8507,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing-serde"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc6b213177105856957181934e4920de57730fc69bf42c37ee5bb664d406d9e1"
-dependencies = [
- "serde",
- "tracing-core",
-]
-
-[[package]]
 name = "tracing-subscriber"
 version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
 dependencies = [
- "ansi_term",
- "chrono",
- "lazy_static",
- "matchers 0.0.1",
- "regex",
- "serde",
- "serde_json",
- "sharded-slab",
- "smallvec",
- "thread_local",
- "tracing",
  "tracing-core",
- "tracing-log 0.1.4",
- "tracing-serde",
 ]
 
 [[package]]
@@ -8537,7 +8521,7 @@ version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad0f048c97dbd9faa9b7df56362b8ebcaa52adb06b498c050d2f4e32f90a7a8b"
 dependencies = [
- "matchers 0.1.0",
+ "matchers",
  "nu-ansi-term",
  "once_cell",
  "regex",
@@ -8546,7 +8530,7 @@ dependencies = [
  "thread_local",
  "tracing",
  "tracing-core",
- "tracing-log 0.2.0",
+ "tracing-log",
 ]
 
 [[package]]

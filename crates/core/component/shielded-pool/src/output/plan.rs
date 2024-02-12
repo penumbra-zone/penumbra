@@ -1,5 +1,5 @@
 use ark_ff::UniformRand;
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_keys::{
@@ -160,9 +160,9 @@ impl TryFrom<pb::OutputPlan> for OutputPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing address"))?
                 .try_into()?,
             rseed: Rseed(msg.rseed.as_slice().try_into()?),
-            value_blinding: Fr::from_bytes(msg.value_blinding.as_slice().try_into()?)?,
-            proof_blinding_r: Fq::from_bytes(msg.proof_blinding_r.as_slice().try_into()?)?,
-            proof_blinding_s: Fq::from_bytes(msg.proof_blinding_s.as_slice().try_into()?)?,
+            value_blinding: Fr::from_bytes_checked(msg.value_blinding.as_slice().try_into()?)?,
+            proof_blinding_r: Fq::from_bytes_checked(msg.proof_blinding_r.as_slice().try_into()?)?,
+            proof_blinding_s: Fq::from_bytes_checked(msg.proof_blinding_s.as_slice().try_into()?)?,
         })
     }
 }
