@@ -52,8 +52,9 @@ pub mod validators {
         pub fn current_by_id(id: &crate::IdentityKey) -> String {
             format!("staking/validators/data/rate/current/{id}")
         }
-        pub fn next_by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/rate/next/{id}")
+
+        pub fn previous_by_id(id: &crate::IdentityKey) -> String {
+            format!("staking/validators/data/rate/previous/{id}")
         }
     }
 
