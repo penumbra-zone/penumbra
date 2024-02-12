@@ -739,6 +739,58 @@ impl ::prost::Name for GenesisContent {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDelegate {
+    /// The identity key of the validator delegated to.
+    #[prost(message, optional, tag = "1")]
+    pub validator_identity: ::core::option::Option<
+        super::super::super::keys::v1::IdentityKey,
+    >,
+    /// The index of the epoch in which this delegation was performed.
+    /// Thendelegation takes effect in the next epoch.
+    #[prost(uint64, tag = "2")]
+    pub epoch_index: u64,
+    /// The amount delegated, in units of unbonding tokens.
+    #[prost(message, optional, tag = "3")]
+    pub unbonded_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of delegation tokens produced by this action.
+    #[prost(message, optional, tag = "4")]
+    pub delegation_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventDelegate {
+    const NAME: &'static str = "EventDelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUndelegate {
+    /// The identity key of the validator undelegated from.
+    #[prost(message, optional, tag = "1")]
+    pub validator_identity: ::core::option::Option<
+        super::super::super::keys::v1::IdentityKey,
+    >,
+    /// The index of the epoch in which this undelegation was performed.
+    /// The undelegation takes effect after the unbonding period.
+    #[prost(uint64, tag = "2")]
+    pub start_epoch_index: u64,
+    /// The amount undelegated, in units of unbonding tokens.
+    #[prost(message, optional, tag = "3")]
+    pub unbonded_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of delegation tokens undelegated.
+    #[prost(message, optional, tag = "4")]
+    pub delegation_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventUndelegate {
+    const NAME: &'static str = "EventUndelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

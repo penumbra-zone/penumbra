@@ -297,3 +297,27 @@ message GenesisContent {
   // The list of validators present at genesis.
   repeated stake.v1.Validator validators = 2;
 }
+
+message EventDelegate {
+  // The identity key of the validator delegated to.
+  core.keys.v1.IdentityKey validator_identity = 1;
+  // The index of the epoch in which this delegation was performed.
+  // Thendelegation takes effect in the next epoch.
+  uint64 epoch_index = 2;
+  // The amount delegated, in units of unbonding tokens.
+  num.v1.Amount unbonded_amount = 3;
+  // The amount of delegation tokens produced by this action.
+  num.v1.Amount delegation_amount = 4;
+}
+
+message EventUndelegate {
+  // The identity key of the validator undelegated from.
+  core.keys.v1.IdentityKey validator_identity = 1;
+  // The index of the epoch in which this undelegation was performed.
+  // The undelegation takes effect after the unbonding period.
+  uint64 start_epoch_index = 2;
+  // The amount undelegated, in units of unbonding tokens.
+  num.v1.Amount unbonded_amount = 3;
+  // The amount of delegation tokens undelegated.
+  num.v1.Amount delegation_amount = 4;
+}

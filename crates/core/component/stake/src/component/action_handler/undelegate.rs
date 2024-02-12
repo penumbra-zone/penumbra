@@ -3,6 +3,7 @@ use std::sync::Arc;
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
@@ -71,7 +72,7 @@ impl ActionHandler for Undelegate {
             .register_denom(&self.unbonding_token().denom())
             .await?;
         // TODO: should we be tracking changes to token supply here or in end_epoch?
-        state.record(event::undelegate(self));
+        state.record_proto(event::undelegate(self));
 
         Ok(())
     }

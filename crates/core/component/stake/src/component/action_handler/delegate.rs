@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
+use penumbra_proto::StateWriteProto as _;
 
 use crate::{
     component::{
@@ -124,7 +125,7 @@ impl ActionHandler for Delegate {
                 .await?;
         }
 
-        state.record(event::delegate(self));
+        state.record_proto(event::delegate(self));
         Ok(())
     }
 }
