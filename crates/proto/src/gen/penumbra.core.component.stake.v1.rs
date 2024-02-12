@@ -791,6 +791,34 @@ impl ::prost::Name for EventUndelegate {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUndelegateClaim {
+    /// The identity key of the validator to finish undelegating from.
+    #[prost(message, optional, tag = "1")]
+    pub validator_identity: ::core::option::Option<
+        super::super::super::keys::v1::IdentityKey,
+    >,
+    /// The epoch in which unbonding began, used to verify the penalty.
+    #[prost(uint64, tag = "2")]
+    pub start_epoch_index: u64,
+    /// The penalty applied to undelegation, in bps^2 (10e-8).
+    /// In the happy path (no slashing), this is 0.
+    #[prost(message, optional, tag = "3")]
+    pub penalty: ::core::option::Option<Penalty>,
+    /// The action's contribution to the transaction's value balance.
+    #[prost(message, optional, tag = "4")]
+    pub balance_commitment: ::core::option::Option<
+        super::super::super::asset::v1::BalanceCommitment,
+    >,
+}
+impl ::prost::Name for EventUndelegateClaim {
+    const NAME: &'static str = "EventUndelegateClaim";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

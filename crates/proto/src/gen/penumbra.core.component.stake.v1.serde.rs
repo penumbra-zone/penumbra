@@ -1186,6 +1186,158 @@ impl<'de> serde::Deserialize<'de> for EventUndelegate {
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventUndelegate", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventUndelegateClaim {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_identity.is_some() {
+            len += 1;
+        }
+        if self.start_epoch_index != 0 {
+            len += 1;
+        }
+        if self.penalty.is_some() {
+            len += 1;
+        }
+        if self.balance_commitment.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventUndelegateClaim", len)?;
+        if let Some(v) = self.validator_identity.as_ref() {
+            struct_ser.serialize_field("validatorIdentity", v)?;
+        }
+        if self.start_epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
+        }
+        if let Some(v) = self.penalty.as_ref() {
+            struct_ser.serialize_field("penalty", v)?;
+        }
+        if let Some(v) = self.balance_commitment.as_ref() {
+            struct_ser.serialize_field("balanceCommitment", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventUndelegateClaim {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_identity",
+            "validatorIdentity",
+            "start_epoch_index",
+            "startEpochIndex",
+            "penalty",
+            "balance_commitment",
+            "balanceCommitment",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorIdentity,
+            StartEpochIndex,
+            Penalty,
+            BalanceCommitment,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
+                            "penalty" => Ok(GeneratedField::Penalty),
+                            "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventUndelegateClaim;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventUndelegateClaim")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventUndelegateClaim, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_identity__ = None;
+                let mut start_epoch_index__ = None;
+                let mut penalty__ = None;
+                let mut balance_commitment__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorIdentity => {
+                            if validator_identity__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                            }
+                            validator_identity__ = map_.next_value()?;
+                        }
+                        GeneratedField::StartEpochIndex => {
+                            if start_epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startEpochIndex"));
+                            }
+                            start_epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Penalty => {
+                            if penalty__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("penalty"));
+                            }
+                            penalty__ = map_.next_value()?;
+                        }
+                        GeneratedField::BalanceCommitment => {
+                            if balance_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balanceCommitment"));
+                            }
+                            balance_commitment__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventUndelegateClaim {
+                    validator_identity: validator_identity__,
+                    start_epoch_index: start_epoch_index__.unwrap_or_default(),
+                    penalty: penalty__,
+                    balance_commitment: balance_commitment__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventUndelegateClaim", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for FundingStream {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

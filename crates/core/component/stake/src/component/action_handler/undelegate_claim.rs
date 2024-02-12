@@ -4,13 +4,14 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
+use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::clock::EpochRead;
 
 use crate::component::validator_handler::ValidatorDataRead;
 use crate::component::SlashingData;
 use crate::undelegate_claim::UndelegateClaimProofPublic;
-use crate::UndelegateClaim;
 use crate::{component::action_handler::ActionHandler, UnbondingToken};
+use crate::{event, UndelegateClaim};
 
 #[async_trait]
 impl ActionHandler for UndelegateClaim {
@@ -63,8 +64,9 @@ impl ActionHandler for UndelegateClaim {
         Ok(())
     }
 
-    async fn execute<S: StateWrite>(&self, _state: S) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         // TODO: where should we be tracking token supply changes?
+        state.record_proto(event::undelegate_claim(self));
         Ok(())
     }
 }

@@ -321,3 +321,15 @@ message EventUndelegate {
   // The amount of delegation tokens undelegated.
   num.v1.Amount delegation_amount = 4;
 }
+
+message EventUndelegateClaim {
+  // The identity key of the validator to finish undelegating from.
+  keys.v1.IdentityKey validator_identity = 1;
+  // The epoch in which unbonding began, used to verify the penalty.
+  uint64 start_epoch_index = 2;
+  // The penalty applied to undelegation, in bps^2 (10e-8).
+  // In the happy path (no slashing), this is 0.
+  Penalty penalty = 3;
+  // The action's contribution to the transaction's value balance.
+  asset.v1.BalanceCommitment balance_commitment = 4;
+}
