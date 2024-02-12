@@ -1,4 +1,4 @@
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
 use penumbra_proof_params::CONVERT_PROOF_PROVING_KEY;
@@ -133,14 +133,14 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .unbonding_amount
                 .ok_or_else(|| anyhow::anyhow!("missing unbonding_amount"))?
                 .try_into()?,
-            balance_blinding: Fr::from_bytes(
+            balance_blinding: Fr::from_bytes_checked(
                 msg.balance_blinding
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("expected 32 bytes"))?,
             )
             .map_err(|_| anyhow::anyhow!("invalid balance_blinding"))?,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            proof_blinding_r: Fq::from_bytes_checked(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes_checked(proof_blinding_s_bytes)?,
         })
     }
 }

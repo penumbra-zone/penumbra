@@ -1,7 +1,5 @@
 use std::io::{self, Write};
 
-use decaf377::FieldExt;
-
 use penumbra_tct::{
     structure::{Kind, Node, Place},
     Position, Tree,

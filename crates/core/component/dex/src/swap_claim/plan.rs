@@ -1,4 +1,4 @@
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::{
     keys::{IncomingViewingKey, NullifierKey},
@@ -174,8 +174,8 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
                 .ok_or_else(|| anyhow::anyhow!("missing output_data"))?
                 .try_into()?,
             epoch_duration: msg.epoch_duration,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            proof_blinding_r: Fq::from_bytes_checked(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes_checked(proof_blinding_s_bytes)?,
         })
     }
 }

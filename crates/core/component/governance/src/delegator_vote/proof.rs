@@ -6,7 +6,6 @@ use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use decaf377::r1cs::ElementVar;
-use decaf377::FieldExt;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
 
 use ark_ff::ToConstraintField;

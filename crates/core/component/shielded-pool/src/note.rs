@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use crate::genesis::Allocation;
 use ark_ff::PrimeField;
 use blake2b_simd;
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use once_cell::sync::Lazy;
@@ -138,7 +138,7 @@ impl Note {
             value,
             rseed,
             address,
-            transmission_key_s: Fq::from_bytes(address.transmission_key().0)
+            transmission_key_s: Fq::from_bytes_checked(address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
     }
@@ -374,7 +374,7 @@ pub fn commitment_from_address(
     note_blinding: Fq,
 ) -> Result<StateCommitment, Error> {
     let transmission_key_s =
-        Fq::from_bytes(address.transmission_key().0).map_err(|_| Error::InvalidTransmissionKey)?;
+        Fq::from_bytes_checked(address.transmission_key().0).map_err(|_| Error::InvalidTransmissionKey)?;
     let commit = poseidon377::hash_6(
         &NOTECOMMIT_DOMAIN_SEP,
         (
@@ -511,7 +511,7 @@ impl TryFrom<&[u8]> for Note {
             Value {
                 amount: Amount::from_le_bytes(amount_bytes),
                 asset_id: asset::Id(
-                    Fq::from_bytes(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
+                    Fq::from_bytes_checked(asset_id_bytes).map_err(|_| Error::NoteDeserializationError)?,
                 ),
             },
             Rseed(rseed_bytes),

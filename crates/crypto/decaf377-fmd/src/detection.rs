@@ -3,7 +3,7 @@ use std::convert::{TryFrom, TryInto};
 use ark_ff::{UniformRand, Zero};
 use ark_serialize::CanonicalDeserialize;
 use bitvec::{order, slice::BitSlice};
-use decaf377::{FieldExt, Fr};
+use decaf377::Fr;
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, ClueKey, Error, MAX_PRECISION};
@@ -60,7 +60,7 @@ impl DetectionKey {
 
     /// Deserialize a detection key from bytes.
     pub fn from_bytes(bytes: [u8; 32]) -> Result<Self, Error> {
-        let dtk = Fr::from_bytes(bytes).map_err(|_| Error::InvalidDetectionKey)?;
+        let dtk = Fr::from_bytes_checked(&bytes).map_err(|_| Error::InvalidDetectionKey)?;
         Ok(Self::from_field(dtk))
     }
 

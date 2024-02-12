@@ -1,6 +1,6 @@
 use ark_ff::{fields::PrimeField, ToConstraintField};
 use ark_serialize::CanonicalDeserialize;
-use decaf377::{FieldExt, Fq};
+use decaf377::Fq;
 use once_cell::sync::Lazy;
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::asset::v1 as pb, serializers::bech32str, DomainType};
@@ -80,7 +80,7 @@ impl TryFrom<[u8; 32]> for Id {
     type Error = anyhow::Error;
 
     fn try_from(bytes: [u8; 32]) -> Result<Id, Self::Error> {
-        Ok(Id(Fq::from_bytes(bytes)?))
+        Ok(Id(Fq::from_bytes_checked(bytes)?))
     }
 }
 

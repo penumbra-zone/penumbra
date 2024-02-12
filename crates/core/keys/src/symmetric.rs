@@ -4,7 +4,6 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
-use decaf377::FieldExt;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
 use penumbra_proto::core::keys::v1::{self as pb};

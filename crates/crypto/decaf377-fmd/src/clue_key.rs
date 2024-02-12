@@ -1,8 +1,7 @@
 use std::{cell::RefCell, convert::TryFrom};
 
-use ark_ff::{Field, PrimeField};
 use bitvec::{array::BitArray, order};
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use rand_core::{CryptoRng, RngCore};
 
 use crate::{hash, hkd, Clue, Error, MAX_PRECISION};

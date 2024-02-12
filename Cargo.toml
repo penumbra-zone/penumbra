@@ -136,10 +136,11 @@ cnidarium = {default-features = false, path = "crates/cnidarium"}
 cnidarium-component = {default-features = false, path = "crates/cnidarium-component"}
 console-subscriber = {version = "0.2"}
 criterion = {version = "0.4"}
-decaf377 = {default-features = false, version = "0.5"}
+decaf377_old = {default-features = false, package = "decaf377", version = "0.5"}
+decaf377 = {default-features = false, git = "https://github.com/penumbra-zone/decaf377", rev = "c8f6a6c5e83736813e95277e82f546bff55ae90a"}
 decaf377-fmd = {path = "crates/crypto/decaf377-fmd"}
 decaf377-ka = {path = "crates/crypto/decaf377-ka"}
-decaf377-rdsa = {version = "0.7"}
+decaf377-rdsa = {git = "https://github.com/penumbra-zone/decaf377-rdsa", rev = "bf11c5d1d97b6dc676aea89ac7a24f62a8e35e7"}
 derivative = {version = "2.2"}
 directories = {version = "4.0.1"}
 ed25519-consensus = {version = "2.1"}
@@ -191,7 +192,7 @@ penumbra-txhash = {default-features = false, path = "crates/core/txhash"}
 penumbra-view = {path = "crates/view"}
 pin-project = {version = "1.0.12"}
 pin-project-lite = {version = "0.2.9"}
-poseidon377 = {version = "0.6"}
+poseidon377 = {git = "https://github.com/penumbra-zone/poseidon377", rev = "c9f73892b59a160a6455dfa9daba0e277be54ea1"}
 proptest = {version = "1"}
 proptest-derive = {version = "0.3"}
 prost = {version = "0.12.3"}

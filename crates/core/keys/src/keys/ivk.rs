@@ -5,7 +5,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{
     r1cs::{ElementVar, FqVar},
-    FieldExt, Fq, Fr,
+    Fq, Fr,
 };
 
 use super::{AddressIndex, Diversifier, DiversifierKey};

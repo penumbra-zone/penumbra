@@ -1,6 +1,6 @@
 use ark_ff::UniformRand;
 use ark_ff::Zero;
-use decaf377::{FieldExt, Fq, Fr};
+use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value};
 use penumbra_keys::FullViewingKey;
@@ -198,14 +198,14 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                 .ok_or_else(|| anyhow::anyhow!("missing unbonded amount in `DelegatorVotePlan`"))?
                 .try_into()?,
             position: value.staked_note_position.into(),
-            randomizer: Fr::from_bytes(
+            randomizer: Fr::from_bytes_checked(
                 value
                     .randomizer
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
             )?,
-            proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
-            proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            proof_blinding_r: Fq::from_bytes_checked(proof_blinding_r_bytes)?,
+            proof_blinding_s: Fq::from_bytes_checked(proof_blinding_s_bytes)?,
         })
     }
 }

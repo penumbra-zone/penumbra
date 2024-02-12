@@ -7,7 +7,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{Bls12_377, FieldExt};
+use decaf377::Bls12_377;
 use decaf377::{Fq, Fr};
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;

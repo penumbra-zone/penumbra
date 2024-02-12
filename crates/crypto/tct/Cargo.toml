@@ -26,7 +26,6 @@ decaf377 = {workspace = true, default-features = true}
 tracing = {workspace = true}
 async-trait = {workspace = true}
 futures = {workspace = true}
-ark-ed-on-bls12-377 = "0.4"
 rand = {workspace = true}
 im = {workspace = true, features = ["serde"]}
 ark-relations = {workspace = true, optional = true}
