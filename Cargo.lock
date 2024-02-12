@@ -5298,6 +5298,11 @@ dependencies = [
 [[package]]
 name = "penumbra-mock-consensus"
 version = "0.66.0"
+dependencies = [
+ "bytes",
+ "tendermint",
+ "tower",
+]
 
 [[package]]
 name = "penumbra-num"
