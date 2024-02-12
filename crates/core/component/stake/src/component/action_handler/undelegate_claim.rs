@@ -64,7 +64,7 @@ impl ActionHandler for UndelegateClaim {
         Ok(())
     }
 
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // TODO: where should we be tracking token supply changes?
         state.record_proto(event::undelegate_claim(self));
         Ok(())

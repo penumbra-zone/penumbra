@@ -1,4 +1,4 @@
-use crate::{Delegate, Undelegate, UndelegateClaim};
+use crate::{validator::Validator, Delegate, Undelegate, UndelegateClaim};
 
 use penumbra_proto::penumbra::core::component::stake::v1 as pb;
 
@@ -26,5 +26,25 @@ pub fn undelegate_claim(undelegate_claim: &UndelegateClaim) -> pb::EventUndelega
         start_epoch_index: undelegate_claim.body.start_epoch_index,
         penalty: Some(undelegate_claim.body.penalty.into()),
         balance_commitment: Some(undelegate_claim.body.balance_commitment.into()),
+    }
+}
+
+pub fn new_validator_definition(
+    validator: Validator,
+    epoch_index: u64,
+) -> pb::EventNewValidatorDefinition {
+    pb::EventNewValidatorDefinition {
+        validator: Some(validator.into()),
+        epoch_index,
+    }
+}
+
+pub fn updated_validator_definition(
+    validator: Validator,
+    epoch_index: u64,
+) -> pb::EventUpdatedValidatorDefinition {
+    pb::EventUpdatedValidatorDefinition {
+        validator: Some(validator.into()),
+        epoch_index,
     }
 }

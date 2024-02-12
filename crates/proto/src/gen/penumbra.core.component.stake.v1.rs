@@ -819,6 +819,40 @@ impl ::prost::Name for EventUndelegateClaim {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventNewValidatorDefinition {
+    /// The details of the newly uploaded validator.
+    #[prost(message, optional, tag = "1")]
+    pub validator: ::core::option::Option<Validator>,
+    /// The epoch in which the validator was uploaded.
+    #[prost(uint64, tag = "2")]
+    pub epoch_index: u64,
+}
+impl ::prost::Name for EventNewValidatorDefinition {
+    const NAME: &'static str = "EventNewValidatorDefinition";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventUpdatedValidatorDefinition {
+    /// The details of the updated validator.
+    #[prost(message, optional, tag = "1")]
+    pub validator: ::core::option::Option<Validator>,
+    /// The epoch in which the validator was updated.
+    #[prost(uint64, tag = "2")]
+    pub epoch_index: u64,
+}
+impl ::prost::Name for EventUpdatedValidatorDefinition {
+    const NAME: &'static str = "EventUpdatedValidatorDefinition";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

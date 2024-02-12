@@ -5,11 +5,11 @@ use penumbra_sct::component::clock::EpochRead;
 
 use std::sync::Arc;
 
-use penumbra_proto::DomainType;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 
 use crate::{
     component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
-    component::validator_handler::ValidatorManager, rate::RateData, validator,
+    component::validator_handler::ValidatorManager, event, rate::RateData, validator,
 };
 
 #[async_trait]
@@ -124,6 +124,11 @@ impl ActionHandler for validator::Definition {
             state.update_validator(v.validator.clone()).await.context(
                 "should be able to update validator during validator definition execution",
             )?;
+
+            state.record_proto(event::updated_validator_definition(
+                v.validator.clone(),
+                current_epoch.index,
+            ));
         } else {
             // This is a new validator definition. We prime the validator's
             // rate data with an initial exchange rate of 1:1.
@@ -140,6 +145,11 @@ impl ActionHandler for validator::Definition {
                 .add_validator(v.validator.clone(), initial_rate_data)
                 .await
                 .context("should be able to add validator during validator definition execution")?;
+
+            state.record_proto(event::new_validator_definition(
+                v.validator.clone(),
+                current_epoch.index,
+            ));
         }
 
         Ok(())

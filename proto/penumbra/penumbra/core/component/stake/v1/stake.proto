@@ -333,3 +333,17 @@ message EventUndelegateClaim {
   // The action's contribution to the transaction's value balance.
   asset.v1.BalanceCommitment balance_commitment = 4;
 }
+
+message EventNewValidatorDefinition {
+  // The details of the newly uploaded validator.
+  Validator validator = 1;
+  // The epoch in which the validator was uploaded.
+  uint64 epoch_index = 2;
+}
+
+message EventUpdatedValidatorDefinition {
+  // The details of the updated validator.
+  Validator validator = 1;
+  // The epoch in which the validator was updated.
+  uint64 epoch_index = 2;
+}

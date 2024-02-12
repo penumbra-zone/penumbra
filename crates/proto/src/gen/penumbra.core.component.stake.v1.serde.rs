@@ -1033,6 +1033,122 @@ impl<'de> serde::Deserialize<'de> for EventDelegate {
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventDelegate", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventNewValidatorDefinition {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator.is_some() {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventNewValidatorDefinition", len)?;
+        if let Some(v) = self.validator.as_ref() {
+            struct_ser.serialize_field("validator", v)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventNewValidatorDefinition {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator",
+            "epoch_index",
+            "epochIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Validator,
+            EpochIndex,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validator" => Ok(GeneratedField::Validator),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventNewValidatorDefinition;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventNewValidatorDefinition")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventNewValidatorDefinition, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator__ = None;
+                let mut epoch_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Validator => {
+                            if validator__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validator"));
+                            }
+                            validator__ = map_.next_value()?;
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventNewValidatorDefinition {
+                    validator: validator__,
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventNewValidatorDefinition", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventUndelegate {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1336,6 +1452,122 @@ impl<'de> serde::Deserialize<'de> for EventUndelegateClaim {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventUndelegateClaim", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventUpdatedValidatorDefinition {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator.is_some() {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventUpdatedValidatorDefinition", len)?;
+        if let Some(v) = self.validator.as_ref() {
+            struct_ser.serialize_field("validator", v)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventUpdatedValidatorDefinition {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator",
+            "epoch_index",
+            "epochIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Validator,
+            EpochIndex,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validator" => Ok(GeneratedField::Validator),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventUpdatedValidatorDefinition;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventUpdatedValidatorDefinition")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventUpdatedValidatorDefinition, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator__ = None;
+                let mut epoch_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Validator => {
+                            if validator__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validator"));
+                            }
+                            validator__ = map_.next_value()?;
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventUpdatedValidatorDefinition {
+                    validator: validator__,
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventUpdatedValidatorDefinition", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for FundingStream {
