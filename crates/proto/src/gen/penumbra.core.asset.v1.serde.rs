@@ -1174,12 +1174,24 @@ impl serde::Serialize for value_view::KnownAssetId {
         if self.metadata.is_some() {
             len += 1;
         }
+        if !self.equivalent_values.is_empty() {
+            len += 1;
+        }
+        if self.extended_metadata.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1.ValueView.KnownAssetId", len)?;
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
         }
         if let Some(v) = self.metadata.as_ref() {
             struct_ser.serialize_field("metadata", v)?;
+        }
+        if !self.equivalent_values.is_empty() {
+            struct_ser.serialize_field("equivalentValues", &self.equivalent_values)?;
+        }
+        if let Some(v) = self.extended_metadata.as_ref() {
+            struct_ser.serialize_field("extendedMetadata", v)?;
         }
         struct_ser.end()
     }
@@ -1193,12 +1205,18 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
         const FIELDS: &[&str] = &[
             "amount",
             "metadata",
+            "equivalent_values",
+            "equivalentValues",
+            "extended_metadata",
+            "extendedMetadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Amount,
             Metadata,
+            EquivalentValues,
+            ExtendedMetadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1223,6 +1241,8 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
                         match value {
                             "amount" => Ok(GeneratedField::Amount),
                             "metadata" => Ok(GeneratedField::Metadata),
+                            "equivalentValues" | "equivalent_values" => Ok(GeneratedField::EquivalentValues),
+                            "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1244,6 +1264,8 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
             {
                 let mut amount__ = None;
                 let mut metadata__ = None;
+                let mut equivalent_values__ = None;
+                let mut extended_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Amount => {
@@ -1258,6 +1280,18 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
                             }
                             metadata__ = map_.next_value()?;
                         }
+                        GeneratedField::EquivalentValues => {
+                            if equivalent_values__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("equivalentValues"));
+                            }
+                            equivalent_values__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::ExtendedMetadata => {
+                            if extended_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("extendedMetadata"));
+                            }
+                            extended_metadata__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1266,10 +1300,125 @@ impl<'de> serde::Deserialize<'de> for value_view::KnownAssetId {
                 Ok(value_view::KnownAssetId {
                     amount: amount__,
                     metadata: metadata__,
+                    equivalent_values: equivalent_values__.unwrap_or_default(),
+                    extended_metadata: extended_metadata__,
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.asset.v1.ValueView.KnownAssetId", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for value_view::known_asset_id::EquivalentValue {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.equivalent_amount.is_some() {
+            len += 1;
+        }
+        if self.numeraire.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.asset.v1.ValueView.KnownAssetId.EquivalentValue", len)?;
+        if let Some(v) = self.equivalent_amount.as_ref() {
+            struct_ser.serialize_field("equivalentAmount", v)?;
+        }
+        if let Some(v) = self.numeraire.as_ref() {
+            struct_ser.serialize_field("numeraire", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for value_view::known_asset_id::EquivalentValue {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "equivalent_amount",
+            "equivalentAmount",
+            "numeraire",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            EquivalentAmount,
+            Numeraire,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "equivalentAmount" | "equivalent_amount" => Ok(GeneratedField::EquivalentAmount),
+                            "numeraire" => Ok(GeneratedField::Numeraire),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = value_view::known_asset_id::EquivalentValue;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.asset.v1.ValueView.KnownAssetId.EquivalentValue")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<value_view::known_asset_id::EquivalentValue, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut equivalent_amount__ = None;
+                let mut numeraire__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::EquivalentAmount => {
+                            if equivalent_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("equivalentAmount"));
+                            }
+                            equivalent_amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::Numeraire => {
+                            if numeraire__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("numeraire"));
+                            }
+                            numeraire__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(value_view::known_asset_id::EquivalentValue {
+                    equivalent_amount: equivalent_amount__,
+                    numeraire: numeraire__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.asset.v1.ValueView.KnownAssetId.EquivalentValue", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for value_view::UnknownAssetId {
