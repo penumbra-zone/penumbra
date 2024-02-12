@@ -4649,7 +4649,7 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tower",
- "tower-abci",
+ "tower-abci 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tower-actor",
  "tower-http",
  "tower-service",
@@ -4767,7 +4767,7 @@ dependencies = [
  "tokio-util 0.7.10",
  "tonic",
  "tower",
- "tower-abci",
+ "tower-abci 0.11.1 (git+https://github.com/penumbra-zone/tower-abci.git?branch=katie/in-memory-server-api)",
  "tower-actor",
  "tower-service",
  "tracing",
@@ -8294,6 +8294,24 @@ name = "tower-abci"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d4826f3df3e9a37083d978cae73f020bcdf6143956b7dfc1bd6050b4e16367c"
+dependencies = [
+ "bytes",
+ "futures",
+ "pin-project",
+ "prost",
+ "tendermint",
+ "tendermint-proto",
+ "tokio",
+ "tokio-stream",
+ "tokio-util 0.6.10",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "tower-abci"
+version = "0.11.1"
+source = "git+https://github.com/penumbra-zone/tower-abci.git?branch=katie/in-memory-server-api#5d5f5020f678f1b6dfecdcd36b791c3151950223"
 dependencies = [
  "bytes",
  "futures",

@@ -75,11 +75,16 @@ ibc-proto = {workspace = true, default-features = false, features = [
     "server",
 ]}
 tower = {workspace = true, features = ["full"]}
-tower-abci = "0.11"
 tower-actor = "0.1.0"
 tower-service = {workspace = true}
 penumbra-tower-trace = { path = "../../util/tower-trace" }
 ics23 = {workspace = true}
+
+# XXX(kate): temporarily use penumbra-zone/tower-abci#41
+[dependencies.tower-abci]
+git = "https://github.com/penumbra-zone/tower-abci.git"
+branch = "katie/in-memory-server-api"
+features = ["local"]
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}
