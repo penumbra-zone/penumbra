@@ -346,7 +346,7 @@ impl DummyWitness for SwapClaimCircuit {
         let state_commitment_proof = sct
             .witness(swap_commitment)
             .expect("the SCT should be able to witness the just-inserted swap commitment");
-        let nullifier = Nullifier(Fq::from(1));
+        let nullifier = Nullifier(Fq::from(1u64));
         let claim_fee = Fee::default();
         let output_data = BatchSwapOutputData {
             delta_1: Amount::from(10u64),
@@ -359,10 +359,10 @@ impl DummyWitness for SwapClaimCircuit {
             trading_pair: swap_plaintext.trading_pair,
             sct_position_prefix: Default::default(),
         };
-        let note_blinding_1 = Fq::from(1);
-        let note_blinding_2 = Fq::from(1);
-        let note_commitment_1 = tct::StateCommitment(Fq::from(1));
-        let note_commitment_2 = tct::StateCommitment(Fq::from(2));
+        let note_blinding_1 = Fq::from(1u64);
+        let note_blinding_2 = Fq::from(1u64);
+        let note_commitment_1 = tct::StateCommitment(Fq::from(1u64));
+        let note_commitment_2 = tct::StateCommitment(Fq::from(2u64));
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
         let public = SwapClaimProofPublic {
@@ -855,7 +855,7 @@ mod tests {
         // End the block, and then add a dummy commitment that we'll use
         // to compute the position and block height that the BSOD corresponds to.
         sct.end_block().expect("can end block");
-        let dummy_swap_commitment = tct::StateCommitment(Fq::from(1));
+        let dummy_swap_commitment = tct::StateCommitment(Fq::from(1u64));
         sct.insert(tct::Witness::Keep, dummy_swap_commitment).unwrap();
         let dummy_state_commitment_proof = sct.witness(swap_commitment).unwrap();
         let dummy_position = dummy_state_commitment_proof.position();

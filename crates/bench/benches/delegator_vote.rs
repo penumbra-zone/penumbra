@@ -37,7 +37,7 @@ fn delegator_vote_proving_time(c: &mut Criterion) {
 
     let note = Note::generate(&mut OsRng, &sender, value_to_send);
     let note_commitment = note.commit();
-    let spend_auth_randomizer = Fr::from(0i32);
+    let spend_auth_randomizer = Fr::from(0u64);
     let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
     let nk = *sk_sender.nullifier_key();
     let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();

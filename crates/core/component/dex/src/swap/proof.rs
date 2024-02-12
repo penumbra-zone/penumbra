@@ -180,7 +180,7 @@ impl DummyWitness for SwapCircuit {
         Self {
             private: SwapProofPrivate {
                 swap_plaintext: swap_plaintext.clone(),
-                fee_blinding: Fr::from(1),
+                fee_blinding: Fr::from(1u64),
             },
             public: SwapProofPublic {
                 swap_commitment: swap_plaintext.swap_commitment(),
