@@ -853,6 +853,27 @@ impl ::prost::Name for EventUpdatedValidatorDefinition {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValidatorStateChange {
+    /// The identity key of the validator whose state changed.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The previous state of the validator.
+    /// May be unset if the validator was just created.
+    #[prost(message, optional, tag = "2")]
+    pub old_state: ::core::option::Option<ValidatorState>,
+    /// The new state of the validator.
+    #[prost(message, optional, tag = "3")]
+    pub new_state: ::core::option::Option<ValidatorState>,
+}
+impl ::prost::Name for EventValidatorStateChange {
+    const NAME: &'static str = "EventValidatorStateChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

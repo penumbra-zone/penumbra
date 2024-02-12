@@ -1,6 +1,7 @@
 use std::pin::Pin;
 
 use crate::{
+    event,
     rate::RateData,
     validator::{State, Validator},
 };
@@ -262,6 +263,9 @@ pub trait ValidatorDataWrite: StateWrite {
         if !matches!(initial_state, State::Active | State::Defined) {
             anyhow::bail!("invalid initial validator state");
         }
+
+        // Emit event indicating validator's initial state:
+        self.record_proto(event::validator_state_change(id, None, initial_state));
 
         self.put(state_key::validators::state::by_id(id), initial_state);
         Ok(())

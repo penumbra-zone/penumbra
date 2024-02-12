@@ -347,3 +347,13 @@ message EventUpdatedValidatorDefinition {
   // The epoch in which the validator was updated.
   uint64 epoch_index = 2;
 }
+
+message EventValidatorStateChange {
+  // The identity key of the validator whose state changed.
+  keys.v1.IdentityKey identity_key = 1;
+  // The previous state of the validator.
+  // May be unset if the validator was just created.
+  ValidatorState old_state = 2;
+  // The new state of the validator.
+  ValidatorState new_state = 3;
+}

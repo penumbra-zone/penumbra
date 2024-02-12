@@ -1,4 +1,7 @@
-use crate::{validator::Validator, Delegate, Undelegate, UndelegateClaim};
+use crate::{
+    validator::{self, Validator},
+    Delegate, IdentityKey, Undelegate, UndelegateClaim,
+};
 
 use penumbra_proto::penumbra::core::component::stake::v1 as pb;
 
@@ -46,5 +49,17 @@ pub fn updated_validator_definition(
     pb::EventUpdatedValidatorDefinition {
         validator: Some(validator.into()),
         epoch_index,
+    }
+}
+
+pub fn validator_state_change(
+    identity_key: &IdentityKey,
+    old_state: Option<validator::State>,
+    new_state: validator::State,
+) -> pb::EventValidatorStateChange {
+    pb::EventValidatorStateChange {
+        identity_key: Some((*identity_key).into()),
+        old_state: old_state.map(Into::into),
+        new_state: Some(new_state.into()),
     }
 }

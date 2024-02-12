@@ -2,9 +2,11 @@ use std::collections::BTreeMap;
 
 use crate::{
     component::{
-        metrics, stake::ConsensusIndexRead, stake::ConsensusIndexWrite, stake::RateDataWrite,
+        metrics,
+        stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
         validator_handler::ValidatorDataWrite,
     },
+    event,
     rate::{BaseRateData, RateData},
     validator::{State, Validator},
     DelegationToken,
@@ -324,6 +326,13 @@ pub trait ValidatorManager: StateWrite {
             Jailed => metrics::gauge!(metrics::JAILED_VALIDATORS).increment(1.0),
             Tombstoned => metrics::gauge!(metrics::TOMBSTONED_VALIDATORS).increment(1.0),
         };
+
+        // Emit an event indicating the state change:
+        self.record_proto(event::validator_state_change(
+            identity_key,
+            Some(old_state),
+            new_state,
+        ));
 
         Ok(())
     }
