@@ -5,13 +5,12 @@
 /// Most importantly, defines [`Builder::init_chain()`].
 mod init_chain;
 
-use crate::TestNode;
-use penumbra_genesis::AppState;
+use {crate::TestNode, bytes::Bytes};
 
 /// A buider, used to prepare and instantiate a new [`TestNode`].
 #[derive(Default)]
 pub struct Builder {
-    app_state: Option<AppState>,
+    app_state: Option<Bytes>,
 }
 
 impl TestNode<()> {
@@ -30,13 +29,9 @@ impl Builder {
         self
     }
 
-    pub fn app_state(self, app_state: AppState) -> Self {
-        let app_state = Some(app_state);
+    /// Sets the `app_state_bytes` to send the ABCI application upon chain initialization.
+    pub fn app_state(self, app_state: impl Into<Bytes>) -> Self {
+        let app_state = Some(app_state.into());
         Self { app_state, ..self }
-    }
-
-    pub fn app_state_bytes(self, _: Vec<u8>) -> Self {
-        // this does not do anything yet
-        self
     }
 }
