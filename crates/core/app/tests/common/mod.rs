@@ -16,7 +16,14 @@ pub fn set_tracing_subscriber() -> tracing::subscriber::DefaultGuard {
     let filter = "debug,penumbra_app=trace,penumbra_mock_consensus=trace";
     let filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new(filter))
-        .expect("should have a valid filter directive");
+        .expect("should have a valid filter directive")
+        // Without explicitly disabling the `r1cs` target, the ZK proof implementations
+        // will spend an enormous amount of CPU and memory building useless tracing output.
+        .add_directive(
+            "r1cs=off"
+                .parse()
+                .expect("rics=off is a valid filter directive"),
+        );
 
     let subscriber = tracing_subscriber::fmt()
         .with_env_filter(filter)
