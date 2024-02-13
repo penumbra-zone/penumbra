@@ -42,6 +42,7 @@ services:
     command: >-
       /bin/pd start --home /pd/testnet_data/node0/pd
       --grpc-bind 0.0.0.0:8080 --abci-bind 0.0.0.0:26658
+      --cometbft-addr http://cometbft-node0:26657
     restart: on-failure
     volumes:
       - penumbra-pd-node0:/pd
