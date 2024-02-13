@@ -115,7 +115,6 @@ impl Component for Funding {
                         ending_epoch_base_rate = ?base_rate,
                         funding_stream = ?stream,
                         delegation_token_supply = ?delegation_token_supply, "debugging information for the funding stream that caused the error");
-                    panic!("staking rewards for epoch exceeds the staking issuance budget, halting chain")
                 }
 
                 match stream.recipient() {
