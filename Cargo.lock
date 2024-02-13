@@ -5219,6 +5219,8 @@ version = "0.67.0"
 dependencies = [
  "anyhow",
  "bytes",
+ "penumbra-genesis",
+ "serde_json",
  "tap",
  "tendermint",
  "tower",

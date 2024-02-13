@@ -29,7 +29,14 @@ impl Builder {
     {
         use tendermint::v0_37::abci::response;
 
-        let request = Self::init_chain_request();
+        let Self {
+            app_state: Some(app_state),
+        } = self
+        else {
+            bail!("builder was not fully initialized")
+        };
+
+        let request = Self::init_chain_request(app_state)?;
         let service = consensus
             .ready()
             .await
@@ -56,18 +63,18 @@ impl Builder {
         })
     }
 
-    fn init_chain_request() -> ConsensusRequest {
+    fn init_chain_request(app_state: AppState) -> Result<ConsensusRequest, anyhow::Error> {
         use tendermint::v0_37::abci::request::InitChain;
         let consensus_params = Self::consensus_params();
-        let app_state_bytes = bytes::Bytes::new();
-        ConsensusRequest::InitChain(InitChain {
+        let app_state_bytes = serde_json::to_vec(&app_state)?.into();
+        Ok(ConsensusRequest::InitChain(InitChain {
             time: tendermint::Time::now(),
             chain_id: "test".to_string(), // XXX const here?
             consensus_params,
             validators: vec![],
             app_state_bytes,
             initial_height: 1_u32.into(),
-        })
+        }))
     }
 
     fn consensus_params() -> consensus::Params {
