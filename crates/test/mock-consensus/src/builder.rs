@@ -6,14 +6,18 @@
 mod init_chain;
 
 use crate::TestNode;
+use penumbra_genesis::AppState;
 
 /// A buider, used to prepare and instantiate a new [`TestNode`].
-pub struct Builder;
+#[derive(Default)]
+pub struct Builder {
+    app_state: Option<AppState>,
+}
 
 impl TestNode<()> {
     /// Returns a new [`Builder`].
     pub fn builder() -> Builder {
-        Builder
+        Builder::default()
     }
 }
 
@@ -26,9 +30,9 @@ impl Builder {
         self
     }
 
-    pub fn app_state(self, _: ()) -> Self {
-        // this does not do anything yet
-        self
+    pub fn app_state(self, app_state: AppState) -> Self {
+        let app_state = Some(app_state);
+        Self { app_state, ..self }
     }
 
     pub fn app_state_bytes(self, _: Vec<u8>) -> Self {
