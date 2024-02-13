@@ -6106,6 +6106,9 @@ impl serde::Serialize for swap_claim_view::Visible {
         if self.output_2.is_some() {
             len += 1;
         }
+        if self.swap_tx.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapClaimView.Visible", len)?;
         if let Some(v) = self.swap_claim.as_ref() {
             struct_ser.serialize_field("swapClaim", v)?;
@@ -6115,6 +6118,9 @@ impl serde::Serialize for swap_claim_view::Visible {
         }
         if let Some(v) = self.output_2.as_ref() {
             struct_ser.serialize_field("output2", v)?;
+        }
+        if let Some(v) = self.swap_tx.as_ref() {
+            struct_ser.serialize_field("swapTx", v)?;
         }
         struct_ser.end()
     }
@@ -6132,6 +6138,8 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
             "output1",
             "output_2",
             "output2",
+            "swap_tx",
+            "swapTx",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -6139,6 +6147,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
             SwapClaim,
             Output1,
             Output2,
+            SwapTx,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6164,6 +6173,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "output1" | "output_1" => Ok(GeneratedField::Output1),
                             "output2" | "output_2" => Ok(GeneratedField::Output2),
+                            "swapTx" | "swap_tx" => Ok(GeneratedField::SwapTx),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -6186,6 +6196,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                 let mut swap_claim__ = None;
                 let mut output_1__ = None;
                 let mut output_2__ = None;
+                let mut swap_tx__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapClaim => {
@@ -6206,6 +6217,12 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                             }
                             output_2__ = map_.next_value()?;
                         }
+                        GeneratedField::SwapTx => {
+                            if swap_tx__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapTx"));
+                            }
+                            swap_tx__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6215,6 +6232,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                     swap_claim: swap_claim__,
                     output_1: output_1__,
                     output_2: output_2__,
+                    swap_tx: swap_tx__,
                 })
             }
         }
@@ -7614,12 +7632,18 @@ impl serde::Serialize for swap_view::Visible {
         if self.swap_plaintext.is_some() {
             len += 1;
         }
+        if self.claim_tx.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapView.Visible", len)?;
         if let Some(v) = self.swap.as_ref() {
             struct_ser.serialize_field("swap", v)?;
         }
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
+        }
+        if let Some(v) = self.claim_tx.as_ref() {
+            struct_ser.serialize_field("claimTx", v)?;
         }
         struct_ser.end()
     }
@@ -7634,12 +7658,15 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
             "swap",
             "swap_plaintext",
             "swapPlaintext",
+            "claim_tx",
+            "claimTx",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Swap,
             SwapPlaintext,
+            ClaimTx,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7664,6 +7691,7 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                         match value {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapPlaintext" | "swap_plaintext" => Ok(GeneratedField::SwapPlaintext),
+                            "claimTx" | "claim_tx" => Ok(GeneratedField::ClaimTx),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7685,6 +7713,7 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
             {
                 let mut swap__ = None;
                 let mut swap_plaintext__ = None;
+                let mut claim_tx__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
@@ -7699,6 +7728,12 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                             }
                             swap_plaintext__ = map_.next_value()?;
                         }
+                        GeneratedField::ClaimTx => {
+                            if claim_tx__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimTx"));
+                            }
+                            claim_tx__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7707,6 +7742,7 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                 Ok(swap_view::Visible {
                     swap: swap__,
                     swap_plaintext: swap_plaintext__,
+                    claim_tx: claim_tx__,
                 })
             }
         }

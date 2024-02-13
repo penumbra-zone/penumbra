@@ -59,6 +59,8 @@ impl From<SwapView> for pb::SwapView {
                 swap_view: Some(sv::SwapView::Visible(sv::Visible {
                     swap: Some(swap.into()),
                     swap_plaintext: Some(swap_plaintext.into()),
+                    // Swap claim crossreferencing is not yet supported in the Rust stack.
+                    claim_tx: None,
                 })),
             },
             SwapView::Opaque { swap } => Self {
