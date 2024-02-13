@@ -3,21 +3,36 @@
 //  Note: these should eventually replace the existing test cases. mock consensus tests are placed
 //  here while the engine is still in development. See #3588.
 
-use {cnidarium::TempStorage, penumbra_mock_consensus::TestNode};
+mod common;
+
+use cnidarium::TempStorage;
+use common::BuilderExt;
+use penumbra_app::server::consensus::Consensus;
+use penumbra_genesis::AppState;
 
 #[tokio::test]
-#[should_panic]
-#[allow(unreachable_code, unused)]
-async fn an_app_with_mock_consensus_can_be_instantiated() {
-    let storage = TempStorage::new().await.unwrap();
+async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
+    // Install a test logger, and acquire some temporary storage.
+    let guard = common::set_tracing_subscriber();
+    let storage = TempStorage::new().await?;
 
-    // TODO(kate): bind this to an in-memory channel/writer instead.
-    let addr: std::net::SocketAddr = todo!();
-    let abci_server = penumbra_app::server::new(todo!()).listen_tcp(addr);
+    // Instantiate the consensus service, and start the test node.
+    let engine = {
+        use penumbra_mock_consensus::TestNode;
+        let app_state = AppState::default();
+        let consensus = Consensus::new(storage.as_ref().clone());
+        TestNode::builder()
+            .single_validator()
+            .with_penumbra_auto_app_state(app_state)?
+            .init_chain(consensus)
+            .await?
+    };
 
-    let _engine = TestNode::<()>::builder()
-        .single_validator()
-        .app_state(() /*genesis::AppState::default()*/)
-        .init_chain(abci_server)
-        .await;
+    tracing::info!(hash = %engine.last_app_hash_hex(), "finished init chain");
+
+    // Free our temporary storage.
+    drop(storage);
+    drop(guard);
+
+    Ok(())
 }

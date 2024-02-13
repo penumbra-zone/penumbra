@@ -136,6 +136,10 @@ impl From<ValueView> for pb::ValueView {
                     pb::value_view::KnownAssetId {
                         amount: Some(amount.into()),
                         metadata: Some(metadata.into()),
+                        // These fields are currently not used by the Rust stack.
+                        // Support for them may be added to the Rust view server in the future.
+                        equivalent_values: Vec::new(),
+                        extended_metadata: None,
                     },
                 )),
             },

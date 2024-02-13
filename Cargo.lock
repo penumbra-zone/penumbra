@@ -99,17 +99,6 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.7.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a824f2aa7e75a0c98c5a504fceb80649e9c35265d44525b5f94de4771a395cd"
-dependencies = [
- "getrandom 0.2.12",
- "once_cell",
- "version_check",
-]
-
-[[package]]
-name = "ahash"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c3a9648d43b9cd48db467b3f87fdd6e146bcc88ab0180006cef2179fe11d01"
@@ -118,15 +107,6 @@ dependencies = [
  "once_cell",
  "version_check",
  "zerocopy",
-]
-
-[[package]]
-name = "aho-corasick"
-version = "0.7.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc936419f96fa211c1b9166887b38e5e40b19958e5b895be7c1f93adec7071ac"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -794,15 +774,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "atomic-shim"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67cd4b51d303cf3501c301e8125df442128d3c6d7c69f71b27833d253de47e77"
-dependencies = [
- "crossbeam-utils",
-]
-
-[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1400,7 +1371,7 @@ dependencies = [
 
 [[package]]
 name = "cnidarium"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1411,9 +1382,9 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot",
  "pbjson",
  "pin-project",
  "prost",
@@ -1433,7 +1404,7 @@ dependencies = [
 
 [[package]]
 name = "cnidarium-component"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1715,7 +1686,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio",
- "parking_lot 0.12.1",
+ "parking_lot",
  "signal-hook",
  "signal-hook-mio",
  "winapi",
@@ -1912,7 +1883,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-fmd"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "ark-ff",
  "ark-serialize",
@@ -1927,7 +1898,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-frost"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -1942,7 +1913,7 @@ dependencies = [
 
 [[package]]
 name = "decaf377-ka"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "ark-ff",
  "decaf377 0.5.0",
@@ -2742,15 +2713,6 @@ checksum = "74721d007512d0cb3338cd20f0654ac913920061a4c4d0d8708edb3f2a698c0c"
 
 [[package]]
 name = "hashbrown"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
-dependencies = [
- "ahash 0.7.7",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
@@ -2761,7 +2723,7 @@ version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
 dependencies = [
- "ahash 0.8.7",
+ "ahash",
 ]
 
 [[package]]
@@ -2770,7 +2732,7 @@ version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 dependencies = [
- "ahash 0.8.7",
+ "ahash",
  "allocator-api2",
 ]
 
@@ -3721,7 +3683,7 @@ checksum = "85c833ca1e66078851dba29046874e38f08b2c883700aa29a03ddd3b23814ee8"
 dependencies = [
  "bitflags 2.4.1",
  "libc",
- "redox_syscall 0.4.1",
+ "redox_syscall",
 ]
 
 [[package]]
@@ -3816,15 +3778,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mach"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b823e83b2affd8f40a9ee8c29dbc56404c1e34cd2710921f2801e2cf29527afa"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "matchers"
 version = "0.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3878,36 +3831,27 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "142c53885123b68d94108295a09d4afe1a1388ed95b54d5dacd9a454753030f2"
-dependencies = [
- "ahash 0.7.7",
- "metrics-macros",
-]
-
-[[package]]
-name = "metrics"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77b9e10a211c839210fd7f99954bda26e5f8e26ec686ad68da6a32df7c80e782"
 dependencies = [
- "ahash 0.8.7",
+ "ahash",
  "portable-atomic",
 ]
 
 [[package]]
 name = "metrics-exporter-prometheus"
-version = "0.10.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "953cbbb6f9ba4b9304f4df79b98cdc9d14071ed93065a9fca11c00c5d9181b66"
+checksum = "9bf4e7146e30ad172c42c39b3246864bd2d3c6396780711a1baf749cfe423e21"
 dependencies = [
+ "base64 0.21.6",
  "hyper",
- "indexmap 1.9.3",
+ "hyper-tls",
+ "indexmap 2.1.0",
  "ipnet",
- "metrics 0.19.0",
+ "metrics",
  "metrics-util",
- "parking_lot 0.11.2",
  "quanta",
  "thiserror",
  "tokio",
@@ -3915,25 +3859,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "metrics-macros"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49e30813093f757be5cf21e50389a24dc7dbb22c49f23b7e8f51d69b508a5ffa"
-dependencies = [
- "proc-macro2 1.0.76",
- "quote 1.0.35",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "metrics-tracing-context"
-version = "0.11.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91c0b6603313b4625101251a1c0749df7deef27ab410d430d79f2fcb9d8480aa"
+checksum = "fb791d015f8947acf5a7f62bd28d00f289bb7ea98cfbe3ffec1d061eee12df12"
 dependencies = [
+ "indexmap 2.1.0",
  "itoa",
  "lockfree-object-pool",
- "metrics 0.19.0",
+ "metrics",
  "metrics-util",
  "once_cell",
  "tracing",
@@ -3943,20 +3877,18 @@ dependencies = [
 
 [[package]]
 name = "metrics-util"
-version = "0.13.0"
+version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd1f4b69bef1e2b392b2d4a12902f2af90bb438ba4a66aa222d1023fa6561b50"
+checksum = "ece71ab046dcf45604e573329966ec1db5ff4b81cfa170a924ff4c959ab5451a"
 dependencies = [
- "aho-corasick 0.7.20",
- "atomic-shim",
+ "aho-corasick",
  "crossbeam-epoch",
  "crossbeam-utils",
- "hashbrown 0.11.2",
- "indexmap 1.9.3",
- "metrics 0.19.0",
+ "hashbrown 0.14.3",
+ "indexmap 2.1.0",
+ "metrics",
  "num_cpus",
  "ordered-float",
- "parking_lot 0.11.2",
  "quanta",
  "radix_trie",
  "sketches-ddsketch",
@@ -4269,9 +4201,9 @@ dependencies = [
 
 [[package]]
 name = "ordered-float"
-version = "2.10.1"
+version = "4.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68f19d67e5a2795c94e73e0bb1cc1a7edeb2e28efd39e2e1c9b7a40c1108b11c"
+checksum = "a76df7075c7d4d01fdcb46c912dd17fba5b60c78ea480b475f2b6ab6f666584e"
 dependencies = [
  "num-traits",
 ]
@@ -4322,37 +4254,12 @@ checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
 
 [[package]]
 name = "parking_lot"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
-dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core 0.8.6",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.9",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
-dependencies = [
- "cfg-if",
- "instant",
- "libc",
- "redox_syscall 0.2.16",
- "smallvec",
- "winapi",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -4363,7 +4270,7 @@ checksum = "4c42a9226546d68acdd9c0a280d17ce19bfe27a46bf68784e4066115788d008e"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.4.1",
+ "redox_syscall",
  "smallvec",
  "windows-targets 0.48.5",
 ]
@@ -4423,7 +4330,7 @@ dependencies = [
 
 [[package]]
 name = "pcli"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4501,7 +4408,7 @@ dependencies = [
 
 [[package]]
 name = "pclientd"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4520,8 +4427,8 @@ dependencies = [
  "http-body",
  "ibc-proto",
  "ibc-types",
- "metrics 0.22.0",
- "parking_lot 0.12.1",
+ "metrics",
+ "parking_lot",
  "penumbra-app",
  "penumbra-asset",
  "penumbra-custody",
@@ -4554,7 +4461,7 @@ dependencies = [
 
 [[package]]
 name = "pd"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4583,7 +4490,7 @@ dependencies = [
  "ibc-types",
  "ics23",
  "jmt",
- "metrics 0.22.0",
+ "metrics",
  "metrics-exporter-prometheus",
  "metrics-tracing-context",
  "metrics-util",
@@ -4689,7 +4596,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-app"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4711,9 +4618,9 @@ dependencies = [
  "ics23",
  "im",
  "jmt",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot",
  "penumbra-asset",
  "penumbra-community-pool",
  "penumbra-compact-block",
@@ -4751,6 +4658,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tokio",
+ "tokio-util 0.7.10",
  "tonic",
  "tower",
  "tower-abci",
@@ -4762,7 +4670,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-asset"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4800,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-auto-https"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "axum-server",
@@ -4812,7 +4720,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-bench"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ec",
@@ -4856,7 +4764,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-community-pool"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4867,7 +4775,7 @@ dependencies = [
  "cnidarium-component",
  "futures",
  "hex",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
@@ -4888,7 +4796,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-compact-block"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4900,7 +4808,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "im",
- "metrics 0.22.0",
+ "metrics",
  "penumbra-community-pool",
  "penumbra-dex",
  "penumbra-fee",
@@ -4924,7 +4832,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-custody"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4957,7 +4865,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-dex"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -4981,9 +4889,9 @@ dependencies = [
  "hex",
  "im",
  "itertools 0.11.0",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot",
  "pbjson-types",
  "penumbra-asset",
  "penumbra-fee",
@@ -5016,7 +4924,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-distributions"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5033,7 +4941,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-eddy"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5041,7 +4949,7 @@ dependencies = [
  "decaf377 0.5.0",
  "futures",
  "merlin",
- "parking_lot 0.12.1",
+ "parking_lot",
  "proptest",
  "rand 0.8.5",
  "rand_core 0.6.4",
@@ -5051,7 +4959,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-fee"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5062,7 +4970,7 @@ dependencies = [
  "cnidarium-component",
  "decaf377 0.5.0",
  "decaf377-rdsa",
- "metrics 0.22.0",
+ "metrics",
  "penumbra-asset",
  "penumbra-num",
  "penumbra-proto",
@@ -5076,7 +4984,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-funding"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5097,7 +5005,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-genesis"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "penumbra-community-pool",
@@ -5115,7 +5023,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-governance"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5136,7 +5044,7 @@ dependencies = [
  "futures",
  "ibc-types",
  "im",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
@@ -5169,7 +5077,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-ibc"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5181,7 +5089,7 @@ dependencies = [
  "ibc-proto",
  "ibc-types",
  "ics23",
- "metrics 0.22.0",
+ "metrics",
  "num-traits",
  "once_cell",
  "pbjson-types",
@@ -5204,7 +5112,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-keys"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "aes 0.8.3",
  "anyhow",
@@ -5250,7 +5158,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-measure"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "bytesize",
@@ -5269,7 +5177,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-mock-client"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "cnidarium",
@@ -5283,11 +5191,20 @@ dependencies = [
 
 [[package]]
 name = "penumbra-mock-consensus"
-version = "0.66.0"
+version = "0.67.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "serde_json",
+ "tap",
+ "tendermint",
+ "tower",
+ "tracing",
+]
 
 [[package]]
 name = "penumbra-num"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5324,7 +5241,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-proof-params"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ec",
@@ -5353,7 +5270,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-proof-setup"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ec",
@@ -5381,7 +5298,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-proto"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5411,7 +5328,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sct"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5428,7 +5345,7 @@ dependencies = [
  "decaf377-rdsa",
  "hex",
  "im",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
  "penumbra-keys",
  "penumbra-proto",
@@ -5444,7 +5361,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-shielded-pool"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5467,7 +5384,7 @@ dependencies = [
  "hex",
  "ibc-types",
  "im",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
  "penumbra-asset",
  "penumbra-ibc",
@@ -5493,7 +5410,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-stake"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5515,7 +5432,7 @@ dependencies = [
  "futures",
  "hex",
  "im",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
  "penumbra-asset",
  "penumbra-community-pool",
@@ -5545,7 +5462,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff",
@@ -5561,7 +5478,7 @@ dependencies = [
  "hex",
  "im",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot",
  "penumbra-proto",
  "poseidon377",
  "proptest",
@@ -5576,7 +5493,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct-property-test"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "futures",
@@ -5588,7 +5505,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tct-visualize"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -5599,7 +5516,7 @@ dependencies = [
  "futures",
  "hex",
  "include-flate",
- "parking_lot 0.12.1",
+ "parking_lot",
  "penumbra-tct",
  "prost",
  "rand 0.8.5",
@@ -5618,14 +5535,14 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tendermint-proxy"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "chrono",
  "futures",
  "hex",
  "http",
- "metrics 0.22.0",
+ "metrics",
  "pbjson-types",
  "penumbra-proto",
  "penumbra-transaction",
@@ -5649,7 +5566,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-tower-trace"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "futures",
  "hex",
@@ -5670,7 +5587,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-transaction"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-ff",
@@ -5722,7 +5639,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-txhash"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "blake2b_simd 1.0.2",
@@ -5734,7 +5651,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-view"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-std",
@@ -5749,9 +5666,9 @@ dependencies = [
  "genawaiter",
  "hex",
  "ibc-types",
- "metrics 0.22.0",
+ "metrics",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot",
  "penumbra-app",
  "penumbra-asset",
  "penumbra-community-pool",
@@ -5789,7 +5706,7 @@ dependencies = [
 
 [[package]]
 name = "penumbra-wallet"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-std",
@@ -6320,16 +6237,15 @@ dependencies = [
 
 [[package]]
 name = "quanta"
-version = "0.9.3"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20afe714292d5e879d8b12740aa223c6a88f118af41870e8b6196e39a02238a8"
+checksum = "9ca0b7bac0b97248c40bb77288fc52029cf1459c0461ea1b05ee32ccf011de2c"
 dependencies = [
  "crossbeam-utils",
  "libc",
- "mach",
  "once_cell",
  "raw-cpuid",
- "wasi 0.10.2+wasi-snapshot-preview1",
+ "wasi 0.11.0+wasi-snapshot-preview1",
  "web-sys",
  "winapi",
 ]
@@ -6365,7 +6281,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
 dependencies = [
  "log",
- "parking_lot 0.12.1",
+ "parking_lot",
  "scheduled-thread-pool",
 ]
 
@@ -6497,11 +6413,11 @@ dependencies = [
 
 [[package]]
 name = "raw-cpuid"
-version = "10.7.0"
+version = "11.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c297679cb867470fa8c9f67dbba74a78d78e3e98d7cf2b08d6d71540f797332"
+checksum = "9d86a7c4638d42c44551f4791a20e687dbb4c3de1f33c43dd71e355cd429def1"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.4.1",
 ]
 
 [[package]]
@@ -6544,15 +6460,6 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
-dependencies = [
- "bitflags 1.3.2",
-]
-
-[[package]]
-name = "redox_syscall"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa"
@@ -6577,7 +6484,7 @@ version = "1.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "380b951a9c5e80ddfd6136919eef32310721aa4aacd4889a8d39124b026ab343"
 dependencies = [
- "aho-corasick 1.1.2",
+ "aho-corasick",
  "memchr",
  "regex-automata 0.4.3",
  "regex-syntax 0.8.2",
@@ -6598,7 +6505,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f804c7828047e88b2d32e2d7fe5a105da8ee3264f01902f796c8e067dc2483f"
 dependencies = [
- "aho-corasick 1.1.2",
+ "aho-corasick",
  "memchr",
  "regex-syntax 0.8.2",
 ]
@@ -7011,7 +6918,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
 dependencies = [
- "parking_lot 0.12.1",
+ "parking_lot",
 ]
 
 [[package]]
@@ -7378,9 +7285,9 @@ dependencies = [
 
 [[package]]
 name = "sketches-ddsketch"
-version = "0.1.3"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04d2ecae5fcf33b122e2e6bd520a57ccf152d2dde3b38c71039df1a6867264ee"
+checksum = "85636c14b73d81f541e525f585c0a2109e6744e1565b5c1668e31c70c10ed65c"
 
 [[package]]
 name = "slab"
@@ -7577,7 +7484,7 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "summonerd"
-version = "0.66.0"
+version = "0.67.0"
 dependencies = [
  "anyhow",
  "ark-groth16",
@@ -7713,7 +7620,7 @@ checksum = "01ce4141aa927a6d1bd34a041795abd0db1cccba5d5f24b009f694bdf3a1f3fa"
 dependencies = [
  "cfg-if",
  "fastrand 2.0.1",
- "redox_syscall 0.4.1",
+ "redox_syscall",
  "rustix 0.38.28",
  "windows-sys 0.52.0",
 ]
@@ -7976,7 +7883,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
- "parking_lot 0.12.1",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2 0.5.5",
@@ -8599,12 +8506,6 @@ name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
-
-[[package]]
-name = "wasi"
-version = "0.10.2+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "wasi"

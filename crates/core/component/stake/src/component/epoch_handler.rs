@@ -156,6 +156,11 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 .unwrap_or(Penalty::from_percent(0));
             let prev_validator_rate_with_penalty = prev_validator_rate.slash(penalty);
 
+            self.set_prev_validator_rate(
+                &validator.identity_key,
+                prev_validator_rate_with_penalty.clone(),
+            );
+
             // Then compute the next validator rate, accounting for funding streams and validator state.
             let next_validator_rate = prev_validator_rate_with_penalty.next_epoch(
                 &next_base_rate,

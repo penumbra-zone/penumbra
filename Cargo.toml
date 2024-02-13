@@ -96,7 +96,7 @@ push = false
 [workspace.package]
 authors = ["Penumbra Labs <team@penumbra.zone>"]
 edition = "2021"
-version = "0.66.0"
+version = "0.67.0"
 repository = "https://github.com/penumbra-zone/penumbra"
 homepage = "https://penumbra.zone"
 license = "MIT OR Apache-2.0"
@@ -151,7 +151,7 @@ im = {version = "^15.1.0"}
 indicatif = {version = "0.16"}
 jmt = {version = "0.9"}
 metrics = {version = "0.22"}
-metrics-tracing-context = {version = "0.11.0"}
+metrics-tracing-context = {version = "0.15"}
 num-bigint = {version = "0.4"}
 num-traits = {default-features = false, version = "0.2.15"}
 once_cell = {version = "1.8"}
@@ -222,5 +222,5 @@ tower = {version = "0.4.0"}
 tower-http = {version = "0.4"}
 tower-service = {version = "0.3.2"}
 tracing = {version = "0.1"}
-tracing-subscriber = {version = "0.3.17"}
+tracing-subscriber = {version = "0.3.17", features = ["env-filter"]}
 url = {version = "2.2"}
