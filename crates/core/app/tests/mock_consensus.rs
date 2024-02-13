@@ -6,6 +6,7 @@
 mod common;
 
 use cnidarium::TempStorage;
+use common::BuilderExt;
 use penumbra_app::server::consensus::Consensus;
 use penumbra_genesis::AppState;
 
@@ -22,7 +23,7 @@ async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
-            .app_state(app_state)
+            .with_penumbra_auto_app_state(app_state)?
             .init_chain(consensus)
             .await?
     };

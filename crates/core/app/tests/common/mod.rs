@@ -60,3 +60,22 @@ impl TempStorageExt for TempStorage {
         self.apply_genesis(Default::default()).await
     }
 }
+
+/// Penumbra-specific extensions to the mock consensus builder.
+pub trait BuilderExt: Sized {
+    type Error;
+    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
+}
+
+impl BuilderExt for penumbra_mock_consensus::builder::Builder {
+    type Error = anyhow::Error;
+    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error> {
+        // what to do here?
+        // - read out list of abci/comet validators from the builder,
+        // - define a penumbra validator for each one
+        // - inject that into the penumbra app state
+        // - serialize to json and then call `with_app_state_bytes`
+        let app_state = serde_json::to_vec(&app_state)?;
+        Ok(self.app_state(app_state))
+    }
+}

@@ -1,6 +1,7 @@
 use {
     super::*,
     anyhow::{anyhow, bail},
+    bytes::Bytes,
     std::time,
     tap::TapFallible,
     tendermint::{
@@ -63,10 +64,9 @@ impl Builder {
         })
     }
 
-    fn init_chain_request(app_state: AppState) -> Result<ConsensusRequest, anyhow::Error> {
+    fn init_chain_request(app_state_bytes: Bytes) -> Result<ConsensusRequest, anyhow::Error> {
         use tendermint::v0_37::abci::request::InitChain;
         let consensus_params = Self::consensus_params();
-        let app_state_bytes = serde_json::to_vec(&app_state)?.into();
         Ok(ConsensusRequest::InitChain(InitChain {
             time: tendermint::Time::now(),
             chain_id: "test".to_string(), // XXX const here?

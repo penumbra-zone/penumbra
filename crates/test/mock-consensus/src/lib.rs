@@ -3,7 +3,7 @@
 //  see penumbra-zone/penumbra#3588.
 
 mod block;
-mod builder;
+pub mod builder;
 
 // TODO(kate): this is a temporary allowance while we set the test node up.
 #[allow(dead_code)]
