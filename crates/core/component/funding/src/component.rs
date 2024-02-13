@@ -102,14 +102,14 @@ impl Component for Funding {
                     .saturating_add(reward_amount_for_stream.value());
 
                 if total_staking_rewards_for_epoch > staking_issuance_budget.value() {
-                    tracing::error!(
+                    tracing::warn!(
                         %total_staking_rewards_for_epoch,
                         %staking_issuance_budget,
                         %reward_amount_for_stream,
                         "the sum of staking rewards for the epoch has exceeded the issuance budget"
                     );
 
-                    tracing::error!(%validator_identity,
+                    tracing::warn!(%validator_identity,
                         index,
                         funding_queue_len,
                         ending_epoch_base_rate = ?base_rate,
