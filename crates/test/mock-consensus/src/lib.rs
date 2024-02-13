@@ -11,9 +11,3 @@ pub struct TestNode<C> {
     consensus: C,
     last_app_hash: Vec<u8>,
 }
-
-impl<C> TestNode<C> {
-    pub fn next_block() -> tendermint::Block {
-        todo!();
-    }
-}
