@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A vote on a proposal.

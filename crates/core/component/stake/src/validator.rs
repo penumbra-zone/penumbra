@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_keys::Address;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::{serde_as, DisplayFromStr};
@@ -39,12 +39,15 @@ pub struct Validator {
     pub consensus_key: tendermint::PublicKey,
 
     /// The validator's (human-readable) name.
+    /// Length: <= 140 characters.
     pub name: String,
 
     /// The validator's website URL.
+    /// Length: <= 70 characters.
     pub website: String,
 
     /// The validator's description.
+    /// Length: <= 280 characters.
     pub description: String,
 
     /// Whether the validator is enabled or not.

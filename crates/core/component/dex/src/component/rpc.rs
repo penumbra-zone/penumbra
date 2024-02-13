@@ -1,12 +1,12 @@
 use std::{pin::Pin, sync::Arc};
 
+use crate::ExecutionCircuitBreaker;
 use async_stream::try_stream;
 use cnidarium::{StateDelta, Storage};
 use futures::{StreamExt, TryStreamExt};
 use penumbra_asset::{asset, Value};
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{
-    core::component::dex::v1alpha1::{
+    core::component::dex::v1::{
         query_service_server::QueryService, simulate_trade_request::routing,
         simulate_trade_request::routing::Setting, simulate_trade_request::Routing,
         simulation_service_server::SimulationService, ArbExecutionRequest, ArbExecutionResponse,
@@ -71,10 +71,6 @@ impl QueryService for Server {
         request: tonic::Request<ArbExecutionRequest>,
     ) -> Result<tonic::Response<ArbExecutionResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let height = request_inner.height;
 
@@ -98,10 +94,6 @@ impl QueryService for Server {
         request: tonic::Request<ArbExecutionsRequest>,
     ) -> Result<tonic::Response<Self::ArbExecutionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;
@@ -152,10 +144,7 @@ impl QueryService for Server {
         request: tonic::Request<BatchSwapOutputDataRequest>,
     ) -> Result<tonic::Response<BatchSwapOutputDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -184,10 +173,6 @@ impl QueryService for Server {
         request: tonic::Request<SwapExecutionRequest>,
     ) -> Result<tonic::Response<SwapExecutionResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
         let request_inner = request.into_inner();
         let height = request_inner.height;
         let trading_pair = request_inner
@@ -215,10 +200,7 @@ impl QueryService for Server {
         request: tonic::Request<SwapExecutionsRequest>,
     ) -> Result<tonic::Response<Self::SwapExecutionsStream>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
+
         let request_inner = request.into_inner();
         let start_height = request_inner.start_height;
         let end_height = request_inner.end_height;
@@ -487,11 +469,9 @@ impl QueryService for Server {
             }
         };
         Ok(tonic::Response::new(
-            s.map_ok(
-                |p: penumbra_proto::core::component::dex::v1alpha1::Position| {
-                    LiquidityPositionsByIdResponse { data: Some(p) }
-                },
-            )
+            s.map_ok(|p: penumbra_proto::core::component::dex::v1::Position| {
+                LiquidityPositionsByIdResponse { data: Some(p) }
+            })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::unavailable(format!(
                     "error getting position value from storage: {e}"
@@ -549,8 +529,15 @@ impl SimulationService for Server {
 
         let state = self.storage.latest_snapshot();
         let mut state_tx = Arc::new(StateDelta::new(state));
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = state_tx
-            .route_and_fill(input.asset_id, output_id, input.amount, routing_params)
+            .route_and_fill(
+                input.asset_id,
+                output_id,
+                input.amount,
+                routing_params,
+                execution_circuit_breaker,
+            )
             .await
             .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
 

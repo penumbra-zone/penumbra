@@ -4,20 +4,27 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use ark_ff::PrimeField;
 use async_trait::async_trait;
-use cnidarium::{StateDelta, StateRead, StateWrite};
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
+
+use cnidarium::{StateDelta, StateRead, StateWrite};
 use penumbra_asset::STAKING_TOKEN_DENOM;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_community_pool::component::StateReadExt as _;
+use penumbra_governance::{
+    component::{StateReadExt as _, StateWriteExt as _},
+    event,
+    proposal::{Proposal, ProposalPayload},
+    proposal_state::State as ProposalState,
+    ProposalNft, ProposalSubmit, VotingReceiptToken,
+};
 use penumbra_ibc::component::ClientStateReadExt;
 use penumbra_keys::keys::{FullViewingKey, NullifierKey};
-use penumbra_proto::DomainType;
-use penumbra_sct::component::StateReadExt as _;
+use penumbra_proto::{DomainType, StateWriteProto as _};
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::SupplyWrite;
-
 use penumbra_transaction::plan::TransactionPlan;
 use penumbra_transaction::Transaction;
 use penumbra_transaction::{AuthorizationData, WitnessData};
@@ -25,12 +32,6 @@ use penumbra_transaction::{AuthorizationData, WitnessData};
 use crate::action_handler::ActionHandler;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;
 use crate::params::AppParameters;
-use penumbra_governance::{
-    component::{StateReadExt as _, StateWriteExt as _},
-    proposal::{Proposal, ProposalPayload},
-    proposal_state::State as ProposalState,
-    ProposalNft, ProposalSubmit, VotingReceiptToken,
-};
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network
@@ -127,7 +128,7 @@ impl ActionHandler for ProposalSubmit {
                         | PositionRewardClaim(_)
                         | CommunityPoolSpend(_)
                         | CommunityPoolOutput(_)
-                        | Withdrawal(_)
+                        | Ics20Withdrawal(_)
                         | CommunityPoolDeposit(_) => {
                             // These actions are all valid for Community Pool spend proposals, because they
                             // don't require proving, so they don't represent a DoS vector.
@@ -294,7 +295,7 @@ impl ActionHandler for ProposalSubmit {
 
         // Compute the effective starting TCT position for the proposal, by rounding the current
         // position down to the start of the block.
-        let Some(sct_position) = state.state_commitment_tree().await.position() else {
+        let Some(sct_position) = state.get_sct().await.position() else {
             anyhow::bail!("state commitment tree is full");
         };
         // All proposals start are considered to start at the beginning of the block, because this
@@ -305,6 +306,8 @@ impl ActionHandler for ProposalSubmit {
         // Since there was a proposal submitted, ensure we track this so that clients can retain
         // state needed to vote as delegators
         state.mark_proposal_started();
+
+        state.record_proto(event::proposal_submit(self));
 
         tracing::debug!(proposal = %proposal_id, "created proposal");
 
@@ -353,7 +356,7 @@ static COMMUNITY_POOL_FULL_VIEWING_KEY: Lazy<FullViewingKey> = Lazy::new(|| {
 async fn build_community_pool_transaction(
     transaction_plan: TransactionPlan,
 ) -> Result<Transaction> {
-    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY);
+    let effect_hash = transaction_plan.effect_hash(&COMMUNITY_POOL_FULL_VIEWING_KEY)?;
     transaction_plan.build(
         &COMMUNITY_POOL_FULL_VIEWING_KEY,
         &WitnessData {
@@ -361,7 +364,7 @@ async fn build_community_pool_transaction(
             state_commitment_proofs: Default::default(),
         },
         &AuthorizationData {
-            effect_hash,
+            effect_hash: Some(effect_hash),
             spend_auths: Default::default(),
             delegator_vote_auths: Default::default(),
         },

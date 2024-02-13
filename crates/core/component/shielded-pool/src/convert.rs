@@ -6,6 +6,7 @@ use ark_groth16::{
 use ark_relations::r1cs;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
+use base64::prelude::*;
 use decaf377::{Bls12_377, FieldExt, Fq, Fr};
 use penumbra_asset::{
     asset::{self, AssetIdVar},
@@ -210,7 +211,7 @@ impl ConvertProof {
         Ok(Self(proof_bytes))
     }
 
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(&self.0), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?BASE64_STANDARD.encode(&self.0), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
@@ -294,6 +295,41 @@ mod tests {
         fn convert_proof_happy_path((public, private) in arb_valid_convert_statement(Fr::from(1u64))) {
             assert!(check_satisfaction(&public, &private).is_ok());
             assert!(check_circuit_satisfaction(public, private).is_ok());
+        }
+    }
+
+    fn nonzero_u128() -> impl Strategy<Value = u128> {
+        prop::num::u128::ANY.prop_filter("nonzero", |x| *x != 0)
+    }
+
+    fn nonzero_u64() -> impl Strategy<Value = u64> {
+        prop::num::u64::ANY.prop_filter("nonzero", |x| *x != 0)
+    }
+
+    prop_compose! {
+        // The circuit should be unsatisfiable if the rate used by the prover is incorrect.
+        // We generate a random rate, filtering out non-zero denominators to avoid division by zero.
+        // This is the "true" rate.
+        // Next, we add a (u64) random value to the true rate, and the prover generates the balance
+        // using this incorrect rate.
+        fn arb_invalid_convert_statement_wrong_rate(balance_blinding: Fr)(amount in any::<u64>(), from_asset_id64 in any::<u64>(), to_asset_id64 in any::<u64>(), rate_num in nonzero_u64(), rate_denom in nonzero_u128(), random_rate_num in nonzero_u64()) -> (ConvertProofPublic, ConvertProofPrivate) {
+            let rate = U128x128::ratio(u128::from(rate_num), rate_denom).expect("the bounds will make this not overflow");
+            let incorrect_rate = rate.checked_add(&U128x128::ratio(random_rate_num, 1u64).expect("should not overflow")).expect("should not overflow");
+            let from = asset::Id(Fq::from(from_asset_id64));
+            let to = asset::Id(Fq::from(to_asset_id64));
+            let amount = Amount::from(amount);
+            let balance = Balance::from(Value { asset_id: to, amount: incorrect_rate.apply_to_amount(&amount).expect("the bounds will make this not overflow")}) - Value {asset_id: from, amount};
+            let public = ConvertProofPublic { from, to, rate, balance_commitment: balance.commit(balance_blinding) };
+            let private = ConvertProofPrivate { amount, balance_blinding };
+            (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn convert_proof_invalid_convert_statement_wrong_rate((public, private) in arb_invalid_convert_statement_wrong_rate(Fr::from(1u64))) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 }

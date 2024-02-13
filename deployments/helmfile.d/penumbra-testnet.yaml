@@ -5,7 +5,7 @@ releases:
     values:
       - persistence:
           enabled: true
-          size: 200G
+          size: 300G
       - preserve_lb_svc: true
       - only_lb_svc: false
       - image:
@@ -38,7 +38,7 @@ releases:
       - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-testnet-val-0:26657"
       - persistence:
           enabled: true
-          size: 200G
+          size: 300G
       - part_of: penumbra-testnet
       # Node config info, including ip address, monikers, and seed-mode status.
       - vars/penumbra-testnet-nodes-ips.yml
@@ -63,3 +63,26 @@ releases:
       - persistence:
           enabled: true
           size: 20G
+
+  - name: penumbra-testnet-cuiloa-node
+    chart: ../charts/penumbra-node
+    needs:
+      - penumbra-testnet
+      # It's not strictly necessary to wait for node deploys, but doing so allows us to exercise
+      # the public HTTPS RPC endpoint for joining, which is nice.
+      - penumbra-testnet-nodes
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: latest
+      - persistence:
+          enabled: true
+          size: 300G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-testnet
+      - nodes:
+        - moniker: cuiloa

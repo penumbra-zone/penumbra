@@ -22,13 +22,24 @@ jobs:
           toolchain: stable
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-
       - name: Install cometbft binary
         run: ./deployments/scripts/install-cometbft
-
       - name: Run the smoke test suite
         run: |
           export PATH="$HOME/bin:$PATH"
           ./deployments/scripts/smoke-test.sh
-        env:
-          TESTNET_RUNTIME: 2m
+      - name: Display comet logs
+        if: always()
+        run: cat deployments/logs/comet.log
+      - name: Display pd logs
+        if: always()
+        run: cat deployments/logs/pd.log
+      - name: Display pclientd logs
+        if: always()
+        run: cat deployments/logs/pclientd.log
+      - name: Display pcli logs
+        if: always()
+        run: cat deployments/logs/pcli.log
+    env:
+      TESTNET_RUNTIME: 2m
+

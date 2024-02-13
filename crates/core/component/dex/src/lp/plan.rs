@@ -2,7 +2,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};

@@ -1,3 +1,4 @@
+// Requires nightly
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
@@ -5,12 +6,7 @@
 mod changes;
 mod current_consensus_keys;
 mod event;
-mod funding_stream;
 mod uptime;
-
-// TODO: move into component mod like other component crates
-#[cfg(feature = "component")]
-mod action_handler;
 
 #[cfg(feature = "component")]
 pub mod component;
@@ -19,6 +15,7 @@ pub mod component;
 pub use component::StateReadExt;
 
 pub mod delegate;
+pub mod funding_stream;
 pub mod rate;
 pub mod state_key;
 pub mod undelegate;

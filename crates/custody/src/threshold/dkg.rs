@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 mod encryption;
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
 use encryption::EncryptionKey;
-use penumbra_proto::{custody::threshold::v1alpha1 as pb, DomainType, Message};
+use penumbra_proto::{custody::threshold::v1 as pb, DomainType, Message};
 use rand_core::CryptoRngCore;
 
 use self::encryption::DecryptionKey;

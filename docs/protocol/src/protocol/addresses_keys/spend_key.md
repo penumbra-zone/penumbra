@@ -55,7 +55,7 @@ personalization `label`, key `key`, and input `input`.  Define
 integer in little-endian order.  Then
 ```
 ask = from_le_bytes(prf_expand("Penumbra_ExpndSd", spend_key_bytes, 0)) mod r
-nk  = from_le_bytes(prf_expand("Penumbra_ExpndSd", spend_key_bytes, 0)) mod q
+nk  = from_le_bytes(prf_expand("Penumbra_ExpndSd", spend_key_bytes, 1)) mod q
 ```
 
 The *spending key* consists of `spend_key_bytes` and `ask`.  (Since `ask` is

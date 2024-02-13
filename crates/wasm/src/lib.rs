@@ -1,7 +1,11 @@
 #![allow(dead_code)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 extern crate core;
 
 pub mod build;
+pub mod dex;
 pub mod error;
 pub mod keys;
 pub mod note_record;

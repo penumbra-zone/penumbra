@@ -14,7 +14,7 @@ use penumbra_governance::{
 };
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{Address, FullViewingKey, PayloadKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use penumbra_txhash::{EffectHash, EffectingData};
@@ -56,7 +56,7 @@ impl TransactionPlan {
     ///
     /// This method is not an [`EffectingData`] impl because it needs an extra input,
     /// the FVK, to partially construct the transaction.
-    pub fn effect_hash(&self, fvk: &FullViewingKey) -> EffectHash {
+    pub fn effect_hash(&self, fvk: &FullViewingKey) -> Result<EffectHash> {
         // This implementation is identical to the one for Transaction, except that we
         // don't need to actually construct the entire `TransactionBody` with
         // complete `Action`s, we just need to construct the bodies of the
@@ -68,18 +68,10 @@ impl TransactionPlan {
 
         let parameters_hash = self.transaction_parameters.effect_hash();
 
-        let memo_hash = self
-            .memo
-            .as_ref()
-            .map(|memo_plan| {
-                memo_plan
-                    .memo()
-                    .expect("can compute memo ciphertext")
-                    .effect_hash()
-            })
-            // If the memo is not present, use the all-zero hash to record its absence in
-            // the overall effect hash.
-            .unwrap_or_default();
+        let memo_hash = match self.memo {
+            Some(ref memo) => memo.memo()?.effect_hash(),
+            None => EffectHash::default(),
+        };
 
         let detection_data_hash = self
             .detection_data
@@ -108,7 +100,7 @@ impl TransactionPlan {
             state.update(action_plan.effect_hash(fvk, &memo_key).as_bytes());
         }
 
-        EffectHash(state.finalize().as_array().clone())
+        Ok(EffectHash(state.finalize().as_array().clone()))
     }
 
     pub fn spend_plans(&self) -> impl Iterator<Item = &SpendPlan> {
@@ -315,7 +307,7 @@ impl TransactionPlan {
 
     pub fn ics20_withdrawals(&self) -> impl Iterator<Item = &Ics20Withdrawal> {
         self.actions.iter().filter_map(|action| {
-            if let ActionPlan::Withdrawal(v) = action {
+            if let ActionPlan::Ics20Withdrawal(v) = action {
                 Some(v)
             } else {
                 None
@@ -331,6 +323,11 @@ impl TransactionPlan {
     /// Convenience method to get the number of `OutputPlan`s in this transaction.
     pub fn num_outputs(&self) -> usize {
         self.output_plans().count()
+    }
+
+    /// Convenience method to get the number of `SpendPlan`s in this transaction.
+    pub fn num_spends(&self) -> usize {
+        self.spend_plans().count()
     }
 
     /// Method to populate the detection data for this transaction plan.
@@ -353,9 +350,7 @@ impl TransactionPlan {
         }
 
         if !clue_plans.is_empty() {
-            self.detection_data = Some(DetectionDataPlan {
-                clue_plans: clue_plans,
-            });
+            self.detection_data = Some(DetectionDataPlan { clue_plans });
         } else {
             self.detection_data = None;
         }
@@ -485,10 +480,7 @@ mod tests {
 
         let mut rng = OsRng;
 
-        let memo_plaintext = MemoPlaintext {
-            return_address: Address::dummy(&mut rng),
-            text: "".to_string(),
-        };
+        let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
         let plan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
@@ -519,9 +511,9 @@ mod tests {
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
-        let plan_effect_hash = plan.effect_hash(fvk);
+        let plan_effect_hash = plan.effect_hash(fvk).unwrap();
 
-        let auth_data = plan.authorize(rng, &sk);
+        let auth_data = plan.authorize(rng, &sk).unwrap();
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

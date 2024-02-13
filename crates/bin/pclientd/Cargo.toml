@@ -1,9 +1,7 @@
 [package]
 name = "pclientd"
-version = "0.64.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [features]
 default = ["std", "download-proving-keys"]
@@ -14,58 +12,55 @@ parallel = ["penumbra-transaction/parallel"]
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 
 [dependencies]
-# Workspace dependencies
-penumbra-proto            = { path = "../../proto", features = ["rpc"] }
-penumbra-tct              = { path = "../../crypto/tct" }
-penumbra-asset           = { path = "../../core/asset" }
-penumbra-keys           = { path = "../../core/keys" }
-penumbra-chain            = { path = "../../core/component/chain" }
-penumbra-transaction      = { path = "../../core/transaction" }
-penumbra-app              = { path = "../../core/app" }
-penumbra-custody          = { path = "../../custody" }
-penumbra-view             = { path = "../../view" }
-
-tokio = { version = "1.22", features = ["full"] }
-tokio-stream = { version = "0.1.8", features = ["sync"] }
-anyhow = "1"
-rand_core = { version = "0.6.3", features = ["getrandom"] }
-rand = "0.8"
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
-serde_with = { version = "1.11", features = ["hex"] }
-tracing = "0.1"
-tracing-subscriber = "0.2"
-url = { version = "2", features = ["serde"] }
-http = "0.2.9"
-http-body = "0.4.5"
-tower = "0.4.0"
-tonic = "0.10"
-tonic-web = "0.10.0"
-tonic-reflection = "0.10.0"
-bytes = { version = "1", features = ["serde"] }
-prost = "0.12.3"
-futures = "0.3"
-hex = "0.4"
-metrics = "0.19.0"
-async-stream = "0.2"
-parking_lot = "0.12"
-clap = { version = "3", features = ["derive", "env"] }
-camino = "1"
-async-trait = "0.1"
-tendermint = "0.34.0"
-sha2 = "0.10.1"
-toml = "0.5"
-ed25519-consensus = "2.1"
-atty = "0.2"
-directories = "4.0.1"
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-app = {workspace = true}
+penumbra-custody = {workspace = true}
+penumbra-view = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-stream = {workspace = true, features = ["sync"]}
+anyhow = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+rand = {workspace = true}
+serde_json = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_with = {workspace = true, features = ["hex"]}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter"]}
+url = {workspace = true, features = ["serde"]}
+http = {workspace = true}
+http-body = {workspace = true}
+tower = {workspace = true}
+tonic = {workspace = true}
+tonic-web = {workspace = true}
+tonic-reflection = {workspace = true}
+bytes = {workspace = true, features = ["serde"]}
+prost = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+metrics = {workspace = true}
+async-stream = {workspace = true}
+parking_lot = {workspace = true}
+clap = {workspace = true, features = ["derive", "env"]}
+camino = {workspace = true}
+async-trait = {workspace = true}
+tendermint = {workspace = true}
+sha2 = {workspace = true}
+toml = {workspace = true}
+ed25519-consensus = {workspace = true}
+atty = {workspace = true}
+directories = {workspace = true}
 
 [dev-dependencies]
-tempfile = "3.3.0"
-assert_cmd = "2.0"
-base64 = "0.20"
-ibc-types = { version = "0.11.0" }
-ibc-proto = { version = "0.40.0", default-features = false, features = ["server"] }
-penumbra-proof-params = { path = "../../crypto/proof-params", features = [
+tempfile = {workspace = true}
+assert_cmd = {workspace = true}
+base64 = {workspace = true}
+ibc-types = {workspace = true, default-features = true}
+ibc-proto = {workspace = true, default-features = false, features = ["server"]}
+penumbra-proof-params = {workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",
-] }
+], default-features = true}

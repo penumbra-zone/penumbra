@@ -5,10 +5,10 @@ use indexed_db_futures::{
     prelude::{IdbObjectStoreParameters, IdbOpenDbRequestLike, OpenDbRequest},
     IdbDatabase, IdbKeyPath, IdbQuerySource, IdbVersionChangeEvent,
 };
-use penumbra_asset::asset::{DenomMetadata, Id};
+use penumbra_asset::asset::{Id, Metadata};
 use penumbra_proto::{
-    crypto::tct::v1alpha1::StateCommitment,
-    view::v1alpha1::{NotesRequest, SwapRecord},
+    crypto::tct::v1::StateCommitment,
+    view::v1::{NotesRequest, SwapRecord},
     DomainType,
 };
 use penumbra_sct::Nullifier;
@@ -139,7 +139,7 @@ impl IndexedDBStorage {
         }
     }
 
-    pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<DenomMetadata>> {
+    pub async fn get_asset(&self, id: &Id) -> WasmResult<Option<Metadata>> {
         let tx = self.db.transaction_on_one(&self.constants.tables.assets)?;
         let store = tx.object_store(&self.constants.tables.assets)?;
 
@@ -198,7 +198,7 @@ impl IndexedDBStorage {
             .transaction_on_one_with_mode(&self.constants.tables.notes, Readwrite)?;
         let store = tx.object_store(&self.constants.tables.notes)?;
 
-        let note_proto: penumbra_proto::core::component::shielded_pool::v1alpha1::Note =
+        let note_proto: penumbra_proto::core::component::shielded_pool::v1::Note =
             note.clone().try_into()?;
         let note_js = serde_wasm_bindgen::to_value(&note_proto)?;
 

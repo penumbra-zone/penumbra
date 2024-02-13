@@ -62,3 +62,28 @@ releases:
       - persistence:
           enabled: true
           size: 1G
+
+  # A devnet almost certainly doesn't need a dedicated postgresql node, but including it for parity's sake:
+  # it's useful to validate config on a devnet without disrupting services on the public networks.
+  - name: penumbra-devnet-cuiloa-node
+    chart: ../charts/penumbra-node
+    needs:
+      - penumbra-devnet
+      # It's not strictly necessary to wait for node deploys, but doing so allows us to exercise
+      # the public HTTPS RPC endpoint for joining, which is nice.
+      - penumbra-devnet-nodes
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.devnet.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: main
+      - persistence:
+          enabled: true
+          size: 10G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-devnet
+      - nodes:
+        - moniker: cuiloa

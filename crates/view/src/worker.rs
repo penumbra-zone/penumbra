@@ -11,22 +11,22 @@ use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     self as proto,
     core::{
-        app::v1alpha1::query_service_client::QueryServiceClient as AppQueryServiceClient,
+        app::v1::query_service_client::QueryServiceClient as AppQueryServiceClient,
         component::{
-            compact_block::v1alpha1::{
+            compact_block::v1::{
                 query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
                 CompactBlockRangeRequest,
             },
-            shielded_pool::v1alpha1::{
+            shielded_pool::v1::{
                 query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-                DenomMetadataByIdRequest,
+                AssetMetadataByIdRequest,
             },
         },
     },
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use proto::core::app::v1alpha1::TransactionsByHeightRequest;
+use proto::core::app::v1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use url::Url;
@@ -186,8 +186,6 @@ impl Worker {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
-        let chain_id = self.storage.app_params().await?.chain_params.chain_id;
-
         let start_height = self
             .storage
             .last_sync_height()
@@ -198,7 +196,6 @@ impl Worker {
         let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                chain_id: chain_id.clone(),
                 start_height,
                 end_height: 0,
                 // Instruct the server to keep feeding us blocks as they're created.
@@ -331,9 +328,8 @@ impl Worker {
 
                         let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
                         if let Some(denom_metadata) = client
-                            .denom_metadata_by_id(DenomMetadataByIdRequest {
+                            .asset_metadata_by_id(AssetMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
-                                chain_id: chain_id.clone(),
                             })
                             .await?
                             .into_inner()
@@ -384,22 +380,20 @@ impl Worker {
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
-        self.run_inner().await.map_err(|e| {
-            tracing::info!(?e, "view worker error");
-            self.error_slot
-                .lock()
-                .expect("no race conditions on worker error slot lock")
-                .replace(e);
-            anyhow::anyhow!("view worker error")
-        })
-    }
-
-    async fn run_inner(&mut self) -> anyhow::Result<()> {
-        // For now, this can be outside of the loop, because assets are only
-        // created at genesis. In the future, we'll want to have a way for
-        // clients to learn about assets as they're created.
-        self.sync().await?;
-        Ok(())
+        loop {
+            // Do a single sync run, recording any errors.
+            if let Err(e) = self.sync().await {
+                tracing::error!(?e, "view worker error");
+                self.error_slot
+                    .lock()
+                    .expect("mutex is not poisoned")
+                    .replace(e);
+            }
+            // Sleep 10s (maybe later use exponential backoff?)
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            // Clear the error slot before retrying.
+            *self.error_slot.lock().expect("mutex is not poisoned") = None;
+        }
     }
 }
 
@@ -441,17 +435,15 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::{
-        cnidarium::v1alpha1::query_service_client::QueryServiceClient, DomainType,
-    };
+    use penumbra_proto::{cnidarium::v1::query_service_client::QueryServiceClient, DomainType};
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
     tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
-        .key_value(penumbra_proto::cnidarium::v1alpha1::KeyValueRequest {
-            key: sct_state_key::anchor_by_height(height),
+        .key_value(penumbra_proto::cnidarium::v1::KeyValueRequest {
+            key: sct_state_key::tree::anchor_by_height(height),
             ..Default::default()
         })
         .await?

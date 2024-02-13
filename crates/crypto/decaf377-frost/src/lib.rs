@@ -3,9 +3,12 @@
 //! This implementation only supports producing `SpendAuth` signatures, which
 //! use the conventional `decaf377` basepoint.
 
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use anyhow::anyhow;
 use frost_core::frost;
-use penumbra_proto::crypto::decaf377_frost::v1alpha1 as pb;
+use penumbra_proto::crypto::decaf377_frost::v1 as pb;
 use std::collections::{BTreeMap, HashMap};
 
 /// A FROST-related error.

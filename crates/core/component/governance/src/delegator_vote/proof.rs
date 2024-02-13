@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
 use std::str::FromStr;
 
+use anyhow::Result;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
 use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -14,7 +15,7 @@ use ark_r1cs_std::prelude::AllocVar;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_snark::SNARK;
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 use tct::r1cs::PositionVar;
@@ -60,100 +61,125 @@ pub struct DelegatorVoteProofPrivate {
     pub nk: NullifierKey,
 }
 
+#[cfg(test)]
+fn check_satisfaction(
+    public: &DelegatorVoteProofPublic,
+    private: &DelegatorVoteProofPrivate,
+) -> Result<()> {
+    use penumbra_keys::keys::FullViewingKey;
+
+    let note_commitment = private.note.commit();
+    if note_commitment != private.state_commitment_proof.commitment() {
+        anyhow::bail!("note commitment did not match state commitment proof");
+    }
+
+    let nullifier = Nullifier::derive(
+        &private.nk,
+        private.state_commitment_proof.position(),
+        &note_commitment,
+    );
+    if nullifier != public.nullifier {
+        anyhow::bail!("nullifier did not match public input");
+    }
+
+    private.state_commitment_proof.verify(public.anchor)?;
+
+    let rk = private.ak.randomize(&private.spend_auth_randomizer);
+    if rk != public.rk {
+        anyhow::bail!("randomized spend auth key did not match public input");
+    }
+
+    let fvk = FullViewingKey::from_components(private.ak, private.nk);
+    let ivk = fvk.incoming();
+    let transmission_key = ivk.diversified_public(&private.note.diversified_generator());
+    if transmission_key != *private.note.transmission_key() {
+        anyhow::bail!("transmission key did not match note");
+    }
+
+    let balance_commitment = private.note.value().commit(private.v_blinding);
+    if balance_commitment != public.balance_commitment {
+        anyhow::bail!("balance commitment did not match public input");
+    }
+
+    if private.note.diversified_generator() == decaf377::Element::default() {
+        anyhow::bail!("diversified generator is identity");
+    }
+    if private.ak.is_identity() {
+        anyhow::bail!("ak is identity");
+    }
+
+    if public.start_position.commitment() != 0 {
+        anyhow::bail!("start position commitment index is not zero");
+    }
+
+    if private.state_commitment_proof.position() >= public.start_position {
+        anyhow::bail!("note did not exist prior to the start of voting");
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(
+    public: DelegatorVoteProofPublic,
+    private: DelegatorVoteProofPrivate,
+) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs = ConstraintSystem::new_ref();
+    let circuit = DelegatorVoteCircuit { public, private };
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
+}
+
 /// Groth16 proof for delegator voting.
 #[derive(Clone, Debug)]
 pub struct DelegatorVoteCircuit {
-    /// Inclusion proof for the note commitment.
-    state_commitment_proof: tct::Proof,
-    /// The note being spent.
-    note: Note,
-    /// The blinding factor used for generating the value commitment.
-    v_blinding: Fr,
-    /// The randomizer used for generating the randomized spend auth key.
-    spend_auth_randomizer: Fr,
-    /// The spend authorization key.
-    ak: VerificationKey<SpendAuth>,
-    /// The nullifier deriving key.
-    nk: NullifierKey,
-
-    /// the merkle root of the state commitment tree.
-    anchor: tct::Root,
-    /// value commitment of the note to be spent.
-    balance_commitment: balance::Commitment,
-    /// nullifier of the note to be spent.
-    nullifier: Nullifier,
-    /// the randomized verification spend key.
-    rk: VerificationKey<SpendAuth>,
-    /// the start position of the proposal being voted on.
-    start_position: tct::Position,
-}
-
-impl DelegatorVoteCircuit {
-    fn new(
-        DelegatorVoteProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-            start_position,
-        }: DelegatorVoteProofPublic,
-        DelegatorVoteProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-        }: DelegatorVoteProofPrivate,
-    ) -> Self {
-        Self {
-            state_commitment_proof,
-            note,
-            v_blinding,
-            spend_auth_randomizer,
-            ak,
-            nk,
-            anchor,
-            balance_commitment,
-            nullifier,
-            rk,
-            start_position,
-        }
-    }
+    public: DelegatorVoteProofPublic,
+    private: DelegatorVoteProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
-        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.note.clone()))?;
+        let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.commitment())
+            Ok(self.private.state_commitment_proof.commitment())
         })?;
 
         let delegator_position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
+            Ok(self.private.state_commitment_proof.position())
         })?;
         let delegator_position_bits = delegator_position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof)
+            Ok(self.private.state_commitment_proof)
         })?;
 
-        let v_blinding_arr: [u8; 32] = self.v_blinding.to_bytes();
+        let v_blinding_arr: [u8; 32] = self.private.v_blinding.to_bytes();
         let v_blinding_vars = UInt8::new_witness_vec(cs.clone(), &v_blinding_arr)?;
 
-        let spend_auth_randomizer_var =
-            SpendAuthRandomizerVar::new_witness(cs.clone(), || Ok(self.spend_auth_randomizer))?;
+        let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
+            Ok(self.private.spend_auth_randomizer)
+        })?;
         let ak_element_var: AuthorizationKeyVar =
-            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.ak))?;
-        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
+            AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
 
         // Public inputs
-        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.public.anchor)))?;
         let claimed_balance_commitment_var =
-            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.balance_commitment))?;
-        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.rk))?;
-        let start_position = PositionVar::new_input(cs.clone(), || Ok(self.start_position))?;
+            BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
+        let claimed_nullifier_var =
+            NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
+        let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.public.rk))?;
+        let start_position = PositionVar::new_input(cs.clone(), || Ok(self.public.start_position))?;
 
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
@@ -248,23 +274,27 @@ impl DummyWitness for DelegatorVoteCircuit {
             .expect("able to witness just-inserted note commitment");
         let start_position = state_commitment_proof.position();
 
-        Self {
+        let public = DelegatorVoteProofPublic {
+            anchor,
+            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            nullifier,
+            rk,
+            start_position,
+        };
+        let private = DelegatorVoteProofPrivate {
             state_commitment_proof,
             note,
             v_blinding,
             spend_auth_randomizer,
             ak,
             nk,
-            anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
-            nullifier,
-            rk,
-            start_position,
-        }
+        };
+
+        Self { public, private }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 pub struct DelegatorVoteProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
 impl DelegatorVoteProof {
@@ -275,7 +305,7 @@ impl DelegatorVoteProof {
         public: DelegatorVoteProofPublic,
         private: DelegatorVoteProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = DelegatorVoteCircuit::new(public, private);
+        let circuit = DelegatorVoteCircuit { public, private };
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
         )
@@ -367,15 +397,14 @@ impl TryFrom<pb::ZkDelegatorVoteProof> for DelegatorVoteProof {
 mod tests {
 
     use super::*;
-    use ark_ff::{PrimeField, UniformRand};
+    use ark_ff::PrimeField;
 
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
-    use penumbra_proof_params::generate_prepared_test_parameters;
+    use penumbra_num::Amount;
     use penumbra_sct::Nullifier;
     use proptest::prelude::*;
-    use rand_core::OsRng;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()
@@ -383,161 +412,153 @@ mod tests {
             .boxed()
     }
 
-    proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1))]
-    #[test]
-    fn delegator_vote_happy_path(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 0..2000u64) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
+    prop_compose! {
+        fn arb_valid_delegator_vote_statement()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (DelegatorVoteProofPublic, DelegatorVoteProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let value_to_send = Value {
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
+            };
+            let note = Note::from_parts(
+                sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
+            let note_commitment = note.commit();
+            let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+            let nk = *sk_sender.nullifier_key();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
 
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
+            let mut sct = tct::Tree::new();
 
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
+            // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+            // unrelated items in the SCT.
+            for i in 0..num_commitments {
+                // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
+                let rseed = Rseed([i as u8; 32]);
+                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
+            }
 
-        let note = Note::generate(&mut rng, &sender, value_to_send);
-        let note_commitment = note.commit();
-        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-        let nk = *sk_sender.nullifier_key();
-        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut sct = tct::Tree::new();
+            sct.insert(tct::Witness::Keep, note_commitment).expect("can insert note commitment into SCT");
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
 
-        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
-        // unrelated items in the SCT.
-        for _ in 0..num_commitments {
-            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
-            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
-        }
+            // All proposals should have a position commitment index of zero, so we need to end the epoch
+            // and get the position that corresponds to the first commitment in the new epoch.
+            sct.end_epoch().expect("should be able to end an epoch");
+            let first_note_commitment = Note::from_parts(sender, value_to_send, Rseed([u8::MAX; 32])).expect("can create note").commit();
+            sct.insert(tct::Witness::Keep, first_note_commitment).expect("can insert note commitment into SCT");
+            let start_position = sct.witness(first_note_commitment).expect("can witness note commitment").position();
 
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-        sct.end_epoch().unwrap();
+            let balance_commitment = value_to_send.commit(v_blinding);
+            let rk: VerificationKey<SpendAuth> = rsk.into();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
-        let first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
-        sct.insert(tct::Witness::Keep, first_note_commitment).unwrap();
-        let start_position = sct.witness(first_note_commitment).unwrap().position();
-
-        let balance_commitment = value_to_send.commit(Fr::from(0u64));
-        let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
-
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let public = DelegatorVoteProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier: nf,
-            rk,
-            start_position,
-        };
-        let private = DelegatorVoteProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding: Fr::from(0u64),
-            spend_auth_randomizer,
-            ak,
-            nk,
-        };
-
-        let proof = DelegatorVoteProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            public.clone(), private
-        )
-        .expect("can create proof");
-
-        let proof_result = proof.verify(&vk, public);
-        assert!(proof_result.is_ok());
+            let public = DelegatorVoteProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier,
+                rk,
+                start_position,
+            };
+            let private = DelegatorVoteProofPrivate {
+                state_commitment_proof,
+                note,
+                v_blinding,
+                spend_auth_randomizer,
+                ak,
+                nk,
+            };
+            (public, private)
         }
     }
 
     proptest! {
-    #![proptest_config(ProptestConfig::with_cases(1))]
-    #[test]
-    #[should_panic]
-    fn delegator_vote_invalid_start_position(seed_phrase_randomness in any::<[u8; 32]>(), spend_auth_randomizer in fr_strategy(), value_amount in 1..2000000000u64, num_commitments in 1000..2000u64) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<DelegatorVoteCircuit>(&mut rng);
-
-        let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-        let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-        let fvk_sender = sk_sender.full_viewing_key();
-        let ivk_sender = fvk_sender.incoming();
-        let (sender, _dtk_d) = ivk_sender.payment_address(0u32.into());
-
-        let value_to_send = Value {
-            amount: value_amount.into(),
-            asset_id: asset::Cache::with_known_assets().get_unit("upenumbra").unwrap().id(),
-        };
-
-        let note = Note::generate(&mut rng, &sender, value_to_send);
-        let note_commitment = note.commit();
-        let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
-        let nk = *sk_sender.nullifier_key();
-        let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
-        let mut sct = tct::Tree::new();
-
-        // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
-        // unrelated items in the SCT.
-        for _ in 0..num_commitments {
-            let random_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
-            sct.insert(tct::Witness::Keep, random_note_commitment).unwrap();
+        #[test]
+        fn delegator_vote_happy_path((public, private) in arb_valid_delegator_vote_statement()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
-
-        sct.insert(tct::Witness::Keep, note_commitment).unwrap();
-        let anchor = sct.root();
-        let state_commitment_proof = sct.witness(note_commitment).unwrap();
-
-        let not_first_note_commitment = Note::generate(&mut rng, &sender, value_to_send).commit();
-        sct.insert(tct::Witness::Keep, not_first_note_commitment).unwrap();
-        let start_position = sct.witness(not_first_note_commitment).unwrap().position();
-
-        let balance_commitment = value_to_send.commit(Fr::from(0u64));
-        let rk: VerificationKey<SpendAuth> = rsk.into();
-        let nf = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
-
-        let blinding_r = Fq::rand(&mut OsRng);
-        let blinding_s = Fq::rand(&mut OsRng);
-        let public = DelegatorVoteProofPublic {
-            anchor,
-            balance_commitment,
-            nullifier: nf,
-            rk,
-            start_position,
-        };
-        let private = DelegatorVoteProofPrivate {
-            state_commitment_proof,
-            note,
-            v_blinding: Fr::from(0u64),
-            spend_auth_randomizer,
-            ak,
-            nk,
-        };
-
-
-        let proof = DelegatorVoteProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
-            public.clone(), private
-        ).expect("can form proof in release mode, but it should not verify");
-
-        // In debug mode, we won't be able to construct a valid proof if the start position
-        // commitment index is non-zero. However, in release mode, the proof will be constructed
-        // but not verify. This is due to the fact there is an assertion during constraint
-        // generation (upstream) where we panic in debug mode if the circuit is not satisifiable,
-        // but not in release mode. To ensure the same behavior in this test for both modes,
-        // we panic if we get here and the proof does not verify (expected).
-        let proof_result = proof.verify(&vk, public);
-        proof_result.expect("we expect this proof _not_ to verify, so this will cause a panic");
     }
+
+    prop_compose! {
+        // This strategy generates a delegator vote statement that votes on a proposal with
+        // a non-zero position commitment index. The circuit should be unsatisfiable in this case.
+        fn arb_invalid_delegator_vote_statement_nonzero_start()(v_blinding in fr_strategy(), spend_auth_randomizer in fr_strategy(), asset_id64 in any::<u64>(), address_index in any::<u32>(), amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), num_commitments in 0..100) -> (DelegatorVoteProofPublic, DelegatorVoteProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+            let sk_sender = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+            let fvk_sender = sk_sender.full_viewing_key();
+            let ivk_sender = fvk_sender.incoming();
+            let (sender, _dtk_d) = ivk_sender.payment_address(address_index.into());
+            let value_to_send = Value {
+                amount: Amount::from(amount),
+                asset_id: asset::Id(Fq::from(asset_id64)),
+            };
+            let note = Note::from_parts(
+                sender,
+                value_to_send,
+                Rseed(rseed_randomness),
+            ).expect("should be able to create note");
+            let note_commitment = note.commit();
+            let rsk = sk_sender.spend_auth_key().randomize(&spend_auth_randomizer);
+            let nk = *sk_sender.nullifier_key();
+            let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
+
+            let mut sct = tct::Tree::new();
+
+            // Next, we simulate the case where the SCT is not empty by adding `num_commitments`
+            // unrelated items in the SCT.
+            for i in 0..num_commitments {
+                // To avoid duplicate note commitments, we use the `i` counter as the Rseed randomness
+                let rseed = Rseed([i as u8; 32]);
+                let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+                sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("can insert note commitment into SCT");
+            }
+
+            sct.insert(tct::Witness::Keep, note_commitment).expect("can insert note commitment into SCT");
+            let anchor = sct.root();
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
+
+            let rseed = Rseed([num_commitments as u8; 32]);
+            let not_first_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
+            sct.insert(tct::Witness::Keep, not_first_note_commitment).expect("can insert note commitment into SCT");
+            // All proposals should have a position commitment index of zero, but this one will not, so
+            // expect the proof to fail.
+            let start_position = sct.witness(not_first_note_commitment).expect("can witness note commitment").position();
+
+            let balance_commitment = value_to_send.commit(v_blinding);
+            let rk: VerificationKey<SpendAuth> = rsk.into();
+            let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
+
+            let public = DelegatorVoteProofPublic {
+                anchor,
+                balance_commitment,
+                nullifier,
+                rk,
+                start_position,
+            };
+            let private = DelegatorVoteProofPrivate {
+                state_commitment_proof,
+                note,
+                v_blinding,
+                spend_auth_randomizer,
+                ak,
+                nk,
+            };
+            (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn delegator_vote_invalid_start_position((public, private) in arb_invalid_delegator_vote_statement_nonzero_start()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
+        }
     }
 }

@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -18,8 +18,8 @@ pub enum State {
     Unbonded,
     /// The validator has been removed from the active set.
     ///
-    /// All delegations to the validator will be unbonded at `unbonding_epoch`.
-    Unbonding { unbonding_epoch: u64 },
+    /// All delegations to the validator will be unbonded at `unbonds_at_epoch`.
+    Unbonding { unbonds_at_epoch: u64 },
 }
 
 impl std::fmt::Display for State {
@@ -27,7 +27,9 @@ impl std::fmt::Display for State {
         match self {
             State::Bonded => write!(f, "Bonded"),
             State::Unbonded => write!(f, "Unbonded"),
-            State::Unbonding { unbonding_epoch } => {
+            State::Unbonding {
+                unbonds_at_epoch: unbonding_epoch,
+            } => {
                 write!(f, "Unbonding (end epoch: {unbonding_epoch})")
             }
         }
@@ -44,12 +46,10 @@ impl From<State> for pb::BondingState {
             state: match v {
                 State::Bonded => pb::bonding_state::BondingStateEnum::Bonded as i32,
                 State::Unbonded => pb::bonding_state::BondingStateEnum::Unbonded as i32,
-                State::Unbonding { unbonding_epoch: _ } => {
-                    pb::bonding_state::BondingStateEnum::Unbonding as i32
-                }
+                State::Unbonding { .. } => pb::bonding_state::BondingStateEnum::Unbonding as i32,
             },
-            unbonding_epoch: match v {
-                State::Unbonding { unbonding_epoch } => unbonding_epoch,
+            unbonds_at_epoch: match v {
+                State::Unbonding { unbonds_at_epoch } => unbonds_at_epoch,
                 _ => 0,
             },
         }
@@ -66,12 +66,12 @@ impl TryFrom<pb::BondingState> for State {
             pb::bonding_state::BondingStateEnum::Bonded => Ok(State::Bonded),
             pb::bonding_state::BondingStateEnum::Unbonded => Ok(State::Unbonded),
             pb::bonding_state::BondingStateEnum::Unbonding => {
-                let unbonding_epoch = if v.unbonding_epoch > 0 {
-                    v.unbonding_epoch
+                let unbonds_at_epoch = if v.unbonds_at_epoch > 0 {
+                    v.unbonds_at_epoch
                 } else {
                     anyhow::bail!("unbonding epoch should be set for unbonding state")
                 };
-                Ok(State::Unbonding { unbonding_epoch })
+                Ok(State::Unbonding { unbonds_at_epoch })
             }
             pb::bonding_state::BondingStateEnum::Unspecified => {
                 Err(anyhow::anyhow!("unspecified bonding state!"))

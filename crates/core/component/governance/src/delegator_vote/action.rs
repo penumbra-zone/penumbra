@@ -4,12 +4,12 @@ use crate::{vote::Vote, DelegatorVoteProof};
 use decaf377_rdsa::{Signature, SpendAuth, VerificationKey};
 use penumbra_asset::Value;
 use penumbra_num::Amount;
-use penumbra_proto::{core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use penumbra_txhash::{EffectHash, EffectingData};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DelegatorVote {
     pub body: DelegatorVoteBody,
     pub auth_sig: Signature<SpendAuth>,
@@ -23,7 +23,7 @@ impl EffectingData for DelegatorVote {
 }
 
 /// The body of a delegator vote.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DelegatorVoteBody {
     /// The proposal ID the vote is for.
     pub proposal: u64,

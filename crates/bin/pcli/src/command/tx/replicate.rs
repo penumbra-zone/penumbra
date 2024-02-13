@@ -10,10 +10,10 @@ use penumbra_dex::{lp::position::Position, DirectedUnitPair};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
-    core::component::dex::v1alpha1::{
+    core::component::dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_view::{Planner, ViewClient};
 
@@ -200,7 +200,6 @@ impl ConstantProduct {
         let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
         let spread_data = client
             .spread(SpreadRequest {
-                chain_id: "".to_string(),
                 trading_pair: Some(self.pair.into_directed_trading_pair().to_canonical().into()),
             })
             .await?

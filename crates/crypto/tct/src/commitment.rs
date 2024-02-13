@@ -1,5 +1,5 @@
 use decaf377::FieldExt;
-use penumbra_proto::{penumbra::crypto::tct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
 use poseidon377::Fq;
 
 /// A commitment to a note or swap.

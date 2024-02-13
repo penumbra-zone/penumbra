@@ -72,7 +72,7 @@ fn main() -> anyhow::Result<()> {
         .client_mod_attribute(".", rpc_doc_attr)
         .compile_with_config(
             cnidarium_config,
-            &["../../proto/penumbra/penumbra/cnidarium/v1alpha1/cnidarium.proto"],
+            &["../../proto/penumbra/penumbra/cnidarium/v1/cnidarium.proto"],
             &["../../proto/penumbra/", "../../proto/rust-vendored/"],
         )?;
 
@@ -87,34 +87,34 @@ fn main() -> anyhow::Result<()> {
         .compile_with_config(
             config,
             &[
-                "../../proto/penumbra/penumbra/core/app/v1alpha1/app.proto",
-                "../../proto/penumbra/penumbra/core/asset/v1alpha1/asset.proto",
-                "../../proto/penumbra/penumbra/core/txhash/v1alpha1/txhash.proto",
-                "../../proto/penumbra/penumbra/core/component/chain/v1alpha1/chain.proto",
-                "../../proto/penumbra/penumbra/core/component/compact_block/v1alpha1/compact_block.proto",
-                "../../proto/penumbra/penumbra/core/component/community_pool/v1alpha1/community_pool.proto",
-                "../../proto/penumbra/penumbra/core/component/dex/v1alpha1/dex.proto",
-                "../../proto/penumbra/penumbra/core/component/distributions/v1alpha1/distributions.proto",
-                "../../proto/penumbra/penumbra/core/component/fee/v1alpha1/fee.proto",
-                "../../proto/penumbra/penumbra/core/component/governance/v1alpha1/governance.proto",
-                "../../proto/penumbra/penumbra/core/component/ibc/v1alpha1/ibc.proto",
-                "../../proto/penumbra/penumbra/core/component/sct/v1alpha1/sct.proto",
-                "../../proto/penumbra/penumbra/core/component/shielded_pool/v1alpha1/shielded_pool.proto",
-                "../../proto/penumbra/penumbra/core/component/stake/v1alpha1/stake.proto",
-                "../../proto/penumbra/penumbra/core/keys/v1alpha1/keys.proto",
-                "../../proto/penumbra/penumbra/core/num/v1alpha1/num.proto",
-                "../../proto/penumbra/penumbra/core/transaction/v1alpha1/transaction.proto",
-                "../../proto/penumbra/penumbra/crypto/decaf377_fmd/v1alpha1/decaf377_fmd.proto",
-                "../../proto/penumbra/penumbra/crypto/decaf377_frost/v1alpha1/decaf377_frost.proto",
-                "../../proto/penumbra/penumbra/crypto/decaf377_rdsa/v1alpha1/decaf377_rdsa.proto",
-                "../../proto/penumbra/penumbra/crypto/tct/v1alpha1/tct.proto",
-                "../../proto/penumbra/penumbra/custody/v1alpha1/custody.proto",
-                "../../proto/penumbra/penumbra/custody/threshold/v1alpha1/threshold.proto",
+                "../../proto/penumbra/penumbra/core/app/v1/app.proto",
+                "../../proto/penumbra/penumbra/core/asset/v1/asset.proto",
+                "../../proto/penumbra/penumbra/core/txhash/v1/txhash.proto",
+                "../../proto/penumbra/penumbra/core/component/compact_block/v1/compact_block.proto",
+                "../../proto/penumbra/penumbra/core/component/community_pool/v1/community_pool.proto",
+                "../../proto/penumbra/penumbra/core/component/dex/v1/dex.proto",
+                "../../proto/penumbra/penumbra/core/component/distributions/v1/distributions.proto",
+                "../../proto/penumbra/penumbra/core/component/funding/v1/funding.proto",
+                "../../proto/penumbra/penumbra/core/component/fee/v1/fee.proto",
+                "../../proto/penumbra/penumbra/core/component/governance/v1/governance.proto",
+                "../../proto/penumbra/penumbra/core/component/ibc/v1/ibc.proto",
+                "../../proto/penumbra/penumbra/core/component/sct/v1/sct.proto",
+                "../../proto/penumbra/penumbra/core/component/shielded_pool/v1/shielded_pool.proto",
+                "../../proto/penumbra/penumbra/core/component/stake/v1/stake.proto",
+                "../../proto/penumbra/penumbra/core/keys/v1/keys.proto",
+                "../../proto/penumbra/penumbra/core/num/v1/num.proto",
+                "../../proto/penumbra/penumbra/core/transaction/v1/transaction.proto",
+                "../../proto/penumbra/penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto",
+                "../../proto/penumbra/penumbra/crypto/decaf377_frost/v1/decaf377_frost.proto",
+                "../../proto/penumbra/penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto",
+                "../../proto/penumbra/penumbra/crypto/tct/v1/tct.proto",
+                "../../proto/penumbra/penumbra/custody/v1/custody.proto",
+                "../../proto/penumbra/penumbra/custody/threshold/v1/threshold.proto",
                 // Also included in the cnidarium crate directly.
-                "../../proto/penumbra/penumbra/cnidarium/v1alpha1/cnidarium.proto",
-                "../../proto/penumbra/penumbra/tools/summoning/v1alpha1/summoning.proto",
-                "../../proto/penumbra/penumbra/util/tendermint_proxy/v1alpha1/tendermint_proxy.proto",
-                "../../proto/penumbra/penumbra/view/v1alpha1/view.proto",
+                "../../proto/penumbra/penumbra/cnidarium/v1/cnidarium.proto",
+                "../../proto/penumbra/penumbra/tools/summoning/v1/summoning.proto",
+                "../../proto/penumbra/penumbra/util/tendermint_proxy/v1/tendermint_proxy.proto",
+                "../../proto/penumbra/penumbra/view/v1/view.proto",
                 "../../proto/rust-vendored/tendermint/types/validator.proto",
                 "../../proto/rust-vendored/tendermint/p2p/types.proto",
             ],
@@ -127,19 +127,21 @@ fn main() -> anyhow::Result<()> {
 
     pbjson_build::Builder::new()
         .register_descriptors(&cnidarium_descriptor_set)?
+        .ignore_unknown_fields()
         .out_dir(&cnidarium_target_dir)
         .build(&[".penumbra"])?;
 
     pbjson_build::Builder::new()
         .register_descriptors(&descriptor_set)?
+        .ignore_unknown_fields()
         .out_dir(&target_dir)
         // These are all excluded because they're part of the Tendermint proxy,
         // so they use `tendermint` types that may not be Serialize/Deserialize,
         // and we don't need to serialize them with Serde anyways.
         .exclude([
-            ".penumbra.util.tendermint_proxy.v1alpha1.ABCIQueryResponse".to_owned(),
-            ".penumbra.util.tendermint_proxy.v1alpha1.GetBlockByHeightResponse".to_owned(),
-            ".penumbra.util.tendermint_proxy.v1alpha1.GetStatusResponse".to_owned(),
+            ".penumbra.util.tendermint_proxy.v1.ABCIQueryResponse".to_owned(),
+            ".penumbra.util.tendermint_proxy.v1.GetBlockByHeightResponse".to_owned(),
+            ".penumbra.util.tendermint_proxy.v1.GetStatusResponse".to_owned(),
         ])
         .build(&[".penumbra"])?;
 

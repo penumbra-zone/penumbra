@@ -1,9 +1,14 @@
 use anyhow::Context;
+use futures::{FutureExt, TryStreamExt};
+use penumbra_fee::GasPrices;
 use penumbra_proto::{
-    util::tendermint_proxy::v1alpha1::tendermint_proxy_service_client::TendermintProxyServiceClient,
-    DomainType,
+    util::tendermint_proxy::v1::tendermint_proxy_service_client::TendermintProxyServiceClient,
+    view::v1::broadcast_transaction_response::Status as BroadcastStatus,
+    view::v1::GasPricesRequest, DomainType,
 };
-use penumbra_transaction::{plan::TransactionPlan, txhash::TransactionId, Transaction};
+use penumbra_transaction::{
+    gas::GasCost, plan::TransactionPlan, txhash::TransactionId, Transaction,
+};
 use penumbra_view::ViewClient;
 use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -16,7 +21,25 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> anyhow::Result<TransactionId> {
+        let gas_prices: GasPrices = self
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
         let transaction = self.build_transaction(plan).await?;
+        let gas_cost = transaction.gas_cost();
+        let fee = gas_prices.fee(&gas_cost);
+        assert!(
+            transaction.transaction_parameters().fee.amount() >= fee,
+            "paid fee {} must be greater than minimum fee {}",
+            transaction.transaction_parameters().fee.amount(),
+            fee
+        );
         self.submit_transaction(transaction).await
     }
 
@@ -53,15 +76,50 @@ impl App {
         transaction: Transaction,
     ) -> anyhow::Result<TransactionId> {
         println!("broadcasting transaction and awaiting confirmation...");
-        let (id, detection_height) = self.view().broadcast_transaction(transaction, true).await?;
-        if detection_height != 0 {
-            println!(
-                "transaction confirmed and detected: {} @ height {}",
-                id, detection_height
-            );
-        } else {
-            println!("transaction confirmed and detected: {}", id);
+        let mut rsp = self.view().broadcast_transaction(transaction, true).await?;
+
+        let id = (async move {
+            while let Some(rsp) = rsp.try_next().await? {
+                match rsp.status {
+                    Some(status) => match status {
+                        BroadcastStatus::BroadcastSuccess(bs) => {
+                            println!(
+                                "transaction broadcast successfully: {}",
+                                TransactionId::try_from(
+                                    bs.id.expect("detected transaction missing id")
+                                )?
+                            );
+                        }
+                        BroadcastStatus::Confirmed(c) => {
+                            let id = c.id.expect("detected transaction missing id").try_into()?;
+                            if c.detection_height != 0 {
+                                println!(
+                                    "transaction confirmed and detected: {} @ height {}",
+                                    id, c.detection_height
+                                );
+                            } else {
+                                println!("transaction confirmed and detected: {}", id);
+                            }
+                            return Ok(id);
+                        }
+                    },
+                    None => {
+                        // No status is unexpected behavior
+                        return Err(anyhow::anyhow!(
+                            "empty BroadcastTransactionResponse message"
+                        ));
+                    }
+                }
+            }
+
+            Err(anyhow::anyhow!(
+                "should have received BroadcastTransaction status or error"
+            ))
         }
+        .boxed())
+        .await
+        .context("error broadcasting transaction")?;
+
         Ok(id)
     }
 

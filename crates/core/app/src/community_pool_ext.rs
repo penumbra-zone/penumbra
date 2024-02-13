@@ -3,16 +3,15 @@ use async_trait::async_trait;
 
 use cnidarium::{StateRead, StateWrite};
 use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt;
 use penumbra_governance::state_key;
 use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sct::component::clock::EpochRead;
 use penumbra_transaction::Transaction;
 
 // Note: These should live in `penumbra-governance` in the `StateReadExt` and `StateWriteExt`
 // traits, however that would result in a circular dependency since the below methods
 // require use of `penumbra-transaction::Transaction`, which has `penumbra-governance` as a
 // dependency.
-
 #[async_trait]
 pub trait CommunityPoolStateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Get all the transactions set to be delivered in this block (scheduled in last block).

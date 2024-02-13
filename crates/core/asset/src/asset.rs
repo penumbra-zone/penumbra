@@ -8,7 +8,7 @@ mod registry;
 
 pub use cache::Cache;
 pub use denom::Denom;
-pub use denom_metadata::{DenomMetadata, Unit};
+pub use denom_metadata::{Metadata, Unit};
 pub use id::{Id, VALUE_GENERATOR_DOMAIN_SEP};
 pub use r1cs::AssetIdVar;
 pub use registry::{Registry, REGISTRY};

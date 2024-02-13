@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use penumbra_proto::{core::component::sct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::sct::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]

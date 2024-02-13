@@ -9,19 +9,24 @@ use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use ibc_types::core::client::ClientId;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_DENOM};
-use penumbra_chain::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::ClientStateReadExt as _;
 use penumbra_ibc::component::ClientStateWriteExt as _;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::{component::StateReadExt as _, Nullifier};
+use penumbra_sct::{
+    component::{clock::EpochRead, tree::SctRead},
+    Nullifier,
+};
 use penumbra_shielded_pool::component::SupplyRead;
-use penumbra_stake::{DelegationToken, GovernanceKey, IdentityKey};
+use penumbra_stake::{
+    component::{validator_handler::ValidatorDataRead, ConsensusIndexRead},
+    DelegationToken, GovernanceKey, IdentityKey,
+};
 use penumbra_tct as tct;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use penumbra_stake::{rate::RateData, validator, StateReadExt as _};
+use penumbra_stake::{rate::RateData, validator};
 
 use crate::{
     params::GovernanceParameters,
@@ -34,6 +39,23 @@ use crate::{state_key, tally::Tally};
 
 #[async_trait]
 pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
+    /// Returns true if the next height is an upgrade height.
+    /// We look-ahead to the next height because we want to halt the chain immediately after
+    /// committing the block.
+    async fn is_upgrade_height(&self) -> Result<bool> {
+        let Some(next_upgrade_height) = self
+            .nonverifiable_get_raw(state_key::upgrades::next_upgrade().as_bytes())
+            .await?
+        else {
+            return Ok(false);
+        };
+
+        let next_upgrade_height = u64::from_be_bytes(next_upgrade_height.as_slice().try_into()?);
+
+        let current_height = self.get_block_height().await?;
+        Ok(current_height.saturating_add(1) == next_upgrade_height)
+    }
+
     /// Indicates if the governance parameters have been updated in this block.
     fn governance_params_updated(&self) -> bool {
         self.object_get::<()>(state_key::governance_params_updated())
@@ -284,7 +306,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         };
 
         // Check that the unbonded amount is correct relative to that exchange rate
-        if rate_data.unbonded_amount(value.amount.value()) != unbonded_amount.value() {
+        if rate_data.unbonded_amount(value.amount).value() != unbonded_amount.value() {
             anyhow::bail!(
                 "unbonded amount {}{} does not correspond to {} staked delegation tokens for validator {} using the exchange rate at the start of proposal {}",
                 unbonded_amount,
@@ -336,7 +358,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         identity_key: &IdentityKey,
         governance_key: &GovernanceKey,
     ) -> Result<()> {
-        if let Some(validator) = self.validator(identity_key).await? {
+        if let Some(validator) = self.get_validator_definition(identity_key).await? {
             if validator.governance_key != *governance_key {
                 anyhow::bail!(
                     "governance key {} does not match validator {}",
@@ -556,6 +578,21 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         self.object_get::<()>(state_key::proposal_started())
             .is_some()
     }
+
+    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
+        Ok(total_halt_count
+            < self
+                .get_proto(state_key::halt::halt_count())
+                .await?
+                .unwrap_or_default())
+    }
+
+    async fn halt_count(&self) -> Result<u64> {
+        Ok(self
+            .get_proto(state_key::halt::halt_count())
+            .await?
+            .unwrap_or_default())
+    }
 }
 
 impl<T: StateRead + penumbra_stake::StateReadExt + ?Sized> StateReadExt for T {}
@@ -589,10 +626,16 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
 
         // Snapshot the rate data and voting power for all active validators at this height
         let mut js = JoinSet::new();
-        for identity_key in self.validator_identity_list().await? {
-            let state = self.validator_state(&identity_key);
-            let rate_data = self.current_validator_rate(&identity_key);
-            let power = self.validator_power(&identity_key);
+        let mut validator_identity_stream = self.consensus_set_stream()?;
+        while let Some(identity_key) = validator_identity_stream.next().await {
+            let identity_key = identity_key?;
+
+            let state = self.get_validator_state(&identity_key);
+            let rate_data = self.get_validator_rate(&identity_key);
+            let power: penumbra_proto::state::future::DomainFuture<
+                Amount,
+                <Self as StateRead>::GetRawFut,
+            > = self.get_validator_power(&identity_key);
             js.spawn(async move {
                 let state = state
                     .await?
@@ -621,7 +664,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     state_key::rate_data_at_proposal_start(proposal_id, identity_key),
                     rate_data,
                 );
-                self.put_proto(
+                self.put(
                     state_key::voting_power_at_proposal_start(proposal_id, identity_key),
                     power,
                 )
@@ -943,6 +986,26 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         tracing::info!(%next_height, "canceling pending app parameters for next block");
 
         self.delete(state_key::change_app_params_at_height(next_height));
+        Ok(())
+    }
+
+    /// Records the next upgrade height.
+    /// After commititng the height, the chain should halt and wait for an upgrade.
+    /// It re-uses the same mechanism as emergency halting that prevents the chain from
+    /// restarting without incrementing the application `TOTAL_HALT_COUNT`.
+    async fn signal_upgrade(&mut self, height: u64) -> Result<()> {
+        self.nonverifiable_put_raw(
+            state_key::upgrades::next_upgrade().into(),
+            height.to_be_bytes().to_vec(),
+        );
+        Ok(())
+    }
+
+    /// Signals to the consensus worker to halt after the next commit.
+    async fn signal_halt(&mut self) -> Result<()> {
+        let halt_count = self.halt_count().await?;
+
+        self.put_proto(state_key::halt::halt_count().to_string(), halt_count + 1);
         Ok(())
     }
 }

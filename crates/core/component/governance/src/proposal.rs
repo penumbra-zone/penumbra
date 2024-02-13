@@ -1,15 +1,17 @@
 use anyhow::Context;
 use bytes::Bytes;
+use penumbra_funding::FundingParameters;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
-use penumbra_chain::params::ChainParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
@@ -29,17 +31,8 @@ pub struct Proposal {
     pub payload: ProposalPayload,
 }
 
-/*
-// TODO: is this needed?
-impl EffectingData for Proposal {
-    fn effect_hash(&self) -> EffectHash {
-        EffectHash::from_proto_effecting_data(&self.to_proto())
-    }
-}
- */
-
 /// The protobuf type URL for a transaction plan.
-pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1alpha1.TransactionPlan";
+pub const TRANSACTION_PLAN_TYPE_URL: &str = "/penumbra.core.transaction.v1.TransactionPlan";
 
 impl From<Proposal> for pb::Proposal {
     fn from(inner: Proposal) -> pb::Proposal {
@@ -49,47 +42,49 @@ impl From<Proposal> for pb::Proposal {
             description: inner.description,
             ..Default::default() // We're about to fill in precisely one of the fields for the payload
         };
-        match inner.payload {
+        use pb::proposal::Payload;
+        let payload = match inner.payload {
             ProposalPayload::Signaling { commit } => {
-                proposal.signaling = Some(pb::proposal::Signaling {
+                Some(Payload::Signaling(pb::proposal::Signaling {
                     commit: if let Some(c) = commit {
                         c
                     } else {
                         String::default()
                     },
-                });
+                }))
             }
             ProposalPayload::Emergency { halt_chain } => {
-                proposal.emergency = Some(pb::proposal::Emergency { halt_chain });
+                Some(Payload::Emergency(pb::proposal::Emergency { halt_chain }))
             }
             ProposalPayload::ParameterChange { old, new } => {
-                proposal.parameter_change = Some(pb::proposal::ParameterChange {
+                Some(Payload::ParameterChange(pb::proposal::ParameterChange {
                     old_parameters: Some((*old).into()),
                     new_parameters: Some((*new).into()),
-                });
+                }))
             }
-            ProposalPayload::CommunityPoolSpend { transaction_plan } => {
-                proposal.community_pool_spend = Some(pb::proposal::CommunityPoolSpend {
+            ProposalPayload::CommunityPoolSpend { transaction_plan } => Some(
+                Payload::CommunityPoolSpend(pb::proposal::CommunityPoolSpend {
                     transaction_plan: Some(pbjson_types::Any {
                         type_url: TRANSACTION_PLAN_TYPE_URL.to_owned(),
                         value: transaction_plan.into(),
                     }),
-                });
-            }
+                }),
+            ),
             ProposalPayload::UpgradePlan { height } => {
-                proposal.upgrade_plan = Some(pb::proposal::UpgradePlan { height });
+                Some(Payload::UpgradePlan(pb::proposal::UpgradePlan { height }))
             }
             ProposalPayload::FreezeIbcClient { client_id } => {
-                proposal.freeze_ibc_client = Some(pb::proposal::FreezeIbcClient {
+                Some(Payload::FreezeIbcClient(pb::proposal::FreezeIbcClient {
                     client_id: client_id.into(),
-                });
+                }))
             }
-            ProposalPayload::UnfreezeIbcClient { client_id } => {
-                proposal.unfreeze_ibc_client = Some(pb::proposal::UnfreezeIbcClient {
+            ProposalPayload::UnfreezeIbcClient { client_id } => Some(Payload::UnfreezeIbcClient(
+                pb::proposal::UnfreezeIbcClient {
                     client_id: client_id.into(),
-                });
-            }
-        }
+                },
+            )),
+        };
+        proposal.payload = payload;
         proposal
     }
 }
@@ -98,24 +93,26 @@ impl TryFrom<pb::Proposal> for Proposal {
     type Error = anyhow::Error;
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
+        use pb::proposal::Payload;
         Ok(Proposal {
             id: inner.id,
             title: inner.title,
             description: inner.description,
-            payload: if let Some(signaling) = inner.signaling {
-                ProposalPayload::Signaling {
+            payload: match inner
+                .payload
+                .ok_or_else(|| anyhow::anyhow!("missing proposal payload"))?
+            {
+                Payload::Signaling(signaling) => ProposalPayload::Signaling {
                     commit: if signaling.commit.is_empty() {
                         None
                     } else {
                         Some(signaling.commit)
                     },
-                }
-            } else if let Some(emergency) = inner.emergency {
-                ProposalPayload::Emergency {
+                },
+                Payload::Emergency(emergency) => ProposalPayload::Emergency {
                     halt_chain: emergency.halt_chain,
-                }
-            } else if let Some(parameter_change) = inner.parameter_change {
-                ProposalPayload::ParameterChange {
+                },
+                Payload::ParameterChange(parameter_change) => ProposalPayload::ParameterChange {
                     old: Box::new(
                         parameter_change
                             .old_parameters
@@ -128,28 +125,34 @@ impl TryFrom<pb::Proposal> for Proposal {
                             .ok_or_else(|| anyhow::anyhow!("missing new parameters"))?
                             .try_into()?,
                     ),
+                },
+                Payload::CommunityPoolSpend(community_pool_spend) => {
+                    ProposalPayload::CommunityPoolSpend {
+                        transaction_plan: {
+                            let transaction_plan = community_pool_spend
+                                .transaction_plan
+                                .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
+                            if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
+                                anyhow::bail!(
+                                    "unknown transaction plan type url: {}",
+                                    transaction_plan.type_url
+                                );
+                            }
+                            transaction_plan.value.to_vec()
+                        },
+                    }
                 }
-            } else if let Some(community_pool_spend) = inner.community_pool_spend {
-                ProposalPayload::CommunityPoolSpend {
-                    transaction_plan: {
-                        let transaction_plan = community_pool_spend
-                            .transaction_plan
-                            .ok_or_else(|| anyhow::anyhow!("missing transaction plan"))?;
-                        if transaction_plan.type_url != TRANSACTION_PLAN_TYPE_URL {
-                            anyhow::bail!(
-                                "unknown transaction plan type url: {}",
-                                transaction_plan.type_url
-                            );
-                        }
-                        transaction_plan.value.to_vec()
-                    },
-                }
-            } else if let Some(upgrade_plan) = inner.upgrade_plan {
-                ProposalPayload::UpgradePlan {
+                Payload::UpgradePlan(upgrade_plan) => ProposalPayload::UpgradePlan {
                     height: upgrade_plan.height,
+                },
+                Payload::FreezeIbcClient(freeze_ibc_client) => ProposalPayload::FreezeIbcClient {
+                    client_id: freeze_ibc_client.client_id,
+                },
+                Payload::UnfreezeIbcClient(unfreeze_ibc_client) => {
+                    ProposalPayload::UnfreezeIbcClient {
+                        client_id: unfreeze_ibc_client.client_id,
+                    }
                 }
-            } else {
-                anyhow::bail!("missing proposal payload or unknown proposal type");
             },
         })
     }
@@ -407,6 +410,11 @@ impl ProposalPayload {
         matches!(self, ProposalPayload::Emergency { .. })
     }
 
+    pub fn is_ibc_freeze(&self) -> bool {
+        matches!(self, ProposalPayload::FreezeIbcClient { .. })
+            || matches!(self, ProposalPayload::UnfreezeIbcClient { .. })
+    }
+
     pub fn is_parameter_change(&self) -> bool {
         matches!(self, ProposalPayload::ParameterChange { .. })
     }
@@ -427,13 +435,15 @@ impl ProposalPayload {
     into = "pb::ChangedAppParameters"
 )]
 pub struct ChangedAppParameters {
-    pub chain_params: Option<ChainParameters>,
     pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
-    pub stake_params: Option<StakeParameters>,
     pub fee_params: Option<FeeParameters>,
+    pub funding_params: Option<FundingParameters>,
     pub governance_params: Option<GovernanceParameters>,
+    pub sct_params: Option<SctParameters>,
+    pub shielded_pool_params: Option<ShieldedPoolParameters>,
+    pub stake_params: Option<StakeParameters>,
 }
 
 impl DomainType for ChangedAppParameters {
@@ -445,7 +455,6 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
-            chain_params: msg.chain_params.map(TryInto::try_into).transpose()?,
             community_pool_params: msg
                 .community_pool_params
                 .map(TryInto::try_into)
@@ -455,8 +464,14 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
                 .map(TryInto::try_into)
                 .transpose()?,
             fee_params: msg.fee_params.map(TryInto::try_into).transpose()?,
+            funding_params: msg.funding_params.map(TryInto::try_into).transpose()?,
             governance_params: msg.governance_params.map(TryInto::try_into).transpose()?,
             ibc_params: msg.ibc_params.map(TryInto::try_into).transpose()?,
+            sct_params: msg.sct_params.map(TryInto::try_into).transpose()?,
+            shielded_pool_params: msg
+                .shielded_pool_params
+                .map(TryInto::try_into)
+                .transpose()?,
             stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
         })
     }
@@ -465,12 +480,14 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
-            chain_params: params.chain_params.map(Into::into),
             community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),
+            funding_params: params.funding_params.map(Into::into),
             governance_params: params.governance_params.map(Into::into),
             ibc_params: params.ibc_params.map(Into::into),
+            sct_params: params.sct_params.map(Into::into),
+            shielded_pool_params: params.shielded_pool_params.map(Into::into),
             stake_params: params.stake_params.map(Into::into),
         }
     }

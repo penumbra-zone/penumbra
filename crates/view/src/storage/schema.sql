@@ -4,18 +4,13 @@ CREATE TABLE schema_hash (schema_hash TEXT NOT NULL);
 -- The client version that created this database
 CREATE TABLE client_version (client_version TEXT NOT NULL);
 
--- Application state, stored in single-row tables
-CREATE TABLE stake_params (bytes BLOB NOT NULL);
-CREATE TABLE ibc_params (bytes BLOB NOT NULL);
-CREATE TABLE governance_params (bytes BLOB NOT NULL);
-CREATE TABLE chain_params (bytes BLOB NOT NULL);
-CREATE TABLE community_pool_params (bytes BLOB NOT NULL);
-CREATE TABLE fee_params (bytes BLOB NOT NULL);
-CREATE TABLE distributions_params (bytes BLOB NOT NULL);
-CREATE TABLE fmd_parameters (bytes BLOB NOT NULL);
-CREATE TABLE full_viewing_key (bytes BLOB NOT NULL);
+-- General-purpose blob storage
+CREATE TABLE kv (
+    k                       TEXT PRIMARY KEY NOT NULL,
+    v                       BLOB NOT NULL
+);
+
 CREATE TABLE sync_height (height BIGINT NOT NULL);
-CREATE TABLE gas_prices (bytes BLOB NOT NULL);
 
 -- used for storing a cache of known assets
 CREATE TABLE assets (
@@ -94,7 +89,9 @@ CREATE TABLE spendable_notes (
     -- the source of the note (a tx hash or structured data jammed into one)
     source                  BLOB NOT NULL,
     -- null if unspent, otherwise spent at height_spent
-    height_spent            BIGINT
+    height_spent            BIGINT,
+    -- null if note source is not a transaction, otherwise the tx hash
+    tx_hash                 BLOB
 );
 
 CREATE INDEX spendable_notes_by_nullifier_idx ON spendable_notes (

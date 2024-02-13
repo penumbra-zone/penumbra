@@ -16,7 +16,7 @@ use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, Valid
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
-    core::transaction::v1alpha1::{self as pbt},
+    core::transaction::v1::{self as pbt},
     DomainType, Message,
 };
 use penumbra_sct::Nullifier;
@@ -301,8 +301,8 @@ impl Transaction {
             Some(ciphertext) => match memo_plaintext {
                 Some(plaintext) => {
                     let plaintext_view: MemoPlaintextView = MemoPlaintextView {
-                        return_address: txp.view_address(plaintext.return_address),
-                        text: plaintext.text,
+                        return_address: txp.view_address(plaintext.return_address()),
+                        text: plaintext.text().to_owned(),
                     };
                     Some(MemoView::Visible {
                         plaintext: plaintext_view,

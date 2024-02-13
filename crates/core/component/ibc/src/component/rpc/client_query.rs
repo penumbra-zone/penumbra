@@ -11,11 +11,10 @@ use ibc_proto::ibc::core::client::v1::{
     QueryUpgradedClientStateResponse, QueryUpgradedConsensusStateRequest,
     QueryUpgradedConsensusStateResponse,
 };
+use prost::Message;
 
 use ibc_types::core::client::ClientId;
 use ibc_types::core::client::Height;
-use ibc_types::lightclients::tendermint::client_state::TENDERMINT_CLIENT_STATE_TYPE_URL;
-use ibc_types::lightclients::tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
 use ibc_types::path::ClientConsensusStatePath;
 use ibc_types::path::ClientStatePath;
 use ibc_types::DomainType;
@@ -23,25 +22,23 @@ use ibc_types::DomainType;
 use std::str::FromStr;
 use tonic::{Response, Status};
 
-use crate::component::ClientStateReadExt;
+use crate::component::{ClientStateReadExt, HostInterface};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
-use penumbra_chain::component::StateReadExt as _;
 
 use super::IbcQuery;
 
 #[async_trait]
-impl ClientQuery for IbcQuery {
+impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
     async fn client_state(
         &self,
         request: tonic::Request<QueryClientStateRequest>,
     ) -> std::result::Result<Response<QueryClientStateResponse>, Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
         let height = Height {
-            revision_number: snapshot
-                .get_revision_number()
+            revision_number: HI::get_revision_number(&snapshot)
                 .await
                 .map_err(|e| tonic::Status::aborted(e.to_string()))?,
             revision_height: snapshot.version(),
@@ -58,23 +55,13 @@ impl ClientQuery for IbcQuery {
             .await
             .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
 
-        // Client state may be None, which we'll convert to a NotFound response.
-        let client_state = match cs_opt {
-            // If found, convert to a suitable type to match
-            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryClientStateResponse.html
-            Some(c) => ibc_proto::google::protobuf::Any {
-                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: c,
-            },
-            None => {
-                return Err(tonic::Status::not_found(format!(
-                    "couldn't find client: {client_id}"
-                )))
-            }
-        };
+        let client_state = cs_opt
+            .map(|cs_opt| ibc_proto::google::protobuf::Any::decode(cs_opt.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
 
         let res = QueryClientStateResponse {
-            client_state: Some(client_state),
+            client_state,
             proof: proof.encode_to_vec(),
             proof_height: Some(height.into()),
         };
@@ -87,7 +74,7 @@ impl ClientQuery for IbcQuery {
         &self,
         _request: tonic::Request<QueryClientStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatesResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
 
         let client_counter = snapshot
             .client_counter()
@@ -122,7 +109,7 @@ impl ClientQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
         let height = if request.get_ref().latest_height {
@@ -142,25 +129,15 @@ impl ClientQuery for IbcQuery {
                     .to_vec(),
             )
             .await
-            .map_err(|e| tonic::Status::aborted(format!("couldn't get client: {e}")))?;
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get consensus state: {e}")))?;
 
-        // if state is None, convert to a NotFound response.
-        let consensus_state = match cs_opt {
-            // If found, convert to a suitable type to match
-            // https://docs.rs/ibc-proto/0.39.1/ibc_proto/ibc/core/client/v1/struct.QueryConsensusStateResponse.html
-            Some(c) => ibc_proto::google::protobuf::Any {
-                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: c,
-            },
-            None => {
-                return Err(tonic::Status::not_found(format!(
-                    "couldn't find client: {client_id}"
-                )))
-            }
-        };
+        let consensus_state = cs_opt
+            .map(|cs_opt| ibc_proto::google::protobuf::Any::decode(cs_opt.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode consensus state: {e}")))?;
 
         let res = QueryConsensusStateResponse {
-            consensus_state: Some(consensus_state),
+            consensus_state,
             proof: proof.encode_to_vec(),
             proof_height: Some(height.into()),
         };
@@ -174,7 +151,7 @@ impl ClientQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConsensusStatesRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStatesResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
 
@@ -216,7 +193,7 @@ impl ClientQuery for IbcQuery {
         request: tonic::Request<QueryConsensusStateHeightsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConsensusStateHeightsResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let client_id = ClientId::from_str(&request.get_ref().client_id)
             .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
 

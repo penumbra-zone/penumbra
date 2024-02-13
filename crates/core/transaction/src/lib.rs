@@ -14,6 +14,8 @@
 
 #![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod auth_data;
 mod detection_data;

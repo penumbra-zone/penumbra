@@ -8,7 +8,7 @@ repo_root="$(git rev-parse --show-toplevel)"
 # Purge the output dirs, to ensure that the codegen is complete:
 # if upstream removed files, we want them removed from all outputs, too.
 echo "Cleaning output dirs..."
-for d in proto/rust-vendored proto/go crates/proto/src/gen ; do
+for d in proto/rust-vendored crates/proto/src/gen ; do
     rm -r "${repo_root}/${d}/"
     mkdir -p "${repo_root}/${d}/"
 done
@@ -21,10 +21,6 @@ buf export penumbra --output rust-vendored/
 # Remove the re-exported Penumbra proto defs, since we version control
 # those directly in this repo, and don't need to duplicate them as output.
 rm -rf rust-vendored/penumbra/
-
-echo "Generating golang code..."
-buf generate
-popd
 
 echo "Generating rust code..."
 pushd "${repo_root}/tools/proto-compiler"

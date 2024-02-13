@@ -3,7 +3,7 @@ use ark_serialize::CanonicalDeserialize;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{penumbra::core::asset::v1 as pb, serializers::bech32str, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::Value;

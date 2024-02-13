@@ -1,43 +1,12 @@
 [package]
 name = "penumbra-proof-setup"
-version = "0.64.1"
-edition = "2021"
-
-[dependencies]
-anyhow = "1.0"
-ark-ec = { version = "0.4.2", default_features = false }
-ark-ff = { version = "0.4.2", default_features = false }
-ark-groth16 = { version = "0.4.0", default_features = false }
-ark-poly = { version = "0.4.2", default_features = false }
-ark-relations = "0.4"
-ark-serialize = "0.4.2"
-blake2b_simd = "0.5"
-rand_core = { version = "0.6", features = ["getrandom"] }
-decaf377 = { version = "0.5", default_features = false }
-penumbra-dex = { path = "../../core/component/dex/" }
-penumbra-community-pool = { path = "../../core/component/community-pool/", features = [
-    "component",
-] }
-penumbra-governance = { path = "../../core/component/governance/" }
-penumbra-proof-params = { path = "../proof-params" }
-penumbra-proto = { path = "../../proto" }
-penumbra-shielded-pool = { path = "../../core/component/shielded-pool/" }
-penumbra-stake = { path = "../../core/component/stake/", features = [
-    "component",
-] }
-rayon = { version = "1.8.0", optional = true }
-
-[dev-dependencies]
-ark-r1cs-std = "0.4.0"
-ark-snark = "0.4.0"
-criterion = { version = "0.4", features = ["html_reports"] }
-penumbra-dex = { path = "../../core/component/dex/" }
-penumbra-proof-params = { path = "../proof-params" }
-rand_chacha = "0.3.1"
+version = {workspace = true}
+edition = {workspace = true}
 
 [[bench]]
 name = "all"
 harness = false
+
 
 [features]
 default = []
@@ -49,3 +18,35 @@ parallel = [
     "rayon",
     "penumbra-shielded-pool/parallel",
 ]
+
+[dependencies]
+anyhow = {workspace = true}
+ark-ec = {workspace = true, default-features = false}
+ark-ff = {workspace = true, default-features = false}
+ark-groth16 = {workspace = true, default-features = false}
+ark-poly = { version = "0.4.2", default_features = false }
+ark-relations = {workspace = true}
+ark-serialize = {workspace = true}
+blake2b_simd = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+decaf377 = {workspace = true, default-features = false}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-community-pool = {workspace = true, features = [
+    "component",
+], default-features = true}
+penumbra-governance = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, default-features = true}
+penumbra-stake = {workspace = true, features = [
+    "component",
+], default-features = true}
+rayon = { version = "1.8.0", optional = true }
+
+[dev-dependencies]
+ark-r1cs-std = {workspace = true}
+ark-snark = {workspace = true}
+criterion = {workspace = true, features = ["html_reports"]}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = true}
+rand_chacha = {workspace = true}

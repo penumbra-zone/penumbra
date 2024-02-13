@@ -1,4 +1,4 @@
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use super::{Swap, SwapPlaintext};

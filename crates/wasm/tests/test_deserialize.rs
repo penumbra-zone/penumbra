@@ -1,4 +1,4 @@
-use penumbra_proto::core::component::ibc::v1alpha1::Ics20Withdrawal as PbIcs20Withdrawal;
+use penumbra_proto::core::component::ibc::v1::Ics20Withdrawal as PbIcs20Withdrawal;
 use penumbra_shielded_pool::Ics20Withdrawal;
 
 #[test]

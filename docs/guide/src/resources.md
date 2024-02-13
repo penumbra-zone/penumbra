@@ -1,28 +1,31 @@
 # Resources
 
 This page links to various resources that are helpful for working with and
-understanding Penumbra:
+understanding Penumbra.
 
-### Discord
+### Getting started
 
-The primary communication hub is our [Discord]; click the link to join the
+  * The primary communication hub is our [Discord]; click the link to join the
 discussion there.
+  * Documentation on how to use `pcli`, how to run `pd`, and how to do development can be found at [guide.penumbra.zone][guide].
 
-### Guide
+### For developers
 
-Documentation on how to use `pcli`, how to run `pd`, and how to do development can be found at [guide.penumbra.zone][guide].
+  * The protocol specification is rendered at [protocol.penumbra.zone][protocol].
+  * The API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
+  * The protobuf documentation is rendered at [buf.build/penumbra-zone/penumbra][protobuf].
+  * The current sprint progress is tracked on a [Github project board](https://github.com/orgs/penumbra-zone/projects/23/views/3) (hint: 🔖 this).
+  * The development history by testnet can be found at [another Github board](https://github.com/orgs/penumbra-zone/projects/17).
 
-### Protocol Specification
+## Tools
 
-The protocol specification is rendered at [protocol.penumbra.zone][protocol].
+  * Public testnet `pd` endpoint: `https://grpc.testnet.penumbra.zone` This URL won't work in a web browser, as the service speaks gRPC.
+  * Public testnet `cometbft` API endpoint: [https://rpc.testnet.penumbra.zone](https://rpc.testnet.penumbra.zone)
+  * Block explorer: [https://cuiloa.testnet.penumbra.zone](https://cuiloa.testnet.penumbra.zone)
+  * Metrics: [https://grafana.testnet.penumbra.zone](https://grafana.testnet.penumbra.zone)
 
-### API documentation
-
-The API documentation is rendered at [rustdoc.penumbra.zone][rustdoc].
-
-### Protobuf documentation
-
-The protobuf documentation is rendered at [buf.build/penumbra-zone/penumbra][protobuf].
+For all those URLs, there's also a `preview` version available, e.g. `https://grpc.testnet-preview.penumbra.zone`,
+that tracks the latest tip of the git repo, rather than the current public testnet.
 
 [Discord]: https://discord.gg/hKvkrqa3zC
 [protocol]: https://protocol.penumbra.zone

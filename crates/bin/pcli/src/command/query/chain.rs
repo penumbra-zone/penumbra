@@ -3,16 +3,16 @@ use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
 use penumbra_proto::{
-    core::app::v1alpha1::{
+    core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    core::component::chain::v1alpha1::{
-        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+    core::component::sct::v1::{
+        query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
     },
-    core::component::stake::v1alpha1::{
+    core::component::stake::v1::{
         query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
     },
-    util::tendermint_proxy::v1alpha1::{
+    util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
 };
@@ -49,9 +49,7 @@ impl ChainCmd {
     pub async fn print_app_params(&self, app: &mut App) -> Result<()> {
         let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
         let params: AppParameters = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .app_parameters
@@ -63,10 +61,10 @@ impl ChainCmd {
         table.load_preset(presets::NOTHING);
         table
             .set_header(vec!["", ""])
-            .add_row(vec!["Chain ID", &params.chain_params.chain_id])
+            .add_row(vec!["Chain ID", &params.chain_id])
             .add_row(vec![
                 "Epoch Duration",
-                &format!("{}", params.chain_params.epoch_duration),
+                &format!("{}", params.sct_params.epoch_duration),
             ])
             .add_row(vec![
                 "Unbonding Epochs",
@@ -130,7 +128,7 @@ impl ChainCmd {
             .ok_or_else(|| anyhow!("missing sync_info"))?
             .latest_block_height;
 
-        let mut client = ChainQueryServiceClient::new(channel.clone());
+        let mut client = SctQueryServiceClient::new(channel.clone());
         let current_epoch: u64 = client
             .epoch_by_height(tonic::Request::new(EpochByHeightRequest {
                 height: current_block_height.clone(),
@@ -141,25 +139,11 @@ impl ChainCmd {
             .context("failed to find EpochByHeight message")?
             .index;
 
-        let mut client = AppQueryServiceClient::new(channel.clone());
-        let app_params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
-            .await?
-            .into_inner()
-            .app_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?;
-
         // Fetch validators.
         let mut client = StakeQueryServiceClient::new(channel.clone());
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
-                chain_id: app_params
-                    .chain_params
-                    .ok_or_else(|| anyhow::anyhow!("missing chain_params in app params"))?
-                    .chain_id,
             })
             .await?
             .into_inner()

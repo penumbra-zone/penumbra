@@ -1,6 +1,6 @@
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +23,6 @@ pub struct Delegate {
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
-    /// TODO(erwan): make sure this is checked in tx validation
     pub delegation_amount: Amount,
 }
 

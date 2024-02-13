@@ -1,10 +1,10 @@
 use penumbra_asset::{
-    asset::{self, DenomMetadata, Unit},
+    asset::{self, Metadata, Unit},
     Value,
 };
 use penumbra_keys::Address;
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::shielded_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A (transparent) genesis allocation.
@@ -20,7 +20,7 @@ pub struct Allocation {
 }
 
 impl Allocation {
-    pub fn denom(&self) -> DenomMetadata {
+    pub fn denom(&self) -> Metadata {
         self.unit().base()
     }
 

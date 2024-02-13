@@ -1,0 +1,13 @@
+syntax = "proto3";
+package penumbra.core.component.distributions.v1;
+
+// Distribution configuration data.
+message DistributionsParameters {
+  // The amount of staking token issued per block.
+  uint64 staking_issuance_per_block = 1;
+}
+
+// Genesis data for the distributions module.
+message GenesisContent {
+  DistributionsParameters distributions_params = 1;
+}

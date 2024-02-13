@@ -4,10 +4,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
 use penumbra_asset::{asset, Value};
-use penumbra_chain::component::StateReadExt;
+use penumbra_proto::StateWriteProto as _;
+use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
-use crate::SwapExecution;
+use crate::{event, ExecutionCircuitBreaker, SwapExecution};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
@@ -50,8 +51,15 @@ pub trait Arbitrage: StateWrite + Sized {
             amount: u64::MAX.into(),
         };
 
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = this
-            .route_and_fill(arb_token, arb_token, flash_loan.amount, params)
+            .route_and_fill(
+                arb_token,
+                arb_token,
+                flash_loan.amount,
+                params,
+                execution_circuit_breaker,
+            )
             .await?;
         let filled_input = swap_execution.input.amount;
         let output = swap_execution.output.amount;
@@ -108,24 +116,22 @@ pub trait Arbitrage: StateWrite + Sized {
 
         // Finally, record the arb execution in the state:
         let height = self_mut.get_block_height().await?;
-        self_mut.set_arb_execution(
-            height,
-            SwapExecution {
-                traces: swap_execution.traces,
-                input: Value {
-                    asset_id: arb_token,
-                    amount: filled_input,
-                },
-                output: Value {
-                    amount: arb_profit,
-                    asset_id: arb_token,
-                },
+        let se = SwapExecution {
+            traces: swap_execution.traces,
+            input: Value {
+                asset_id: arb_token,
+                amount: filled_input,
             },
-        );
-        metrics::histogram!(
-            crate::component::metrics::DEX_ARB_DURATION,
-            arb_start.elapsed()
-        );
+            output: Value {
+                amount: arb_profit,
+                asset_id: arb_token,
+            },
+        };
+        self_mut.set_arb_execution(height, se.clone());
+        // Emit an ABCI event detailing the arb execution.
+        self_mut.record_proto(event::arb_execution(height, se));
+        metrics::histogram!(crate::component::metrics::DEX_ARB_DURATION)
+            .record(arb_start.elapsed());
         return Ok(Value {
             amount: arb_profit,
             asset_id: arb_token,

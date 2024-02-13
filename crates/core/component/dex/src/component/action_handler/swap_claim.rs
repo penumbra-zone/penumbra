@@ -3,16 +3,23 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium_component::ActionHandler;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_txhash::TransactionContext;
 
 use cnidarium::{StateRead, StateWrite};
 use penumbra_proof_params::SWAPCLAIM_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto;
-use penumbra_sct::component::{SctManager as _, SourceContext, StateReadExt as _};
+use penumbra_sct::component::{
+    source::SourceContext,
+    tree::{SctManager, VerificationExt},
+    StateReadExt as _,
+};
 use penumbra_shielded_pool::component::NoteManager;
 
-use crate::{component::StateReadExt, event, swap_claim::SwapClaim};
+use crate::{
+    component::StateReadExt,
+    event,
+    swap_claim::{SwapClaim, SwapClaimProofPublic},
+};
 
 #[async_trait]
 impl ActionHandler for SwapClaim {
@@ -21,12 +28,14 @@ impl ActionHandler for SwapClaim {
         self.proof
             .verify(
                 &SWAPCLAIM_PROOF_VERIFICATION_KEY,
-                context.anchor,
-                self.body.nullifier,
-                self.body.fee.clone(),
-                self.body.output_data,
-                self.body.output_1_commitment,
-                self.body.output_2_commitment,
+                SwapClaimProofPublic {
+                    anchor: context.anchor,
+                    nullifier: self.body.nullifier,
+                    claim_fee: self.body.fee.clone(),
+                    output_data: self.body.output_data,
+                    note_commitment_1: self.body.output_1_commitment,
+                    note_commitment_2: self.body.output_2_commitment,
+                },
             )
             .context("a swap claim proof did not verify")?;
 
@@ -38,7 +47,7 @@ impl ActionHandler for SwapClaim {
 
         // 1. Validate the epoch duration passed in the swap claim matches
         // what we know.
-        let epoch_duration = state.get_epoch_duration().await?;
+        let epoch_duration = state.get_epoch_duration_parameter().await?;
         let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
             anyhow::bail!("provided epoch duration does not match chain epoch duration");

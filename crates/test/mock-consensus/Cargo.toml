@@ -1,0 +1,16 @@
+[package]
+name = "penumbra-mock-consensus"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+bytes = { workspace = true }
+tendermint = { workspace = true }
+tower = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tap = "1.0.1"

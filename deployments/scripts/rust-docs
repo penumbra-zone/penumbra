@@ -17,7 +17,8 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # Doing this in one go is useful because the JSON file with search
 # indexes is overwritten on each cargo doc invocation.
 
-cargo +nightly doc --no-deps \
+# cargo +nightly doc --no-deps \
+cargo +nightly-2024-02-01 doc --no-deps \
   -p tendermint \
   -p tendermint-config \
   -p ibc-types \
@@ -36,11 +37,11 @@ cargo +nightly doc --no-deps \
   -p cnidarium-component \
   -p penumbra-app \
   -p penumbra-asset \
-  -p penumbra-chain \
   -p penumbra-custody \
   -p penumbra-community-pool \
   -p penumbra-dex \
   -p penumbra-distributions \
+  -p penumbra-genesis \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \

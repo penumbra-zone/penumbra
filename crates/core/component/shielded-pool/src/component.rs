@@ -9,7 +9,7 @@ mod transfer;
 
 pub use self::metrics::register_metrics;
 pub use note_manager::NoteManager;
-pub use shielded_pool::ShieldedPool;
+pub use shielded_pool::{ShieldedPool, StateReadExt, StateWriteExt};
 pub use supply::{SupplyRead, SupplyWrite};
 pub use transfer::Ics20Transfer;
 

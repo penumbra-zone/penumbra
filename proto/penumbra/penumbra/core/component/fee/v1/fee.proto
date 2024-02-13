@@ -1,0 +1,65 @@
+syntax = "proto3";
+package penumbra.core.component.fee.v1;
+
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/num/v1/num.proto";
+
+// Specifies fees paid by a transaction.
+message Fee {
+  // The amount of the token used to pay fees.
+  num.v1.Amount amount = 1;
+  // If present, the asset ID of the token used to pay fees.
+  // If absent, specifies the staking token implicitly.
+  asset.v1.AssetId asset_id = 2;
+}
+
+message GasPrices {
+  // The price per unit block space in terms of the staking token, with an implicit 1,000 denominator.
+  uint64 block_space_price = 1;
+  // The price per unit compact block space in terms of the staking token, with an implicit 1,000 denominator.
+  uint64 compact_block_space_price = 2;
+  // The price per unit verification cost in terms of the staking token, with an implicit 1,000 denominator.
+  uint64 verification_price = 3;
+  // The price per unit execution cost in terms of the staking token, with an implicit 1,000 denominator.
+  uint64 execution_price = 4;
+}
+
+message FeeTier {
+  // The tier for the fee.
+  enum Tier {
+    TIER_UNSPECIFIED = 0;
+    TIER_LOW = 1;
+    TIER_MEDIUM = 2;
+    TIER_HIGH = 3;
+  }
+
+  // The selected fee tier.
+  Tier fee_tier = 1;
+}
+
+// Fee component configuration data.
+message FeeParameters {
+  // Fixed gas prices used to compute transactions' base fees.
+  //
+  // In the future, this should be removed and replaced with parameters for dynamic gas pricing.
+  GasPrices fixed_gas_prices = 1;
+}
+
+// Fee-specific genesis content.
+message GenesisContent {
+  // The FeeParameters present at genesis.
+  FeeParameters fee_params = 1;
+}
+
+// Query operations for the fee component.
+service QueryService {
+  // Get the current gas prices.
+  rpc CurrentGasPrices(CurrentGasPricesRequest) returns (CurrentGasPricesResponse);
+}
+
+message CurrentGasPricesRequest {}
+
+message CurrentGasPricesResponse {
+  // The current gas prices.
+  GasPrices gas_prices = 1;
+}

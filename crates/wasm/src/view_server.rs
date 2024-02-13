@@ -7,7 +7,7 @@ use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
-use penumbra_asset::asset::{DenomMetadata, Id};
+use penumbra_asset::asset::{Id, Metadata};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::lp::position::Position;
 use penumbra_dex::lp::LpNft;
@@ -64,7 +64,7 @@ pub struct ViewServer {
     fvk: FullViewingKey,
     notes: BTreeMap<note::StateCommitment, SpendableNoteRecord>,
     swaps: BTreeMap<tct::StateCommitment, SwapRecord>,
-    denoms: BTreeMap<Id, DenomMetadata>,
+    denoms: BTreeMap<Id, Metadata>,
     sct: Tree,
     storage: IndexedDBStorage,
     last_position: Option<StoredPosition>,
@@ -111,7 +111,7 @@ impl ViewServer {
 
     /// Scans block for notes, swaps
     /// Returns true if the block contains new notes, swaps or false if the block is empty for us
-    ///     compact_block: `v1alpha1::CompactBlock`
+    ///     compact_block: `v1::CompactBlock`
     /// Scan results are saved in-memory rather than returned
     /// Use `flush_updates()` to get the scan results
     /// Returns: `bool`
@@ -119,7 +119,7 @@ impl ViewServer {
     pub async fn scan_block(&mut self, compact_block: JsValue) -> WasmResult<bool> {
         utils::set_panic_hook();
 
-        let block_proto: penumbra_proto::core::component::compact_block::v1alpha1::CompactBlock =
+        let block_proto: penumbra_proto::core::component::compact_block::v1::CompactBlock =
             serde_wasm_bindgen::from_value(compact_block)?;
 
         let block: CompactBlock = block_proto.try_into()?;
@@ -155,6 +155,7 @@ impl ViewServer {
                                 nullifier,
                                 position: note_position,
                                 source,
+                                return_address: None,
                             };
                             self.notes
                                 .insert(payload.note_commitment, note_record.clone());
@@ -239,6 +240,7 @@ impl ViewServer {
                                 nullifier,
                                 position,
                                 source,
+                                return_address: None,
                             };
                             self.notes
                                 .insert(spendable_note.note_commitment, spendable_note.clone());

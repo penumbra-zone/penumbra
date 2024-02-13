@@ -1,11 +1,8 @@
 [package]
 name = "penumbra-wasm"
-version = "0.64.1"
-authors = [
-    "Valentine <valentine@zpoken.io>",
-    "Gabe R. <gabe@penumbralabs.xyz"
-]
-edition = "2021"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -15,46 +12,36 @@ default = ["console_error_panic_hook"]
 mock-database = []
 
 [dependencies]
-penumbra-asset         = { path = "../core/asset" }
-penumbra-chain         = { path = "../core/component/chain", default-features = false }
-penumbra-compact-block = { path = "../core/component/compact-block", default-features = false }
-penumbra-dex           = { path = "../core/component/dex", default-features = false }
-penumbra-fee           = { path = "../core/component/fee", default-features = false }
-penumbra-governance    = { path = "../core/component/governance", default-features = false }
-penumbra-ibc           = { path = "../core/component/ibc", default-features = false }
-penumbra-keys          = { path = "../core/keys" }
-penumbra-num           = { path = "../core/num" }
-penumbra-proof-params  = { path = "../crypto/proof-params", default-features = false }
-penumbra-proto         = { path = "../proto", default-features = false }
-penumbra-sct           = { path = "../core/component/sct", default-features = false }
-penumbra-shielded-pool = { path = "../core/component/shielded-pool", default-features = false }
-penumbra-stake         = { path = "../core/component/stake", default-features = false }
-penumbra-tct           = { path = "../crypto/tct" }
-penumbra-transaction   = { path = "../core/transaction", default-features = false }
-
-anyhow                   = "1.0.75"
-ark-ff                   = { version = "0.4.2", features = ["std"] }
-base64                   = "0.21.2"
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-compact-block = {workspace = true, default-features = false}
+penumbra-dex = {workspace = true, default-features = false}
+penumbra-fee = {workspace = true, default-features = false}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = false}
+anyhow = {workspace = true}
+ark-ff = {workspace = true, features = ["std"], default-features = true}
+base64 = {workspace = true}
 console_error_panic_hook = { version = "0.1.7", optional = true }
-decaf377                 = { version = "0.5", features = ["r1cs"] }
-hex                      = "0.4.3"
-indexed_db_futures       = "0.3.0"
-rand_core                = { version = "0.6.4", features = ["getrandom"] }
-serde                    = { version = "1.0.186", features = ["derive"] }
-serde-wasm-bindgen       = "0.5.0"
-thiserror                = "1.0"
-wasm-bindgen             = "0.2.87"
-wasm-bindgen-futures     = "0.4.37"
-web-sys                  = { version = "0.3.64", features = ["console"] }
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+hex = {workspace = true}
+indexed_db_futures = "0.3.0"
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+serde-wasm-bindgen = "0.5.0"
+thiserror = {workspace = true}
+wasm-bindgen = "0.2.87"
+wasm-bindgen-futures = "0.4.37"
+web-sys = { version = "0.3.64", features = ["console"] }
 
 [dev-dependencies]
-wasm-bindgen-test        = "0.3.37"
-serde_json               = "1.0.107"
-
-# Profiles are ignored for crates within a workspace.
-# In order to customize the profile for wasm, we must
-# either break the crate out of the workspace, or set
-# the profile options at the workspace level, affecting
-# all crates.
-# [profile.release]
-# lto = true
+wasm-bindgen-test = "0.3.37"
+serde_json = {workspace = true}

@@ -10,6 +10,8 @@ use penumbra_txhash::TransactionContext;
 
 mod submit;
 
+use crate::PenumbraHost;
+
 use super::ActionHandler;
 use cnidarium_component::ActionHandler as _;
 
@@ -41,7 +43,7 @@ impl ActionHandler for Action {
             Action::IbcRelay(action) => {
                 action
                     .clone()
-                    .with_handler::<Ics20Transfer>()
+                    .with_handler::<Ics20Transfer, PenumbraHost>()
                     .check_stateless(())
                     .await
             }
@@ -78,7 +80,7 @@ impl ActionHandler for Action {
 
                 action
                     .clone()
-                    .with_handler::<Ics20Transfer>()
+                    .with_handler::<Ics20Transfer, PenumbraHost>()
                     .check_stateful(state)
                     .await
             }
@@ -111,7 +113,7 @@ impl ActionHandler for Action {
             Action::IbcRelay(action) => {
                 action
                     .clone()
-                    .with_handler::<Ics20Transfer>()
+                    .with_handler::<Ics20Transfer, PenumbraHost>()
                     .execute(state)
                     .await
             }

@@ -8,7 +8,7 @@ use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use penumbra_fee::Fee;
 use penumbra_proto::{
-    core::keys::v1alpha1 as pb_keys, penumbra::core::component::dex::v1alpha1 as pb, DomainType,
+    core::keys::v1 as pb_keys, penumbra::core::component::dex::v1 as pb, DomainType,
 };
 use penumbra_tct::StateCommitment;
 use poseidon377::{hash_1, hash_4, hash_7};
@@ -143,6 +143,20 @@ impl SwapPlaintext {
         SwapPayload {
             encrypted_swap: SwapCiphertext(ciphertext),
             commitment,
+        }
+    }
+
+    pub fn delta_1_value(&self) -> Value {
+        Value {
+            amount: self.delta_1_i,
+            asset_id: self.trading_pair.asset_1,
+        }
+    }
+
+    pub fn delta_2_value(&self) -> Value {
+        Value {
+            amount: self.delta_2_i,
+            asset_id: self.trading_pair.asset_2,
         }
     }
 

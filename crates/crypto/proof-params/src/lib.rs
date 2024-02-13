@@ -1,4 +1,7 @@
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use anyhow::{bail, Result};
 use ark_groth16::{PreparedVerifyingKey, ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;

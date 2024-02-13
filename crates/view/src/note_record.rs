@@ -1,6 +1,6 @@
 use penumbra_asset::Value;
-use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_keys::{keys::AddressIndex, Address, AddressView};
+use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note, Rseed};
 use penumbra_tct as tct;
@@ -20,6 +20,7 @@ pub struct SpendableNoteRecord {
     pub height_spent: Option<u64>,
     pub position: tct::Position,
     pub source: CommitmentSource,
+    pub return_address: Option<AddressView>,
 }
 
 impl DomainType for SpendableNoteRecord {
@@ -36,6 +37,7 @@ impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
             height_spent: v.height_spent.unwrap_or(0),
             position: v.position.into(),
             source: Some(v.source.into()),
+            return_address: v.return_address.map(Into::into),
         }
     }
 }
@@ -71,6 +73,7 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
                 .source
                 .ok_or_else(|| anyhow::anyhow!("missing note source"))?
                 .try_into()?,
+            return_address: v.return_address.map(TryInto::try_into).transpose()?,
         })
     }
 }
@@ -79,13 +82,24 @@ impl TryFrom<&Row<'_>> for SpendableNoteRecord {
     type Error = anyhow::Error;
 
     fn try_from(row: &Row<'_>) -> Result<Self, Self::Error> {
+        let return_address_bytes = row
+            .get::<_, Option<Vec<u8>>>("return_address")
+            // If there's no return_address column, fill in None
+            .ok()
+            .flatten();
+        let return_address = return_address_bytes
+            .map(|b| {
+                // Address is not proto-encoded
+                Address::try_from(b)
+            })
+            .transpose()?
+            .map(|a| AddressView::Opaque { address: a });
         Ok(SpendableNoteRecord {
             address_index: row.get::<_, Vec<u8>>("address_index")?[..].try_into()?,
             nullifier: row.get::<_, Vec<u8>>("nullifier")?[..].try_into()?,
             height_created: row.get("height_created")?,
             height_spent: row.get("height_spent")?,
             position: row.get::<_, u64>("position")?.into(),
-            source: CommitmentSource::decode(&row.get::<_, Vec<u8>>("source")?[..])?,
             note_commitment: row.get::<_, Vec<u8>>("note_commitment")?[..].try_into()?,
             note: Note::from_parts(
                 row.get::<_, Vec<u8>>("address")?[..].try_into()?,
@@ -95,6 +109,8 @@ impl TryFrom<&Row<'_>> for SpendableNoteRecord {
                 },
                 Rseed(row.get::<_, [u8; 32]>("rseed")?),
             )?,
+            source: CommitmentSource::decode(&row.get::<_, Vec<u8>>("source")?[..])?,
+            return_address,
         })
     }
 }

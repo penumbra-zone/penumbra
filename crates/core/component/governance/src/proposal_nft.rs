@@ -12,7 +12,7 @@ use penumbra_asset::asset;
 pub struct ProposalNft {
     proposal_id: u64,
     proposal_state: Kind,
-    base_denom: asset::DenomMetadata,
+    base_denom: asset::Metadata,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,7 +94,7 @@ impl ProposalNft {
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn denom(&self) -> asset::DenomMetadata {
+    pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 
@@ -119,10 +119,10 @@ impl ProposalNft {
     }
 }
 
-impl TryFrom<asset::DenomMetadata> for ProposalNft {
+impl TryFrom<asset::Metadata> for ProposalNft {
     type Error = anyhow::Error;
 
-    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::Metadata) -> Result<Self, Self::Error> {
         let base_string = base_denom.to_string();
 
         // Note: this regex must be in sync with asset::REGISTRY

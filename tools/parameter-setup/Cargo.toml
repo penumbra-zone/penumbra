@@ -1,26 +1,26 @@
 [package]
 name = "penumbra-parameter-setup"
-version = "0.1.0"
-edition = "2021"
+version = {workspace = true}
+edition = {workspace = true}
 publish = false
 
 [dependencies]
-penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup", features = [
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-proof-setup = {workspace = true, features = [
     "parallel",
-] }
-penumbra-dex = { path = "../../crates/core/component/dex/" }
-penumbra-community-pool = { path = "../../crates/core/component/community-pool/", features = [
+]}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-community-pool = {workspace = true, features = [
     "component",
-] }
-penumbra-governance = { path = "../../crates/core/component/governance/" }
-penumbra-shielded-pool = { path = "../../crates/core/component/shielded-pool/", features = [
+], default-features = true}
+penumbra-governance = {workspace = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, features = [
     "parallel",
-] }
-penumbra-stake = { path = "../../crates/core/component/stake/", features = [
+], default-features = true}
+penumbra-stake = {workspace = true, features = [
     "component",
-] }
-ark-groth16 = "0.4"
-ark-serialize = "0.4"
-decaf377 = { version = "0.5", features = ["r1cs"] }
-rand_core = "0.6.4"
+], default-features = true}
+ark-groth16 = {workspace = true}
+ark-serialize = {workspace = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+rand_core = {workspace = true}

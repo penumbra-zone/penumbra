@@ -8,7 +8,7 @@ use poseidon377::hash_2;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, serializers::bech32str, DomainType};
+use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str, DomainType};
 
 use crate::keys::wallet_id::WalletId;
 use crate::{
@@ -57,7 +57,7 @@ impl FullViewingKey {
         // WART: this can't cleanly forward to a method on the IVK,
         // because the IVK doesn't know the WalletId.
         if self.incoming().views_address(&address) {
-            AddressView::Visible {
+            AddressView::Decoded {
                 index: self.incoming().index_for_diversifier(address.diversifier()),
                 wallet_id: self.wallet_id(),
                 address,

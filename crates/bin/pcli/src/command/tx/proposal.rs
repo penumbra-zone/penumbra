@@ -5,6 +5,8 @@ use penumbra_governance::{proposal::ChangedAppParameters, Proposal, ProposalPayl
 use penumbra_proto::DomainType;
 use penumbra_transaction::plan::TransactionPlan;
 
+use super::FeeTier;
+
 #[derive(Debug, clap::Subcommand)]
 pub enum ProposalCmd {
     /// Make a template file for a new proposal.
@@ -27,6 +29,9 @@ pub enum ProposalCmd {
         /// The amount of the staking token to deposit alongside the proposal.
         #[clap(long)]
         deposit_amount: u64,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Withdraw a governance proposal that you previously submitted.
     Withdraw {
@@ -39,6 +44,9 @@ pub enum ProposalCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
     ///
@@ -51,6 +59,9 @@ pub enum ProposalCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
 }
 
@@ -86,13 +97,15 @@ impl ProposalKindCmd {
             ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
                 old: Box::new(app_params.as_changed_params()),
                 new: Box::new(ChangedAppParameters {
-                    chain_params: None,
                     community_pool_params: None,
-                    ibc_params: None,
-                    stake_params: None,
-                    fee_params: None,
-                    governance_params: None,
                     distributions_params: None,
+                    ibc_params: None,
+                    fee_params: None,
+                    funding_params: None,
+                    governance_params: None,
+                    sct_params: None,
+                    shielded_pool_params: None,
+                    stake_params: None,
                 }),
             },
             ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {

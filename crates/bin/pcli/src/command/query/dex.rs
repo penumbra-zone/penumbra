@@ -3,21 +3,21 @@ use comfy_table::{presets, Table};
 use futures::{Stream, StreamExt, TryStreamExt};
 use std::pin::Pin;
 
-use penumbra_asset::{asset, asset::DenomMetadata, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_dex::{
     lp::position::{self, Position},
     BatchSwapOutputData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 use penumbra_proto::core::component::{
-    dex::v1alpha1::{
+    dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient,
         simulation_service_client::SimulationServiceClient, ArbExecutionRequest,
         BatchSwapOutputDataRequest, LiquidityPositionByIdRequest, LiquidityPositionsByPriceRequest,
         LiquidityPositionsRequest, SimulateTradeRequest, SwapExecutionRequest,
     },
-    shielded_pool::v1alpha1::{
+    shielded_pool::v1::{
         query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-        DenomMetadataByIdRequest,
+        AssetMetadataByIdRequest,
     },
 };
 use penumbra_view::ViewClient;
@@ -96,7 +96,6 @@ impl DexCmd {
     pub async fn get_batch_outputs(
         &self,
         app: &mut App,
-        chain_id: String,
         height: &u64,
         trading_pair: &TradingPair,
     ) -> Result<BatchSwapOutputData> {
@@ -105,7 +104,6 @@ impl DexCmd {
             .batch_swap_output_data(BatchSwapOutputDataRequest {
                 height: *height,
                 trading_pair: Some((*trading_pair).into()),
-                chain_id,
             })
             .await?
             .into_inner()
@@ -156,7 +154,7 @@ impl DexCmd {
         input: Value,
         output: asset::Id,
     ) -> Result<SwapExecution> {
-        use penumbra_proto::core::component::dex::v1alpha1::simulate_trade_request::{
+        use penumbra_proto::core::component::dex::v1::simulate_trade_request::{
             routing::Setting, Routing,
         };
         let mut client = SimulationServiceClient::new(app.pd_channel().await?);
@@ -180,12 +178,8 @@ impl DexCmd {
         &self,
         mut client: DexQueryServiceClient<Channel>,
         include_closed: bool,
-        chain_id: Option<String>,
     ) -> Result<Pin<Box<dyn Stream<Item = Result<Position>> + Send + 'static>>> {
-        let stream = client.liquidity_positions(LiquidityPositionsRequest {
-            include_closed,
-            chain_id: chain_id.unwrap_or_default(),
-        });
+        let stream = client.liquidity_positions(LiquidityPositionsRequest { include_closed });
         let stream = stream.await?.into_inner();
 
         Ok(stream
@@ -312,26 +306,20 @@ impl DexCmd {
     ) -> Result<()> {
         let mut client = ShieldedPoolQueryServiceClient::new(app.pd_channel().await?);
 
-        let chain_id = app.view().app_params().await?.chain_params.chain_id;
+        let outputs = self.get_batch_outputs(app, height, trading_pair).await?;
 
-        let outputs = self
-            .get_batch_outputs(app, chain_id.clone(), height, trading_pair)
-            .await?;
-
-        let asset_1: DenomMetadata = client
-            .denom_metadata_by_id(DenomMetadataByIdRequest {
+        let asset_1: Metadata = client
+            .asset_metadata_by_id(AssetMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_1().into()),
-                chain_id: chain_id.clone(),
             })
             .await?
             .into_inner()
             .denom_metadata
             .context("denom metadata for asset 1 not found")?
             .try_into()?;
-        let asset_2: DenomMetadata = client
-            .denom_metadata_by_id(DenomMetadataByIdRequest {
+        let asset_2: Metadata = client
+            .asset_metadata_by_id(AssetMetadataByIdRequest {
                 asset_id: Some(trading_pair.asset_2().into()),
-                chain_id: chain_id.clone(),
             })
             .await?
             .into_inner()
@@ -408,10 +396,9 @@ impl DexCmd {
             }
             DexCmd::AllPositions { include_closed } => {
                 let client = DexQueryServiceClient::new(app.pd_channel().await?);
-                let chain_id = app.view().app_params().await?.chain_params.chain_id;
 
                 let positions_stream = self
-                    .get_all_liquidity_positions(client.clone(), *include_closed, Some(chain_id))
+                    .get_all_liquidity_positions(client.clone(), *include_closed)
                     .await?;
 
                 let asset_cache = app.view().assets().await?;

@@ -88,6 +88,12 @@ ingressRoute:
   # These config objects must already exist in the API, i.e. create them out of band.
   middlewares: []
 
+# Whether to place the application in "maintenance mode", effectively stopping pd and cometbft,
+# allowing an administrator to inspect and munge local state, e.g. to perform a chain upgrade.
+# Makes two changes: 1) sets the `command` for the containers to `sleep infinity`; and 2) sets
+# the uid for the pd container to 0/root
+maintenanceMode: false
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -106,32 +112,25 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  # The Penumbra container sets 1000 as default UID. We'll use that by default.
+  # See also `maintenanceMode=true`, which overrides this to 0.
+  runAsUser: 1000
+
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-  # runAsUser: 1000
 
-# N.B. Ingress is not used. In order to have HTTPS support
-# for pd's gRPC support, you'll need to configure support for h2c.
-# Or, you can add an LB service for pd and enable the auto https setting.
-ingress:
+# The chart uses a top-level `ingressRoute` rather than `ingress` value map,
+# because use of Traefik CRD `IngressRoute` is required for h2c support,
+# so that pd's gRPC service can have an HTTPS reverse proxy in front of it.
+ingressRoute:
   enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+    pd: grpc.chart-example.local
+    tm: rpc.chart-example.local
 
 resources: {}
   # limits:

@@ -1,9 +1,9 @@
 use cnidarium::Storage;
 use penumbra_asset::asset;
-use penumbra_chain::component::StateReadExt as _;
-use penumbra_proto::core::component::shielded_pool::v1alpha1::{
-    query_service_server::QueryService, DenomMetadataByIdRequest, DenomMetadataByIdResponse,
+use penumbra_proto::core::component::shielded_pool::v1::{
+    query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
 };
+
 use tonic::Status;
 use tracing::instrument;
 
@@ -23,15 +23,11 @@ impl Server {
 #[tonic::async_trait]
 impl QueryService for Server {
     #[instrument(skip(self, request))]
-    async fn denom_metadata_by_id(
+    async fn asset_metadata_by_id(
         &self,
-        request: tonic::Request<DenomMetadataByIdRequest>,
-    ) -> Result<tonic::Response<DenomMetadataByIdResponse>, Status> {
+        request: tonic::Request<AssetMetadataByIdRequest>,
+    ) -> Result<tonic::Response<AssetMetadataByIdResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
 
         let request = request.into_inner();
         let id: asset::Id = request
@@ -48,7 +44,7 @@ impl QueryService for Server {
         let rsp = match denom {
             Some(denom) => {
                 tracing::debug!(?id, ?denom, "found denom");
-                DenomMetadataByIdResponse {
+                AssetMetadataByIdResponse {
                     denom_metadata: Some(denom.into()),
                 }
             }

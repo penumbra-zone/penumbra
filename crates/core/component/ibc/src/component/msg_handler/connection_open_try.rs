@@ -1,4 +1,4 @@
-use crate::component::proof_verification;
+use crate::component::{proof_verification, HostInterface};
 use crate::version::pick_connection_version;
 use crate::IBC_COMMITMENT_PREFIX;
 use anyhow::{Context, Result};
@@ -13,13 +13,12 @@ use ibc_types::{
         State as ConnectionState,
     },
 };
-use penumbra_chain::component::StateReadExt as _;
 
 use crate::component::{
     client::StateReadExt as _,
-    client_counter::validate_penumbra_client_state,
     connection::{StateReadExt as _, StateWriteExt as _},
     connection_counter::SUPPORTED_VERSIONS,
+    ics02_validation::validate_penumbra_client_state,
     MsgHandler,
 };
 
@@ -30,7 +29,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // Validate a ConnectionOpenTry message, which is sent to us by a counterparty chain that
@@ -50,11 +49,11 @@ impl MsgHandler for MsgConnectionOpenTry {
         // POSTERIOR STATE: (INIT, TRYOPEN)
         // verify that the consensus height is correct
 
-        consensus_height_is_correct(&mut state, self).await?;
+        consensus_height_is_correct::<&S, HI>(&mut state, self).await?;
 
         // verify that the client state (which is a Penumbra client) is well-formed for a
         // penumbra client.
-        penumbra_client_state_is_well_formed(&mut state, self).await?;
+        penumbra_client_state_is_well_formed::<&S, HI>(&mut state, self).await?;
 
         // TODO(erwan): how to handle this with ibc-rs@0.23.0?
         // if this msg provides a previous_connection_id to resume from, then check that the
@@ -155,7 +154,7 @@ impl MsgHandler for MsgConnectionOpenTry {
         )
         .context("couldn't verify client consensus state")?;
 
-        // VALIDATION SUCCESSSFUL, now execute
+        // VALIDATION SUCCESSFUL, now execute
         //
         // new_conn is the new connection that we will open on this chain
         let mut new_conn = ConnectionEnd {
@@ -197,13 +196,13 @@ impl MsgHandler for MsgConnectionOpenTry {
         Ok(())
     }
 }
-async fn consensus_height_is_correct<S: StateRead>(
+async fn consensus_height_is_correct<S: StateRead, HI: HostInterface>(
     state: S,
     msg: &MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
     let current_height = IBCHeight::new(
-        state.get_revision_number().await?,
-        state.get_block_height().await?,
+        HI::get_revision_number(&state).await?,
+        HI::get_block_height(&state).await?,
     )?;
     if msg.consensus_height_of_b_on_a >= current_height {
         anyhow::bail!("consensus height is greater than the current block height",);
@@ -211,12 +210,12 @@ async fn consensus_height_is_correct<S: StateRead>(
 
     Ok(())
 }
-async fn penumbra_client_state_is_well_formed<S: StateRead>(
+async fn penumbra_client_state_is_well_formed<S: StateRead, HI: HostInterface>(
     state: S,
     msg: &MsgConnectionOpenTry,
 ) -> anyhow::Result<()> {
-    let height = state.get_block_height().await?;
-    let chain_id = state.get_chain_id().await?;
+    let height = HI::get_block_height(&state).await?;
+    let chain_id = HI::get_chain_id(&state).await?;
     validate_penumbra_client_state(msg.client_state_of_b_on_a.clone(), &chain_id, height)?;
 
     Ok(())

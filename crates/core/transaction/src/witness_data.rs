@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 use penumbra_shielded_pool::note;
 use penumbra_tct as tct;
 use serde::{Deserialize, Serialize};

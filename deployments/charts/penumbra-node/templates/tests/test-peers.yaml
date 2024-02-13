@@ -1,6 +1,6 @@
 {{ $count := (.Values.nodes | len | int) }}
 {{ range $i,$e := until $count }}
-{{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
+{{ $fn_name := printf "%s-%d" $.Release.Name $i }}
 ---
 apiVersion: v1
 kind: Pod

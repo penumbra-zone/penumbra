@@ -1,7 +1,7 @@
 use anyhow::Result;
 use comfy_table::{presets, Table};
 
-use penumbra_keys::FullViewingKey;
+use penumbra_keys::AddressView;
 use penumbra_sct::CommitmentSource;
 use penumbra_view::ViewClient;
 
@@ -17,7 +17,7 @@ impl BalanceCmd {
         false
     }
 
-    pub async fn exec<V: ViewClient>(&self, _fvk: &FullViewingKey, view: &mut V) -> Result<()> {
+    pub async fn exec<V: ViewClient>(&self, view: &mut V) -> Result<()> {
         let asset_cache = view.assets().await?;
 
         // Initialize the table
@@ -27,7 +27,7 @@ impl BalanceCmd {
         let notes = view.unspent_notes_by_account_and_asset().await?;
 
         if self.by_note {
-            table.set_header(vec!["Account", "Value", "Source"]);
+            table.set_header(vec!["Account", "Value", "Source", "Sender"]);
 
             let rows = notes
                 .iter()
@@ -39,21 +39,23 @@ impl BalanceCmd {
                                 *index,
                                 asset.value(record.note.amount()),
                                 record.source.clone(),
+                                record.return_address.clone(),
                             )
                         })
                     })
                 })
                 // Exclude withdrawn LPNFTs.
-                .filter(|(_, value, _)| match asset_cache.get(&value.asset_id) {
+                .filter(|(_, value, _, _)| match asset_cache.get(&value.asset_id) {
                     None => true,
                     Some(denom) => !denom.is_withdrawn_position_nft(),
                 });
 
-            for (index, value, source) in rows {
+            for (index, value, source, return_address) in rows {
                 table.add_row(vec![
                     format!("# {}", index),
                     value.format(&asset_cache),
                     format_source(&source),
+                    format_return_address(&return_address),
                 ]);
             }
 
@@ -109,5 +111,19 @@ fn format_source(source: &CommitmentSource) -> String {
             "ICS20 packet {} via {} from {}",
             packet_seq, channel_id, sender
         ),
+    }
+}
+
+fn format_return_address(return_address: &Option<penumbra_keys::AddressView>) -> String {
+    match return_address {
+        None => "Unknown".to_owned(),
+        Some(AddressView::Opaque { address }) => address.display_short_form(),
+        Some(AddressView::Decoded { index, .. }) => {
+            if index.is_ephemeral() {
+                format!("[account {} (IBC deposit address)]", index.account)
+            } else {
+                format!("[account {}]", index.account)
+            }
+        }
     }
 }

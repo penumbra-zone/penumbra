@@ -1,16 +1,12 @@
 [package]
 name = "penumbra-tct-property-test"
-version = "0.64.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [dev-dependencies]
-penumbra-tct = { path = "../../crypto/tct", features = ["arbitrary"] }
-
-anyhow = "1"
-static_assertions = "1"
-proptest = "1"
-proptest-derive = "0.3"
-tokio = { version = "1.21.1", features = ["full"] }
-futures = "0.3"
+penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+anyhow = {workspace = true}
+proptest = {workspace = true}
+proptest-derive = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+futures = {workspace = true}

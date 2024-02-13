@@ -1,3 +1,6 @@
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use std::net::SocketAddr;
 use std::path::Path;
 
@@ -10,13 +13,13 @@ use penumbra_custody::soft_kms::{self, SoftKms};
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
-    core::app::v1alpha1::{
+    core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    custody::v1alpha1::custody_protocol_service_server::CustodyProtocolServiceServer,
-    view::v1alpha1::view_protocol_service_server::ViewProtocolServiceServer,
+    custody::v1::custody_service_server::CustodyServiceServer,
+    view::v1::view_service_server::ViewServiceServer,
 };
-use penumbra_view::{Storage, ViewService};
+use penumbra_view::{Storage, ViewServer};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 
@@ -33,6 +36,8 @@ pub use proxy::{
     GovernanceQueryProxy, SctQueryProxy, ShieldedPoolQueryProxy, StakeQueryProxy,
     TendermintProxyProxy,
 };
+
+use crate::proxy::FeeQueryProxy;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -85,7 +90,7 @@ pub enum Command {
     /// Generate configs for `pclientd` in view or custody mode.
     Init {
         /// If provided, initialize in view mode with the given full viewing key.
-        #[clap(long, display_order = 100)]
+        #[clap(long, display_order = 100, value_name = "FULL_VIEWING_KEY")]
         view: Option<String>,
         /// If provided, initialize in custody mode with the given seed phrase.
         ///
@@ -149,9 +154,7 @@ impl Opt {
         let mut client = AppQueryServiceClient::connect(grpc_url.to_string()).await?;
 
         let params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: String::new(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .try_into()?;
@@ -307,19 +310,17 @@ impl Opt {
                 let dex_query_proxy = DexQueryProxy(proxy_channel.clone());
                 let dex_simulation_proxy = DexSimulationProxy(proxy_channel.clone());
                 let sct_query_proxy = SctQueryProxy(proxy_channel.clone());
+                let fee_query_proxy = FeeQueryProxy(proxy_channel.clone());
                 let shielded_pool_query_proxy = ShieldedPoolQueryProxy(proxy_channel.clone());
                 let chain_query_proxy = ChainQueryProxy(proxy_channel.clone());
                 let stake_query_proxy = StakeQueryProxy(proxy_channel.clone());
                 let compact_block_query_proxy = CompactBlockQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service = ViewProtocolServiceServer::new(
-                    ViewService::new(storage, config.grpc_url).await?,
-                );
+                let view_service =
+                    ViewServiceServer::new(ViewServer::new(storage, config.grpc_url).await?);
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
-                    CustodyProtocolServiceServer::new(SoftKms::new(
-                        kms_config.spend_key.clone().into(),
-                    ))
+                    CustodyServiceServer::new(SoftKms::new(kms_config.spend_key.clone().into()))
                 });
 
                 let server = Server::builder()
@@ -331,6 +332,7 @@ impl Opt {
                     .add_service(tonic_web::enable(dex_query_proxy))
                     .add_service(tonic_web::enable(dex_simulation_proxy))
                     .add_service(tonic_web::enable(sct_query_proxy))
+                    .add_service(tonic_web::enable(fee_query_proxy))
                     .add_service(tonic_web::enable(shielded_pool_query_proxy))
                     .add_service(tonic_web::enable(chain_query_proxy))
                     .add_service(tonic_web::enable(stake_query_proxy))

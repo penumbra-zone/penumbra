@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use ibc_types::core::channel::{
@@ -14,7 +14,7 @@ use crate::component::{
     client::StateReadExt,
     connection::StateReadExt as _,
     proof_verification::{commit_packet, PacketProofVerifier},
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -25,14 +25,19 @@ impl MsgHandler for MsgTimeout {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        H: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
         tracing::debug!(msg = ?self);
         let mut channel = state
             .get_channel(&self.packet.chan_on_a, &self.packet.port_on_a)
-            .await?
+            .await
+            .context("failed to get channel")?
             .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
         if !channel.state_matches(&ChannelState::Open) {
             anyhow::bail!("channel is not open");
@@ -52,7 +57,8 @@ impl MsgHandler for MsgTimeout {
 
         let connection = state
             .get_connection(&channel.connection_hops[0])
-            .await?
+            .await
+            .context("failed to get connection")?
             .ok_or_else(|| anyhow::anyhow!("connection not found for channel"))?;
 
         let chain_ts = state
@@ -68,7 +74,8 @@ impl MsgHandler for MsgTimeout {
         // verify that we actually sent this packet
         let commitment = state
             .get_packet_commitment(&self.packet)
-            .await?
+            .await
+            .context("failed to get packet commitment")?
             .ok_or_else(|| anyhow::anyhow!("packet commitment not found"))?;
         if commitment != commit_packet(&self.packet) {
             anyhow::bail!("packet commitment does not match");
@@ -82,18 +89,24 @@ impl MsgHandler for MsgTimeout {
 
             // in the case of a timed-out ordered packet, the counterparty should have
             // committed the next sequence number to their state
-            state.verify_packet_timeout_proof(&connection, self).await?;
+            state
+                .verify_packet_timeout_proof::<HI>(&connection, self)
+                .await
+                .context("failed to verify packet timeout proof")?;
         } else {
             // in the case of a timed-out unordered packet, the counterparty should not have
             // committed a receipt to the state.
             state
-                .verify_packet_timeout_absence_proof(&connection, self)
-                .await?;
+                .verify_packet_timeout_absence_proof::<HI>(&connection, self)
+                .await
+                .context("failed to verify packet timeout absence proof")?;
         }
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            H::timeout_packet_check(&mut state, self).await?;
+            H::timeout_packet_check(&mut state, self)
+                .await
+                .context("failed to execute handler for timeout_packet_check")?;
         } else {
             anyhow::bail!("invalid port id");
         }

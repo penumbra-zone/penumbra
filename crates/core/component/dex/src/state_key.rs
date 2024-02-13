@@ -59,6 +59,10 @@ pub fn pending_outputs() -> &'static str {
     "dex/pending_outputs"
 }
 
+pub fn aggregate_value() -> &'static str {
+    "dex/aggregate_value"
+}
+
 /// Encompasses non-consensus state keys.
 pub(crate) mod internal {
     use super::*;

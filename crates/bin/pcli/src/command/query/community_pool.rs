@@ -3,8 +3,8 @@ use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_asset::Value;
 use penumbra_proto::{
-    core::component::community_pool::v1alpha1::CommunityPoolAssetBalancesRequest,
-    penumbra::core::component::community_pool::v1alpha1::query_service_client::QueryServiceClient as CommunityPoolQueryServiceClient,
+    core::component::community_pool::v1::CommunityPoolAssetBalancesRequest,
+    penumbra::core::component::community_pool::v1::query_service_client::QueryServiceClient as CommunityPoolQueryServiceClient,
 };
 use penumbra_view::ViewClient;
 use std::io::{stdout, Write};
@@ -38,10 +38,8 @@ impl CommunityPoolCmd {
         });
 
         let mut client = CommunityPoolQueryServiceClient::new(app.pd_channel().await?);
-        let chain_id = app.view().app_params().await?.chain_params.chain_id;
         let balances = client
             .community_pool_asset_balances(CommunityPoolAssetBalancesRequest {
-                chain_id,
                 asset_ids: asset_id.map_or_else(std::vec::Vec::new, |id| vec![id.into()]),
             })
             .await?

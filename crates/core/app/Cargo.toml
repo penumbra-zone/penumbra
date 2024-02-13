@@ -1,81 +1,98 @@
 [package]
 name = "penumbra-app"
-version = "0.64.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-# Workspace dependencies
-cnidarium = { path = "../../cnidarium" }
-cnidarium-component = { path = "../../cnidarium-component" }
-penumbra-proto = { path = "../../proto", features = ["cnidarium"] }
-penumbra-tct = { path = "../../crypto/tct" }
-penumbra-proof-params = { path = "../../crypto/proof-params" }
-penumbra-asset = { path = "../asset" }
-penumbra-keys = { path = "../keys" }
-penumbra-txhash = { path = "../txhash" }
-penumbra-num = { path = "../num" }
-penumbra-chain = { path = "../component/chain", features = ["component"] }
-penumbra-shielded-pool = { path = "../component/shielded-pool", features = [
-    "component",
-] }
-penumbra-stake = { path = "../component/stake" }
-penumbra-governance = { path = "../component/governance" }
-penumbra-sct = { path = "../component/sct" }
-penumbra-fee = { path = "../component/fee" }
-penumbra-community-pool = { path = "../component/community-pool" }
-penumbra-dex = { path = "../component/dex" }
-penumbra-ibc = { path = "../component/ibc", features = ["component"] }
-penumbra-distributions = { path = "../component/distributions" }
-penumbra-compact-block = { path = "../component/compact-block" }
-penumbra-transaction = { path = "../transaction", features = ["parallel"] }
-
-# Penumbra dependencies
-decaf377 = { version = "0.5" }
-decaf377-rdsa = { version = "0.7" }
-jmt = "0.9"
-tokio = { version = "1.21.1", features = ["full", "tracing"] }
-async-trait = "0.1.52"
-tonic = "0.10"
-futures = "0.3"
-anyhow = "1"
-tracing = "0.1"
-ark-ff = { version = "0.4", default_features = false }
-blake2b_simd = "0.5"
-bincode = "1.3.3"
-serde = { version = "1", features = ["derive"] }
-serde_with = "2.2"
-metrics = "0.19.0"
-sha2 = "0.9"
-serde_json = "1"
-serde_unit_struct = "0.1"
-bech32 = "0.8"
-im = "15.1.0"
-regex = "1.5"
-once_cell = "1.8"
-bitvec = "1"
-hex = "0.4"
-base64 = "0.20"
-tempfile = "3.3.0"
-prost = "0.12.3"
-rand_chacha = "0.3"
-parking_lot = "0.12"
-
-tendermint = "0.34.0"
-tendermint-proto = "0.34.0"
-tendermint-light-client-verifier = "0.34.0"
-ibc-types = { version = "0.11.0", default-features = false }
-ibc-proto = { version = "0.40.0", default-features = false, features = [
-    "server",
-] }
-
-[dev-dependencies]
-ed25519-consensus = "2"
-rand_core = "0.6"
-rand_chacha = "0.3"
-tracing-subscriber = "0.3"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
 
 [features]
 default = ["std"]
 std = ["ark-ff/std", "ibc-types/std"]
+
+[dependencies]
+cnidarium = {workspace = true, default-features = true}
+cnidarium-component = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, features = ["cnidarium"], default-features = true}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-txhash = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, features = [
+    "component",
+], default-features = true}
+penumbra-stake = {workspace = true, default-features = true}
+penumbra-governance = {workspace = true, default-features = true}
+penumbra-sct = {workspace = true, default-features = true}
+penumbra-fee = {workspace = true, default-features = true}
+penumbra-funding = {workspace = true, default-features = true}
+penumbra-community-pool = {workspace = true, default-features = true}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-ibc = {workspace = true, features = ["component"], default-features = true}
+penumbra-distributions = {workspace = true, default-features = true}
+penumbra-compact-block = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-genesis = {workspace = true}
+decaf377 = {workspace = true, default-features = true}
+decaf377-rdsa = {workspace = true}
+jmt = {workspace = true}
+tokio = {workspace = true, features = ["full", "tracing"]}
+tokio-util = {workspace = true}
+async-trait = {workspace = true}
+tonic = {workspace = true}
+futures = {workspace = true}
+anyhow = {workspace = true}
+tracing = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+blake2b_simd = {workspace = true}
+bincode = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_with = {workspace = true}
+metrics = {workspace = true}
+sha2 = {workspace = true}
+serde_json = {workspace = true}
+serde_unit_struct = {workspace = true}
+bech32 = {workspace = true}
+im = {workspace = true}
+regex = {workspace = true}
+once_cell = {workspace = true}
+bitvec = {workspace = true}
+hex = {workspace = true}
+base64 = {workspace = true}
+tempfile = {workspace = true}
+prost = {workspace = true}
+rand_chacha = {workspace = true}
+parking_lot = {workspace = true}
+tendermint = {workspace = true}
+tendermint-proto = {workspace = true}
+tendermint-light-client-verifier = {workspace = true}
+ibc-types = {workspace = true, default-features = false}
+ibc-proto = {workspace = true, default-features = false, features = [
+    "server",
+]}
+tower = {workspace = true, features = ["full"]}
+tower-abci = "0.11"
+tower-actor = "0.1.0"
+tower-service = {workspace = true}
+penumbra-tower-trace = { path = "../../util/tower-trace" }
+ics23 = {workspace = true}
+
+[dev-dependencies]
+ed25519-consensus = {workspace = true}
+penumbra-mock-consensus = {workspace = true}
+penumbra-mock-client = {workspace = true}
+rand_core = {workspace = true}
+rand_chacha = {workspace = true}
+tracing-subscriber = {workspace = true}
+
+# Enable the feature flags to get proving keys when running tests.
+[dev-dependencies.penumbra-proof-params]
+workspace = true
+features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+]

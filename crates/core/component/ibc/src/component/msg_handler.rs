@@ -21,12 +21,18 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 
+use super::HostInterface;
+
 /// Variant of ActionHandler defined locally (so it can be implemented for IBC
 /// message types) and tweaked (removing the separate check_stateless step).
 #[async_trait]
 pub(crate) trait MsgHandler {
-    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()>;
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn check_stateless<AH: AppHandlerCheck>(&self) -> Result<()>;
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         state: S,
     ) -> Result<()>;

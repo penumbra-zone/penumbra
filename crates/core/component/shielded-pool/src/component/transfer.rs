@@ -19,15 +19,13 @@ use ibc_types::{
     },
     transfer::acknowledgement::TokenTransferAcknowledgement,
 };
-use penumbra_asset::{asset, asset::DenomMetadata, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::component::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto,
-    StateWriteProto,
+    penumbra::core::component::ibc::v1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
 use penumbra_sct::CommitmentSource;
-use prost::Message;
 
 use penumbra_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
@@ -52,7 +50,7 @@ use penumbra_ibc::component::{
 fn is_source(
     source_port: &PortId,
     source_channel: &ChannelId,
-    denom: &DenomMetadata,
+    denom: &Metadata,
     is_refund: bool,
 ) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
@@ -137,7 +135,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
             );
 
             // update supply tracking of burned note
-            self.update_token_supply(&withdrawal.denom.id(), -(withdrawal.amount.value() as i128))
+            self.decrease_token_supply(&withdrawal.denom.id(), withdrawal.amount)
                 .await
                 .expect("couldn't update token supply in ics20 withdrawal!");
         }
@@ -217,8 +215,9 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
-        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-        let denom: asset::DenomMetadata = packet_data.denom.as_str().try_into()?;
+        let packet_data: FungibleTokenPacketData =
+            serde_json::from_slice(msg.packet.data.as_slice())?;
+        let denom: asset::Metadata = packet_data.denom.as_str().try_into()?;
 
         if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
             // check if we have enough balance to refund tokens to sender
@@ -261,7 +260,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     // NOTE: spec says proto but thsi is actualy JSON according to the ibc-go implementation
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())
         .with_context(|| "failed to decode FTPD packet")?;
-    let denom: asset::DenomMetadata = packet_data
+    let denom: asset::Metadata = packet_data
         .denom
         .as_str()
         .try_into()
@@ -284,7 +283,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             source_chan = msg.packet.chan_on_a
         );
 
-        let unprefixed_denom: asset::DenomMetadata = packet_data
+        let unprefixed_denom: asset::Metadata = packet_data
             .denom
             .replace(&prefix, "")
             .as_str()
@@ -355,7 +354,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
         );
 
-        let denom: asset::DenomMetadata = prefixed_denomination
+        let denom: asset::Metadata = prefixed_denomination
             .as_str()
             .try_into()
             .context("unable to parse denom in ics20 transfer as DenomMetadata")?;
@@ -404,8 +403,8 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
 async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
-    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-    let denom: asset::DenomMetadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
+    let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())?;
+    let denom: asset::Metadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
         .as_str()
         .try_into()
@@ -416,7 +415,10 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         .try_into()
         .context("couldn't decode amount in ics20 transfer timeout")?;
 
-    let receiver = Address::from_str(&packet_data.receiver)
+    // packet_data.sender is the original sender for this packet that was not committed on the
+    // other chain but was sent from penumbra. so, the penumbra refund receiver address is the
+    // sender
+    let receiver = Address::from_str(&packet_data.sender)
         .context("couldn't decode receiver address in ics20 timeout")?;
 
     let value: Value = Value {

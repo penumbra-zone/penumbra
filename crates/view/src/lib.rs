@@ -1,5 +1,7 @@
 #![deny(clippy::unwrap_used)]
-#![recursion_limit = "256"]
+#![recursion_limit = "512"]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 mod client;
 mod metrics;
 mod note_record;
@@ -18,7 +20,7 @@ pub use crate::metrics::register_metrics;
 pub use client::ViewClient;
 pub use note_record::SpendableNoteRecord;
 pub use planner::Planner;
-pub use service::ViewService;
+pub use service::ViewServer;
 pub use status::StatusStreamResponse;
 pub use storage::Storage;
 pub use swap_record::SwapRecord;

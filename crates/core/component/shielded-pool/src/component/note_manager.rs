@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_asset::Value;
 use penumbra_keys::Address;
-use penumbra_sct::component::{SctManager as _, StateReadExt as _};
+use penumbra_sct::component::tree::{SctManager, SctRead};
 use penumbra_sct::CommitmentSource;
 use penumbra_tct as tct;
 use tct::StateCommitment;
@@ -41,7 +41,7 @@ pub trait NoteManager: StateWrite {
         // is very slow, so instead we hash the current position.
 
         let position: u64 = self
-            .state_commitment_tree()
+            .get_sct()
             .await
             .position()
             .expect("state commitment tree is not full")
@@ -57,7 +57,7 @@ pub trait NoteManager: StateWrite {
 
         let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
         // Now record the note and update the total supply:
-        self.update_token_supply(&value.asset_id, value.amount.value() as i128)
+        self.increase_token_supply(&value.asset_id, value.amount)
             .await?;
         self.add_note_payload(note.payload(), source).await;
 

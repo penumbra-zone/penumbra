@@ -1,4 +1,7 @@
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 use decaf377_fmd as fmd;
 use decaf377_ka as ka;
 use decaf377_rdsa as rdsa;

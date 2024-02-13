@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_sct::{component::SourceContext as _, CommitmentSource};
+use penumbra_sct::{component::source::SourceContext, CommitmentSource};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
@@ -170,7 +170,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -233,7 +233,7 @@ mod tests {
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

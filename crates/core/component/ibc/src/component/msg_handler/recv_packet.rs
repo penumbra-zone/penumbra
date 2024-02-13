@@ -11,25 +11,28 @@ use ibc_types::core::{
     client::Height as IBCHeight,
     connection::State as ConnectionState,
 };
-use penumbra_chain::component::StateReadExt;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt},
     connection::StateReadExt as _,
     proof_verification::PacketProofVerifier,
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
 impl MsgHandler for MsgRecvPacket {
-    async fn check_stateless<H: AppHandlerCheck>(&self) -> Result<()> {
+    async fn check_stateless<AH>(&self) -> Result<()> {
         // NOTE: no additional stateless validation is possible
 
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -66,8 +69,8 @@ impl MsgHandler for MsgRecvPacket {
             anyhow::bail!("connection for channel is not open");
         }
 
-        let block_height = state.get_block_height().await?;
-        let height = IBCHeight::new(state.get_revision_number().await?, block_height)?;
+        let block_height = HI::get_block_height(&state).await?;
+        let height = IBCHeight::new(HI::get_revision_number(&state).await?, block_height)?;
 
         if self.packet.timeout_height_on_b.has_expired(height) {
             anyhow::bail!("packet has timed out");
@@ -78,7 +81,7 @@ impl MsgHandler for MsgRecvPacket {
         // TODO: is this correct logic?
         // If the packet has no timeout timestamp, what do we do?
         if let Some(packet_timeout) = packet_timeout {
-            let block_time = state.get_block_timestamp().await?;
+            let block_time = HI::get_block_timestamp(&state).await?;
             if block_time >= packet_timeout {
                 anyhow::bail!(
                     "packet has timed out: block time {:?} >= packet timeout {:?}",
@@ -89,7 +92,7 @@ impl MsgHandler for MsgRecvPacket {
         }
 
         state
-            .verify_packet_recv_proof(&connection, self)
+            .verify_packet_recv_proof::<HI>(&connection, self)
             .await
             .with_context(|| format!("packet {:?} failed to verify", self.packet))?;
 
@@ -107,7 +110,7 @@ impl MsgHandler for MsgRecvPacket {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            H::recv_packet_check(&mut state, self).await?;
+            AH::recv_packet_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -147,8 +150,9 @@ impl MsgHandler for MsgRecvPacket {
         );
 
         let transfer = PortId::transfer();
+        // todo: should this be part of the app handler logic?
         if self.packet.port_on_b == transfer {
-            H::recv_packet_execute(state, self).await;
+            AH::recv_packet_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

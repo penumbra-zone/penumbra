@@ -13,7 +13,7 @@ use penumbra_proof_setup::{
     single::log::Hashable,
 };
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::{
         self as pb, participate_request::Contribution as PBContribution,
     },
     Message,
@@ -394,12 +394,7 @@ impl Storage {
             let hash: String = hex::encode_upper(hash_bytes);
             let address_bytes: Vec<u8> = row.get(3)?;
             let address: Address = address_bytes.try_into()?;
-            out.push((
-                slot,
-                hash,
-                date_time.to_string(),
-                address.display_short_form(),
-            ));
+            out.push((slot, hash, date_time.to_string(), format!("{}", address)));
         }
 
         Ok(out)

@@ -72,6 +72,12 @@ service:
   externalTrafficPolicy: Local
   port: 26656
 
+# Whether to place the application in "maintenance mode", effectively stopping pd and cometbft,
+# allowing an administrator to inspect and munge local state, e.g. to perform a chain upgrade.
+# Makes two changes: 1) sets the `command` for the containers to `sleep infinity`; and 2) sets
+# the uid for the pd container to 0/root
+maintenanceMode: false
+
 # configure PVCs for disk data
 persistence:
   enabled: false
@@ -105,13 +111,16 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  # The Penumbra container sets 1000 as default UID. We'll use that by default.
+  # See also `maintenanceMode=true`, which overrides this to 0.
+  runAsUser: 1000
+
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-  # runAsUser: 1000
 
 # N.B. Only `IngressRoute`, a custom CRD specific to Traefik ingress controller
 # is supported. This is because a traditional Ingress object doesn't allow us

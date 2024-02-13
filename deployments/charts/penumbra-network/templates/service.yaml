@@ -14,7 +14,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: {{ $val_name }}
+    statefulset.kubernetes.io/pod-name: {{ $val_name }}
     {{- include "penumbra-network.selectorLabels" $ | nindent 4 }}
   ports:
     - protocol: TCP
@@ -58,7 +58,7 @@ spec:
     protocol: TCP
     targetPort: 26656
   selector:
-    app: {{ $val_name }}
+    statefulset.kubernetes.io/pod-name: {{ $val_name }}
     {{- include "penumbra-network.selectorLabels" $ | nindent 4 }}
   type: LoadBalancer
 {{ end }}

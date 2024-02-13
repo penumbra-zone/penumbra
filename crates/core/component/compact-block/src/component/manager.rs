@@ -2,14 +2,14 @@ use anyhow::Context;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_dex::component::StateReadExt;
 use penumbra_dex::component::SwapManager as _;
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_proto::DomainType;
-use penumbra_sct::component::SctManager as _;
-use penumbra_sct::component::StateReadExt as _;
+use penumbra_sct::component::clock::EpochRead;
+use penumbra_sct::component::tree::SctManager as _;
+use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::NoteManager as _;
 use tracing::instrument;
 
@@ -40,6 +40,7 @@ trait Inner: StateWrite {
         end_epoch: bool,
         mut app_parameters_updated: bool,
     ) -> Result<()> {
+        use penumbra_shielded_pool::component::StateReadExt as _;
         // Find out what our block height is (this is set even during the genesis block)
         let height = self
             .get_block_height()

@@ -7,14 +7,13 @@ use ibc_types::core::{
 };
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ConnectionPath};
-use penumbra_chain::component::StateReadExt as _;
 
 use crate::{
     component::{
         client::StateReadExt as _,
-        client_counter::validate_penumbra_client_state,
         connection::{StateReadExt as _, StateWriteExt as _},
-        proof_verification, MsgHandler,
+        ics02_validation::validate_penumbra_client_state,
+        proof_verification, HostInterface, MsgHandler,
     },
     IBC_COMMITMENT_PREFIX,
 };
@@ -25,7 +24,7 @@ impl MsgHandler for MsgConnectionOpenAck {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         // Validate a ConnectionOpenAck message, which is sent to us by a counterparty chain that
         // has committed a Connection to us expected to be in the TRYOPEN state. Before executing a
@@ -42,10 +41,10 @@ impl MsgHandler for MsgConnectionOpenAck {
         // POSTERIOR STATE: (OPEN, TRYOPEN)
         //
         // verify that the consensus height is correct
-        consensus_height_is_correct(&state, self).await?;
+        consensus_height_is_correct::<&S, HI>(&state, self).await?;
 
         // verify that the client state is well formed
-        penumbra_client_state_is_well_formed(&state, self).await?;
+        penumbra_client_state_is_well_formed::<&S, HI>(&state, self).await?;
 
         // verify the previous connection that we're ACKing is in the correct state
         let connection = verify_previous_connection(&state, self).await?;
@@ -190,13 +189,13 @@ impl MsgHandler for MsgConnectionOpenAck {
         Ok(())
     }
 }
-async fn consensus_height_is_correct<S: StateRead>(
+async fn consensus_height_is_correct<S: StateRead, HI: HostInterface>(
     state: S,
     msg: &MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
     let current_height = Height::new(
-        state.get_revision_number().await?,
-        state.get_block_height().await?,
+        HI::get_revision_number(&state).await?,
+        HI::get_block_height(&state).await?,
     )?;
     if msg.consensus_height_of_a_on_b >= current_height {
         anyhow::bail!("consensus height is greater than the current block height",);
@@ -205,12 +204,12 @@ async fn consensus_height_is_correct<S: StateRead>(
     Ok(())
 }
 
-async fn penumbra_client_state_is_well_formed<S: StateRead>(
+async fn penumbra_client_state_is_well_formed<S: StateRead, HI: HostInterface>(
     state: S,
     msg: &MsgConnectionOpenAck,
 ) -> anyhow::Result<()> {
-    let height = state.get_block_height().await?;
-    let chain_id = state.get_chain_id().await?;
+    let height = HI::get_block_height(&state).await?;
+    let chain_id = HI::get_chain_id(&state).await?;
     validate_penumbra_client_state(msg.client_state_of_a_on_b.clone(), &chain_id, height)?;
 
     Ok(())

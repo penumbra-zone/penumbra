@@ -1,12 +1,11 @@
 use std::collections::BTreeMap;
 
-use penumbra_chain::params::FmdParameters;
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_fee::GasPrices;
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, NotePayload};
+use penumbra_shielded_pool::{fmd, Note, NotePayload};
 use penumbra_tct::{self as tct, StateCommitment};
 use tracing::Instrument;
 
@@ -19,7 +18,7 @@ pub struct FilteredBlock {
     pub new_swaps: BTreeMap<StateCommitment, SwapRecord>,
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
-    pub fmd_parameters: Option<FmdParameters>,
+    pub fmd_parameters: Option<fmd::Parameters>,
     pub app_parameters_updated: bool,
     pub gas_prices: Option<GasPrices>,
 }
@@ -149,6 +148,7 @@ pub async fn scan_block(
                             nullifier,
                             position,
                             source,
+                            return_address: None,
                         },
                     );
                 }

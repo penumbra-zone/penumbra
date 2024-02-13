@@ -1,7 +1,8 @@
 use decaf377::Bls12_377;
 
 use ark_groth16::{PreparedVerifyingKey, ProvingKey};
-use penumbra_proto::{core::component::stake::v1alpha1 as pb, DomainType};
+use base64::prelude::*;
+use penumbra_proto::{core::component::stake::v1 as pb, DomainType};
 
 use decaf377::{Fq, Fr};
 use penumbra_asset::{asset, balance, STAKING_TOKEN_ASSET_ID};
@@ -10,6 +11,41 @@ use penumbra_proof_params::VerifyingKeyExt;
 use penumbra_shielded_pool::{ConvertProof, ConvertProofPrivate, ConvertProofPublic};
 
 use crate::Penalty;
+
+/// The public inputs to an [`UndelegateClaimProof`].
+#[derive(Clone, Debug)]
+pub struct UndelegateClaimProofPublic {
+    pub balance_commitment: balance::Commitment,
+    pub unbonding_id: asset::Id,
+    pub penalty: Penalty,
+}
+
+impl From<UndelegateClaimProofPublic> for ConvertProofPublic {
+    fn from(value: UndelegateClaimProofPublic) -> Self {
+        Self {
+            from: value.unbonding_id,
+            to: *STAKING_TOKEN_ASSET_ID,
+            rate: value.penalty.kept_rate(),
+            balance_commitment: value.balance_commitment,
+        }
+    }
+}
+
+/// The private inputs to an [`UndelegateClaimProof`].
+#[derive(Clone, Debug)]
+pub struct UndelegateClaimProofPrivate {
+    pub unbonding_amount: Amount,
+    pub balance_blinding: Fr,
+}
+
+impl From<UndelegateClaimProofPrivate> for ConvertProofPrivate {
+    fn from(value: UndelegateClaimProofPrivate) -> Self {
+        Self {
+            amount: value.unbonding_amount,
+            balance_blinding: value.balance_blinding,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct UndelegateClaimProof(ConvertProof);
@@ -22,42 +58,21 @@ impl UndelegateClaimProof {
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        unbonding_amount: Amount,
-        balance_blinding: Fr,
-        balance_commitment: balance::Commitment,
-        unbonding_id: asset::Id,
-        penalty: Penalty,
+        public: UndelegateClaimProofPublic,
+        private: UndelegateClaimProofPrivate,
     ) -> anyhow::Result<Self> {
-        let public = ConvertProofPublic {
-            from: unbonding_id,
-            to: *STAKING_TOKEN_ASSET_ID,
-            rate: penalty.kept_rate(),
-            balance_commitment,
-        };
-        let private = ConvertProofPrivate {
-            amount: unbonding_amount,
-            balance_blinding,
-        };
-        let proof = ConvertProof::prove(blinding_r, blinding_s, pk, public, private)?;
+        let proof = ConvertProof::prove(blinding_r, blinding_s, pk, public.into(), private.into())?;
         Ok(Self(proof))
     }
 
     /// Called to verify the proof using the provided public inputs.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?base64::encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?BASE64_STANDARD.encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        balance_commitment: balance::Commitment,
-        unbonding_id: asset::Id,
-        penalty: Penalty,
+        public: UndelegateClaimProofPublic,
     ) -> anyhow::Result<()> {
-        let public = ConvertProofPublic {
-            from: unbonding_id,
-            to: *STAKING_TOKEN_ASSET_ID,
-            rate: penalty.kept_rate(),
-            balance_commitment,
-        };
-        self.0.verify(vk, public)
+        self.0.verify(vk, public.into())
     }
 }
 
@@ -119,21 +134,21 @@ mod tests {
             let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);
             let balance_commitment = balance.commit(balance_blinding);
 
+            let public = UndelegateClaimProofPublic { balance_commitment, unbonding_id, penalty };
+            let private = UndelegateClaimProofPrivate { unbonding_amount, balance_blinding };
+
             let blinding_r = Fq::rand(&mut rng);
             let blinding_s = Fq::rand(&mut rng);
             let proof = UndelegateClaimProof::prove(
                 blinding_r,
                 blinding_s,
                 &pk,
-                unbonding_amount,
-                balance_blinding,
-                balance_commitment,
-                unbonding_id,
-                penalty
+                public.clone(),
+                private
             )
             .expect("can create proof");
 
-            let proof_result = proof.verify(&vk, balance_commitment, unbonding_id, penalty);
+            let proof_result = proof.verify(&vk, public);
 
             assert!(proof_result.is_ok());
         }

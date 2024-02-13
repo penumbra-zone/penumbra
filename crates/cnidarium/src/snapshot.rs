@@ -232,7 +232,8 @@ impl StateRead for Snapshot {
                         let _start = std::time::Instant::now();
                         let rsp = substore.get_jmt(key_hash);
                         #[cfg(feature = "metrics")]
-                        metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION, _start.elapsed());
+                        metrics::histogram!(metrics::STORAGE_GET_RAW_DURATION)
+                            .record(_start.elapsed());
                         rsp
                     })
                 })
@@ -273,10 +274,8 @@ impl StateRead for Snapshot {
                             .get_cf(cf_nonverifiable, key)
                             .map_err(Into::into);
                         #[cfg(feature = "metrics")]
-                        metrics::histogram!(
-                            metrics::STORAGE_NONCONSENSUS_GET_RAW_DURATION,
-                            _start.elapsed()
-                        );
+                        metrics::histogram!(metrics::STORAGE_NONCONSENSUS_GET_RAW_DURATION)
+                            .record(_start.elapsed());
                         rsp
                     })
                 })

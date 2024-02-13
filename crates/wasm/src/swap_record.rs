@@ -1,5 +1,5 @@
 use penumbra_dex::{swap::SwapPlaintext, BatchSwapOutputData};
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_tct as tct;
 use std::convert::{TryFrom, TryInto};

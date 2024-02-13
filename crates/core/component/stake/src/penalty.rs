@@ -1,6 +1,6 @@
 use ark_ff::ToConstraintField;
 use decaf377::Fq;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pbs, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pbs, DomainType};
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};

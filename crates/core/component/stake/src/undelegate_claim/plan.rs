@@ -2,7 +2,7 @@ use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
 use penumbra_proof_params::CONVERT_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
 
@@ -10,6 +10,8 @@ use crate::{
     IdentityKey, Penalty, UnbondingToken, UndelegateClaim, UndelegateClaimBody,
     UndelegateClaimProof,
 };
+
+use super::UndelegateClaimProofPublic;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]
@@ -56,11 +58,15 @@ impl UndelegateClaimPlan {
             self.proof_blinding_r,
             self.proof_blinding_s,
             &CONVERT_PROOF_PROVING_KEY,
-            self.unbonding_amount,
-            self.balance_blinding,
-            self.balance_commitment(),
-            self.unbonding_id(),
-            self.penalty,
+            UndelegateClaimProofPublic {
+                balance_commitment: self.balance_commitment(),
+                unbonding_id: self.unbonding_id(),
+                penalty: self.penalty,
+            },
+            super::UndelegateClaimProofPrivate {
+                unbonding_amount: self.unbonding_amount,
+                balance_blinding: self.balance_blinding,
+            },
         )
         .expect("can generate undelegate claim proof")
     }

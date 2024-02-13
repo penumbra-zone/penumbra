@@ -1,6 +1,6 @@
 use penumbra_sct::Nullifier;
 
-use penumbra_proto::core::component::shielded_pool::v1alpha1::{EventOutput, EventSpend};
+use penumbra_proto::core::component::shielded_pool::v1::{EventOutput, EventSpend};
 
 use crate::NotePayload;
 

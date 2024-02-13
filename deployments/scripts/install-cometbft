@@ -1,12 +1,32 @@
 #!/bin/bash
-# Utility script to download a version of CometBFT for use with Penumbra.
+# Utility script to download a specific version of CometBFT for use with Penumbra.
+# Designed to be used in CI contexts, to bootstrap a testing setup quickly.
+set -euo pipefail
 
 
+# Sane defaults
 COMETBFT_VERSION="${COMETBFT_VERSION:-0.37.2}"
-curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
+
+# Download and extract
+cometbft_download_url="https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
+cometbft_temp_dir="$(mktemp -d)"
+pushd "$cometbft_temp_dir" > /dev/null
+curl -sSfL -O "$cometbft_download_url"
 tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
-mkdir -p "$HOME/bin"
-cp -v cometbft "$HOME/bin/"
-export PATH="$HOME/bin:$PATH"
+trap 'rm -r "$cometbft_temp_dir"' EXIT
+
+# Try to write to system-wide location.
+if [[ -w /usr/local/bin/ ]] ; then
+    mv -v cometbft /usr/local/bin/
+else
+    cometbft_install_dir="${HOME:?}/bin"
+    >&2 echo "WARNING: /usr/local/bin/ not writable, installing cometbft to $cometbft_install_dir"
+    mkdir -p "$cometbft_install_dir"
+    mv -v cometbft "${cometbft_install_dir}/"
+    export PATH="$PATH:$cometbft_install_dir"
+fi
+
+# Sanity checks
+echo "Checking that cometbft is installed:"
 which cometbft
 cometbft version

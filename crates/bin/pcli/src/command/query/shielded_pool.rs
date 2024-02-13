@@ -1,6 +1,5 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use penumbra_compact_block::CompactBlock;
 use penumbra_proto::DomainType;
 use penumbra_sct::{CommitmentSource, NullificationInfo, Nullifier};
 use penumbra_tct::StateCommitment;
@@ -30,14 +29,15 @@ pub enum ShieldedPool {
 
 impl ShieldedPool {
     pub fn key(&self) -> String {
-        use penumbra_compact_block::state_key as cb_state_key;
         use penumbra_sct::state_key as sct_state_key;
         match self {
-            ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
-            ShieldedPool::CompactBlock { height } => cb_state_key::compact_block(*height),
-            ShieldedPool::Commitment { commitment } => sct_state_key::note_source(commitment),
+            ShieldedPool::Anchor { height } => sct_state_key::tree::anchor_by_height(*height),
+            ShieldedPool::CompactBlock { .. } => {
+                unreachable!("should be handled at outer level via rpc");
+            }
+            ShieldedPool::Commitment { commitment } => sct_state_key::tree::note_source(commitment),
             ShieldedPool::Nullifier { nullifier } => {
-                sct_state_key::spent_nullifier_lookup(nullifier)
+                sct_state_key::nullifier_set::spent_nullifier_lookup(nullifier)
             }
         }
     }
@@ -49,8 +49,7 @@ impl ShieldedPool {
                 serde_json::to_string_pretty(&anchor)?
             }
             ShieldedPool::CompactBlock { .. } => {
-                let compact_block = CompactBlock::decode(bytes)?;
-                serde_json::to_string_pretty(&compact_block)?
+                unreachable!("should be handled at outer level via rpc");
             }
             ShieldedPool::Commitment { .. } => {
                 let commitment_source = CommitmentSource::decode(bytes)?;

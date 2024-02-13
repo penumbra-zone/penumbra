@@ -1,5 +1,5 @@
-use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{view::v1alpha1 as pb, DomainType};
+use penumbra_keys::{keys::AddressIndex, AddressView};
+use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
@@ -18,6 +18,7 @@ pub struct SpendableNoteRecord {
     pub height_spent: Option<u64>,
     pub position: tct::Position,
     pub source: CommitmentSource,
+    pub return_address: Option<AddressView>,
 }
 
 impl DomainType for SpendableNoteRecord {
@@ -34,6 +35,7 @@ impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
             height_spent: v.height_spent.unwrap_or(0),
             position: v.position.into(),
             source: Some(v.source.into()),
+            return_address: v.return_address.map(Into::into),
         }
     }
 }
@@ -69,6 +71,7 @@ impl TryFrom<pb::SpendableNoteRecord> for SpendableNoteRecord {
                 .source
                 .ok_or_else(|| anyhow::anyhow!("missing note source"))?
                 .try_into()?,
+            return_address: v.return_address.map(TryInto::try_into).transpose()?,
         })
     }
 }

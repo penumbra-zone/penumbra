@@ -84,7 +84,7 @@ impl ViewCmd {
             }
             ViewCmd::Balance(balance_cmd) => {
                 let view_client = app.view();
-                balance_cmd.exec(&full_viewing_key, view_client).await?;
+                balance_cmd.exec(view_client).await?;
             }
             ViewCmd::Staked(staked_cmd) => {
                 let channel = app.pd_channel().await?;

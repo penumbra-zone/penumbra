@@ -1,13 +1,11 @@
 [package]
 name = "cnidarium-component"
-version = "0.64.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [dependencies]
-cnidarium = { path = "../cnidarium", default-features = false }
-async-trait = "0.1.52"
-anyhow = "1"
-tendermint = "0.34.0"
-hex = "0.4"
+cnidarium = {workspace = true, default-features = false}
+async-trait = {workspace = true}
+anyhow = {workspace = true}
+tendermint = {workspace = true}
+hex = {workspace = true}

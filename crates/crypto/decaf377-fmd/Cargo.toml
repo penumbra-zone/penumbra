@@ -1,27 +1,26 @@
 [package]
 name = "decaf377-fmd"
-version = "0.64.1"
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-decaf377 = "0.5"
-ark-ff = { version = "0.4", default_features = false }
-ark-serialize = "0.4"
-thiserror = "1"
-rand_core = { version = "0.6.3", features = ["getrandom"] }
-bitvec = "1"
-blake2b_simd = "0.5"
-
-[dev-dependencies]
-proptest = "1"
-criterion = { version = "0.3", features = ["html_reports"] }
+version = {workspace = true}
+edition = {workspace = true}
 
 [[bench]]
 name = "fmd"
 harness = false
 
+
 [features]
 default = ["std"]
 std = ["ark-ff/std"]
+
+[dependencies]
+decaf377 = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-serialize = {workspace = true}
+thiserror = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+bitvec = {workspace = true}
+blake2b_simd = {workspace = true}
+
+[dev-dependencies]
+proptest = {workspace = true}
+criterion = {workspace = true, features = ["html_reports"]}

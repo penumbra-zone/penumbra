@@ -4,13 +4,14 @@ use std::{
 };
 
 use anyhow::{anyhow, Result};
-use decaf377_frost as frost;
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
+use rand_core::CryptoRngCore;
+
+use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
-use penumbra_proto::{penumbra::custody::threshold::v1alpha1 as pb, DomainType, Message};
+use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
 use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
 use penumbra_txhash::EffectHash;
-use rand_core::CryptoRngCore;
 
 use super::config::Config;
 
@@ -348,7 +349,7 @@ pub fn coordinator_round2(
     let reply = CoordinatorRound2 { all_commitments };
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
-    let effect_hash = state.plan.effect_hash(config.fvk());
+    let effect_hash = state.plan.effect_hash(config.fvk())?;
     let signing_packages = {
         reply
             .all_commitments
@@ -404,7 +405,7 @@ pub fn coordinator_round3(
         .collect::<Result<Vec<_>, _>>()?;
     let delegator_vote_auths = spend_auths.split_off(state.plan.spend_plans().count());
     Ok(AuthorizationData {
-        effect_hash: state.effect_hash,
+        effect_hash: Some(state.effect_hash),
         spend_auths,
         delegator_vote_auths,
     })
@@ -432,7 +433,7 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let effect_hash = state.plan.effect_hash(config.fvk());
+    let effect_hash = state.plan.effect_hash(config.fvk())?;
     let signing_packages = coordinator
         .all_commitments
         .into_iter()

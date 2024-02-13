@@ -1,12 +1,17 @@
 {{ $count := (.Values.nodes | len | int) }}
 {{ range $i,$e := until $count }}
-{{ $fn_name := printf "%s-fn-%d" $.Release.Name $i }}
-{{ $p2p_svc_name := printf "%s-p2p" $fn_name }}
+{{- /*
+We set the service names to include the string "-fn"
+for compatibility reasons: doing so allows us to reuse pre-existing
+services and their associated IPs.
+*/}}
+{{ $fn_name := printf "%s-%d" $.Release.Name $i }}
+{{ $rpc_svc_name := printf "%s-fn-%d" $.Release.Name $i }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ $fn_name }}
+  name: {{ $rpc_svc_name }}
   labels:
     app.kubernetes.io/component: rpc
     {{- include "penumbra-node.labels" $ | nindent 4 }}
@@ -36,15 +41,24 @@ spec:
       protocol: TCP
   {{- end }}
   selector:
-    app: {{ $fn_name }}
+    statefulset.kubernetes.io/pod-name: {{ $fn_name }}
     {{- include "penumbra-node.selectorLabels" $ | nindent 4 }}
+
+{{- if (index $.Values.nodes $i).external_address -}}
+{{- /*
+We only configure an external LoadBalancer service for p2p
+if an IP has been provided. This logic is awkward because we must
+first create the LB to get an IP, then use that IP in the config
+for CometBFT. Using an operator pattern would enable us to sidestep this.
+*/}}
+{{ $p2p_svc_name := printf "%s-fn-%d-p2p" $.Release.Name $i }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   # P2P service is a LoadBalancer with externalTrafficPolicy=Local by default,
   # because no other networking setup makes sense. We need the source IP preserved
-  # for TM P2P to work.
+  # for CometBFT P2P to work.
   name: {{ $p2p_svc_name }}
   {{- if $.Values.preserve_lb_svc }}
   annotations:
@@ -61,7 +75,8 @@ spec:
     protocol: TCP
     targetPort: 26656
   selector:
-    app: {{ $fn_name }}
+    statefulset.kubernetes.io/pod-name: {{ $fn_name }}
     {{- include "penumbra-node.selectorLabels" $ | nindent 4 }}
   type: LoadBalancer
+{{ end }}
 {{ end }}

@@ -1,3 +1,4 @@
+use anyhow::Result;
 use ark_ff::ToConstraintField;
 use ark_groth16::{
     r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
@@ -8,7 +9,7 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use decaf377::{r1cs::FqVar, Bls12_377, Fq};
 use penumbra_fee::Fee;
-use penumbra_proto::{core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
@@ -32,25 +33,9 @@ use crate::{
 
 use penumbra_proof_params::{DummyWitness, GROTH16_PROOF_LENGTH_BYTES};
 
-/// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
-/// however the note commitment proof needs to be for a specific block due to clearing prices
-/// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+/// The public inputs to a [`SwapProofPublic`].
 #[derive(Clone, Debug)]
-pub struct SwapClaimCircuit {
-    /// The swap being claimed
-    swap_plaintext: SwapPlaintext,
-    /// Inclusion proof for the swap commitment
-    state_commitment_proof: tct::Proof,
-    // The nullifier deriving key for the Swap NFT note.
-    nk: NullifierKey,
-    /// Output amount 1
-    lambda_1: Amount,
-    /// Output amount 2
-    lambda_2: Amount,
-    /// Note commitment blinding factor for the first output note
-    note_blinding_1: Fq,
-    /// Note commitment blinding factor for the second output note
-    note_blinding_2: Fq,
+pub struct SwapClaimProofPublic {
     /// Anchor
     pub anchor: tct::Root,
     /// Nullifier
@@ -65,80 +50,153 @@ pub struct SwapClaimCircuit {
     pub note_commitment_2: note::StateCommitment,
 }
 
-impl SwapClaimCircuit {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        swap_plaintext: SwapPlaintext,
-        state_commitment_proof: tct::Proof,
-        nk: NullifierKey,
-        lambda_1: Amount,
-        lambda_2: Amount,
-        note_blinding_1: Fq,
-        note_blinding_2: Fq,
-        anchor: tct::Root,
-        nullifier: Nullifier,
-        claim_fee: Fee,
-        output_data: BatchSwapOutputData,
-        note_commitment_1: note::StateCommitment,
-        note_commitment_2: note::StateCommitment,
-    ) -> Self {
-        Self {
-            swap_plaintext,
-            state_commitment_proof,
-            nk,
-            lambda_1,
-            lambda_2,
-            note_blinding_1,
-            note_blinding_2,
-            anchor,
-            nullifier,
-            claim_fee,
-            output_data,
-            note_commitment_1,
-            note_commitment_2,
-        }
+/// The public inputs to a [`SwapProofPrivate`].
+#[derive(Clone, Debug)]
+pub struct SwapClaimProofPrivate {
+    /// The swap being claimed
+    pub swap_plaintext: SwapPlaintext,
+    /// Inclusion proof for the swap commitment
+    pub state_commitment_proof: tct::Proof,
+    // The nullifier deriving key for the Swap NFT note.
+    pub nk: NullifierKey,
+    /// Output amount 1
+    pub lambda_1: Amount,
+    /// Output amount 2
+    pub lambda_2: Amount,
+    /// Note commitment blinding factor for the first output note
+    pub note_blinding_1: Fq,
+    /// Note commitment blinding factor for the second output note
+    pub note_blinding_2: Fq,
+}
+
+#[cfg(test)]
+fn check_satisfaction(
+    public: &SwapClaimProofPublic,
+    private: &SwapClaimProofPrivate,
+) -> Result<()> {
+    let swap_commitment = private.swap_plaintext.swap_commitment();
+    if swap_commitment != private.state_commitment_proof.commitment() {
+        anyhow::bail!("swap commitment integrity check failed");
     }
+
+    private.state_commitment_proof.verify(public.anchor)?;
+
+    let nullifier = Nullifier::derive(
+        &private.nk,
+        private.state_commitment_proof.position(),
+        &swap_commitment,
+    );
+    if nullifier != public.nullifier {
+        anyhow::bail!("nullifier did not match public input");
+    }
+
+    if private.swap_plaintext.claim_fee != public.claim_fee {
+        anyhow::bail!("claim fee did not match public input");
+    }
+
+    let block: u64 = private.state_commitment_proof.position().block().into();
+    let note_commitment_block_height: u64 = public.output_data.epoch_starting_height + block;
+    if note_commitment_block_height != public.output_data.height {
+        anyhow::bail!("swap commitment height did not match public input");
+    }
+
+    if private.swap_plaintext.trading_pair != public.output_data.trading_pair {
+        anyhow::bail!("trading pair did not match public input");
+    }
+
+    let (lambda_1, lambda_2) = public.output_data.pro_rata_outputs((
+        private.swap_plaintext.delta_1_i,
+        private.swap_plaintext.delta_2_i,
+    ));
+    if lambda_1 != private.lambda_1 {
+        anyhow::bail!("lambda_1 did not match public input");
+    }
+    if lambda_2 != private.lambda_2 {
+        anyhow::bail!("lambda_2 did not match public input");
+    }
+
+    let (output_1_note, output_2_note) = private.swap_plaintext.output_notes(&public.output_data);
+    let note_commitment_1 = output_1_note.commit();
+    let note_commitment_2 = output_2_note.commit();
+    if note_commitment_1 != public.note_commitment_1 {
+        anyhow::bail!("note commitment 1 did not match public input");
+    }
+    if note_commitment_2 != public.note_commitment_2 {
+        anyhow::bail!("note commitment 2 did not match public input");
+    }
+
+    Ok(())
+}
+
+#[cfg(test)]
+fn check_circuit_satisfaction(
+    public: SwapClaimProofPublic,
+    private: SwapClaimProofPrivate,
+) -> Result<()> {
+    use ark_relations::r1cs::{self, ConstraintSystem};
+
+    let cs: ConstraintSystemRef<_> = ConstraintSystem::new_ref();
+    let circuit = SwapClaimCircuit { public, private };
+    cs.set_optimization_goal(r1cs::OptimizationGoal::Constraints);
+    circuit
+        .generate_constraints(cs.clone())
+        .expect("can generate constraints from circuit");
+    cs.finalize();
+    if !cs.is_satisfied()? {
+        anyhow::bail!("constraints are not satisfied");
+    }
+    Ok(())
+}
+
+/// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
+/// however the note commitment proof needs to be for a specific block due to clearing prices
+/// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+#[derive(Clone, Debug)]
+pub struct SwapClaimCircuit {
+    public: SwapClaimProofPublic,
+    private: SwapClaimProofPrivate,
 }
 
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
         let swap_plaintext_var =
-            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.swap_plaintext.clone()))?;
+            SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.private.swap_plaintext.clone()))?;
 
         let claimed_swap_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.commitment())
+            Ok(self.private.state_commitment_proof.commitment())
         })?;
 
         let position_var = tct::r1cs::PositionVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof.position())
+            Ok(self.private.state_commitment_proof.position())
         })?;
         let position_bits = position_var.to_bits_le()?;
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
-            Ok(self.state_commitment_proof)
+            Ok(self.private.state_commitment_proof)
         })?;
-        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.nk))?;
-        let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_1))?;
-        let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.lambda_2))?;
-        let note_blinding_1 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_1))?;
-        let note_blinding_2 = FqVar::new_witness(cs.clone(), || Ok(self.note_blinding_2))?;
+        let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
+        let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_1))?;
+        let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_2))?;
+        let note_blinding_1 = FqVar::new_witness(cs.clone(), || Ok(self.private.note_blinding_1))?;
+        let note_blinding_2 = FqVar::new_witness(cs.clone(), || Ok(self.private.note_blinding_2))?;
 
         // Inputs
-        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.anchor)))?;
-        let claimed_nullifier_var = NullifierVar::new_input(cs.clone(), || Ok(self.nullifier))?;
-        let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.claim_fee.0))?;
+        let anchor_var = FqVar::new_input(cs.clone(), || Ok(Fq::from(self.public.anchor)))?;
+        let claimed_nullifier_var =
+            NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
+        let claimed_fee_var = ValueVar::new_input(cs.clone(), || Ok(self.public.claim_fee.0))?;
         let output_data_var =
-            BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.output_data))?;
+            BatchSwapOutputDataVar::new_input(cs.clone(), || Ok(self.public.output_data))?;
         let claimed_note_commitment_1 =
-            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment_1))?;
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.note_commitment_1))?;
         let claimed_note_commitment_2 =
-            StateCommitmentVar::new_input(cs.clone(), || Ok(self.note_commitment_2))?;
+            StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.note_commitment_2))?;
 
         // Swap commitment integrity check.
         let swap_commitment = swap_plaintext_var.commit()?;
         claimed_swap_commitment.enforce_equal(&swap_commitment)?;
 
-        // Merkle path integrity. Ensure the provided note commitment is in the TCT.
+        // Merkle path integrity. Ensure the provided swap commitment is in the TCT.
         merkle_path_var.verify(
             cs.clone(),
             &Boolean::TRUE,
@@ -266,21 +324,25 @@ impl DummyWitness for SwapClaimCircuit {
         let note_commitment_2 = tct::StateCommitment(Fq::from(2));
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
-        Self {
-            swap_plaintext,
-            state_commitment_proof,
+        let public = SwapClaimProofPublic {
             anchor,
             nullifier,
-            nk,
             claim_fee,
             output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+        let private = SwapClaimProofPrivate {
+            swap_plaintext,
+            state_commitment_proof,
+            nk,
             lambda_1,
             lambda_2,
             note_blinding_1,
             note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-        }
+        };
+
+        Self { public, private }
     }
 }
 
@@ -295,34 +357,10 @@ impl SwapClaimProof {
         blinding_r: Fq,
         blinding_s: Fq,
         pk: &ProvingKey<Bls12_377>,
-        swap_plaintext: SwapPlaintext,
-        state_commitment_proof: tct::Proof,
-        nk: NullifierKey,
-        anchor: tct::Root,
-        nullifier: Nullifier,
-        lambda_1: Amount,
-        lambda_2: Amount,
-        note_blinding_1: Fq,
-        note_blinding_2: Fq,
-        note_commitment_1: tct::StateCommitment,
-        note_commitment_2: tct::StateCommitment,
-        output_data: BatchSwapOutputData,
+        public: SwapClaimProofPublic,
+        private: SwapClaimProofPrivate,
     ) -> anyhow::Result<Self> {
-        let circuit = SwapClaimCircuit {
-            swap_plaintext: swap_plaintext.clone(),
-            state_commitment_proof,
-            nk,
-            anchor,
-            nullifier,
-            claim_fee: swap_plaintext.claim_fee,
-            output_data,
-            lambda_1,
-            lambda_2,
-            note_blinding_1,
-            note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-        };
+        let circuit = SwapClaimCircuit { public, private };
 
         let proof = Groth16::<Bls12_377, LibsnarkReduction>::create_proof_with_reduction(
             circuit, pk, blinding_r, blinding_s,
@@ -340,53 +378,54 @@ impl SwapClaimProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        anchor: tct::Root,
-        nullifier: Nullifier,
-        fee: Fee,
-        output_data: BatchSwapOutputData,
-        note_commitment_1: tct::StateCommitment,
-        note_commitment_2: tct::StateCommitment,
+        public: SwapClaimProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            Fq::from(anchor.0)
+            Fq::from(public.anchor.0)
                 .to_field_elements()
                 .expect("Fq types are Bls12-377 field members"),
         );
         public_inputs.extend(
-            nullifier
+            public
+                .nullifier
                 .0
                 .to_field_elements()
                 .expect("nullifier is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            Fq::from(fee.0.amount)
+            Fq::from(public.claim_fee.0.amount)
                 .to_field_elements()
                 .expect("Fq types are Bls12-377 field members"),
         );
         public_inputs.extend(
-            fee.0
+            public
+                .claim_fee
+                .0
                 .asset_id
                 .0
                 .to_field_elements()
                 .expect("asset_id is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            output_data
+            public
+                .output_data
                 .to_field_elements()
                 .expect("output_data is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            note_commitment_1
+            public
+                .note_commitment_1
                 .0
                 .to_field_elements()
                 .expect("note_commitment_1 is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            note_commitment_2
+            public
+                .note_commitment_2
                 .0
                 .to_field_elements()
                 .expect("note_commitment_2 is a Bls12-377 field member"),
@@ -430,12 +469,9 @@ impl TryFrom<pb::ZkSwapClaimProof> for SwapClaimProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::UniformRand;
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
-    use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
-    use rand_core::OsRng;
 
     #[derive(Debug)]
     struct TestBatchSwapOutputData {
@@ -485,13 +521,12 @@ mod tests {
             .boxed()
     }
 
-    proptest! {
-    #![proptest_config(ProptestConfig::with_cases(2))]
-    #[test]
-    fn swap_claim_proof_happy_path_filled(seed_phrase_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, test_bsod in filled_bsod_strategy()) {
-        let mut rng = OsRng;
-        let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
-
+    fn swapclaim_statement(
+        seed_phrase_randomness: [u8; 32],
+        rseed_randomness: [u8; 32],
+        value1_amount: u64,
+        test_bsod: TestBatchSwapOutputData,
+    ) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
         let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
         let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
         let fvk_recipient = sk_recipient.full_viewing_key();
@@ -507,8 +542,15 @@ mod tests {
         let delta_2_i = Amount::from(0u64);
         let fee = Fee::default();
 
-        let swap_plaintext =
-        SwapPlaintext::new(&mut rng, trading_pair, delta_1_i, delta_2_i, fee, claim_address);
+        let rseed = Rseed(rseed_randomness);
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i,
+            delta_2_i,
+            claim_fee: fee,
+            claim_address,
+            rseed,
+        };
         let fee = swap_plaintext.clone().claim_fee;
         let mut sct = tct::Tree::new();
         let swap_commitment = swap_plaintext.swap_commitment();
@@ -540,37 +582,38 @@ mod tests {
         let note_commitment_1 = output_1_note.commit();
         let note_commitment_2 = output_2_note.commit();
 
-        let blinding_r = Fq::rand(&mut rng);
-        let blinding_s = Fq::rand(&mut rng);
-
-        let proof = SwapClaimProof::prove(
-            blinding_r,
-            blinding_s,
-            &pk,
+        let public = SwapClaimProofPublic {
+            anchor,
+            nullifier,
+            claim_fee: fee,
+            output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+        let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
             nk,
-            anchor,
-            nullifier,
             lambda_1,
             lambda_2,
             note_blinding_1,
             note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-            output_data,
-        )
-        .expect("can create proof");
+        };
 
-        let proof_result = proof.verify(&vk,
-        anchor,
-        nullifier,
-        fee,
-        output_data,
-        note_commitment_1,
-        note_commitment_2);
+        (public, private)
+    }
 
-        assert!(proof_result.is_ok());
+    prop_compose! {
+        fn arb_valid_swapclaim_statement_filled()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, test_bsod in filled_bsod_strategy()) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
+            swapclaim_statement(seed_phrase_randomness, rseed_randomness, value1_amount, test_bsod)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn swap_claim_proof_happy_path_filled((public, private) in arb_valid_swapclaim_statement_filled()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
         }
     }
 
@@ -597,101 +640,203 @@ mod tests {
             .boxed()
     }
 
+    prop_compose! {
+        fn arb_valid_swapclaim_statement_unfilled()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, test_bsod in unfilled_bsod_strategy()) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
+            swapclaim_statement(seed_phrase_randomness, rseed_randomness, value1_amount, test_bsod)
+        }
+    }
+
     proptest! {
-            #![proptest_config(ProptestConfig::with_cases(2))]
-            #[test]
-            fn swap_claim_proof_happy_path_unfilled(seed_phrase_randomness in any::<[u8; 32]>(), test_bsod in unfilled_bsod_strategy(), value2_amount in 2..200u64,) {
+        #[test]
+        fn swap_claim_proof_happy_path_unfilled((public, private) in arb_valid_swapclaim_statement_unfilled()) {
+            assert!(check_satisfaction(&public, &private).is_ok());
+            assert!(check_circuit_satisfaction(public, private).is_ok());
+        }
+    }
 
-            let mut rng = OsRng;
-            let (pk, vk) = generate_prepared_test_parameters::<SwapClaimCircuit>(&mut rng);
-
+    prop_compose! {
+        // This strategy is invalid because the fee is not equal to the claim fee.
+        fn arb_invalid_swapclaim_statement_fee()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, fee_amount in any::<u64>(), test_bsod in unfilled_bsod_strategy()) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
-            let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
-            let fvk_recipient = sk_recipient.full_viewing_key();
-            let ivk_recipient = fvk_recipient.incoming();
-            let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-            let nk = *sk_recipient.nullifier_key();
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+        let nk = *sk_recipient.nullifier_key();
 
-            let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
-            let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
-            let trading_pair = TradingPair::new(gm.id(), gn.id());
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
 
-            let delta_1_i = Amount::from(0u64);
-            let delta_2_i = Amount::from(value2_amount);
-            let fee = Fee::default();
+        let delta_1_i = Amount::from(value1_amount);
+        let delta_2_i = Amount::from(0u64);
+        let fee = Fee::default();
 
-            let swap_plaintext = SwapPlaintext::new(
-                &mut rng,
-                trading_pair,
-                delta_1_i,
-                delta_2_i,
-                fee,
-                claim_address,
-            );
-            let fee = swap_plaintext.clone().claim_fee;
-            let mut sct = tct::Tree::new();
-            let swap_commitment = swap_plaintext.swap_commitment();
-            sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
-            let anchor = sct.root();
-            let state_commitment_proof = sct.witness(swap_commitment).unwrap();
-            let position = state_commitment_proof.position();
-            let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
-            let epoch_duration = 20;
-            let height = epoch_duration * position.epoch() + position.block();
+        let rseed = Rseed(rseed_randomness);
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i,
+            delta_2_i,
+            claim_fee: fee,
+            claim_address,
+            rseed,
+        };
+        let incorrect_fee = Fee::from_staking_token_amount(Amount::from(fee_amount));
+        let mut sct = tct::Tree::new();
+        let swap_commitment = swap_plaintext.swap_commitment();
+        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let position = state_commitment_proof.position();
+        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
+        let epoch_duration = 20;
+        let height = epoch_duration * position.epoch() + position.block();
 
-            let output_data = BatchSwapOutputData {
-                delta_1: test_bsod.delta_1,
-                delta_2: test_bsod.delta_2,
-                lambda_1: test_bsod.lambda_1,
-                lambda_2: test_bsod.lambda_2,
-                unfilled_1: test_bsod.unfilled_1,
-                unfilled_2: test_bsod.unfilled_2,
-                height: height.into(),
-                trading_pair: swap_plaintext.trading_pair,
-                epoch_starting_height: (epoch_duration * position.epoch()).into(),
-            };
-            let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
+        let output_data = BatchSwapOutputData {
+            delta_1: test_bsod.delta_1,
+            delta_2: test_bsod.delta_2,
+            lambda_1: test_bsod.lambda_1,
+            lambda_2: test_bsod.lambda_2,
+            unfilled_1: test_bsod.unfilled_1,
+            unfilled_2: test_bsod.unfilled_2,
+            height: height.into(),
+            trading_pair: swap_plaintext.trading_pair,
+            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+        };
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
-            let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
-            let note_blinding_1 = output_rseed_1.derive_note_blinding();
-            let note_blinding_2 = output_rseed_2.derive_note_blinding();
-            let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
-            let note_commitment_1 = output_1_note.commit();
-            let note_commitment_2 = output_2_note.commit();
+        let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
 
-            let blinding_r = Fq::rand(&mut rng);
-            let blinding_s = Fq::rand(&mut rng);
+        let public = SwapClaimProofPublic {
+            anchor,
+            nullifier,
+            claim_fee: incorrect_fee,
+            output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+        let private = SwapClaimProofPrivate {
+            swap_plaintext,
+            state_commitment_proof,
+            nk,
+            lambda_1,
+            lambda_2,
+            note_blinding_1,
+            note_blinding_2,
+        };
 
-            let proof = SwapClaimProof::prove(
-                blinding_r,
-                blinding_s,
-                &pk,
-                swap_plaintext,
-                state_commitment_proof,
-                nk,
-                anchor,
-                nullifier,
-                lambda_1,
-                lambda_2,
-                note_blinding_1,
-                note_blinding_2,
-                note_commitment_1,
-                note_commitment_2,
-                output_data,
-            )
-            .expect("can create proof");
+        (public, private)
+        }
+    }
 
-            let proof_result = proof.verify(
-                &vk,
-                anchor,
-                nullifier,
-                fee,
-                output_data,
-                note_commitment_1,
-                note_commitment_2,
-            );
+    proptest! {
+        #[test]
+        fn swap_claim_proof_invalid_fee((public, private) in arb_invalid_swapclaim_statement_fee()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
+        }
+    }
 
-            assert!(proof_result.is_ok());
+    prop_compose! {
+        // This strategy is invalid because the block height of the swap commitment does not match
+        // the height of the batch swap output data.
+        fn arb_invalid_swapclaim_swap_commitment_height()(seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>(), value1_amount in 2..200u64, fee_amount in any::<u64>(), test_bsod in unfilled_bsod_strategy()) -> (SwapClaimProofPublic, SwapClaimProofPrivate) {
+            let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
+        let sk_recipient = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk_recipient = sk_recipient.full_viewing_key();
+        let ivk_recipient = fvk_recipient.incoming();
+        let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
+        let nk = *sk_recipient.nullifier_key();
+
+        let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+        let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let trading_pair = TradingPair::new(gm.id(), gn.id());
+
+        let delta_1_i = Amount::from(value1_amount);
+        let delta_2_i = Amount::from(0u64);
+        let fee = Fee::default();
+
+        let rseed = Rseed(rseed_randomness);
+        let swap_plaintext = SwapPlaintext {
+            trading_pair,
+            delta_1_i,
+            delta_2_i,
+            claim_fee: fee,
+            claim_address,
+            rseed,
+        };
+        let incorrect_fee = Fee::from_staking_token_amount(Amount::from(fee_amount));
+        let mut sct = tct::Tree::new();
+        let swap_commitment = swap_plaintext.swap_commitment();
+        sct.insert(tct::Witness::Keep, swap_commitment).unwrap();
+        let anchor = sct.root();
+        let state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let position = state_commitment_proof.position();
+        let nullifier = Nullifier::derive(&nk, position, &swap_commitment);
+
+        // End the block, and then add a dummy commitment that we'll use
+        // to compute the position and block height that the BSOD corresponds to.
+        sct.end_block().expect("can end block");
+        let dummy_swap_commitment = tct::StateCommitment(Fq::from(1));
+        sct.insert(tct::Witness::Keep, dummy_swap_commitment).unwrap();
+        let dummy_state_commitment_proof = sct.witness(swap_commitment).unwrap();
+        let dummy_position = dummy_state_commitment_proof.position();
+
+        let epoch_duration = 20;
+        let height = epoch_duration * dummy_position.epoch() + dummy_position.block();
+
+        let output_data = BatchSwapOutputData {
+            delta_1: test_bsod.delta_1,
+            delta_2: test_bsod.delta_2,
+            lambda_1: test_bsod.lambda_1,
+            lambda_2: test_bsod.lambda_2,
+            unfilled_1: test_bsod.unfilled_1,
+            unfilled_2: test_bsod.unfilled_2,
+            height: height.into(),
+            trading_pair: swap_plaintext.trading_pair,
+            epoch_starting_height: (epoch_duration * dummy_position.epoch()).into(),
+        };
+        let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
+
+        let (output_rseed_1, output_rseed_2) = swap_plaintext.output_rseeds();
+        let note_blinding_1 = output_rseed_1.derive_note_blinding();
+        let note_blinding_2 = output_rseed_2.derive_note_blinding();
+        let (output_1_note, output_2_note) = swap_plaintext.output_notes(&output_data);
+        let note_commitment_1 = output_1_note.commit();
+        let note_commitment_2 = output_2_note.commit();
+
+        let public = SwapClaimProofPublic {
+            anchor,
+            nullifier,
+            claim_fee: incorrect_fee,
+            output_data,
+            note_commitment_1,
+            note_commitment_2,
+        };
+        let private = SwapClaimProofPrivate {
+            swap_plaintext,
+            state_commitment_proof,
+            nk,
+            lambda_1,
+            lambda_2,
+            note_blinding_1,
+            note_blinding_2,
+        };
+
+        (public, private)
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn swap_claim_proof_invalid_swap_commitment_height((public, private) in arb_invalid_swapclaim_swap_commitment_height()) {
+            assert!(check_satisfaction(&public, &private).is_err());
+            assert!(check_circuit_satisfaction(public, private).is_err());
         }
     }
 }

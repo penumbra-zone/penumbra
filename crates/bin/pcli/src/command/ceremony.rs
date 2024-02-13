@@ -13,13 +13,13 @@ use penumbra_proof_setup::all::{
 };
 use penumbra_proof_setup::single::log::Hashable;
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
-    tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::ceremony_coordinator_service_client::CeremonyCoordinatorServiceClient,
+    tools::summoning::v1::{
         participate_request::{Identify, Msg as RequestMsg},
         participate_response::{Confirm, ContributeNow, Msg as ResponseMsg},
         ParticipateRequest, ParticipateResponse,
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_transaction::memo::MemoPlaintext;
 use penumbra_view::Planner;
@@ -54,10 +54,10 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
         return Ok(());
     }
 
-    let memo_plaintext = MemoPlaintext {
-        return_address: app.config.full_viewing_key.payment_address(from).0,
-        text: "E PLURIBUS UNUM".to_owned(),
-    };
+    let memo_plaintext = MemoPlaintext::new(
+        app.config.full_viewing_key.payment_address(from).0,
+        "E PLURIBUS UNUM".into(),
+    )?;
 
     let mut planner = Planner::new(OsRng);
     planner.set_gas_prices(gas_prices);
@@ -80,12 +80,24 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
 pub enum CeremonyCmd {
     /// Contribute to the ceremony
     Contribute {
-        #[clap(long)]
+        /// The phase of the summoning ceremony that's currently active. Must match that of the remote
+        /// coordinator.
+        #[clap(long, default_value = "2")]
         phase: u8,
+        /// The URL for the public coordination server.
         #[clap(long, default_value = "https://summoning.penumbra.zone")]
         coordinator_url: Url,
-        #[clap(long)]
+        /// The Penumbra wallet address of the coordination server. Bids will be sent to this
+        /// address, so the coordinator can compute the contributor's place in the queue.
+        #[clap(
+            long,
+            default_value = "penumbra1qvqr8cvqyf4pwrl6svw9kj8eypf3fuunrcs83m30zxh57y2ytk94gygmtq5k82cjdq9y3mlaa3fwctwpdjr6fxnwuzrsy4ezm0u2tqpzw0sed82shzcr42sju55en26mavjnw4"
+        )]
         coordinator_address: Address,
+        /// Amount to spend during bid. Must be specified typed values, e.g. '50penumbra'.
+        /// Only the 'penumbra' token is accepted for contributions. Bids are additive,
+        /// so if you're disconnected, you can bid '0penumbra' and your previous bids
+        /// will be still be counted when computing your place in the queue.
         #[clap(long)]
         bid: String,
     },

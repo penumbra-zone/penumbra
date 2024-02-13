@@ -1,7 +1,7 @@
 //! A basic software key management system that stores keys in memory but
 //! presents as an asynchronous signer.
 
-use penumbra_proto::custody::v1alpha1::{self as pb, AuthorizeResponse};
+use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
@@ -33,12 +33,12 @@ impl SoftKms {
             policy.check(request)?;
         }
 
-        Ok(request.plan.authorize(OsRng, &self.config.spend_key))
+        Ok(request.plan.authorize(OsRng, &self.config.spend_key)?)
     }
 }
 
 #[async_trait]
-impl pb::custody_protocol_service_server::CustodyProtocolService for SoftKms {
+impl pb::custody_service_server::CustodyService for SoftKms {
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,

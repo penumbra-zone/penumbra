@@ -1,7 +1,5 @@
 #![deny(clippy::unwrap_used)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #[cfg(feature = "component")]
 pub mod component;
 
@@ -9,7 +7,9 @@ pub mod ics20_withdrawal;
 pub use ics20_withdrawal::Ics20Withdrawal;
 
 pub mod event;
+pub mod fmd;
 pub mod genesis;
+pub mod params;
 pub mod state_key;
 
 pub mod note;

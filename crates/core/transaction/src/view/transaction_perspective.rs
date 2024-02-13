@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use penumbra_asset::asset;
 use penumbra_keys::{Address, AddressView, PayloadKey};
-use penumbra_proto::core::transaction::v1alpha1::{
+use penumbra_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
 use penumbra_sct::Nullifier;
