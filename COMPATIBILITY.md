@@ -1,3 +1,3 @@
-| Application version (Name)| Penumbra crate version | CometBFT |
-| -------- | -------- | -------- |
-| 1 (Testnet 64) | v0.64.0    | v0.37.2 |
+| Application version (Name)| Penumbra crate version | CometBFT | Protobuf |
+| ------------------------- | ---------------------- | -------- | -------- |
+| 1 (Testnet 67)            | v0.67.1                | v0.37.2  | v1       |
