@@ -13,6 +13,7 @@ component = [
     "penumbra-sct/component",
     "penumbra-shielded-pool/component",
     "penumbra-stake/component",
+    "metrics",
     "futures"
 ]
 default = ["component"]
@@ -33,6 +34,7 @@ anyhow = {workspace = true}
 tracing = {workspace = true}
 tendermint = {workspace = true}
 futures = {workspace = true, optional = true}
+metrics = {workspace = true, optional = true}
 serde = {workspace = true, features = ["derive"]}
 
 [dev-dependencies]
