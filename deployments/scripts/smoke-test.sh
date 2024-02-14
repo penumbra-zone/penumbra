@@ -46,7 +46,7 @@ echo "Building latest version of pd from source..."
 cargo build --quiet --release --bin pd
 
 echo "Generating testnet config..."
-EPOCH_DURATION="${EPOCH_DURATION:-100}"
+EPOCH_DURATION="${EPOCH_DURATION:-50}"
 UNBONDING_EPOCHS="${UNBONDING_EPOCHS:-1}"
 cargo run --quiet --release --bin pd -- testnet generate --unbonding-epochs "$UNBONDING_EPOCHS" --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
