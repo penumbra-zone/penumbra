@@ -96,6 +96,10 @@ pub trait ValidatorManager: StateWrite {
         use validator::State::*;
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
+        // We use the current epoch index to compute the unbonding epoch for the validator,
+        // when necessary.
+        let current_epoch = self.get_current_epoch().await?;
+
         // Validator state transitions are usually triggered by an epoch transition. The exception
         // to this rule is when a validator exits the active set. In this case, we want to end the
         // current epoch early in order to hold that validator transitions happen at epoch boundaries.
@@ -153,7 +157,7 @@ pub trait ValidatorManager: StateWrite {
                     identity_key,
                     Unbonding {
                         unbonds_at_epoch: self
-                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .compute_unbonding_epoch(identity_key, current_epoch.index)
                             .await?,
                     },
                 );
@@ -204,7 +208,7 @@ pub trait ValidatorManager: StateWrite {
                     identity_key,
                     Unbonding {
                         unbonds_at_epoch: self
-                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .compute_unbonding_epoch(identity_key, current_epoch.index)
                             .await?,
                     },
                 );
@@ -222,7 +226,7 @@ pub trait ValidatorManager: StateWrite {
                     identity_key,
                     Unbonding {
                         unbonds_at_epoch: self
-                            .compute_unbonding_epoch_for_validator(identity_key)
+                            .compute_unbonding_epoch(identity_key, current_epoch.index)
                             .await?,
                     },
                 );
