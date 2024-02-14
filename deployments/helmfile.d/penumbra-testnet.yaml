@@ -86,3 +86,24 @@ releases:
       - part_of: penumbra-testnet
       - nodes:
         - moniker: cuiloa
+
+  - name: penumbra-testnet-dex-explorer-node
+    chart: ../charts/penumbra-node
+    needs:
+      - penumbra-testnet
+      - penumbra-testnet-nodes
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: latest
+      - persistence:
+          enabled: true
+          size: 300G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-testnet
+      - nodes:
+        - moniker: dex-explorer
