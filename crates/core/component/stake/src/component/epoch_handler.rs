@@ -122,7 +122,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         self.set_prev_base_rate(prev_base_rate.clone());
 
         let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
-
         let mut validator_stream = self.consensus_set_stream()?;
 
         while let Some(validator_identity) = validator_stream.next().await {
@@ -319,7 +318,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 ?delegation_token_supply,
                 "validator's end-epoch has been processed");
 
-            // TODO(erwan): move this up?
             self.process_validator_pool_state(&validator.identity_key, epoch_to_end)
                 .await;
         }
@@ -460,12 +458,15 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             .map(|(consensus_key, power)| {
                 Ok(Update {
                     pub_key: *consensus_key,
-                    // Note: Since the maxim
+                    // Validator voting power is measured in units of staking tokens,
+                    // at time, CometBFT has an upper limit of around 2^60 - 1.
+                    // This means that there is an upper bound on the maximum possible issuance
+                    // at around 10^12 units of staking tokens.
                     power: ((*power).value() as u64).try_into()?,
                 })
             })
             .collect::<Result<Vec<_>>>()?;
-        self.put_tendermint_validator_updates(tendermint_validator_updates);
+        self.put_cometbft_validator_updates(tendermint_validator_updates);
 
         // Record the new consensus keys we will have told tendermint about.
         let updated_consensus_keys = CurrentConsensusKeys {

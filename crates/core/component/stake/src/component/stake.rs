@@ -174,7 +174,7 @@ pub trait ConsensusUpdateRead: StateRead {
 impl<T: StateRead + ?Sized> ConsensusUpdateRead for T {}
 
 pub(crate) trait ConsensusUpdateWrite: StateWrite {
-    fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
+    fn put_cometbft_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
             state_key::internal::tendermint_validator_updates(),
