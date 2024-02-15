@@ -9,32 +9,32 @@ default = ["metrics"]
 rpc = ["dep:tonic", "dep:prost", "dep:serde", "dep:pbjson", "dep:ibc-proto"]
 
 [dependencies]
-jmt = {workspace = true}
-tokio = {workspace = true, features = ["full", "tracing"]}
-tokio-stream = {workspace = true}
-tempfile = {workspace = true}
 anyhow = {workspace = true}
 async-trait = {workspace = true}
-tracing = {workspace = true}
-rocksdb = {workspace = true}
+borsh = "0.10.3"
 futures = {workspace = true}
 hex = {workspace = true}
-metrics = {workspace = true, optional = true}
-parking_lot = {workspace = true}
-pin-project = {workspace = true}
-smallvec = { version = "1.10", features = ["union", "const_generics"] }
-ibc-types = {workspace = true, default-features = false, features = ["std"]}
-once_cell = {workspace = true}
-ics23 = {workspace = true}
-tendermint = {workspace = true, default-features = false}
-borsh = "0.10.3"
-sha2 = {workspace = true}
-tonic = {workspace = true, optional = true}
-prost = {workspace = true, optional = true}
-serde = {workspace = true, optional = true}
-pbjson = {workspace = true, optional = true}
 ibc-proto = {workspace = true, default-features = false, features = ["serde"], optional = true}
+ibc-types = {workspace = true, default-features = false, features = ["std"]}
+ics23 = {workspace = true}
+jmt = {workspace = true}
+metrics = {workspace = true, optional = true}
+once_cell = {workspace = true}
+parking_lot = {workspace = true}
+pbjson = {workspace = true, optional = true}
+pin-project = {workspace = true}
+prost = {workspace = true, optional = true}
 regex = {workspace = true}
+rocksdb = {workspace = true}
+serde = {workspace = true, optional = true}
+sha2 = {workspace = true}
+smallvec = { version = "1.10", features = ["union", "const_generics"] }
+tempfile = {workspace = true}
+tendermint = {workspace = true, default-features = false}
+tokio = {workspace = true, features = ["full", "tracing"]}
+tokio-stream = {workspace = true}
+tonic = {workspace = true, optional = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 tempfile = {workspace = true}
