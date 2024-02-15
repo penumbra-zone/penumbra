@@ -20,6 +20,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
 use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
+use tap::Tap;
 use tct::r1cs::PositionVar;
 
 use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
@@ -396,16 +397,15 @@ impl DelegatorVoteProof {
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
-        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(VerificationError::SynthesisError)?;
-        tracing::debug!(?proof_result, elapsed = ?start.elapsed());
-        proof_result
-            .then_some(())
-            .ok_or(VerificationError::InvalidProof)
+        .map_err(VerificationError::SynthesisError)?
+        .tap(|proof_result| tracing::debug!(?proof_result, elapsed = ?start.elapsed()))
+        .then_some(())
+        .ok_or(VerificationError::InvalidProof)
     }
 }
 
