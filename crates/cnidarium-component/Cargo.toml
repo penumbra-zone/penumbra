@@ -4,8 +4,8 @@ version = {workspace = true}
 edition = {workspace = true}
 
 [dependencies]
-cnidarium = {workspace = true, default-features = false}
-async-trait = {workspace = true}
 anyhow = {workspace = true}
-tendermint = {workspace = true}
+async-trait = {workspace = true}
+cnidarium = {workspace = true, default-features = false}
 hex = {workspace = true}
+tendermint = {workspace = true}
