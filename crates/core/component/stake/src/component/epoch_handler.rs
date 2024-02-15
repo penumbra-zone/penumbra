@@ -258,7 +258,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 .expect("delegation token should be known");
 
             // Calculate the voting power in the newly beginning epoch
-            let voting_power = next_validator_rate.voting_power(delegation_token_supply.into());
+            let voting_power = next_validator_rate.voting_power(delegation_token_supply);
 
             tracing::debug!(
                 validator = ?validator.identity_key,
@@ -319,7 +319,10 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 "validator's end-epoch has been processed");
 
             self.process_validator_pool_state(&validator.identity_key, epoch_to_end)
-                .await;
+                .await.map_err(|e| {
+                    tracing::error!(?e, validator_identity = %validator.identity_key, "failed to process validator pool state");
+                    e
+                })?;
         }
 
         // We have collected the funding streams for all validators, so we can now

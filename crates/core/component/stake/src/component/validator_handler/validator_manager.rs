@@ -560,14 +560,13 @@ pub trait ValidatorManager: StateWrite {
         &mut self,
         validator_identity: &IdentityKey,
         at_epoch: Epoch,
-    ) {
+    ) -> Result<()> {
         let pool_state = self.get_validator_bonding_state(validator_identity).await;
 
         // If the pool is already unbonded, this will return the current epoch.
         let unbonding_epoch_target = self
             .compute_unbonding_epoch(validator_identity, at_epoch.index)
-            .await
-            .unwrap();
+            .await?;
 
         tracing::debug!(
             validator_identity = %validator_identity,
@@ -585,6 +584,8 @@ pub trait ValidatorManager: StateWrite {
                     ?validator_identity
                 ));
         }
+
+        Ok(())
     }
 
     #[instrument(skip(self, last_commit_info))]
