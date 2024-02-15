@@ -296,6 +296,28 @@ impl DummyWitness for DelegatorVoteCircuit {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("error deserializing compressed proof: {0:?}")]
+    ProofDeserialize(ark_serialize::SerializationError),
+    #[error("Fq types are Bls12-377 field members")]
+    Anchor,
+    #[error("balance commitment is a Bls12-377 field member")]
+    BalanceCommitment,
+    #[error("nullifier is a Bls12-377 field member")]
+    Nullifier,
+    #[error("could not decompress element points: {0:?}")]
+    DecompressRk(decaf377::EncodingError),
+    #[error("randomized spend key is a Bls12-377 field member")]
+    Rk,
+    #[error("start position is a Bls12-377 field member")]
+    StartPosition,
+    #[error("error verifying proof: {0:?}")]
+    SynthesisError(ark_relations::r1cs::SynthesisError),
+    #[error("delegator vote proof did not verify")]
+    InvalidProof,
+}
+
 #[derive(Clone, Debug, Copy)]
 pub struct DelegatorVoteProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
