@@ -377,15 +377,18 @@ impl DelegatorVoteProof {
         }
 
         use VerificationError::*;
+        let public_inputs = [
+            to_field_elements!(Fq::from(anchor), Anchor),
+            to_field_elements!(balance_commitment, BalanceCommitment),
+            to_field_elements!(nullifier, Nullifier),
+            to_field_elements!(element_rk, Rk),
+            to_field_elements!(start_position, StartPosition),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .tap(|public_inputs| tracing::trace!(?public_inputs));
 
-        let mut public_inputs = Vec::new();
-        public_inputs.extend(to_field_elements!(Fq::from(anchor), Anchor));
-        public_inputs.extend(to_field_elements!(balance_commitment, BalanceCommitment));
-        public_inputs.extend(to_field_elements!(nullifier, Nullifier));
-        public_inputs.extend(to_field_elements!(element_rk, Rk));
-        public_inputs.extend(to_field_elements!(start_position, StartPosition));
-
-        tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
         Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
