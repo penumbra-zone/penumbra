@@ -33,22 +33,22 @@ parallel = [
 ]
 
 [dependencies]
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 anyhow = {workspace = true}
 ark-ec = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
-ark-std = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-once_cell = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
-rand = {workspace = true}
-num-bigint = {workspace = true}
-tracing = {workspace = true}
 ark-groth16 = {workspace = true, default-features = false}
-ark-snark = {workspace = true}
 ark-r1cs-std = {workspace = true, default-features = false}
 ark-relations = {workspace = true}
-sha2 = {workspace = true}
+ark-serialize = {workspace = true}
+ark-snark = {workspace = true}
+ark-std = {workspace = true, default-features = false}
 bech32 = {workspace = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 lazy_static = "1.4.0"
+num-bigint = {workspace = true}
+once_cell = {workspace = true}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+sha2 = {workspace = true}
+tracing = {workspace = true}

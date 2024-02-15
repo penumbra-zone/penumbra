@@ -4,8 +4,6 @@ version = {workspace = true}
 edition = {workspace = true}
 
 [dependencies]
-penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
 anyhow = {workspace = true}
 chrono = {workspace = true, default-features = false, features = ["serde"]}
 futures = {workspace = true}
@@ -13,13 +11,15 @@ hex = {workspace = true}
 http = {workspace = true}
 metrics = {workspace = true}
 pbjson-types = {workspace = true}
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
 pin-project = {workspace = true}
 pin-project-lite = {workspace = true}
 sha2 = {workspace = true}
 tendermint = {workspace = true}
 tendermint-config = {workspace = true}
-tendermint-proto = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
+tendermint-proto = {workspace = true}
 tendermint-rpc = {workspace = true, features = ["http-client"]}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true}

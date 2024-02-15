@@ -17,54 +17,52 @@ sct-divergence-check = []
 std = ["ark-std/std"]
 
 [dependencies]
-penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
+anyhow = {workspace = true}
+ark-std = {workspace = true, default-features = false}
+async-stream = {workspace = true}
+async-trait = {workspace = true}
+bytes = {workspace = true, features = ["serde"]}
+camino = {workspace = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+digest = "0.9"
+ed25519-consensus = {workspace = true}
+futures = {workspace = true}
+genawaiter = "0.99"
+hex = {workspace = true}
+ibc-types = {workspace = true, default-features = false}
+metrics = {workspace = true}
+once_cell = {workspace = true}
+parking_lot = {workspace = true}
+penumbra-app = {workspace = true}
 penumbra-asset = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-distributions = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
+penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
+penumbra-distributions = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
 penumbra-funding = {workspace = true, default-features = false}
-penumbra-compact-block = {workspace = true, default-features = false}
-penumbra-app = {workspace = true}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, default-features = true}
-ibc-types = {workspace = true, default-features = false}
-ark-std = {workspace = true, default-features = false}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+prost = {workspace = true}
+r2d2 = {workspace = true}
+r2d2_sqlite = {workspace = true, features = ["bundled"]}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+sha2 = {workspace = true}
+tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true, features = ["sync"]}
-anyhow = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
-rand = {workspace = true}
-serde_json = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
+tonic = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
-tonic = {workspace = true}
 url = {workspace = true}
-bytes = {workspace = true, features = ["serde"]}
-prost = {workspace = true}
-futures = {workspace = true}
-hex = {workspace = true}
-metrics = {workspace = true}
-async-stream = {workspace = true}
-parking_lot = {workspace = true}
-camino = {workspace = true}
-async-trait = {workspace = true}
-tendermint = {workspace = true}
-sha2 = {workspace = true}
-ed25519-consensus = {workspace = true}
-r2d2 = {workspace = true}
-r2d2_sqlite = {workspace = true, features = [
-    "bundled",
-]}
-genawaiter = "0.99"
-digest = "0.9"
-once_cell = {workspace = true}

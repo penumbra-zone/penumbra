@@ -30,82 +30,86 @@ parallel = [
 ]
 
 [dependencies]
-penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-community-pool = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-compact-block = {workspace = true, default-features = false}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-proof-setup = {workspace = true}
-penumbra-app = {workspace = true}
-penumbra-wallet = { path = "../../wallet" }
-penumbra-custody = {workspace = true}
-penumbra-view = {workspace = true}
-decaf377 = {workspace = true, default-features = true}
-decaf377-rdsa = {workspace = true}
-tendermint = {workspace = true, features = ["rust-crypto"], default-features = true}
-jmt = {workspace = true}
-ibc-types = {workspace = true, features = ["std", "with_serde"], default-features = true}
-ibc-proto = {workspace = true, default-features = true}
+anyhow = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
-atty = {workspace = true}
-ed25519-consensus = {workspace = true}
-futures = {workspace = true}
 async-stream = {workspace = true}
+atty = {workspace = true}
+base64 = {workspace = true}
 bincode = {workspace = true}
 blake2b_simd = {workspace = true}
-base64 = {workspace = true}
-simple-base64 = "0.23"
 bytes = {workspace = true}
+camino = {workspace = true}
+clap = {workspace = true, features = ["derive", "env"]}
+colored = "2.1.0"
+colored_json = "2.1"
 comfy-table = "5"
+decaf377 = {workspace = true, default-features = true}
+decaf377-rdsa = {workspace = true}
+dialoguer = "0.10.4"
 directories = {workspace = true}
-tokio = {workspace = true, features = ["full"]}
-tokio-stream = {workspace = true}
-tokio-util = {workspace = true}
-tower = {workspace = true, features = ["full"]}
-tracing = {workspace = true}
-tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
-tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
-pin-project = {workspace = true}
-serde_json = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-regex = {workspace = true}
-serde_with = {workspace = true, features = ["hex"]}
-sha2 = {workspace = true}
-anyhow = {workspace = true}
+ed25519-consensus = {workspace = true}
+futures = {workspace = true}
 hex = {workspace = true}
+http-body = {workspace = true}
+ibc-proto = {workspace = true, default-features = true}
+ibc-types = {workspace = true, features = ["std", "with_serde"], default-features = true}
+indicatif = {workspace = true}
+jmt = {workspace = true}
+ndarray = "0.15.6"
+once_cell = {workspace = true}
+penumbra-app = {workspace = true}
+penumbra-asset = {workspace = true, default-features = false}
+penumbra-community-pool = {workspace = true, default-features = false}
+penumbra-compact-block = {workspace = true, default-features = false}
+penumbra-custody = {workspace = true}
+penumbra-dex = {workspace = true, default-features = false}
+penumbra-fee = {workspace = true, default-features = false}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-proof-setup = {workspace = true}
+penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-view = {workspace = true}
+penumbra-wallet = { path = "../../wallet" }
+pin-project = {workspace = true}
 rand = {workspace = true}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+regex = {workspace = true}
 rpassword = "7"
-indicatif = {workspace = true}
-http-body = {workspace = true}
-clap = {workspace = true, features = ["derive", "env"]}
-camino = {workspace = true}
-url = {workspace = true, features = ["serde"]}
-colored_json = "2.1"
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+serde_with = {workspace = true, features = ["hex"]}
+sha2 = {workspace = true}
+simple-base64 = "0.23"
+tendermint = {workspace = true, features = ["rust-crypto"], default-features = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-stream = {workspace = true}
+tokio-util = {workspace = true}
 toml = {workspace = true, features = ["preserve_order"]}
-once_cell = {workspace = true}
-ndarray = "0.15.6"
-dialoguer = "0.10.4"
-colored = "2.1.0"
+tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
+tower = {workspace = true, features = ["full"]}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
+url = {workspace = true, features = ["serde"]}
 
 [dev-dependencies]
 assert_cmd = {workspace = true}
-predicates = "2.1"
-tempfile = {workspace = true}
-regex = {workspace = true}
 penumbra-governance = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, features = [
+predicates = "2.1"
+regex = {workspace = true}
+tempfile = {workspace = true}
+
+[dev-dependencies.penumbra-proof-params]
+default-features = true
+workspace = true
+features = [
     "bundled-proving-keys",
     "download-proving-keys",
-], default-features = true}
+]

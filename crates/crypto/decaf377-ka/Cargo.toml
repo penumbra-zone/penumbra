@@ -10,9 +10,9 @@ std = ["ark-ff/std"]
 [dependencies]
 ark-ff = {workspace = true, default-features = false}
 decaf377 = {workspace = true}
+hex = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 thiserror = {workspace = true}
-hex = {workspace = true}
 zeroize = "1.4"
 zeroize_derive = "1.3"
 

@@ -28,19 +28,15 @@ ark-poly = { version = "0.4.2", default_features = false }
 ark-relations = {workspace = true}
 ark-serialize = {workspace = true}
 blake2b_simd = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
 decaf377 = {workspace = true, default-features = false}
+penumbra-community-pool = {workspace = true, features = ["component"], default-features = true}
 penumbra-dex = {workspace = true, default-features = true}
-penumbra-community-pool = {workspace = true, features = [
-    "component",
-], default-features = true}
 penumbra-governance = {workspace = true, default-features = true}
 penumbra-proof-params = {workspace = true, default-features = true}
 penumbra-proto = {workspace = true, default-features = true}
 penumbra-shielded-pool = {workspace = true, default-features = true}
-penumbra-stake = {workspace = true, features = [
-    "component",
-], default-features = true}
+penumbra-stake = {workspace = true, features = ["component"], default-features = true}
+rand_core = {workspace = true, features = ["getrandom"]}
 rayon = { version = "1.8.0", optional = true }
 
 [dev-dependencies]

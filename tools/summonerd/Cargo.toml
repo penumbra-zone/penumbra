@@ -14,14 +14,14 @@ rust-version = "1.65"
 anyhow = {workspace = true}
 ark-groth16 = {workspace = true}
 ark-serialize = {workspace = true}
+askama = "0.11"
 async-trait = {workspace = true}
 atty = {workspace = true}
-askama = "0.11"
 axum = {workspace = true}
 bytes = {workspace = true}
 camino = {workspace = true}
-clap = {workspace = true, features = ["derive", "env", "color"]}
 chrono = {workspace = true}
+clap = {workspace = true, features = ["derive", "env", "color"]}
 console-subscriber = {workspace = true}
 decaf377 = {workspace = true}
 futures = {workspace = true}
@@ -35,6 +35,8 @@ penumbra-proof-params = {workspace = true, default-features = true}
 penumbra-proof-setup = {workspace = true, features = ["parallel"]}
 penumbra-proto = {workspace = true, default-features = true}
 penumbra-view = {workspace = true}
+r2d2 = {workspace = true}
+r2d2_sqlite = {workspace = true, features = ["bundled"]}
 rand = {workspace = true}
 rand_core = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
@@ -44,7 +46,3 @@ tower = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {workspace = true}
-r2d2 = {workspace = true}
-r2d2_sqlite = {workspace = true, features = [
-    "bundled",
-]}
