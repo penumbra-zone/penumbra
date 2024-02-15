@@ -14,7 +14,7 @@ use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
 use penumbra_asset::{
-    asset::{self},
+    asset::{self, Id},
     Value, ValueVar,
 };
 use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
@@ -24,6 +24,7 @@ use penumbra_shielded_pool::{
     note::{self, NoteVar},
     Rseed,
 };
+use tct::{Root, StateCommitment};
 
 use crate::{
     batch_swap_output_data::BatchSwapOutputDataVar,
@@ -410,35 +411,35 @@ impl SwapClaimProof {
         let mut public_inputs = Vec::new();
 
         let SwapClaimProofPublic {
-            anchor,
-            nullifier,
-            claim_fee,
+            anchor: Root(anchor),
+            nullifier: Nullifier(nullifier),
+            claim_fee:
+                Fee(Value {
+                    amount,
+                    asset_id: Id(asset_id),
+                }),
             output_data,
-            note_commitment_1,
-            note_commitment_2,
+            note_commitment_1: StateCommitment(note_commitment_1),
+            note_commitment_2: StateCommitment(note_commitment_2),
         } = public;
 
         public_inputs.extend(
-            Fq::from(anchor.0)
+            Fq::from(anchor)
                 .to_field_elements()
                 .ok_or(VerificationError::Anchor)?,
         );
         public_inputs.extend(
             nullifier
-                .0
                 .to_field_elements()
                 .ok_or(VerificationError::Nullifier)?,
         );
         public_inputs.extend(
-            Fq::from(claim_fee.0.amount)
+            Fq::from(amount)
                 .to_field_elements()
                 .ok_or(VerificationError::ClaimFeeAmount)?,
         );
         public_inputs.extend(
-            claim_fee
-                .0
-                .asset_id
-                .0
+            asset_id
                 .to_field_elements()
                 .ok_or(VerificationError::ClaimFeeAssetId)?,
         );
@@ -449,13 +450,11 @@ impl SwapClaimProof {
         );
         public_inputs.extend(
             note_commitment_1
-                .0
                 .to_field_elements()
                 .ok_or(VerificationError::NoteCommitment1)?,
         );
         public_inputs.extend(
             note_commitment_2
-                .0
                 .to_field_elements()
                 .ok_or(VerificationError::NoteCommitment2)?,
         );
