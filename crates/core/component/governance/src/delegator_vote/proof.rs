@@ -353,30 +353,38 @@ impl DelegatorVoteProof {
             rk,
             start_position,
         }: DelegatorVoteProofPublic,
-    ) -> anyhow::Result<()> {
-        let proof =
-            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+    ) -> Result<(), VerificationError> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
+            .map_err(VerificationError::ProofDeserialize)?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
             Fq::from(anchor)
                 .to_field_elements()
-                .expect("valid field element"),
+                .ok_or(VerificationError::Anchor)?,
         );
         public_inputs.extend(
             balance_commitment
                 .to_field_elements()
-                .expect("valid field element"),
+                .ok_or(VerificationError::BalanceCommitment)?,
         );
-        public_inputs.extend(nullifier.to_field_elements().expect("valid field element"));
+        public_inputs.extend(
+            nullifier
+                .to_field_elements()
+                .ok_or(VerificationError::Nullifier)?,
+        );
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
-            .expect("expect only valid element points");
-        public_inputs.extend(element_rk.to_field_elements().expect("valid field element"));
+            .map_err(VerificationError::DecompressRk)?;
+        public_inputs.extend(
+            element_rk
+                .to_field_elements()
+                .ok_or(VerificationError::Rk)?,
+        );
         public_inputs.extend(
             start_position
                 .to_field_elements()
-                .expect("valid field element"),
+                .ok_or(VerificationError::StartPosition)?,
         );
 
         tracing::trace!(?public_inputs);
@@ -386,11 +394,11 @@ impl DelegatorVoteProof {
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(|err| anyhow::anyhow!(err))?;
+        .map_err(VerificationError::SynthesisError)?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("delegator vote proof did not verify"))
+            .ok_or(VerificationError::InvalidProof)
     }
 }
 
