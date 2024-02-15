@@ -19,33 +19,33 @@ std = ["ark-ff/std"]
 docsrs = []
 
 [dependencies]
-penumbra-proto = {workspace = true, default-features = false}
-cnidarium = {workspace = true, optional = true, default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = false}
-cnidarium-component = {workspace = true, optional = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-dex = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
-penumbra-community-pool = {workspace = true, default-features = false}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-ark-ff = {workspace = true, default-features = false}
-decaf377-rdsa = {workspace = true}
-metrics = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-tracing = {workspace = true}
 anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
 async-trait = {workspace = true}
-tendermint = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
-rand = {workspace = true}
+cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
-tonic = {workspace = true, optional = true}
-tokio-stream = {workspace = true, optional = true}
-tokio = {workspace = true, optional = true}
 im = {workspace = true}
+metrics = {workspace = true}
+penumbra-community-pool = {workspace = true, default-features = false}
+penumbra-dex = {workspace = true, default-features = false}
+penumbra-fee = {workspace = true, default-features = false}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
+penumbra-proof-params = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+tendermint = {workspace = true}
+tokio = {workspace = true, optional = true}
+tokio-stream = {workspace = true, optional = true}
+tonic = {workspace = true, optional = true}
+tracing = {workspace = true}
