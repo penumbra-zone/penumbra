@@ -1,5 +1,6 @@
 use base64::prelude::*;
 use std::str::FromStr;
+use tct::Root;
 
 use anyhow::Result;
 use ark_r1cs_std::{
@@ -24,7 +25,11 @@ use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
 use crate::{note, Note, Rseed};
-use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_asset::{
+    balance::commitment::BalanceCommitmentVar,
+    balance::{self, Commitment},
+    Value,
+};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
@@ -323,27 +328,28 @@ impl SpendProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        public: SpendProofPublic,
+        SpendProofPublic {
+            anchor: Root(anchor),
+            balance_commitment: Commitment(balance_commitment),
+            nullifier: Nullifier(nullifier),
+            rk,
+        }: SpendProofPublic,
     ) -> Result<(), VerificationError> {
         let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
             .map_err(VerificationError::ProofDeserialize)?;
-        let element_rk = decaf377::Encoding(public.rk.to_bytes())
+        let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .map_err(VerificationError::DecompressRk)?;
 
         let mut public_inputs = Vec::new();
-        public_inputs.extend([Fq::from(public.anchor.0)]);
+        public_inputs.extend([Fq::from(anchor)]);
         public_inputs.extend(
-            public
-                .balance_commitment
-                .0
+            balance_commitment
                 .to_field_elements()
                 .ok_or(VerificationError::BalanceCommitment)?,
         );
         public_inputs.extend(
-            public
-                .nullifier
-                .0
+            nullifier
                 .to_field_elements()
                 .ok_or(VerificationError::Nullifier)?,
         );
