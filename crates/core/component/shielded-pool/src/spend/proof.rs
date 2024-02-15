@@ -326,6 +326,9 @@ impl SpendProof {
     ) -> Result<(), VerificationError> {
         let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
             .map_err(VerificationError::ProofDeserialize)?;
+        let element_rk = decaf377::Encoding(public.rk.to_bytes())
+            .vartime_decompress()
+            .map_err(VerificationError::DecompressRk)?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(public.anchor.0)]);
@@ -343,9 +346,6 @@ impl SpendProof {
                 .to_field_elements()
                 .ok_or(VerificationError::Nullifier)?,
         );
-        let element_rk = decaf377::Encoding(public.rk.to_bytes())
-            .vartime_decompress()
-            .map_err(VerificationError::DecompressRk)?;
         public_inputs.extend(
             element_rk
                 .to_field_elements()
