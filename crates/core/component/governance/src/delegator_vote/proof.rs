@@ -342,7 +342,14 @@ impl DelegatorVoteProof {
     /// Called to verify the proof using the provided public inputs.
     // For debugging proof verification failures,
     // to check that the proof data and verification keys are consistent.
-    #[tracing::instrument(level="debug", skip(self, vk), fields(self = ?general_purpose::STANDARD.encode(self.clone().encode_to_vec()), vk = ?vk.debug_id()))]
+    #[tracing::instrument(
+        level="debug",
+        skip(self, vk),
+        fields(
+            self = ?general_purpose::STANDARD.encode(self.clone().encode_to_vec()),
+            vk = ?vk.debug_id()
+        )
+    )]
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
