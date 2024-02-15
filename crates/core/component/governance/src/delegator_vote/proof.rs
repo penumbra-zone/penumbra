@@ -1,5 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
+use penumbra_asset::balance::Commitment;
 use std::str::FromStr;
+use tct::Root;
 
 use anyhow::Result;
 use ark_groth16::r1cs_to_qap::LibsnarkReduction;
@@ -322,38 +324,35 @@ impl DelegatorVoteProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        public: DelegatorVoteProofPublic,
+        DelegatorVoteProofPublic {
+            anchor: Root(anchor),
+            balance_commitment: Commitment(balance_commitment),
+            nullifier: Nullifier(nullifier),
+            rk,
+            start_position,
+        }: DelegatorVoteProofPublic,
     ) -> anyhow::Result<()> {
         let proof =
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend(
-            Fq::from(public.anchor.0)
+            Fq::from(anchor)
                 .to_field_elements()
                 .expect("valid field element"),
         );
         public_inputs.extend(
-            public
-                .balance_commitment
-                .0
+            balance_commitment
                 .to_field_elements()
                 .expect("valid field element"),
         );
-        public_inputs.extend(
-            public
-                .nullifier
-                .0
-                .to_field_elements()
-                .expect("valid field element"),
-        );
-        let element_rk = decaf377::Encoding(public.rk.to_bytes())
+        public_inputs.extend(nullifier.to_field_elements().expect("valid field element"));
+        let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .expect("expect only valid element points");
         public_inputs.extend(element_rk.to_field_elements().expect("valid field element"));
         public_inputs.extend(
-            public
-                .start_position
+            start_position
                 .to_field_elements()
                 .expect("valid field element"),
         );
