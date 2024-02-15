@@ -349,6 +349,30 @@ impl DummyWitness for SwapClaimCircuit {
 #[derive(Clone, Debug)]
 pub struct SwapClaimProof(pub [u8; GROTH16_PROOF_LENGTH_BYTES]);
 
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("error deserializing compressed proof: {0:?}")]
+    ProofDeserialize(ark_serialize::SerializationError),
+    #[error("Fq types are Bls12-377 field members")]
+    Anchor,
+    #[error("nullifier is a Bls12-377 field member")]
+    Nullifier,
+    #[error("Fq types are Bls12-377 field members")]
+    ClaimFeeAmount,
+    #[error("asset_id is a Bls12-377 field member")]
+    ClaimFeeAssetId,
+    #[error("output_data is a Bls12-377 field member")]
+    OutputData,
+    #[error("note_commitment_1 is a Bls12-377 field member")]
+    NoteCommitment1,
+    #[error("note_commitment_2 is a Bls12-377 field member")]
+    NoteCommitment2,
+    #[error("error verifying proof: {0:?}")]
+    SynthesisError(ark_relations::r1cs::SynthesisError),
+    #[error("proof did not verify")]
+    InvalidProof,
+}
+
 impl SwapClaimProof {
     #![allow(clippy::too_many_arguments)]
     /// Generate an [`SwapClaimProof`] given the proving key, public inputs,
@@ -379,9 +403,9 @@ impl SwapClaimProof {
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
         public: SwapClaimProofPublic,
-    ) -> anyhow::Result<()> {
-        let proof =
-            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+    ) -> Result<(), VerificationError> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
+            .map_err(VerificationError::ProofDeserialize)?;
 
         let mut public_inputs = Vec::new();
 
@@ -397,18 +421,18 @@ impl SwapClaimProof {
         public_inputs.extend(
             Fq::from(anchor.0)
                 .to_field_elements()
-                .expect("Fq types are Bls12-377 field members"),
+                .ok_or(VerificationError::Anchor)?,
         );
         public_inputs.extend(
             nullifier
                 .0
                 .to_field_elements()
-                .expect("nullifier is a Bls12-377 field member"),
+                .ok_or(VerificationError::Nullifier)?,
         );
         public_inputs.extend(
             Fq::from(claim_fee.0.amount)
                 .to_field_elements()
-                .expect("Fq types are Bls12-377 field members"),
+                .ok_or(VerificationError::ClaimFeeAmount)?,
         );
         public_inputs.extend(
             claim_fee
@@ -416,24 +440,24 @@ impl SwapClaimProof {
                 .asset_id
                 .0
                 .to_field_elements()
-                .expect("asset_id is a Bls12-377 field member"),
+                .ok_or(VerificationError::ClaimFeeAssetId)?,
         );
         public_inputs.extend(
             output_data
                 .to_field_elements()
-                .expect("output_data is a Bls12-377 field member"),
+                .ok_or(VerificationError::OutputData)?,
         );
         public_inputs.extend(
             note_commitment_1
                 .0
                 .to_field_elements()
-                .expect("note_commitment_1 is a Bls12-377 field member"),
+                .ok_or(VerificationError::NoteCommitment1)?,
         );
         public_inputs.extend(
             note_commitment_2
                 .0
                 .to_field_elements()
-                .expect("note_commitment_2 is a Bls12-377 field member"),
+                .ok_or(VerificationError::NoteCommitment2)?,
         );
 
         tracing::trace!(?public_inputs);
@@ -443,11 +467,11 @@ impl SwapClaimProof {
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(|err| anyhow::anyhow!(err))?;
+        .map_err(VerificationError::SynthesisError)?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("swapclaim proof did not verify"))
+            .ok_or(VerificationError::InvalidProof)
     }
 }
 
