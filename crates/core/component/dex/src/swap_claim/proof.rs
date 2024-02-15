@@ -384,26 +384,34 @@ impl SwapClaimProof {
             Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
 
         let mut public_inputs = Vec::new();
+
+        let SwapClaimProofPublic {
+            anchor,
+            nullifier,
+            claim_fee,
+            output_data,
+            note_commitment_1,
+            note_commitment_2,
+        } = public;
+
         public_inputs.extend(
-            Fq::from(public.anchor.0)
+            Fq::from(anchor.0)
                 .to_field_elements()
                 .expect("Fq types are Bls12-377 field members"),
         );
         public_inputs.extend(
-            public
-                .nullifier
+            nullifier
                 .0
                 .to_field_elements()
                 .expect("nullifier is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            Fq::from(public.claim_fee.0.amount)
+            Fq::from(claim_fee.0.amount)
                 .to_field_elements()
                 .expect("Fq types are Bls12-377 field members"),
         );
         public_inputs.extend(
-            public
-                .claim_fee
+            claim_fee
                 .0
                 .asset_id
                 .0
@@ -411,21 +419,18 @@ impl SwapClaimProof {
                 .expect("asset_id is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            public
-                .output_data
+            output_data
                 .to_field_elements()
                 .expect("output_data is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            public
-                .note_commitment_1
+            note_commitment_1
                 .0
                 .to_field_elements()
                 .expect("note_commitment_1 is a Bls12-377 field member"),
         );
         public_inputs.extend(
-            public
-                .note_commitment_2
+            note_commitment_2
                 .0
                 .to_field_elements()
                 .expect("note_commitment_2 is a Bls12-377 field member"),
