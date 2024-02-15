@@ -365,6 +365,9 @@ impl DelegatorVoteProof {
     ) -> Result<(), VerificationError> {
         let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
             .map_err(VerificationError::ProofDeserialize)?;
+        let element_rk = decaf377::Encoding(rk.to_bytes())
+            .vartime_decompress()
+            .map_err(VerificationError::DecompressRk)?;
 
         /// Shorthand helper, convert expressions into field elements.
         macro_rules! to_field_elements {
@@ -379,9 +382,6 @@ impl DelegatorVoteProof {
         public_inputs.extend(to_field_elements!(Fq::from(anchor), Anchor));
         public_inputs.extend(to_field_elements!(balance_commitment, BalanceCommitment));
         public_inputs.extend(to_field_elements!(nullifier, Nullifier));
-        let element_rk = decaf377::Encoding(rk.to_bytes())
-            .vartime_decompress()
-            .map_err(VerificationError::DecompressRk)?;
         public_inputs.extend(to_field_elements!(element_rk, Rk));
         public_inputs.extend(to_field_elements!(start_position, StartPosition));
 
