@@ -16,50 +16,50 @@ parallel = [
 download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 
 [dependencies]
-penumbra-proto = {workspace = true, default-features = true}
-decaf377-ka = {workspace = true}
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-serialize = {workspace = true}
+base64 = {workspace = true}
+bech32 = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
+chacha20poly1305 = {workspace = true}
+decaf377 = {workspace = true}
 decaf377-fmd = {workspace = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-stake = {workspace = true, default-features = false}
-penumbra-ibc = {workspace = true, default-features = false}
+decaf377-ka = {workspace = true}
+decaf377-rdsa = {workspace = true}
+derivative = {workspace = true}
+hex = {workspace = true}
+ibc-proto = {workspace = true, default-features = false}
+ibc-types = {workspace = true, default-features = false}
+num-bigint = {workspace = true}
+once_cell = {workspace = true}
+pbjson-types = {workspace = true}
+penumbra-asset = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-asset = {workspace = true, default-features = false}
+penumbra-governance = {workspace = true, default-features = false}
+penumbra-ibc = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-stake = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
 penumbra-txhash = {workspace = true, default-features = false}
-ibc-types = {workspace = true, default-features = false}
-ibc-proto = {workspace = true, default-features = false}
-decaf377 = {workspace = true}
-decaf377-rdsa = {workspace = true}
 poseidon377 = {workspace = true, features = ["r1cs"]}
-base64 = {workspace = true}
-ark-ff = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
-regex = {workspace = true}
-sha2 = {workspace = true}
-bech32 = {workspace = true}
-anyhow = {workspace = true}
-thiserror = {workspace = true}
-bytes = {workspace = true}
-derivative = {workspace = true}
-hex = {workspace = true}
-blake2b_simd = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-once_cell = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
 rand = {workspace = true}
-chacha20poly1305 = {workspace = true}
-pbjson-types = {workspace = true}
-num-bigint = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
-tracing = {workspace = true}
+sha2 = {workspace = true}
+thiserror = {workspace = true}
 tokio = {workspace = true, features = ["full"], optional = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}
