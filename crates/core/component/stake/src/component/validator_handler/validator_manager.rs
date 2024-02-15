@@ -13,7 +13,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::StreamExt as _;
 use penumbra_num::Amount;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sct::{
+    component::clock::{EpochManager, EpochRead},
+    epoch::Epoch,
+};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
@@ -22,7 +25,7 @@ use validator::BondingState::*;
 
 use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto;
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 
 use crate::{
     component::validator_handler::ValidatorDataRead,
@@ -545,6 +548,39 @@ pub trait ValidatorManager: StateWrite {
         self.put(state_key::validators::definitions::by_id(id), validator);
 
         Ok(())
+    }
+
+    /// Update the validator pool's bonding state.
+    #[instrument(skip(self))]
+    async fn process_validator_pool_state(
+        &mut self,
+        validator_identity: &IdentityKey,
+        at_epoch: Epoch,
+    ) {
+        let pool_state = self.get_validator_bonding_state(validator_identity).await;
+
+        // If the pool is already unbonded, this will return the current epoch.
+        let unbonding_epoch_target = self
+            .compute_unbonding_epoch(validator_identity, at_epoch.index)
+            .await
+            .unwrap();
+
+        tracing::debug!(
+            validator_identity = %validator_identity,
+            ?pool_state,
+            ?unbonding_epoch_target,
+            "processing validator pool state");
+
+        if at_epoch.index >= unbonding_epoch_target {
+            // The validator's delegation pool has finished unbonding, so we
+            // transition it to the Unbonded state.
+            let _ = self
+                .set_validator_bonding_state(validator_identity, Unbonded)
+                .instrument(tracing::debug_span!(
+                    "validator_pool_unbonded",
+                    ?validator_identity
+                ));
+        }
     }
 
     #[instrument(skip(self, last_commit_info))]

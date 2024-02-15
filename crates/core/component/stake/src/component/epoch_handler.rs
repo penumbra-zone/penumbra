@@ -1,7 +1,6 @@
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
 use std::collections::{BTreeMap, BTreeSet};
-use validator::BondingState::*;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -15,7 +14,7 @@ use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
 use tendermint::validator::Update;
 use tendermint::PublicKey;
 use tokio::task::JoinSet;
-use tracing::{instrument, Instrument};
+use tracing::instrument;
 
 use crate::{
     component::{
@@ -23,8 +22,8 @@ use crate::{
         validator_handler::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
         SlashingData, FP_SCALING_FACTOR,
     },
-    validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
-    StateReadExt,
+    validator::{self},
+    CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty, StateReadExt,
 };
 use crate::{state_key, Delegate, Undelegate};
 
@@ -319,6 +318,10 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 delegation_denom = ?delegation_token_denom,
                 ?delegation_token_supply,
                 "validator's end-epoch has been processed");
+
+            // TODO(erwan): move this up?
+            self.process_validator_pool_state(&validator.identity_key, epoch_to_end)
+                .await;
         }
 
         // We have collected the funding streams for all validators, so we can now
@@ -327,7 +330,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
 
         // Now that all the voting power has been calculated for the upcoming epoch,
         // we can determine which validators are Active for the next epoch.
-        self.process_validator_unbondings().await?;
         self.set_active_and_inactive_validators().await?;
         Ok(())
     }
@@ -379,43 +381,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         for (v, _) in inactive {
             self.set_validator_state(v, validator::State::Inactive)
                 .await?;
-        }
-
-        Ok(())
-    }
-
-    /// Process all `Unbonding` validators, transitioning them to `Unbonded` if their
-    /// unbonding target has been reached.
-    #[instrument(skip(self))]
-    async fn process_validator_unbondings(&mut self) -> Result<()> {
-        let current_epoch = self.get_current_epoch().await?;
-
-        let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
-            let state = self
-                .get_validator_bonding_state(&identity_key)
-                .await?
-                .context("should be able to fetch validator bonding state")?;
-
-            match state {
-                Bonded => continue,
-                Unbonded => continue,
-                Unbonding { unbonds_at_epoch } => {
-                    if current_epoch.index >= unbonds_at_epoch {
-                        // The validator's delegation pool has finished unbonding, so we
-                        // transition it to the Unbonded state.
-                        let _ = self
-                            .set_validator_bonding_state(
-                                &identity_key,
-                                validator::BondingState::Unbonded,
-                            )
-                            // Instrument the call with a span that includes the validator ID,
-                            // since our current span doesn't have any per-validator information.
-                            .instrument(tracing::debug_span!("unbonding", ?identity_key));
-                    }
-                }
-            }
         }
 
         Ok(())
