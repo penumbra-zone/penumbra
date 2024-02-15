@@ -341,25 +341,25 @@ impl SpendProof {
             .vartime_decompress()
             .map_err(VerificationError::DecompressRk)?;
 
-        let mut public_inputs = Vec::new();
-        public_inputs.extend([Fq::from(anchor)]);
-        public_inputs.extend(
-            balance_commitment
-                .to_field_elements()
-                .ok_or(VerificationError::BalanceCommitment)?,
-        );
-        public_inputs.extend(
-            nullifier
-                .to_field_elements()
-                .ok_or(VerificationError::Nullifier)?,
-        );
-        public_inputs.extend(
-            element_rk
-                .to_field_elements()
-                .ok_or(VerificationError::Rk)?,
-        );
+        /// Shorthand helper, convert expressions into field elements.
+        macro_rules! to_field_elements {
+            ($fe:expr, $err:expr) => {
+                $fe.to_field_elements().ok_or($err)?
+            };
+        }
 
-        tracing::trace!(?public_inputs);
+        use VerificationError::*;
+        let public_inputs = [
+            to_field_elements!(Fq::from(anchor), Anchor),
+            to_field_elements!(balance_commitment, BalanceCommitment),
+            to_field_elements!(nullifier, Nullifier),
+            to_field_elements!(element_rk, Rk),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .tap(|public_inputs| tracing::trace!(?public_inputs));
+
         let start = std::time::Instant::now();
         Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
