@@ -366,35 +366,24 @@ impl DelegatorVoteProof {
         let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
             .map_err(VerificationError::ProofDeserialize)?;
 
+        /// Shorthand helper, convert expressions into field elements.
+        macro_rules! to_field_elements {
+            ($fe:expr, $err:expr) => {
+                $fe.to_field_elements().ok_or($err)?
+            };
+        }
+
+        use VerificationError::*;
+
         let mut public_inputs = Vec::new();
-        public_inputs.extend(
-            Fq::from(anchor)
-                .to_field_elements()
-                .ok_or(VerificationError::Anchor)?,
-        );
-        public_inputs.extend(
-            balance_commitment
-                .to_field_elements()
-                .ok_or(VerificationError::BalanceCommitment)?,
-        );
-        public_inputs.extend(
-            nullifier
-                .to_field_elements()
-                .ok_or(VerificationError::Nullifier)?,
-        );
+        public_inputs.extend(to_field_elements!(Fq::from(anchor), Anchor));
+        public_inputs.extend(to_field_elements!(balance_commitment, BalanceCommitment));
+        public_inputs.extend(to_field_elements!(nullifier, Nullifier));
         let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
             .map_err(VerificationError::DecompressRk)?;
-        public_inputs.extend(
-            element_rk
-                .to_field_elements()
-                .ok_or(VerificationError::Rk)?,
-        );
-        public_inputs.extend(
-            start_position
-                .to_field_elements()
-                .ok_or(VerificationError::StartPosition)?,
-        );
+        public_inputs.extend(to_field_elements!(element_rk, Rk));
+        public_inputs.extend(to_field_elements!(start_position, StartPosition));
 
         tracing::trace!(?public_inputs);
         let start = std::time::Instant::now();
