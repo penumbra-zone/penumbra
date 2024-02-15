@@ -13,14 +13,14 @@ default = ["std"]
 std = ["ark-ff/std"]
 
 [dependencies]
-decaf377 = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
 ark-serialize = {workspace = true}
-thiserror = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
 bitvec = {workspace = true}
 blake2b_simd = {workspace = true}
+decaf377 = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+thiserror = {workspace = true}
 
 [dev-dependencies]
-proptest = {workspace = true}
 criterion = {workspace = true, features = ["html_reports"]}
+proptest = {workspace = true}
