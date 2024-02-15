@@ -240,10 +240,25 @@ pub mod swap_view {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
+        /// The underlying Swap action being viewed.
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
+        /// The plaintext of the encrypted swap.
         #[prost(message, optional, tag = "3")]
         pub swap_plaintext: ::core::option::Option<super::SwapPlaintext>,
+        /// Optionally, a transaction hash for the transaction that claimed this
+        /// swap.
+        ///
+        /// Presence of this field signals that the swap outputs have been claimed
+        /// and that the claim transaction is known to the view server.  Absence of
+        /// this field does not indicate anything about the state of the swap.
+        ///
+        /// This field allows frontends to more easily crossreference the sequence of
+        /// Swap/SwapClaim actions.
+        #[prost(message, optional, tag = "4")]
+        pub claim_tx: ::core::option::Option<
+            super::super::super::super::txhash::v1::TransactionId,
+        >,
     }
     impl ::prost::Name for Visible {
         const NAME: &'static str = "Visible";
@@ -305,6 +320,15 @@ pub mod swap_claim_view {
         #[prost(message, optional, tag = "3")]
         pub output_2: ::core::option::Option<
             super::super::super::shielded_pool::v1::NoteView,
+        >,
+        /// Optionally, a transaction hash for the transaction that created the swap
+        /// this action claims.
+        ///
+        /// This field allows frontends to more easily crossreference the sequence of
+        /// Swap/SwapClaim actions.
+        #[prost(message, optional, tag = "4")]
+        pub swap_tx: ::core::option::Option<
+            super::super::super::super::txhash::v1::TransactionId,
         >,
     }
     impl ::prost::Name for Visible {

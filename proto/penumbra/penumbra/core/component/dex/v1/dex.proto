@@ -7,6 +7,7 @@ import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
 
 // A Penumbra ZK swap proof.
@@ -119,8 +120,20 @@ message SwapClaimPlan {
 
 message SwapView {
   message Visible {
+    // The underlying Swap action being viewed.
     dex.v1.Swap swap = 1;
+    // The plaintext of the encrypted swap.
     dex.v1.SwapPlaintext swap_plaintext = 3;
+    // Optionally, a transaction hash for the transaction that claimed this
+    // swap.
+    //
+    // Presence of this field signals that the swap outputs have been claimed
+    // and that the claim transaction is known to the view server.  Absence of
+    // this field does not indicate anything about the state of the swap.
+    //
+    // This field allows frontends to more easily crossreference the sequence of
+    // Swap/SwapClaim actions.
+    txhash.v1.TransactionId claim_tx = 4;
   }
 
   message Opaque {
@@ -138,6 +151,12 @@ message SwapClaimView {
     dex.v1.SwapClaim swap_claim = 1;
     shielded_pool.v1.NoteView output_1 = 2;
     shielded_pool.v1.NoteView output_2 = 3;
+    // Optionally, a transaction hash for the transaction that created the swap
+    // this action claims.
+    //
+    // This field allows frontends to more easily crossreference the sequence of
+    // Swap/SwapClaim actions.
+    txhash.v1.TransactionId swap_tx = 4;
   }
   message Opaque {
     dex.v1.SwapClaim swap_claim = 1;

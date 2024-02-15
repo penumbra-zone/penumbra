@@ -67,6 +67,8 @@ impl From<SwapClaimView> for pbd::SwapClaimView {
                     swap_claim: Some(swap_claim.into()),
                     output_1: Some(output_1.into()),
                     output_2: Some(output_2.into()),
+                    // Swap claim crossreferencing is not yet supported in the Rust stack.
+                    swap_tx: None,
                 })),
             },
             SwapClaimView::Opaque { swap_claim } => Self {
