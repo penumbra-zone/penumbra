@@ -1,36 +1,37 @@
-use base64::{engine::general_purpose, Engine as _};
-use penumbra_asset::balance::Commitment;
-use std::str::FromStr;
-use tct::Root;
-
 use anyhow::Result;
-use ark_groth16::r1cs_to_qap::LibsnarkReduction;
-use ark_r1cs_std::{prelude::*, uint8::UInt8};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use decaf377::r1cs::ElementVar;
-use decaf377::FieldExt;
-use decaf377::{r1cs::FqVar, Bls12_377, Fq, Fr};
-
 use ark_ff::ToConstraintField;
-use ark_groth16::{Groth16, PreparedVerifyingKey, Proof, ProvingKey};
-use ark_r1cs_std::prelude::AllocVar;
+use ark_groth16::{
+    r1cs_to_qap::LibsnarkReduction, Groth16, PreparedVerifyingKey, Proof, ProvingKey,
+};
+use ark_r1cs_std::{prelude::*, uint8::UInt8};
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
+use base64::{engine::general_purpose, Engine as _};
+use decaf377::{
+    r1cs::{ElementVar, FqVar},
+    Bls12_377, FieldExt, Fq, Fr,
+};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
-use penumbra_tct as tct;
-use penumbra_tct::r1cs::StateCommitmentVar;
-use tap::Tap;
-use tct::r1cs::PositionVar;
-
-use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_asset::{
+    balance::{self, commitment::BalanceCommitmentVar, Commitment},
+    Value,
+};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
+use penumbra_proto::{core::component::governance::v1 as pb, DomainType};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{note, Note, Rseed};
+use penumbra_tct::{
+    self as tct,
+    r1cs::{PositionVar, StateCommitmentVar},
+    Root,
+};
+use std::str::FromStr;
+use tap::Tap;
 
 /// The public input for a [`DelegatorVoteProof`].
 #[derive(Clone, Debug)]
