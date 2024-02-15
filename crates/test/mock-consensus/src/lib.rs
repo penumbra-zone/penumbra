@@ -8,7 +8,6 @@ pub mod builder;
 
 mod abci;
 mod block;
-mod send_block;
 
 /// A test node.
 ///

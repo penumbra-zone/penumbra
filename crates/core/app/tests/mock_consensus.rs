@@ -56,12 +56,12 @@ async fn mock_consensus_can_send_a_single_empty_block() -> anyhow::Result<()> {
             .await?
     };
 
-    let block = engine
+    engine
         .block()
         .with_data(vec![])
         .with_evidence(List::new(Vec::new()))
-        .finish()?;
-    engine.send_block(block).await?;
+        .execute()
+        .await?;
 
     // Free our temporary storage.
     drop(storage);

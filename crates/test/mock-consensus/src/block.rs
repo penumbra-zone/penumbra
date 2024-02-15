@@ -4,11 +4,16 @@
 use {
     crate::TestNode,
     anyhow::bail,
+    tap::Tap,
     tendermint::{
         account,
         block::{header::Version, Block, Commit, Header, Height},
-        chain, evidence, AppHash, Hash,
+        chain, evidence,
+        v0_37::abci::{ConsensusRequest, ConsensusResponse},
+        AppHash, Hash,
     },
+    tower::{BoxError, Service},
+    tracing::{info, instrument},
 };
 
 /// A builder, used to prepare and instantiate a new [`Block`].
@@ -70,14 +75,56 @@ impl<'e, C> Builder<'e, C> {
 
     // TODO(kate): add more `with_` setters for fields in the header.
     // TODO(kate): set some fields using state in the test node.
+}
 
-    /// Consumes this builder, returning a [`Block`].
-    pub fn finish(self) -> Result<Block, anyhow::Error> {
+impl<'e, C> Builder<'e, C>
+where
+    C: Service<ConsensusRequest, Response = ConsensusResponse, Error = BoxError>
+        + Send
+        + Clone
+        + 'static,
+    C::Future: Send + 'static,
+    C::Error: Sized,
+{
+    /// Consumes this builder, executing the [`Block`] using the consensus service.
+    ///
+    /// Use [`TestNode::block()`] to build a new block.
+    #[instrument(level = "info", skip_all, fields(height, time))]
+    pub async fn execute(self) -> Result<(), anyhow::Error> {
+        let (test_node, block) = self.finish()?;
+
+        let Block {
+            header,
+            data,
+            evidence: _,
+            last_commit: _,
+            ..
+        } = block.tap(|block| {
+            tracing::span::Span::current()
+                .record("height", block.header.height.value())
+                .record("time", block.header.time.unix_timestamp());
+        });
+
+        info!("sending block");
+        test_node.begin_block(header).await?;
+        for tx in data {
+            let tx = tx.into();
+            test_node.deliver_tx(tx).await?;
+        }
+        test_node.end_block().await?;
+        test_node.commit().await?;
+        info!("finished sending block");
+
+        Ok(())
+    }
+
+    /// Consumes this builder, returning its [`TestNode`] reference and a [`Block`].
+    fn finish(self) -> Result<(&'e mut TestNode<C>, Block), anyhow::Error> {
         let Self {
             data: Some(data),
             evidence: Some(evidence),
             last_commit,
-            test_node: _,
+            test_node,
         } = self
         else {
             bail!("builder was not fully initialized")
@@ -101,7 +148,8 @@ impl<'e, C> Builder<'e, C> {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ]),
         };
+        let block = Block::new(header, data, evidence, last_commit)?;
 
-        Block::new(header, data, evidence, last_commit).map_err(Into::into)
+        Ok((test_node, block))
     }
 }
