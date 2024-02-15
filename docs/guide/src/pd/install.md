@@ -8,7 +8,7 @@ Make sure to choose the correct platform for your machine. After downloading the
 extract it, and copy its contents to your `$PATH`. For example:
 
 ```
-curl -O -L https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../penumbra_version.md }}/pd-x86_64-unknown-linux-gnu.tar.xz
+curl -sSfL -O https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../penumbra_version.md }}/pd-x86_64-unknown-linux-gnu.tar.xz
 unxz pd-x86_64-unknown-linux-gnu.tar.xz
 tar -xf pd-x86_64-unknown-linux-gnu.tar
 sudo mv pd-x86_64-unknown-linux-gnu/pd /usr/local/bin/
