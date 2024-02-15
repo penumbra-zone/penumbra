@@ -273,6 +273,28 @@ impl DummyWitness for SpendCircuit {
 #[derive(Clone, Debug)]
 pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("error deserializing compressed proof: {0:?}")]
+    ProofDeserialize(ark_serialize::SerializationError),
+    #[error("Fq types are Bls12-377 field members")]
+    Anchor,
+    #[error("balance commitment is a Bls12-377 field member")]
+    BalanceCommitment,
+    #[error("nullifier is a Bls12-377 field member")]
+    Nullifier,
+    #[error("could not decompress element points: {0:?}")]
+    DecompressRk(decaf377::EncodingError),
+    #[error("randomized spend key is a Bls12-377 field member")]
+    Rk,
+    #[error("start position is a Bls12-377 field member")]
+    StartPosition,
+    #[error("error verifying proof: {0:?}")]
+    SynthesisError(ark_relations::r1cs::SynthesisError),
+    #[error("spend proof did not verify")]
+    InvalidProof,
+}
+
 impl SpendProof {
     /// Generate a `SpendProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
@@ -301,9 +323,9 @@ impl SpendProof {
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
         public: SpendProofPublic,
-    ) -> anyhow::Result<()> {
-        let proof =
-            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
+    ) -> Result<(), VerificationError> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
+            .map_err(VerificationError::ProofDeserialize)?;
 
         let mut public_inputs = Vec::new();
         public_inputs.extend([Fq::from(public.anchor.0)]);
@@ -312,22 +334,22 @@ impl SpendProof {
                 .balance_commitment
                 .0
                 .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
+                .ok_or(VerificationError::BalanceCommitment)?,
         );
         public_inputs.extend(
             public
                 .nullifier
                 .0
                 .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
+                .ok_or(VerificationError::Nullifier)?,
         );
         let element_rk = decaf377::Encoding(public.rk.to_bytes())
             .vartime_decompress()
-            .expect("expect only valid element points");
+            .map_err(VerificationError::DecompressRk)?;
         public_inputs.extend(
             element_rk
                 .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("rk is not a valid element"))?,
+                .ok_or(VerificationError::Rk)?,
         );
 
         tracing::trace!(?public_inputs);
@@ -337,11 +359,11 @@ impl SpendProof {
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(|err| anyhow::anyhow!(err))?;
+        .map_err(VerificationError::SynthesisError)?;
         tracing::debug!(?proof_result, elapsed = ?start.elapsed());
         proof_result
             .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
+            .ok_or(VerificationError::InvalidProof)
     }
 }
 
