@@ -227,11 +227,11 @@ impl FromStr for ProposalKind {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.replace(['-', '_', ' '], "").to_lowercase().as_str() {
+        match s {
             "signaling" => Ok(ProposalKind::Signaling),
             "emergency" => Ok(ProposalKind::Emergency),
-            "parameterchange" => Ok(ProposalKind::ParameterChange),
-            "communitypoolspend" => Ok(ProposalKind::CommunityPoolSpend),
+            "parameter_change" => Ok(ProposalKind::ParameterChange),
+            "community_pool_spend" => Ok(ProposalKind::CommunityPoolSpend),
             "upgrade_plan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
