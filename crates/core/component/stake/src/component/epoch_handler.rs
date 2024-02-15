@@ -288,9 +288,9 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 ));
             }
 
-            // We want to know if the validator has enough stake delegated to it to remain
-            // in the consensus set. In order to do this, we need to know what is the "absolute"
-            // (i.e. unbonded) amount corresponding to the validator's delegation pool.
+            // We want to know if the validator has enough stake to remain in the consensus set.
+            // In order to do this, we need to know what is the size of the validator's delegation
+            // pool in terms of staking tokens (i.e. the unbonded amount).
             let delegation_token_denom = DelegationToken::from(&validator.identity_key).denom();
             let validator_unbonded_amount =
                 next_validator_rate.unbonded_amount(delegation_token_supply);
