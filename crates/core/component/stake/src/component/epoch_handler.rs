@@ -384,12 +384,12 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         Ok(())
     }
 
-    /// Materializes the entire current validator set as a Tendermint update.
+    /// Materializes the entire current validator set as a CometBFT update.
     ///
     /// This re-defines all validators every time, to simplify the code compared to
     /// trying to track delta updates.
     #[instrument(skip(self))]
-    async fn build_tendermint_validator_updates(&mut self) -> Result<()> {
+    async fn build_cometbft_validator_updates(&mut self) -> Result<()> {
         let current_consensus_keys: CurrentConsensusKeys = self
             .get(state_key::consensus_update::consensus_keys())
             .await?
@@ -440,7 +440,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         }
 
         // Next, filter that mapping to exclude any zero-power validators, UNLESS they
-        // were already known to Tendermint.
+        // were already known to CometBFT.
         voting_power_by_consensus_key.retain(|consensus_key, voting_power| {
             *voting_power > Amount::zero() || current_consensus_keys.contains(consensus_key)
         });

@@ -131,8 +131,8 @@ pub mod consensus_update {
 
 pub(super) mod internal {
 
-    pub fn tendermint_validator_updates() -> &'static str {
-        "staking/tendermint_validator_updates"
+    pub fn cometbft_validator_updates() -> &'static str {
+        "staking/cometbft_validator_updates"
     }
 }
 

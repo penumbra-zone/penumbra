@@ -99,7 +99,7 @@ impl Component for Staking {
         }
         // Build the initial validator set update.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .expect("should be able to build initial tendermint validator updates");
     }
@@ -154,7 +154,7 @@ impl Component for Staking {
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .context("should be able to build tendermint validator updates")?;
         Ok(())
@@ -165,8 +165,8 @@ pub trait ConsensusUpdateRead: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
     ///
     /// Set during `end_block`.
-    fn tendermint_validator_updates(&self) -> Option<Vec<Update>> {
-        self.object_get(state_key::internal::tendermint_validator_updates())
+    fn cometbft_validator_updates(&self) -> Option<Vec<Update>> {
+        self.object_get(state_key::internal::cometbft_validator_updates())
             .unwrap_or(None)
     }
 }
@@ -177,7 +177,7 @@ pub(crate) trait ConsensusUpdateWrite: StateWrite {
     fn put_cometbft_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
-            state_key::internal::tendermint_validator_updates(),
+            state_key::internal::cometbft_validator_updates(),
             Some(updates),
         )
     }
