@@ -75,6 +75,7 @@ rand_core = {workspace = true}
 regex = {workspace = true}
 tokio = {workspace = true, features = ["full"], optional = true}
 tonic = {workspace = true, optional = true}
+tap = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}

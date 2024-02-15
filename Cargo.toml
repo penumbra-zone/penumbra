@@ -204,6 +204,7 @@ serde_json = {version = "1.0.96"}
 serde_unit_struct = {version = "0.1"}
 serde_with = {version = "3.5.1"}
 sha2 = {version = "0.10"}
+tap = "1.0.1"
 tempfile = {version = "3.3.0"}
 tendermint = {default-features = false, version = "0.34.0"}
 tendermint-config = {version = "0.34.0"}
