@@ -1,9 +1,8 @@
+use crate::component::FP_SCALING_FACTOR;
 use penumbra_keys::Address;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
-
-use crate::rate::FP_SCALING_FACTOR;
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
@@ -237,6 +236,6 @@ impl<'a> IntoIterator for &'a FundingStreams {
     type IntoIter = std::slice::Iter<'a, FundingStream>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.funding_streams).iter()
+        (self.funding_streams).iter()
     }
 }

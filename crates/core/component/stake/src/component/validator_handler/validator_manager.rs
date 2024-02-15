@@ -414,6 +414,12 @@ pub trait ValidatorManager: StateWrite {
         initial_voting_power: Amount,
     ) -> Result<()> {
         tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
+
+        // TODO(erwan): add more guards - maybe.
+        // It's not totally clear we want guards here, because it's convenient
+        // to be able to add a validator with a nonsensical initial state for testing purposes.
+        // We will know once if we run with the testing framework. If we remove it, we'll have to
+        // expand the `match` down below.
         if !matches!(initial_state, State::Defined | State::Active) {
             anyhow::bail!(
                 "validator (identity_key={}) cannot have initial_state={:?}",
@@ -421,35 +427,32 @@ pub trait ValidatorManager: StateWrite {
                 initial_state
             )
         }
-        // TODO(erwan): add more guards for voting power and nonsensical initial states.
-        // in a separate PR, will move this up closer to `add_validator` - i don't want to
-        // clutter the diff for now.
-        let id = validator.identity_key.clone();
+        let validator_identity = validator.identity_key.clone();
 
         // First, we record the validator definition in the general validator index:
         self.put(
-            state_key::validators::definitions::by_id(&id),
+            state_key::validators::definitions::by_id(&validator_identity),
             validator.clone(),
         );
         // Then, we create a mapping from the validator's consensus key to its
         // identity key, so we can look up the validator by its consensus key, and
         // vice-versa.
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+        self.register_consensus_key(&validator_identity, &validator.consensus_key)
             .await;
         // We register the validator's delegation token in the token registry...
-        self.register_denom(&DelegationToken::from(&id).denom())
+        self.register_denom(&DelegationToken::from(&validator_identity).denom())
             .await?;
         // ... and its reward rate data in the JMT.
-        self.set_validator_rate_data(&id, initial_rate_data);
+        self.set_validator_rate_data(&validator_identity, initial_rate_data);
 
         // We initialize the validator's state, power, and bonding state.
-        self.set_initial_validator_state(&id, initial_state)?;
-        self.set_validator_power(&id, initial_voting_power)?;
-        self.set_validator_bonding_state(&id, initial_bonding_state);
+        self.set_initial_validator_state(&validator_identity, initial_state)?;
+        self.set_validator_power(&validator_identity, initial_voting_power)?;
+        self.set_validator_bonding_state(&validator_identity, initial_bonding_state);
 
         // For genesis validators, we also need to add them to the consensus set index.
         if initial_state == validator::State::Active {
-            self.add_consensus_set_index(&id);
+            self.add_consensus_set_index(&validator_identity);
         }
 
         // Finally, update metrics for the new validator.
@@ -463,7 +466,8 @@ pub trait ValidatorManager: StateWrite {
             _ => unreachable!("the initial state was validated by the guard condition"),
         };
 
-        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => id.to_string()).increment(0.0);
+        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => validator_identity.to_string())
+            .increment(0.0);
 
         Ok(())
     }

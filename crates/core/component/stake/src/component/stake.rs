@@ -302,7 +302,7 @@ pub trait StateWriteExt: StateWrite {
         /// modeling, so this is an interim hack.
         fn validator_address(ck: &PublicKey) -> [u8; 20] {
             let ck_bytes = ck.to_bytes();
-            let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+            let addr: [u8; 20] = Sha256::digest(ck_bytes).as_slice()[0..20]
                 .try_into()
                 .expect("Sha256 digest should be 20-bytes long");
 
@@ -386,6 +386,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its state was not found", validator_identity)
                 })?;
+
             if validator_state != validator::State::Active {
                 continue;
             }
@@ -410,7 +411,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 })?;
         }
 
-        Ok(total_active_stake.into())
+        Ok(total_active_stake)
     }
 }
 

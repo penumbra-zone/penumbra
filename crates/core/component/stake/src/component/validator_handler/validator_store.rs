@@ -177,7 +177,7 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
         use futures::TryFutureExt;
-        self.get(&state_key::validators::definitions::by_id(&identity_key))
+        self.get(&state_key::validators::definitions::by_id(identity_key))
             .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
             .boxed()
     }
