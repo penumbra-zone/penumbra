@@ -14,36 +14,36 @@ default = []
 parallel = ["penumbra-transaction/parallel"]
 
 [dependencies]
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
-penumbra-app = {workspace = true}
-penumbra-stake = {workspace = true, default-features = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-fee = {workspace = true, default-features = true}
-penumbra-view = {workspace = true}
-penumbra-custody = {workspace = true}
-bytes = {workspace = true}
-bincode = {workspace = true}
-ark-std = {workspace = true, default-features = false}
-decaf377 = {workspace = true, default-features = true}
-tokio = {workspace = true, features = ["full"]}
-tower = {workspace = true, features = ["full"]}
-tonic = {workspace = true}
-tracing = {workspace = true}
-pin-project = {workspace = true}
-serde_json = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
 anyhow = {workspace = true}
+ark-std = {workspace = true, default-features = false}
+bincode = {workspace = true}
+bytes = {workspace = true}
+decaf377 = {workspace = true, default-features = true}
 hex = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
+penumbra-app = {workspace = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-custody = {workspace = true}
+penumbra-dex = {workspace = true, default-features = true}
+penumbra-fee = {workspace = true, default-features = true}
+penumbra-governance = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-stake = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-view = {workspace = true}
+pin-project = {workspace = true}
 rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tonic = {workspace = true}
+tower = {workspace = true, features = ["full"]}
+tracing = {workspace = true}
 
 [dev-dependencies]
+once_cell = {workspace = true}
 proptest = {workspace = true}
 proptest-derive = {workspace = true}
-once_cell = {workspace = true}
