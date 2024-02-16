@@ -61,6 +61,12 @@ impl From<SwapView> for pb::SwapView {
                     swap_plaintext: Some(swap_plaintext.into()),
                     // Swap claim crossreferencing is not yet supported in the Rust stack.
                     claim_tx: None,
+                    // These fields are also not yet supported in the Rust stack.
+                    asset_1_metadata: None,
+                    asset_2_metadata: None,
+                    batch_swap_output_data: None,
+                    output_1: None,
+                    output_2: None,
                 })),
             },
             SwapView::Opaque { swap } => Self {
