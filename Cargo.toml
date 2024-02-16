@@ -134,7 +134,7 @@ criterion = {version = "0.4"}
 decaf377 = {default-features = false, version = "0.5"}
 decaf377-fmd = {path = "crates/crypto/decaf377-fmd"}
 decaf377-ka = {path = "crates/crypto/decaf377-ka"}
-decaf377-rdsa = {version = "0.7"}
+decaf377-rdsa = {version = "0.9"}
 derivative = {version = "2.2"}
 directories = {version = "4.0.1"}
 ed25519-consensus = {version = "2.1"}
