@@ -266,7 +266,7 @@ pub trait ValidatorManager: StateWrite {
             (Tombstoned, Tombstoned) => {
                 tracing::debug!(validator_identity = %identity_key, "validator is already tombstoned");
                 // See discussion in https://github.com/penumbra-zone/penumbra/pull/3761 for context.
-                // The abridged summary is that applying a misbehavior penalty enough and immediately
+                // The abridged summary is that applying a misbehavior penalty once and immediately
                 // unbonding the validator's delegation pool should be enough to deter misbehavior.
                 // Considering every single misbehavior actions as "counts" that accumulate runs the
                 // risk of cratering misconfigured validator into oblivion.
