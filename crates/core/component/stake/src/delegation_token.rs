@@ -63,7 +63,7 @@ impl TryFrom<asset::Metadata> for DelegationToken {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         let validator_identity =
-            Regex::new("udelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)")
+            Regex::new("^udelegation_(?P<data>penumbravalid1[a-zA-HJ-NP-Z0-9]+)$")
                 .expect("regex is valid")
                 .captures(&base_denom.to_string())
                 .ok_or_else(|| {
