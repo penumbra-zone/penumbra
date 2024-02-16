@@ -134,6 +134,24 @@ message SwapView {
     // This field allows frontends to more easily crossreference the sequence of
     // Swap/SwapClaim actions.
     txhash.v1.TransactionId claim_tx = 4;
+    // Optionally, if the swap has been confirmed, the batch price it received.
+    //
+    // As soon as the swap is detected, the view server can in principle record
+    // the relevant BSOD and provide it as part of the view.  This allows providing
+    // info about the execution of the swap.
+    BatchSwapOutputData batch_swap_output_data = 20;
+    // Optionally, if the swap has been confirmed, the output note of asset 1.
+    //
+    // This is the note that will be minted by the SwapClaim action.
+    shielded_pool.v1.NoteView output_1 = 30;
+    // Optionally, if the swap has been confirmed, the output note of asset 2.
+    //
+    // This is the note that will be minted by the SwapClaim action.
+    shielded_pool.v1.NoteView output_2 = 31;
+    // Optionally, metadata about asset 1 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_1_metadata = 40;
+    // Optionally, metadata about asset 2 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_2_metadata = 41;
   }
 
   message Opaque {
