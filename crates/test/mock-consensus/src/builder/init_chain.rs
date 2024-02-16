@@ -60,6 +60,7 @@ impl Builder {
 
         Ok(TestNode {
             consensus,
+            height: block::Height::from(0_u8),
             last_app_hash: app_hash.as_bytes().to_owned(),
         })
     }

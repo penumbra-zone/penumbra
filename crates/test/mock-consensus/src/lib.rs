@@ -21,6 +21,7 @@ mod block;
 pub struct TestNode<C> {
     consensus: C,
     last_app_hash: Vec<u8>,
+    height: tendermint::block::Height,
 }
 
 impl<C> TestNode<C> {

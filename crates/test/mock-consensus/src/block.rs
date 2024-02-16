@@ -1,13 +1,14 @@
 //! [`Builder`] facilities for constructing [`Block`]s.
 //!
-/// Builders are acquired by calling [`TestNode::block()`].
+//! Builders are acquired by calling [`TestNode::block()`].
+
 use {
     crate::TestNode,
     anyhow::bail,
     tap::Tap,
     tendermint::{
         account,
-        block::{header::Version, Block, Commit, Header, Height},
+        block::{self, header::Version, Block, Commit, Header, Round},
         chain, evidence,
         v0_37::abci::{ConsensusRequest, ConsensusResponse},
         AppHash, Hash,
@@ -21,9 +22,6 @@ use {
 /// These are acquired by calling [`TestNode::block()`].
 pub struct Builder<'e, C> {
     /// A unique reference to the test node.
-    //
-    //  NB: this is currently unused, but will eventually be used to fill in header fields, etc.
-    #[allow(dead_code)]
     test_node: &'e mut TestNode<C>,
 
     /// Transaction data.
@@ -31,9 +29,6 @@ pub struct Builder<'e, C> {
 
     /// Evidence of malfeasance.
     evidence: Option<evidence::List>,
-
-    /// Last commit.
-    last_commit: Option<Commit>,
 }
 
 impl<C> TestNode<C> {
@@ -43,10 +38,11 @@ impl<C> TestNode<C> {
             test_node: self,
             data: Default::default(),
             evidence: Default::default(),
-            last_commit: Default::default(),
         }
     }
 }
+
+// === impl Builder ===
 
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
@@ -61,14 +57,6 @@ impl<'e, C> Builder<'e, C> {
     pub fn with_evidence(self, evidence: evidence::List) -> Self {
         Self {
             evidence: Some(evidence),
-            ..self
-        }
-    }
-
-    /// Sets the last [`Commit`] for this block.
-    pub fn with_last_commit(self, last_commit: Commit) -> Self {
-        Self {
-            last_commit: Some(last_commit),
             ..self
         }
     }
@@ -119,21 +107,48 @@ where
     }
 
     /// Consumes this builder, returning its [`TestNode`] reference and a [`Block`].
+    #[instrument(
+        level = "info"
+        skip(self),
+        fields(height),
+    )]
     fn finish(self) -> Result<(&'e mut TestNode<C>, Block), anyhow::Error> {
+        tracing::trace!("building block");
         let Self {
             data: Some(data),
             evidence: Some(evidence),
-            last_commit,
             test_node,
         } = self
         else {
             bail!("builder was not fully initialized")
         };
 
+        let height = {
+            let height = test_node.height.increment();
+            test_node.height = height.clone();
+            tracing::Span::current().record("height", height.value());
+            height
+        };
+
+        let last_commit = if height.value() != 1 {
+            let block_id = block::Id {
+                hash: Hash::None,
+                part_set_header: block::parts::Header::new(0, Hash::None)?,
+            };
+            Some(Commit {
+                height,
+                round: Round::default(),
+                block_id,
+                signatures: Vec::default(),
+            })
+        } else {
+            None // The first block has no previous commit to speak of.
+        };
+
         let header = Header {
             version: Version { block: 1, app: 1 },
             chain_id: chain::Id::try_from("test".to_owned())?,
-            height: Height::try_from(1_u8)?,
+            height,
             time: tendermint::Time::now(),
             last_block_id: None,
             last_commit_hash: None,
