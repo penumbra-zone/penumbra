@@ -1,5 +1,6 @@
 use base64::prelude::*;
 use std::str::FromStr;
+use tct::Root;
 
 use anyhow::Result;
 use ark_r1cs_std::{
@@ -24,13 +25,18 @@ use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
 use crate::{note, Note, Rseed};
-use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_asset::{
+    balance::commitment::BalanceCommitmentVar,
+    balance::{self, Commitment},
+    Value,
+};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
+use tap::Tap;
 
 /// The public input for a [`SpendProof`].
 #[derive(Clone, Debug)]
@@ -273,6 +279,28 @@ impl DummyWitness for SpendCircuit {
 #[derive(Clone, Debug)]
 pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("error deserializing compressed proof: {0:?}")]
+    ProofDeserialize(ark_serialize::SerializationError),
+    #[error("Fq types are Bls12-377 field members")]
+    Anchor,
+    #[error("balance commitment is a Bls12-377 field member")]
+    BalanceCommitment,
+    #[error("nullifier is a Bls12-377 field member")]
+    Nullifier,
+    #[error("could not decompress element points: {0:?}")]
+    DecompressRk(decaf377::EncodingError),
+    #[error("randomized spend key is a Bls12-377 field member")]
+    Rk,
+    #[error("start position is a Bls12-377 field member")]
+    StartPosition,
+    #[error("error verifying proof: {0:?}")]
+    SynthesisError(ark_relations::r1cs::SynthesisError),
+    #[error("spend proof did not verify")]
+    InvalidProof,
+}
+
 impl SpendProof {
     /// Generate a `SpendProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
@@ -300,48 +328,48 @@ impl SpendProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        public: SpendProofPublic,
-    ) -> anyhow::Result<()> {
-        let proof =
-            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
-
-        let mut public_inputs = Vec::new();
-        public_inputs.extend([Fq::from(public.anchor.0)]);
-        public_inputs.extend(
-            public
-                .balance_commitment
-                .0
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
-        );
-        public_inputs.extend(
-            public
-                .nullifier
-                .0
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
-        );
-        let element_rk = decaf377::Encoding(public.rk.to_bytes())
+        SpendProofPublic {
+            anchor: Root(anchor),
+            balance_commitment: Commitment(balance_commitment),
+            nullifier: Nullifier(nullifier),
+            rk,
+        }: SpendProofPublic,
+    ) -> Result<(), VerificationError> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
+            .map_err(VerificationError::ProofDeserialize)?;
+        let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
-            .expect("expect only valid element points");
-        public_inputs.extend(
-            element_rk
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("rk is not a valid element"))?,
-        );
+            .map_err(VerificationError::DecompressRk)?;
 
-        tracing::trace!(?public_inputs);
+        /// Shorthand helper, convert expressions into field elements.
+        macro_rules! to_field_elements {
+            ($fe:expr, $err:expr) => {
+                $fe.to_field_elements().ok_or($err)?
+            };
+        }
+
+        use VerificationError::*;
+        let public_inputs = [
+            to_field_elements!(Fq::from(anchor), Anchor),
+            to_field_elements!(balance_commitment, BalanceCommitment),
+            to_field_elements!(nullifier, Nullifier),
+            to_field_elements!(element_rk, Rk),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .tap(|public_inputs| tracing::trace!(?public_inputs));
+
         let start = std::time::Instant::now();
-        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(|err| anyhow::anyhow!(err))?;
-        tracing::debug!(?proof_result, elapsed = ?start.elapsed());
-        proof_result
-            .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
+        .map_err(VerificationError::SynthesisError)?
+        .tap(|proof_result| tracing::debug!(?proof_result, elapsed = ?start.elapsed()))
+        .then_some(())
+        .ok_or(VerificationError::InvalidProof)
     }
 }
 
