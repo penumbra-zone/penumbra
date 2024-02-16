@@ -4,9 +4,6 @@ use decaf377::Fr;
 use decaf377_rdsa as rdsa;
 use penumbra_keys::FullViewingKey;
 use penumbra_txhash::AuthorizingData;
-use rand_core::OsRng;
-use rand_core::{CryptoRng, RngCore};
-use std::fmt::Debug;
 
 use super::TransactionPlan;
 use crate::ActionPlan;
@@ -47,9 +44,8 @@ impl TransactionPlan {
     /// Slot in the [`AuthorizationData`] and derive the synthetic
     /// blinding factors needed to compute the binding signature
     /// and assemble the transaction.
-    pub fn apply_auth_data<R: CryptoRng + RngCore + Debug>(
+    pub fn apply_auth_data(
         &self,
-        rng: &mut R,
         auth_data: &AuthorizationData,
         mut transaction: Transaction,
     ) -> Result<Transaction> {
@@ -108,7 +104,7 @@ impl TransactionPlan {
         let binding_signing_key = rdsa::SigningKey::from(synthetic_blinding_factor);
         let auth_hash = transaction.transaction_body.auth_hash();
 
-        let binding_sig = binding_signing_key.sign(rng, auth_hash.as_bytes());
+        let binding_sig = binding_signing_key.sign_deterministic(auth_hash.as_bytes());
         tracing::debug!(bvk = ?rdsa::VerificationKey::from(&binding_signing_key), ?auth_hash);
 
         transaction.binding_sig = binding_sig;
@@ -144,7 +140,7 @@ impl TransactionPlan {
             .build_unauth_with_actions(actions, witness_data)?;
 
         // 3. Slot in the authorization data with .apply_auth_data,
-        let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
+        let tx = self.apply_auth_data(auth_data, tx)?;
 
         // 4. Return the completed transaction.
         Ok(tx)
@@ -189,7 +185,7 @@ impl TransactionPlan {
             .build_unauth_with_actions(actions, &*witness_data)?;
 
         // 3. Slot in the authorization data with .apply_auth_data,
-        let tx = self.apply_auth_data(&mut OsRng, auth_data, tx)?;
+        let tx = self.apply_auth_data(auth_data, tx)?;
 
         // 4. Return the completed transaction.
         Ok(tx)
