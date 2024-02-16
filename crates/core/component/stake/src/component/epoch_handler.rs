@@ -30,8 +30,6 @@ use crate::{
 
 use super::{ConsensusIndexRead, StateWriteExt};
 
-// Commenting out for now: we can have a tally variable and increase it as we go instead
-
 #[async_trait]
 pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
     #[instrument(skip(self, epoch_to_end), fields(index = epoch_to_end.index))]
@@ -42,8 +40,8 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let mut undelegations_by_validator = BTreeMap::<IdentityKey, Amount>::new();
 
         let end_height = self.get_block_height().await?;
-        let mut num_delegations = 0;
-        let mut num_undelegations = 0;
+        let mut num_delegations = 0usize;
+        let mut num_undelegations = 0usize;
 
         for height in epoch_to_end.start_height..=end_height {
             let changes = self
@@ -54,8 +52,8 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 )
                 .await?;
 
-            num_delegations += changes.delegations.len();
-            num_undelegations += changes.undelegations.len();
+            num_delegations = num_delegations.saturating_add(changes.delegations.len());
+            num_undelegations = num_undelegations.saturating_add(changes.undelegations.len());
 
             for d in changes.delegations {
                 let validator_identity = d.validator_identity.clone();
@@ -184,7 +182,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
 
         let validator = self.get_validator_definition(&validator_identity).await?.ok_or_else(|| {
-            anyhow::anyhow!("validator (identity={}) is present in consensus set index but its definition was not found in the JMT", &validator_identity)
+            anyhow::anyhow!("validator (identity={}) is in consensus index but its definition was not found in the JMT", &validator_identity)
         })?;
 
         // Grab the current validator state.
@@ -192,7 +190,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             .get_validator_state(&validator.identity_key)
             .await?
             .ok_or_else(|| {
-                anyhow::anyhow!("validator (identity={}) is present in consensus set index but its state was not found in the JMT", &validator.identity_key)
+                anyhow::anyhow!("validator (identity={}) is in consensus index but its state was not found in the JMT", &validator.identity_key)
             })?;
 
         // We are transitioning to the next epoch, so the "current" validator
@@ -201,7 +199,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             .get_validator_rate(&validator.identity_key)
             .await?
             .ok_or_else(|| {
-                anyhow::anyhow!("validator (identity={}) is present in consensus set index but its rate data was not found in the JMT", &validator.identity_key)
+                anyhow::anyhow!("validator (identity={}) is in consensus index but its rate data was not found in the JMT", &validator.identity_key)
             })?;
 
         // First, apply any penalty recorded in the epoch we are ending.
