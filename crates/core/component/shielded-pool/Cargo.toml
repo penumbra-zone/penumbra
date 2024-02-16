@@ -66,6 +66,7 @@ rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
+tap = {workspace = true}
 tendermint = {workspace = true}
 thiserror = {workspace = true}
 tonic = {workspace = true, optional = true}
