@@ -69,7 +69,9 @@ rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
+tap = {workspace = true}
 tendermint = {workspace = true}
+thiserror = {workspace = true}
 tokio = {workspace = true, features = ["full", "tracing"], optional = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
