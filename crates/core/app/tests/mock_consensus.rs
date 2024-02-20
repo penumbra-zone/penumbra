@@ -6,10 +6,7 @@
 mod common;
 
 use {
-    self::common::BuilderExt,
     cnidarium::TempStorage,
-    penumbra_app::server::consensus::Consensus,
-    penumbra_genesis::AppState,
     penumbra_sct::component::clock::EpochRead,
     tracing::{error_span, Instrument},
 };
@@ -17,23 +14,10 @@ use {
 /// Exercises that a test node can be instantiated using the consensus service.
 #[tokio::test]
 async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
-    // Install a test logger, and acquire some temporary storage.
+    // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-
-    // Instantiate the consensus service, and start the test node.
-    let engine = {
-        use penumbra_mock_consensus::TestNode;
-        let app_state = AppState::default();
-        let consensus = Consensus::new(storage.as_ref().clone());
-        TestNode::builder()
-            .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
-            .init_chain(consensus)
-            .await?
-    };
-
-    tracing::info!(hash = %engine.last_app_hash_hex(), "finished init chain");
+    let _ = common::start_test_node(&storage).await?;
 
     // Free our temporary storage.
     drop(storage);
@@ -46,21 +30,10 @@ async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
 /// executed by the consensus service.
 #[tokio::test]
 async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<()> {
-    // Install a test logger, and acquire some temporary storage.
+    // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-
-    // Instantiate the consensus service, and start the test node.
-    let mut engine = {
-        use penumbra_mock_consensus::TestNode;
-        let app_state = AppState::default();
-        let consensus = Consensus::new(storage.as_ref().clone());
-        TestNode::builder()
-            .single_validator()
-            .with_penumbra_auto_app_state(app_state)?
-            .init_chain(consensus)
-            .await?
-    };
+    let mut test_node = common::start_test_node(&storage).await?;
 
     // Check that we begin at height 0, before any blocks have been generated.
     assert_eq!(
@@ -71,7 +44,7 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
 
     for expected in 1..=8 {
         // Generate an empty block.
-        engine
+        test_node
             .block()
             .with_data(vec![])
             .execute()
