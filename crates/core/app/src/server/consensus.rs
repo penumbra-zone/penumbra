@@ -57,7 +57,7 @@ impl Consensus {
         })
     }
 
-    pub async fn run(mut self) -> Result<(), tower::BoxError> {
+    async fn run(mut self) -> Result<(), tower::BoxError> {
         while let Some(Message {
             req,
             rsp_sender,
