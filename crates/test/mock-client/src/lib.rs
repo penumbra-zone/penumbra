@@ -2,7 +2,7 @@ use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_dex::swap::SwapPlaintext;
 use penumbra_keys::FullViewingKey;
-use penumbra_sct::component::tree::SctRead;
+use penumbra_sct::component::{clock::EpochRead, tree::SctRead};
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
 use std::collections::BTreeMap;
@@ -25,6 +25,18 @@ impl MockClient {
             sct: Default::default(),
             swaps: Default::default(),
         }
+    }
+
+    pub async fn with_sync_to_storage(
+        mut self,
+        storage: impl AsRef<cnidarium::Storage>,
+    ) -> anyhow::Result<Self> {
+        let latest = storage.as_ref().latest_snapshot();
+        let height = latest.get_block_height().await?;
+        let state = cnidarium::StateDelta::new(latest);
+        self.sync_to(height, state).await?;
+
+        Ok(self)
     }
 
     pub async fn sync_to<R: StateRead>(
