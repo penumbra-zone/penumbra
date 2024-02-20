@@ -11,7 +11,6 @@ use {
     penumbra_app::server::consensus::Consensus,
     penumbra_genesis::AppState,
     penumbra_sct::component::clock::EpochRead,
-    tendermint::evidence::List,
     tracing::{error_span, Instrument},
 };
 
@@ -75,7 +74,6 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
         engine
             .block()
             .with_data(vec![])
-            .with_evidence(List::new(Vec::new()))
             .execute()
             .instrument(error_span!("executing block", %expected))
             .await?;
