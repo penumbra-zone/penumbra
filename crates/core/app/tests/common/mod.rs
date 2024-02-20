@@ -5,8 +5,12 @@
 
 use async_trait::async_trait;
 use cnidarium::TempStorage;
-use penumbra_app::app::App;
+use penumbra_app::{
+    app::App,
+    server::consensus::{Consensus, ConsensusService},
+};
 use penumbra_genesis::AppState;
+use penumbra_mock_consensus::TestNode;
 use std::ops::Deref;
 
 // Installs a tracing subscriber to log events until the returned guard is dropped.
@@ -32,6 +36,22 @@ pub fn set_tracing_subscriber() -> tracing::subscriber::DefaultGuard {
         .finish();
 
     tracing::subscriber::set_default(subscriber)
+}
+
+/// A [`TestNode`] coupled with Penumbra's [`Consensus`] service.
+pub type PenumbraTestNode = TestNode<ConsensusService>;
+
+/// Returns a new [`PenumbraTestNode`] backed by the given temporary storage.
+pub async fn start_test_node(storage: &TempStorage) -> anyhow::Result<PenumbraTestNode> {
+    use tap::TapFallible;
+    let app_state = AppState::default();
+    let consensus = Consensus::new(storage.as_ref().clone());
+    TestNode::builder()
+        .single_validator()
+        .with_penumbra_auto_app_state(app_state)?
+        .init_chain(consensus)
+        .await
+        .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))
 }
 
 #[async_trait]
