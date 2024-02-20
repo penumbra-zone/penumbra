@@ -28,7 +28,7 @@ pub struct Builder<'e, C> {
     data: Option<Vec<Vec<u8>>>,
 
     /// Evidence of malfeasance.
-    evidence: Option<evidence::List>,
+    evidence: evidence::List,
 }
 
 impl<C> TestNode<C> {
@@ -55,10 +55,7 @@ impl<'e, C> Builder<'e, C> {
 
     /// Sets the evidence [`List`][evidence::List] for this block.
     pub fn with_evidence(self, evidence: evidence::List) -> Self {
-        Self {
-            evidence: Some(evidence),
-            ..self
-        }
+        Self { evidence, ..self }
     }
 
     // TODO(kate): add more `with_` setters for fields in the header.
@@ -116,7 +113,7 @@ where
         tracing::trace!("building block");
         let Self {
             data: Some(data),
-            evidence: Some(evidence),
+            evidence,
             test_node,
         } = self
         else {
