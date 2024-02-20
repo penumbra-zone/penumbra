@@ -165,8 +165,8 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         // record them for the funding component to process.
         self.queue_staking_rewards(funding_queue);
 
-        // Now that all the voting power has been calculated, we can select the
-        // top `limit` validators to be active for the next epoch.
+        // Now that the consensus set voting power has been calculated, we can select the
+        // top N validators to be active for the next epoch.
         self.set_active_and_inactive_validators().await?;
         Ok(())
     }

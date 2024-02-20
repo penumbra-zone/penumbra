@@ -680,6 +680,10 @@ pub trait ValidatorManager: StateWrite {
 
     /// Process evidence of byzantine behavior from CometBFT.
     ///
+    /// Evidence *MUST* be processed before `end_block` is called, because
+    /// the evidence may trigger a validator state transition requiring
+    /// an early epoch change.
+    ///
     /// # Errors
     /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
