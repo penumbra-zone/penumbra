@@ -194,7 +194,10 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             }
         }
 
-        // TODO(erwan): remove this, this is just for testing.
+        // This is a sanity check to ensure that we have processed all the delegation changes.
+        // It should be impossible for this to fail, but we check it anyway. We can remove
+        // these guards when we start rolling out our testing framework and increase coverage.
+        // This should coincide with a profiling/performance effort on the epoch-handler.
         assert!(delegations_by_validator.is_empty());
         assert!(undelegations_by_validator.is_empty());
 
