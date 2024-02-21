@@ -8,6 +8,7 @@ use futures::StreamExt;
 use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 
 use cnidarium::StateWrite;
+use futures::TryStreamExt;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
@@ -43,6 +44,8 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let mut num_delegations = 0usize;
         let mut num_undelegations = 0usize;
 
+        // TODO(erwan): we can turn this into a joinset later, but since the storage locality is pretty good
+        // and the number of ticks is about 700, we can just do this in a loop for now.
         for height in epoch_to_end.start_height..=end_height {
             let changes = self
                 .get_delegation_changes(
@@ -57,17 +60,20 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
 
             for d in changes.delegations {
                 let validator_identity = d.validator_identity.clone();
-                delegations_by_validator
+                let delegation_tally = delegations_by_validator
                     .entry(validator_identity)
                     .or_default()
                     .saturating_add(&d.delegation_amount);
+                delegations_by_validator.insert(validator_identity, delegation_tally);
             }
             for u in changes.undelegations {
                 let validator_identity = u.validator_identity.clone();
-                undelegations_by_validator
+                let undelegation_tally = undelegations_by_validator
                     .entry(validator_identity)
                     .or_default()
                     .saturating_add(&u.delegation_amount);
+
+                undelegations_by_validator.insert(validator_identity, undelegation_tally);
             }
         }
 
@@ -79,6 +85,33 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             epoch_index = epoch_to_end.index,
             "collected delegation changes for the epoch"
         );
+
+        // TODO(erwan): no doubt, this can be optimized, but we're on a cold path and for now,
+        // we want the simplest possible implementation.
+        let delegation_set = delegations_by_validator
+            .keys()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let undelegation_set = undelegations_by_validator
+            .keys()
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        let validators_with_delegation_changes = delegation_set
+            .union(&undelegation_set)
+            .cloned()
+            .collect::<BTreeSet<_>>();
+
+        // We're only tracking the consensus set, and each validator identity is about 64 bytes,
+        // it seems reasonable to collect the entire consensus set into memory since we expect
+        // less than 100k entries. We do this to keep the code simple.
+        let consensus_set = self
+            .consensus_set_stream()?
+            .try_collect::<BTreeSet<IdentityKey>>()
+            .await?;
+
+        let validators_to_process = validators_with_delegation_changes
+            .union(&consensus_set)
+            .collect::<BTreeSet<_>>();
 
         // We are transitioning to the next epoch, so the "current" base rate in
         // the state is now the previous base rate.
@@ -128,10 +161,9 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         self.set_prev_base_rate(prev_base_rate.clone());
 
         let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
-        let mut validator_stream = self.consensus_set_stream()?;
 
-        while let Some(validator_identity) = validator_stream.next().await {
-            let validator_identity = validator_identity?;
+        for validator_identity in validators_to_process {
+            // TODO(erwan): we don't need to remove the entry in prod, this is just for testing.
             let total_delegations = delegations_by_validator
                 .remove(&validator_identity)
                 .unwrap_or_else(Amount::zero);
@@ -161,6 +193,10 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             });
         }
 
+        // TODO(erwan): remove this, this is just for testing.
+        assert!(delegations_by_validator.is_empty());
+        assert!(undelegations_by_validator.is_empty());
+
         // We have collected the funding streams for all validators, so we can now
         // record them for the funding component to process.
         self.queue_staking_rewards(funding_queue);
@@ -173,7 +209,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
 
     async fn process_validator(
         &mut self,
-        validator_identity: IdentityKey,
+        validator_identity: &IdentityKey,
         epoch_to_end: Epoch,
         next_base_rate: BaseRateData,
         total_delegations: Amount,
