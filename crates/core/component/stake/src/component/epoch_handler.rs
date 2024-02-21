@@ -165,32 +165,33 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         for validator_identity in validators_to_process {
             // TODO(erwan): we don't need to remove the entry in prod, this is just for testing.
             let total_delegations = delegations_by_validator
-                .remove(&validator_identity)
+                .remove(validator_identity)
                 .unwrap_or_else(Amount::zero);
 
             let total_undelegations = undelegations_by_validator
-                .remove(&validator_identity)
+                .remove(validator_identity)
                 .unwrap_or_else(Amount::zero);
 
-            self.process_validator(
-                validator_identity,
-                epoch_to_end,
-                next_base_rate.clone(),
-                total_delegations,
-                total_undelegations,
-            )
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    ?e,
-                    ?validator_identity,
-                    "failed to process validator's end-epoch"
-                );
-                e
-            })?
-            .map(|(identity, funding_streams, delegation_token_supply)| {
-                funding_queue.push((identity, funding_streams, delegation_token_supply))
-            });
+            if let Some(rewards) = self
+                .process_validator(
+                    validator_identity,
+                    epoch_to_end,
+                    next_base_rate.clone(),
+                    total_delegations,
+                    total_undelegations,
+                )
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        ?e,
+                        ?validator_identity,
+                        "failed to process validator's end-epoch"
+                    );
+                    e
+                })?
+            {
+                funding_queue.push(rewards)
+            }
         }
 
         // TODO(erwan): remove this, this is just for testing.
