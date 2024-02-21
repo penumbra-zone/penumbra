@@ -144,16 +144,13 @@ pub trait ValidatorManager: StateWrite {
 
                 // Finally, set the validator to be active.
                 self.put(validator_state_path, Active);
-
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(0.0);
             }
 
-            (Active, new_state @ (Inactive | Disabled)) => {
+            (Active, Inactive | Disabled) => {
                 // When an active validator becomes inactive, or is disabled by its operator,
                 // we need to start the unbonding process for its delegation pool. We keep it
                 // in the consensus set, but it is no longer part of the "active set".
-                tracing::debug!(validator_identity = %identity_key, "transitioning validator from active to inactive");
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "validator has become inactive or disabled");
 
                 // The validator's delegation pool begins unbonding.
                 self.set_validator_bonding_state(
@@ -165,19 +162,16 @@ pub trait ValidatorManager: StateWrite {
                     },
                 );
 
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(0.0);
-
                 self.put(validator_state_path, new_state);
             }
-            (Jailed, Inactive) => {
+            (Jailed, Defined | Inactive) => {
                 // After getting jailed, a validator can be released from jail when its operator
                 // updates the validator definition. It is then considered inactive, unless its
                 // delegation pool falls below the minimum threshold.
 
                 // Here, we don't have anything to do, only allow the validator to return to society.
                 tracing::debug!(validator_identity = %identity_key, "releasing validator from jail");
-                self.put(validator_state_path, Inactive);
+                self.put(validator_state_path, new_state);
             }
             (Disabled, Inactive) => {
                 // The validator was disabled by its operator, and was re-enabled. Since its
@@ -282,13 +276,6 @@ pub trait ValidatorManager: StateWrite {
             (Defined | Jailed | Disabled, Active) => {
                 anyhow::bail!(
                     "only Inactive validators can become Active: identity_key={}, old_state={:?}",
-                    identity_key,
-                    old_state
-                )
-            }
-            (Jailed, Defined) => {
-                anyhow::bail!(
-                    "only inactive validators can become defined: identity_key={}, old_state={:?}",
                     identity_key,
                     old_state
                 )
