@@ -148,8 +148,15 @@ impl RateData {
         // Remove scaling factors:
         let validator_exchange_rate =
             (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        if validator_exchange_rate == U128x128::from(0u128) {
+            // If the exchange rate is zero, the delegation amount is also zero.
+            // This is extremely unlikely to be hit in practice, but it's a valid
+            // edge case that a test might want to cover.
+            return 0u128.into();
+        }
 
         /* **************** Compute the corresponding delegation size *********************** */
+
         let delegation_amount = (unbonded_amount / validator_exchange_rate)
             .expect("validator exchange rate is nonzero");
         /* ********************************************************************************** */
