@@ -314,13 +314,12 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("TransactionPlannerResponse missing plan"))?;
 
     // Hold on to the swap plaintext to be able to claim.
-    let swap_plaintext =
-        TryInto::<penumbra_transaction::plan::TransactionPlan>::try_into(plan.clone())?
-            .swap_plans()
-            .next()
-            .expect("swap plan must be present")
-            .swap_plaintext
-            .clone();
+    let swap_plaintext = TryInto::<penumbra_transaction::TransactionPlan>::try_into(plan.clone())?
+        .swap_plans()
+        .next()
+        .expect("swap plan must be present")
+        .swap_plaintext
+        .clone();
 
     // 5.2. Get authorization data for the transaction from pclientd (signing).
     let auth_data = custody_client

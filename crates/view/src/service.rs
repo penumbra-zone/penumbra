@@ -55,7 +55,7 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
 use crate::{Planner, Storage, Worker};

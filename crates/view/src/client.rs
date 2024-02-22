@@ -21,9 +21,8 @@ use penumbra_proto::view::v1::{
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
 use penumbra_stake::IdentityKey;
-use penumbra_transaction::AuthorizationData;
 use penumbra_transaction::{
-    plan::TransactionPlan, txhash::TransactionId, Transaction, WitnessData,
+    txhash::TransactionId, AuthorizationData, Transaction, TransactionPlan, WitnessData,
 };
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};

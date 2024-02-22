@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
 use penumbra_keys::FullViewingKey;
-use penumbra_transaction::{plan::TransactionPlan, AuthorizationData, Transaction};
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 
 pub async fn build_transaction<V, C>(
