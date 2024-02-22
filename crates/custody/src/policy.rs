@@ -34,7 +34,7 @@ pub enum AuthPolicy {
     /// This policy should be combined with an `AllowList` to prevent sending
     /// funds outside of the relayer account.
     OnlyIbcRelay,
-    /// Require specific pre-authorizations for submitted [`TransactionPlan`](penumbra_transaction::plan::TransactionPlan)s.
+    /// Require specific pre-authorizations for submitted [`TransactionPlan`](penumbra_transaction::TransactionPlan)s.
     PreAuthorization(PreAuthorizationPolicy),
 }
 

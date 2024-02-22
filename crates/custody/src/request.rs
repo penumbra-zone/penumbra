@@ -1,5 +1,5 @@
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::TransactionPlan;
 
 use crate::PreAuthorization;
 

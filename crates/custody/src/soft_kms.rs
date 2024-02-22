@@ -24,7 +24,7 @@ impl SoftKms {
         Self { config }
     }
 
-    /// Attempt to authorize the requested [`TransactionPlan`](penumbra_transaction::plan::TransactionPlan).
+    /// Attempt to authorize the requested [`TransactionPlan`](penumbra_transaction::TransactionPlan).
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
     pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
         tracing::debug!(?request.plan);

@@ -3,7 +3,7 @@ use rand::{CryptoRng, RngCore};
 
 use penumbra_keys::keys::SpendKey;
 
-use crate::{plan::TransactionPlan, AuthorizationData};
+use crate::{AuthorizationData, TransactionPlan};
 
 impl TransactionPlan {
     /// Authorize this [`TransactionPlan`] with the provided [`SpendKey`].

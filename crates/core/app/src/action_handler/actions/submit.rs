@@ -25,9 +25,7 @@ use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::SupplyWrite;
-use penumbra_transaction::plan::TransactionPlan;
-use penumbra_transaction::Transaction;
-use penumbra_transaction::{AuthorizationData, WitnessData};
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
 use crate::action_handler::ActionHandler;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;

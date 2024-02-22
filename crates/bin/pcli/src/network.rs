@@ -6,9 +6,7 @@ use penumbra_proto::{
     view::v1::broadcast_transaction_response::Status as BroadcastStatus,
     view::v1::GasPricesRequest, DomainType,
 };
-use penumbra_transaction::{
-    gas::GasCost, plan::TransactionPlan, txhash::TransactionId, Transaction,
-};
+use penumbra_transaction::{gas::GasCost, txhash::TransactionId, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
