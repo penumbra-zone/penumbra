@@ -5245,6 +5245,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-parameter-setup"
+version = "0.67.1"
+dependencies = [
+ "ark-groth16",
+ "ark-serialize",
+ "decaf377 0.5.0",
+ "penumbra-community-pool",
+ "penumbra-dex",
+ "penumbra-governance",
+ "penumbra-proof-params",
+ "penumbra-proof-setup",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "penumbra-proof-params"
 version = "0.67.1"
 dependencies = [
