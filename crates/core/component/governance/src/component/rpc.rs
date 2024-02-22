@@ -360,14 +360,12 @@ impl QueryService for Server {
         } else {
             // If the query is for the total voting power at the start of the proposal, return that
             let total_voting_power = state
-                .get_proto::<u64>(&state_key::all_voting_power_at_proposal_start(
-                    proposal_id,
-                ))
+                .total_voting_power_at_proposal_start(proposal_id)
                 .await
                 .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
 
             Ok(tonic::Response::new(VotingPowerAtProposalStartResponse {
-                voting_power: total_voting_power.expect("total voting power should be set"),
+                voting_power: total_voting_power,
             }))
         }
     }
