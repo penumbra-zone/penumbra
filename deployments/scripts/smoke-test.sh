@@ -64,6 +64,9 @@ trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
 
+echo "Running pd integration tests against running pd binary"
+    cargo test --release --package pd -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pd-tests.log"
+
 echo "Running pclientd integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
