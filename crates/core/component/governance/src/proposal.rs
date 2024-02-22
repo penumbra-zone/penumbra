@@ -15,7 +15,7 @@ use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
 pub struct Proposal {
     /// The ID number of the proposal.
