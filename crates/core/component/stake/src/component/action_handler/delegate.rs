@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
+use penumbra_num::Amount;
 
 use crate::{
     component::{
         validator_handler::{ValidatorDataRead, ValidatorManager},
         StateWriteExt as _,
     },
-    event, validator, Delegate, StateReadExt as _,
+    event,
+    validator::State::*,
+    Delegate, StateReadExt as _,
 };
 
 #[async_trait]
@@ -52,7 +55,6 @@ impl ActionHandler for Delegate {
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
-        use validator::State::*;
         if !validator.enabled {
             anyhow::bail!(
                 "delegations are only allowed to enabled validators, but {} is disabled",
@@ -96,36 +98,46 @@ impl ActionHandler for Delegate {
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        use crate::validator;
+        let validator = self.validator_identity;
+        let unbonded_delegation = self.unbonded_amount;
+        // This action is executed in two phases:
+        // 1. We check if the self-delegation requirement is met.
+        // 2. We queue the delegation for the next epoch.
 
-        tracing::debug!(?self, "queuing delegation for next epoch");
-        state.push_delegation(self.clone());
-
-        // When a validator definition is published, it starts in a `Defined` state
-        // until it gathers enough stake to become `Inactive` and get indexed in the
-        // validator list.
-        //
-        // Unlike other validator state transitions, this one is executed with the
-        // delegation transaction and not at the end of the epoch. This is because we
-        // want to avoid having to iterate over all defined validators at all.
-        // See #2921 for more details.
         let validator_state = state
             .get_validator_state(&self.validator_identity)
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
-        // TODO(erwan): The next PR (#3853) in this sprint changes this logic to require
-        // an initial delegation that is at least the minimum stake param.
-        if matches!(validator_state, validator::State::Defined)
-            && self.delegation_amount.value()
-                >= state.get_stake_params().await?.min_validator_stake.value()
-        {
-            tracing::debug!(validator_identity = %self.validator_identity, delegation_amount = %self.delegation_amount, "validator has enough stake to transition out of defined state");
-            state
-                .set_validator_state(&self.validator_identity, validator::State::Inactive)
-                .await?;
+        // When a validator definition is published, it starts in a `Defined` state
+        // where it is unindexed by the staking module. We transition validator with
+        // too little stake to the `Defined` state as well. See #2921 for more details.
+        if validator_state == Defined {
+            let min_stake = state.get_stake_params().await?.min_validator_stake;
+            // With #3853, we impose a minimum self-delegation requirement to simplify
+            // end-epoch handling. The first delegation" to a `Defined` validator must
+            // be at least `min_validator_stake`.
+            //
+            // Note: Validators can be demoted to `Defined` if they have too little stake,
+            // if we don't check that the pool is empty, we could trap delegations.
+            let validator_pool_size = state
+                .get_validator_pool_size(&validator)
+                .await
+                .unwrap_or_else(Amount::zero);
+
+            if validator_pool_size == Amount::zero() {
+                ensure!(
+                unbonded_delegation >= min_stake,
+                "first delegation to a `Defined` validator must be at least min_validator_stake"
+            );
+                tracing::debug!(%validator, %unbonded_delegation, "first delegation to validator recorded");
+                state.set_validator_state(&validator, Inactive).await?;
+            }
         }
 
+        // We queue the delegation so it can be processed at the epoch boundary.
+        tracing::debug!(?self, "queuing delegation for next epoch");
+        state.push_delegation(self.clone());
         state.record(event::delegate(self));
         Ok(())
     }
