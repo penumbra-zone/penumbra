@@ -197,7 +197,7 @@ impl TryFrom<ProposalToml> for Proposal {
 }
 
 /// The specific kind of a proposal.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 pub enum ProposalKind {
     /// A signaling proposal.
@@ -254,7 +254,7 @@ impl Proposal {
 }
 
 /// The machine-interpretable body of a proposal.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ProposalPayload {
     /// A signaling proposal is merely for coordination; it does not enact anything automatically by
     /// itself.
@@ -429,7 +429,7 @@ impl ProposalPayload {
 ///
 /// Note: must be kept in sync with
 /// `penumbra_app::params::AppParameters`.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(
     try_from = "pb::ChangedAppParameters",
     into = "pb::ChangedAppParameters"
