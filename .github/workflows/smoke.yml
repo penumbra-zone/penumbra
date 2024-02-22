@@ -31,9 +31,12 @@ jobs:
       - name: Display comet logs
         if: always()
         run: cat deployments/logs/comet.log
-      - name: Display pd logs
+      - name: Display pd runtime logs
         if: always()
         run: cat deployments/logs/pd.log
+      - name: Display pd test logs
+        if: always()
+        run: cat deployments/logs/pd-tests.log
       - name: Display pclientd logs
         if: always()
         run: cat deployments/logs/pclientd.log
