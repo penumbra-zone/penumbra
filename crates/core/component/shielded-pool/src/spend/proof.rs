@@ -72,11 +72,6 @@ pub struct SpendProofPrivate {
 fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) -> Result<()> {
     use penumbra_keys::keys::FullViewingKey;
 
-    let amount_u128: u128 = private.note.value().amount.into();
-    if amount_u128 == 0u128 {
-        return Ok(());
-    }
-
     let note_commitment = private.note.commit();
     if note_commitment != private.state_commitment_proof.commitment() {
         anyhow::bail!("note commitment did not match state commitment proof");
@@ -91,7 +86,10 @@ fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) ->
         anyhow::bail!("nullifier did not match public input");
     }
 
-    private.state_commitment_proof.verify(public.anchor)?;
+    let amount_u128: u128 = private.note.value().amount.into();
+    if amount_u128 != 0u128 {
+        private.state_commitment_proof.verify(public.anchor)?;
+    }
 
     let rk = private.ak.randomize(&private.spend_auth_randomizer);
     if rk != public.rk {
@@ -178,21 +176,19 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.public.rk))?;
 
-        // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
-        let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
-        // We use a Boolean constraint to enforce the below constraints only if this is not a
-        // dummy spend.
-        let is_not_dummy = is_dummy.not();
-
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
-        note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
+        note_commitment_var.enforce_equal(&claimed_note_commitment)?;
 
         // Nullifier integrity.
         let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_note_commitment)?;
-        nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &is_not_dummy)?;
+        nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Merkle auth path verification against the provided anchor.
+        //
+        // We short circuit the merkle path verification if the note is a _dummy_ spend (a spend
+        // with zero value), since these are never committed to the state commitment tree.
+        let is_not_dummy = note_var.amount().is_eq(&FqVar::zero())?.not();
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
@@ -203,25 +199,23 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         // Check integrity of randomized verification key.
         let computed_rk_var = ak_element_var.randomize(&spend_auth_randomizer_var)?;
-        computed_rk_var.conditional_enforce_equal(&rk_var, &is_not_dummy)?;
+        computed_rk_var.enforce_equal(&rk_var)?;
 
         // Check integrity of diversified address.
         let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_element_var)?;
         let computed_transmission_key =
             ivk.diversified_public(&note_var.diversified_generator())?;
-        computed_transmission_key
-            .conditional_enforce_equal(&note_var.transmission_key(), &is_not_dummy)?;
+        computed_transmission_key.enforce_equal(&note_var.transmission_key())?;
 
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
-        balance_commitment
-            .conditional_enforce_equal(&claimed_balance_commitment_var, &is_not_dummy)?;
+        balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
 
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.conditional_enforce_not_equal(&note_var.diversified_generator(), &is_not_dummy)?;
+        identity.enforce_not_equal(&note_var.diversified_generator())?;
         // Check the ak is not identity.
-        identity.conditional_enforce_not_equal(&ak_element_var.inner, &is_not_dummy)?;
+        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         Ok(())
     }

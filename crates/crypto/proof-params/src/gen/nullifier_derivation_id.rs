@@ -1,3 +1,3 @@
 
-pub const PROVING_KEY_ID: &'static str = "groth16pk15nyrctlmt7tehtw5xse5qkxuduaryflwjgwqyxylnqgp3m66nlrq65q374";
-pub const VERIFICATION_KEY_ID: &'static str = "groth16vk16uhuvvk8hkh67kpcuxavksvu8p0gnzlhm54n22rlcvz2rvj82adsxqsjqf";
+pub const PROVING_KEY_ID: &'static str = "groth16pk1e79gm2pkg5rlkyeectfh4yualrjy9qdlez22l4f56g5tjqkqfv3syrrzsm";
+pub const VERIFICATION_KEY_ID: &'static str = "groth16vk1ylw2upegj9ppaz9s0hd0czh8yeqxvqc4s39468733cnfcch2cfwqnm4gqj";
