@@ -10,7 +10,12 @@ use {
     cnidarium::TempStorage,
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
+    penumbra_proto::DomainType,
     penumbra_sct::component::clock::EpochRead,
+    penumbra_shielded_pool::SpendPlan,
+    penumbra_transaction::TransactionPlan,
+    std::ops::Deref,
+    tap::Tap,
     tracing::{error_span, Instrument},
 };
 
@@ -78,70 +83,51 @@ async fn mock_consensus_can_send_a_spend_action() -> anyhow::Result<()> {
     let mut rng = <rand_chacha::ChaChaRng as rand_core::SeedableRng>::seed_from_u64(0xBEEF);
 
     // Sync the mock client, using the test account's full viewing key, to the latest snapshot.
-    let MockClient { notes, sct, .. } = MockClient::new(test_keys::FULL_VIEWING_KEY.clone())
+    let (viewing_key, spend_key) = (&test_keys::FULL_VIEWING_KEY, &test_keys::SPEND_KEY);
+    let client = MockClient::new(viewing_key.deref().clone())
         .with_sync_to_storage(&storage)
         .await?;
 
     // Take one of the test account's notes...
-    let note = notes
-        .values()
-        .cloned()
+    let (commitment, note) = client
+        .notes
+        .iter()
         .next()
-        .ok_or_else(|| anyhow!("mock client had no note"))?;
-    let asset_id = note.asset_id();
-    let proof = sct
-        .witness(note.commit())
-        .ok_or_else(|| anyhow!("index is not witnessed"))?;
+        .ok_or_else(|| anyhow!("mock client had no note"))?
+        .tap(|(commitment, note)| {
+            tracing::info!(?commitment, ?note, "mock client note commitment")
+        });
 
-    // ...and use it to craft a `Spend`.
-    let (spend, spend_key) = {
-        use {decaf377_rdsa::SigningKey, penumbra_shielded_pool::SpendPlan};
-        let spend_plan = SpendPlan::new(&mut rng, note, proof.position());
-        let auth_sig = test_keys::SPEND_KEY
-            .spend_auth_key()
-            .randomize(&spend_plan.randomizer)
-            .sign(&mut rng, [0u8; 64].as_ref());
-        let spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof, sct.root());
-        let key = SigningKey::from(spend_plan.value_blinding);
-        (spend, key)
-    };
-
-    // Next, craft a transaction, containing this `Spend`.
+    // Build a transaction spending this note.
     let tx = {
-        use {
-            penumbra_asset::Value,
-            penumbra_fee::Fee,
-            penumbra_num::Amount,
-            penumbra_transaction::{Action, Transaction, TransactionBody, TransactionParameters},
-            penumbra_txhash::AuthorizingData,
-        };
-        let transaction_parameters = TransactionParameters {
-            expiry_height: 0,
-            chain_id: "i-wonder-if-this-is-load-bearing".to_owned(),
-            fee: Fee(Value {
-                amount: Amount::zero(),
-                asset_id,
-            }),
-        };
-        let transaction_body = TransactionBody {
-            actions: vec![Action::Spend(spend)],
-            transaction_parameters,
+        let position = client
+            .sct
+            .witness(*commitment)
+            .ok_or_else(|| anyhow!("commitment is not witnessed"))?
+            .position();
+        let spend = SpendPlan::new(&mut rng, note.clone(), position);
+        let plan = TransactionPlan {
+            actions: vec![spend.into()],
             ..Default::default()
         };
-        let binding_sig = spend_key.sign(rng, transaction_body.auth_hash().as_bytes());
-        let transaction = Transaction {
-            transaction_body,
-            binding_sig,
-            anchor: sct.root(),
-        };
-        <Transaction as penumbra_proto::DomainType>::encode_to_vec(&transaction)
+        let witness = plan.witness_data(&client.sct)?;
+        let auth = plan.authorize(rand_core::OsRng, spend_key)?;
+        plan.build_concurrent(viewing_key, &witness, &auth).await?
     };
 
     // Execute the transaction, and sync another mock client up to the latest snapshot.
-    test_node.block().with_data(vec![tx]).execute().await?;
-    MockClient::new(test_keys::FULL_VIEWING_KEY.clone())
+    test_node
+        .block()
+        .with_data(vec![tx.encode_to_vec()]) // TODO(kate): add a `with_tx` extension method
+        .execute()
+        .await?;
+
+    // Sync to the latest storage snapshot once more.
+    let client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone())
         .with_sync_to_storage(&storage)
         .await?;
+
+    client.notes.get(&commitment).unwrap();
 
     // Free our temporary storage.
     drop(storage);

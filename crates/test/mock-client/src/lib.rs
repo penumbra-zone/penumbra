@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {
     latest_height: u64,
-    fvk: FullViewingKey,
+    pub fvk: FullViewingKey,
     pub notes: BTreeMap<note::StateCommitment, Note>,
     swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
     pub sct: penumbra_tct::Tree,

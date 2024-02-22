@@ -190,4 +190,25 @@ impl TransactionPlan {
         // 4. Return the completed transaction.
         Ok(tx)
     }
+
+    /// Returns a [`WitnessData`], which may be used to build this transaction.
+    pub fn witness_data(&self, sct: &penumbra_tct::Tree) -> Result<WitnessData, anyhow::Error> {
+        let anchor = sct.root();
+
+        let witness_note = |spend: &penumbra_shielded_pool::SpendPlan| {
+            let commitment = spend.note.commit();
+            sct.witness(commitment)
+                .ok_or_else(|| anyhow::anyhow!("commitment should exist in tree"))
+                .map(|proof| (commitment, proof))
+        };
+        let state_commitment_proofs = self
+            .spend_plans()
+            .map(witness_note)
+            .collect::<Result<_, _>>()?;
+
+        Ok(WitnessData {
+            anchor,
+            state_commitment_proofs,
+        })
+    }
 }
