@@ -7,10 +7,7 @@ use cnidarium_component::ActionHandler;
 use penumbra_num::Amount;
 
 use crate::{
-    component::{
-        validator_handler::{ValidatorDataRead, ValidatorManager},
-        StateWriteExt as _,
-    },
+    component::{validator_handler::ValidatorDataRead, StateWriteExt as _},
     event,
     validator::State::*,
     Delegate, StateReadExt as _,
