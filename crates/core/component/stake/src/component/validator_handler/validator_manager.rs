@@ -174,14 +174,18 @@ pub trait ValidatorManager: StateWrite {
 
                 self.put(validator_state_path, new_state);
             }
-            (Jailed, Defined | Inactive) => {
-                // After getting jailed, a validator can be released from jail when its operator
-                // updates the validator definition. It is then considered inactive, unless its
-                // delegation pool falls below the minimum threshold.
-
+            (Jailed, Defined) => {
+                // A jailed validator has been released from jail by its operator.
+                // Its delegation pool has falled below the minimum threshold, so it is
+                // considered `Defined`.
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "releasing validator from jail");
+                // TODO(erwan): deindex
+                self.put(validator_state_path, Defined);
+            }
+            (Jailed, Inactive) => {
                 // Here, we don't have anything to do, only allow the validator to return to society.
-                tracing::debug!(validator_identity = %identity_key, "releasing validator from jail");
-                self.put(validator_state_path, new_state);
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "releasing validator from jail");
+                self.put(validator_state_path, Inactive);
             }
             (Disabled, Inactive) => {
                 // The validator was disabled by its operator, and was re-enabled. Since its
@@ -524,7 +528,7 @@ pub trait ValidatorManager: StateWrite {
 
                 let unbonded_pool_size = validator_rate_data.unbonded_amount(delegation_pool_size);
 
-                if unbonded_pool_size.value() >= min_validator_stake.value() {
+                if unbonded_pool_size >= min_validator_stake {
                     self.set_validator_state(id, Inactive).await?;
                 } else {
                     self.set_validator_state(id, Defined).await?;
