@@ -175,8 +175,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         total_delegations: Amount,
         total_undelegations: Amount,
     ) -> Result<Option<(IdentityKey, FundingStreams, Amount)>> {
-        let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
-
         let validator = self.get_validator_definition(&validator_identity).await?.ok_or_else(|| {
             anyhow::anyhow!("validator (identity={}) is in consensus index but its definition was not found in the JMT", &validator_identity)
         })?;
@@ -329,36 +327,21 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             None
         };
 
-        // We want to know if the validator has enough stake to remain in the consensus set.
-        // In order to do this, we need to know what is the size of the validator's delegation
-        // pool in terms of staking tokens (i.e. the unbonded amount).
-        let delegation_token_denom = DelegationToken::from(&validator.identity_key).denom();
-        let validator_unbonded_amount =
-            next_validator_rate.unbonded_amount(delegation_token_supply);
-
-        tracing::debug!(
-            validator_identity = %validator.identity_key,
-            validator_delegation_pool = ?delegation_token_supply,
-            validator_unbonded_amount = ?validator_unbonded_amount,
-            "calculated validator's unbonded amount for the upcoming epoch"
-        );
-
-        if validator_unbonded_amount < min_validator_stake {
-            tracing::debug!(
-                validator_identity = %validator.identity_key,
-                validator_unbonded_amount = ?validator_unbonded_amount,
-                min_validator_stake = ?min_validator_stake,
-                "validator's unbonded amount is below the minimum stake threshold, transitioning to defined"
-            );
-            self.set_validator_state(&validator.identity_key, validator::State::Defined)
-                .await?;
-        }
+        let final_state = self
+            .try_precursor_transition(
+                validator_identity,
+                validator_state,
+                &next_validator_rate,
+                delegation_token_supply,
+            )
+            .await;
 
         tracing::debug!(validator_identity = %validator.identity_key,
             previous_epoch_validator_rate= ?prev_validator_rate,
             next_epoch_validator_rate = ?next_validator_rate,
-            delegation_denom = ?delegation_token_denom,
             ?delegation_token_supply,
+            voting_power = ?voting_power,
+            final_state = ?final_state,
             "validator's end-epoch has been processed");
 
         self.process_validator_pool_state(&validator.identity_key, epoch_to_end)

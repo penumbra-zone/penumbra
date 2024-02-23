@@ -22,6 +22,7 @@ use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
 use tokio::task::JoinSet;
 use validator::BondingState::*;
+use validator::State::*;
 
 use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto;
@@ -38,42 +39,53 @@ use crate::{
 use penumbra_asset::asset;
 
 #[async_trait]
+/// Defines the validator state machine of the staking component.
+///
+/// # Overview:
+/// This trait offers an interface to:
+///  - Add validators from the staking component via [`add_validator`]
+///  - Safe handles to perform state-transitions like [`try_precursor_transition`]
+///  - Raw state transitions via [`set_validator_state`]
+///
+/// # State machine diagram:
+///             ┌───────────────────────────────────────────────────────┐
+///             │                      ┌──────────────────────────────┐ │
+///             ▼                      ▼                              │ │
+///     ╔══════*════════╗       ┌────────────┐                        │ │
+///  ┌─▶║    Defined    ║◀─────▶│  Disabled  │                        │ │
+///  │  ╚═══════════════╝       └────────────┘                        │ │
+///  │          │                      │                              │ │
+///  │          │                      ▼                              │ │
+///  │          │               ┏━━━━━━━━━━━━┓                        │ │
+///  │          └──────────────▶┃            ┃                        │ │
+///  │                          ┃ Tombstoned ┃◀────────────┐          │ │
+///  │          ┌──────────────▶┃            ┃             │          │ │
+///  │          │               ┗━━━━━━━━━━━━┛             │          │ │
+///  │          │                      ▲                   │          │ │
+///  │          │                      │           ┌──────────────┐   │ │
+///  │   ┌─────────────┐        ┌────────────┐     │              │◀──┘ │
+///  └──▶│   Jailed    │◀───────│   Active   │◀───▶│   Inactive   │     │
+///      └─────────────┘        └────────────┘     │              │◀────┘
+///             │                                  └──────────────┘      
+///             │                                          ▲             
+///             └──────────────────────────────────────────┘             
+///                                                                      
+///                                                                      
+///                                                                      
+///                                                  ╔═════════════════╗
+///                                                  ║ starting state  ║
+///                                                  ╚═════════════════╝
+///                                                  ┏━━━━━━━━━━━━━━━━━┓
+///                                                  ┃ terminal state  ┃
+///                                                  ┗━━━━━━━━━━━━━━━━━┛         
 pub trait ValidatorManager: StateWrite {
     /// Perform a state transition for the specified validator and new state.
     /// Initial validator state is defined using [`add_validator`]
-    ///             ┌───────────────────────────────────────────────────────┐
-    ///             │                      ┌──────────────────────────────┐ │
-    ///             ▼                      ▼                              │ │
-    ///     ╔══════*════════╗       ┌────────────┐                        │ │
-    ///  ┌─▶║    Defined    ║◀─────▶│  Disabled  │                        │ │
-    ///  │  ╚═══════════════╝       └────────────┘                        │ │
-    ///  │          │                      │                              │ │
-    ///  │          │                      ▼                              │ │
-    ///  │          │               ┏━━━━━━━━━━━━┓                        │ │
-    ///  │          └──────────────▶┃            ┃                        │ │
-    ///  │                          ┃ Tombstoned ┃◀────────────┐          │ │
-    ///  │          ┌──────────────▶┃            ┃             │          │ │
-    ///  │          │               ┗━━━━━━━━━━━━┛             │          │ │
-    ///  │          │                      ▲                   │          │ │
-    ///  │          │                      │           ┌──────────────┐   │ │
-    ///  │   ┌─────────────┐        ┌────────────┐     │              │◀──┘ │
-    ///  └──▶│   Jailed    │◀───────│   Active   │◀───▶│   Inactive   │     │
-    ///      └─────────────┘        └────────────┘     │              │◀────┘
-    ///             │                                  └──────────────┘      
-    ///             │                                          ▲             
-    ///             └──────────────────────────────────────────┘             
-    ///                                                                      
-    ///                                                                      
-    ///                                                                      
-    ///                                                  ╔═════════════════╗
-    ///                                                  ║ starting state  ║
-    ///                                                  ╚═════════════════╝
-    ///                                                  ┏━━━━━━━━━━━━━━━━━┓
-    ///                                                  ┃ terminal state  ┃
-    ///                                                  ┗━━━━━━━━━━━━━━━━━┛                                                                                      
+
     /// # Errors
     /// This method errors on illegal state transitions; since execution must be infallible,
     /// it's the caller's responsibility to ensure that the state transitions are legal.
+    /// For example, by using `try_*_transition` methods.
     ///
     /// It can also error if the validator is not found in the state, though this should
     /// never happen.
@@ -106,7 +118,6 @@ pub trait ValidatorManager: StateWrite {
         old_state: validator::State,
         new_state: validator::State,
     ) -> Result<()> {
-        use validator::State::*;
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
         // We use the current epoch index to compute the unbonding epoch for the validator,
@@ -336,6 +347,64 @@ pub trait ValidatorManager: StateWrite {
         Ok(())
     }
 
+    /// Try to implement a state transition in/out of the `Defined` precursor state.
+    /// Returns the new state if sucessful, and `None` otherwise.
+    async fn try_precursor_transition(
+        &mut self,
+        validator_id: &IdentityKey,
+        previous_state: validator::State,
+        next_rate: &RateData,
+        delegation_token_supply: Amount,
+    ) -> Option<State> {
+        // Conspicuously missing from this list are `Jailed | Disabled` validators.
+        // This is because their transition MUST be triggered by a manual validator upload.
+        if !matches!(previous_state, Defined | Inactive | Active) {
+            return None;
+        }
+
+        let min_stake = self
+            .get_stake_params()
+            .await
+            .expect("staking parameters are always set")
+            .min_validator_stake;
+
+        // We want to know if the validator has enough stake to remain in the consensus set.
+        // In order to do this, we need to know what is the size of the validator's delegation
+        // pool in terms of staking tokens (i.e. the unbonded amount).
+        let unbonded_pool = next_rate.unbonded_amount(delegation_token_supply);
+
+        tracing::debug!(
+            %validator_id,
+            ?delegation_token_supply,
+            ?unbonded_pool,
+            next_validator_exchange_rate = ?next_rate.validator_exchange_rate,
+            ?previous_state,
+            ?min_stake,
+            "computing validator pool's unbonded amount for the upcoming epoch"
+        );
+
+        let has_minimum_stake = unbonded_pool >= min_stake;
+
+        let new_state = match previous_state {
+            Defined if has_minimum_stake => Inactive,
+            Defined if !has_minimum_stake => Defined,
+            Active if has_minimum_stake => Active,
+            Active if !has_minimum_stake => Defined,
+            Inactive if has_minimum_stake => Inactive,
+            Inactive if !has_minimum_stake => Defined,
+            _ => unreachable!("the previous state was validated by the guard condition"),
+        };
+
+        if new_state != previous_state {
+            let _ = self
+                .set_validator_state(validator_id, new_state)
+                .await
+                .expect("we guard the state transition");
+        }
+
+        Some(new_state)
+    }
+
     /// Add a validator during genesis, which will start in Active
     /// state with power assigned.
     async fn add_genesis_validator(
@@ -475,7 +544,7 @@ pub trait ValidatorManager: StateWrite {
 
     /// Update a validator definition
     #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
-    async fn update_validator(&mut self, validator: Validator) -> Result<()> {
+    async fn update_validator_definition(&mut self, validator: Validator) -> Result<()> {
         use validator::State::*;
 
         tracing::debug!(definition = ?validator, "updating validator definition");
