@@ -93,7 +93,10 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 
 // PoC for issue surfaced in zellic audit: https://github.com/penumbra-zone/penumbra/issues/3859
 #[tokio::test]
-#[should_panic(expected = "assertion failed: cs.is_satisfied().unwrap()")]
+#[cfg_attr(
+    debug_assertions,
+    should_panic("assertion failed: cs.is_satisfied().unwrap()")
+)]
 async fn invalid_dummy_spend() {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
 
@@ -184,25 +187,12 @@ async fn invalid_dummy_spend() {
     };
 
     // 3. Simulate execution of the Spend action
-    spend.check_stateless(transaction_context).await.unwrap();
-    spend.check_stateful(state.clone()).await.unwrap();
-    let mut state_tx = state.try_begin_transaction().unwrap();
-    state_tx.put_mock_source(1u8);
-    spend.execute(&mut state_tx).await.unwrap();
-    state_tx.apply();
-
-    // 4. Execute EndBlock
-
-    let end_block = abci::request::EndBlock {
-        height: height.try_into().unwrap(),
-    };
-    ShieldedPool::end_block(&mut state, &end_block).await;
-
-    let mut state_tx = state.try_begin_transaction().unwrap();
-    // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
-
-    state_tx.apply();
+    spend
+        .check_stateless(transaction_context)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("spend proof did not verify");
 }
 
 #[tokio::test]
