@@ -498,7 +498,7 @@ pub trait ConsensusIndexRead: StateRead {
         else {
             tracing::error!(
                 %validator_id,
-                "consenus set index check returned false because validator state was not found");
+                "consensus set index check returned false because validator state was not found");
             return false;
         };
 
@@ -509,7 +509,7 @@ pub trait ConsensusIndexRead: StateRead {
             %validator_id,
             ?belongs_in_index,
             ?state,
-            "removing validator from consensus set"
+            "does not belong in consensus set"
         );
 
         belongs_in_index
