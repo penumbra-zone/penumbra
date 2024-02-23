@@ -90,8 +90,7 @@ impl Component for Funding {
             else {
                 tracing::error!(
                     %validator_identity,
-                    ending_epoch_base_rate = ?base_rate,
-                    "the ending epoch's rate data for the validator has not been found in storage, computing rewards is not possible"
+                    "the validator rate data has not been found in storage, computing rewards is not possible"
                 );
                 continue;
             };
@@ -99,8 +98,11 @@ impl Component for Funding {
             for stream in funding_streams {
                 // We compute the reward amount for this specific funding stream, it is based
                 // on the ending epoch's rate data.
-                let reward_amount_for_stream =
-                    stream.reward_amount(&base_rate, &validator_rate, delegation_token_supply);
+                let reward_amount_for_stream = stream.reward_amount(
+                    base_rate.base_reward_rate,
+                    validator_rate.validator_exchange_rate,
+                    delegation_token_supply,
+                );
 
                 total_staking_rewards_for_epoch = total_staking_rewards_for_epoch
                     .saturating_add(reward_amount_for_stream.value());

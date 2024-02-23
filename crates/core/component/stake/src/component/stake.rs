@@ -99,7 +99,7 @@ impl Component for Staking {
         }
         // Build the initial validator set update.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .expect("should be able to build initial tendermint validator updates");
     }
@@ -154,7 +154,7 @@ impl Component for Staking {
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .context("should be able to build tendermint validator updates")?;
         Ok(())
@@ -165,8 +165,8 @@ pub trait ConsensusUpdateRead: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
     ///
     /// Set during `end_block`.
-    fn tendermint_validator_updates(&self) -> Option<Vec<Update>> {
-        self.object_get(state_key::internal::tendermint_validator_updates())
+    fn cometbft_validator_updates(&self) -> Option<Vec<Update>> {
+        self.object_get(state_key::internal::cometbft_validator_updates())
             .unwrap_or(None)
     }
 }
@@ -174,10 +174,10 @@ pub trait ConsensusUpdateRead: StateRead {
 impl<T: StateRead + ?Sized> ConsensusUpdateRead for T {}
 
 pub(crate) trait ConsensusUpdateWrite: StateWrite {
-    fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
+    fn put_cometbft_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
-            state_key::internal::tendermint_validator_updates(),
+            state_key::internal::cometbft_validator_updates(),
             Some(updates),
         )
     }
@@ -302,7 +302,7 @@ pub trait StateWriteExt: StateWrite {
         /// modeling, so this is an interim hack.
         fn validator_address(ck: &PublicKey) -> [u8; 20] {
             let ck_bytes = ck.to_bytes();
-            let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+            let addr: [u8; 20] = Sha256::digest(ck_bytes).as_slice()[0..20]
                 .try_into()
                 .expect("Sha256 digest should be 20-bytes long");
 
@@ -386,6 +386,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its state was not found", validator_identity)
                 })?;
+
             if validator_state != validator::State::Active {
                 continue;
             }
@@ -410,7 +411,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 })?;
         }
 
-        Ok(total_active_stake.into())
+        Ok(total_active_stake)
     }
 }
 

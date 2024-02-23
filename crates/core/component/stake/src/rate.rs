@@ -7,10 +7,7 @@ use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
-use crate::{Delegate, Penalty, Undelegate};
-use once_cell::sync::Lazy;
-
-pub(crate) const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
+use crate::{Delegate, Penalty, Undelegate, FP_SCALING_FACTOR};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -151,8 +148,15 @@ impl RateData {
         // Remove scaling factors:
         let validator_exchange_rate =
             (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        if validator_exchange_rate == U128x128::from(0u128) {
+            // If the exchange rate is zero, the delegation amount is also zero.
+            // This is extremely unlikely to be hit in practice, but it's a valid
+            // edge case that a test might want to cover.
+            return 0u128.into();
+        }
 
         /* **************** Compute the corresponding delegation size *********************** */
+
         let delegation_amount = (unbonded_amount / validator_exchange_rate)
             .expect("validator exchange rate is nonzero");
         /* ********************************************************************************** */
@@ -231,9 +235,9 @@ impl RateData {
     /// delegates `unbonded_amount` of the staking token.
     pub fn build_delegate(&self, unbonded_amount: Amount) -> Delegate {
         Delegate {
-            delegation_amount: self.delegation_amount(unbonded_amount).into(),
+            delegation_amount: self.delegation_amount(unbonded_amount),
             epoch_index: self.epoch_index,
-            unbonded_amount: unbonded_amount.into(),
+            unbonded_amount,
             validator_identity: self.identity_key.clone(),
         }
     }
@@ -244,7 +248,7 @@ impl RateData {
         Undelegate {
             start_epoch_index: self.epoch_index,
             delegation_amount,
-            unbonded_amount: self.unbonded_amount(delegation_amount.into()).into(),
+            unbonded_amount: self.unbonded_amount(delegation_amount),
             validator_identity: self.identity_key.clone(),
         }
     }

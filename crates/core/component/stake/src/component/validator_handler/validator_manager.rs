@@ -13,7 +13,10 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::StreamExt as _;
 use penumbra_num::Amount;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_sct::{
+    component::clock::{EpochManager, EpochRead},
+    epoch::Epoch,
+};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
@@ -22,7 +25,7 @@ use validator::BondingState::*;
 
 use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto;
-use tracing::instrument;
+use tracing::{instrument, Instrument};
 
 use crate::{
     component::validator_handler::ValidatorDataRead,
@@ -38,26 +41,36 @@ use penumbra_asset::asset;
 pub trait ValidatorManager: StateWrite {
     /// Perform a state transition for the specified validator and new state.
     /// Initial validator state is defined using [`add_validator`]
+    ///             ┌───────────────────────────────────────────────────────┐
+    ///             │                      ┌──────────────────────────────┐ │
+    ///             ▼                      ▼                              │ │
+    ///     ╔══════*════════╗       ┌────────────┐                        │ │
+    ///  ┌─▶║    Defined    ║◀─────▶│  Disabled  │                        │ │
+    ///  │  ╚═══════════════╝       └────────────┘                        │ │
+    ///  │          │                      │                              │ │
+    ///  │          │                      ▼                              │ │
+    ///  │          │               ┏━━━━━━━━━━━━┓                        │ │
+    ///  │          └──────────────▶┃            ┃                        │ │
+    ///  │                          ┃ Tombstoned ┃◀────────────┐          │ │
+    ///  │          ┌──────────────▶┃            ┃             │          │ │
+    ///  │          │               ┗━━━━━━━━━━━━┛             │          │ │
+    ///  │          │                      ▲                   │          │ │
+    ///  │          │                      │           ┌──────────────┐   │ │
+    ///  │   ┌─────────────┐        ┌────────────┐     │              │◀──┘ │
+    ///  └──▶│   Jailed    │◀───────│   Active   │◀───▶│   Inactive   │     │
+    ///      └─────────────┘        └────────────┘     │              │◀────┘
+    ///             │                                  └──────────────┘      
+    ///             │                                          ▲             
+    ///             └──────────────────────────────────────────┘             
     ///                                                                      
-    ///    ┌───────────────────────────────────────────────────────────┐     
-    ///    │      ┌─────────────────────────────────┐                  │     
-    ///    │      │             ┌───────────────────┼──────────────┐   │     
-    ///    │      │             ▼                   │              │   │     
-    ///    ▼      ▼        ┌────────┐          ┌────────┐          │   │     
-    /// ┌────────────┐     │        │◀────────▶│        │        ┌────────┐  
-    /// │  Defined   │◀───▶│Inactive│          │ Active │───────▶│ Jailed │─┐
-    /// └────────────┘     │        │  ┌───────│        │        └────────┘ │
-    ///        ▲           └────────┘  │       └────────┘             │     │
-    ///        │                ▲      │            │                 │     │
-    ///        │                │      │            │                 │     │
-    ///        │                │      │            ▼                 │     │
-    ///        │                │      │      ┌──────────┐            │     │
-    ///        │                │      │      │Tombstoned│◀───────────┘     │
-    ///        │                │      │      └──────────┘                  │
-    ///        │                ▼      ▼                                    │
-    ///        │            ┌──────────────┐                                │
-    ///        └───────────▶│   Disabled   │◀───────────────────────────────┘
-    ///                     └──────────────┘                                                                                
+    ///                                                                      
+    ///                                                                      
+    ///                                                  ╔═════════════════╗
+    ///                                                  ║ starting state  ║
+    ///                                                  ╚═════════════════╝
+    ///                                                  ┏━━━━━━━━━━━━━━━━━┓
+    ///                                                  ┃ terminal state  ┃
+    ///                                                  ┗━━━━━━━━━━━━━━━━━┛                                                                                      
     /// # Errors
     /// This method errors on illegal state transitions; since execution must be infallible,
     /// it's the caller's responsibility to ensure that the state transitions are legal.
@@ -141,16 +154,13 @@ pub trait ValidatorManager: StateWrite {
 
                 // Finally, set the validator to be active.
                 self.put(validator_state_path, Active);
-
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(0.0);
             }
 
-            (Active, new_state @ (Inactive | Disabled)) => {
+            (Active, Inactive | Disabled) => {
                 // When an active validator becomes inactive, or is disabled by its operator,
                 // we need to start the unbonding process for its delegation pool. We keep it
                 // in the consensus set, but it is no longer part of the "active set".
-                tracing::debug!(validator_identity = %identity_key, "transitioning validator from active to inactive");
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "validator has become inactive or disabled");
 
                 // The validator's delegation pool begins unbonding.
                 self.set_validator_bonding_state(
@@ -162,18 +172,19 @@ pub trait ValidatorManager: StateWrite {
                     },
                 );
 
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(0.0);
-
                 self.put(validator_state_path, new_state);
             }
+            (Jailed, Defined) => {
+                // A jailed validator has been released from jail by its operator.
+                // Its delegation pool has falled below the minimum threshold, so it is
+                // considered `Defined`.
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "releasing validator from jail");
+                // TODO(erwan): deindex
+                self.put(validator_state_path, Defined);
+            }
             (Jailed, Inactive) => {
-                // After getting jailed, a validator can be released from jail when its operator
-                // updates the validator definition. It is then considered inactive, unless its
-                // delegation pool falls below the minimum threshold.
-
                 // Here, we don't have anything to do, only allow the validator to return to society.
-                tracing::debug!(validator_identity = %identity_key, "releasing validator from jail");
+                tracing::debug!(validator_identity = %identity_key, ?new_state, "releasing validator from jail");
                 self.put(validator_state_path, Inactive);
             }
             (Disabled, Inactive) => {
@@ -263,7 +274,7 @@ pub trait ValidatorManager: StateWrite {
             (Tombstoned, Tombstoned) => {
                 tracing::debug!(validator_identity = %identity_key, "validator is already tombstoned");
                 // See discussion in https://github.com/penumbra-zone/penumbra/pull/3761 for context.
-                // The abridged summary is that applying a misbehavior penalty enough and immediately
+                // The abridged summary is that applying a misbehavior penalty once and immediately
                 // unbonding the validator's delegation pool should be enough to deter misbehavior.
                 // Considering every single misbehavior actions as "counts" that accumulate runs the
                 // risk of cratering misconfigured validator into oblivion.
@@ -279,13 +290,6 @@ pub trait ValidatorManager: StateWrite {
             (Defined | Jailed | Disabled, Active) => {
                 anyhow::bail!(
                     "only Inactive validators can become Active: identity_key={}, old_state={:?}",
-                    identity_key,
-                    old_state
-                )
-            }
-            (Jailed, Defined) => {
-                anyhow::bail!(
-                    "only inactive validators can become defined: identity_key={}, old_state={:?}",
                     identity_key,
                     old_state
                 )
@@ -411,6 +415,12 @@ pub trait ValidatorManager: StateWrite {
         initial_voting_power: Amount,
     ) -> Result<()> {
         tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
+
+        // TODO(erwan): add more guards - maybe.
+        // It's not totally clear we want guards here, because it's convenient
+        // to be able to add a validator with a nonsensical initial state for testing purposes.
+        // We will know once if we run with the testing framework. If we remove it, we'll have to
+        // expand the `match` down below.
         if !matches!(initial_state, State::Defined | State::Active) {
             anyhow::bail!(
                 "validator (identity_key={}) cannot have initial_state={:?}",
@@ -418,35 +428,32 @@ pub trait ValidatorManager: StateWrite {
                 initial_state
             )
         }
-        // TODO(erwan): add more guards for voting power and nonsensical initial states.
-        // in a separate PR, will move this up closer to `add_validator` - i don't want to
-        // clutter the diff for now.
-        let id = validator.identity_key.clone();
+        let validator_identity = validator.identity_key.clone();
 
         // First, we record the validator definition in the general validator index:
         self.put(
-            state_key::validators::definitions::by_id(&id),
+            state_key::validators::definitions::by_id(&validator_identity),
             validator.clone(),
         );
         // Then, we create a mapping from the validator's consensus key to its
         // identity key, so we can look up the validator by its consensus key, and
         // vice-versa.
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
+        self.register_consensus_key(&validator_identity, &validator.consensus_key)
             .await;
         // We register the validator's delegation token in the token registry...
-        self.register_denom(&DelegationToken::from(&id).denom())
+        self.register_denom(&DelegationToken::from(&validator_identity).denom())
             .await?;
         // ... and its reward rate data in the JMT.
-        self.set_validator_rate_data(&id, initial_rate_data);
+        self.set_validator_rate_data(&validator_identity, initial_rate_data);
 
         // We initialize the validator's state, power, and bonding state.
-        self.set_initial_validator_state(&id, initial_state)?;
-        self.set_validator_power(&id, initial_voting_power)?;
-        self.set_validator_bonding_state(&id, initial_bonding_state);
+        self.set_initial_validator_state(&validator_identity, initial_state)?;
+        self.set_validator_power(&validator_identity, initial_voting_power)?;
+        self.set_validator_bonding_state(&validator_identity, initial_bonding_state);
 
         // For genesis validators, we also need to add them to the consensus set index.
         if initial_state == validator::State::Active {
-            self.add_consensus_set_index(&id);
+            self.add_consensus_set_index(&validator_identity);
         }
 
         // Finally, update metrics for the new validator.
@@ -460,7 +467,8 @@ pub trait ValidatorManager: StateWrite {
             _ => unreachable!("the initial state was validated by the guard condition"),
         };
 
-        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => id.to_string()).increment(0.0);
+        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => validator_identity.to_string())
+            .increment(0.0);
 
         Ok(())
     }
@@ -520,7 +528,7 @@ pub trait ValidatorManager: StateWrite {
 
                 let unbonded_pool_size = validator_rate_data.unbonded_amount(delegation_pool_size);
 
-                if unbonded_pool_size.value() >= min_validator_stake.value() {
+                if unbonded_pool_size >= min_validator_stake {
                     self.set_validator_state(id, Inactive).await?;
                 } else {
                     self.set_validator_state(id, Defined).await?;
@@ -543,6 +551,40 @@ pub trait ValidatorManager: StateWrite {
             .await;
 
         self.put(state_key::validators::definitions::by_id(id), validator);
+
+        Ok(())
+    }
+
+    /// Update the validator pool's bonding state.
+    #[instrument(skip(self))]
+    async fn process_validator_pool_state(
+        &mut self,
+        validator_identity: &IdentityKey,
+        at_epoch: Epoch,
+    ) -> Result<()> {
+        let pool_state = self.get_validator_bonding_state(validator_identity).await;
+
+        // If the pool is already unbonded, this will return the current epoch.
+        let unbonding_epoch_target = self
+            .compute_unbonding_epoch(validator_identity, at_epoch.index)
+            .await?;
+
+        tracing::debug!(
+            validator_identity = %validator_identity,
+            ?pool_state,
+            ?unbonding_epoch_target,
+            "processing validator pool state");
+
+        if at_epoch.index >= unbonding_epoch_target {
+            // The validator's delegation pool has finished unbonding, so we
+            // transition it to the Unbonded state.
+            let _ = self
+                .set_validator_bonding_state(validator_identity, Unbonded)
+                .instrument(tracing::debug_span!(
+                    "validator_pool_unbonded",
+                    ?validator_identity
+                ));
+        }
 
         Ok(())
     }
@@ -638,6 +680,10 @@ pub trait ValidatorManager: StateWrite {
     }
 
     /// Process evidence of byzantine behavior from CometBFT.
+    ///
+    /// Evidence *MUST* be processed before `end_block` is called, because
+    /// the evidence may trigger a validator state transition requiring
+    /// an early epoch change.
     ///
     /// # Errors
     /// Returns an error if the validator is not found in the JMT.

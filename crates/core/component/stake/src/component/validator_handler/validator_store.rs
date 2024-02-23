@@ -52,9 +52,10 @@ pub trait ValidatorDataRead: StateRead {
     async fn get_validator_bonding_state(
         &self,
         identity_key: &IdentityKey,
-    ) -> Result<Option<validator::BondingState>> {
+    ) -> Option<validator::BondingState> {
         self.get(&state_key::validators::bonding_state::by_id(identity_key))
             .await
+            .expect("no deserialization error expected")
     }
 
     /// Convenience method to assemble a [`ValidatorStatus`].
@@ -62,7 +63,7 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
-        let bonding_state = self.get_validator_bonding_state(identity_key).await?;
+        let bonding_state = self.get_validator_bonding_state(identity_key).await;
         let state = self.get_validator_state(identity_key).await?;
         let power = self.get_validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
@@ -141,10 +142,12 @@ pub trait ValidatorDataRead: StateRead {
     }
 
     /// Compute the unbonding epoch for an undelegation initiated at `starting_epoch`.
+    /// If the pool is unbonded, or already unbonding, the `starting_epoch` is ignored.
+    ///
     /// This can be used to check if the undelegation is allowed, or to compute the
     /// epoch at which a delegation pool will be unbonded.
     async fn compute_unbonding_epoch(&self, id: &IdentityKey, starting_epoch: u64) -> Result<u64> {
-        let Some(val_bonding_state) = self.get_validator_bonding_state(id).await? else {
+        let Some(val_bonding_state) = self.get_validator_bonding_state(id).await else {
             anyhow::bail!(
                 "validator bonding state not tracked (validator_identity={})",
                 id
@@ -174,7 +177,7 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
         use futures::TryFutureExt;
-        self.get(&state_key::validators::definitions::by_id(&identity_key))
+        self.get(&state_key::validators::definitions::by_id(identity_key))
             .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
             .boxed()
     }

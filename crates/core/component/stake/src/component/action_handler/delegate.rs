@@ -114,6 +114,8 @@ impl ActionHandler for Delegate {
             .await?
             .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
 
+        // TODO(erwan): The next PR (#3853) in this sprint changes this logic to require
+        // an initial delegation that is at least the minimum stake param.
         if matches!(validator_state, validator::State::Defined)
             && self.delegation_amount.value()
                 >= state.get_stake_params().await?.min_validator_stake.value()
