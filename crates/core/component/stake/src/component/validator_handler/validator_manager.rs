@@ -162,7 +162,7 @@ pub trait ValidatorManager: StateWrite {
             (Inactive, Defined) => {
                 // The validator has fallen below the minimum threshold to be
                 // part of the "greater" consensus set.
-                self.remove_consensus_set_index(identity_key);
+                tracing::debug!(identity_key = ?identity_key, "validator has fallen below minimum stake threshold to be considered inactive");
                 self.put(validator_state_path, Defined);
             }
             (Inactive, Active) => {
@@ -265,7 +265,16 @@ pub trait ValidatorManager: StateWrite {
                 // The validator was part of the active set, but its delegation pool fell below
                 // the minimum threshold. We remove it from the active set and the consensus set.
                 tracing::debug!(unbonds_at_epoch, "ejecting from active set");
-                self.remove_consensus_set_index(identity_key);
+
+                // The validator's delegation pool begins unbonding.
+                self.set_validator_bonding_state(
+                    identity_key,
+                    Unbonding {
+                        unbonds_at_epoch: self
+                            .compute_unbonding_epoch(identity_key, current_epoch.index)
+                            .await?,
+                    },
+                );
                 self.put(validator_state_path, Defined);
             }
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
@@ -293,9 +302,6 @@ pub trait ValidatorManager: StateWrite {
                     misbehavior_penalty,
                     "tombstoning validator and unbond its pool"
                 );
-
-                // Remove the validator from the consensus set.
-                self.remove_consensus_set_index(identity_key);
 
                 // Finally, set the validator to be tombstoned.
                 self.put(validator_state_path, Tombstoned);

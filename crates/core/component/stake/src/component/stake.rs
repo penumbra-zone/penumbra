@@ -488,6 +488,32 @@ pub trait ConsensusIndexRead: StateRead {
             })
             .boxed())
     }
+
+    /// Returns whether the given validator should be indexed in the consensus set.
+    async fn belongs_in_index(&self, validator_id: &IdentityKey) -> bool {
+        let Some(state) = self
+            .get_validator_state(validator_id)
+            .await
+            .expect("no deserialization error")
+        else {
+            tracing::error!(
+                %validator_id,
+                "consenus set index check returned false because validator state was not found");
+            return false;
+        };
+
+        let belongs_in_index =
+            matches!(state, validator::State::Active | validator::State::Inactive);
+
+        tracing::debug!(
+            %validator_id,
+            ?belongs_in_index,
+            ?state,
+            "removing validator from consensus set"
+        );
+
+        belongs_in_index
+    }
 }
 
 impl<T: StateRead + ?Sized> ConsensusIndexRead for T {}

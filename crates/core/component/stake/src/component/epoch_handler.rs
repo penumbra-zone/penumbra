@@ -29,7 +29,8 @@ use crate::{
     StateReadExt,
 };
 
-use super::{ConsensusIndexRead, StateWriteExt};
+use super::StateWriteExt;
+use crate::component::stake::{ConsensusIndexRead, ConsensusIndexWrite};
 
 #[async_trait]
 pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
@@ -44,8 +45,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let mut num_delegations = 0usize;
         let mut num_undelegations = 0usize;
 
-        // TODO(erwan): we can turn this into a joinset later, but since the storage locality is pretty good
-        // and the number of ticks is about ~700, we can just do this in a loop for now.
+        // Performance: see #3874.
         for height in epoch_to_end.start_height..=end_height {
             let changes = self
                 .get_delegation_changes(
@@ -89,8 +89,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         // Compute and set the chain base rate for the upcoming epoch.
         let next_base_rate = self.process_chain_base_rate().await?;
 
-        // TODO(erwan): no doubt, this can be optimized, but we're on a cold path and for now,
-        // we want the simplest possible implementation.
+        // TODO(erwan): replace this with a tagged stream once we have tests. See #3874.
         let delegation_set = delegations_by_validator
             .keys()
             .cloned()
@@ -127,7 +126,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 .remove(validator_identity)
                 .unwrap_or_else(Amount::zero);
 
-            // These operations should be commutative, so later, we can consider using a Joinset for this loop.
             if let Some(rewards) = self
                 .process_validator(
                     validator_identity,
@@ -349,6 +347,17 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 tracing::error!(?e, validator_identity = %validator.identity_key, "failed to process validator pool state");
                 e
             })?;
+
+        // Finally, we decide whether to keep this validator in the consensus set.
+        // Doing this here means that we no longer have to worry about validators
+        // escaping end-epoch processing.
+        //
+        // Performance: NV-storage layer churn because the validator might not actually
+        // be in the CS index. We should replace the union set approach with a merged
+        // stream that tags items with their source. See #3874.
+        if !self.belongs_in_index(&validator.identity_key).await {
+            self.remove_consensus_set_index(&validator.identity_key);
+        }
 
         Ok(reward_queue_entry)
     }
