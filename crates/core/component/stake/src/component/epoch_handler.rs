@@ -45,7 +45,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let mut num_undelegations = 0usize;
 
         // TODO(erwan): we can turn this into a joinset later, but since the storage locality is pretty good
-        // and the number of ticks is about 700, we can just do this in a loop for now.
+        // and the number of ticks is about ~700, we can just do this in a loop for now.
         for height in epoch_to_end.start_height..=end_height {
             let changes = self
                 .get_delegation_changes(
@@ -86,6 +86,9 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             "collected delegation changes for the epoch"
         );
 
+        // Compute and set the chain base rate for the upcoming epoch.
+        let next_base_rate = self.process_chain_base_rate().await?;
+
         // TODO(erwan): no doubt, this can be optimized, but we're on a cold path and for now,
         // we want the simplest possible implementation.
         let delegation_set = delegations_by_validator
@@ -113,57 +116,9 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             .union(&consensus_set)
             .collect::<BTreeSet<_>>();
 
-        // We are transitioning to the next epoch, so the "current" base rate in
-        // the state is now the previous base rate.
-        let prev_base_rate = self.get_current_base_rate().await?;
-
-        tracing::debug!(
-            "fetching the issuance budget for this epoch from the distributions component"
-        );
-        // Fetch the issuance budget for the epoch we are ending.
-        let issuance_budget_for_epoch = self
-            .get_staking_token_issuance_for_epoch()
-            .expect("issuance budget is always set by the distributions component");
-
-        // Compute the base reward rate for the upcoming epoch based on the total amount
-        // of active stake and the issuance budget given to us by the distribution component.
-        let total_active_stake_previous_epoch = self.total_active_stake().await?;
-        tracing::debug!(
-            ?total_active_stake_previous_epoch,
-            ?issuance_budget_for_epoch,
-            "computing base rate for the upcoming epoch"
-        );
-
-        let base_reward_rate =
-            U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
-                .expect("total active stake is nonzero");
-        let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
-            .expect("base reward rate is around one")
-            .round_down()
-            .try_into()
-            .expect("rounded to an integral value");
-        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch");
-
-        let next_base_rate = prev_base_rate.next_epoch(base_reward_rate);
-        tracing::debug!(
-            ?prev_base_rate,
-            ?next_base_rate,
-            ?base_reward_rate,
-            ?total_active_stake_previous_epoch,
-            ?issuance_budget_for_epoch,
-            "calculated base rate for the upcoming epoch"
-        );
-
-        // Set the next base rate as the new "current" base rate.
-        self.set_base_rate(next_base_rate.clone());
-        // We cache the previous base rate in the state, so that other components
-        // can use it in their end-epoch procesisng (e.g. funding for staking rewards).
-        self.set_prev_base_rate(prev_base_rate.clone());
-
         let mut funding_queue: Vec<(IdentityKey, FundingStreams, Amount)> = Vec::new();
 
         for validator_identity in validators_to_process {
-            // TODO(erwan): we don't need to remove the entry in prod, this is just for testing.
             let total_delegations = delegations_by_validator
                 .remove(validator_identity)
                 .unwrap_or_else(Amount::zero);
@@ -172,6 +127,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 .remove(validator_identity)
                 .unwrap_or_else(Amount::zero);
 
+            // These operations should be commutative, so later, we can consider using a Joinset for this loop.
             if let Some(rewards) = self
                 .process_validator(
                     validator_identity,
@@ -412,6 +368,56 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             })?;
 
         Ok(reward_queue_entry)
+    }
+
+    async fn process_chain_base_rate(&mut self) -> Result<BaseRateData> {
+        // We are transitioning to the next epoch, so the "current" base rate in
+        // the state is now the previous base rate.
+        let prev_base_rate = self.get_current_base_rate().await?;
+
+        tracing::debug!(
+            "fetching the issuance budget for this epoch from the distributions component"
+        );
+        // Fetch the issuance budget for the epoch we are ending.
+        let issuance_budget_for_epoch = self
+            .get_staking_token_issuance_for_epoch()
+            .expect("issuance budget is always set by the distributions component");
+
+        // Compute the base reward rate for the upcoming epoch based on the total amount
+        // of active stake and the issuance budget given to us by the distribution component.
+        let total_active_stake_previous_epoch = self.total_active_stake().await?;
+        tracing::debug!(
+            ?total_active_stake_previous_epoch,
+            ?issuance_budget_for_epoch,
+            "computing base rate for the upcoming epoch"
+        );
+
+        let base_reward_rate =
+            U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
+                .expect("total active stake is nonzero");
+        let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
+            .expect("base reward rate is around one")
+            .round_down()
+            .try_into()
+            .expect("rounded to an integral value");
+        tracing::debug!(%base_reward_rate, "base reward rate for the upcoming epoch");
+
+        let next_base_rate = prev_base_rate.next_epoch(base_reward_rate);
+        tracing::debug!(
+            ?prev_base_rate,
+            ?next_base_rate,
+            ?base_reward_rate,
+            ?total_active_stake_previous_epoch,
+            ?issuance_budget_for_epoch,
+            "calculated base rate for the upcoming epoch"
+        );
+
+        // Set the next base rate as the new "current" base rate.
+        self.set_base_rate(next_base_rate.clone());
+        // We cache the previous base rate in the state, so that other components
+        // can use it in their end-epoch procesisng (e.g. funding for staking rewards).
+        self.set_prev_base_rate(prev_base_rate);
+        Ok(next_base_rate)
     }
 
     /// Called during `end_epoch`. Will perform state transitions to validators based
