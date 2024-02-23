@@ -29,7 +29,8 @@
                 "penumbra1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2teg83gu"
             ]
         ],
-        "sequence_number": 0
+        "sequence_number": 0,
+        "fullnode": null
     },
     {
         "name": "Penumbra Labs CI 2",
@@ -61,6 +62,7 @@
                 "penumbra1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2teg83gu"
             ]
         ],
-        "sequence_number": 0
+        "sequence_number": 0,
+        "fullnode": null
     }
 ]

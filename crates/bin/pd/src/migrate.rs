@@ -14,7 +14,7 @@ use penumbra_stake::{
     component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
 };
 
-use crate::testnet::generate::TestnetConfig;
+use penumbra_network::generate::PenumbraNetwork;
 
 /// The kind of migration that should be performed.
 pub enum Migration {
@@ -80,7 +80,7 @@ impl Migration {
                     ..Default::default()
                 };
                 let mut genesis =
-                    TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+                    PenumbraNetwork::make_genesis(app_state.clone()).expect("can make genesis");
                 genesis.app_hash = app_hash
                     .0
                     .to_vec()
@@ -93,7 +93,7 @@ impl Migration {
                     now
                 });
                 let checkpoint = app_hash.0.to_vec();
-                let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+                let genesis = PenumbraNetwork::make_checkpoint(genesis, Some(checkpoint));
 
                 let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
                 tracing::info!("genesis: {}", genesis_json);
@@ -104,7 +104,7 @@ impl Migration {
                 let mut validator_state_path = path_to_export.clone();
                 validator_state_path.push("priv_validator_state.json");
                 let fresh_validator_state =
-                    crate::testnet::generate::TestnetValidator::initial_state();
+                    penumbra_network::validator::PenumbraValidator::initial_state();
                 std::fs::write(validator_state_path, fresh_validator_state)
                     .expect("can write validator state");
             }

@@ -99,8 +99,9 @@ pub enum RootCommand {
     },
     /// Generate, join, or reset a testnet.
     Testnet {
-        /// Path to directory to store output in. Must not exist. Defaults to
-        /// ~/.penumbra/testnet_data".
+        /// Path  directory where network config will be stored. By default:
+        /// `~/.penumbra/testnet_data`. If directory already exists and is not empty,
+        /// then commands `join` and `generate` will fail.
         #[clap(long)]
         testnet_dir: Option<PathBuf>,
 
@@ -191,27 +192,37 @@ pub enum TestnetCommand {
 
     /// Like `testnet generate`, but joins the testnet to which the specified node belongs
     Join {
-        /// URL of the remote Tendermint RPC endpoint for bootstrapping connection.
+        /// URL of the remote CometBFT RPC endpoint for bootstrapping connection.
         #[clap(
             env = "PENUMBRA_PD_JOIN_URL",
             default_value = "https://rpc.testnet.penumbra.zone"
         )]
-        node: Url,
+        bootstrap_node_url: Url,
         /// Human-readable name to identify node on network
-        // Default: 'node-#'
+        /// Defaults to `node-xxxx`, where `xxxx` is a random hex string.
         #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]
         moniker: Option<String>,
-        /// Public URL to advertise for this node's Tendermint P2P service.
+        /// Public URL to advertise for this node's CometBFT P2P service.
         /// Setting this option will instruct other nodes on the network to connect
         /// to yours. Must be in the form of a socket, e.g. "1.2.3.4:26656".
         #[clap(long, env = "PENUMBRA_PD_TM_EXTERNAL_ADDR")]
         external_address: Option<SocketAddr>,
-        /// When generating Tendermint config, use this socket to bind the Tendermint RPC service.
-        #[clap(long, env = "PENUMBRA_PD_TM_RPC_BIND", default_value = "0.0.0.0:26657")]
-        tendermint_rpc_bind: SocketAddr,
-        /// When generating Tendermint config, use this socket to bind the Tendermint P2P service.
-        #[clap(long, env = "PENUMBRA_PD_TM_P2P_BIND", default_value = "0.0.0.0:26656")]
-        tendermint_p2p_bind: SocketAddr,
+        /// When generating CometBFT config, use this socket to bind the CometBFT RPC service.
+        #[clap(
+            long,
+            env = "PENUMBRA_PD_TM_RPC_BIND",
+            default_value = "0.0.0.0:26657",
+            alias = "tendermint_rpc_bind"
+        )]
+        cometbft_rpc_bind: SocketAddr,
+        /// When generating CometBFT config, use this socket to bind the CometBFT P2P service.
+        #[clap(
+            long,
+            env = "PENUMBRA_PD_TM_P2P_BIND",
+            default_value = "0.0.0.0:26656",
+            alias = "tendermint_p2p_bind"
+        )]
+        cometbft_p2p_bind: SocketAddr,
     },
 
     /// Reset all `pd` testnet state.

@@ -76,6 +76,7 @@ penumbra-genesis                 = { workspace = true }
 penumbra-governance              = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-ibc                     = { workspace = true, features = ["rpc"], default-features = true }
 penumbra-keys                    = { workspace = true, default-features = true }
+penumbra-network                 = { path = "../../core/network" }
 penumbra-proto                   = { workspace = true, default-features = true }
 penumbra-sct                     = { workspace = true, default-features = true }
 penumbra-shielded-pool           = { workspace = true, features = ["parallel"], default-features = true }
@@ -121,6 +122,7 @@ url                              = { workspace = true }
 zip                              = "0.6"
 
 [dev-dependencies]
+assert_cmd = {workspace = true}
 penumbra-proof-params = {workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",

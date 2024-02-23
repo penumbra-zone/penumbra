@@ -1,0 +1,118 @@
+[package]
+name = "penumbra-network"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+description = "Logic for representing Penumbra network configurations, including fullnodes, validators, and genesis."
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+rust-version = "1.73"
+
+[package.metadata.dist]
+dist = true
+
+[package.metadata.release]
+# Update the guide docs to use the most recent version, to reduce tedium.
+# Preview the changes with `cargo release replace`.
+pre-release-replacements = [
+    { file = "../../../docs/guide/src/penumbra_version.md", search = "^v.*", replace = "{{tag_name}}", exactly = 1 },
+]
+
+[features]
+default = ["download-proving-keys"]
+std = ["ibc-types/std"]
+download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+anyhow = "1"
+
+[dependencies]
+penumbra-proto = {workspace = true, default-features = true}
+cnidarium = {workspace = true, features = ["migration", "rpc"], default-features = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-shielded-pool = {workspace = true, features = [
+    "parallel",
+], default-features = true}
+penumbra-stake = {workspace = true, features = [
+    "parallel",
+], default-features = true}
+penumbra-sct = {workspace = true, default-features = true}
+penumbra-fee = {workspace = true, default-features = true}
+penumbra-dex = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-governance = {workspace = true, features = [
+    "parallel",
+], default-features = true}
+penumbra-ibc = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-compact-block = {workspace = true, default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-app = {workspace = true}
+penumbra-custody = {workspace = true}
+penumbra-tower-trace = { path = "../../util/tower-trace" }
+penumbra-genesis = {workspace = true}
+decaf377 = {workspace = true, features = ["parallel"], default-features = true}
+decaf377-rdsa = {workspace = true}
+tower-abci = "0.11"
+jmt = {workspace = true}
+tendermint-config = {workspace = true}
+tendermint-proto = {workspace = true}
+tendermint = {workspace = true}
+tendermint-light-client-verifier = {workspace = true}
+ibc-types = {workspace = true, default-features = true}
+ibc-proto = {workspace = true, default-features = false, features = [
+    "server",
+]}
+prost = {workspace = true}
+toml = {workspace = true}
+ics23 = {workspace = true}
+pin-project-lite = {workspace = true}
+ark-ff = {workspace = true, default-features = true}
+async-stream = {workspace = true}
+bincode = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
+chrono = {workspace = true, default-features = false, features = ["serde"]}
+csv = "1.1"
+directories = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-stream = {workspace = true}
+tokio-util = {workspace = true, features = ["compat"]}
+tower = {workspace = true, features = ["full"]}
+tower-actor = "0.1.0"
+tower-service = {workspace = true}
+tracing = {workspace = true}
+regex = {workspace = true}
+reqwest = { version = "0.11", features = ["json"] }
+pbjson-types = {workspace = true}
+tonic = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
+url = {workspace = true}
+pin-project = {workspace = true}
+futures = {workspace = true}
+serde_json = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_with = {workspace = true, features = ["hex"]}
+sha2 = {workspace = true}
+anyhow = {workspace = true}
+hex = {workspace = true}
+rand = {workspace = true}
+rand_chacha = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+metrics = {workspace = true}
+http = {workspace = true}
+ed25519-consensus = {workspace = true}
+async-trait = {workspace = true}
+once_cell = {workspace = true}
+rocksdb = {workspace = true}
+tempfile = {workspace = true}
+base64 = {workspace = true}
+
+[dev-dependencies]
+penumbra-proof-params = {workspace = true, features = [
+    "bundled-proving-keys",
+    "download-proving-keys",
+], default-features = true}

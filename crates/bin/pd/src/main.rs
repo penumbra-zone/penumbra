@@ -14,20 +14,19 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
     migrate::Migration::SimpleMigration,
-    testnet::{
-        config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
-        generate::TestnetConfig,
-        join::testnet_join,
-    },
 };
 use penumbra_app::SUBSTORE_PREFIXES;
+
+use penumbra_network::config::{get_testnet_dir, url_has_necessary_parts};
+use penumbra_network::generate::{PenumbraNetwork, PenumbraNetworkConfig};
+use penumbra_network::join::BootstrapNode;
+
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
-use url::Url;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -99,10 +98,7 @@ async fn main() -> anyhow::Result<()> {
 
             // Unpack home directory. Accept an explicit path, but default
             // to a sane value if unspecified.
-            let pd_home = match home {
-                Some(h) => h,
-                None => get_testnet_dir(None).join("node0").join("pd"),
-            };
+            let pd_home = get_testnet_dir(home).join("node0").join("pd");
             let rocksdb_home = pd_home.join("rocksdb");
 
             let storage = Storage::load(rocksdb_home, SUBSTORE_PREFIXES.to_vec())
@@ -254,18 +250,19 @@ async fn main() -> anyhow::Result<()> {
         RootCommand::Testnet {
             tn_cmd:
                 TestnetCommand::Join {
-                    node,
+                    bootstrap_node_url,
                     moniker,
                     external_address,
-                    tendermint_rpc_bind,
-                    tendermint_p2p_bind,
+                    cometbft_rpc_bind,
+                    cometbft_p2p_bind,
                 },
             testnet_dir,
         } => {
             let output_dir = get_testnet_dir(testnet_dir);
 
-            // If the output directory already exists, bail out, rather than overwriting.
-            if output_dir.exists() {
+            // If directory exists and is not empty, fail. We allow existing but empty directories
+            // to support scripting by external tooling, and also tempdirs in tests.
+            if output_dir.exists() && !output_dir.read_dir()?.next().is_none() {
                 anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
@@ -273,31 +270,33 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // Check whether an external address was set, and parse as TendermintAddress.
+            // Required because we accept the CLI opt as a SocketAddr.
             let external_address: Option<TendermintAddress> = match external_address {
-                Some(a) => {
-                    let u = Url::parse(format!("tcp://{}", a).as_str())?;
-                    parse_tm_address(None, &u).ok()
-                }
+                Some(a) => Some(format!("tcp://{}", a).parse()?),
                 None => None,
             };
 
             // Set custom moniker, or default to random string suffix.
-            let node_name = match moniker {
+            let moniker = match moniker {
                 Some(m) => m,
                 None => format!("node-{}", hex::encode(OsRng.gen::<u32>().to_le_bytes())),
             };
 
-            // Join the target testnet, looking up network info and writing
-            // local configs for pd and tendermint.
-            testnet_join(
-                output_dir,
-                node,
-                &node_name,
-                external_address,
-                tendermint_rpc_bind,
-                tendermint_p2p_bind,
-            )
-            .await?;
+            let bootstrap_node = BootstrapNode {
+                cometbft_url: bootstrap_node_url,
+            };
+
+            // Join the target network, looking up network info and writing
+            // local configs for pd and cometbft.
+            bootstrap_node
+                .join(
+                    output_dir,
+                    &moniker,
+                    external_address,
+                    cometbft_rpc_bind,
+                    cometbft_p2p_bind,
+                )
+                .await?;
         }
 
         RootCommand::Testnet {
@@ -317,21 +316,10 @@ async fn main() -> anyhow::Result<()> {
                 },
             testnet_dir,
         } => {
-            // Build script computes the latest testnet name and sets it as an env variable
-            let chain_id = match preserve_chain_id {
-                true => chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string()),
-                false => {
-                    // If preserve_chain_id is false, we append a random suffix to avoid collisions
-                    let randomizer = OsRng.gen::<u32>();
-                    let chain_id =
-                        chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
-                    format!("{}-{}", chain_id, hex::encode(randomizer.to_le_bytes()))
-                }
-            };
-
             let output_dir = get_testnet_dir(testnet_dir);
-            // If the output directory already exists, bail out, rather than overwriting.
-            if output_dir.exists() {
+            // If directory exists and is not empty, fail. We allow existing but empty directories
+            // to support scripting by external tooling, and also tempdirs in tests.
+            if output_dir.exists() && !output_dir.read_dir()?.next().is_none() {
                 anyhow::bail!(
                     "output directory {:?} already exists, refusing to overwrite it",
                     output_dir
@@ -353,30 +341,44 @@ async fn main() -> anyhow::Result<()> {
                         .collect(),
                     None => Ok(Vec::new()),
                 };
-
             let external_addresses = external_addresses?;
+
+            // Unwrap option
+            let chain_id = PenumbraNetwork::generate_chain_id(chain_id, !preserve_chain_id);
 
             // Build and write local configs based on input flags.
             tracing::info!(?chain_id, "Generating network config");
-            let t = TestnetConfig::generate(
-                &chain_id,
-                Some(output_dir),
-                peer_address_template,
-                Some(external_addresses),
-                allocations_input_file,
+            let mut net_config = PenumbraNetworkConfig {
                 validators_input_file,
-                timeout_commit,
-                active_validator_limit,
-                epoch_duration,
-                unbonding_delay,
-                proposal_voting_blocks,
-            )?;
+                allocations_input_file,
+                peer_address_template,
+                external_addresses,
+                ..Default::default()
+            };
+            if let Some(t) = timeout_commit {
+                net_config.tendermint_timeout_commit = t
+            }
+            if let Some(l) = active_validator_limit {
+                net_config.active_validator_limit = l
+            }
+            if let Some(u) = unbonding_delay {
+                net_config.unbonding_delay = u
+            }
+            if let Some(p) = proposal_voting_blocks {
+                net_config.proposal_voting_blocks = p
+            }
+            if let Some(e) = epoch_duration {
+                net_config.epoch_duration = e
+            }
+
+            let mut penumbra_network = PenumbraNetwork::new(Some(chain_id), net_config)?;
+            penumbra_network.testnet_dir = output_dir;
             tracing::info!(
-                n_validators = t.validators.len(),
-                chain_id = %t.genesis.chain_id,
+                n_validators = penumbra_network.genesis_validators.len(),
+                chain_id = %penumbra_network.chain_id,
                 "Writing config files for network"
             );
-            t.write_configs()?;
+            penumbra_network.write_configs()?;
         }
         RootCommand::Export {
             mut home,
