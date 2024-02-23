@@ -17,7 +17,7 @@ use std::ops::Deref;
 pub fn set_tracing_subscriber() -> tracing::subscriber::DefaultGuard {
     use tracing_subscriber::filter::EnvFilter;
 
-    let filter = "debug,penumbra_app=trace,penumbra_mock_consensus=trace";
+    let filter = "info,penumbra_app=trace,penumbra_mock_consensus=trace";
     let filter = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new(filter))
         .expect("should have a valid filter directive")
