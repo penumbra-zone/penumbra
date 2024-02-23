@@ -7,6 +7,7 @@ use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
 use penumbra_asset::asset::{self, Id, Metadata};
+use penumbra_asset::ValueView;
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
@@ -15,8 +16,8 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1::{
-    self as pb, view_service_client::ViewServiceClient, BroadcastTransactionResponse,
-    WitnessRequest,
+    self as pb, view_service_client::ViewServiceClient, BalancesResponse,
+    BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
@@ -503,26 +504,19 @@ where
                 }),
             );
 
-            let balances: Vec<_> = req.await?.into_inner().try_collect().await?;
+            let balances: Vec<BalancesResponse> = req.await?.into_inner().try_collect().await?;
 
             balances
                 .into_iter()
                 .map(|rsp| {
-                    let balance = rsp
-                        .balance
-                        .ok_or_else(|| anyhow::anyhow!("empty balance type"))?;
+                    let pb_value_view = rsp
+                        .balance_view
+                        .ok_or_else(|| anyhow::anyhow!("empty balance view"))?;
 
-                    let asset = balance
-                        .asset_id
-                        .ok_or_else(|| anyhow::anyhow!("empty asset type"))?
-                        .try_into()?;
-
-                    let amount = balance
-                        .amount
-                        .ok_or_else(|| anyhow::anyhow!("empty amount type"))?
-                        .try_into()?;
-
-                    Ok((asset, amount))
+                    let value_view: ValueView = pb_value_view.try_into()?;
+                    let id = value_view.asset_id();
+                    let amount = value_view.value().amount;
+                    Ok((id, amount))
                 })
                 .collect()
         }
@@ -869,26 +863,27 @@ where
                     Some(status) => match status {
                         pb::witness_and_build_response::Status::BuildProgress(_) => {
                             // TODO: should update progress here
-                        },
+                        }
                         pb::witness_and_build_response::Status::Complete(c) => {
                             return c.transaction
                                 .ok_or_else(|| {
                                     anyhow::anyhow!("WitnessAndBuildResponse complete status message missing transaction")
                                 })?
                                 .try_into();
-                        },
+                        }
                     },
                     None => {
                         // No status is unexpected behavior
                         return Err(anyhow::anyhow!(
                             "empty WitnessAndBuildResponse message"
-                        ));},
+                        ));
+                    }
                 }
             }
 
             Err(anyhow::anyhow!("should have received complete status or error"))
         }
-        .boxed()
+            .boxed()
     }
 
     fn unclaimed_swaps(

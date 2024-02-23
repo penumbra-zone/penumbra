@@ -307,8 +307,18 @@ message BalancesRequest {
 }
 
 message BalancesResponse {
-  core.keys.v1.AddressIndex account = 1;
-  core.asset.v1.Value balance = 2;
+  // Deprecated: use `account_address` instead.
+  core.keys.v1.AddressIndex account = 1 [deprecated = true];
+  // Deprecated: use `balance_view` instead.
+  core.asset.v1.Value balance = 2 [deprecated = true];
+
+  // The default address for the account.
+  //
+  // Note that the returned balance is for all funds sent to the account,
+  // not just funds sent to its default address.
+  core.keys.v1.AddressView account_address = 3;
+  // The account's balance, with metadata.
+  core.asset.v1.ValueView balance_view = 4;
 }
 
 // Requests sync status of the view service.
