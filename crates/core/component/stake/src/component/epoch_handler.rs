@@ -356,10 +356,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         // be in the CS index. We should replace the union set approach with a merged
         // stream that tags items with their source. See #3874.
         if !self.belongs_in_index(&validator.identity_key).await {
-            tracing::debug!(
-                validator_id = %validator.identity_key,
-                "removing validator from consensus set"
-            );
             self.remove_consensus_set_index(&validator.identity_key);
         }
 

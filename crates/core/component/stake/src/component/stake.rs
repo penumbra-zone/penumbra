@@ -503,11 +503,11 @@ pub trait ConsensusIndexRead: StateRead {
 
         match state {
             validator::State::Active | validator::State::Inactive => {
-                tracing::debug!(?state, "validator belongs in consensus set");
+                tracing::debug!(?state, "validator belongs in the consensus set");
                 true
             }
             _ => {
-                tracing::debug!(?state, "validator does not belong in consensus set");
+                tracing::debug!(?state, "validator does not belong in the consensus set");
                 false
             }
         }
