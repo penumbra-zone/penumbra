@@ -863,19 +863,19 @@ mod tests {
             let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
 
             let mut sct = tct::Tree::new();
-            // We shouldn't need a valid Merkle proof here, so let's generate a dummy one.
-            let rseed = Rseed([0u8; 32]);
-            let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
-            sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
+            sct.insert(tct::Witness::Keep, note_commitment).expect("should be able to insert note commitments into the SCT");
 
-            let anchor = sct.root();
-            let state_commitment_proof = sct.witness(dummy_note_commitment).expect("can witness note commitment");
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
+            // use an invalid anchor to verify that the circuit skips inclusion checks for dummy
+            // spends
+            let invalid_anchor = tct::Tree::new().root();
+
             let public = SpendProofPublic {
-                anchor,
+                anchor: invalid_anchor,
                 balance_commitment,
                 nullifier,
                 rk,
