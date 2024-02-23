@@ -1,0 +1,34 @@
+[
+    {
+        "name": "Penumbra Labs CI 1",
+        "website": "https://penumbra.zone",
+        "description": "This is a validator run by Penumbra Labs, using testnets as a public CI",
+        "funding_streams": [
+            [
+                50,
+                "penumbra1fcy6crf6u4r450k8y4nye43puxet2ytfh7s0dzxsxjk68czej9mp37xv49np0clv4dc8cwg4re0xfs79uwlfehnja4p0revmlek0drezxfse8spg3qc6gux6vyuzuulse7xuxv"
+            ],
+            [
+                50,
+                "penumbra13ahs2s8ms6q0utgetty3zflwteepg87gqm88sqqcdj2mjhhydkykwu6n7dk557x84aa9a6cqhdytw0zk33xjgmuedprrlunc86up6zps8juej9rpuuydjtk7jaxpmrw27gfu9x"
+            ],
+            [
+                50,
+                "penumbra1uw03wyt49u7wm5wgu4nvkdt0v48fdaw5y4az4xlgmnp6ucs6th4xd0zg8wqxwndwfv286ktjwgemyhrxqu0d5qjf8dapr57l3k8yqs09vw9m5ywxsx9hjj2dj4qwnrl2rzxdh9"
+            ],
+            [
+                50,
+                "penumbra1w6em8sdx0467ug9kk0s0sng254tqjfk9gglv6ff7dq2v8arwekevkjte9udzmsj9l83mz74747tj0a49w2vhecxj7ac4upr5c5pvjqhsy7dwn422m8dgdekt7y4lmad026njsv"
+            ],
+            [
+                50,
+                "penumbra1jp4pryqqmh65pq8e7zwk6k2674vwhn4qqphxjk0vukxln0crmp2tdld0mhavuyrspwuajnsk5t5t33u2auxvheunr7qde4l068ez0euvtu08z7rwj6shlh64ndz0wvz7cmu29z"
+            ],
+            [
+                50,
+                "penumbra1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2teg83gu"
+            ]
+        ],
+        "sequence_number": 0
+    }
+]
