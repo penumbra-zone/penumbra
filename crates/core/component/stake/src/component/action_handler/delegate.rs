@@ -131,7 +131,6 @@ impl ActionHandler for Delegate {
                 "first delegation to a `Defined` validator must be at least min_validator_stake"
             );
                 tracing::debug!(%validator, %unbonded_delegation, "first delegation to validator recorded");
-                state.set_validator_state(&validator, Inactive).await?;
             }
         }
 
