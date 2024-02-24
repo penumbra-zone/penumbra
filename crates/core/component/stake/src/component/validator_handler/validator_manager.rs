@@ -41,22 +41,27 @@ use penumbra_asset::asset;
 #[async_trait]
 /// Defines the validator state machine of the staking component.
 ///
-/// # Overview:
-/// This trait offers an interface to:
-/// ## State machine interface:
-///  - Add validators from the staking component via [`add_validator`]
-///  - Safe handle that check guard condition and implement transition rules like [`try_precursor_transition`]
-///  - Raw but faillible state transitions via [`set_validator_state`] which will do what you ask unless it is
-///    egregiously wrong e.g. performing a non-existent transition, in which case it will return an error.
-/// ## Validator-specific logic:
-///  - Tracking a validator's uptime via [`track_uptime`]
-///  - Process byzantine behavior evidence via [`process_evidence`]
+/// # Overview
+/// This trait offers an interface to the validator staking state machine.
+///
+/// ## Validator management
+/// - Add validator definition via [`add_validator`].
+/// - Update validator definitions via [`update_validator_definition`].
+///
+/// ## State machine interface
+/// - A fallible state transition function via [`set_validator_state`].
+/// - A safer handle to tentatively explore state transitions via [`try_precursor_transition`].
+///
+/// ## Validator-specific logic
+/// - Tracking a validator's uptime via [`track_uptime`].
+/// - Process byzantine behavior evidence via [`process_evidence`].
 ///
 /// # State machine diagram:
+/// ```plaintext
 ///             ┌───────────────────────────────────────────────────────┐
 ///             │                      ┌──────────────────────────────┐ │
 ///             ▼                      ▼                              │ │
-///     ╔══════*════════╗       ┌────────────┐                        │ │
+///     ╔═══════════════╗       ┌────────────┐                        │ │
 ///  ┌─▶║    Defined    ║◀─────▶│  Disabled  │                        │ │
 ///  │  ╚═══════════════╝       └────────────┘                        │ │
 ///  │          │                      │                              │ │
@@ -83,13 +88,22 @@ use penumbra_asset::asset;
 ///                                                  ┏━━━━━━━━━━━━━━━━━┓
 ///                                                  ┃ terminal state  ┃
 ///                                                  ┗━━━━━━━━━━━━━━━━━┛         
+/// ```
+///
+/// [`add_validator`]: Self::add_validator
+/// [`update_validator_definition`]: Self::update_validator_definition
+/// [`set_validator_state`]: Self::set_validator_state
+/// [`try_precursor_transition`]: Self::try_precursor_transition
+/// [`track_uptime`]: Self::track_uptime
+/// [`process_evidence`]: Self::process_evidence
 pub trait ValidatorManager: StateWrite {
-    /// Perform a state transition for the specified validator and new state.
-    /// Initial validator state is defined using [`add_validator`] and
-
+    /// Execute a legal state transition, updating the validator records and
+    /// implementing the necessary side effects.
+    ///
     /// # Errors
-    /// This method errors on illegal state transitions; since execution must be infallible,
-    /// it's the caller's responsibility to ensure that the state transitions are legal.
+    /// This method errors on illegal state transitions, but will otherwise try to do what
+    /// you ask it to do. It is the caller's responsibility to ensure that the state transitions
+    /// are legal and pertinent.
     ///
     /// An error can also happen if the state is corrupted or pushed into an incoherent mode
     /// in this case, we return an error but there is no way to recover from those.
@@ -335,6 +349,7 @@ pub trait ValidatorManager: StateWrite {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     /// Try to implement a state transition in/out of the `Defined` precursor state.
     /// Returns the new state if sucessful, and `None` otherwise.
     async fn try_precursor_transition(
@@ -356,9 +371,8 @@ pub trait ValidatorManager: StateWrite {
             .expect("staking parameters are always set")
             .min_validator_stake;
 
-        // We want to know if the validator has enough stake to remain in the consensus set.
-        // In order to do this, we need to know what is the size of the validator's delegation
-        // pool in terms of staking tokens (i.e. the unbonded amount).
+        // We convert the delegation pool into staking tokens so that we can decide whether
+        // the validator meets the minimum stake threshold.
         let unbonded_pool = next_rate.unbonded_amount(delegation_token_supply);
 
         tracing::debug!(
@@ -368,11 +382,12 @@ pub trait ValidatorManager: StateWrite {
             next_validator_exchange_rate = ?next_rate.validator_exchange_rate,
             ?previous_state,
             ?min_stake,
-            "computing validator pool's unbonded amount for the upcoming epoch"
+            "computed validator unbonded pool to explore precursor transition"
         );
 
         let has_minimum_stake = unbonded_pool >= min_stake;
 
+        // Refer yourself to the state machine diagram for the logic behind these transitions.
         let new_state = match previous_state {
             Defined if has_minimum_stake => Inactive,
             Defined if !has_minimum_stake => Defined,
@@ -414,7 +429,7 @@ pub trait ValidatorManager: StateWrite {
         let total_delegation_tokens = genesis_allocations
             .get(&delegation_id)
             .copied()
-            .unwrap_or(0u64.into());
+            .unwrap_or_else(Amount::zero);
         let power = initial_rate_data.voting_power(total_delegation_tokens);
 
         self.add_validator_inner(

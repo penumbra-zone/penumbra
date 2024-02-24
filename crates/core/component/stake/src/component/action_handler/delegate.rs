@@ -124,9 +124,9 @@ impl ActionHandler for Delegate {
 
             if validator_pool_size == Amount::zero() {
                 ensure!(
-                unbonded_delegation >= min_stake,
-                "first delegation to a `Defined` validator must be at least min_validator_stake"
-            );
+                    unbonded_delegation >= min_stake,
+                    "first delegation to a `Defined` validator must be at least {min_stake}"
+                );
                 tracing::debug!(%validator, %unbonded_delegation, "first delegation to validator recorded");
             }
         }
