@@ -92,6 +92,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 }
 
 // PoC for issue surfaced in zellic audit: https://github.com/penumbra-zone/penumbra/issues/3859
+// test that 0-value spends with invalid proofs are not accepted
 #[tokio::test]
 #[cfg_attr(
     debug_assertions,
