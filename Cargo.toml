@@ -3,7 +3,7 @@
 # Set virtual workspace's resolver to v1, to support the "rust-docs" script.
 resolver = "1"
 
-exclude = ["tools/proto-compiler"]
+exclude = ["tools/proto-compiler", "tools/parameter-setup"]
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
@@ -50,7 +50,6 @@ members = [
   "crates/misc/tct-visualize",
   "crates/bench",
   "tools/summonerd", "crates/core/component/funding", "crates/core/genesis",
-  "tools/parameter-setup"
 ]
 
 # Config for 'cargo dist'
