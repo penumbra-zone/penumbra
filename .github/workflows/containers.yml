@@ -7,6 +7,12 @@ name: Create and publish container images
 # can execute this workflow and wait on its completion.
 on:
   workflow_call:
+    inputs:
+      no_cache:
+        description: 'Build without cache'
+        required: false
+        default: 'false'
+        type: 'string'
   workflow_dispatch:
 
 jobs:
@@ -56,7 +62,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: ${{ github.event.inputs.no_cache || 'false' }}
+          no-cache: ${{ inputs.no_cache == 'true' }}
 
   grafana:
     # No need for a heavy runner, we're just copying in a few files, not compiling.
