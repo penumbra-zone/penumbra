@@ -412,7 +412,7 @@ pub(crate) trait Inner: StateWrite {
 
                 (new_a_from_b, current_a_from_b)
             }
-            (State::Withdrawn, _) | (State::Claimed, _) | (State::Closed, None) => {
+            (State::Withdrawn { .. }, _) | (State::Closed, None) => {
                 // The position already went through the `Closed` state or was opened in the `Closed` state, so its contribution has already been subtracted.
                 return Ok(());
             }
@@ -554,7 +554,7 @@ pub(crate) trait Inner: StateWrite {
                 // The position is closed, so the change is the negative of the previous reserves.
                 (-old_a, -old_b)
             }
-            (State::Withdrawn, _) | (State::Claimed, _) | (State::Closed, None) => {
+            (State::Withdrawn { .. }, _) | (State::Closed, None) => {
                 // The position already went through the `Closed` state or was opened in the `Closed` state, so its contribution has already been subtracted.
                 return Ok(());
             }

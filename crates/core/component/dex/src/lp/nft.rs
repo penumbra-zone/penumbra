@@ -63,7 +63,7 @@ impl TryFrom<asset::Metadata> for LpNft {
         // Note: this regex must be in sync with both asset::REGISTRY
         // and the bech32 prefix for LP IDs defined in the proto crate.
         let base_denom_string = base_denom.to_string();
-        let captures = Regex::new("^lpnft_(?P<state>[a-z]+)_(?P<id>plpid1[a-zA-HJ-NP-Z0-9]+)$")
+        let captures = Regex::new("^lpnft_(?P<state>[a-z_0-9]+)_(?P<id>plpid1[a-zA-HJ-NP-Z0-9]+)$")
             .expect("regex is valid")
             .captures(&base_denom_string)
             .ok_or_else(|| {
@@ -178,24 +178,29 @@ mod tests {
         let position_id = position.id();
 
         let lpnft1 = LpNft::new(position_id, State::Opened);
-
-        let lpnft1_denom = lpnft1.denom();
         let lpnft1_string = lpnft1.denom().to_string();
-
-        dbg!(&lpnft1);
-        dbg!(&lpnft1_denom);
-        dbg!(&lpnft1_string);
-
         assert_eq!(lpnft1.to_string(), lpnft1_string);
 
         let lpnft2_denom = asset::REGISTRY.parse_denom(&lpnft1_string).unwrap();
         let lpnft2 = LpNft::try_from(lpnft2_denom).unwrap();
-
-        dbg!(&lpnft2);
-
         assert_eq!(lpnft1, lpnft2);
 
         let lpnft3: LpNft = lpnft1_string.parse().unwrap();
         assert_eq!(lpnft1, lpnft3);
+
+        let lpnft_c = LpNft::new(position_id, State::Closed);
+        let lpnft_c_string = lpnft_c.denom().to_string();
+        let lpnft_c_2 = lpnft_c_string.parse().unwrap();
+        assert_eq!(lpnft_c, lpnft_c_2);
+
+        let lpnft_w0 = LpNft::new(position_id, State::Withdrawn { sequence: 0 });
+        let lpnft_w0_string = lpnft_w0.denom().to_string();
+        let lpnft_w0_2 = lpnft_w0_string.parse().unwrap();
+        assert_eq!(lpnft_w0, lpnft_w0_2);
+
+        let lpnft_w1 = LpNft::new(position_id, State::Withdrawn { sequence: 1 });
+        let lpnft_w1_string = lpnft_w1.denom().to_string();
+        let lpnft_w1_2 = lpnft_w1_string.parse().unwrap();
+        assert_eq!(lpnft_w1, lpnft_w1_2);
     }
 }

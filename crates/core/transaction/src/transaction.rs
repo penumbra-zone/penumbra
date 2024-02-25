@@ -254,7 +254,6 @@ impl Transaction {
                 | Action::PositionOpen(_)
                 | Action::PositionClose(_)
                 | Action::PositionWithdraw(_)
-                | Action::PositionRewardClaim(_)
                 | Action::Ics20Withdrawal(_)
                 | Action::CommunityPoolSpend(_)
                 | Action::CommunityPoolOutput(_)

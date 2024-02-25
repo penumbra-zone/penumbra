@@ -1,7 +1,7 @@
 use crate::{
     lp::{
         action::{PositionClose, PositionOpen, PositionWithdraw},
-        position::Position,
+        position::{self, Position},
     },
     swap::Swap,
     swap_claim::SwapClaim,
@@ -50,11 +50,17 @@ pub fn position_withdraw(
     position_withdraw: &PositionWithdraw,
     final_position_state: &Position,
 ) -> pb::EventPositionWithdraw {
+    let sequence = if let position::State::Withdrawn { sequence, .. } = final_position_state.state {
+        sequence + 1
+    } else {
+        0
+    };
     pb::EventPositionWithdraw {
         position_id: Some(position_withdraw.position_id.into()),
         trading_pair: Some(final_position_state.phi.pair.into()),
         reserves_1: Some(final_position_state.reserves.r1.into()),
         reserves_2: Some(final_position_state.reserves.r2.into()),
+        sequence,
     }
 }
 

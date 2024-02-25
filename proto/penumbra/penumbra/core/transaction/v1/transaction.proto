@@ -83,7 +83,7 @@ message Action {
     component.dex.v1.PositionOpen position_open = 30;
     component.dex.v1.PositionClose position_close = 31;
     component.dex.v1.PositionWithdraw position_withdraw = 32;
-    component.dex.v1.PositionRewardClaim position_reward_claim = 34;
+    component.dex.v1.PositionRewardClaim position_reward_claim = 34 [deprecated = true];
 
     // (un)delegation
     component.stake.v1.Delegate delegate = 40;
@@ -172,7 +172,7 @@ message ActionView {
     component.dex.v1.PositionOpen position_open = 30;
     component.dex.v1.PositionClose position_close = 31;
     component.dex.v1.PositionWithdraw position_withdraw = 32;
-    component.dex.v1.PositionRewardClaim position_reward_claim = 34;
+    component.dex.v1.PositionRewardClaim position_reward_claim = 34 [deprecated = true];
 
     component.stake.v1.Delegate delegate = 41;
     component.stake.v1.Undelegate undelegate = 42;
@@ -259,7 +259,7 @@ message ActionPlan {
 
     // The position withdraw/reward claim actions require balance information so they have Plan types.
     component.dex.v1.PositionWithdrawPlan position_withdraw = 32;
-    component.dex.v1.PositionRewardClaimPlan position_reward_claim = 34;
+    component.dex.v1.PositionRewardClaimPlan position_reward_claim = 34 [deprecated = true];
 
     // We don't need any extra information (yet) to understand delegations,
     // because we don't yet use flow encryption.
