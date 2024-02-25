@@ -305,12 +305,18 @@ message PositionState {
     POSITION_STATE_ENUM_CLOSED = 2;
     // The final reserves and accumulated fees have been withdrawn, leaving an
     // empty, inactive position awaiting (possible) retroactive rewards.
+    //
+    // Positions can be withdrawn from multiple times, incrementing a sequence
+    // number each time.
     POSITION_STATE_ENUM_WITHDRAWN = 3;
-    // Any retroactive rewards have been claimed. The position is now an inert,
-    // historical artefact.
-    POSITION_STATE_ENUM_CLAIMED = 4;
+    // Deprecated.
+    POSITION_STATE_ENUM_CLAIMED = 4 [deprecated = true];
   }
   PositionStateEnum state = 1;
+  // Only meaningful if `state` is `POSITION_STATE_ENUM_WITHDRAWN`.
+  //
+  // The sequence number allows multiple withdrawals from the same position.
+  uint64 sequence = 2;
 }
 
 // An LPNFT tracking both ownership and state of a position.
@@ -369,18 +375,15 @@ message PositionWithdraw {
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
   asset.v1.BalanceCommitment reserves_commitment = 2;
+  // The sequence number of the withdrawal.
+  //
+  // This allows multiple withdrawals from the same position, rather than a single reward claim.
+  uint64 sequence = 3;
 }
 
-// A transaction action that claims retroactive rewards for a historical
-// position.
-//
-// This action's contribution to the transaction's value balance is to consume a
-// withdrawn position NFT and contribute its reward balance.
+// Deprecated.
 message PositionRewardClaim {
   PositionId position_id = 1;
-  // A transparent (zero blinding factor) commitment to the position's accumulated rewards.
-  //
-  // The chain will check this commitment by recomputing it with the on-chain state.
   asset.v1.BalanceCommitment rewards_commitment = 2;
 }
 
@@ -404,9 +407,13 @@ message PositionWithdrawPlan {
   Reserves reserves = 1;
   PositionId position_id = 2;
   TradingPair pair = 3;
+  // The sequence number of the withdrawal.
+  uint64 sequence = 4;
+  // Any accumulated rewards assigned to this position.
+  repeated asset.v1.Value rewards = 5;
 }
 
-// Contains private and public data for claiming rewards from a position.
+// Deprecated.
 message PositionRewardClaimPlan {
   Reserves reserves = 1;
 }
@@ -629,6 +636,8 @@ message EventPositionWithdraw {
   num.v1.Amount reserves_1 = 3;
   // The reserves of asset 2 of the withdrawn position.
   num.v1.Amount reserves_2 = 4;
+  // The sequence number of the withdrawal.
+  uint64 sequence = 5;
 }
 
 message EventPositionExecution {

@@ -1,7 +1,5 @@
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
-use penumbra_dex::{
-    PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, Swap, SwapClaim,
-};
+use penumbra_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
 use penumbra_fee::Gas;
 use penumbra_ibc::IbcRelay;
 use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
@@ -198,22 +196,6 @@ fn position_withdraw_gas_cost() -> Gas {
     }
 }
 
-fn position_reward_claim_gas_cost() -> Gas {
-    Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
-        // The compact block space cost is based on the byte size of the data the [`Action`] adds
-        // to the compact block.
-        // For a PositionRewardClaim the compact block is not modified.
-        compact_block_space: 0u64,
-        // Does not include a zk-SNARK proof, so there's no verification cost.
-        verification: 0,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
-        execution: 10,
-    }
-}
-
 impl GasCost for Transaction {
     fn gas_cost(&self) -> Gas {
         self.actions().map(GasCost::gas_cost).sum()
@@ -257,7 +239,6 @@ impl GasCost for ActionPlan {
             ActionPlan::PositionOpen(po) => po.gas_cost(),
             ActionPlan::PositionClose(pc) => pc.gas_cost(),
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
-            ActionPlan::PositionRewardClaim(_) => position_reward_claim_gas_cost(),
             ActionPlan::CommunityPoolSpend(ds) => ds.gas_cost(),
             ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
             ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
@@ -284,7 +265,6 @@ impl GasCost for Action {
             Action::PositionOpen(p) => p.gas_cost(),
             Action::PositionClose(p) => p.gas_cost(),
             Action::PositionWithdraw(p) => p.gas_cost(),
-            Action::PositionRewardClaim(p) => p.gas_cost(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.gas_cost(),
             Action::CommunityPoolDeposit(deposit) => deposit.gas_cost(),
             Action::CommunityPoolSpend(spend) => spend.gas_cost(),
@@ -455,12 +435,6 @@ impl GasCost for PositionClose {
 impl GasCost for PositionWithdraw {
     fn gas_cost(&self) -> Gas {
         position_withdraw_gas_cost()
-    }
-}
-
-impl GasCost for PositionRewardClaim {
-    fn gas_cost(&self) -> Gas {
-        position_reward_claim_gas_cost()
     }
 }
 

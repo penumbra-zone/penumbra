@@ -28,7 +28,6 @@ pub enum Action {
     PositionOpen(penumbra_dex::lp::action::PositionOpen),
     PositionClose(penumbra_dex::lp::action::PositionClose),
     PositionWithdraw(penumbra_dex::lp::action::PositionWithdraw),
-    PositionRewardClaim(penumbra_dex::lp::action::PositionRewardClaim),
 
     Delegate(penumbra_stake::Delegate),
     Undelegate(penumbra_stake::Undelegate),
@@ -61,7 +60,6 @@ impl EffectingData for Action {
             Action::PositionOpen(p) => p.effect_hash(),
             Action::PositionClose(p) => p.effect_hash(),
             Action::PositionWithdraw(p) => p.effect_hash(),
-            Action::PositionRewardClaim(p) => p.effect_hash(),
             Action::Ics20Withdrawal(w) => w.effect_hash(),
             Action::CommunityPoolSpend(d) => d.effect_hash(),
             Action::CommunityPoolOutput(d) => d.effect_hash(),
@@ -103,9 +101,6 @@ impl Action {
             Action::PositionWithdraw(_) => {
                 tracing::info_span!("PositionWithdraw", ?idx)
             }
-            Action::PositionRewardClaim(_) => {
-                tracing::info_span!("PositionRewardClaim", ?idx)
-            }
             Action::Delegate(_) => tracing::info_span!("Delegate", ?idx),
             Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
             Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
@@ -135,7 +130,6 @@ impl IsAction for Action {
             Action::PositionOpen(p) => p.balance_commitment(),
             Action::PositionClose(p) => p.balance_commitment(),
             Action::PositionWithdraw(p) => p.balance_commitment(),
-            Action::PositionRewardClaim(p) => p.balance_commitment(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
             Action::CommunityPoolDeposit(deposit) => deposit.balance_commitment(),
             Action::CommunityPoolSpend(spend) => spend.balance_commitment(),
@@ -164,7 +158,6 @@ impl IsAction for Action {
             Action::PositionOpen(x) => x.view_from_perspective(txp),
             Action::PositionClose(x) => x.view_from_perspective(txp),
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
-            Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
             Action::CommunityPoolSpend(x) => x.view_from_perspective(txp),
             Action::CommunityPoolOutput(x) => x.view_from_perspective(txp),
@@ -234,9 +227,6 @@ impl From<Action> for pb::Action {
             Action::PositionWithdraw(inner) => pb::Action {
                 action: Some(pb::action::Action::PositionWithdraw(inner.into())),
             },
-            Action::PositionRewardClaim(inner) => pb::Action {
-                action: Some(pb::action::Action::PositionRewardClaim(inner.into())),
-            },
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
@@ -299,8 +289,8 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::PositionWithdraw(inner) => {
                 Ok(Action::PositionWithdraw(inner.try_into()?))
             }
-            pb::action::Action::PositionRewardClaim(inner) => {
-                Ok(Action::PositionRewardClaim(inner.try_into()?))
+            pb::action::Action::PositionRewardClaim(_) => {
+                Err(anyhow!("PositionRewardClaim is deprecated and unsupported"))
             }
             pb::action::Action::Ics20Withdrawal(inner) => {
                 Ok(Action::Ics20Withdrawal(inner.try_into()?))

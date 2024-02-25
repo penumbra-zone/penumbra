@@ -268,12 +268,10 @@ impl Worker {
                                 let denom = lp_nft.denom();
                                 self.storage.record_asset(denom).await?;
 
-                                let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
-                                let _id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                self.storage.record_asset(denom).await?;
-
-                                let lp_nft = LpNft::new(position_id, position::State::Claimed);
+                                let lp_nft = LpNft::new(
+                                    position_id,
+                                    position::State::Withdrawn { sequence: 0 },
+                                );
                                 let _id = lp_nft.asset_id();
                                 let denom = lp_nft.denom();
                                 self.storage.record_asset(denom).await?;
@@ -294,18 +292,16 @@ impl Worker {
                             penumbra_transaction::Action::PositionWithdraw(position_withdraw) => {
                                 let position_id = position_withdraw.position_id;
 
-                                // Update the position record
-                                self.storage
-                                    .update_position(position_id, position::State::Withdrawn)
-                                    .await?;
-                            }
-                            penumbra_transaction::Action::PositionRewardClaim(position_claim) => {
-                                let position_id = position_claim.position_id;
+                                // Record the LPNFT for the current sequence number.
+                                let state = position::State::Withdrawn {
+                                    sequence: position_withdraw.sequence,
+                                };
+                                let lp_nft = LpNft::new(position_id, state);
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
                                 // Update the position record
-                                self.storage
-                                    .update_position(position_id, position::State::Claimed)
-                                    .await?;
+                                self.storage.update_position(position_id, state).await?;
                             }
                             _ => (),
                         };

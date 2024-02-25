@@ -56,6 +56,20 @@ impl Reserves {
             r2: self.r1,
         }
     }
+
+    /// Return zero reserves.
+    pub fn zero() -> Self {
+        Self {
+            r1: Amount::zero(),
+            r2: Amount::zero(),
+        }
+    }
+}
+
+impl Default for Reserves {
+    fn default() -> Self {
+        Self::zero()
+    }
 }
 
 impl DomainType for Reserves {

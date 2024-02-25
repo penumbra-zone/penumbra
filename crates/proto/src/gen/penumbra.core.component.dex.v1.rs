@@ -606,6 +606,11 @@ impl ::prost::Name for PositionId {
 pub struct PositionState {
     #[prost(enumeration = "position_state::PositionStateEnum", tag = "1")]
     pub state: i32,
+    /// Only meaningful if `state` is `POSITION_STATE_ENUM_WITHDRAWN`.
+    ///
+    /// The sequence number allows multiple withdrawals from the same position.
+    #[prost(uint64, tag = "2")]
+    pub sequence: u64,
 }
 /// Nested message and enum types in `PositionState`.
 pub mod position_state {
@@ -631,9 +636,11 @@ pub mod position_state {
         Closed = 2,
         /// The final reserves and accumulated fees have been withdrawn, leaving an
         /// empty, inactive position awaiting (possible) retroactive rewards.
+        ///
+        /// Positions can be withdrawn from multiple times, incrementing a sequence
+        /// number each time.
         Withdrawn = 3,
-        /// Any retroactive rewards have been claimed. The position is now an inert,
-        /// historical artefact.
+        /// Deprecated.
         Claimed = 4,
     }
     impl PositionStateEnum {
@@ -760,6 +767,11 @@ pub struct PositionWithdraw {
     pub reserves_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
     >,
+    /// The sequence number of the withdrawal.
+    ///
+    /// This allows multiple withdrawals from the same position, rather than a single reward claim.
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
 }
 impl ::prost::Name for PositionWithdraw {
     const NAME: &'static str = "PositionWithdraw";
@@ -768,19 +780,12 @@ impl ::prost::Name for PositionWithdraw {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
-/// A transaction action that claims retroactive rewards for a historical
-/// position.
-///
-/// This action's contribution to the transaction's value balance is to consume a
-/// withdrawn position NFT and contribute its reward balance.
+/// Deprecated.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaim {
     #[prost(message, optional, tag = "1")]
     pub position_id: ::core::option::Option<PositionId>,
-    /// A transparent (zero blinding factor) commitment to the position's accumulated rewards.
-    ///
-    /// The chain will check this commitment by recomputing it with the on-chain state.
     #[prost(message, optional, tag = "2")]
     pub rewards_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
@@ -845,6 +850,12 @@ pub struct PositionWithdrawPlan {
     pub position_id: ::core::option::Option<PositionId>,
     #[prost(message, optional, tag = "3")]
     pub pair: ::core::option::Option<TradingPair>,
+    /// The sequence number of the withdrawal.
+    #[prost(uint64, tag = "4")]
+    pub sequence: u64,
+    /// Any accumulated rewards assigned to this position.
+    #[prost(message, repeated, tag = "5")]
+    pub rewards: ::prost::alloc::vec::Vec<super::super::super::asset::v1::Value>,
 }
 impl ::prost::Name for PositionWithdrawPlan {
     const NAME: &'static str = "PositionWithdrawPlan";
@@ -853,7 +864,7 @@ impl ::prost::Name for PositionWithdrawPlan {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
-/// Contains private and public data for claiming rewards from a position.
+/// Deprecated.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaimPlan {
@@ -1359,6 +1370,9 @@ pub struct EventPositionWithdraw {
     /// The reserves of asset 2 of the withdrawn position.
     #[prost(message, optional, tag = "4")]
     pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The sequence number of the withdrawal.
+    #[prost(uint64, tag = "5")]
+    pub sequence: u64,
 }
 impl ::prost::Name for EventPositionWithdraw {
     const NAME: &'static str = "EventPositionWithdraw";

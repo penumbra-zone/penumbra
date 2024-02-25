@@ -10,7 +10,7 @@ use penumbra_txhash::{EffectHash, EffectingData};
 use penumbra_dex::{
     lp::{
         action::{PositionClose, PositionOpen},
-        plan::{PositionRewardClaimPlan, PositionWithdrawPlan},
+        plan::PositionWithdrawPlan,
     },
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
@@ -69,9 +69,6 @@ pub enum ActionPlan {
     // PositionWithdrawPlan requires the balance of the funds to be withdrawn, so
     // a plan must be used.
     PositionWithdraw(PositionWithdrawPlan),
-    // Reward Claim requires the balance of the funds to be claimed, so a plan
-    // must be used.
-    PositionRewardClaim(PositionRewardClaimPlan),
 
     CommunityPoolSpend(CommunityPoolSpend),
     CommunityPoolOutput(CommunityPoolOutput),
@@ -152,9 +149,6 @@ impl ActionPlan {
             PositionOpen(plan) => Action::PositionOpen(plan.clone()),
             PositionClose(plan) => Action::PositionClose(plan.clone()),
             PositionWithdraw(plan) => Action::PositionWithdraw(plan.position_withdraw()),
-            PositionRewardClaim(_plan) => unimplemented!(
-                "this api is wrong and needs to be fixed, but we don't do reward claims anyways"
-            ),
             CommunityPoolSpend(plan) => Action::CommunityPoolSpend(plan.clone()),
             CommunityPoolOutput(plan) => Action::CommunityPoolOutput(plan.clone()),
             CommunityPoolDeposit(plan) => Action::CommunityPoolDeposit(plan.clone()),
@@ -184,7 +178,6 @@ impl ActionPlan {
             PositionOpen(position_open) => position_open.balance(),
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
-            PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
             Ics20Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
@@ -212,7 +205,6 @@ impl ActionPlan {
             PositionOpen(_) => Fr::zero(),
             PositionClose(_) => Fr::zero(),
             PositionWithdraw(_) => Fr::zero(),
-            PositionRewardClaim(_) => Fr::zero(),
             CommunityPoolSpend(_) => Fr::zero(),
             CommunityPoolOutput(_) => Fr::zero(),
             CommunityPoolDeposit(_) => Fr::zero(),
@@ -242,7 +234,6 @@ impl ActionPlan {
             PositionOpen(plan) => plan.effect_hash(),
             PositionClose(plan) => plan.effect_hash(),
             PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
-            PositionRewardClaim(_plan) => todo!("position reward claim plan is not implemented"),
             CommunityPoolSpend(plan) => plan.effect_hash(),
             CommunityPoolOutput(plan) => plan.effect_hash(),
             CommunityPoolDeposit(plan) => plan.effect_hash(),
@@ -337,12 +328,6 @@ impl From<PositionWithdrawPlan> for ActionPlan {
     }
 }
 
-impl From<PositionRewardClaimPlan> for ActionPlan {
-    fn from(inner: PositionRewardClaimPlan) -> ActionPlan {
-        ActionPlan::PositionRewardClaim(inner)
-    }
-}
-
 impl From<Ics20Withdrawal> for ActionPlan {
     fn from(inner: Ics20Withdrawal) -> ActionPlan {
         ActionPlan::Ics20Withdrawal(inner)
@@ -412,9 +397,6 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                 >::into(
                     inner
                 ))),
-            },
-            ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),
             },
             ActionPlan::CommunityPoolDeposit(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::CommunityPoolDeposit(
@@ -491,8 +473,8 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::PositionWithdraw(inner) => {
                 Ok(ActionPlan::PositionWithdraw(inner.try_into()?))
             }
-            pb_t::action_plan::Action::PositionRewardClaim(inner) => {
-                Ok(ActionPlan::PositionRewardClaim(inner.try_into()?))
+            pb_t::action_plan::Action::PositionRewardClaim(_) => {
+                Err(anyhow!("PositionRewardClaim is deprecated and unsupported"))
             }
             pb_t::action_plan::Action::CommunityPoolSpend(inner) => {
                 Ok(ActionPlan::CommunityPoolSpend(inner.try_into()?))

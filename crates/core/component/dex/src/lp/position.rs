@@ -208,10 +208,10 @@ pub enum State {
     Closed,
     /// The final reserves and accumulated fees have been withdrawn, leaving an
     /// empty, inactive position awaiting (possible) retroactive rewards.
-    Withdrawn,
-    /// Any retroactive rewards have been claimed. The position is now an inert,
-    /// historical artefact.
-    Claimed,
+    Withdrawn {
+        /// The sequence number, incrementing with each withdrawal.
+        sequence: u64,
+    },
 }
 
 impl std::fmt::Display for State {
@@ -219,8 +219,7 @@ impl std::fmt::Display for State {
         match self {
             State::Opened => write!(f, "opened"),
             State::Closed => write!(f, "closed"),
-            State::Withdrawn => write!(f, "withdrawn"),
-            State::Claimed => write!(f, "claimed"),
+            State::Withdrawn { sequence } => write!(f, "withdrawn_{}", sequence),
         }
     }
 }
@@ -232,9 +231,18 @@ impl std::str::FromStr for State {
         match s {
             "opened" => Ok(State::Opened),
             "closed" => Ok(State::Closed),
-            "withdrawn" => Ok(State::Withdrawn),
-            "claimed" => Ok(State::Claimed),
-            _ => Err(anyhow::anyhow!("unknown position state")),
+            _ => {
+                let mut parts = s.splitn(2, '_');
+                if parts.next() == Some("withdrawn") {
+                    let sequence = parts
+                        .next()
+                        .ok_or_else(|| anyhow::anyhow!("missing sequence number"))?
+                        .parse()?;
+                    Ok(State::Withdrawn { sequence })
+                } else {
+                    Err(anyhow::anyhow!("unknown position state"))
+                }
+            }
         }
     }
 }
@@ -290,9 +298,13 @@ impl From<State> for pb::PositionState {
             state: match v {
                 State::Opened => pb::position_state::PositionStateEnum::Opened,
                 State::Closed => pb::position_state::PositionStateEnum::Closed,
-                State::Withdrawn => pb::position_state::PositionStateEnum::Withdrawn,
-                State::Claimed => pb::position_state::PositionStateEnum::Claimed,
+                State::Withdrawn { .. } => pb::position_state::PositionStateEnum::Withdrawn,
             } as i32,
+            sequence: match v {
+                State::Withdrawn { sequence } => sequence,
+                // This will be omitted from serialization.
+                _ => 0,
+            },
         }
     }
 }
@@ -312,12 +324,10 @@ impl TryFrom<pb::PositionState> for State {
         match position_state {
             pb::position_state::PositionStateEnum::Opened => Ok(State::Opened),
             pb::position_state::PositionStateEnum::Closed => Ok(State::Closed),
-            pb::position_state::PositionStateEnum::Withdrawn => Ok(State::Withdrawn),
-            pb::position_state::PositionStateEnum::Claimed => Ok(State::Claimed),
-            pb::position_state::PositionStateEnum::Unspecified => {
-                // maps to a missing position state, or one that's set to zero.
-                Err(anyhow!("unspecified position state!"))
-            }
+            pb::position_state::PositionStateEnum::Withdrawn => Ok(State::Withdrawn {
+                sequence: v.sequence,
+            }),
+            _ => Err(anyhow!("unknown position state")),
         }
     }
 }
@@ -367,6 +377,25 @@ mod test {
     use decaf377::Fq;
     use penumbra_asset::asset;
     use rand_core::OsRng;
+
+    #[test]
+    fn position_state_fromstr() {
+        assert_eq!("opened".parse::<State>().unwrap(), State::Opened);
+        assert_eq!("closed".parse::<State>().unwrap(), State::Closed);
+        assert_eq!(
+            "withdrawn_0".parse::<State>().unwrap(),
+            State::Withdrawn { sequence: 0 }
+        );
+        assert_eq!(
+            "withdrawn_1".parse::<State>().unwrap(),
+            State::Withdrawn { sequence: 1 }
+        );
+        assert!("withdrawn".parse::<State>().is_err());
+        assert!("withdrawn_".parse::<State>().is_err());
+        assert!("withdrawn_1_".parse::<State>().is_err());
+        assert!("withdrawn_1_2".parse::<State>().is_err());
+        assert!("withdrawn_1_2_3".parse::<State>().is_err());
+    }
 
     fn assert_position_similar(p1: Position, p2: Position) {
         assert_eq!(p1.reserves.r1, p2.reserves.r1);
