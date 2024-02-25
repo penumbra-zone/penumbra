@@ -56,6 +56,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            --no-cache
 
   grafana:
     # No need for a heavy runner, we're just copying in a few files, not compiling.
