@@ -63,6 +63,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: ${{ inputs.no_cache == 'true' }}
+          build-args: |
+            CACHEBUST=${{ github.run_number }}
 
   grafana:
     # No need for a heavy runner, we're just copying in a few files, not compiling.

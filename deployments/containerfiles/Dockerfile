@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
         clang
 
 WORKDIR /usr/src/penumbra
+# Invalidate cache to force Docker to rebuild the layers
+ARG CACHEBUST=1
 RUN ls -la
 # Add rust dependency lockfiles first, to cache downloads.
 COPY Cargo.lock Cargo.toml .
