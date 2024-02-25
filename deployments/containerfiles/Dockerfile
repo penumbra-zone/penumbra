@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
         clang
 
 WORKDIR /usr/src/penumbra
+RUN ls -la
 # Add rust dependency lockfiles first, to cache downloads.
 COPY Cargo.lock Cargo.toml .
 # If any rust code changed, the cache will break on copying `crates/`.
