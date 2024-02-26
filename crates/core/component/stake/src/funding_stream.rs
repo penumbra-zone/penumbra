@@ -1,4 +1,4 @@
-use crate::component::FP_SCALING_FACTOR;
+use crate::BPS_SQUARED_SCALING_FACTOR;
 use penumbra_keys::Address;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
@@ -50,7 +50,7 @@ impl FundingStream {
 impl FundingStream {
     /// Computes the amount of reward at the epoch boundary.
     /// The input rates are assumed to be in basis points squared, this means that
-    /// to get the actual rate, you need to rescale by [`FP_SCALING_FACTOR`].
+    /// to get the actual rate, you need to rescale by [`BPS_SQUARED_SCALING_FACTOR`].
     pub fn reward_amount(
         &self,
         base_reward_rate: Amount,
@@ -66,10 +66,11 @@ impl FundingStream {
 
         // First, we remove the scaling factors:
         let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
-        let prev_validator_exchange_rate =
-            (prev_validator_exchange_rate_bps_sq / *FP_SCALING_FACTOR).expect("nonzero divisor");
+        let prev_validator_exchange_rate = (prev_validator_exchange_rate_bps_sq
+            / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("nonzero divisor");
         let prev_base_reward_rate =
-            (prev_base_reward_rate_bps_sq / *FP_SCALING_FACTOR).expect("nonzero divisor");
+            (prev_base_reward_rate_bps_sq / *BPS_SQUARED_SCALING_FACTOR).expect("nonzero divisor");
 
         // The reward amount at epoch e, for validator v, is R_{v,e}.
         // It is computed as:

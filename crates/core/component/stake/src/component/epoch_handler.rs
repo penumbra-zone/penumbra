@@ -18,11 +18,12 @@ use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::state_key;
+use crate::BPS_SQUARED_SCALING_FACTOR;
 use crate::{
     component::{
         stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
         validator_handler::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
-        SlashingData, FP_SCALING_FACTOR,
+        SlashingData,
     },
     rate::BaseRateData,
     validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
@@ -387,7 +388,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         let base_reward_rate =
             U128x128::ratio(issuance_budget_for_epoch, total_active_stake_previous_epoch)
                 .expect("total active stake is nonzero");
-        let base_reward_rate: Amount = (base_reward_rate * *FP_SCALING_FACTOR)
+        let base_reward_rate: Amount = (base_reward_rate * *BPS_SQUARED_SCALING_FACTOR)
             .expect("base reward rate is around one")
             .round_down()
             .try_into()
