@@ -2,6 +2,7 @@
 # re-add directories explicitly.
 **/
 !crates/
+!assets/
 !Cargo.toml
 !Cargo.lock
 !.cargo/
