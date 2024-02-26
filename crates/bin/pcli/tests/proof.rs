@@ -91,7 +91,11 @@ fn spend_proof_parameters_vs_current_spend_circuit() {
     let proof = SpendProof::prove(blinding_r, blinding_s, pk, public.clone(), private)
         .expect("can create proof");
 
+    println!("proof is: {:?}", proof);
+
     let proof_result = proof.verify(vk, public);
+    println!("proof_result is: {:?}", proof_result);
+
     assert!(proof_result.is_ok());
 }
 

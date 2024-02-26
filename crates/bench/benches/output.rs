@@ -37,7 +37,7 @@ fn output_proving_time(c: &mut Criterion) {
     let value_to_send = Value::from_str("1upenumbra").expect("valid value");
 
     let note = Note::from_parts(address, value_to_send, Rseed([1u8; 32])).expect("can make a note");
-    let balance_blinding = Fr::from(1);
+    let balance_blinding = Fr::from(1u64);
     let balance_commitment = (-Balance::from(value_to_send)).commit(balance_blinding);
     let note_commitment = note.commit();
 
