@@ -273,7 +273,7 @@ message CurrentValidatorRateResponse {
 // Staking configuration data.
 message StakeParameters {
   // The number of epochs an unbonding note for before being released.
-  uint64 unbonding_epochs = 1;
+  uint64 unbonding_epochs = 1 [deprecated = true];
   // The maximum number of validators in the consensus set.
   uint64 active_validator_limit = 2;
   // The base reward rate, expressed in basis points of basis points
