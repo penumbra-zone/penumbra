@@ -1,7 +1,7 @@
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::BondingState", into = "pb::BondingState")]
 pub enum State {
     /// The validator is in the active set.
