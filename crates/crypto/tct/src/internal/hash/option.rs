@@ -35,7 +35,7 @@ impl From<Option<Hash>> for OptionHash {
     fn from(hash: Option<Hash>) -> Self {
         match hash {
             Some(hash) => Self {
-                inner: hash.0 .0 .0,
+                inner: hash.0.to_le_limbs(),
             },
             None => Self {
                 // This sentinel value is not a valid `Fq` because it's bigger than the modulus,
