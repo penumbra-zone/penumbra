@@ -1,12 +1,12 @@
 pub mod action_handler;
+mod epoch_handler;
 pub mod metrics;
 pub mod rpc;
 pub mod stake;
 pub mod validator_handler;
-mod epoch_handler;
 
-pub use stake::Staking;
 pub use self::metrics::register_metrics;
+pub use stake::Staking;
 
 // Max validator power is 1152921504606846975 (i64::MAX / 8)
 // https://github.com/tendermint/tendermint/blob/master/types/validator_set.go#L25
