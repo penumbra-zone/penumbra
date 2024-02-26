@@ -44,11 +44,14 @@ impl BalanceCmd {
                         })
                     })
                 })
+                /* Don't exclude withdrawn LPNFTs in by_note, which is a more precise view.
                 // Exclude withdrawn LPNFTs.
                 .filter(|(_, value, _, _)| match asset_cache.get(&value.asset_id) {
                     None => true,
                     Some(denom) => !denom.is_withdrawn_position_nft(),
                 });
+                 */
+                ;
 
             for (index, value, source, return_address) in rows {
                 table.add_row(vec![
