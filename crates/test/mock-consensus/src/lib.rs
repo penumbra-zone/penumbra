@@ -25,6 +25,8 @@ pub struct TestNode<C> {
 }
 
 impl<C> TestNode<C> {
+    pub const CHAIN_ID: &'static str = "penumbra-test-chain";
+
     /// Returns the last app_hash value, as a slice of bytes.
     pub fn last_app_hash(&self) -> &[u8] {
         &self.last_app_hash

@@ -67,10 +67,11 @@ impl Builder {
 
     fn init_chain_request(app_state_bytes: Bytes) -> Result<ConsensusRequest, anyhow::Error> {
         use tendermint::v0_37::abci::request::InitChain;
+        let chain_id = TestNode::<()>::CHAIN_ID.to_string();
         let consensus_params = Self::consensus_params();
         Ok(ConsensusRequest::InitChain(InitChain {
             time: tendermint::Time::now(),
-            chain_id: "test".to_string(), // XXX const here?
+            chain_id,
             consensus_params,
             validators: vec![],
             app_state_bytes,
