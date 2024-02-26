@@ -4,10 +4,10 @@
 //
 //  see penumbra-zone/penumbra#3588.
 
+pub mod block;
 pub mod builder;
 
 mod abci;
-mod block;
 
 /// A test node.
 ///
