@@ -191,7 +191,8 @@ pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
-            .await?
+            .await
+            .expect("no deserialization error should happen")
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 

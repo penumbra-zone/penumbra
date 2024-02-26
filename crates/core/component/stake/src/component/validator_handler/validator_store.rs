@@ -3,6 +3,7 @@ use std::pin::Pin;
 use crate::{
     rate::RateData,
     validator::{State, Validator},
+    DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -112,6 +113,14 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
         self.get(&state_key::validators::uptime::by_id(identity_key))
+    }
+
+    async fn get_validator_pool_size(&self, identity_key: &IdentityKey) -> Option<Amount> {
+        use penumbra_shielded_pool::component::SupplyRead;
+
+        self.token_supply(&DelegationToken::from(identity_key).id())
+            .await
+            .expect("no deserialization error expected")
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
