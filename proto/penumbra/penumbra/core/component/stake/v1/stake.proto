@@ -288,6 +288,8 @@ message StakeParameters {
   uint64 missed_blocks_maximum = 7;
   // The minimum amount of stake required for a validator to be indexed by the protocol.
   num.v1.Amount min_validator_stake = 8;
+  // The number of blocks that must elapse before an unbonding note can be claimed.
+  uint64 unbonding_delay = 9;
 }
 
 // Genesis data for the staking component.
