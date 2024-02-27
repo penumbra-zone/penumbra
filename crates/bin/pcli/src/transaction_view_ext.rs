@@ -104,6 +104,7 @@ fn format_value_view(value_view: &ValueView) -> String {
         ValueView::KnownAssetId {
             amount,
             metadata: denom,
+            ..
         } => {
             let unit = denom.default_unit();
             format!("{}{}", unit.format_value(*amount), unit)

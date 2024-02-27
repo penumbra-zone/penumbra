@@ -3200,6 +3200,12 @@ impl serde::Serialize for TransactionPerspective {
         if self.transaction_id.is_some() {
             len += 1;
         }
+        if !self.prices.is_empty() {
+            len += 1;
+        }
+        if !self.extended_metadata.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective", len)?;
         if !self.payload_keys.is_empty() {
             struct_ser.serialize_field("payloadKeys", &self.payload_keys)?;
@@ -3218,6 +3224,12 @@ impl serde::Serialize for TransactionPerspective {
         }
         if let Some(v) = self.transaction_id.as_ref() {
             struct_ser.serialize_field("transactionId", v)?;
+        }
+        if !self.prices.is_empty() {
+            struct_ser.serialize_field("prices", &self.prices)?;
+        }
+        if !self.extended_metadata.is_empty() {
+            struct_ser.serialize_field("extendedMetadata", &self.extended_metadata)?;
         }
         struct_ser.end()
     }
@@ -3240,6 +3252,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "denoms",
             "transaction_id",
             "transactionId",
+            "prices",
+            "extended_metadata",
+            "extendedMetadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3250,6 +3265,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             AddressViews,
             Denoms,
             TransactionId,
+            Prices,
+            ExtendedMetadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3278,6 +3295,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
                             "denoms" => Ok(GeneratedField::Denoms),
                             "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
+                            "prices" => Ok(GeneratedField::Prices),
+                            "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3303,6 +3322,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut address_views__ = None;
                 let mut denoms__ = None;
                 let mut transaction_id__ = None;
+                let mut prices__ = None;
+                let mut extended_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PayloadKeys => {
@@ -3341,6 +3362,18 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             }
                             transaction_id__ = map_.next_value()?;
                         }
+                        GeneratedField::Prices => {
+                            if prices__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("prices"));
+                            }
+                            prices__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::ExtendedMetadata => {
+                            if extended_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("extendedMetadata"));
+                            }
+                            extended_metadata__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3353,10 +3386,126 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     address_views: address_views__.unwrap_or_default(),
                     denoms: denoms__.unwrap_or_default(),
                     transaction_id: transaction_id__,
+                    prices: prices__.unwrap_or_default(),
+                    extended_metadata: extended_metadata__.unwrap_or_default(),
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_perspective::ExtendedMetadataById {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.extended_metadata.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById", len)?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.extended_metadata.as_ref() {
+            struct_ser.serialize_field("extendedMetadata", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_perspective::ExtendedMetadataById {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "asset_id",
+            "assetId",
+            "extended_metadata",
+            "extendedMetadata",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            ExtendedMetadata,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_perspective::ExtendedMetadataById;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_perspective::ExtendedMetadataById, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut extended_metadata__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::ExtendedMetadata => {
+                            if extended_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("extendedMetadata"));
+                            }
+                            extended_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_perspective::ExtendedMetadataById {
+                    asset_id: asset_id__,
+                    extended_metadata: extended_metadata__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TransactionPlan {

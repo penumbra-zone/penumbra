@@ -4,9 +4,13 @@ use once_cell::sync::Lazy;
 
 pub mod asset;
 pub mod balance;
+mod equivalent_value;
+mod estimated_price;
 mod value;
 
 pub use balance::Balance;
+pub use equivalent_value::EquivalentValue;
+pub use estimated_price::EstimatedPrice;
 pub use value::{Value, ValueVar, ValueView};
 
 pub static STAKING_TOKEN_DENOM: Lazy<asset::Metadata> = Lazy::new(|| {

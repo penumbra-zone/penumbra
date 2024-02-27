@@ -152,13 +152,8 @@ pub mod value_view {
         #[prost(message, optional, tag = "2")]
         pub metadata: ::core::option::Option<super::Metadata>,
         /// Optionally, a list of equivalent values in other numeraires.
-        ///
-        /// For instance, this can provide a USD-equivalent value relative to a
-        /// stablecoin, or an amount of the staking token, etc.  A view server can
-        /// optionally include this information to assist a frontend in displaying
-        /// information about the value in a user-friendly way.
         #[prost(message, repeated, tag = "3")]
-        pub equivalent_values: ::prost::alloc::vec::Vec<known_asset_id::EquivalentValue>,
+        pub equivalent_values: ::prost::alloc::vec::Vec<super::EquivalentValue>,
         /// Optionally, extended, dynamically-typed metadata about the object this
         /// token represents.
         ///
@@ -170,30 +165,6 @@ pub mod value_view {
         /// logic would fall back on the ordinary asset metadata.
         #[prost(message, optional, tag = "4")]
         pub extended_metadata: ::core::option::Option<::pbjson_types::Any>,
-    }
-    /// Nested message and enum types in `KnownAssetId`.
-    pub mod known_asset_id {
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct EquivalentValue {
-            /// The equivalent amount of the parent Value in terms of the numeraire.
-            #[prost(message, optional, tag = "1")]
-            pub equivalent_amount: ::core::option::Option<
-                super::super::super::super::num::v1::Amount,
-            >,
-            /// Metadata describing the numeraire.
-            #[prost(message, optional, tag = "2")]
-            pub numeraire: ::core::option::Option<super::super::Metadata>,
-        }
-        impl ::prost::Name for EquivalentValue {
-            const NAME: &'static str = "EquivalentValue";
-            const PACKAGE: &'static str = "penumbra.core.asset.v1";
-            fn full_name() -> ::prost::alloc::string::String {
-                ::prost::alloc::format!(
-                    "penumbra.core.asset.v1.ValueView.KnownAssetId.{}", Self::NAME
-                )
-            }
-        }
     }
     impl ::prost::Name for KnownAssetId {
         const NAME: &'static str = "KnownAssetId";
@@ -270,6 +241,58 @@ pub mod asset_image {
 }
 impl ::prost::Name for AssetImage {
     const NAME: &'static str = "AssetImage";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1.{}", Self::NAME)
+    }
+}
+/// The estimated price of one asset in terms of a numeraire.
+///
+/// This is used for generating "equivalent values" in ValueViews.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EstimatedPrice {
+    #[prost(message, optional, tag = "1")]
+    pub priced_asset: ::core::option::Option<AssetId>,
+    #[prost(message, optional, tag = "2")]
+    pub numeraire: ::core::option::Option<AssetId>,
+    /// Multiply units of the priced asset by this value to get the value in the numeraire.
+    ///
+    /// This is a floating-point number since the price is approximate.
+    #[prost(double, tag = "3")]
+    pub numeraire_per_unit: f64,
+    /// If set, gives some idea of when the price was estimated.
+    #[prost(uint64, tag = "4")]
+    pub as_of_height: u64,
+}
+impl ::prost::Name for EstimatedPrice {
+    const NAME: &'static str = "EstimatedPrice";
+    const PACKAGE: &'static str = "penumbra.core.asset.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.asset.v1.{}", Self::NAME)
+    }
+}
+/// An "equivalent" value to a given value, in terms of a numeraire.
+///
+/// For instance, this can provide a USD-equivalent value relative to a
+/// stablecoin, or an amount of the staking token, etc.  A view server can
+/// optionally include this information to assist a frontend in displaying
+/// information about the value in a user-friendly way.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EquivalentValue {
+    /// The equivalent amount of the parent Value in terms of the numeraire.
+    #[prost(message, optional, tag = "1")]
+    pub equivalent_amount: ::core::option::Option<super::super::num::v1::Amount>,
+    /// Metadata describing the numeraire.
+    #[prost(message, optional, tag = "2")]
+    pub numeraire: ::core::option::Option<Metadata>,
+    /// If set, gives some idea of when the price/equivalence was estimated.
+    #[prost(uint64, tag = "3")]
+    pub as_of_height: u64,
+}
+impl ::prost::Name for EquivalentValue {
+    const NAME: &'static str = "EquivalentValue";
     const PACKAGE: &'static str = "penumbra.core.asset.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.asset.v1.{}", Self::NAME)
