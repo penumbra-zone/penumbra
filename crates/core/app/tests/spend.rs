@@ -96,7 +96,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg_attr(
     debug_assertions,
-    should_panic("assertion failed: cs.is_satisfied().unwrap()")
+    should_panic = "assertion failed: cs.is_satisfied().unwrap()"
 )]
 async fn invalid_dummy_spend() {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
