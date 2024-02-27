@@ -4,7 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
-use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
 use tendermint::v0_37::abci;
@@ -68,7 +69,7 @@ impl Component for Dex {
         }
 
         // Then, perform arbitrage:
-        let arb_burn = state
+        let arb_burn = match state
             .arbitrage(
                 *STAKING_TOKEN_ASSET_ID,
                 vec![
@@ -100,7 +101,18 @@ impl Component for Dex {
                 ],
             )
             .await
-            .expect("must be able to process arbitrage");
+        {
+            Ok(v) => v,
+            Err(e) => {
+                // The arbitrage search should not error, but if it does, we should
+                // simply not perform arbitrage, rather than halting the entire chain.
+                tracing::warn!(?e, "error processing arbitrage, this is a bug");
+                Value {
+                    amount: Amount::zero(),
+                    asset_id: *STAKING_TOKEN_ASSET_ID,
+                }
+            }
+        };
 
         if arb_burn.amount != 0u64.into() {
             // TODO: hack to avoid needing an asset cache for nice debug output
