@@ -152,7 +152,7 @@ impl MsgHandler for MsgRecvPacket {
         let transfer = PortId::transfer();
         // todo: should this be part of the app handler logic?
         if self.packet.port_on_b == transfer {
-            AH::recv_packet_execute(state, self).await;
+            AH::recv_packet_execute(state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }

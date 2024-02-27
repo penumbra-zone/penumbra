@@ -518,7 +518,7 @@ impl AppHandlerExecute for Ics20Transfer {
     async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute<S: StateWrite>(mut state: S, msg: &MsgRecvPacket) {
+    async fn recv_packet_execute<S: StateWrite>(mut state: S, msg: &MsgRecvPacket) -> Result<()> {
         // recv packet should never fail a transaction, but it should record a failure acknowledgement.
         let ack: Vec<u8> = match recv_transfer_packet_inner(&mut state, msg).await {
             Ok(_) => {
@@ -535,14 +535,18 @@ impl AppHandlerExecute for Ics20Transfer {
         state
             .write_acknowledgement(&msg.packet, &ack)
             .await
-            .expect("able to write acknowledgement");
+            .context("able to write acknowledgement")?;
+
+        Ok(())
     }
 
-    async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) {
-        // timeouts should never fail
+    async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
+        // timeouts may fail due to counterparty chains sending transfers of u128-1
         timeout_packet_inner(&mut state, msg)
             .await
-            .expect("able to timeout packet");
+            .context("able to timeout packet")?;
+
+        Ok(())
     }
 
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
