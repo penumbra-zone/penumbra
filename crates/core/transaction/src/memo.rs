@@ -103,9 +103,9 @@ impl MemoPlaintext {
         self.into()
     }
 
-    pub fn blank_memo(address: Address) -> MemoPlaintext {
+    pub fn blank_memo(return_address: Address) -> MemoPlaintext {
         MemoPlaintext {
-            return_address: address,
+            return_address,
             text: String::new(),
         }
     }

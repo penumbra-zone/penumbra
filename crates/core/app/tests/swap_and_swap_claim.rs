@@ -96,14 +96,14 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // means we have to synchronize a client's view of the test chain's SCT
     // state.
     let epoch_duration = state.get_epoch_duration_parameter().await?;
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     // TODO: generalize StateRead/StateWrite impls from impl for &S to impl for Deref<Target=S>
     client.sync_to(1, state.deref()).await?;
 
     let output_data = state.output_data(height, trading_pair).await?.unwrap();
 
     let commitment = swap.body.payload.commitment;
-    let swap_auth_path = client.witness(commitment).unwrap();
+    let swap_auth_path = client.witness_commitment(commitment).unwrap();
     let detected_plaintext = client.swap_by_commitment(&commitment).unwrap();
     assert_eq!(plaintext, detected_plaintext);
 
@@ -207,7 +207,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
 
     // 6. Create a SwapClaim action
     let epoch_duration = state.get_epoch_duration_parameter().await.unwrap();
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     client.sync_to(1, state.deref()).await.unwrap();
 
     let output_data = state
@@ -217,7 +217,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
         .unwrap();
 
     let commitment = swap.body.payload.commitment;
-    let swap_auth_path = client.witness(commitment).unwrap();
+    let swap_auth_path = client.witness_commitment(commitment).unwrap();
     let detected_plaintext = client.swap_by_commitment(&commitment).unwrap();
     assert_eq!(plaintext, detected_plaintext);
 
