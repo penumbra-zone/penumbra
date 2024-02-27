@@ -35,7 +35,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client.sync_to(0, state.deref()).await?;
     let note = client.notes.values().next().unwrap().clone();
@@ -112,7 +112,7 @@ async fn invalid_dummy_spend() {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client.sync_to(0, state.deref()).await.unwrap();
     let note = client.notes.values().next().unwrap().clone();
@@ -212,7 +212,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client
         .sync_to(0, state.deref())
@@ -303,7 +303,7 @@ async fn spend_duplicate_nullifier_same_transaction() {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client
         .sync_to(0, state.deref())

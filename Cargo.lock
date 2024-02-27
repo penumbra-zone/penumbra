@@ -5263,6 +5263,8 @@ dependencies = [
  "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-tct",
+ "penumbra-transaction",
+ "rand_core 0.6.4",
 ]
 
 [[package]]

@@ -10,13 +10,16 @@ use {
     cnidarium::TempStorage,
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
+    penumbra_mock_consensus::TestNode,
     penumbra_proto::DomainType,
-    penumbra_sct::component::clock::EpochRead,
-    penumbra_shielded_pool::SpendPlan,
-    penumbra_transaction::TransactionPlan,
-    std::ops::Deref,
+    penumbra_sct::component::{clock::EpochRead, tree::SctRead as _},
+    penumbra_shielded_pool::{OutputPlan, SpendPlan},
+    penumbra_transaction::{
+        memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
+    },
+    rand_core::OsRng,
     tap::Tap,
-    tracing::{error_span, Instrument},
+    tracing::{error_span, info, Instrument},
 };
 
 /// Exercises that a test node can be instantiated using the consensus service.
@@ -75,59 +78,88 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
 }
 
 #[tokio::test]
-async fn mock_consensus_can_send_a_spend_action() -> anyhow::Result<()> {
+async fn mock_consensus_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
     let mut test_node = common::start_test_node(&storage).await?;
-    let mut rng = <rand_chacha::ChaChaRng as rand_core::SeedableRng>::seed_from_u64(0xBEEF);
 
-    // Sync the mock client, using the test account's full viewing key, to the latest snapshot.
-    let (viewing_key, spend_key) = (&test_keys::FULL_VIEWING_KEY, &test_keys::SPEND_KEY);
-    let client = MockClient::new(viewing_key.deref().clone())
+    // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone())
         .with_sync_to_storage(&storage)
-        .await?;
+        .await?
+        .tap(|c| info!(client.notes = %c.notes.len(), "mock client synced to test storage"));
 
-    // Take one of the test account's notes...
-    let (commitment, note) = client
+    // Take one of the test wallet's notes, and send it to a different account.
+    let input_note = client
         .notes
-        .iter()
+        .values()
+        .cloned()
         .next()
-        .ok_or_else(|| anyhow!("mock client had no note"))?
-        .tap(|(commitment, note)| {
-            tracing::info!(?commitment, ?note, "mock client note commitment")
-        });
+        .ok_or_else(|| anyhow!("mock client had no note"))?;
 
-    // Build a transaction spending this note.
-    let tx = {
-        let position = client
-            .sct
-            .witness(*commitment)
-            .ok_or_else(|| anyhow!("commitment is not witnessed"))?
-            .position();
-        let spend = SpendPlan::new(&mut rng, note.clone(), position);
-        let plan = TransactionPlan {
-            actions: vec![spend.into()],
+    // Write down a transaction plan with exactly one spend and one output.
+    let mut plan = TransactionPlan {
+        actions: vec![
+            // First, spend the selected input note.
+            SpendPlan::new(
+                &mut OsRng,
+                input_note.clone(),
+                // Spends require _positioned_ notes, in order to compute their nullifiers.
+                client
+                    .position(input_note.commit())
+                    .ok_or_else(|| anyhow!("input note commitment was unknown to mock client"))?,
+            )
+            .into(),
+            // Next, create a new output of the exact same amount.
+            OutputPlan::new(&mut OsRng, input_note.value(), *test_keys::ADDRESS_1).into(),
+        ],
+        // Now fill out the remaining parts of the transaction needed for verification:
+        memo: Some(MemoPlan::new(
+            &mut OsRng,
+            MemoPlaintext::blank_memo(*test_keys::ADDRESS_0),
+        )?),
+        detection_data: None, // We'll set this automatically below
+        transaction_parameters: TransactionParameters {
+            chain_id: TestNode::<()>::CHAIN_ID.to_string(),
             ..Default::default()
-        };
-        let witness = plan.witness_data(&client.sct)?;
-        let auth = plan.authorize(rand_core::OsRng, spend_key)?;
-        plan.build_concurrent(viewing_key, &witness, &auth).await?
+        },
     };
+    plan.populate_detection_data(OsRng, 0);
 
-    // Execute the transaction, and sync another mock client up to the latest snapshot.
+    let tx = client.witness_auth_build(&plan).await?;
+
+    // Execute the transaction, applying it to the chain state.
+    let pre_tx_snapshot = storage.latest_snapshot();
     test_node
         .block()
-        .with_data(vec![tx.encode_to_vec()]) // TODO(kate): add a `with_tx` extension method
+        .with_data(vec![tx.encode_to_vec()])
         .execute()
         .await?;
+    let post_tx_snapshot = storage.latest_snapshot();
 
-    // Sync to the latest storage snapshot once more.
-    let client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone())
-        .with_sync_to_storage(&storage)
-        .await?;
+    // Check that the nullifiers were spent as a result of the transaction:
+    for nf in tx.spent_nullifiers() {
+        assert!(pre_tx_snapshot.spend_info(nf).await?.is_none());
+        assert!(post_tx_snapshot.spend_info(nf).await?.is_some());
+    }
 
-    client.notes.get(&commitment).unwrap();
+    // Sync the client up to the current block
+    client.sync_to_latest(post_tx_snapshot).await?;
+
+    // Check that the client was able to detect the new note:
+
+    // Grab the output note we're expecting to see...
+    let output_nc = tx
+        .outputs()
+        .next()
+        .expect("tx has one output")
+        .body
+        .note_payload
+        .note_commitment
+        .clone();
+    // ... and check that it's now in the client's note set.
+    assert!(client.notes.contains_key(&output_nc));
 
     // Free our temporary storage.
     drop(storage);
