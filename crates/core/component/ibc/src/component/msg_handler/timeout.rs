@@ -143,7 +143,7 @@ impl MsgHandler for MsgTimeout {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            H::timeout_packet_execute(state, self).await;
+            H::timeout_packet_execute(state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
