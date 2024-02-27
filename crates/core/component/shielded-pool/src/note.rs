@@ -48,7 +48,7 @@ pub struct Note {
     transmission_key_s: Fq,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(into = "pb::NoteView", try_from = "pb::NoteView")]
 pub struct NoteView {
     pub value: ValueView,

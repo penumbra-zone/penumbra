@@ -4760,6 +4760,7 @@ dependencies = [
  "ibig",
  "num-bigint",
  "once_cell",
+ "pbjson-types",
  "penumbra-num",
  "penumbra-proto",
  "poseidon377",
