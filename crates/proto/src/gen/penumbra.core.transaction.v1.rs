@@ -199,6 +199,34 @@ pub struct TransactionPerspective {
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
     pub transaction_id: ::core::option::Option<super::super::txhash::v1::TransactionId>,
+    /// Any relevant estimated prices
+    #[prost(message, repeated, tag = "20")]
+    pub prices: ::prost::alloc::vec::Vec<super::super::asset::v1::EstimatedPrice>,
+    /// Any relevant extended metadata, indexed by asset id.
+    #[prost(message, repeated, tag = "30")]
+    pub extended_metadata: ::prost::alloc::vec::Vec<
+        transaction_perspective::ExtendedMetadataById,
+    >,
+}
+/// Nested message and enum types in `TransactionPerspective`.
+pub mod transaction_perspective {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ExtendedMetadataById {
+        #[prost(message, optional, tag = "1")]
+        pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+        #[prost(message, optional, tag = "2")]
+        pub extended_metadata: ::core::option::Option<::pbjson_types::Any>,
+    }
+    impl ::prost::Name for ExtendedMetadataById {
+        const NAME: &'static str = "ExtendedMetadataById";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionPerspective.{}", Self::NAME
+            )
+        }
+    }
 }
 impl ::prost::Name for TransactionPerspective {
     const NAME: &'static str = "TransactionPerspective";

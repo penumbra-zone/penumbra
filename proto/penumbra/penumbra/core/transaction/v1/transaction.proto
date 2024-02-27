@@ -1,6 +1,7 @@
 syntax = "proto3";
 package penumbra.core.transaction.v1;
 
+import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
@@ -113,6 +114,16 @@ message TransactionPerspective {
   repeated asset.v1.Metadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
   txhash.v1.TransactionId transaction_id = 6;
+
+  // Any relevant estimated prices
+  repeated asset.v1.EstimatedPrice prices = 20;
+
+  message ExtendedMetadataById {
+    asset.v1.AssetId asset_id = 1;
+    google.protobuf.Any extended_metadata = 2;
+  }
+  // Any relevant extended metadata, indexed by asset id.
+  repeated ExtendedMetadataById extended_metadata = 30;
 }
 
 message PayloadKeyWithCommitment {

@@ -16,7 +16,11 @@ use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::asset::{AssetIdVar, Cache, Id, Metadata, REGISTRY};
+use crate::EquivalentValue;
+use crate::{
+    asset::{AssetIdVar, Cache, Id, Metadata, REGISTRY},
+    EstimatedPrice,
+};
 
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
@@ -27,11 +31,19 @@ pub struct Value {
 }
 
 /// Represents a value of a known or unknown denomination.
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(try_from = "pb::ValueView", into = "pb::ValueView")]
 pub enum ValueView {
-    KnownAssetId { amount: Amount, metadata: Metadata },
-    UnknownAssetId { amount: Amount, asset_id: Id },
+    KnownAssetId {
+        amount: Amount,
+        metadata: Metadata,
+        equivalent_values: Vec<EquivalentValue>,
+        extended_metadata: Option<pbjson_types::Any>,
+    },
+    UnknownAssetId {
+        amount: Amount,
+        asset_id: Id,
+    },
 }
 
 impl ValueView {
@@ -44,6 +56,56 @@ impl ValueView {
     pub fn asset_id(&self) -> Id {
         self.value().asset_id
     }
+
+    /// Use the provided [`EstimatedPrice`]s and asset metadata [`Cache`] to add
+    /// equivalent values to this [`ValueView`].
+    pub fn with_prices(mut self, prices: &[EstimatedPrice], known_metadata: &Cache) -> Self {
+        if let ValueView::KnownAssetId {
+            ref mut equivalent_values,
+            metadata,
+            amount,
+            ..
+        } = &mut self
+        {
+            // Set the equivalent values.
+            *equivalent_values = prices
+                .iter()
+                .filter_map(|price| {
+                    if metadata.id() == price.priced_asset
+                        && known_metadata.contains_key(&price.numeraire)
+                    {
+                        let equivalent_amount_f =
+                            (amount.value() as f64) * price.numeraire_per_unit;
+                        Some(EquivalentValue {
+                            equivalent_amount: Amount::from(equivalent_amount_f as u128),
+                            numeraire: known_metadata
+                                .get(&price.numeraire)
+                                .expect("we checked containment above")
+                                .clone(),
+                            as_of_height: price.as_of_height,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+        }
+
+        self
+    }
+
+    /// Use the provided extended metadata to add extended metadata to this [`ValueView`].
+    pub fn with_extended_metadata(mut self, extended: Option<pbjson_types::Any>) -> Self {
+        if let ValueView::KnownAssetId {
+            ref mut extended_metadata,
+            ..
+        } = &mut self
+        {
+            *extended_metadata = extended;
+        }
+
+        self
+    }
 }
 
 impl Value {
@@ -53,6 +115,8 @@ impl Value {
             Ok(ValueView::KnownAssetId {
                 amount: self.amount,
                 metadata: denom,
+                equivalent_values: Vec::new(),
+                extended_metadata: None,
             })
         } else {
             Err(anyhow::anyhow!(
@@ -69,6 +133,8 @@ impl Value {
             Some(denom) => ValueView::KnownAssetId {
                 amount: self.amount,
                 metadata: denom.clone(),
+                equivalent_values: Vec::new(),
+                extended_metadata: None,
             },
             None => ValueView::UnknownAssetId {
                 amount: self.amount,
@@ -84,6 +150,7 @@ impl From<ValueView> for Value {
             ValueView::KnownAssetId {
                 amount,
                 metadata: denom,
+                ..
             } => Value {
                 amount,
                 asset_id: Id::from(denom),
@@ -131,15 +198,18 @@ impl TryFrom<pb::Value> for Value {
 impl From<ValueView> for pb::ValueView {
     fn from(v: ValueView) -> Self {
         match v {
-            ValueView::KnownAssetId { amount, metadata } => pb::ValueView {
+            ValueView::KnownAssetId {
+                amount,
+                metadata,
+                equivalent_values,
+                extended_metadata,
+            } => pb::ValueView {
                 value_view: Some(pb::value_view::ValueView::KnownAssetId(
                     pb::value_view::KnownAssetId {
                         amount: Some(amount.into()),
                         metadata: Some(metadata.into()),
-                        // These fields are currently not used by the Rust stack.
-                        // Support for them may be added to the Rust view server in the future.
-                        equivalent_values: Vec::new(),
-                        extended_metadata: None,
+                        equivalent_values: equivalent_values.into_iter().map(Into::into).collect(),
+                        extended_metadata,
                     },
                 )),
             },
@@ -171,6 +241,12 @@ impl TryFrom<pb::ValueView> for ValueView {
                     .metadata
                     .ok_or_else(|| anyhow::anyhow!("missing denom field"))?
                     .try_into()?,
+                equivalent_values: v
+                    .equivalent_values
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                extended_metadata: v.extended_metadata,
             }),
             pb::value_view::ValueView::UnknownAssetId(v) => Ok(ValueView::UnknownAssetId {
                 amount: v
