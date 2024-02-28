@@ -2,6 +2,7 @@
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
 use std::error::Error;
+use std::io::IsTerminal as _;
 
 use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
@@ -46,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
     let metrics_layer = MetricsLayer::new();
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(atty::is(atty::Stream::Stdout))
+        .with_ansi(std::io::stdout().is_terminal())
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;

@@ -16,6 +16,7 @@ use penumbra_proto::{
     view::v1::{view_service_client::ViewServiceClient, view_service_server::ViewServiceServer},
 };
 use penumbra_view::ViewServer;
+use std::io::IsTerminal as _;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -31,7 +32,7 @@ pub struct Opt {
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
-            .with_ansi(atty::is(atty::Stream::Stdout))
+            .with_ansi(std::io::stdout().is_terminal())
             .with_env_filter(
                 EnvFilter::from_default_env()
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
