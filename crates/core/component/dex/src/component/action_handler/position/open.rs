@@ -9,7 +9,7 @@ use penumbra_proto::StateWriteProto as _;
 use crate::{
     component::{PositionManager, PositionRead},
     event,
-    lp::action::PositionOpen,
+    lp::{action::PositionOpen, position},
 };
 
 #[async_trait]
@@ -26,6 +26,9 @@ impl ActionHandler for PositionOpen {
         //  + the trading function doesn't specify a cyclic pair,
         //  + the fee is <=50%.
         self.position.check_stateless()?;
+        if self.position.state != position::State::Opened {
+            anyhow::bail!("attempted to open a position with a state besides `Opened`");
+        }
         Ok(())
     }
 
