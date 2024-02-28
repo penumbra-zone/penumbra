@@ -1,18 +1,18 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use colored_json::ToColoredJson;
+use comfy_table::Table;
 use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
-use ibc_proto::ibc::core::channel::v1::QueryChannelsRequest;
+use ibc_proto::ibc::core::channel::v1::{
+    IdentifiedChannel, QueryChannelRequest, QueryChannelsRequest,
+};
 use ibc_proto::ibc::core::client::v1::query_client::QueryClient as ClientQueryClient;
 use ibc_proto::ibc::core::client::v1::{QueryClientStateRequest, QueryClientStatesRequest};
 use ibc_proto::ibc::core::connection::v1::query_client::QueryClient as ConnectionQueryClient;
-use ibc_proto::ibc::core::connection::v1::{QueryConnectionRequest, QueryConnectionsRequest};
-use ibc_types::core::channel::ChannelEnd;
-use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
-
-use penumbra_proto::cnidarium::v1::{
-    query_service_client::QueryServiceClient as StorageQueryServiceClient, KeyValueRequest,
+use ibc_proto::ibc::core::connection::v1::{
+    ConnectionEnd, QueryConnectionRequest, QueryConnectionsRequest,
 };
-use penumbra_proto::DomainType;
+use ibc_types::core::channel::channel::State;
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 
 use crate::App;
 
@@ -49,9 +49,14 @@ pub enum IbcCmd {
     Channels {},
 }
 
+struct ChannelInfo {
+    channel: IdentifiedChannel,
+    connection: ConnectionEnd,
+    client: TendermintClientState,
+}
+
 impl IbcCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let mut client = StorageQueryServiceClient::new(app.pd_channel().await?);
         match self {
             IbcCmd::Client { client_id } => {
                 let mut ibc_client = ClientQueryClient::new(app.pd_channel().await?);
@@ -115,37 +120,131 @@ impl IbcCmd {
                 println!("{}", connections_json.to_colored_json_auto()?);
             }
             IbcCmd::Channel { port, channel_id } => {
-                // TODO channel lookup should be updated to use the ibc query logic.
-                // https://docs.rs/ibc-proto/0.36.1/ibc_proto/ibc/core/channel/v1/query_client/struct.QueryClient.html#method.channel
-                let key =
-                    format!("ibc-data/channelEnds/ports/{port}/channels/channel-{channel_id}");
-                let value = client
-                    .key_value(KeyValueRequest {
-                        key,
-                        ..Default::default()
+                let mut channel_client = ChannelQueryClient::new(app.pd_channel().await?);
+                let mut connection_client = ConnectionQueryClient::new(app.pd_channel().await?);
+                let mut client_client = ClientQueryClient::new(app.pd_channel().await?);
+
+                let channel = channel_client
+                    .channel(QueryChannelRequest {
+                        port_id: port.to_string(),
+                        channel_id: format!("channel-{channel_id}"),
                     })
-                    .await
-                    .context(format!(
-                        "Error finding channel: {port}:channel-{channel_id}"
-                    ))?
+                    .await?
                     .into_inner()
-                    .value
-                    .context(format!("Channel {port}:channel-{channel_id} not found"))?;
+                    .channel
+                    .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+                let connection = connection_client
+                    .connection(QueryConnectionRequest {
+                        connection_id: channel.connection_hops[0].clone(),
+                    })
+                    .await?
+                    .into_inner()
+                    .connection
+                    .ok_or_else(|| anyhow::anyhow!("connection for channel not found"))?;
+                let client_state = client_client
+                    .client_state(QueryClientStateRequest {
+                        client_id: connection.client_id.clone(),
+                    })
+                    .await?
+                    .into_inner()
+                    .client_state
+                    .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
+                let client_state = TendermintClientState::try_from(client_state)?;
 
-                let channel = ChannelEnd::decode(value.value.as_ref())?;
+                let mut table = Table::new();
+                table.set_header(vec![
+                    "Channel ID",
+                    "Port",
+                    "Counterparty",
+                    "Counterparty Channel ID",
+                    "State",
+                    "Client ID",
+                    "Client Height",
+                ]);
+                let state_str = State::from_i32(channel.state).unwrap().to_string();
+                table.add_row(vec![
+                    channel_id.to_string(),
+                    port.to_string(),
+                    client_state.chain_id.to_string(),
+                    channel
+                        .counterparty
+                        .ok_or_else(|| anyhow::anyhow!("counterparty not found"))?
+                        .channel_id
+                        .to_string(),
+                    state_str,
+                    connection.client_id.to_string(),
+                    client_state.latest_height.to_string(),
+                ]);
 
-                let channel_json = serde_json::to_string_pretty(&channel)?;
-                println!("{}", channel_json.to_colored_json_auto()?);
+                println!("{table}")
             }
             IbcCmd::Channels {} => {
-                let mut ibc_client = ChannelQueryClient::new(app.pd_channel().await?);
+                let mut channel_client = ChannelQueryClient::new(app.pd_channel().await?);
+                let mut connection_client = ConnectionQueryClient::new(app.pd_channel().await?);
+                let mut client_client = ClientQueryClient::new(app.pd_channel().await?);
+
                 let req = QueryChannelsRequest {
                     // TODO: support pagination
                     pagination: None,
                 };
-                let channels = ibc_client.channels(req).await?.into_inner().channels;
-                let channels_json = serde_json::to_string_pretty(&channels)?;
-                println!("{}", channels_json.to_colored_json_auto()?);
+
+                let mut channel_infos = vec![];
+                let channels = channel_client.channels(req).await?.into_inner().channels;
+                for channel in channels {
+                    let connection = connection_client
+                        .connection(QueryConnectionRequest {
+                            connection_id: channel.connection_hops[0].clone(),
+                        })
+                        .await?
+                        .into_inner()
+                        .connection
+                        .ok_or_else(|| anyhow::anyhow!("connection for channel not found"))?;
+                    let client_state = client_client
+                        .client_state(QueryClientStateRequest {
+                            client_id: connection.client_id.clone(),
+                        })
+                        .await?
+                        .into_inner()
+                        .client_state
+                        .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
+
+                    let client_state = TendermintClientState::try_from(client_state)?;
+                    channel_infos.push(ChannelInfo {
+                        channel,
+                        connection,
+                        client: client_state,
+                    });
+                }
+
+                let mut table = Table::new();
+                table.set_header(vec![
+                    "Channel ID",
+                    "Port",
+                    "Counterparty",
+                    "Counterparty Channel ID",
+                    "State",
+                    "Client ID",
+                    "Client Height",
+                ]);
+
+                for info in channel_infos {
+                    let state_str = State::from_i32(info.channel.state).unwrap().to_string();
+                    table.add_row(vec![
+                        info.channel.channel_id.to_string(),
+                        info.channel.port_id,
+                        info.client.chain_id.to_string(),
+                        info.channel
+                            .counterparty
+                            .ok_or_else(|| anyhow::anyhow!("counterparty not found"))?
+                            .channel_id
+                            .to_string(),
+                        state_str,
+                        info.connection.client_id.to_string(),
+                        info.client.latest_height.to_string(),
+                    ]);
+                }
+
+                println!("{table}")
             }
         }
 
