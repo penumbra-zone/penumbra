@@ -81,6 +81,7 @@ tracing = {workspace = true}
 ed25519-consensus = {workspace = true}
 penumbra-mock-consensus = {workspace = true}
 penumbra-mock-client = {workspace = true}
+rand = {workspace = true}
 rand_core = {workspace = true}
 rand_chacha = {workspace = true}
 tap = {workspace = true}

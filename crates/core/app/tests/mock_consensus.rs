@@ -6,6 +6,7 @@
 mod common;
 
 use {
+    self::common::TestNodeExt as _,
     anyhow::anyhow,
     cnidarium::TempStorage,
     penumbra_keys::test_keys,
@@ -14,6 +15,7 @@ use {
     penumbra_proto::DomainType,
     penumbra_sct::component::{clock::EpochRead, tree::SctRead as _},
     penumbra_shielded_pool::{OutputPlan, SpendPlan},
+    penumbra_stake::component::validator_handler::ValidatorDataRead as _,
     penumbra_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
@@ -29,6 +31,33 @@ async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
     let _ = common::start_test_node(&storage).await?;
+
+    // Free our temporary storage.
+    drop(storage);
+    drop(guard);
+
+    Ok(())
+}
+
+/// Exercises that the mock consensus engine can provide a single genesis validator.
+#[tokio::test]
+async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
+    // Install a test logger, acquire some temporary storage, and start the test node.
+    let guard = common::set_tracing_subscriber();
+    let storage = TempStorage::new().await?;
+    let test_node = common::start_test_node(&storage).await?;
+
+    let identity_key = test_node.penumbra_identity_key();
+    match storage
+        .latest_snapshot()
+        .get_validator_state(&identity_key)
+        .tap(|_| info!(?identity_key, "getting validator state"))
+        .await?
+        .ok_or_else(|| anyhow!("genesis validator state was not found"))?
+    {
+        penumbra_stake::validator::State::Active => info!("genesis validator is active"),
+        other => panic!("unexpected genesis validator state, found: {other}"),
+    }
 
     // Free our temporary storage.
     drop(storage);

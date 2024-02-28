@@ -9,6 +9,11 @@ pub mod builder;
 
 mod abci;
 
+use {
+    decaf377_rdsa::{SpendAuth, VerificationKey},
+    tendermint::block::Height,
+};
+
 /// A test node.
 ///
 /// Construct a new test node by calling [`TestNode::builder()`]. Use [`TestNode::block()`] to
@@ -21,7 +26,8 @@ mod abci;
 pub struct TestNode<C> {
     consensus: C,
     last_app_hash: Vec<u8>,
-    height: tendermint::block::Height,
+    height: Height,
+    identity_key: VerificationKey<SpendAuth>,
 }
 
 impl<C> TestNode<C> {
@@ -37,5 +43,10 @@ impl<C> TestNode<C> {
         // Use upper-case hexadecimal integers, include leading zeroes.
         // - https://doc.rust-lang.org/std/fmt/#formatting-traits
         format!("{:02X?}", self.last_app_hash)
+    }
+
+    /// Returns this test node's identity key.
+    pub fn identity_key(&self) -> VerificationKey<SpendAuth> {
+        self.identity_key
     }
 }
