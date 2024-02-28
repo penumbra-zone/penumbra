@@ -32,14 +32,13 @@ impl ActionHandler for PositionOpen {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        // Validate that the position ID doesn't collide
-        state.check_position_id_unused(&self.position.id()).await?;
-
+    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
         Ok(())
     }
 
     async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Validate that the position ID doesn't collide
+        state.check_position_id_unused(&self.position.id()).await?;
         state.put_position(self.position.clone()).await?;
         state.record_proto(event::position_open(self));
         Ok(())
