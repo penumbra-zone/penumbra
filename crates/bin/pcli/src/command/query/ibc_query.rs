@@ -156,6 +156,7 @@ impl IbcCmd {
                     "Channel ID",
                     "Port",
                     "Counterparty",
+                    "Counterparty Channel ID",
                     "State",
                     "Client ID",
                     "Client Height",
@@ -165,6 +166,11 @@ impl IbcCmd {
                     channel_id.to_string(),
                     port.to_string(),
                     client_state.chain_id.to_string(),
+                    channel
+                        .counterparty
+                        .ok_or_else(|| anyhow::anyhow!("counterparty not found"))?
+                        .channel_id
+                        .to_string(),
                     state_str,
                     connection.client_id.to_string(),
                     client_state.latest_height.to_string(),
@@ -215,6 +221,7 @@ impl IbcCmd {
                     "Channel ID",
                     "Port",
                     "Counterparty",
+                    "Counterparty Channel ID",
                     "State",
                     "Client ID",
                     "Client Height",
@@ -226,6 +233,11 @@ impl IbcCmd {
                         info.channel.channel_id.to_string(),
                         info.channel.port_id,
                         info.client.chain_id.to_string(),
+                        info.channel
+                            .counterparty
+                            .ok_or_else(|| anyhow::anyhow!("counterparty not found"))?
+                            .channel_id
+                            .to_string(),
                         state_str,
                         info.connection.client_id.to_string(),
                         info.client.latest_height.to_string(),
