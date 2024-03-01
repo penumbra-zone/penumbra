@@ -67,7 +67,7 @@ message FundingStream {
 // Describes the reward and exchange rates and voting power for a validator in some epoch.
 message RateData {
   keys.v1.IdentityKey identity_key = 1;
-  uint64 epoch_index = 2;
+  uint64 epoch_index = 2 [deprecated = true];
   num.v1.Amount validator_reward_rate = 4;
   num.v1.Amount validator_exchange_rate = 5;
 }
@@ -96,7 +96,8 @@ message BondingState {
     BONDING_STATE_ENUM_UNBONDED = 3;
   }
   BondingStateEnum state = 1;
-  uint64 unbonds_at_epoch = 2;
+  uint64 unbonds_at_epoch = 2 [deprecated = true];
+  uint64 unbonds_at_height = 3;
 }
 
 // Describes the state of a validator
@@ -273,7 +274,7 @@ message CurrentValidatorRateResponse {
 // Staking configuration data.
 message StakeParameters {
   // The number of epochs an unbonding note for before being released.
-  uint64 unbonding_epochs = 1;
+  uint64 unbonding_epochs = 1 [deprecated = true];
   // The maximum number of validators in the consensus set.
   uint64 active_validator_limit = 2;
   // The base reward rate, expressed in basis points of basis points
@@ -288,6 +289,8 @@ message StakeParameters {
   uint64 missed_blocks_maximum = 7;
   // The minimum amount of stake required for a validator to be indexed by the protocol.
   num.v1.Amount min_validator_stake = 8;
+  // The number of blocks that must elapse before an unbonding note can be claimed.
+  uint64 unbonding_delay = 9;
 }
 
 // Genesis data for the staking component.
