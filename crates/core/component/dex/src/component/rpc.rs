@@ -1,9 +1,11 @@
 use std::{pin::Pin, sync::Arc};
 
-use crate::ExecutionCircuitBreaker;
 use async_stream::try_stream;
-use cnidarium::{StateDelta, Storage};
 use futures::{StreamExt, TryStreamExt};
+use tonic::Status;
+use tracing::instrument;
+
+use cnidarium::{StateDelta, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
@@ -20,16 +22,16 @@ use penumbra_proto::{
     },
     DomainType, StateReadProto,
 };
-use tonic::Status;
-use tracing::instrument;
+
+use crate::ExecutionCircuitBreaker;
+use crate::{
+    lp::position::{self, Position},
+    state_key, DirectedTradingPair, SwapExecution, TradingPair,
+};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
     PositionRead, StateReadExt,
-};
-use crate::{
-    lp::position::{self, Position},
-    state_key, DirectedTradingPair, SwapExecution, TradingPair,
 };
 
 // TODO: Hide this and only expose a Router?
@@ -541,7 +543,13 @@ impl SimulationService for Server {
             .await
             .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
 
+        let unfilled = Value {
+            amount: input.amount - swap_execution.input.amount,
+            asset_id: input.asset_id,
+        };
+
         Ok(tonic::Response::new(SimulateTradeResponse {
+            unfilled: Some(unfilled.into()),
             output: Some(swap_execution.into()),
         }))
     }

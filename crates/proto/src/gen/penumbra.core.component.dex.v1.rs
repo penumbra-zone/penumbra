@@ -1254,6 +1254,8 @@ impl ::prost::Name for SimulateTradeRequest {
 pub struct SimulateTradeResponse {
     #[prost(message, optional, tag = "1")]
     pub output: ::core::option::Option<SwapExecution>,
+    #[prost(message, optional, tag = "2")]
+    pub unfilled: ::core::option::Option<super::super::super::asset::v1::Value>,
 }
 impl ::prost::Name for SimulateTradeResponse {
     const NAME: &'static str = "SimulateTradeResponse";

@@ -4868,9 +4868,15 @@ impl serde::Serialize for SimulateTradeResponse {
         if self.output.is_some() {
             len += 1;
         }
+        if self.unfilled.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SimulateTradeResponse", len)?;
         if let Some(v) = self.output.as_ref() {
             struct_ser.serialize_field("output", v)?;
+        }
+        if let Some(v) = self.unfilled.as_ref() {
+            struct_ser.serialize_field("unfilled", v)?;
         }
         struct_ser.end()
     }
@@ -4883,11 +4889,13 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
     {
         const FIELDS: &[&str] = &[
             "output",
+            "unfilled",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Output,
+            Unfilled,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4911,6 +4919,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
                     {
                         match value {
                             "output" => Ok(GeneratedField::Output),
+                            "unfilled" => Ok(GeneratedField::Unfilled),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -4931,6 +4940,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut output__ = None;
+                let mut unfilled__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Output => {
@@ -4939,6 +4949,12 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
                             }
                             output__ = map_.next_value()?;
                         }
+                        GeneratedField::Unfilled => {
+                            if unfilled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unfilled"));
+                            }
+                            unfilled__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -4946,6 +4962,7 @@ impl<'de> serde::Deserialize<'de> for SimulateTradeResponse {
                 }
                 Ok(SimulateTradeResponse {
                     output: output__,
+                    unfilled: unfilled__,
                 })
             }
         }

@@ -584,6 +584,7 @@ message SimulateTradeRequest {
 
 message SimulateTradeResponse {
   core.component.dex.v1.SwapExecution output = 1;
+  asset.v1.Value unfilled = 2;
 }
 
 message EventSwap {
