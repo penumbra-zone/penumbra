@@ -14,9 +14,7 @@ license.workspace = true
 [dependencies]
 anyhow = { workspace = true }
 bytes = { workspace = true }
-decaf377-rdsa = { workspace = true }
 ed25519-consensus = { workspace = true }
-http = { workspace = true }
 rand_core = { workspace = true }
 tap = { workspace = true }
 tendermint = { workspace = true }
