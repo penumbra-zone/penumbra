@@ -470,7 +470,7 @@ pub struct UndelegateClaimBody {
     >,
     /// / The starting height of the `start_epoch` for the claim.
     #[prost(uint64, tag = "5")]
-    pub start_height: u64,
+    pub unbonding_start_height: u64,
 }
 impl ::prost::Name for UndelegateClaimBody {
     const NAME: &'static str = "UndelegateClaimBody";

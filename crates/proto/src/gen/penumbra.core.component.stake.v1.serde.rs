@@ -2145,7 +2145,7 @@ impl serde::Serialize for UndelegateClaimBody {
         if self.balance_commitment.is_some() {
             len += 1;
         }
-        if self.start_height != 0 {
+        if self.unbonding_start_height != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.UndelegateClaimBody", len)?;
@@ -2162,9 +2162,9 @@ impl serde::Serialize for UndelegateClaimBody {
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
         }
-        if self.start_height != 0 {
+        if self.unbonding_start_height != 0 {
             #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -2183,8 +2183,8 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             "penalty",
             "balance_commitment",
             "balanceCommitment",
-            "start_height",
-            "startHeight",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2193,7 +2193,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             StartEpochIndex,
             Penalty,
             BalanceCommitment,
-            StartHeight,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2220,7 +2220,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
-                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2244,7 +2244,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                 let mut start_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut balance_commitment__ = None;
-                let mut start_height__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -2273,11 +2273,11 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                             }
                             balance_commitment__ = map_.next_value()?;
                         }
-                        GeneratedField::StartHeight => {
-                            if start_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
                             }
-                            start_height__ = 
+                            unbonding_start_height__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -2291,7 +2291,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     balance_commitment: balance_commitment__,
-                    start_height: start_height__.unwrap_or_default(),
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }
