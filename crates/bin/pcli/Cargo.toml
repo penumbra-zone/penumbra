@@ -33,7 +33,6 @@ parallel = [
 anyhow = {workspace = true}
 ark-ff = {workspace = true, default-features = false}
 async-stream = {workspace = true}
-atty = {workspace = true}
 base64 = {workspace = true}
 bincode = {workspace = true}
 blake2b_simd = {workspace = true}

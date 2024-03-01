@@ -15,7 +15,6 @@ download-proving-keys = ["penumbra-proof-params/download-proving-keys"]
 anyhow = {workspace = true}
 async-stream = {workspace = true}
 async-trait = {workspace = true}
-atty = {workspace = true}
 bytes = {workspace = true, features = ["serde"]}
 camino = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}

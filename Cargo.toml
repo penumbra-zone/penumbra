@@ -116,7 +116,6 @@ ark-std                          = { default-features = false, version = "0.4" }
 assert_cmd                       = { version = "2.0" }
 async-stream                     = { version = "0.3.5" }
 async-trait                      = { version = "0.1.52" }
-atty                             = { version = "0.2" }
 axum                             = { version = "0.6" }
 axum-server                      = { version = "0.4.7" }
 base64                           = { version = "0.21.2" }

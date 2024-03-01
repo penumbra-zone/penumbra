@@ -16,7 +16,6 @@ ark-groth16 = {workspace = true}
 ark-serialize = {workspace = true}
 askama = "0.11"
 async-trait = {workspace = true}
-atty = {workspace = true}
 axum = {workspace = true}
 bytes = {workspace = true}
 camino = {workspace = true}
