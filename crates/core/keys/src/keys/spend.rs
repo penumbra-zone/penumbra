@@ -152,6 +152,12 @@ impl SpendKey {
     }
 }
 
+impl From<[u8; SPENDKEY_LEN_BYTES]> for SpendKeyBytes {
+    fn from(bytes: [u8; SPENDKEY_LEN_BYTES]) -> Self {
+        Self(bytes)
+    }
+}
+
 impl TryFrom<&[u8]> for SpendKeyBytes {
     type Error = anyhow::Error;
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
