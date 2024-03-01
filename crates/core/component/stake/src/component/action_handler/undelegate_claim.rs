@@ -33,14 +33,16 @@ impl ActionHandler for UndelegateClaim {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        // These checks all formerly happened in the `check_historical` method,
+        // These checks all formerly happened in the `check_stateful` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
 
-        // If the validator delegation pool is bonded, or unbonding, check that enough epochs
-        // have elapsed to claim the unbonding tokens:
+        // If the validator delegation pool is bonded, or unbonding, we must
+        // check that the unbonding delay (measured in blocks) has elapsed.
         let current_height = state.get_block_height().await?;
 
+        // Check if the unbonding height has been reached, it will always be the case if
+        // the validator delegation pool is unbonded.
         let allowed_unbonding_height = state
             .compute_unbonding_height(
                 &self.body.validator_identity,
@@ -58,18 +60,18 @@ impl ActionHandler for UndelegateClaim {
             wait_blocks
         );
 
-        let unbonding_epoch = state
+        let unbonding_epoch_start = state
             .get_epoch_by_height(self.body.unbonding_start_height)
             .await?;
-        let allowed_epoch = state.get_epoch_by_height(allowed_unbonding_height).await?;
+        let unbonding_epoch_end = state.get_epoch_by_height(allowed_unbonding_height).await?;
 
-        // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
+        // Compute the penalty for the epoch range [unbonding_epoch_start, unbonding_epoch_end], and check
         // that it matches the penalty in the claim.
         let expected_penalty = state
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
-                unbonding_epoch.index,
-                allowed_epoch.index,
+                unbonding_epoch_start.index,
+                unbonding_epoch_end.index,
             )
             .await?;
 
@@ -78,11 +80,9 @@ impl ActionHandler for UndelegateClaim {
             "penalty does not match expected penalty"
         );
 
-        // (end of former check_historical impl)
-
+        /* ---------- execution ----------- */
         // No state changes here - this action just converts one token to another
 
-        // TODO: where should we be tracking token supply changes?
         Ok(())
     }
 }
