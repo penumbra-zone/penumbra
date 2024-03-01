@@ -709,12 +709,13 @@ impl TxCmd {
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
-                                start_epoch_index,
+                                unbonding_start_height: start_epoch_index,
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
                                 proof_blinding_r: Fq::rand(&mut OsRng),
                                 proof_blinding_s: Fq::rand(&mut OsRng),
+                                start_height
                             })
                             .plan(
                                 app.view

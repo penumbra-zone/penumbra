@@ -51,6 +51,7 @@ impl From<UndelegateClaimBody> for pb::UndelegateClaimBody {
             start_epoch_index: d.start_epoch_index,
             penalty: Some(d.penalty.into()),
             balance_commitment: Some(d.balance_commitment.into()),
+            start_height: d.start_height,
         }
     }
 }
@@ -72,7 +73,7 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .balance_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
-                start_height: d.start_height,
+            start_height: d.start_height,
         })
     }
 }
