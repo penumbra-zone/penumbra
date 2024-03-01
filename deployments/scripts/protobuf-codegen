@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Generate code for Rust & Go from proto definitions.
 
 set -euo pipefail
