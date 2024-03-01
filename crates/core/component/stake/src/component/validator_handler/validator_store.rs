@@ -1,28 +1,20 @@
-use std::pin::Pin;
-
 use crate::{
+    component::{StateReadExt as _, MAX_VOTING_POWER},
     rate::RateData,
-    validator::{State, Validator},
-    DelegationToken,
+    state_key,
+    validator::{self, BondingState::*, State, Validator},
+    DelegationToken, IdentityKey, Uptime,
 };
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use futures::{Future, FutureExt, TryStreamExt};
 use penumbra_num::Amount;
-use tendermint::PublicKey;
-use validator::BondingState::*;
-
-use cnidarium::{StateRead, StateWrite};
 use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
+use std::pin::Pin;
+use tendermint::PublicKey;
 use tracing::instrument;
 
-use crate::component::MAX_VOTING_POWER;
-use crate::{
-    component::StateReadExt as _,
-    state_key,
-    validator::{self},
-    IdentityKey, Uptime,
-};
 #[async_trait]
 pub trait ValidatorDataRead: StateRead {
     async fn get_validator_info(
