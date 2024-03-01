@@ -2327,6 +2327,9 @@ impl serde::Serialize for UndelegateClaimPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if self.unbonding_start_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.UndelegateClaimPlan", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -2353,6 +2356,10 @@ impl serde::Serialize for UndelegateClaimPlan {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
+        if self.unbonding_start_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -2376,6 +2383,8 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2387,6 +2396,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             BalanceBlinding,
             ProofBlindingR,
             ProofBlindingS,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2416,6 +2426,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                             "balanceBlinding" | "balance_blinding" => Ok(GeneratedField::BalanceBlinding),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2442,6 +2453,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                 let mut balance_blinding__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -2494,6 +2506,14 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
+                            }
+                            unbonding_start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2507,6 +2527,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                     balance_blinding: balance_blinding__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }

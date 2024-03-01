@@ -456,6 +456,7 @@ pub struct UndelegateClaimBody {
         super::super::super::keys::v1::IdentityKey,
     >,
     /// The epoch in which unbonding began, used to verify the penalty.
+    #[deprecated]
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
@@ -487,6 +488,7 @@ pub struct UndelegateClaimPlan {
         super::super::super::keys::v1::IdentityKey,
     >,
     /// The epoch in which unbonding began, used to verify the penalty.
+    #[deprecated]
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2 (10e-8).
@@ -506,6 +508,9 @@ pub struct UndelegateClaimPlan {
     /// The second blinding factor to use for the ZK undelegate claim proof.
     #[prost(bytes = "vec", tag = "8")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+    /// The block height at which unbonding began.
+    #[prost(uint64, tag = "9")]
+    pub unbonding_start_height: u64,
 }
 impl ::prost::Name for UndelegateClaimPlan {
     const NAME: &'static str = "UndelegateClaimPlan";
