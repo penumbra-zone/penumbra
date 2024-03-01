@@ -5,6 +5,7 @@ use ibc_types::core::{
     channel::{channel::State as ChannelState, events, ChannelId, Packet, PortId},
     client::Height,
 };
+use penumbra_sct::component::clock::EpochRead;
 
 use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
@@ -127,6 +128,17 @@ pub trait SendPacketRead: StateRead {
         let client_state = self.get_client_state(&connection.client_id).await?;
         if client_state.is_frozen() {
             anyhow::bail!("client {} is frozen", &connection.client_id);
+        }
+
+        let latest_consensus_state = self
+            .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
+            .await?;
+
+        let current_block_time = self.get_block_timestamp().await?;
+        let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp)?;
+
+        if client_state.expired(time_elapsed) {
+            anyhow::bail!("client {} is expired", &connection.client_id);
         }
 
         let latest_height = client_state.latest_height();
