@@ -147,6 +147,9 @@ impl serde::Serialize for BondingState {
         if self.unbonds_at_epoch != 0 {
             len += 1;
         }
+        if self.unbonds_at_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.BondingState", len)?;
         if self.state != 0 {
             let v = bonding_state::BondingStateEnum::try_from(self.state)
@@ -156,6 +159,10 @@ impl serde::Serialize for BondingState {
         if self.unbonds_at_epoch != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("unbondsAtEpoch", ToString::to_string(&self.unbonds_at_epoch).as_str())?;
+        }
+        if self.unbonds_at_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondsAtHeight", ToString::to_string(&self.unbonds_at_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -170,12 +177,15 @@ impl<'de> serde::Deserialize<'de> for BondingState {
             "state",
             "unbonds_at_epoch",
             "unbondsAtEpoch",
+            "unbonds_at_height",
+            "unbondsAtHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             State,
             UnbondsAtEpoch,
+            UnbondsAtHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -200,6 +210,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                         match value {
                             "state" => Ok(GeneratedField::State),
                             "unbondsAtEpoch" | "unbonds_at_epoch" => Ok(GeneratedField::UnbondsAtEpoch),
+                            "unbondsAtHeight" | "unbonds_at_height" => Ok(GeneratedField::UnbondsAtHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -221,6 +232,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
             {
                 let mut state__ = None;
                 let mut unbonds_at_epoch__ = None;
+                let mut unbonds_at_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::State => {
@@ -237,6 +249,14 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::UnbondsAtHeight => {
+                            if unbonds_at_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondsAtHeight"));
+                            }
+                            unbonds_at_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -245,6 +265,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                 Ok(BondingState {
                     state: state__.unwrap_or_default(),
                     unbonds_at_epoch: unbonds_at_epoch__.unwrap_or_default(),
+                    unbonds_at_height: unbonds_at_height__.unwrap_or_default(),
                 })
             }
         }
@@ -1604,6 +1625,9 @@ impl serde::Serialize for StakeParameters {
         if self.min_validator_stake.is_some() {
             len += 1;
         }
+        if self.unbonding_delay != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.StakeParameters", len)?;
         if self.unbonding_epochs != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1636,6 +1660,10 @@ impl serde::Serialize for StakeParameters {
         if let Some(v) = self.min_validator_stake.as_ref() {
             struct_ser.serialize_field("minValidatorStake", v)?;
         }
+        if self.unbonding_delay != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingDelay", ToString::to_string(&self.unbonding_delay).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -1662,6 +1690,8 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             "missedBlocksMaximum",
             "min_validator_stake",
             "minValidatorStake",
+            "unbonding_delay",
+            "unbondingDelay",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1674,6 +1704,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             SignedBlocksWindowLen,
             MissedBlocksMaximum,
             MinValidatorStake,
+            UnbondingDelay,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1704,6 +1735,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                             "signedBlocksWindowLen" | "signed_blocks_window_len" => Ok(GeneratedField::SignedBlocksWindowLen),
                             "missedBlocksMaximum" | "missed_blocks_maximum" => Ok(GeneratedField::MissedBlocksMaximum),
                             "minValidatorStake" | "min_validator_stake" => Ok(GeneratedField::MinValidatorStake),
+                            "unbondingDelay" | "unbonding_delay" => Ok(GeneratedField::UnbondingDelay),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1731,6 +1763,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                 let mut signed_blocks_window_len__ = None;
                 let mut missed_blocks_maximum__ = None;
                 let mut min_validator_stake__ = None;
+                let mut unbonding_delay__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::UnbondingEpochs => {
@@ -1795,6 +1828,14 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                             }
                             min_validator_stake__ = map_.next_value()?;
                         }
+                        GeneratedField::UnbondingDelay => {
+                            if unbonding_delay__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingDelay"));
+                            }
+                            unbonding_delay__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1809,6 +1850,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                     signed_blocks_window_len: signed_blocks_window_len__.unwrap_or_default(),
                     missed_blocks_maximum: missed_blocks_maximum__.unwrap_or_default(),
                     min_validator_stake: min_validator_stake__,
+                    unbonding_delay: unbonding_delay__.unwrap_or_default(),
                 })
             }
         }

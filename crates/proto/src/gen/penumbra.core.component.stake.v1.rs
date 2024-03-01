@@ -143,6 +143,7 @@ impl ::prost::Name for FundingStream {
 pub struct RateData {
     #[prost(message, optional, tag = "1")]
     pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    #[deprecated]
     #[prost(uint64, tag = "2")]
     pub epoch_index: u64,
     #[prost(message, optional, tag = "4")]
@@ -205,8 +206,11 @@ impl ::prost::Name for ValidatorStatus {
 pub struct BondingState {
     #[prost(enumeration = "bonding_state::BondingStateEnum", tag = "1")]
     pub state: i32,
+    #[deprecated]
     #[prost(uint64, tag = "2")]
     pub unbonds_at_epoch: u64,
+    #[prost(uint64, tag = "3")]
+    pub unbonds_at_height: u64,
 }
 /// Nested message and enum types in `BondingState`.
 pub mod bonding_state {
@@ -688,6 +692,7 @@ impl ::prost::Name for CurrentValidatorRateResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StakeParameters {
     /// The number of epochs an unbonding note for before being released.
+    #[deprecated]
     #[prost(uint64, tag = "1")]
     pub unbonding_epochs: u64,
     /// The maximum number of validators in the consensus set.
@@ -713,6 +718,9 @@ pub struct StakeParameters {
     pub min_validator_stake: ::core::option::Option<
         super::super::super::num::v1::Amount,
     >,
+    /// The number of blocks that must elapse before an unbonding note can be claimed.
+    #[prost(uint64, tag = "9")]
+    pub unbonding_delay: u64,
 }
 impl ::prost::Name for StakeParameters {
     const NAME: &'static str = "StakeParameters";
