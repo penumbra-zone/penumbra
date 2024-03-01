@@ -184,7 +184,7 @@ impl TestnetConfig {
         validators: Vec<Validator>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
     ) -> anyhow::Result<penumbra_genesis::Content> {
         let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
@@ -205,8 +205,8 @@ impl TestnetConfig {
                 stake_params: StakeParameters {
                     active_validator_limit: active_validator_limit
                         .unwrap_or(default_app_params.stake_params.active_validator_limit),
-                    unbonding_epochs: unbonding_epochs
-                        .unwrap_or(default_app_params.stake_params.unbonding_epochs),
+                    unbonding_delay: unbonding_delay
+                        .unwrap_or(default_app_params.stake_params.unbonding_delay),
                     ..Default::default()
                 },
             },
