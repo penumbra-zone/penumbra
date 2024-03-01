@@ -32,8 +32,7 @@ impl Builder {
 
         let Self {
             app_state: Some(app_state),
-            identity_key: Some(identity_key),
-            extensions: _,
+            keys: _,
         } = self
         else {
             bail!("builder was not fully initialized")
@@ -64,7 +63,6 @@ impl Builder {
             consensus,
             height: block::Height::from(0_u8),
             last_app_hash: app_hash.as_bytes().to_owned(),
-            identity_key: identity_key.try_into()?,
         })
     }
 

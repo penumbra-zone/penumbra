@@ -6,20 +6,15 @@
 mod init_chain;
 
 use {
-    crate::TestNode,
+    crate::{keyring::Keys, TestNode},
     bytes::Bytes,
-    decaf377_rdsa::{SpendAuth, VerificationKeyBytes},
-    http::Extensions,
-    tap::TapOptional,
-    tracing::warn,
 };
 
 /// A buider, used to prepare and instantiate a new [`TestNode`].
 #[derive(Default)]
 pub struct Builder {
     pub app_state: Option<Bytes>,
-    pub identity_key: Option<VerificationKeyBytes<SpendAuth>>,
-    pub extensions: Extensions,
+    pub keys: Option<Keys>,
 }
 
 impl TestNode<()> {
@@ -36,26 +31,11 @@ impl Builder {
         Self { app_state, ..self }
     }
 
-    /// Sets the test node's identity key.
-    pub fn identity_key(self, identity_key: impl Into<VerificationKeyBytes<SpendAuth>>) -> Self {
-        let identity_key = Some(identity_key.into());
+    /// Generates a single set of validator keys.
+    pub fn single_validator(self) -> Self {
         Self {
-            identity_key,
+            keys: Some(Keys::generate()),
             ..self
         }
-    }
-
-    /// Adds an extension to this builder.
-    ///
-    /// This is not a part of "regular" use of this builder, but may be used to store additional
-    /// state to facilitate the implementation of extension traits around this builder.
-    pub fn extension<T>(mut self, value: T) -> Self
-    where
-        T: Send + Sync + 'static,
-    {
-        self.extensions
-            .insert(value)
-            .tap_some(|_| warn!("builder overwrote an extension value, this is probably a bug!"));
-        self
     }
 }

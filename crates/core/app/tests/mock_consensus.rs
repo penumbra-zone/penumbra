@@ -6,7 +6,6 @@
 mod common;
 
 use {
-    self::common::TestNodeExt as _,
     anyhow::anyhow,
     cnidarium::TempStorage,
     penumbra_keys::test_keys,
@@ -45,18 +44,27 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-    let test_node = common::start_test_node(&storage).await?;
+    let _test_node = common::start_test_node(&storage).await?;
 
-    let identity_key = test_node.penumbra_identity_key();
-    match storage
-        .latest_snapshot()
-        .get_validator_state(&identity_key)
-        .tap(|_| info!(?identity_key, "getting validator state"))
-        .await?
-        .ok_or_else(|| anyhow!("genesis validator state was not found"))?
-    {
-        penumbra_stake::validator::State::Active => info!("genesis validator is active"),
-        other => panic!("unexpected genesis validator state, found: {other}"),
+    let snapshot = storage.latest_snapshot();
+    let validators = snapshot
+        .validator_definitions()
+        .tap(|_| info!("getting validator definitions"))
+        .await?;
+    match validators.as_slice() {
+        [v] => {
+            let identity_key = v.identity_key;
+            let status = snapshot
+                .get_validator_state(&identity_key)
+                .await?
+                .ok_or_else(|| anyhow!("could not find validator status"))?;
+            assert_eq!(
+                status,
+                penumbra_stake::validator::State::Active,
+                "validator should be active"
+            );
+        }
+        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
     }
 
     // Free our temporary storage.
