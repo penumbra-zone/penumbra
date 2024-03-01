@@ -180,6 +180,8 @@ message UndelegateClaimBody {
   Penalty penalty = 3;
   // The action's contribution to the transaction's value balance.
   asset.v1.BalanceCommitment balance_commitment = 4;
+  /// The starting height of the `start_epoch` for the claim.
+  uint64 start_height = 5;
 }
 
 message UndelegateClaimPlan {
