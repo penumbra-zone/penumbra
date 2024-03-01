@@ -217,7 +217,10 @@ message TransactionPlannerRequest {
     core.component.fee.v1.FeeTier auto_fee = 100;
     // A manually set fee, rather than automatically computing a fee based on gas use.
     core.component.fee.v1.Fee manual_fee = 101;
-  };
+  }
+
+  // The epoch index of the transaction being planned.
+  uint64 epoch_index = 200;
 
   // Request message subtypes
   message Output {
