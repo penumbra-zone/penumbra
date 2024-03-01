@@ -676,7 +676,7 @@ impl TxCmd {
                     {
                         println!("claiming {}", token.denom().default_unit());
                         let validator_identity = token.validator();
-                        let start_epoch_index = token.start_epoch_index();
+                        let start_epoch_index = token.unbonding_start_height();
                         let end_epoch_index = current_epoch.index;
 
                         let mut client = StakeQueryServiceClient::new(channel.clone());
@@ -709,13 +709,12 @@ impl TxCmd {
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
-                                unbonding_start_height: start_epoch_index,
+                                unbonding_start_height,
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
                                 proof_blinding_r: Fq::rand(&mut OsRng),
                                 proof_blinding_s: Fq::rand(&mut OsRng),
-                                start_height
                             })
                             .plan(
                                 app.view

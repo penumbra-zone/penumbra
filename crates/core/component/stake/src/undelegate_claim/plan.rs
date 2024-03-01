@@ -18,8 +18,6 @@ use super::UndelegateClaimProofPublic;
 pub struct UndelegateClaimPlan {
     /// The identity key of the validator to undelegate from.
     pub validator_identity: IdentityKey,
-    /// The height at which unbonding started.
-    pub start_height: u64,
     /// The penalty applied to undelegation, in bps^2.
     pub penalty: Penalty,
     /// The amount of unbonding tokens to claim. This is a bare number because its denom is determined by the preceding data.
@@ -51,7 +49,7 @@ impl UndelegateClaimPlan {
             start_epoch_index: self.unbonding_start_height,
             penalty: self.penalty,
             balance_commitment: self.balance().commit(self.balance_blinding),
-            start_height: self.start_height,
+            unbonding_start_height: self.unbonding_start_height,
         }
     }
 
@@ -97,12 +95,14 @@ impl DomainType for UndelegateClaimPlan {
 }
 
 impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
+    #[allow(deprecated)]
     fn from(msg: UndelegateClaimPlan) -> Self {
         Self {
             validator_identity: Some(msg.validator_identity.into()),
-            start_epoch_index: msg.unbonding_start_height,
+            start_epoch_index: 0,
             penalty: Some(msg.penalty.into()),
             unbonding_amount: Some(msg.unbonding_amount.into()),
+            unbonding_start_height: msg.unbonding_start_height,
             balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
             proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
             proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
