@@ -19,10 +19,11 @@ use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
+use tap::Tap;
 use tendermint::v0_37::abci;
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tracing::instrument;
+use tracing::{instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
 use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
@@ -48,11 +49,13 @@ impl Component for Staking {
                 let starting_height = state
                     .get_block_height()
                     .await
-                    .expect("should be able to get initial block height");
+                    .expect("should be able to get initial block height")
+                    .tap(|height| trace!(%height,"found initial block height"));
                 let starting_epoch = state
                     .get_epoch_by_height(starting_height)
                     .await
-                    .expect("should be able to get initial epoch");
+                    .expect("should be able to get initial epoch")
+                    .tap(|epoch| trace!(?epoch, "found initial epoch"));
                 let epoch_index = starting_epoch.index;
 
                 let genesis_base_rate = BaseRateData {
@@ -61,6 +64,7 @@ impl Component for Staking {
                     base_exchange_rate: 1_0000_0000u128.into(),
                 };
                 state.set_base_rate(genesis_base_rate.clone());
+                trace!(?genesis_base_rate, "set base rate");
 
                 let mut genesis_allocations = BTreeMap::<_, Amount>::new();
                 for allocation in &sp_genesis.allocations {
@@ -68,10 +72,14 @@ impl Component for Staking {
                     *genesis_allocations.entry(value.asset_id).or_default() += value.amount;
                 }
 
-                for validator in &staking_genesis.validators {
+                trace!("parsing genesis validators");
+                for (i, validator) in staking_genesis.validators.iter().enumerate() {
                     // Parse the proto into a domain type.
                     let validator = Validator::try_from(validator.clone())
-                        .expect("should be able to parse genesis validator");
+                        .expect("should be able to parse genesis validator")
+                        .tap(|Validator { name, enabled, .. }|
+                             trace!(%i, %name, %enabled, "parsed genesis validator")
+                        );
 
                     state
                         .add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
