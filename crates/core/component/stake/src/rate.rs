@@ -15,8 +15,6 @@ use crate::{Delegate, Penalty, Undelegate, BPS_SQUARED_SCALING_FACTOR};
 pub struct RateData {
     /// The validator's identity key.
     pub identity_key: IdentityKey,
-    /// The index of the epoch for which this rate is valid.
-    pub epoch_index: u64,
     /// The validator-specific reward rate.
     pub validator_reward_rate: Amount,
     /// The validator-specific exchange rate.
@@ -113,7 +111,6 @@ impl RateData {
 
             RateData {
                 identity_key: previous_rate.identity_key.clone(),
-                epoch_index: previous_rate.epoch_index + 1,
                 validator_reward_rate: next_validator_reward_rate,
                 validator_exchange_rate: next_validator_exchange_rate,
             }
@@ -122,7 +119,6 @@ impl RateData {
             // the next epoch's rate is set to the current rate.
             RateData {
                 identity_key: previous_rate.identity_key.clone(),
-                epoch_index: previous_rate.epoch_index + 1,
                 validator_reward_rate: previous_rate.validator_reward_rate,
                 validator_exchange_rate: previous_rate.validator_exchange_rate,
             }
@@ -235,10 +231,10 @@ impl RateData {
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
     /// delegates `unbonded_amount` of the staking token.
-    pub fn build_delegate(&self, unbonded_amount: Amount) -> Delegate {
+    pub fn build_delegate(&self, epoch_index: u64, unbonded_amount: Amount) -> Delegate {
         Delegate {
             delegation_amount: self.delegation_amount(unbonded_amount),
-            epoch_index: self.epoch_index,
+            epoch_index,
             unbonded_amount,
             validator_identity: self.identity_key.clone(),
         }
@@ -246,9 +242,9 @@ impl RateData {
 
     /// Uses this `RateData` to build an `Undelegate` transaction action that
     /// undelegates `delegation_amount` of the validator's delegation tokens.
-    pub fn build_undelegate(&self, delegation_amount: Amount) -> Undelegate {
+    pub fn build_undelegate(&self, epoch_index: u64, delegation_amount: Amount) -> Undelegate {
         Undelegate {
-            start_epoch_index: self.epoch_index,
+            start_epoch_index: epoch_index,
             delegation_amount,
             unbonded_amount: self.unbonded_amount(delegation_amount),
             validator_identity: self.identity_key.clone(),
@@ -312,10 +308,11 @@ impl DomainType for RateData {
 }
 
 impl From<RateData> for pb::RateData {
+    #[allow(deprecated)]
     fn from(v: RateData) -> Self {
         pb::RateData {
             identity_key: Some(v.identity_key.into()),
-            epoch_index: v.epoch_index,
+            epoch_index: 0,
             validator_reward_rate: Some(v.validator_reward_rate.into()),
             validator_exchange_rate: Some(v.validator_exchange_rate.into()),
         }
@@ -330,7 +327,6 @@ impl TryFrom<pb::RateData> for RateData {
                 .identity_key
                 .ok_or_else(|| anyhow::anyhow!("missing identity key"))?
                 .try_into()?,
-            epoch_index: v.epoch_index,
             validator_reward_rate: v
                 .validator_reward_rate
                 .ok_or_else(|| anyhow::anyhow!("empty validator reward rate in RateData message"))?
@@ -408,7 +404,6 @@ mod tests {
 
         let rate_data = RateData {
             identity_key: ik,
-            epoch_index: 0,
             validator_reward_rate: 1_0000_0000u128.into(),
             validator_exchange_rate: 2_0000_0000u128.into(),
         };

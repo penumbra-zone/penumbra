@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::StakeParameters", into = "pb::StakeParameters")]
 pub struct StakeParameters {
-    /// The number of epochs that must pass before a validator can be unbonded.
-    pub unbonding_epochs: u64,
+    /// The number of blocks to wait before a validator can unbond their stake.
+    pub unbonding_delay: u64,
     /// The number of validators allowed in the consensus set (Active state).
     pub active_validator_limit: u64,
     /// The base reward rate, expressed in basis points of basis points
@@ -33,7 +33,6 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
 
     fn try_from(msg: pb::StakeParameters) -> anyhow::Result<Self> {
         Ok(StakeParameters {
-            unbonding_epochs: msg.unbonding_epochs,
             active_validator_limit: msg.active_validator_limit,
             slashing_penalty_downtime: msg.slashing_penalty_downtime,
             slashing_penalty_misbehavior: msg.slashing_penalty_misbehavior,
@@ -44,14 +43,16 @@ impl TryFrom<pb::StakeParameters> for StakeParameters {
                 .min_validator_stake
                 .ok_or_else(|| anyhow::anyhow!("missing min_validator_stake"))?
                 .try_into()?,
+            unbonding_delay: msg.unbonding_delay,
         })
     }
 }
 
 impl From<StakeParameters> for pb::StakeParameters {
+    #[allow(deprecated)]
     fn from(params: StakeParameters) -> Self {
         pb::StakeParameters {
-            unbonding_epochs: params.unbonding_epochs,
+            unbonding_epochs: 0,
             active_validator_limit: params.active_validator_limit,
             signed_blocks_window_len: params.signed_blocks_window_len,
             missed_blocks_maximum: params.missed_blocks_maximum,
@@ -59,6 +60,7 @@ impl From<StakeParameters> for pb::StakeParameters {
             slashing_penalty_misbehavior: params.slashing_penalty_misbehavior,
             base_reward_rate: params.base_reward_rate,
             min_validator_stake: Some(params.min_validator_stake.into()),
+            unbonding_delay: params.unbonding_delay,
         }
     }
 }
@@ -67,7 +69,7 @@ impl From<StakeParameters> for pb::StakeParameters {
 impl Default for StakeParameters {
     fn default() -> Self {
         Self {
-            unbonding_epochs: 2,
+            unbonding_delay: 719 * 2 + 1,
             active_validator_limit: 80,
             // Copied from cosmos hub
             signed_blocks_window_len: 10000,

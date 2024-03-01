@@ -305,8 +305,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// If you don't specify spends or outputs as well, they will be filled in automatically.
     #[instrument(skip(self))]
-    pub fn delegate(&mut self, unbonded_amount: Amount, rate_data: RateData) -> &mut Self {
-        let delegation = rate_data.build_delegate(unbonded_amount).into();
+    pub fn delegate(
+        &mut self,
+        epoch_index: u64,
+        unbonded_amount: Amount,
+        rate_data: RateData,
+    ) -> &mut Self {
+        let delegation = rate_data
+            .build_delegate(epoch_index, unbonded_amount)
+            .into();
         self.action(delegation);
         self
     }
@@ -315,8 +322,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
     #[instrument(skip(self))]
-    pub fn undelegate(&mut self, delegation_amount: Amount, rate_data: RateData) -> &mut Self {
-        let undelegation = rate_data.build_undelegate(delegation_amount).into();
+    pub fn undelegate(
+        &mut self,
+        epoch_index: u64,
+        delegation_amount: Amount,
+        rate_data: RateData,
+    ) -> &mut Self {
+        let undelegation = rate_data.build_undelegate(epoch_index, delegation_amount).into();
         self.action(undelegation);
         self
     }
