@@ -16,6 +16,8 @@ pub struct UndelegateClaimBody {
     pub penalty: Penalty,
     /// The action's contribution to the transaction's value balance.
     pub balance_commitment: balance::Commitment,
+    /// The height at which unbonding started.
+    pub start_height: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,6 +72,7 @@ impl TryFrom<pb::UndelegateClaimBody> for UndelegateClaimBody {
                 .balance_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
+                start_height: d.start_height,
         })
     }
 }
