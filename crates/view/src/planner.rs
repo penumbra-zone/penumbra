@@ -328,7 +328,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         delegation_amount: Amount,
         rate_data: RateData,
     ) -> &mut Self {
-        let undelegation = rate_data.build_undelegate(epoch_index, delegation_amount).into();
+        let undelegation = rate_data
+            .build_undelegate(epoch_index, delegation_amount)
+            .into();
         self.action(undelegation);
         self
     }

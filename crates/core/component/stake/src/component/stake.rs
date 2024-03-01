@@ -365,10 +365,12 @@ pub trait SlashingData: StateRead {
     async fn compounded_penalty_over_range(
         &self,
         id: &IdentityKey,
-        start: u64,
-        end: u64,
+        epoch_index_start: u64,
+        epoch_index_end: u64,
     ) -> Result<Penalty> {
-        let range = self.get_penalty_for_range(id, start, end).await;
+        let range = self
+            .get_penalty_for_range(id, epoch_index_start, epoch_index_end)
+            .await;
         let compounded_penalty = Self::compute_compounded_penalty(range);
         Ok(compounded_penalty)
     }

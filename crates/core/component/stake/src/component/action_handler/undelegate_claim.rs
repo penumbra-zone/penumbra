@@ -36,17 +36,24 @@ impl ActionHandler for UndelegateClaim {
 
         // If the validator delegation pool is bonded, or unbonding, check that enough epochs
         // have elapsed to claim the unbonding tokens:
-        let current_epoch = state.get_current_epoch().await?;
-        let allowed_unbonding_epoch = state
-            .compute_unbonding_epoch(&self.body.validator_identity, self.body.start_epoch_index)
+        let current_height = state.get_block_height().await?;
+
+        // MERGEBLOCK: this should be the start unbonding height (Rather than epoch index)
+        let allowed_unbonding_height = state
+            .compute_unbonding_height(&self.body.validator_identity, self.body.start_epoch_index)
             .await?;
 
+        let wait_blocks = allowed_unbonding_height.saturating_sub(current_height);
+
         ensure!(
-            current_epoch.index >= allowed_unbonding_epoch,
-            "cannot claim unbonding tokens before the end epoch (current epoch: {}, unbonding epoch: {})",
-            current_epoch.index,
-            allowed_unbonding_epoch
+            current_height >= allowed_unbonding_height,
+            "cannot claim unbonding tokens before height {} (currently at {}, wait {} blocks)",
+            allowed_unbonding_height,
+            current_height,
+            wait_blocks
         );
+
+        let allowed_epoch = state.get_epoch_by_height(allowed_unbonding_height).await?;
 
         // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
         // that it matches the penalty in the claim.
@@ -54,7 +61,7 @@ impl ActionHandler for UndelegateClaim {
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
                 self.body.start_epoch_index,
-                allowed_unbonding_epoch,
+                allowed_epoch.index,
             )
             .await?;
 

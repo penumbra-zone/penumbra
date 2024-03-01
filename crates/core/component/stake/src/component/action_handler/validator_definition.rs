@@ -59,10 +59,9 @@ impl ActionHandler for validator::Definition {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // These checks all formerly happened in the `check_historical` method,
+        // These checks all formerly happened in the `check_stateful` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
-
         let v = self;
 
         // Check that the sequence numbers of the updated validators is correct...
@@ -99,7 +98,6 @@ impl ActionHandler for validator::Definition {
             // 2. If we submit a validator update to CometBFT that
             // includes duplicate consensus keys, CometBFT gets confused
             // and hangs.
-            // Note: This is currently vulnerable to a TOCTOU hazard. Tracked in #3858.
             ensure!(
                 ck_owner.identity_key == v.validator.identity_key,
                 "consensus key {:?} is already in use by validator {}",
@@ -108,14 +106,8 @@ impl ActionHandler for validator::Definition {
             );
         }
 
-        // (end of former check_historical impl)
-
+        /* ------------ execution ----------- */
         let v = self;
-
-        let current_epoch = state
-            .get_current_epoch()
-            .await
-            .context("should be able to get current epoch during validator definition execution")?;
 
         let validator_exists = state
             .get_validator_definition(&v.validator.identity_key)
@@ -137,7 +129,6 @@ impl ActionHandler for validator::Definition {
 
             let initial_rate_data = RateData {
                 identity_key: validator_key,
-                epoch_index: current_epoch.index,
                 validator_reward_rate: 0u128.into(),
                 validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
             };
