@@ -142,12 +142,16 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    /// Compute the unbonding epoch for an undelegation initiated at `starting_epoch`.
-    /// If the pool is unbonded, or already unbonding, the `starting_epoch` is ignored.
+    /// Compute the unbonding epoch for an undelegation initiated at `unbonding_height_start`.
+    /// If the pool is unbonded, or already unbonding, the `unbonding_height_start` is ignored.
     ///
     /// This can be used to check if the undelegation is allowed, or to compute the
     /// epoch at which a delegation pool will be unbonded.
-    async fn compute_unbonding_epoch(&self, id: &IdentityKey, starting_epoch: u64) -> Result<u64> {
+    async fn compute_unbonding_height(
+        &self,
+        id: &IdentityKey,
+        unbonding_height_start: u64,
+    ) -> Result<u64> {
         let Some(val_bonding_state) = self.get_validator_bonding_state(id).await else {
             anyhow::bail!(
                 "validator bonding state not tracked (validator_identity={})",
@@ -155,19 +159,19 @@ pub trait ValidatorDataRead: StateRead {
             )
         };
 
-        let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
+        let min_block_delay = self.get_stake_params().await?.unbonding_delay;
 
-        let upper_bound_epoch = starting_epoch.saturating_add(min_epoch_delay);
+        let upper_bound_height = unbonding_height_start.saturating_add(min_block_delay);
 
-        let unbonding_epoch = match val_bonding_state {
-            Bonded => upper_bound_epoch,
+        let unbonding_height = match val_bonding_state {
+            Bonded => upper_bound_height,
             // When the minimum delay parameter changes, an unbonding validator may
             // have a delay that is larger than the new minimum delay. In this case,
-            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.min(upper_bound_epoch),
-            Unbonded => starting_epoch,
+            Unbonding { unbonds_at_height } => unbonds_at_height.min(upper_bound_height),
+            Unbonded => unbonding_height_start,
         };
 
-        Ok(unbonding_epoch)
+        Ok(unbonding_height)
     }
 
     // TODO(erwan): we pull the entire validator definition instead of tracking
