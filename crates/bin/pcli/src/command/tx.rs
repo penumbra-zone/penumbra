@@ -675,15 +675,26 @@ impl TxCmd {
                         })
                     {
                         println!("claiming {}", token.denom().default_unit());
+
                         let validator_identity = token.validator();
-                        let start_epoch_index = token.unbonding_start_height();
+                        let unbonding_start_height = token.unbonding_start_height();
                         let end_epoch_index = current_epoch.index;
 
-                        let mut client = StakeQueryServiceClient::new(channel.clone());
-                        let penalty: Penalty = client
+                        let mut sct_client = SctQueryServiceClient::new(channel.clone());
+                        let epoch_start = sct_client
+                            .epoch_by_height(EpochByHeightRequest {
+                                height: unbonding_start_height,
+                            })
+                            .await?
+                            .into_inner()
+                            .epoch
+                            .context("unable to get epoch for unbonding start height")?;
+
+                        let mut stake_client = StakeQueryServiceClient::new(channel.clone());
+                        let penalty: Penalty = stake_client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
                                 identity_key: Some(validator_identity.into()),
-                                start_epoch_index,
+                                start_epoch_index: epoch_start.index,
                                 end_epoch_index,
                             }))
                             .await?

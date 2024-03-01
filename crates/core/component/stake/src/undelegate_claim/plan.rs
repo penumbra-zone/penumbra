@@ -46,10 +46,9 @@ impl UndelegateClaimPlan {
     pub fn undelegate_claim_body(&self) -> UndelegateClaimBody {
         UndelegateClaimBody {
             validator_identity: self.validator_identity,
-            start_epoch_index: self.unbonding_start_height,
+            unbonding_start_height: self.unbonding_start_height,
             penalty: self.penalty,
             balance_commitment: self.balance().commit(self.balance_blinding),
-            unbonding_start_height: self.unbonding_start_height,
         }
     }
 

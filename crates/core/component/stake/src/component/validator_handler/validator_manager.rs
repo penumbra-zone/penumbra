@@ -15,7 +15,6 @@ use futures::StreamExt as _;
 use penumbra_num::Amount;
 use penumbra_sct::{
     component::clock::{EpochManager, EpochRead},
-    epoch::Epoch,
 };
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
@@ -575,22 +574,22 @@ pub trait ValidatorManager: StateWrite {
     async fn process_validator_pool_state(
         &mut self,
         validator_identity: &IdentityKey,
-        at_epoch: Epoch,
+        at_height: u64,
     ) -> Result<()> {
         let pool_state = self.get_validator_bonding_state(validator_identity).await;
 
         // If the pool is already unbonded, this will return the current epoch.
-        let unbonding_epoch_target = self
-            .compute_unbonding_height(validator_identity, at_epoch.index)
+        let allowed_unbonding_height = self
+            .compute_unbonding_height(validator_identity, at_height)
             .await?;
 
         tracing::debug!(
-            validator_identity = %validator_identity,
             ?pool_state,
-            ?unbonding_epoch_target,
-            "processing validator pool state");
+            ?allowed_unbonding_height,
+            "processing validator pool state"
+        );
 
-        if at_epoch.index >= unbonding_epoch_target {
+        if at_height >= allowed_unbonding_height {
             // The validator's delegation pool has finished unbonding, so we
             // transition it to the Unbonded state.
             let _ = self

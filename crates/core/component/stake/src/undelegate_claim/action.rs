@@ -47,7 +47,7 @@ impl From<UndelegateClaimBody> for pb::UndelegateClaimBody {
     fn from(d: UndelegateClaimBody) -> Self {
         pb::UndelegateClaimBody {
             validator_identity: Some(d.validator_identity.into()),
-            start_epoch_index: d.start_epoch_index,
+            start_epoch_index: 0,
             penalty: Some(d.penalty.into()),
             balance_commitment: Some(d.balance_commitment.into()),
             unbonding_start_height: d.unbonding_start_height,

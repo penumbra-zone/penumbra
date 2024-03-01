@@ -14,8 +14,11 @@ use crate::{component::action_handler::ActionHandler, UnbondingToken};
 impl ActionHandler for UndelegateClaim {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        let unbonding_id =
-            UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
+        let unbonding_id = UnbondingToken::new(
+            self.body.validator_identity,
+            self.body.unbonding_start_height,
+        )
+        .id();
 
         self.proof.verify(
             &CONVERT_PROOF_VERIFICATION_KEY,
@@ -38,9 +41,11 @@ impl ActionHandler for UndelegateClaim {
         // have elapsed to claim the unbonding tokens:
         let current_height = state.get_block_height().await?;
 
-        // MERGEBLOCK: this should be the start unbonding height (Rather than epoch index)
         let allowed_unbonding_height = state
-            .compute_unbonding_height(&self.body.validator_identity, self.body.start_epoch_index)
+            .compute_unbonding_height(
+                &self.body.validator_identity,
+                self.body.unbonding_start_height,
+            )
             .await?;
 
         let wait_blocks = allowed_unbonding_height.saturating_sub(current_height);
@@ -53,6 +58,9 @@ impl ActionHandler for UndelegateClaim {
             wait_blocks
         );
 
+        let unbonding_epoch = state
+            .get_epoch_by_height(self.body.unbonding_start_height)
+            .await?;
         let allowed_epoch = state.get_epoch_by_height(allowed_unbonding_height).await?;
 
         // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
@@ -60,7 +68,7 @@ impl ActionHandler for UndelegateClaim {
         let expected_penalty = state
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
-                self.body.start_epoch_index,
+                unbonding_epoch.index,
                 allowed_epoch.index,
             )
             .await?;

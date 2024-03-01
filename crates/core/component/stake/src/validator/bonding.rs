@@ -27,10 +27,8 @@ impl std::fmt::Display for State {
         match self {
             State::Bonded => write!(f, "Bonded"),
             State::Unbonded => write!(f, "Unbonded"),
-            State::Unbonding {
-                unbonds_at_height: unbonding_epoch,
-            } => {
-                write!(f, "Unbonding (end epoch: {unbonding_epoch})")
+            State::Unbonding { unbonds_at_height } => {
+                write!(f, "Unbonding (until height: {unbonds_at_height})")
             }
         }
     }
