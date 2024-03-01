@@ -1254,6 +1254,7 @@ impl ::prost::Name for SimulateTradeRequest {
 pub struct SimulateTradeResponse {
     #[prost(message, optional, tag = "1")]
     pub output: ::core::option::Option<SwapExecution>,
+    /// Estimated input amount that will not be swapped due to liquidity
     #[prost(message, optional, tag = "2")]
     pub unfilled: ::core::option::Option<super::super::super::asset::v1::Value>,
 }

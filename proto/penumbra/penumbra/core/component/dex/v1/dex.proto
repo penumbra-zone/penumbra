@@ -584,6 +584,7 @@ message SimulateTradeRequest {
 
 message SimulateTradeResponse {
   core.component.dex.v1.SwapExecution output = 1;
+  // Estimated input amount that will not be swapped due to liquidity
   asset.v1.Value unfilled = 2;
 }
 

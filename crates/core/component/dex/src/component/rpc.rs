@@ -544,7 +544,15 @@ impl SimulationService for Server {
             .map_err(|e| tonic::Status::internal(format!("error simulating trade: {:#}", e)))?;
 
         let unfilled = Value {
-            amount: input.amount - swap_execution.input.amount,
+            amount: input
+                .amount
+                .checked_sub(&swap_execution.input.amount)
+                .ok_or_else(|| {
+                    tonic::Status::failed_precondition(
+                        "swap execution input amount is larger than request input amount"
+                            .to_string(),
+                    )
+                })?,
             asset_id: input.asset_id,
         };
 
