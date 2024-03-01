@@ -82,7 +82,7 @@ pub enum ProposalKindCmd {
         #[clap(long)]
         transaction_plan: Option<camino::Utf8PathBuf>,
     },
-    /// Generate a template for an upgrade propopsal,
+    /// Generate a template for an upgrade proposal,
     UpgradePlan,
 }
 

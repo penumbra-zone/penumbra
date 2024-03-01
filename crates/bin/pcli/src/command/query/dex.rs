@@ -278,7 +278,7 @@ impl DexCmd {
             for i in 0..(trace.len() - 1) {
                 row[1 + i] = format!("{} =>", trace[i].format(&cache));
             }
-            // Right-align the last elemnent of the trace, in case subtraces have different lengths
+            // Right-align the last element of the trace, in case subtraces have different lengths
             row[column_count - 2] = trace
                 .last()
                 .context("trace should have elements")?

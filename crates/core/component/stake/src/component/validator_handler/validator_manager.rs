@@ -204,7 +204,7 @@ pub trait ValidatorManager: StateWrite {
             }
             (Jailed, Defined) => {
                 // A jailed validator has been released from jail by its operator.
-                // Its delegation pool has falled below the minimum threshold, so it is
+                // Its delegation pool has fell below the minimum threshold, so it is
                 // considered `Defined`.
                 //
                 // End-epoch handler is responsible for choosing when to deindex the validator.
@@ -357,7 +357,7 @@ pub trait ValidatorManager: StateWrite {
 
     #[instrument(skip(self))]
     /// Try to implement a state transition in/out of the `Defined` precursor state.
-    /// Returns the new state if sucessful, and `None` otherwise.
+    /// Returns the new state if successful, and `None` otherwise.
     async fn try_precursor_transition(
         &mut self,
         validator_id: &IdentityKey,

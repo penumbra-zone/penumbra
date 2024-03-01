@@ -693,7 +693,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendCircuit` is not satisified, when using an
+        /// Check that the `SpendCircuit` is not satisfied, when using an
         /// incorrect nullifier.
         fn spend_proof_verification_nullifier_integrity_failure((public, private) in arb_invalid_spend_statement_nullifier()) {
             assert!(check_satisfaction(&public, &private).is_err());
@@ -762,7 +762,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendCircuit` is not satisifed when using balance
+        /// Check that the `SpendCircuit` is not satisfied when using balance
         /// commitments with different blinding factors.
         fn spend_proof_verification_balance_commitment_integrity_failure((public, private) in arb_invalid_spend_statement_v_blinding_factor()) {
             assert!(check_satisfaction(&public, &private).is_err());
