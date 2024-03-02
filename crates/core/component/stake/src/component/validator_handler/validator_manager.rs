@@ -235,10 +235,13 @@ pub trait ValidatorManager: StateWrite {
                 tracing::debug!(penalty, unbonds_at_epoch, "jailed validator");
             }
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
-                // We have processed evidence of byzantine behavior for this validator.
-                // It will be terminated, its delegation pool slashed and unbonded.
-                // The epoch-handler is responsible for removing it from the consensus
-                // set index.
+                // When we detect byzantine misbehavior from a validator, we:
+                // 1. Record the maximum slashing penalty for the corresponding pool
+                // 2. Immediately unbond its delegation pool
+                // 3. Forbid new delegations
+                //
+                // Later, during end-epoch processing, we remove the validator from the
+                // consensus set index.
                 let misbehavior_penalty =
                     self.get_stake_params().await?.slashing_penalty_misbehavior;
 
