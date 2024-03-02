@@ -198,6 +198,7 @@ message TransactionPlannerRequest {
   repeated SwapClaim swap_claims = 31;
   repeated Delegate delegations = 40;
   repeated Undelegate undelegations = 50;
+  repeated UndelegateClaim undelegation_claims = 51;
   repeated penumbra.core.component.ibc.v1.IbcRelay ibc_relay_actions = 60;
   repeated penumbra.core.component.ibc.v1.Ics20Withdrawal ics20_withdrawals = 61;
   repeated PositionOpen position_opens = 70;
@@ -242,6 +243,18 @@ message TransactionPlannerRequest {
   message Undelegate {
     core.asset.v1.Value value = 1;
     core.component.stake.v1.RateData rate_data = 2;
+  }
+  message UndelegateClaim {
+    // The identity key of the validator to finish undelegating from.
+    core.keys.v1.IdentityKey validator_identity = 1;
+    // The epoch in which unbonding began, used to verify the penalty.
+    uint64 start_epoch_index = 2;
+    // The penalty applied to undelegation, in bps^2 (10e-8).
+    // In the happy path (no slashing), this is 0.
+    core.component.stake.v1.Penalty penalty = 3;
+    // The amount of unbonding tokens to claim.
+    // This is a bare number because its denom is determined by the preceding data.
+    core.num.v1.Amount unbonding_amount = 4;
   }
   message PositionOpen {
     // Contains the data defining the position, sufficient to compute its `PositionId`.
