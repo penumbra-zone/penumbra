@@ -80,14 +80,12 @@ use penumbra_asset::asset;
 ///             │                                          ▲             
 ///             └──────────────────────────────────────────┘             
 ///                                                                      
-///                                                                      
-///                                                                      
-///                                                  ╔═════════════════╗
-///                                                  ║ starting state  ║
-///                                                  ╚═════════════════╝
-///                                                  ┏━━━━━━━━━━━━━━━━━┓
-///                                                  ┃ terminal state  ┃
-///                                                  ┗━━━━━━━━━━━━━━━━━┛         
+///     ╔═════════════════╗
+///     ║ starting state  ║
+///     ╚═════════════════╝
+///     ┏━━━━━━━━━━━━━━━━━┓
+///     ┃ terminal state  ┃
+///     ┗━━━━━━━━━━━━━━━━━┛         
 /// ```
 ///
 /// [`add_validator`]: Self::add_validator
@@ -142,7 +140,7 @@ pub trait ValidatorManager: StateWrite {
         // when necessary.
         let current_epoch = self.get_current_epoch().await?;
 
-        tracing::info!("executing state transition");
+        tracing::debug!("tentatively executing a state transition");
 
         // Validator state transitions are usually triggered by an epoch transition. The exception
         // to this rule is when a validator exits the active set. In this case, we want to end the
@@ -152,24 +150,21 @@ pub trait ValidatorManager: StateWrite {
             self.set_end_epoch_flag();
         }
 
+        // Determine if the state transition is valid, returning an error otherwise,
+        // if valid we update the state key with the specified `new_state`.
         match (old_state, new_state) {
             (Defined, Inactive) => {
                 // The validator has reached the minimum threshold to be indexed by
-                // the staking component.
+                // the staking component, so we add it:
                 self.add_consensus_set_index(identity_key);
-                self.put(validator_state_path, Inactive);
             }
             (Inactive, Defined) => {
-                // The validator has fallen below the minimum threshold to be
-                // part of the "greater" consensus set.
-                tracing::debug!(identity_key = ?identity_key, "validator has fallen below minimum stake threshold to be considered inactive");
-                self.put(validator_state_path, Defined);
+                // The validator delegation pool is below the `min_stake_threshold` stake parameter.
+                // It will be de-indexed from the consensus set by the epoch-handler.
             }
             (Inactive, Active) => {
-                let power = self.get_validator_power(identity_key).await;
-
-                // The validators with the most voting power are selected to be part of the
-                // chain's "Active set".
+                // The delegator has been promoted into the active set, we initialize its uptime tracker,
+                // and bond its delegation pool.
                 self.set_validator_bonding_state(identity_key, Bonded);
 
                 // Track the validator uptime, overwriting any prior tracking data.
@@ -181,16 +176,14 @@ pub trait ValidatorManager: StateWrite {
                     ),
                 );
 
-                tracing::debug!(voting_power = ?power, "validator pool is bonded, uptime is tracked, setting validator to active");
-
-                // Finally, set the validator to be active.
-                self.put(validator_state_path, Active);
+                let power = self.get_validator_power(identity_key).await;
+                tracing::debug!(voting_power = ?power, "validator pool: bonded, uptime: tracked, setting validator to active");
             }
 
-            (Active, Inactive | Disabled) => {
-                // When an active validator becomes inactive, or is disabled by its operator,
-                // we need to start the unbonding process for its delegation pool. We keep it
-                // in the consensus set, but it is no longer part of the "active set".
+            (Active, Inactive | Defined | Disabled) => {
+                // When a validator is honorably discharged from the active set, we begin unbonding
+                // its delegation pool. The epoch-handler will decide whether it wants to keep it in
+                // the consensus set index or not.
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
@@ -199,89 +192,53 @@ pub trait ValidatorManager: StateWrite {
                             .await?,
                     },
                 );
-
-                self.put(validator_state_path, new_state);
             }
             (Jailed, Defined) => {
-                // A jailed validator has been released from jail by its operator.
-                // Its delegation pool has fallen below the minimum threshold, so it is
-                // considered `Defined`.
+                // A jailed validator has been released from jail by its operator, but its
+                // delegation pool has fallen below the `min_stake_threshold`.
                 //
                 // End-epoch handler is responsible for choosing when to deindex the validator.
-                tracing::debug!("releasing validator from jail");
-                self.put(validator_state_path, Defined);
             }
             (Jailed, Inactive) => {
-                // Here, we don't have anything to do, only allow the validator to return to society.
-                //
-                // End-epoch handler is responsible for choosing when to deindex the validator.
-                tracing::debug!("releasing validator from jail");
-                self.put(validator_state_path, Inactive);
+                // We bring back this validator into the consensus set index.
+                self.add_consensus_set_index(identity_key);
             }
             (Disabled, Inactive) => {
                 // The validator was disabled by its operator, and was re-enabled. Since its
                 // delegation pool was sufficiently large, it is considered inactive.
-                tracing::debug!("disabled validator has become inactive");
-                self.put(validator_state_path, Inactive);
+                self.add_consensus_set_index(identity_key);
             }
             (Inactive | Jailed, Disabled) => {
                 // The validator was disabled by its operator.
-                // We record that the validator was disabled, so delegations to it are not processed.
-                tracing::debug!("validator has been disabled");
-                self.put(validator_state_path, Disabled);
+                // The epoch-handler is responsible for removing this identity from the consensus set index.
             }
             (Active, Jailed) => {
-                // An active validator has committed misbehavior (e.g. failing to sign a block),
-                // we must punish it by applying a penalty to its delegation pool and start the
-                // unbonding process. We also record that the validator was jailed, so delegations
-                // to it are not processed.
+                // An active validator has missed too many blocks, we penalize it by
+                // slashing its delegation pool, forbid new delegations, and start
+                // unbonding its delegated stake.  The epoch-handler is responsible
+                // for removing this identity from the consensus set index.
                 let penalty = self.get_stake_params().await?.slashing_penalty_downtime;
 
                 // Record the slashing penalty on this validator.
                 self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await;
 
-                // The validator's delegation pool begins unbonding.  Jailed
-                // validators are not unbonded immediately, because they need to
-                // be held accountable for byzantine behavior for the entire
-                // unbonding period.
+                // The validator's delegation pool begins unbonding.
                 let unbonds_at_epoch = self
                     .compute_unbonding_epoch(identity_key, current_epoch.index)
                     .await?;
 
+                // Note: `Jailed` validators are not unbonded immediately, so that they
+                // can be held accountable for byzantine behavior.
                 self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_epoch });
 
                 tracing::debug!(penalty, unbonds_at_epoch, "jailed validator");
-
-                // Finally, set the validator to be jailed.
-                self.put(validator_state_path, Jailed);
-            }
-            (Active, Defined) => {
-                let unbonds_at_epoch = self
-                    .compute_unbonding_epoch(identity_key, current_epoch.index)
-                    .await?;
-                // The validator's delegation pool begins unbonding.
-                self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_epoch });
-                // The validator was part of the active set, but its delegation pool fell below
-                // the minimum threshold. We remove it from the active set and the consensus set.
-                tracing::debug!(unbonds_at_epoch, "ejecting from active set");
-
-                // The validator's delegation pool begins unbonding.
-                self.set_validator_bonding_state(
-                    identity_key,
-                    Unbonding {
-                        unbonds_at_epoch: self
-                            .compute_unbonding_epoch(identity_key, current_epoch.index)
-                            .await?,
-                    },
-                );
-                self.put(validator_state_path, Defined);
             }
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
                 // We have processed evidence of byzantine behavior for this validator.
-                // It must be terminated and its delegation pool is slashed with a high
-                // penalty. We immediately unbond the validator's delegation pool, and
-                // it is removed from the consensus set.
+                // It will be terminated, its delegation pool slashed and unbonded.
+                // The epoch-handler is responsible for removing it from the consensus
+                // set index.
                 let misbehavior_penalty =
                     self.get_stake_params().await?.slashing_penalty_misbehavior;
 
@@ -300,12 +257,17 @@ pub trait ValidatorManager: StateWrite {
 
                 tracing::info!(
                     misbehavior_penalty,
-                    "tombstoning validator and unbond its pool"
+                    "tombstoning validator and unbonding its pool"
                 );
-
-                // Finally, set the validator to be tombstoned.
-                self.put(validator_state_path, Tombstoned);
             }
+            (Disabled, Defined) => {
+                /* valid state transition, but there is nothing to do other than updating the state */
+            }
+            (Defined, Disabled) => {
+                /* valid state transition, but there is nothing to do other than updating the state */
+            }
+
+            /* Identities: no-ops */
             (Tombstoned, Tombstoned) => {
                 tracing::debug!("validator is already tombstoned");
                 // See discussion in https://github.com/penumbra-zone/penumbra/pull/3761 for context.
@@ -314,41 +276,41 @@ pub trait ValidatorManager: StateWrite {
                 // Considering every single misbehavior actions as "counts" that accumulate runs the
                 // risk of cratering misconfigured validator into oblivion.
             }
-            (Disabled, Defined) => {
-                self.put(validator_state_path, Defined);
-            }
-            (Defined, Disabled) => {
-                self.put(validator_state_path, Disabled);
-            }
-
-            /* Bad transitions */
-            (Defined | Jailed | Disabled, Active) => {
-                anyhow::bail!(
-                    "only Inactive validators can become Active: identity_key={}, old_state={:?}",
-                    identity_key,
-                    old_state
-                )
-            }
-            (Inactive | Disabled | Defined, Jailed) => anyhow::bail!(
-                "only active validators can get jailed: state={:?}, identity_key={}",
-                old_state,
-                identity_key
-            ),
-            (Tombstoned, Defined | Disabled | Inactive | Active | Jailed) => {
-                anyhow::bail!(
-                    "tombstoning is permanent, identity_key={}, next_state={:?}",
-                    identity_key,
-                    new_state
-                )
-            }
-
-            /* Identities: no-ops */
             (Defined, Defined) => { /* no-op */ }
             (Inactive, Inactive) => { /* no-op */ }
             (Active, Active) => { /* no-op */ }
             (Jailed, Jailed) => { /* no-op */ }
             (Disabled, Disabled) => { /* no-op */ }
+
+            /* Bad transitions */
+            (Disabled | Defined | Jailed, Active) => {
+                anyhow::bail!(
+                    "only inactive validators can become active (identity={}, old_state={:?}, new_state={:?})",
+                    identity_key,
+                    old_state,
+                    new_state,
+                )
+            }
+            (Disabled | Defined | Inactive, Jailed) => {
+                anyhow::bail!(
+                    "only active validators can get jailed (identity={}, old_state={:?}, new_state={:?})",
+                    identity_key,
+                    old_state,
+                    new_state
+                )
+            }
+            (Tombstoned, Defined | Disabled | Inactive | Active | Jailed) => {
+                anyhow::bail!(
+                    "tombstoning is permanent, identity_key={}, new_state={:?}",
+                    identity_key,
+                    new_state
+                )
+            }
         }
+
+        // At this point, we are guaranteed that this state transition is valid.
+        tracing::info!("successful state transition");
+        self.put(validator_state_path, new_state);
 
         Self::state_machine_metrics(old_state, new_state);
 
@@ -394,6 +356,7 @@ pub trait ValidatorManager: StateWrite {
         let has_minimum_stake = unbonded_pool >= min_stake;
 
         // Refer yourself to the state machine diagram for the logic behind these transitions.
+        // Note: this could be refactored, no doubt, but it's going to look ugly either way.
         let new_state = match previous_state {
             Defined if has_minimum_stake => Inactive,
             Defined if !has_minimum_stake => Defined,
@@ -408,7 +371,7 @@ pub trait ValidatorManager: StateWrite {
             let _ = self
                 .set_validator_state(validator_id, new_state)
                 .await
-                .expect("we guard the state transition");
+                .expect("this must be a valid transition because we guard the method");
         }
 
         Some(new_state)
