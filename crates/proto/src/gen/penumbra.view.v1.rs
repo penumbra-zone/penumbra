@@ -184,6 +184,10 @@ pub struct TransactionPlannerRequest {
     pub delegations: ::prost::alloc::vec::Vec<transaction_planner_request::Delegate>,
     #[prost(message, repeated, tag = "50")]
     pub undelegations: ::prost::alloc::vec::Vec<transaction_planner_request::Undelegate>,
+    #[prost(message, repeated, tag = "51")]
+    pub undelegation_claims: ::prost::alloc::vec::Vec<
+        transaction_planner_request::UndelegateClaim,
+    >,
     #[prost(message, repeated, tag = "60")]
     pub ibc_relay_actions: ::prost::alloc::vec::Vec<
         super::super::core::component::ibc::v1::IbcRelay,
@@ -314,6 +318,39 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for Undelegate {
         const NAME: &'static str = "Undelegate";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct UndelegateClaim {
+        /// The identity key of the validator to finish undelegating from.
+        #[prost(message, optional, tag = "1")]
+        pub validator_identity: ::core::option::Option<
+            super::super::super::core::keys::v1::IdentityKey,
+        >,
+        /// The epoch in which unbonding began, used to verify the penalty.
+        #[prost(uint64, tag = "2")]
+        pub start_epoch_index: u64,
+        /// The penalty applied to undelegation, in bps^2 (10e-8).
+        /// In the happy path (no slashing), this is 0.
+        #[prost(message, optional, tag = "3")]
+        pub penalty: ::core::option::Option<
+            super::super::super::core::component::stake::v1::Penalty,
+        >,
+        /// The amount of unbonding tokens to claim.
+        /// This is a bare number because its denom is determined by the preceding data.
+        #[prost(message, optional, tag = "4")]
+        pub unbonding_amount: ::core::option::Option<
+            super::super::super::core::num::v1::Amount,
+        >,
+    }
+    impl ::prost::Name for UndelegateClaim {
+        const NAME: &'static str = "UndelegateClaim";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
