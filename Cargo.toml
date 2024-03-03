@@ -176,7 +176,7 @@ penumbra-keys                    = { default-features = false, path = "crates/co
 penumbra-mock-client             = { path = "crates/test/mock-client" }
 penumbra-mock-consensus          = { path = "crates/test/mock-consensus" }
 penumbra-num                     = { default-features = false, path = "crates/core/num" }
-penumbra-proof-params            = { default-features = false, path = "crates/crypto/proof-params" }
+penumbra-proof-params            = { default-features = false, path = "crates/crypto/proof-params", features = ["download-proving-keys"] }
 penumbra-proof-setup             = { path = "crates/crypto/proof-setup" }
 penumbra-proto                   = { default-features = false, path = "crates/proto" }
 penumbra-sct                     = { default-features = false, path = "crates/core/component/sct" }
