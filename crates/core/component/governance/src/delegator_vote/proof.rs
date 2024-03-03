@@ -426,8 +426,6 @@ impl TryFrom<pb::ZkDelegatorVoteProof> for DelegatorVoteProof {
 mod tests {
 
     use super::*;
-    use ark_ff::PrimeField;
-
     use decaf377::{Fq, Fr};
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};

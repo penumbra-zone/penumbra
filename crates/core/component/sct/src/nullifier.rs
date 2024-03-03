@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{r1cs::FqVar, Fq};

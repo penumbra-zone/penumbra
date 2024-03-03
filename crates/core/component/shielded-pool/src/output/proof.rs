@@ -276,8 +276,6 @@ mod tests {
 
     use crate::{note, Note};
 
-    use ark_ff::PrimeField;
-
     fn fq_strategy() -> BoxedStrategy<Fq> {
         any::<[u8; 32]>()
             .prop_map(|bytes| Fq::from_le_bytes_mod_order(&bytes[..]))

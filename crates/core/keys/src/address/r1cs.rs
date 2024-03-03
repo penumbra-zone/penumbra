@@ -1,5 +1,5 @@
 use crate::Address;
-use ark_ff::{PrimeField, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;
 use decaf377::{

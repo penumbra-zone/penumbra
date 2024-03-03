@@ -7,7 +7,7 @@ use std::{
     ops::RangeInclusive,
 };
 
-use ark_ff::{fields::PrimeField, One, Zero};
+use ark_ff::{One, Zero};
 use once_cell::sync::Lazy;
 use poseidon377::{hash_1, hash_4, Fq};
 use serde::{Deserialize, Serialize};
@@ -271,7 +271,6 @@ impl From<u64> for Forgotten {
 
 #[cfg(any(test, feature = "arbitrary"))]
 mod arbitrary {
-    use ark_ff::BigInteger256;
     use poseidon377::Fq;
 
     use super::Hash;

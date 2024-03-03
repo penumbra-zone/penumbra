@@ -1,4 +1,3 @@
-use ark_ff::PrimeField;
 use decaf377::{Fq, Fr};
 use decaf377_ka as ka;
 use penumbra_keys::prf;

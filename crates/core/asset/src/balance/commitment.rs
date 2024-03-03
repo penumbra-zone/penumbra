@@ -1,6 +1,5 @@
 use std::ops::Deref;
 
-use ark_ff::PrimeField;
 use ark_r1cs_std::prelude::*;
 use ark_r1cs_std::uint8::UInt8;
 use ark_relations::r1cs::SynthesisError;

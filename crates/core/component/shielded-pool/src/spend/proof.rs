@@ -403,13 +403,10 @@ mod tests {
     use penumbra_tct::StateCommitment;
     use proptest::prelude::*;
 
+    use crate::Note;
     use decaf377_rdsa::{SpendAuth, VerificationKey};
     use penumbra_tct as tct;
     use rand_core::OsRng;
-
-    use crate::Note;
-
-    use ark_ff::PrimeField;
 
     fn fr_strategy() -> BoxedStrategy<Fr> {
         any::<[u8; 32]>()

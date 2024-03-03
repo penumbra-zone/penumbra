@@ -1,4 +1,4 @@
-use ark_ff::{fields::PrimeField, ToConstraintField};
+use ark_ff::ToConstraintField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::Fq;
 use once_cell::sync::Lazy;

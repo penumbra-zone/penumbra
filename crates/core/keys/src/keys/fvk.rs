@@ -1,5 +1,4 @@
 use anyhow::Context;
-use ark_ff::PrimeField;
 use ark_serialize::CanonicalDeserialize;
 use decaf377::{Fq, Fr};
 use once_cell::sync::Lazy;

@@ -204,9 +204,12 @@ impl TryFrom<pb::DelegatorVotePlan> for DelegatorVotePlan {
                     .as_slice()
                     .try_into()
                     .map_err(|_| anyhow::anyhow!("invalid randomizer"))?,
-            ).expect("randomizer malformed"),
-            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes).expect("proof_blinding_r malformed"),
-            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes).expect("proof_blinding_s malformed"),
+            )
+            .expect("randomizer malformed"),
+            proof_blinding_r: Fq::from_bytes_checked(&proof_blinding_r_bytes)
+                .expect("proof_blinding_r malformed"),
+            proof_blinding_s: Fq::from_bytes_checked(&proof_blinding_s_bytes)
+                .expect("proof_blinding_s malformed"),
         })
     }
 }

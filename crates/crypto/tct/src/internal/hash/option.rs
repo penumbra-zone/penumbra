@@ -1,6 +1,4 @@
 use std::fmt::Debug;
-
-use ark_ff::{BigInteger256, Fp256};
 use decaf377::Fq;
 
 use crate::prelude::*;

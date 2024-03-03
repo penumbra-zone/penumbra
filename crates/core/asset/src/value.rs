@@ -343,8 +343,6 @@ mod tests {
 
     #[test]
     fn sum_balance_commitments() {
-        use ark_ff::Field;
-
         let pen_denom = crate::asset::Cache::with_known_assets()
             .get_unit("upenumbra")
             .unwrap()

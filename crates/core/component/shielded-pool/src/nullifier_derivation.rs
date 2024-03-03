@@ -227,8 +227,6 @@ impl TryFrom<pb::ZkNullifierDerivationProof> for NullifierDerivationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_ff::PrimeField;
-
     use penumbra_asset::{asset, Value};
     use penumbra_keys::keys::{SeedPhrase, SpendKey};
     use penumbra_num::Amount;
