@@ -356,8 +356,8 @@ pub trait ValidatorManager: StateWrite {
         Some(new_state)
     }
 
-    /// Add a new genesis validator which will start in the [`Active`] state with its
-    /// genesis allocation bonded.
+    /// Add a new genesis validator starting in the [`Active`] state with its
+    /// genesis allocation entirely bonded.
     #[instrument(skip(self, genesis_allocations))]
     async fn add_genesis_validator(
         &mut self,
@@ -394,9 +394,12 @@ pub trait ValidatorManager: StateWrite {
         )
         .await?;
 
-        // We also need to start tracking uptime of new validators, because they
-        // start in the active state, so we need to bundle in the effects of the
-        // Inactive -> Active state transition.
+        // Here, we are in the special case of genesis validators. Since they start in
+        // the active state we need to bundle the effects of the `Inactive -> Active`
+        // state transition:
+        // - add them to the consensus set index
+        // - track their uptime
+        self.add_consensus_set_index(&validator.identity_key);
         self.set_validator_uptime(
             &validator.identity_key,
             Uptime::new(0, self.signed_blocks_window_len().await? as usize),
@@ -468,11 +471,6 @@ pub trait ValidatorManager: StateWrite {
         self.set_initial_validator_state(&validator_identity, initial_state)?;
         self.set_validator_power(&validator_identity, initial_voting_power)?;
         self.set_validator_bonding_state(&validator_identity, initial_bonding_state);
-
-        // For genesis validators, we also need to add them to the consensus set index.
-        if initial_state == validator::State::Active {
-            self.add_consensus_set_index(&validator_identity);
-        }
 
         // Finally, update metrics for the new validator.
         match initial_state {
