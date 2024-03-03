@@ -42,19 +42,17 @@ use penumbra_asset::asset;
 /// Defines the validator state machine of the staking component.
 ///
 /// # Overview
-/// This trait offers an interface to the validator staking state machine.
+/// An interface to the validator state machine.
 ///
 /// ## Validator management
 /// - Add validator definition via [`add_validator`].
 /// - Update validator definitions via [`update_validator_definition`].
+/// - Tracking a validator's uptime via [`track_uptime`].
+/// - Process byzantine behavior evidence via [`process_evidence`].
 ///
 /// ## State machine interface
 /// - A fallible state transition function via [`set_validator_state`].
 /// - A safer handle to tentatively explore state transitions via [`try_precursor_transition`].
-///
-/// ## Validator-specific logic
-/// - Tracking a validator's uptime via [`track_uptime`].
-/// - Process byzantine behavior evidence via [`process_evidence`].
 ///
 /// # State machine diagram:
 /// ```plaintext
@@ -123,7 +121,7 @@ pub trait ValidatorManager: StateWrite {
             .await
     }
 
-    // Inner function pretends to be the outer one, so we can include cur_state
+    // Inner function pretends to be the outer one, so we can include `old_state`
     // in the tracing span.  This way, we don't need to include any information
     // in tracing events inside the function about what the state transition is,
     // because it's already attached to the span.
@@ -153,15 +151,19 @@ pub trait ValidatorManager: StateWrite {
         // Determine if the state transition is valid, returning an error otherwise,
         // if valid we update the state key with the specified `new_state`.
         match (old_state, new_state) {
-            (Defined, Inactive) => {
-                // The validator has reached the minimum threshold to be indexed by
-                // the staking component, so we add it:
+            (Defined | Disabled | Jailed, Inactive) => {
+                // The validator has enough stake to be considered for the consensus set.
                 self.add_consensus_set_index(identity_key);
             }
-            (Inactive, Defined) => {
-                // The validator delegation pool is below the `min_stake_threshold` stake parameter.
-                // It will be de-indexed from the consensus set by the epoch-handler.
+            (Inactive | Jailed | Disabled, Defined) => {
+                // This branch covers the case where a validator's delegation pool has
+                // fallen below the `min_stake_threshold`.
             }
+            (Inactive | Jailed | Defined, Disabled) => {
+                // The validator was disabled by its operator.
+                // The epoch-handler is responsible for removing this identity from the consensus set index.
+            }
+
             (Inactive, Active) => {
                 // The delegator has been promoted into the active set, we initialize its uptime tracker,
                 // and bond its delegation pool.
@@ -193,25 +195,7 @@ pub trait ValidatorManager: StateWrite {
                     },
                 );
             }
-            (Jailed, Defined) => {
-                // A jailed validator has been released from jail by its operator, but its
-                // delegation pool has fallen below the `min_stake_threshold`.
-                //
-                // End-epoch handler is responsible for choosing when to deindex the validator.
-            }
-            (Jailed, Inactive) => {
-                // We bring back this validator into the consensus set index.
-                self.add_consensus_set_index(identity_key);
-            }
-            (Disabled, Inactive) => {
-                // The validator was disabled by its operator, and was re-enabled. Since its
-                // delegation pool was sufficiently large, it is considered inactive.
-                self.add_consensus_set_index(identity_key);
-            }
-            (Inactive | Jailed, Disabled) => {
-                // The validator was disabled by its operator.
-                // The epoch-handler is responsible for removing this identity from the consensus set index.
-            }
+
             (Active, Jailed) => {
                 // An active validator has missed too many blocks, we penalize it by
                 // slashing its delegation pool, forbid new delegations, and start
@@ -262,12 +246,6 @@ pub trait ValidatorManager: StateWrite {
                     misbehavior_penalty,
                     "tombstoning validator and unbonding its pool"
                 );
-            }
-            (Disabled, Defined) => {
-                /* valid state transition, but there is nothing to do other than updating the state */
-            }
-            (Defined, Disabled) => {
-                /* valid state transition, but there is nothing to do other than updating the state */
             }
 
             /* Identities: no-ops */
@@ -321,8 +299,8 @@ pub trait ValidatorManager: StateWrite {
     }
 
     #[instrument(skip(self))]
-    /// Try to implement a state transition in/out of the `Defined` precursor state.
-    /// Returns the new state if successful, and `None` otherwise.
+    /// Try to perform a state transition in/out of the `Defined` precursor state.
+    /// If successful, returns the new state, otherwise returns `None`.
     async fn try_precursor_transition(
         &mut self,
         validator_id: &IdentityKey,
@@ -380,33 +358,36 @@ pub trait ValidatorManager: StateWrite {
         Some(new_state)
     }
 
-    /// Add a validator during genesis, which will start in Active
-    /// state with power assigned.
+    /// Add a new genesis validator which will start in the [`Active`] state with its
+    /// genesis allocation bonded.
+    #[instrument(skip(self, genesis_allocations))]
     async fn add_genesis_validator(
         &mut self,
         genesis_allocations: &BTreeMap<asset::Id, Amount>,
         genesis_base_rate: &BaseRateData,
         validator: Validator,
     ) -> Result<()> {
-        let initial_rate_data = RateData {
+        let initial_validator_rate = RateData {
             identity_key: validator.identity_key.clone(),
             epoch_index: genesis_base_rate.epoch_index,
             validator_reward_rate: 0u128.into(),
             validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
         };
-
         // The initial allocations to the validator are specified in `genesis_allocations`.
-        // We use these to determine the initial voting power for each validator.
+        // In this case, the validator's delegation pool size is exactly its allocation
+        // because we hardcoded the exchange rate to 1.
         let delegation_id = DelegationToken::from(validator.identity_key.clone()).id();
         let total_delegation_tokens = genesis_allocations
             .get(&delegation_id)
             .copied()
             .unwrap_or_else(Amount::zero);
-        let power = initial_rate_data.voting_power(total_delegation_tokens);
+        let power = initial_validator_rate.voting_power(total_delegation_tokens);
+
+        tracing::debug!(?initial_validator_rate, ?power, "adding genesis validator");
 
         self.add_validator_inner(
             validator.clone(),
-            initial_rate_data,
+            initial_validator_rate,
             // All genesis validators start in the "Active" state:
             validator::State::Active,
             // All genesis validators start in the "Bonded" bonding state:
@@ -450,6 +431,7 @@ pub trait ValidatorManager: StateWrite {
     /// # Errors
     /// This method errors if the initial state is not one of the two valid
     /// initial states. Or if the voting power is negative.
+    #[instrument(skip(self))]
     async fn add_validator_inner(
         &mut self,
         validator: Validator,
@@ -458,13 +440,7 @@ pub trait ValidatorManager: StateWrite {
         initial_bonding_state: validator::BondingState,
         initial_voting_power: Amount,
     ) -> Result<()> {
-        tracing::debug!(validator_definition = ?validator, ?initial_state, ?initial_bonding_state, ?initial_voting_power, ?initial_rate_data, "adding validator");
-
-        // TODO(erwan): add more guards - maybe.
-        // It's not totally clear we want guards here, because it's convenient
-        // to be able to add a validator with a nonsensical initial state for testing purposes.
-        // We will know once if we run with the testing framework. If we remove it, we'll have to
-        // expand the `match` down below.
+        tracing::debug!("adding validator");
         if !matches!(initial_state, State::Defined | State::Active) {
             anyhow::bail!(
                 "validator (identity_key={}) cannot have initial_state={:?}",
@@ -520,8 +496,6 @@ pub trait ValidatorManager: StateWrite {
     /// Update a validator definition
     #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
     async fn update_validator_definition(&mut self, validator: Validator) -> Result<()> {
-        use validator::State::*;
-
         tracing::debug!(definition = ?validator, "updating validator definition");
         let id = &validator.identity_key;
         let current_state = self
