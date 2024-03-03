@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use anyhow::{Context, Result};
-use ark_ff::PrimeField;
 use async_trait::async_trait;
 use decaf377::Fq;
 use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Error, Result};
-use ark_ff::PrimeField;
 
 use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::SynthesisError;

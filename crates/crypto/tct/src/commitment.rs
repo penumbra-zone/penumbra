@@ -132,7 +132,6 @@ pub use arbitrary::FqStrategy;
 
 #[cfg(feature = "arbitrary")]
 mod arbitrary {
-    use ark_ff::PrimeField;
     use decaf377::Fq;
     use proptest::strategy::Strategy;
 

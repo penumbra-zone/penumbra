@@ -1,7 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
 use crate::genesis::Allocation;
-use ark_ff::PrimeField;
 use blake2b_simd;
 use decaf377::Fq;
 use decaf377_fmd as fmd;

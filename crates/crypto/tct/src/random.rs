@@ -1,6 +1,5 @@
 //! Generating random values of various types.
 
-use ark_ff::PrimeField;
 use decaf377::Fq;
 use rand::{distributions::Distribution, Rng};
 
