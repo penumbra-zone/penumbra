@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_sct::component::clock::EpochRead;
@@ -73,36 +73,39 @@ impl ActionHandler for validator::Definition {
         {
             // Ensure that the highest existing sequence number is less than
             // the new sequence number.
-            let current_seq = existing_v.sequence_number;
-            if v.validator.sequence_number <= current_seq {
-                anyhow::bail!(
-                    "expected sequence numbers to be increasing: current sequence number is {}",
-                    current_seq
-                );
-            }
+            // Ensure that the sequence number keeps increasing.
+            let old_seq = existing_v.sequence_number;
+            let new_seq = v.validator.sequence_number;
+            ensure!(
+                new_seq > old_seq,
+                "definition sequence number must increase (given {}, but previous definition sequence number is {})",
+                new_seq,
+                old_seq,
+            );
         }
 
-        // Check whether the consensus key has already been used by another validator.
-        if let Some(existing_v) = state
+        // Check if the consensus key is known, and if so, that it is by the
+        // validator that declares it in this definition.
+        if let Some(ck_owner) = state
             .get_validator_by_consensus_key(&v.validator.consensus_key)
             .await?
         {
-            if v.validator.identity_key != existing_v.identity_key {
-                // This is a new validator definition, but the consensus key it declares
-                // is used by another validator. We MUST reject this definition:
-                //
-                // 1. It prevents someone from declaring an (app-level) validator that
-                // "piggybacks" on the actual behavior of someone else's validator.
-                //
-                // 2. If we submit a validator update to Tendermint that
-                // includes duplicate consensus keys, Tendermint gets confused
-                // and hangs.
-                anyhow::bail!(
-                    "consensus key {:?} is already in use by validator {}",
-                    v.validator.consensus_key,
-                    existing_v.identity_key,
-                );
-            }
+            // If we detect that the new definition tries to squat someone else's
+            // consensus key, we MUST reject this definition:
+            //
+            // 1. It prevents someone from declaring an (app-level) validator that
+            // "piggybacks" on the actual behavior of someone else's validator.
+            //
+            // 2. If we submit a validator update to CometBFT that
+            // includes duplicate consensus keys, CometBFT gets confused
+            // and hangs.
+            // Note: This is currently vulnerable to a TOCTOU hazard. Tracked in #3858.
+            ensure!(
+                ck_owner.identity_key == v.validator.identity_key,
+                "consensus key {:?} is already in use by validator {}",
+                v.validator.consensus_key,
+                ck_owner.identity_key,
+            );
         }
 
         // (end of former check_historical impl)
