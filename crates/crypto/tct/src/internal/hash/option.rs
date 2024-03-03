@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use decaf377::Fq;
+use std::fmt::Debug;
 
 use crate::prelude::*;
 
