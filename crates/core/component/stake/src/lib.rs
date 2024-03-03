@@ -14,6 +14,9 @@ pub mod component;
 #[cfg(feature = "component")]
 pub use component::StateReadExt;
 
+pub static BPS_SQUARED_SCALING_FACTOR: Lazy<penumbra_num::fixpoint::U128x128> =
+    Lazy::new(|| 1_0000_0000u128.into());
+
 pub mod delegate;
 pub mod funding_stream;
 pub mod rate;
@@ -23,6 +26,7 @@ pub mod undelegate_claim;
 pub mod validator;
 
 pub use delegate::Delegate;
+use once_cell::sync::Lazy;
 pub use undelegate::Undelegate;
 pub use undelegate_claim::{
     UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan, UndelegateClaimProof,

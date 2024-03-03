@@ -19,10 +19,11 @@ use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
+use tap::Tap;
 use tendermint::v0_37::abci;
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tracing::instrument;
+use tracing::{instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
 use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
@@ -48,11 +49,13 @@ impl Component for Staking {
                 let starting_height = state
                     .get_block_height()
                     .await
-                    .expect("should be able to get initial block height");
+                    .expect("should be able to get initial block height")
+                    .tap(|height| trace!(%height,"found initial block height"));
                 let starting_epoch = state
                     .get_epoch_by_height(starting_height)
                     .await
-                    .expect("should be able to get initial epoch");
+                    .expect("should be able to get initial epoch")
+                    .tap(|epoch| trace!(?epoch, "found initial epoch"));
                 let epoch_index = starting_epoch.index;
 
                 let genesis_base_rate = BaseRateData {
@@ -61,6 +64,7 @@ impl Component for Staking {
                     base_exchange_rate: 1_0000_0000u128.into(),
                 };
                 state.set_base_rate(genesis_base_rate.clone());
+                trace!(?genesis_base_rate, "set base rate");
 
                 let mut genesis_allocations = BTreeMap::<_, Amount>::new();
                 for allocation in &sp_genesis.allocations {
@@ -68,10 +72,14 @@ impl Component for Staking {
                     *genesis_allocations.entry(value.asset_id).or_default() += value.amount;
                 }
 
-                for validator in &staking_genesis.validators {
+                trace!("parsing genesis validators");
+                for (i, validator) in staking_genesis.validators.iter().enumerate() {
                     // Parse the proto into a domain type.
                     let validator = Validator::try_from(validator.clone())
-                        .expect("should be able to parse genesis validator");
+                        .expect("should be able to parse genesis validator")
+                        .tap(|Validator { name, enabled, .. }|
+                             trace!(%i, %name, %enabled, "parsed genesis validator")
+                        );
 
                     state
                         .add_genesis_validator(&genesis_allocations, &genesis_base_rate, validator)
@@ -99,7 +107,7 @@ impl Component for Staking {
         }
         // Build the initial validator set update.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .expect("should be able to build initial tendermint validator updates");
     }
@@ -154,7 +162,7 @@ impl Component for Staking {
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
-            .build_tendermint_validator_updates()
+            .build_cometbft_validator_updates()
             .await
             .context("should be able to build tendermint validator updates")?;
         Ok(())
@@ -165,8 +173,8 @@ pub trait ConsensusUpdateRead: StateRead {
     /// Returns a list of validator updates to send to Tendermint.
     ///
     /// Set during `end_block`.
-    fn tendermint_validator_updates(&self) -> Option<Vec<Update>> {
-        self.object_get(state_key::internal::tendermint_validator_updates())
+    fn cometbft_validator_updates(&self) -> Option<Vec<Update>> {
+        self.object_get(state_key::internal::cometbft_validator_updates())
             .unwrap_or(None)
     }
 }
@@ -174,10 +182,10 @@ pub trait ConsensusUpdateRead: StateRead {
 impl<T: StateRead + ?Sized> ConsensusUpdateRead for T {}
 
 pub(crate) trait ConsensusUpdateWrite: StateWrite {
-    fn put_tendermint_validator_updates(&mut self, updates: Vec<Update>) {
+    fn put_cometbft_validator_updates(&mut self, updates: Vec<Update>) {
         tracing::debug!(?updates);
         self.object_put(
-            state_key::internal::tendermint_validator_updates(),
+            state_key::internal::cometbft_validator_updates(),
             Some(updates),
         )
     }
@@ -191,7 +199,8 @@ pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
-            .await?
+            .await
+            .expect("no deserialization error should happen")
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
@@ -302,7 +311,7 @@ pub trait StateWriteExt: StateWrite {
         /// modeling, so this is an interim hack.
         fn validator_address(ck: &PublicKey) -> [u8; 20] {
             let ck_bytes = ck.to_bytes();
-            let addr: [u8; 20] = Sha256::digest(&ck_bytes).as_slice()[0..20]
+            let addr: [u8; 20] = Sha256::digest(ck_bytes).as_slice()[0..20]
                 .try_into()
                 .expect("Sha256 digest should be 20-bytes long");
 
@@ -386,6 +395,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 .ok_or_else(|| {
                     anyhow::anyhow!("validator (identity_key={}) is in the consensus set index but its state was not found", validator_identity)
                 })?;
+
             if validator_state != validator::State::Active {
                 continue;
             }
@@ -410,7 +420,7 @@ pub(crate) trait InternalStakingData: StateRead {
                 })?;
         }
 
-        Ok(total_active_stake.into())
+        Ok(total_active_stake)
     }
 }
 
@@ -485,6 +495,30 @@ pub trait ConsensusIndexRead: StateRead {
                 })
             })
             .boxed())
+    }
+
+    /// Returns whether the given validator should be indexed in the consensus set.
+    #[instrument(level = "error", skip(self))]
+    async fn belongs_in_index(&self, validator_id: &IdentityKey) -> bool {
+        let Some(state) = self
+            .get_validator_state(validator_id)
+            .await
+            .expect("no deserialization error")
+        else {
+            tracing::error!("validator state was not found");
+            return false;
+        };
+
+        match state {
+            validator::State::Active | validator::State::Inactive => {
+                tracing::debug!(?state, "validator belongs in the consensus set");
+                true
+            }
+            _ => {
+                tracing::debug!(?state, "validator does not belong in the consensus set");
+                false
+            }
+        }
     }
 }
 

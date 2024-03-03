@@ -1,8 +1,22 @@
+use std::str::FromStr;
+use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use r2d2_sqlite::{
+    rusqlite::{OpenFlags, OptionalExtension},
+    SqliteConnectionManager,
+};
+use sha2::{Digest, Sha256};
+use tokio::{
+    sync::broadcast::{self, error::RecvError},
+    task::spawn_blocking,
+};
+use url::Url;
+
 use penumbra_app::params::AppParameters;
 use penumbra_asset::{asset, asset::Id, asset::Metadata, Value};
 use penumbra_dex::{
@@ -23,24 +37,19 @@ use penumbra_shielded_pool::{fmd, note, Note, Rseed};
 use penumbra_stake::{DelegationToken, IdentityKey};
 use penumbra_tct as tct;
 use penumbra_transaction::Transaction;
-use r2d2_sqlite::{
-    rusqlite::{OpenFlags, OptionalExtension},
-    SqliteConnectionManager,
-};
-use sha2::{Digest, Sha256};
-use std::str::FromStr;
-use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+use sct::TreeStore;
 use tct::StateCommitment;
-use tokio::{
-    sync::broadcast::{self, error::RecvError},
-    task::spawn_blocking,
-};
-use url::Url;
 
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
 mod sct;
-use sct::TreeStore;
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BalanceEntry {
+    pub id: Id,
+    pub amount: u128,
+    pub address_index: AddressIndex,
+}
 
 /// The hash of the schema for the database.
 static SCHEMA_HASH: Lazy<String> =
@@ -171,7 +180,7 @@ impl Storage {
 
             Ok(storage)
         })
-        .await?
+            .await?
     }
 
     pub async fn initialize(
@@ -237,7 +246,7 @@ impl Storage {
         &self,
         address_index: Option<AddressIndex>,
         asset_id: Option<asset::Id>,
-    ) -> anyhow::Result<BTreeMap<Id, u128>> {
+    ) -> anyhow::Result<Vec<BalanceEntry>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -248,7 +257,7 @@ impl Storage {
 
             tracing::debug!(?query);
 
-            let mut balances = BTreeMap::new();
+            let mut entries = Vec::new();
 
             for result in pool.get()?.prepare_cached(query)?.query_map([], |row| {
                 let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
@@ -277,19 +286,19 @@ impl Storage {
                         continue;
                     }
                 }
-                // Skip this entry if not captured by asset id filter
                 if let Some(asset_id) = asset_id {
                     if asset_id != id {
                         continue;
                     }
                 }
 
-                balances
-                    .entry(id)
-                    .and_modify(|x| *x += amount)
-                    .or_insert(amount);
+                entries.push(BalanceEntry {
+                    id,
+                    amount,
+                    address_index: index,
+                });
             }
-            Ok(balances)
+            Ok(entries)
         })
         .await?
     }
@@ -982,7 +991,7 @@ impl Storage {
                 let denom: String = dbtx.query_row_and_then(
                     "SELECT denom FROM assets WHERE asset_id = ?1",
                     [asset_id],
-                    |row| row.get("denom")
+                    |row| row.get("denom"),
                 )?;
 
                 let identity_key = DelegationToken::from_str(&denom)
@@ -993,7 +1002,6 @@ impl Storage {
             }
 
             Ok(results)
-
         }).await?
     }
 
@@ -1051,7 +1059,7 @@ impl Storage {
                 )
                 .map_err(anyhow::Error::from)
         })
-        .await??;
+            .await??;
 
         Ok(())
     }
@@ -1211,7 +1219,7 @@ impl Storage {
                 })?
                 .collect()
         })
-        .await?
+            .await?
     }
 
     pub async fn record_block(
@@ -1352,41 +1360,41 @@ impl Storage {
                 let spent_commitment: Option<StateCommitment> = dbtx.prepare_cached(
                     "UPDATE spendable_notes SET height_spent = ?1 WHERE nullifier = ?2 RETURNING note_commitment"
                 )?
-                .query_and_then(
-                    (height_spent, &nullifier_bytes),
-                    |row| {
-                        let bytes: Vec<u8> = row.get("note_commitment")?;
-                        StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
-                    }
-                )?
-                .next()
-                .transpose()?;
+                    .query_and_then(
+                        (height_spent, &nullifier_bytes),
+                        |row| {
+                            let bytes: Vec<u8> = row.get("note_commitment")?;
+                            StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                        },
+                    )?
+                    .next()
+                    .transpose()?;
 
                 let swap_commitment: Option<StateCommitment> = dbtx.prepare_cached(
-                        "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
-                    )?
+                    "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
+                )?
                     .query_and_then(
                         (height_spent, &nullifier_bytes),
                         |row| {
                             let bytes: Vec<u8> = row.get("swap_commitment")?;
                             StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
-                        }
+                        },
                     )?
                     .next()
                     .transpose()?;
 
                 // Check denom type
                 let spent_denom: String
-                = dbtx.prepare_cached(
-                        "SELECT denom FROM assets
+                    = dbtx.prepare_cached(
+                    "SELECT denom FROM assets
                         WHERE asset_id ==
                             (SELECT asset_id FROM notes
                              WHERE note_commitment ==
                                 (SELECT note_commitment FROM spendable_notes WHERE nullifier = ?1))"
-                    )?
+                )?
                     .query_and_then(
                         [&nullifier_bytes],
-                        |row| row.get("denom")
+                        |row| row.get("denom"),
                     )?
                     .next()
                     .transpose()?
@@ -1507,7 +1515,7 @@ impl Storage {
 
             anyhow::Ok(new_sct)
         })
-        .await??;
+            .await??;
 
         Ok(())
     }

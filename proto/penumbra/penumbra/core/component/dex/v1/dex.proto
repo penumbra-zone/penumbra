@@ -7,6 +7,7 @@ import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/component/shielded_pool/v1/shielded_pool.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
 
 // A Penumbra ZK swap proof.
@@ -119,8 +120,38 @@ message SwapClaimPlan {
 
 message SwapView {
   message Visible {
+    // The underlying Swap action being viewed.
     dex.v1.Swap swap = 1;
+    // The plaintext of the encrypted swap.
     dex.v1.SwapPlaintext swap_plaintext = 3;
+    // Optionally, a transaction hash for the transaction that claimed this
+    // swap.
+    //
+    // Presence of this field signals that the swap outputs have been claimed
+    // and that the claim transaction is known to the view server.  Absence of
+    // this field does not indicate anything about the state of the swap.
+    //
+    // This field allows frontends to more easily crossreference the sequence of
+    // Swap/SwapClaim actions.
+    txhash.v1.TransactionId claim_tx = 4;
+    // Optionally, if the swap has been confirmed, the batch price it received.
+    //
+    // As soon as the swap is detected, the view server can in principle record
+    // the relevant BSOD and provide it as part of the view.  This allows providing
+    // info about the execution of the swap.
+    BatchSwapOutputData batch_swap_output_data = 20;
+    // Optionally, if the swap has been confirmed, the output note of asset 1.
+    //
+    // This is the note that will be minted by the SwapClaim action.
+    shielded_pool.v1.NoteView output_1 = 30;
+    // Optionally, if the swap has been confirmed, the output note of asset 2.
+    //
+    // This is the note that will be minted by the SwapClaim action.
+    shielded_pool.v1.NoteView output_2 = 31;
+    // Optionally, metadata about asset 1 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_1_metadata = 40;
+    // Optionally, metadata about asset 2 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_2_metadata = 41;
   }
 
   message Opaque {
@@ -138,6 +169,12 @@ message SwapClaimView {
     dex.v1.SwapClaim swap_claim = 1;
     shielded_pool.v1.NoteView output_1 = 2;
     shielded_pool.v1.NoteView output_2 = 3;
+    // Optionally, a transaction hash for the transaction that created the swap
+    // this action claims.
+    //
+    // This field allows frontends to more easily crossreference the sequence of
+    // Swap/SwapClaim actions.
+    txhash.v1.TransactionId swap_tx = 4;
   }
   message Opaque {
     dex.v1.SwapClaim swap_claim = 1;
@@ -268,12 +305,18 @@ message PositionState {
     POSITION_STATE_ENUM_CLOSED = 2;
     // The final reserves and accumulated fees have been withdrawn, leaving an
     // empty, inactive position awaiting (possible) retroactive rewards.
+    //
+    // Positions can be withdrawn from multiple times, incrementing a sequence
+    // number each time.
     POSITION_STATE_ENUM_WITHDRAWN = 3;
-    // Any retroactive rewards have been claimed. The position is now an inert,
-    // historical artefact.
-    POSITION_STATE_ENUM_CLAIMED = 4;
+    // Deprecated.
+    POSITION_STATE_ENUM_CLAIMED = 4 [deprecated = true];
   }
   PositionStateEnum state = 1;
+  // Only meaningful if `state` is `POSITION_STATE_ENUM_WITHDRAWN`.
+  //
+  // The sequence number allows multiple withdrawals from the same position.
+  uint64 sequence = 2;
 }
 
 // An LPNFT tracking both ownership and state of a position.
@@ -332,18 +375,15 @@ message PositionWithdraw {
   //
   // The chain will check this commitment by recomputing it with the on-chain state.
   asset.v1.BalanceCommitment reserves_commitment = 2;
+  // The sequence number of the withdrawal.
+  //
+  // This allows multiple withdrawals from the same position, rather than a single reward claim.
+  uint64 sequence = 3;
 }
 
-// A transaction action that claims retroactive rewards for a historical
-// position.
-//
-// This action's contribution to the transaction's value balance is to consume a
-// withdrawn position NFT and contribute its reward balance.
+// Deprecated.
 message PositionRewardClaim {
   PositionId position_id = 1;
-  // A transparent (zero blinding factor) commitment to the position's accumulated rewards.
-  //
-  // The chain will check this commitment by recomputing it with the on-chain state.
   asset.v1.BalanceCommitment rewards_commitment = 2;
 }
 
@@ -367,9 +407,13 @@ message PositionWithdrawPlan {
   Reserves reserves = 1;
   PositionId position_id = 2;
   TradingPair pair = 3;
+  // The sequence number of the withdrawal.
+  uint64 sequence = 4;
+  // Any accumulated rewards assigned to this position.
+  repeated asset.v1.Value rewards = 5;
 }
 
-// Contains private and public data for claiming rewards from a position.
+// Deprecated.
 message PositionRewardClaimPlan {
   Reserves reserves = 1;
 }
@@ -540,6 +584,8 @@ message SimulateTradeRequest {
 
 message SimulateTradeResponse {
   core.component.dex.v1.SwapExecution output = 1;
+  // Estimated input amount that will not be swapped due to liquidity
+  asset.v1.Value unfilled = 2;
 }
 
 message EventSwap {
@@ -592,6 +638,8 @@ message EventPositionWithdraw {
   num.v1.Amount reserves_1 = 3;
   // The reserves of asset 2 of the withdrawn position.
   num.v1.Amount reserves_2 = 4;
+  // The sequence number of the withdrawal.
+  uint64 sequence = 5;
 }
 
 message EventPositionExecution {

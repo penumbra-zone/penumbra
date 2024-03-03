@@ -340,9 +340,6 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::PositionWithdraw(_) => {
                     ["Withdraw Liquitity Position", ""]
                 }
-                penumbra_transaction::ActionView::PositionRewardClaim(_) => {
-                    ["Claim Liquitity Position Reward", ""]
-                }
                 penumbra_transaction::ActionView::ProposalDepositClaim(proposal_deposit_claim) => {
                     action = format!(
                         "Claim Deposit for Governance Proposal #{}",

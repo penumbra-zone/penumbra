@@ -1,5 +1,10 @@
+pub mod metrics;
 mod state_key;
 pub mod view;
+use ::metrics::{gauge, histogram};
+pub use metrics::register_metrics;
+
+/* Component implementation */
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_stake::component::validator_handler::ValidatorDataRead;
 pub use view::{StateReadExt, StateWriteExt};
@@ -58,12 +63,14 @@ impl Component for Funding {
         use penumbra_stake::StateReadExt as _;
 
         let state = Arc::get_mut(state).expect("state should be unique");
+        let funding_execution_start = std::time::Instant::now();
 
         // Here, we want to process the funding rewards for the epoch that just ended. To do this,
         // we pull the funding queue that the staking component has prepared for us, as well as the
         // base rate data for the epoch that just ended.
         let funding_queue = state.get_funding_queue().unwrap_or_default();
-        let funding_queue_len = funding_queue.len();
+        let fetching_funding_queue_duration = funding_execution_start.elapsed().as_millis() as f64;
+        histogram!(metrics::FETCH_FUNDING_QUEUE_LATENCY,).record(fetching_funding_queue_duration);
 
         let Some(base_rate) = state.get_previous_base_rate() else {
             tracing::error!("the ending epoch's base rate has not beed found in object storage, computing rewards is not possible");
@@ -75,19 +82,15 @@ impl Component for Funding {
         let staking_issuance_budget = state
             .get_staking_token_issuance_for_epoch()
             .expect("staking token issuance MUST be set");
+
         let mut total_staking_rewards_for_epoch = 0u128;
 
-        for (index, (validator_identity, funding_streams, delegation_token_supply)) in
-            funding_queue.into_iter().enumerate()
-        {
+        for (validator_identity, funding_streams, delegation_token_supply) in funding_queue {
             let Some(validator_rate) = state.get_prev_validator_rate(&validator_identity).await
             else {
                 tracing::error!(
                     %validator_identity,
-                    index,
-                    funding_queue_len,
-                    ending_epoch_base_rate = ?base_rate,
-                    "the ending epoch's rate data for the validator has not been found in storage, computing rewards is not possible"
+                    "the validator rate data has not been found in storage, computing rewards is not possible"
                 );
                 continue;
             };
@@ -95,28 +98,14 @@ impl Component for Funding {
             for stream in funding_streams {
                 // We compute the reward amount for this specific funding stream, it is based
                 // on the ending epoch's rate data.
-                let reward_amount_for_stream =
-                    stream.reward_amount(&base_rate, &validator_rate, delegation_token_supply);
+                let reward_amount_for_stream = stream.reward_amount(
+                    base_rate.base_reward_rate,
+                    validator_rate.validator_exchange_rate,
+                    delegation_token_supply,
+                );
 
                 total_staking_rewards_for_epoch = total_staking_rewards_for_epoch
                     .saturating_add(reward_amount_for_stream.value());
-
-                if total_staking_rewards_for_epoch > staking_issuance_budget.value() {
-                    tracing::error!(
-                        %total_staking_rewards_for_epoch,
-                        %staking_issuance_budget,
-                        %reward_amount_for_stream,
-                        "the sum of staking rewards for the epoch has exceeded the issuance budget"
-                    );
-
-                    tracing::error!(%validator_identity,
-                        index,
-                        funding_queue_len,
-                        ending_epoch_base_rate = ?base_rate,
-                        funding_stream = ?stream,
-                        delegation_token_supply = ?delegation_token_supply, "debugging information for the funding stream that caused the error");
-                    panic!("staking rewards for epoch exceeds the staking issuance budget, halting chain")
-                }
 
                 match stream.recipient() {
                     // If the recipient is an address, mint a note to that address
@@ -146,6 +135,26 @@ impl Component for Funding {
                 }
             }
         }
+
+        // We compute and log the difference between the total rewards distributed and the
+        // staking token issuance budget for the epoch. This is useful to monitor the
+        // correctness of the funding rewards computation.
+        let rewards_difference = (total_staking_rewards_for_epoch as i128
+            - staking_issuance_budget.value() as i128) as f64;
+
+        gauge!(metrics::VALIDATOR_FUNDING_VS_BUDGET_DIFFERENCE).set(rewards_difference);
+
+        if total_staking_rewards_for_epoch > staking_issuance_budget.value() {
+            tracing::warn!(
+                total_staking_rewards_for_epoch = total_staking_rewards_for_epoch,
+                staking_issuance_budget = staking_issuance_budget.value(),
+                "total staking rewards for the epoch exceeded the staking token issuance budget target"
+            );
+        }
+
+        histogram!(metrics::TOTAL_FUNDING_STREAMS_PROCESSING_TIME,)
+            .record(funding_execution_start.elapsed().as_millis() as f64);
+
         Ok(())
     }
 }

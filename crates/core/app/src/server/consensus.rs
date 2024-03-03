@@ -18,6 +18,8 @@ pub struct Consensus {
     app: App,
 }
 
+pub type ConsensusService = tower_actor::Actor<Request, Response, BoxError>;
+
 fn trace_events(events: &[Event]) {
     for event in events {
         let span = tracing::info_span!("event", kind = ?event.kind);
@@ -32,7 +34,7 @@ fn trace_events(events: &[Event]) {
 impl Consensus {
     const QUEUE_SIZE: usize = 10;
 
-    pub fn new(storage: Storage) -> tower_actor::Actor<Request, Response, BoxError> {
+    pub fn new(storage: Storage) -> ConsensusService {
         tower_actor::Actor::new(Self::QUEUE_SIZE, |queue: _| {
             let storage = storage.clone();
             async move {
@@ -57,7 +59,7 @@ impl Consensus {
         })
     }
 
-    pub async fn run(mut self) -> Result<(), tower::BoxError> {
+    async fn run(mut self) -> Result<(), tower::BoxError> {
         while let Some(Message {
             req,
             rsp_sender,

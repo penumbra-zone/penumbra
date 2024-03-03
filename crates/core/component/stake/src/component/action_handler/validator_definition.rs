@@ -121,9 +121,12 @@ impl ActionHandler for validator::Definition {
             .is_some();
 
         if validator_exists {
-            state.update_validator(v.validator.clone()).await.context(
-                "should be able to update validator during validator definition execution",
-            )?;
+            state
+                .update_validator_definition(v.validator.clone())
+                .await
+                .context(
+                    "should be able to update validator during validator definition execution",
+                )?;
         } else {
             // This is a new validator definition. We prime the validator's
             // rate data with an initial exchange rate of 1:1.

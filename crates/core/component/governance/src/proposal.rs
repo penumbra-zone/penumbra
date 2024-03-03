@@ -15,7 +15,7 @@ use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 /// A governance proposal.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Proposal", into = "pb::Proposal")]
 pub struct Proposal {
     /// The ID number of the proposal.
@@ -197,7 +197,7 @@ impl TryFrom<ProposalToml> for Proposal {
 }
 
 /// The specific kind of a proposal.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "clap", derive(clap::Subcommand))]
 pub enum ProposalKind {
     /// A signaling proposal.
@@ -227,11 +227,11 @@ impl FromStr for ProposalKind {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.replace(['-', '_', ' '], "").to_lowercase().as_str() {
+        match s {
             "signaling" => Ok(ProposalKind::Signaling),
             "emergency" => Ok(ProposalKind::Emergency),
-            "parameterchange" => Ok(ProposalKind::ParameterChange),
-            "communitypoolspend" => Ok(ProposalKind::CommunityPoolSpend),
+            "parameter_change" => Ok(ProposalKind::ParameterChange),
+            "community_pool_spend" => Ok(ProposalKind::CommunityPoolSpend),
             "upgrade_plan" => Ok(ProposalKind::UpgradePlan),
             _ => Err(anyhow::anyhow!("invalid proposal kind: {}", s)),
         }
@@ -254,7 +254,7 @@ impl Proposal {
 }
 
 /// The machine-interpretable body of a proposal.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ProposalPayload {
     /// A signaling proposal is merely for coordination; it does not enact anything automatically by
     /// itself.
@@ -429,7 +429,7 @@ impl ProposalPayload {
 ///
 /// Note: must be kept in sync with
 /// `penumbra_app::params::AppParameters`.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(
     try_from = "pb::ChangedAppParameters",
     into = "pb::ChangedAppParameters"

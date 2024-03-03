@@ -330,36 +330,44 @@ impl QueryService for Server {
         let state = self.storage.latest_snapshot();
         let request = request.into_inner();
         let proposal_id = request.proposal_id;
-        let identity_key: IdentityKey = request
-            .identity_key
-            .ok_or_else(|| {
-                tonic::Status::invalid_argument("identity key not included in request".to_string())
-            })?
-            .try_into()
-            .map_err(|_| {
+        if let Some(identity_key) = request.identity_key {
+            // If the query is for a specific validator, return their voting power at the start of
+            // the proposal
+            let identity_key = identity_key.try_into().map_err(|_| {
                 tonic::Status::invalid_argument(
                     "identity key in request was bad protobuf".to_string(),
                 )
             })?;
 
-        let voting_power = state
-            .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
-                proposal_id,
-                identity_key,
-            ))
-            .await
-            .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
+            let voting_power = state
+                .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
+                    proposal_id,
+                    identity_key,
+                ))
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
 
-        if voting_power.is_none() {
-            return Err(tonic::Status::not_found(format!(
-                "validator did not exist at proposal creation: {}",
-                identity_key
-            )));
+            if voting_power.is_none() {
+                return Err(tonic::Status::not_found(format!(
+                    "validator did not exist at proposal creation: {}",
+                    identity_key
+                )));
+            }
+
+            Ok(tonic::Response::new(VotingPowerAtProposalStartResponse {
+                voting_power: voting_power.expect("voting power should be set"),
+            }))
+        } else {
+            // If the query is for the total voting power at the start of the proposal, return that
+            let total_voting_power = state
+                .total_voting_power_at_proposal_start(proposal_id)
+                .await
+                .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
+
+            Ok(tonic::Response::new(VotingPowerAtProposalStartResponse {
+                voting_power: total_voting_power,
+            }))
         }
-
-        Ok(tonic::Response::new(VotingPowerAtProposalStartResponse {
-            voting_power: voting_power.expect("voting power should be set"),
-        }))
     }
 
     type AllTalliedDelegatorVotesForProposalStream = Pin<

@@ -34,52 +34,53 @@ parallel = [
 ]
 
 [dependencies]
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-groth16 = {workspace = true, default-features = false}
+ark-r1cs-std = {workspace = true, default-features = false}
+ark-relations = {workspace = true}
+ark-serialize = {workspace = true}
+ark-snark = {workspace = true}
+async-stream = {workspace = true, optional = true}
+async-trait = {workspace = true, optional = true}
+base64 = {workspace = true}
+bech32 = {workspace = true}
+bitvec = {workspace = true}
 cnidarium = {workspace = true, default-features = false, optional = true}
 cnidarium-component = {workspace = true, default-features = false, optional = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377-rdsa = {workspace = true}
+futures = {workspace = true, optional = true}
+hex = {workspace = true}
+im = {workspace = true, optional = true}
+metrics = {workspace = true, optional = true}
+once_cell = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-distributions = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
-penumbra-txhash = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proof-params = {workspace = true, default-features = true}
 penumbra-proto = {workspace = true, default-features = true}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
-decaf377-rdsa = {workspace = true}
-ark-r1cs-std = {workspace = true, default-features = false}
-ark-relations = {workspace = true}
-ark-ff = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
-ark-groth16 = {workspace = true, default-features = false}
-ark-snark = {workspace = true}
-tendermint = {workspace = true, default-features = true}
-anyhow = {workspace = true}
-tracing = {workspace = true}
+penumbra-txhash = {workspace = true, default-features = false}
+rand_chacha = {workspace = true}
+rand_core = {workspace = true}
+regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
+serde_unit_struct = {workspace = true}
 serde_with = {workspace = true}
 sha2 = {workspace = true}
-serde_unit_struct = {workspace = true}
-bech32 = {workspace = true}
-regex = {workspace = true}
-once_cell = {workspace = true}
-bitvec = {workspace = true}
-hex = {workspace = true}
-base64 = {workspace = true}
-rand_core = {workspace = true}
-rand_chacha = {workspace = true}
-async-trait = {workspace = true, optional = true}
+tap = {workspace = true}
+tendermint = {workspace = true, default-features = true}
 tokio = {workspace = true, features = ["full", "tracing"], optional = true}
 tonic = {workspace = true, optional = true}
-im = {workspace = true, optional = true}
-futures = {workspace = true, optional = true}
-metrics = {workspace = true, optional = true}
-async-stream = {workspace = true, optional = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}
+proptest = {workspace = true}
 rand_chacha = {workspace = true}
 tracing-subscriber = {workspace = true}
-proptest = {workspace = true}

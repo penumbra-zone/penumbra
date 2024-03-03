@@ -35,15 +35,15 @@ impl ActionHandler for UndelegateClaim {
         // If the validator delegation pool is bonded, or unbonding, check that enough epochs
         // have elapsed to claim the unbonding tokens:
         let current_epoch = state.get_current_epoch().await?;
-        let unbonding_epoch = state
-            .compute_unbonding_epoch_for_validator(&self.body.validator_identity)
+        let allowed_unbonding_epoch = state
+            .compute_unbonding_epoch(&self.body.validator_identity, self.body.start_epoch_index)
             .await?;
 
         ensure!(
-            unbonding_epoch > current_epoch.index,
-            "cannot claim unbonding tokens before the end epoch (current epoch: {}, end epoch: {})",
+            current_epoch.index >= allowed_unbonding_epoch,
+            "cannot claim unbonding tokens before the end epoch (current epoch: {}, unbonding epoch: {})",
             current_epoch.index,
-            unbonding_epoch
+            allowed_unbonding_epoch
         );
 
         // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
@@ -52,7 +52,7 @@ impl ActionHandler for UndelegateClaim {
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
                 self.body.start_epoch_index,
-                unbonding_epoch,
+                allowed_unbonding_epoch,
             )
             .await?;
 

@@ -1,6 +1,7 @@
 use {
     super::*,
     anyhow::{anyhow, bail},
+    bytes::Bytes,
     std::time,
     tap::TapFallible,
     tendermint::{
@@ -29,7 +30,14 @@ impl Builder {
     {
         use tendermint::v0_37::abci::response;
 
-        let request = Self::init_chain_request();
+        let Self {
+            app_state: Some(app_state),
+        } = self
+        else {
+            bail!("builder was not fully initialized")
+        };
+
+        let request = Self::init_chain_request(app_state)?;
         let service = consensus
             .ready()
             .await
@@ -52,22 +60,23 @@ impl Builder {
 
         Ok(TestNode {
             consensus,
+            height: block::Height::from(0_u8),
             last_app_hash: app_hash.as_bytes().to_owned(),
         })
     }
 
-    fn init_chain_request() -> ConsensusRequest {
+    fn init_chain_request(app_state_bytes: Bytes) -> Result<ConsensusRequest, anyhow::Error> {
         use tendermint::v0_37::abci::request::InitChain;
+        let chain_id = TestNode::<()>::CHAIN_ID.to_string();
         let consensus_params = Self::consensus_params();
-        let app_state_bytes = bytes::Bytes::new();
-        ConsensusRequest::InitChain(InitChain {
+        Ok(ConsensusRequest::InitChain(InitChain {
             time: tendermint::Time::now(),
-            chain_id: "test".to_string(), // XXX const here?
+            chain_id,
             consensus_params,
             validators: vec![],
             app_state_bytes,
             initial_height: 1_u32.into(),
-        })
+        }))
     }
 
     fn consensus_params() -> consensus::Params {

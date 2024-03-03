@@ -20,6 +20,6 @@ pub mod lp;
 pub mod swap;
 pub mod swap_claim;
 
-pub use lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw};
+pub use lp::action::{PositionClose, PositionOpen, PositionWithdraw};
 pub use swap::Swap;
 pub use swap_claim::SwapClaim;

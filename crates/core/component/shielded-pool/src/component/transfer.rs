@@ -98,7 +98,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 .expect("able to retrieve value balance in ics20 withdrawal! (execute)")
                 .unwrap_or_else(Amount::zero);
 
-            let new_value_balance = existing_value_balance + withdrawal.amount;
+            let new_value_balance = existing_value_balance
+                .checked_add(&withdrawal.amount)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("overflow adding value balance in ics20 withdrawal")
+                })?;
             self.put(
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
@@ -257,7 +261,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     //
     // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
     //
-    // NOTE: spec says proto but thsi is actualy JSON according to the ibc-go implementation
+    // NOTE: spec says proto but this is actually JSON according to the ibc-go implementation
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())
         .with_context(|| "failed to decode FTPD packet")?;
     let denom: asset::Metadata = packet_data
@@ -285,8 +289,11 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         let unprefixed_denom: asset::Metadata = packet_data
             .denom
-            .replace(&prefix, "")
-            .as_str()
+            .strip_prefix(&prefix)
+            .context(format!(
+                "denom in packet didn't begin with expected prefix {}",
+                prefix
+            ))?
             .try_into()
             .context("couldnt decode denom in ICS20 transfer")?;
 
@@ -348,7 +355,6 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // prefixedDenomination = prefix + data.denom
         //
         // then mint that denom to packet_data.receiver in packet_data.amount
-        // no value balance to update here since this is an exogenous denom
         let prefixed_denomination = format!(
             "{}/{}/{}",
             msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
@@ -471,6 +477,14 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             new_value_balance,
         );
     } else {
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
         state
             .mint_note(
                 value,
@@ -484,6 +498,12 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             )
             .await
             .context("failed to mint return voucher in ics20 transfer timeout")?;
+
+        let new_value_balance = value_balance.saturating_add(&value.amount);
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            new_value_balance,
+        );
     }
 
     Ok(())

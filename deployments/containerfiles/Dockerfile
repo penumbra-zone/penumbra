@@ -17,6 +17,8 @@ COPY Cargo.lock Cargo.toml .
 # If any rust code changed, the cache will break on copying `crates/`.
 # Ideally we'd copy in all Cargo.toml files first, fetch, then copy crates.
 COPY crates ./crates
+# Copy static assets.
+COPY assets ./assets
 # Copy in summonerd contribution orchestrator.
 COPY tools ./tools
 RUN cargo fetch

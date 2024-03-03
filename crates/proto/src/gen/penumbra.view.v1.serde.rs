@@ -1377,12 +1377,24 @@ impl serde::Serialize for BalancesResponse {
         if self.balance.is_some() {
             len += 1;
         }
+        if self.account_address.is_some() {
+            len += 1;
+        }
+        if self.balance_view.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.BalancesResponse", len)?;
         if let Some(v) = self.account.as_ref() {
             struct_ser.serialize_field("account", v)?;
         }
         if let Some(v) = self.balance.as_ref() {
             struct_ser.serialize_field("balance", v)?;
+        }
+        if let Some(v) = self.account_address.as_ref() {
+            struct_ser.serialize_field("accountAddress", v)?;
+        }
+        if let Some(v) = self.balance_view.as_ref() {
+            struct_ser.serialize_field("balanceView", v)?;
         }
         struct_ser.end()
     }
@@ -1396,12 +1408,18 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
         const FIELDS: &[&str] = &[
             "account",
             "balance",
+            "account_address",
+            "accountAddress",
+            "balance_view",
+            "balanceView",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Account,
             Balance,
+            AccountAddress,
+            BalanceView,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1426,6 +1444,8 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
                         match value {
                             "account" => Ok(GeneratedField::Account),
                             "balance" => Ok(GeneratedField::Balance),
+                            "accountAddress" | "account_address" => Ok(GeneratedField::AccountAddress),
+                            "balanceView" | "balance_view" => Ok(GeneratedField::BalanceView),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1447,6 +1467,8 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
             {
                 let mut account__ = None;
                 let mut balance__ = None;
+                let mut account_address__ = None;
+                let mut balance_view__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Account => {
@@ -1461,6 +1483,18 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
                             }
                             balance__ = map_.next_value()?;
                         }
+                        GeneratedField::AccountAddress => {
+                            if account_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountAddress"));
+                            }
+                            account_address__ = map_.next_value()?;
+                        }
+                        GeneratedField::BalanceView => {
+                            if balance_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balanceView"));
+                            }
+                            balance_view__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1469,6 +1503,8 @@ impl<'de> serde::Deserialize<'de> for BalancesResponse {
                 Ok(BalancesResponse {
                     account: account__,
                     balance: balance__,
+                    account_address: account_address__,
+                    balance_view: balance_view__,
                 })
             }
         }

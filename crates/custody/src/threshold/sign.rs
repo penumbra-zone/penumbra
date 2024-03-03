@@ -10,7 +10,7 @@ use rand_core::CryptoRngCore;
 use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
-use penumbra_transaction::{plan::TransactionPlan, AuthorizationData};
+use penumbra_transaction::{AuthorizationData, TransactionPlan};
 use penumbra_txhash::EffectHash;
 
 use super::config::Config;

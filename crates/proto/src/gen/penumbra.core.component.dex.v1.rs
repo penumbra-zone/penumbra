@@ -240,10 +240,56 @@ pub mod swap_view {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Visible {
+        /// The underlying Swap action being viewed.
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
+        /// The plaintext of the encrypted swap.
         #[prost(message, optional, tag = "3")]
         pub swap_plaintext: ::core::option::Option<super::SwapPlaintext>,
+        /// Optionally, a transaction hash for the transaction that claimed this
+        /// swap.
+        ///
+        /// Presence of this field signals that the swap outputs have been claimed
+        /// and that the claim transaction is known to the view server.  Absence of
+        /// this field does not indicate anything about the state of the swap.
+        ///
+        /// This field allows frontends to more easily crossreference the sequence of
+        /// Swap/SwapClaim actions.
+        #[prost(message, optional, tag = "4")]
+        pub claim_tx: ::core::option::Option<
+            super::super::super::super::txhash::v1::TransactionId,
+        >,
+        /// Optionally, if the swap has been confirmed, the batch price it received.
+        ///
+        /// As soon as the swap is detected, the view server can in principle record
+        /// the relevant BSOD and provide it as part of the view.  This allows providing
+        /// info about the execution of the swap.
+        #[prost(message, optional, tag = "20")]
+        pub batch_swap_output_data: ::core::option::Option<super::BatchSwapOutputData>,
+        /// Optionally, if the swap has been confirmed, the output note of asset 1.
+        ///
+        /// This is the note that will be minted by the SwapClaim action.
+        #[prost(message, optional, tag = "30")]
+        pub output_1: ::core::option::Option<
+            super::super::super::shielded_pool::v1::NoteView,
+        >,
+        /// Optionally, if the swap has been confirmed, the output note of asset 2.
+        ///
+        /// This is the note that will be minted by the SwapClaim action.
+        #[prost(message, optional, tag = "31")]
+        pub output_2: ::core::option::Option<
+            super::super::super::shielded_pool::v1::NoteView,
+        >,
+        /// Optionally, metadata about asset 1 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "40")]
+        pub asset_1_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
+        /// Optionally, metadata about asset 2 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "41")]
+        pub asset_2_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
     }
     impl ::prost::Name for Visible {
         const NAME: &'static str = "Visible";
@@ -305,6 +351,15 @@ pub mod swap_claim_view {
         #[prost(message, optional, tag = "3")]
         pub output_2: ::core::option::Option<
             super::super::super::shielded_pool::v1::NoteView,
+        >,
+        /// Optionally, a transaction hash for the transaction that created the swap
+        /// this action claims.
+        ///
+        /// This field allows frontends to more easily crossreference the sequence of
+        /// Swap/SwapClaim actions.
+        #[prost(message, optional, tag = "4")]
+        pub swap_tx: ::core::option::Option<
+            super::super::super::super::txhash::v1::TransactionId,
         >,
     }
     impl ::prost::Name for Visible {
@@ -551,6 +606,11 @@ impl ::prost::Name for PositionId {
 pub struct PositionState {
     #[prost(enumeration = "position_state::PositionStateEnum", tag = "1")]
     pub state: i32,
+    /// Only meaningful if `state` is `POSITION_STATE_ENUM_WITHDRAWN`.
+    ///
+    /// The sequence number allows multiple withdrawals from the same position.
+    #[prost(uint64, tag = "2")]
+    pub sequence: u64,
 }
 /// Nested message and enum types in `PositionState`.
 pub mod position_state {
@@ -576,9 +636,11 @@ pub mod position_state {
         Closed = 2,
         /// The final reserves and accumulated fees have been withdrawn, leaving an
         /// empty, inactive position awaiting (possible) retroactive rewards.
+        ///
+        /// Positions can be withdrawn from multiple times, incrementing a sequence
+        /// number each time.
         Withdrawn = 3,
-        /// Any retroactive rewards have been claimed. The position is now an inert,
-        /// historical artefact.
+        /// Deprecated.
         Claimed = 4,
     }
     impl PositionStateEnum {
@@ -705,6 +767,11 @@ pub struct PositionWithdraw {
     pub reserves_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
     >,
+    /// The sequence number of the withdrawal.
+    ///
+    /// This allows multiple withdrawals from the same position, rather than a single reward claim.
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
 }
 impl ::prost::Name for PositionWithdraw {
     const NAME: &'static str = "PositionWithdraw";
@@ -713,19 +780,12 @@ impl ::prost::Name for PositionWithdraw {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
-/// A transaction action that claims retroactive rewards for a historical
-/// position.
-///
-/// This action's contribution to the transaction's value balance is to consume a
-/// withdrawn position NFT and contribute its reward balance.
+/// Deprecated.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaim {
     #[prost(message, optional, tag = "1")]
     pub position_id: ::core::option::Option<PositionId>,
-    /// A transparent (zero blinding factor) commitment to the position's accumulated rewards.
-    ///
-    /// The chain will check this commitment by recomputing it with the on-chain state.
     #[prost(message, optional, tag = "2")]
     pub rewards_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
@@ -790,6 +850,12 @@ pub struct PositionWithdrawPlan {
     pub position_id: ::core::option::Option<PositionId>,
     #[prost(message, optional, tag = "3")]
     pub pair: ::core::option::Option<TradingPair>,
+    /// The sequence number of the withdrawal.
+    #[prost(uint64, tag = "4")]
+    pub sequence: u64,
+    /// Any accumulated rewards assigned to this position.
+    #[prost(message, repeated, tag = "5")]
+    pub rewards: ::prost::alloc::vec::Vec<super::super::super::asset::v1::Value>,
 }
 impl ::prost::Name for PositionWithdrawPlan {
     const NAME: &'static str = "PositionWithdrawPlan";
@@ -798,7 +864,7 @@ impl ::prost::Name for PositionWithdrawPlan {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
-/// Contains private and public data for claiming rewards from a position.
+/// Deprecated.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PositionRewardClaimPlan {
@@ -1188,6 +1254,9 @@ impl ::prost::Name for SimulateTradeRequest {
 pub struct SimulateTradeResponse {
     #[prost(message, optional, tag = "1")]
     pub output: ::core::option::Option<SwapExecution>,
+    /// Estimated input amount that will not be swapped due to liquidity
+    #[prost(message, optional, tag = "2")]
+    pub unfilled: ::core::option::Option<super::super::super::asset::v1::Value>,
 }
 impl ::prost::Name for SimulateTradeResponse {
     const NAME: &'static str = "SimulateTradeResponse";
@@ -1304,6 +1373,9 @@ pub struct EventPositionWithdraw {
     /// The reserves of asset 2 of the withdrawn position.
     #[prost(message, optional, tag = "4")]
     pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The sequence number of the withdrawal.
+    #[prost(uint64, tag = "5")]
+    pub sequence: u64,
 }
 impl ::prost::Name for EventPositionWithdraw {
     const NAME: &'static str = "EventPositionWithdraw";

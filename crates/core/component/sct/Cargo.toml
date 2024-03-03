@@ -16,30 +16,30 @@ std = ["ark-ff/std"]
 docsrs = []
 
 [dependencies]
-cnidarium = {workspace = true, optional = true, default-features = true}
-cnidarium-component = {workspace = true, optional = true, default-features = true}
-penumbra-proto = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = false}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
-poseidon377 = {workspace = true, features = ["r1cs"]}
-decaf377-rdsa = {workspace = true}
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
 ark-r1cs-std = {workspace = true, default-features = false}
 ark-relations = {workspace = true}
-ark-ff = {workspace = true, default-features = false}
 ark-serialize = {workspace = true}
-metrics = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-tracing = {workspace = true}
-anyhow = {workspace = true}
 async-trait = {workspace = true}
-tendermint = {workspace = true}
+bincode = {workspace = true}
 blake2b_simd = {workspace = true}
 bytes = {workspace = true}
-rand_core = {workspace = true, features = ["getrandom"]}
-rand = {workspace = true}
-bincode = {workspace = true}
-once_cell = {workspace = true}
+cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377-rdsa = {workspace = true}
 hex = {workspace = true}
 im = {workspace = true}
+metrics = {workspace = true}
+once_cell = {workspace = true}
+penumbra-keys = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+poseidon377 = {workspace = true, features = ["r1cs"]}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+serde = {workspace = true, features = ["derive"]}
+tendermint = {workspace = true}
 tonic = {workspace = true, optional = true}
+tracing = {workspace = true}

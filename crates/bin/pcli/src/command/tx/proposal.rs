@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
 use penumbra_governance::{proposal::ChangedAppParameters, Proposal, ProposalPayload};
 use penumbra_proto::DomainType;
-use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::TransactionPlan;
 
 use super::FeeTier;
 

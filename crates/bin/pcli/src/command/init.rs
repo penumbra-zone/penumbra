@@ -1,4 +1,7 @@
-use std::{io::Read, str::FromStr};
+use std::{
+    io::{IsTerminal as _, Read},
+    str::FromStr,
+};
 
 use anyhow::Result;
 use camino::Utf8PathBuf;
@@ -101,7 +104,7 @@ impl SoftKmsInitCmd {
                 // The `rpassword` crate doesn't support reading from stdin, so we check
                 // for an interactive session. We must support non-interactive use cases,
                 // for integration with other tooling.
-                if atty::is(atty::Stream::Stdin) {
+                if std::io::stdin().is_terminal() {
                     seed_phrase = rpassword::prompt_password("Enter seed phrase: ")?;
                 } else {
                     while let Ok(n_bytes) = std::io::stdin().lock().read_to_string(&mut seed_phrase)

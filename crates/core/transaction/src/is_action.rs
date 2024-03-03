@@ -4,7 +4,7 @@ use penumbra_asset::{balance, Value};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
-        action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+        action::{PositionClose, PositionOpen, PositionWithdraw},
         position, LpNft,
     },
     swap::{Swap, SwapCiphertext, SwapView},
@@ -268,40 +268,43 @@ impl IsAction for PositionClose {
 
 impl IsAction for PositionWithdraw {
     fn balance_commitment(&self) -> balance::Commitment {
-        let closed_position_nft = Value {
-            amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
+        let prev_state_nft = if self.sequence == 0 {
+            Value {
+                amount: 1u64.into(),
+                asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
+            }
+        } else {
+            Value {
+                amount: 1u64.into(),
+                asset_id: LpNft::new(
+                    self.position_id,
+                    position::State::Withdrawn {
+                        sequence: self.sequence - 1,
+                    },
+                )
+                .asset_id(),
+            }
         }
         .commit(Fr::zero());
-        let withdrawn_position_nft = Value {
+
+        let next_state_nft = Value {
             amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
+            asset_id: LpNft::new(
+                self.position_id,
+                position::State::Withdrawn {
+                    sequence: self.sequence,
+                },
+            )
+            .asset_id(),
         }
         .commit(Fr::zero());
 
         // The action consumes a closed position and produces the position's reserves and a withdrawn position NFT.
-        self.reserves_commitment - closed_position_nft + withdrawn_position_nft
+        self.reserves_commitment - prev_state_nft + next_state_nft
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::PositionWithdraw(self.to_owned())
-    }
-}
-
-impl IsAction for PositionRewardClaim {
-    fn balance_commitment(&self) -> balance::Commitment {
-        let withdrawn_position_nft = Value {
-            amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
-        }
-        .commit(Fr::zero());
-
-        // The action consumes a closed position and produces the position's reserves.
-        self.rewards_commitment - withdrawn_position_nft
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::PositionRewardClaim(self.to_owned())
     }
 }
 

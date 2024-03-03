@@ -18,6 +18,7 @@ use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::instrument;
 use url::Url;
 
+use penumbra_asset::asset::Metadata;
 use penumbra_asset::{asset, Value};
 use penumbra_dex::{
     lp::{
@@ -28,6 +29,8 @@ use penumbra_dex::{
     TradingPair,
 };
 use penumbra_fee::Fee;
+use penumbra_keys::keys::WalletId;
+use penumbra_keys::AddressView;
 use penumbra_keys::{
     keys::{AddressIndex, FullViewingKey},
     Address,
@@ -55,7 +58,7 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
 use crate::{Planner, Storage, Worker};
@@ -918,6 +921,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[allow(deprecated)]
     #[instrument(skip(self, request))]
     async fn balances(
         &self,
@@ -949,15 +953,56 @@ impl ViewService for ViewServer {
 
         tracing::debug!(?account_filter, ?asset_id_filter, ?result);
 
+        let self2 = self.clone();
         let stream = try_stream! {
+            // retrieve balance and address views
             for element in result {
-                yield pb::BalancesResponse {
-                    account: account_filter.clone().map(Into::into),
-                    balance: Some(Value {
-                        asset_id: element.0.into(),
-                        amount: element.1.into(),
-                    }.into()),
+                let metadata: Metadata = self2
+                    .asset_metadata_by_id(Request::new(pb::AssetMetadataByIdRequest {
+                        asset_id: Some(element.id.into()),
+                    }))
+                    .await?
+                    .into_inner()
+                    .denom_metadata
+                    .context("denom metadata not found")?
+                    .try_into()?;
 
+                 let value = Value {
+                    asset_id: element.id,
+                    amount: element.amount.into(),
+                };
+
+                let value_view = value.view_with_denom(metadata)?;
+
+                let address: Address = self2
+                  .address_by_index(Request::new(pb::AddressByIndexRequest {
+                       address_index: account_filter.map(Into::into),
+                   }))
+                   .await?
+                    .into_inner()
+                    .address
+                    .context("address not found")?
+                    .try_into()?;
+
+                 let wallet_id: WalletId = self2
+                            .wallet_id(Request::new(pb::WalletIdRequest {}))
+                            .await?
+                            .into_inner()
+                            .wallet_id
+                            .context("wallet id not found")?
+                            .try_into()?;
+
+                let address_view = AddressView::Decoded {
+                    address,
+                    index: element.address_index,
+                    wallet_id,
+                };
+
+                yield pb::BalancesResponse {
+                    account_address: Some(address_view.into()),
+                    balance_view: Some(value_view.into()),
+                    balance: None,
+                    account: None,
                 }
             }
         };
