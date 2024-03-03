@@ -138,7 +138,7 @@ pub trait ValidatorManager: StateWrite {
         // when necessary.
         let current_epoch = self.get_current_epoch().await?;
 
-        tracing::debug!("tentatively executing a state transition");
+        tracing::debug!("trying to execute a state transition");
 
         // Validator state transitions are usually triggered by an epoch transition. The exception
         // to this rule is when a validator exits the active set. In this case, we want to end the
@@ -148,22 +148,20 @@ pub trait ValidatorManager: StateWrite {
             self.set_end_epoch_flag();
         }
 
-        // Determine if the state transition is valid, returning an error otherwise,
-        // if valid we update the state key with the specified `new_state`.
+        // Determine if the state transition is valid, returning an error otherwise.
         match (old_state, new_state) {
             (Defined | Disabled | Jailed, Inactive) => {
                 // The validator has enough stake to be considered for the consensus set.
                 self.add_consensus_set_index(identity_key);
             }
             (Inactive | Jailed | Disabled, Defined) => {
-                // This branch covers the case where a validator's delegation pool has
-                // fallen below the `min_stake_threshold`.
+                // The validator's delegation pool has fallen below the `min_validator_stake` threshold.
+                // If necessary, the epoch-handler will deindex this validator after processing it.
             }
             (Inactive | Jailed | Defined, Disabled) => {
                 // The validator was disabled by its operator.
-                // The epoch-handler is responsible for removing this identity from the consensus set index.
+                // If necessary, the epoch-handler will deindex this validator after processing it.
             }
-
             (Inactive, Active) => {
                 // The delegator has been promoted into the active set, we initialize its uptime tracker,
                 // and bond its delegation pool.
@@ -244,7 +242,7 @@ pub trait ValidatorManager: StateWrite {
 
                 tracing::info!(
                     misbehavior_penalty,
-                    "tombstoning validator and unbonding its pool"
+                    "validator has been tombstoned and slashed"
                 );
             }
 
