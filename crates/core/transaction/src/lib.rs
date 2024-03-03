@@ -3,7 +3,7 @@
 //! This crate defines data structures that provide modeling of shielded
 //! transactions through their entire lifecycle:
 //!
-//! * the [`TransactionPlan`](plan::TransactionPlan) type completely describes a
+//! * the [`TransactionPlan`](TransactionPlan) type completely describes a
 //! planned transaction before it is created;
 //!
 //! * the [`Transaction`] type represents the shielded transaction itself;
@@ -37,7 +37,7 @@ pub use detection_data::DetectionData;
 pub use error::Error;
 pub use is_action::IsAction;
 pub use parameters::TransactionParameters;
-pub use plan::ActionPlan;
+pub use plan::{ActionPlan, TransactionPlan};
 pub use transaction::{Transaction, TransactionBody};
 pub use view::{ActionView, MemoPlaintextView, MemoView, TransactionPerspective, TransactionView};
 pub use witness_data::WitnessData;

@@ -4,9 +4,9 @@ version = {workspace = true}
 edition = {workspace = true}
 
 [dev-dependencies]
-penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
 anyhow = {workspace = true}
+futures = {workspace = true}
+penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
 proptest = {workspace = true}
 proptest-derive = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
-futures = {workspace = true}

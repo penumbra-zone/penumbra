@@ -558,6 +558,9 @@ impl serde::Serialize for FungibleTokenPacketData {
         if !self.receiver.is_empty() {
             len += 1;
         }
+        if !self.memo.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.ibc.v1.FungibleTokenPacketData", len)?;
         if !self.denom.is_empty() {
             struct_ser.serialize_field("denom", &self.denom)?;
@@ -570,6 +573,9 @@ impl serde::Serialize for FungibleTokenPacketData {
         }
         if !self.receiver.is_empty() {
             struct_ser.serialize_field("receiver", &self.receiver)?;
+        }
+        if !self.memo.is_empty() {
+            struct_ser.serialize_field("memo", &self.memo)?;
         }
         struct_ser.end()
     }
@@ -585,6 +591,7 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
             "amount",
             "sender",
             "receiver",
+            "memo",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -593,6 +600,7 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
             Amount,
             Sender,
             Receiver,
+            Memo,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -619,6 +627,7 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
                             "amount" => Ok(GeneratedField::Amount),
                             "sender" => Ok(GeneratedField::Sender),
                             "receiver" => Ok(GeneratedField::Receiver),
+                            "memo" => Ok(GeneratedField::Memo),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -642,6 +651,7 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
                 let mut amount__ = None;
                 let mut sender__ = None;
                 let mut receiver__ = None;
+                let mut memo__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Denom => {
@@ -668,6 +678,12 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
                             }
                             receiver__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::Memo => {
+                            if memo__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("memo"));
+                            }
+                            memo__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -678,6 +694,7 @@ impl<'de> serde::Deserialize<'de> for FungibleTokenPacketData {
                     amount: amount__.unwrap_or_default(),
                     sender: sender__.unwrap_or_default(),
                     receiver: receiver__.unwrap_or_default(),
+                    memo: memo__.unwrap_or_default(),
                 })
             }
         }

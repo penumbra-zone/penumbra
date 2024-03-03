@@ -1,9 +1,8 @@
+use crate::BPS_SQUARED_SCALING_FACTOR;
 use penumbra_keys::Address;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
-
-use crate::rate::{BaseRateData, FP_SCALING_FACTOR};
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
@@ -50,38 +49,44 @@ impl FundingStream {
 
 impl FundingStream {
     /// Computes the amount of reward at the epoch boundary.
+    /// The input rates are assumed to be in basis points squared, this means that
+    /// to get the actual rate, you need to rescale by [`BPS_SQUARED_SCALING_FACTOR`].
     pub fn reward_amount(
         &self,
-        epoch_to_end: &BaseRateData,
+        base_reward_rate: Amount,
+        validator_exchange_rate: Amount,
         total_delegation_tokens: Amount,
     ) -> Amount {
         // Setup:
         let total_delegation_tokens = U128x128::from(total_delegation_tokens);
-        let prev_base_exchange_rate = U128x128::from(epoch_to_end.base_exchange_rate);
-        let prev_base_reward_rate = U128x128::from(epoch_to_end.base_reward_rate);
+        let prev_validator_exchange_rate_bps_sq = U128x128::from(validator_exchange_rate);
+        let prev_base_reward_rate_bps_sq = U128x128::from(base_reward_rate);
         let commission_rate_bps = U128x128::from(self.rate_bps());
         let max_bps = U128x128::from(10_000u128);
 
-        // The reward amount is computed as:
-        //   y_v * c_{v,e} * r_e * psi(e)
-        // where:
-        //   y_v = total delegation tokens for validator v
-        //   c_{v,e} = commission rate for validator v, at epoch e
-        //   r_e = base reward rate for epoch e
-        //   psi(e) = base exchange rate for epoch e
+        // First, we remove the scaling factors:
+        let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
+        let prev_validator_exchange_rate = (prev_validator_exchange_rate_bps_sq
+            / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("nonzero divisor");
+        let prev_base_reward_rate =
+            (prev_base_reward_rate_bps_sq / *BPS_SQUARED_SCALING_FACTOR).expect("nonzero divisor");
+
+        // The reward amount at epoch e, for validator v, is R_{v,e}.
+        // It is computed as:
+        //   R_{v,e} = y_v * c_{v,e} * r_e * psi_v(e)
+        //   where:
+        //          y_v = total delegation tokens for validator v
+        //          c_{v,e} = commission rate for validator v, at epoch e
+        //          r_e = base reward rate for epoch e
+        //          psi_v(e) = the validator exchange rate for epoch e
+        //
         // The commission rate is the sum of all the funding streams rate, and is capped at 100%.
         // In this method, we use a partial commission rate specific to `this` funding stream.
 
-        // First, we remove the scaling factors:
-        let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
-        let prev_base_exchange_rate =
-            (prev_base_exchange_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
-        let prev_base_reward_rate =
-            (prev_base_reward_rate / *FP_SCALING_FACTOR).expect("nonzero divisor");
-
         // Then, we compute the cumulative depreciation for this pool:
-        let staking_tokens = (total_delegation_tokens * prev_base_exchange_rate)
-            .expect("exchange rate is between 0 and 1");
+        let staking_tokens = (total_delegation_tokens * prev_validator_exchange_rate)
+            .expect("exchange rate is close to 1");
 
         // Now, we can compute the total reward amount for this pool:
         let total_reward_amount =
@@ -167,6 +172,8 @@ impl TryFrom<pb::FundingStream> for FundingStream {
 /// [`FundingStream`]s, and cannot exceed 10000bps (100%). This property is guaranteed by the
 /// `TryFrom<Vec<FundingStream>` implementation for [`FundingStreams`], which checks the sum, and is
 /// the only way to build a non-empty [`FundingStreams`].
+///
+/// Similarly, it's not possible to build a [`FundingStreams`] with more than 8 funding streams.
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct FundingStreams {
     funding_streams: Vec<FundingStream>,
@@ -182,12 +189,20 @@ impl FundingStreams {
     pub fn iter(&self) -> impl Iterator<Item = &FundingStream> {
         self.funding_streams.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.funding_streams.len()
+    }
 }
 
 impl TryFrom<Vec<FundingStream>> for FundingStreams {
     type Error = anyhow::Error;
 
     fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
+        if funding_streams.len() > 8 {
+            anyhow::bail!("validators can declare at most 8 funding streams");
+        }
+
         if funding_streams.iter().map(|fs| fs.rate_bps()).sum::<u16>() > 10_000 {
             anyhow::bail!("sum of funding rates exceeds 100% (10,000bps)");
         }
@@ -222,6 +237,6 @@ impl<'a> IntoIterator for &'a FundingStreams {
     type IntoIter = std::slice::Iter<'a, FundingStream>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.funding_streams).iter()
+        (self.funding_streams).iter()
     }
 }

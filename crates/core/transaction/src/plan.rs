@@ -27,6 +27,7 @@ mod build;
 mod clue;
 mod detection_data;
 mod memo;
+mod spend;
 
 pub use action::ActionPlan;
 pub use clue::CluePlan;

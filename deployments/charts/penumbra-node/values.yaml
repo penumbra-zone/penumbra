@@ -86,7 +86,8 @@ ingressRoute:
   secretName: ""
   # Traefik middleware CRDs, to be applied to pd's gRPC service.
   # These config objects must already exist in the API, i.e. create them out of band.
-  middlewares: []
+  middlewares:
+    - name: ratelimit-pd
 
 # Whether to place the application in "maintenance mode", effectively stopping pd and cometbft,
 # allowing an administrator to inspect and munge local state, e.g. to perform a chain upgrade.

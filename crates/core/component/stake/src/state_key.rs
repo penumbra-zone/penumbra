@@ -52,8 +52,9 @@ pub mod validators {
         pub fn current_by_id(id: &crate::IdentityKey) -> String {
             format!("staking/validators/data/rate/current/{id}")
         }
-        pub fn next_by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/rate/next/{id}")
+
+        pub fn previous_by_id(id: &crate::IdentityKey) -> String {
+            format!("staking/validators/data/rate/previous/{id}")
         }
     }
 
@@ -130,8 +131,8 @@ pub mod consensus_update {
 
 pub(super) mod internal {
 
-    pub fn tendermint_validator_updates() -> &'static str {
-        "staking/tendermint_validator_updates"
+    pub fn cometbft_validator_updates() -> &'static str {
+        "staking/cometbft_validator_updates"
     }
 }
 

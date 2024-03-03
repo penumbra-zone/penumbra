@@ -14,7 +14,7 @@ use crate::{
     vote::Vote,
 };
 
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Tally", into = "pb::Tally")]
 pub struct Tally {
     yes: u64,

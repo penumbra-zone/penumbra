@@ -1831,6 +1831,9 @@ impl serde::Serialize for EventPositionWithdraw {
         if self.reserves_2.is_some() {
             len += 1;
         }
+        if self.sequence != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionWithdraw", len)?;
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
@@ -1843,6 +1846,10 @@ impl serde::Serialize for EventPositionWithdraw {
         }
         if let Some(v) = self.reserves_2.as_ref() {
             struct_ser.serialize_field("reserves2", v)?;
+        }
+        if self.sequence != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
     }
@@ -1862,6 +1869,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
             "reserves1",
             "reserves_2",
             "reserves2",
+            "sequence",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1870,6 +1878,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
             TradingPair,
             Reserves1,
             Reserves2,
+            Sequence,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1896,6 +1905,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
                             "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
+                            "sequence" => Ok(GeneratedField::Sequence),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1919,6 +1929,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
                 let mut trading_pair__ = None;
                 let mut reserves_1__ = None;
                 let mut reserves_2__ = None;
+                let mut sequence__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
@@ -1945,6 +1956,14 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
                             }
                             reserves_2__ = map_.next_value()?;
                         }
+                        GeneratedField::Sequence => {
+                            if sequence__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sequence"));
+                            }
+                            sequence__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1955,6 +1974,7 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
                     trading_pair: trading_pair__,
                     reserves_1: reserves_1__,
                     reserves_2: reserves_2__,
+                    sequence: sequence__.unwrap_or_default(),
                 })
             }
         }
@@ -3851,11 +3871,18 @@ impl serde::Serialize for PositionState {
         if self.state != 0 {
             len += 1;
         }
+        if self.sequence != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.PositionState", len)?;
         if self.state != 0 {
             let v = position_state::PositionStateEnum::try_from(self.state)
                 .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.state)))?;
             struct_ser.serialize_field("state", &v)?;
+        }
+        if self.sequence != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
     }
@@ -3868,11 +3895,13 @@ impl<'de> serde::Deserialize<'de> for PositionState {
     {
         const FIELDS: &[&str] = &[
             "state",
+            "sequence",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             State,
+            Sequence,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3896,6 +3925,7 @@ impl<'de> serde::Deserialize<'de> for PositionState {
                     {
                         match value {
                             "state" => Ok(GeneratedField::State),
+                            "sequence" => Ok(GeneratedField::Sequence),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3916,6 +3946,7 @@ impl<'de> serde::Deserialize<'de> for PositionState {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut state__ = None;
+                let mut sequence__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::State => {
@@ -3924,6 +3955,14 @@ impl<'de> serde::Deserialize<'de> for PositionState {
                             }
                             state__ = Some(map_.next_value::<position_state::PositionStateEnum>()? as i32);
                         }
+                        GeneratedField::Sequence => {
+                            if sequence__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sequence"));
+                            }
+                            sequence__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3931,6 +3970,7 @@ impl<'de> serde::Deserialize<'de> for PositionState {
                 }
                 Ok(PositionState {
                     state: state__.unwrap_or_default(),
+                    sequence: sequence__.unwrap_or_default(),
                 })
             }
         }
@@ -4031,12 +4071,19 @@ impl serde::Serialize for PositionWithdraw {
         if self.reserves_commitment.is_some() {
             len += 1;
         }
+        if self.sequence != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.PositionWithdraw", len)?;
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
         }
         if let Some(v) = self.reserves_commitment.as_ref() {
             struct_ser.serialize_field("reservesCommitment", v)?;
+        }
+        if self.sequence != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
         }
         struct_ser.end()
     }
@@ -4052,12 +4099,14 @@ impl<'de> serde::Deserialize<'de> for PositionWithdraw {
             "positionId",
             "reserves_commitment",
             "reservesCommitment",
+            "sequence",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             PositionId,
             ReservesCommitment,
+            Sequence,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4082,6 +4131,7 @@ impl<'de> serde::Deserialize<'de> for PositionWithdraw {
                         match value {
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             "reservesCommitment" | "reserves_commitment" => Ok(GeneratedField::ReservesCommitment),
+                            "sequence" => Ok(GeneratedField::Sequence),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -4103,6 +4153,7 @@ impl<'de> serde::Deserialize<'de> for PositionWithdraw {
             {
                 let mut position_id__ = None;
                 let mut reserves_commitment__ = None;
+                let mut sequence__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
@@ -4117,6 +4168,14 @@ impl<'de> serde::Deserialize<'de> for PositionWithdraw {
                             }
                             reserves_commitment__ = map_.next_value()?;
                         }
+                        GeneratedField::Sequence => {
+                            if sequence__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sequence"));
+                            }
+                            sequence__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -4125,6 +4184,7 @@ impl<'de> serde::Deserialize<'de> for PositionWithdraw {
                 Ok(PositionWithdraw {
                     position_id: position_id__,
                     reserves_commitment: reserves_commitment__,
+                    sequence: sequence__.unwrap_or_default(),
                 })
             }
         }
@@ -4148,6 +4208,12 @@ impl serde::Serialize for PositionWithdrawPlan {
         if self.pair.is_some() {
             len += 1;
         }
+        if self.sequence != 0 {
+            len += 1;
+        }
+        if !self.rewards.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.PositionWithdrawPlan", len)?;
         if let Some(v) = self.reserves.as_ref() {
             struct_ser.serialize_field("reserves", v)?;
@@ -4157,6 +4223,13 @@ impl serde::Serialize for PositionWithdrawPlan {
         }
         if let Some(v) = self.pair.as_ref() {
             struct_ser.serialize_field("pair", v)?;
+        }
+        if self.sequence != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sequence", ToString::to_string(&self.sequence).as_str())?;
+        }
+        if !self.rewards.is_empty() {
+            struct_ser.serialize_field("rewards", &self.rewards)?;
         }
         struct_ser.end()
     }
@@ -4172,6 +4245,8 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
             "position_id",
             "positionId",
             "pair",
+            "sequence",
+            "rewards",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -4179,6 +4254,8 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
             Reserves,
             PositionId,
             Pair,
+            Sequence,
+            Rewards,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -4204,6 +4281,8 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
                             "reserves" => Ok(GeneratedField::Reserves),
                             "positionId" | "position_id" => Ok(GeneratedField::PositionId),
                             "pair" => Ok(GeneratedField::Pair),
+                            "sequence" => Ok(GeneratedField::Sequence),
+                            "rewards" => Ok(GeneratedField::Rewards),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -4226,6 +4305,8 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
                 let mut reserves__ = None;
                 let mut position_id__ = None;
                 let mut pair__ = None;
+                let mut sequence__ = None;
+                let mut rewards__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Reserves => {
@@ -4246,6 +4327,20 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
                             }
                             pair__ = map_.next_value()?;
                         }
+                        GeneratedField::Sequence => {
+                            if sequence__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sequence"));
+                            }
+                            sequence__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Rewards => {
+                            if rewards__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rewards"));
+                            }
+                            rewards__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -4255,6 +4350,8 @@ impl<'de> serde::Deserialize<'de> for PositionWithdrawPlan {
                     reserves: reserves__,
                     position_id: position_id__,
                     pair: pair__,
+                    sequence: sequence__.unwrap_or_default(),
+                    rewards: rewards__.unwrap_or_default(),
                 })
             }
         }
@@ -6106,6 +6203,9 @@ impl serde::Serialize for swap_claim_view::Visible {
         if self.output_2.is_some() {
             len += 1;
         }
+        if self.swap_tx.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapClaimView.Visible", len)?;
         if let Some(v) = self.swap_claim.as_ref() {
             struct_ser.serialize_field("swapClaim", v)?;
@@ -6115,6 +6215,9 @@ impl serde::Serialize for swap_claim_view::Visible {
         }
         if let Some(v) = self.output_2.as_ref() {
             struct_ser.serialize_field("output2", v)?;
+        }
+        if let Some(v) = self.swap_tx.as_ref() {
+            struct_ser.serialize_field("swapTx", v)?;
         }
         struct_ser.end()
     }
@@ -6132,6 +6235,8 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
             "output1",
             "output_2",
             "output2",
+            "swap_tx",
+            "swapTx",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -6139,6 +6244,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
             SwapClaim,
             Output1,
             Output2,
+            SwapTx,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6164,6 +6270,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
                             "output1" | "output_1" => Ok(GeneratedField::Output1),
                             "output2" | "output_2" => Ok(GeneratedField::Output2),
+                            "swapTx" | "swap_tx" => Ok(GeneratedField::SwapTx),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -6186,6 +6293,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                 let mut swap_claim__ = None;
                 let mut output_1__ = None;
                 let mut output_2__ = None;
+                let mut swap_tx__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapClaim => {
@@ -6206,6 +6314,12 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                             }
                             output_2__ = map_.next_value()?;
                         }
+                        GeneratedField::SwapTx => {
+                            if swap_tx__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("swapTx"));
+                            }
+                            swap_tx__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6215,6 +6329,7 @@ impl<'de> serde::Deserialize<'de> for swap_claim_view::Visible {
                     swap_claim: swap_claim__,
                     output_1: output_1__,
                     output_2: output_2__,
+                    swap_tx: swap_tx__,
                 })
             }
         }
@@ -7614,12 +7729,48 @@ impl serde::Serialize for swap_view::Visible {
         if self.swap_plaintext.is_some() {
             len += 1;
         }
+        if self.claim_tx.is_some() {
+            len += 1;
+        }
+        if self.batch_swap_output_data.is_some() {
+            len += 1;
+        }
+        if self.output_1.is_some() {
+            len += 1;
+        }
+        if self.output_2.is_some() {
+            len += 1;
+        }
+        if self.asset_1_metadata.is_some() {
+            len += 1;
+        }
+        if self.asset_2_metadata.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapView.Visible", len)?;
         if let Some(v) = self.swap.as_ref() {
             struct_ser.serialize_field("swap", v)?;
         }
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
+        }
+        if let Some(v) = self.claim_tx.as_ref() {
+            struct_ser.serialize_field("claimTx", v)?;
+        }
+        if let Some(v) = self.batch_swap_output_data.as_ref() {
+            struct_ser.serialize_field("batchSwapOutputData", v)?;
+        }
+        if let Some(v) = self.output_1.as_ref() {
+            struct_ser.serialize_field("output1", v)?;
+        }
+        if let Some(v) = self.output_2.as_ref() {
+            struct_ser.serialize_field("output2", v)?;
+        }
+        if let Some(v) = self.asset_1_metadata.as_ref() {
+            struct_ser.serialize_field("asset1Metadata", v)?;
+        }
+        if let Some(v) = self.asset_2_metadata.as_ref() {
+            struct_ser.serialize_field("asset2Metadata", v)?;
         }
         struct_ser.end()
     }
@@ -7634,12 +7785,30 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
             "swap",
             "swap_plaintext",
             "swapPlaintext",
+            "claim_tx",
+            "claimTx",
+            "batch_swap_output_data",
+            "batchSwapOutputData",
+            "output_1",
+            "output1",
+            "output_2",
+            "output2",
+            "asset_1_metadata",
+            "asset1Metadata",
+            "asset_2_metadata",
+            "asset2Metadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Swap,
             SwapPlaintext,
+            ClaimTx,
+            BatchSwapOutputData,
+            Output1,
+            Output2,
+            Asset1Metadata,
+            Asset2Metadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7664,6 +7833,12 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                         match value {
                             "swap" => Ok(GeneratedField::Swap),
                             "swapPlaintext" | "swap_plaintext" => Ok(GeneratedField::SwapPlaintext),
+                            "claimTx" | "claim_tx" => Ok(GeneratedField::ClaimTx),
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "output1" | "output_1" => Ok(GeneratedField::Output1),
+                            "output2" | "output_2" => Ok(GeneratedField::Output2),
+                            "asset1Metadata" | "asset_1_metadata" => Ok(GeneratedField::Asset1Metadata),
+                            "asset2Metadata" | "asset_2_metadata" => Ok(GeneratedField::Asset2Metadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7685,6 +7860,12 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
             {
                 let mut swap__ = None;
                 let mut swap_plaintext__ = None;
+                let mut claim_tx__ = None;
+                let mut batch_swap_output_data__ = None;
+                let mut output_1__ = None;
+                let mut output_2__ = None;
+                let mut asset_1_metadata__ = None;
+                let mut asset_2_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
@@ -7699,6 +7880,42 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                             }
                             swap_plaintext__ = map_.next_value()?;
                         }
+                        GeneratedField::ClaimTx => {
+                            if claim_tx__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimTx"));
+                            }
+                            claim_tx__ = map_.next_value()?;
+                        }
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output1 => {
+                            if output_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output1"));
+                            }
+                            output_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output2 => {
+                            if output_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output2"));
+                            }
+                            output_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset1Metadata => {
+                            if asset_1_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset1Metadata"));
+                            }
+                            asset_1_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset2Metadata => {
+                            if asset_2_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset2Metadata"));
+                            }
+                            asset_2_metadata__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7707,6 +7924,12 @@ impl<'de> serde::Deserialize<'de> for swap_view::Visible {
                 Ok(swap_view::Visible {
                     swap: swap__,
                     swap_plaintext: swap_plaintext__,
+                    claim_tx: claim_tx__,
+                    batch_swap_output_data: batch_swap_output_data__,
+                    output_1: output_1__,
+                    output_2: output_2__,
+                    asset_1_metadata: asset_1_metadata__,
+                    asset_2_metadata: asset_2_metadata__,
                 })
             }
         }

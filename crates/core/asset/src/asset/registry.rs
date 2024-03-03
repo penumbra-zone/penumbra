@@ -382,7 +382,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             // Note: this regex must be in sync with LpNft::try_from
             // and the bech32 prefix for LP IDs defined in the proto crate.
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "^lpnft_(?P<data>[a-z]+_plpid1[a-zA-HJ-NP-Z0-9]+)$",
+            "^lpnft_(?P<data>[a-z_0-9]+_plpid1[a-zA-HJ-NP-Z0-9]+)$",
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());

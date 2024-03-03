@@ -1,23 +1,27 @@
 mod common;
 
 use self::common::TempStorageExt;
+use ark_ff::{Fp, UniformRand};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
-use decaf377_rdsa::SigningKey;
+use decaf377::{Fq, Fr};
+use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use penumbra_app::ActionHandler;
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_keys::{test_keys, PayloadKey};
+use penumbra_keys::{keys::NullifierKey, test_keys, PayloadKey};
 use penumbra_mock_client::MockClient;
 use penumbra_num::Amount;
 use penumbra_sct::{
     component::{clock::EpochManager, source::SourceContext},
     epoch::Epoch,
 };
-use penumbra_shielded_pool::{component::ShieldedPool, SpendPlan};
+use penumbra_shielded_pool::{
+    component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
+};
 use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
 use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
-use rand_core::SeedableRng;
+use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
 
@@ -31,7 +35,7 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client.sync_to(0, state.deref()).await?;
     let note = client.notes.values().next().unwrap().clone();
@@ -87,6 +91,111 @@ async fn spend_happy_path() -> anyhow::Result<()> {
     Ok(())
 }
 
+// PoC for issue surfaced in zellic audit: https://github.com/penumbra-zone/penumbra/issues/3859
+// test that 0-value spends with invalid proofs are not accepted
+#[tokio::test]
+#[cfg_attr(
+    debug_assertions,
+    should_panic("assertion failed: cs.is_satisfied().unwrap()")
+)]
+async fn invalid_dummy_spend() {
+    let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1312);
+
+    let storage = TempStorage::new()
+        .await
+        .unwrap()
+        .apply_default_genesis()
+        .await
+        .unwrap();
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+
+    let height = 1;
+
+    // Precondition: This test uses the default genesis which has existing notes for the test keys.
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
+    let sk = test_keys::SPEND_KEY.clone();
+    client.sync_to(0, state.deref()).await.unwrap();
+    let note = client.notes.values().next().unwrap().clone();
+
+    let note_commitment = note.commit();
+    let proof = client.sct.witness(note_commitment).unwrap();
+    let root = client.sct.root();
+    let tct_position = proof.position();
+
+    // 1. Simulate BeginBlock
+    let mut state_tx = state.try_begin_transaction().unwrap();
+    state_tx.put_block_height(height);
+    state_tx.put_epoch_by_height(
+        height,
+        Epoch {
+            index: 0,
+            start_height: 0,
+        },
+    );
+    state_tx.apply();
+
+    // 2. Create a Spend action
+    let spend_plan = SpendPlan::new(&mut rng, note.clone(), tct_position);
+    let dummy_effect_hash = [0u8; 64];
+    let rsk = sk.spend_auth_key().randomize(&spend_plan.randomizer);
+    let auth_sig = rsk.sign(&mut rng, dummy_effect_hash.as_ref());
+    let mut spend = spend_plan.spend(&test_keys::FULL_VIEWING_KEY, auth_sig, proof.clone(), root);
+
+    let note_zero_value = Note::from_parts(
+        note.address(),
+        Value {
+            amount: Amount::from(0u64),
+            asset_id: note.asset_id(),
+        },
+        note.rseed(),
+    )
+    .unwrap();
+
+    let public = SpendProofPublic {
+        anchor: root,
+        balance_commitment: spend_plan.balance().commit(spend_plan.value_blinding),
+        nullifier: spend_plan.nullifier(&test_keys::FULL_VIEWING_KEY),
+        rk: spend_plan.rk(&test_keys::FULL_VIEWING_KEY),
+    };
+
+    // construct a proof for this spend using only public information, attempting to prove a spend
+    // of a dummy note.
+    let ak = VerificationKey::<SpendAuth>::try_from([0u8; 32]).unwrap();
+    let nk = NullifierKey(Fq::rand(&mut OsRng));
+
+    let private = SpendProofPrivate {
+        state_commitment_proof: proof,
+        note: note_zero_value,
+        v_blinding: Fr::rand(&mut OsRng),
+        spend_auth_randomizer: Fr::rand(&mut OsRng),
+        ak,
+        nk,
+    };
+    let bad_proof = SpendProof::prove(
+        Fq::rand(&mut OsRng),
+        Fq::rand(&mut OsRng),
+        &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
+        public,
+        private,
+    )
+    .expect("can generate ZKSpendProof");
+
+    spend.proof = bad_proof;
+
+    let transaction_context = TransactionContext {
+        anchor: root,
+        effect_hash: EffectHash(dummy_effect_hash),
+    };
+
+    // 3. Simulate execution of the Spend action
+    spend
+        .check_stateless(transaction_context)
+        .await
+        .unwrap_err()
+        .to_string()
+        .contains("spend proof did not verify");
+}
+
 #[tokio::test]
 #[should_panic(expected = "was already spent")]
 async fn spend_duplicate_nullifier_previous_transaction() {
@@ -103,7 +212,7 @@ async fn spend_duplicate_nullifier_previous_transaction() {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client
         .sync_to(0, state.deref())
@@ -194,7 +303,7 @@ async fn spend_duplicate_nullifier_same_transaction() {
     let height = 1;
 
     // Precondition: This test uses the default genesis which has existing notes for the test keys.
-    let mut client = MockClient::new(test_keys::FULL_VIEWING_KEY.clone());
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
     let sk = test_keys::SPEND_KEY.clone();
     client
         .sync_to(0, state.deref())

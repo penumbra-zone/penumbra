@@ -3,7 +3,7 @@ use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// The state of a validator in the validator state machine.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::ValidatorState", into = "pb::ValidatorState")]
 pub enum State {
     /// The validator definition has been published, but the validator stake is below the minimum

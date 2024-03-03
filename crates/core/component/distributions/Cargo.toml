@@ -14,16 +14,16 @@ default = ["component"]
 docsrs = []
 
 [dependencies]
+anyhow = {workspace = true}
+async-trait = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
-async-trait = {workspace = true}
-anyhow = {workspace = true}
-tracing = {workspace = true}
-tendermint = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
+tendermint = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]

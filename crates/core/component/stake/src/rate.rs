@@ -7,10 +7,7 @@ use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
-use crate::{Delegate, Penalty, Undelegate};
-use once_cell::sync::Lazy;
-
-pub(crate) const FP_SCALING_FACTOR: Lazy<U128x128> = Lazy::new(|| U128x128::from(1_0000_0000u128));
+use crate::{Delegate, Penalty, Undelegate, BPS_SQUARED_SCALING_FACTOR};
 
 /// Describes a validator's reward rate and voting power in some epoch.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -57,7 +54,7 @@ impl RateData {
             // Rate data is represented with an implicit scaling factor of 1_0000_0000.
             // To make the calculations more readable, we use `U128x128` to represent
             // the intermediate descaled values. As a last step, we scaled them back
-            // using [`FP_SCALING_FACTOR`] and round down to an [`Amount`].
+            // using [`BPS_SQUARED_SCALING_FACTOR`] and round down to an [`Amount`].
 
             /* Setting up constants and unrolling scaling factors */
             let one = U128x128::from(1u128);
@@ -70,10 +67,10 @@ impl RateData {
 
             let validator_commission =
                 (validator_commission_bps / max_bps).expect("max_bps is nonzero");
-            let next_base_reward_rate =
-                (next_base_reward_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+            let next_base_reward_rate = (next_base_reward_rate / *BPS_SQUARED_SCALING_FACTOR)
+                .expect("scaling factor is nonzero");
             let previous_validator_exchange_rate = (previous_validator_exchange_rate
-                / *FP_SCALING_FACTOR)
+                / *BPS_SQUARED_SCALING_FACTOR)
                 .expect("scaling factor is nonzero");
             /* ************************************************* */
 
@@ -100,12 +97,14 @@ impl RateData {
             /* ***************************************************************** */
 
             /* Rescale the rate data using the fixed point scaling factor */
-            let next_validator_reward_rate = (next_validator_reward_rate * *FP_SCALING_FACTOR)
+            let next_validator_reward_rate = (next_validator_reward_rate
+                * *BPS_SQUARED_SCALING_FACTOR)
                 .expect("rate is between 0 and 1")
                 .round_down()
                 .try_into()
                 .expect("rounding down gives an integral type");
-            let next_validator_exchange_rate = (next_validator_exchange_rate * *FP_SCALING_FACTOR)
+            let next_validator_exchange_rate = (next_validator_exchange_rate
+                * *BPS_SQUARED_SCALING_FACTOR)
                 .expect("rate is between 0 and 1")
                 .round_down()
                 .try_into()
@@ -149,10 +148,17 @@ impl RateData {
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
         // Remove scaling factors:
-        let validator_exchange_rate =
-            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        let validator_exchange_rate = (validator_exchange_rate / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("scaling factor is nonzero");
+        if validator_exchange_rate == U128x128::from(0u128) {
+            // If the exchange rate is zero, the delegation amount is also zero.
+            // This is extremely unlikely to be hit in practice, but it's a valid
+            // edge case that a test might want to cover.
+            return 0u128.into();
+        }
 
         /* **************** Compute the corresponding delegation size *********************** */
+
         let delegation_amount = (unbonded_amount / validator_exchange_rate)
             .expect("validator exchange rate is nonzero");
         /* ********************************************************************************** */
@@ -195,8 +201,8 @@ impl RateData {
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
         // Remove scaling factors:
-        let validator_exchange_rate =
-            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        let validator_exchange_rate = (validator_exchange_rate / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("scaling factor is nonzero");
 
         /* **************** Compute the unbonded amount *********************** */
         (delegation_amount * validator_exchange_rate)
@@ -213,8 +219,8 @@ impl RateData {
         let validator_exchange_rate = U128x128::from(self.validator_exchange_rate);
 
         // Remove scaling factors:
-        let validator_exchange_rate =
-            (validator_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        let validator_exchange_rate = (validator_exchange_rate / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("scaling factor is nonzero");
 
         /* ************************ Convert the delegation tokens to staking tokens ******************** */
         let voting_power = (delegation_pool_size * validator_exchange_rate)
@@ -231,9 +237,9 @@ impl RateData {
     /// delegates `unbonded_amount` of the staking token.
     pub fn build_delegate(&self, unbonded_amount: Amount) -> Delegate {
         Delegate {
-            delegation_amount: self.delegation_amount(unbonded_amount).into(),
+            delegation_amount: self.delegation_amount(unbonded_amount),
             epoch_index: self.epoch_index,
-            unbonded_amount: unbonded_amount.into(),
+            unbonded_amount,
             validator_identity: self.identity_key.clone(),
         }
     }
@@ -244,7 +250,7 @@ impl RateData {
         Undelegate {
             start_epoch_index: self.epoch_index,
             delegation_amount,
-            unbonded_amount: self.unbonded_amount(delegation_amount.into()).into(),
+            unbonded_amount: self.unbonded_amount(delegation_amount),
             validator_identity: self.identity_key.clone(),
         }
     }
@@ -272,10 +278,10 @@ impl BaseRateData {
         let one = U128x128::from(1u128);
 
         // Remove scaling factors:
-        let prev_base_exchange_rate =
-            (prev_base_exchange_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
-        let next_base_reward_rate_fp =
-            (next_base_reward_rate / *FP_SCALING_FACTOR).expect("scaling factor is nonzero");
+        let prev_base_exchange_rate = (prev_base_exchange_rate / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("scaling factor is nonzero");
+        let next_base_reward_rate_fp = (next_base_reward_rate / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("scaling factor is nonzero");
 
         // Compute the reward growth factor:
         let reward_growth_factor = (one + next_base_reward_rate_fp).expect("does not overflow");
@@ -286,7 +292,8 @@ impl BaseRateData {
         /* ****************************************************************************** */
 
         // Rescale the exchange rate:
-        let next_base_exchange_rate_scaled = (next_base_exchange_rate * *FP_SCALING_FACTOR)
+        let next_base_exchange_rate_scaled = (next_base_exchange_rate
+            * *BPS_SQUARED_SCALING_FACTOR)
             .expect("rate is between 0 and 1")
             .round_down()
             .try_into()

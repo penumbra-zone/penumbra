@@ -294,8 +294,10 @@ impl App {
 
     /// Wrapper function for [`Self::deliver_tx`]  that decodes from bytes.
     pub async fn deliver_tx_bytes(&mut self, tx_bytes: &[u8]) -> Result<Vec<abci::Event>> {
-        let tx = Arc::new(Transaction::decode(tx_bytes)?);
-        self.deliver_tx(tx).await
+        let tx = Arc::new(Transaction::decode(tx_bytes).context("decoding transaction")?);
+        self.deliver_tx(tx)
+            .await
+            .context("failed to deliver transaction")
     }
 
     pub async fn deliver_tx(&mut self, tx: Arc<Transaction>) -> Result<Vec<abci::Event>> {
@@ -335,8 +337,14 @@ impl App {
             async move { tx2.check_stateful(state2).await }.instrument(tracing::Span::current()),
         );
 
-        stateless.await??;
-        stateful.await??;
+        stateless
+            .await
+            .context("waiting for check_stateless check tasks")?
+            .context("check_stateless failed")?;
+        stateful
+            .await
+            .context("waiting for check_stateful tasks")?
+            .context("check_stateful failed")?;
 
         // At this point, the stateful checks should have completed,
         // leaving us with exclusive access to the Arc<State>.
@@ -350,9 +358,12 @@ impl App {
         let transaction = Arc::as_ref(&tx).clone();
         state_tx
             .put_block_transaction(height, transaction.into())
-            .await?;
+            .await
+            .context("storing transactions")?;
 
-        tx.execute(&mut state_tx).await?;
+        tx.execute(&mut state_tx)
+            .await
+            .context("executing transaction")?;
 
         // At this point, we've completed execution successfully with no errors,
         // so we can apply the transaction to the State. Otherwise, we'd have
@@ -587,7 +598,7 @@ impl App {
 
     pub fn tendermint_validator_updates(&self) -> Vec<Update> {
         self.state
-            .tendermint_validator_updates()
+            .cometbft_validator_updates()
             // If the tendermint validator updates are not set, we return an empty
             // update set, signaling no change to Tendermint.
             .unwrap_or_default()

@@ -552,10 +552,25 @@ impl ::prost::Name for BalancesRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BalancesResponse {
+    /// Deprecated: use `account_address` instead.
+    #[deprecated]
     #[prost(message, optional, tag = "1")]
     pub account: ::core::option::Option<super::super::core::keys::v1::AddressIndex>,
+    /// Deprecated: use `balance_view` instead.
+    #[deprecated]
     #[prost(message, optional, tag = "2")]
     pub balance: ::core::option::Option<super::super::core::asset::v1::Value>,
+    /// The default address for the account.
+    ///
+    /// Note that the returned balance is for all funds sent to the account,
+    /// not just funds sent to its default address.
+    #[prost(message, optional, tag = "3")]
+    pub account_address: ::core::option::Option<
+        super::super::core::keys::v1::AddressView,
+    >,
+    /// The account's balance, with metadata.
+    #[prost(message, optional, tag = "4")]
+    pub balance_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
 }
 impl ::prost::Name for BalancesResponse {
     const NAME: &'static str = "BalancesResponse";

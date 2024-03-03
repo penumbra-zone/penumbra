@@ -10,28 +10,29 @@ r1cs = ["ark-r1cs-std", "ark-relations", "decaf377/r1cs", "poseidon377/r1cs"]
 parallel = ["ark-r1cs-std/parallel", "ark-ff/parallel", "decaf377/parallel", "poseidon377/parallel"]
 
 [dependencies]
-penumbra-proto = {workspace = true, default-features = true}
-derivative = {workspace = true}
-once_cell = {workspace = true}
-blake2b_simd = {workspace = true}
-hex = {workspace = true}
-hash_hasher = "2"
-thiserror = {workspace = true}
-serde = {workspace = true, features = ["derive", "rc"]}
-parking_lot = {workspace = true}
+ark-ed-on-bls12-377 = "0.4"
 ark-ff = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
-poseidon377 = {workspace = true, features = ["r1cs"]}
-decaf377 = {workspace = true, default-features = true}
-tracing = {workspace = true}
-async-trait = {workspace = true}
-futures = {workspace = true}
-rand = {workspace = true}
-im = {workspace = true, features = ["serde"]}
-ark-relations = {workspace = true, optional = true}
 ark-r1cs-std = {workspace = true, optional = true, default-features = false}
+ark-relations = {workspace = true, optional = true}
+ark-serialize = {workspace = true}
+async-trait = {workspace = true}
+blake2b_simd = {workspace = true}
+decaf377 = {workspace = true, default-features = true}
+derivative = {workspace = true}
+futures = {workspace = true}
+hash_hasher = "2"
+hex = {workspace = true}
+im = {workspace = true, features = ["serde"]}
+once_cell = {workspace = true}
+parking_lot = {workspace = true}
+penumbra-proto = {workspace = true, default-features = true}
+poseidon377 = {workspace = true, features = ["r1cs"]}
 proptest = {workspace = true, optional = true}
 proptest-derive = {workspace = true, optional = true}
+rand = {workspace = true}
+serde = {workspace = true, features = ["derive", "rc"]}
+thiserror = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 static_assertions = "1"

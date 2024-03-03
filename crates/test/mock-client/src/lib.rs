@@ -1,30 +1,51 @@
+use anyhow::Error;
 use cnidarium::StateRead;
 use penumbra_compact_block::{component::StateReadExt as _, CompactBlock, StatePayload};
 use penumbra_dex::swap::SwapPlaintext;
-use penumbra_keys::FullViewingKey;
-use penumbra_sct::component::tree::SctRead;
+use penumbra_keys::{keys::SpendKey, FullViewingKey};
+use penumbra_sct::component::{clock::EpochRead, tree::SctRead};
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
+use rand_core::OsRng;
 use std::collections::BTreeMap;
 
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {
     latest_height: u64,
-    fvk: FullViewingKey,
+    sk: SpendKey,
+    pub fvk: FullViewingKey,
     pub notes: BTreeMap<note::StateCommitment, Note>,
     swaps: BTreeMap<tct::StateCommitment, SwapPlaintext>,
     pub sct: penumbra_tct::Tree,
 }
 
 impl MockClient {
-    pub fn new(fvk: FullViewingKey) -> MockClient {
+    pub fn new(sk: SpendKey) -> MockClient {
         Self {
             latest_height: u64::MAX,
-            fvk,
+            fvk: sk.full_viewing_key().clone(),
+            sk,
             notes: Default::default(),
             sct: Default::default(),
             swaps: Default::default(),
         }
+    }
+
+    pub async fn with_sync_to_storage(
+        mut self,
+        storage: impl AsRef<cnidarium::Storage>,
+    ) -> anyhow::Result<Self> {
+        let latest = storage.as_ref().latest_snapshot();
+        self.sync_to_latest(latest).await?;
+
+        Ok(self)
+    }
+
+    pub async fn sync_to_latest<R: StateRead>(&mut self, state: R) -> anyhow::Result<()> {
+        let height = state.get_block_height().await?;
+        self.sync_to(height, state).await?;
+        Ok(())
     }
 
     pub async fn sync_to<R: StateRead>(
@@ -32,7 +53,8 @@ impl MockClient {
         target_height: u64,
         state: R,
     ) -> anyhow::Result<()> {
-        for height in 0..=target_height {
+        let start_height = self.latest_height.wrapping_add(1);
+        for height in start_height..=target_height {
             let compact_block = state
                 .compact_block(height)
                 .await?
@@ -137,7 +159,45 @@ impl MockClient {
         self.swaps.get(commitment).cloned()
     }
 
-    pub fn witness(&self, commitment: note::StateCommitment) -> Option<penumbra_tct::Proof> {
+    pub fn position(&self, commitment: note::StateCommitment) -> Option<penumbra_tct::Position> {
+        self.sct.witness(commitment).map(|proof| proof.position())
+    }
+
+    pub fn witness_commitment(
+        &self,
+        commitment: note::StateCommitment,
+    ) -> Option<penumbra_tct::Proof> {
         self.sct.witness(commitment)
+    }
+
+    pub fn witness_plan(&self, plan: &TransactionPlan) -> Result<WitnessData, Error> {
+        Ok(WitnessData {
+            anchor: self.sct.root(),
+            // TODO: this will only witness spends, not other proofs like swaps
+            state_commitment_proofs: plan
+                .spend_plans()
+                .map(|spend| {
+                    let nc = spend.note.commit();
+                    Ok((
+                        nc,
+                        self.sct.witness(nc).ok_or_else(|| {
+                            anyhow::anyhow!("note commitment {:?} unknown to client", nc)
+                        })?,
+                    ))
+                })
+                .collect::<Result<_, Error>>()?,
+        })
+    }
+
+    pub fn authorize_plan(&self, plan: &TransactionPlan) -> Result<AuthorizationData, Error> {
+        plan.authorize(OsRng, &self.sk)
+    }
+
+    pub async fn witness_auth_build(&self, plan: &TransactionPlan) -> Result<Transaction, Error> {
+        let witness_data = self.witness_plan(plan)?;
+        let auth_data = self.authorize_plan(plan)?;
+        plan.clone()
+            .build_concurrent(&self.fvk, &witness_data, &auth_data)
+            .await
     }
 }

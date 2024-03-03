@@ -27,54 +27,55 @@ parallel = [
 ]
 
 [dependencies]
-penumbra-proto = {workspace = true, default-features = false}
-cnidarium = {workspace = true, optional = true, default-features = true}
-cnidarium-component = {workspace = true, optional = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, default-features = false}
-penumbra-sct = {workspace = true, default-features = false}
-penumbra-fee = {workspace = true, default-features = false}
-penumbra-tct = {workspace = true, default-features = false}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-asset = {workspace = true, default-features = false}
-penumbra-num = {workspace = true, default-features = false}
-penumbra-keys = {workspace = true, default-features = false}
-penumbra-txhash = {workspace = true, default-features = false}
-decaf377-ka = {workspace = true}
-decaf377-fmd = {workspace = true}
-poseidon377 = {workspace = true, features = ["r1cs"]}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
-decaf377-rdsa = {workspace = true}
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-groth16 = {workspace = true, default-features = false}
 ark-r1cs-std = {workspace = true, default-features = false}
 ark-relations = {workspace = true}
-ark-ff = {workspace = true, default-features = false}
 ark-serialize = {workspace = true}
-ark-groth16 = {workspace = true, default-features = false}
 ark-snark = {workspace = true}
-async-trait = {workspace = true}
 async-stream = {workspace = true}
-bincode = {workspace = true}
-hex = {workspace = true}
-thiserror = {workspace = true}
-anyhow = {workspace = true}
-tracing = {workspace = true}
-prost = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-serde_json = {workspace = true}
-metrics = {workspace = true}
-pbjson-types = {workspace = true}
-tendermint = {workspace = true}
-tendermint-light-client-verifier = {workspace = true}
-sha2 = {workspace = true}
-once_cell = {workspace = true}
+async-trait = {workspace = true}
 base64 = {workspace = true}
+bincode = {workspace = true}
 blake2b_simd = {workspace = true}
+cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377-fmd = {workspace = true}
+decaf377-ka = {workspace = true}
+decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
+hex = {workspace = true}
 im = {workspace = true}
+metrics = {workspace = true}
+once_cell = {workspace = true}
 parking_lot = {workspace = true}
+pbjson-types = {workspace = true}
+penumbra-asset = {workspace = true, default-features = false}
+penumbra-fee = {workspace = true, default-features = false}
+penumbra-keys = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = false}
+penumbra-txhash = {workspace = true, default-features = false}
+poseidon377 = {workspace = true, features = ["r1cs"]}
+prost = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+sha2 = {workspace = true}
+tap = {workspace = true}
+tendermint = {workspace = true}
+tendermint-light-client-verifier = {workspace = true}
+thiserror = {workspace = true}
 tokio = {workspace = true, features = ["full"], optional = true}
 tonic = {workspace = true, optional = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}

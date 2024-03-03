@@ -1,6 +1,6 @@
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
-    lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+    lp::action::{PositionClose, PositionOpen, PositionWithdraw},
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
@@ -37,7 +37,6 @@ pub enum ActionView {
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
-    PositionRewardClaim(PositionRewardClaim),
     Delegate(Delegate),
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaim),
@@ -78,7 +77,11 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::PositionOpen(x) => ActionView::PositionOpen(x.try_into()?),
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
-                AV::PositionRewardClaim(x) => ActionView::PositionRewardClaim(x.try_into()?),
+                AV::PositionRewardClaim(_) => {
+                    return Err(anyhow::anyhow!(
+                        "PositionRewardClaim is deprecated and unsupported"
+                    ))
+                }
                 AV::Ics20Withdrawal(x) => ActionView::Ics20Withdrawal(x.try_into()?),
                 AV::CommunityPoolDeposit(x) => ActionView::CommunityPoolDeposit(x.try_into()?),
                 AV::CommunityPoolSpend(x) => ActionView::CommunityPoolSpend(x.try_into()?),
@@ -110,7 +113,6 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::PositionOpen(x) => AV::PositionOpen(x.into()),
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),
-                ActionView::PositionRewardClaim(x) => AV::PositionRewardClaim(x.into()),
                 ActionView::Ics20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
                 ActionView::CommunityPoolDeposit(x) => AV::CommunityPoolDeposit(x.into()),
                 ActionView::CommunityPoolSpend(x) => AV::CommunityPoolSpend(x.into()),
@@ -140,7 +142,6 @@ impl From<ActionView> for Action {
             ActionView::PositionOpen(x) => Action::PositionOpen(x),
             ActionView::PositionClose(x) => Action::PositionClose(x),
             ActionView::PositionWithdraw(x) => Action::PositionWithdraw(x),
-            ActionView::PositionRewardClaim(x) => Action::PositionRewardClaim(x),
             ActionView::Ics20Withdrawal(x) => Action::Ics20Withdrawal(x),
             ActionView::CommunityPoolDeposit(x) => Action::CommunityPoolDeposit(x),
             ActionView::CommunityPoolSpend(x) => Action::CommunityPoolSpend(x),

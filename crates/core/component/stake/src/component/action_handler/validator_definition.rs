@@ -31,6 +31,10 @@ impl ActionHandler for validator::Definition {
             anyhow::bail!("validator description must be less than 280 characters")
         }
 
+        if self.validator.funding_streams.len() > 8 {
+            anyhow::bail!("validators can declare at most 8 funding streams")
+        }
+
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
         self.validator
@@ -117,9 +121,12 @@ impl ActionHandler for validator::Definition {
             .is_some();
 
         if validator_exists {
-            state.update_validator(v.validator.clone()).await.context(
-                "should be able to update validator during validator definition execution",
-            )?;
+            state
+                .update_validator_definition(v.validator.clone())
+                .await
+                .context(
+                    "should be able to update validator during validator definition execution",
+                )?;
         } else {
             // This is a new validator definition. We prime the validator's
             // rate data with an initial exchange rate of 1:1.

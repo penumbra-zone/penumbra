@@ -8,43 +8,43 @@ default = []
 parallel = ["penumbra-tct/parallel", "ark-ff/parallel", "poseidon377/parallel", "decaf377-rdsa/parallel", "ark-std/parallel", "ark-r1cs-std/parallel", "decaf377/parallel"]
 
 [dependencies]
-decaf377-ka = {workspace = true}
-decaf377-fmd = {workspace = true}
-penumbra-proto = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
-penumbra-asset = {workspace = true, default-features = true}
-decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
-decaf377-rdsa = {workspace = true}
-poseidon377 = {workspace = true, features = ["r1cs"]}
-f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
-base64 = {workspace = true}
-bip32 = "0.5"
-ark-ff = {workspace = true, default-features = false}
-ark-std = {workspace = true, default-features = false}
-ark-serialize = {workspace = true}
-regex = {workspace = true}
-sha2 = {workspace = true}
-bech32 = {workspace = true}
 aes = "0.8.1"
 anyhow = {workspace = true}
-thiserror = {workspace = true}
-bytes = {workspace = true}
-derivative = {workspace = true}
-hex = {workspace = true}
-hmac = "0.12.0"
-blake2b_simd = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-once_cell = {workspace = true}
-pbkdf2 = "0.12.0"
-rand_core = {workspace = true, features = ["getrandom"]}
-rand = {workspace = true}
-chacha20poly1305 = {workspace = true}
-ethnum = {workspace = true}
-ibig = {workspace = true}
-num-bigint = {workspace = true}
-tracing = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
 ark-r1cs-std = {workspace = true, default-features = false}
 ark-relations = {workspace = true}
+ark-serialize = {workspace = true}
+ark-std = {workspace = true, default-features = false}
+base64 = {workspace = true}
+bech32 = {workspace = true}
+bip32 = "0.5"
+blake2b_simd = {workspace = true}
+bytes = {workspace = true}
+chacha20poly1305 = {workspace = true}
+decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
+decaf377-fmd = {workspace = true}
+decaf377-ka = {workspace = true}
+decaf377-rdsa = {workspace = true}
+derivative = {workspace = true}
+ethnum = {workspace = true}
+f4jumble = { git = "https://github.com/zcash/librustzcash", rev = "2425a0869098e3b0588ccd73c42716bcf418612c" }
+hex = {workspace = true}
+hmac = "0.12.0"
+ibig = {workspace = true}
+num-bigint = {workspace = true}
+once_cell = {workspace = true}
+pbkdf2 = "0.12.0"
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-tct = {workspace = true, features = ["r1cs"], default-features = true}
+poseidon377 = {workspace = true, features = ["r1cs"]}
+rand = {workspace = true}
+rand_core = {workspace = true, features = ["getrandom"]}
+regex = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+sha2 = {workspace = true}
+thiserror = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}

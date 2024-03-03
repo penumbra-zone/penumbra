@@ -144,6 +144,7 @@ impl From<Ics20Withdrawal> for pb::FungibleTokenPacketData {
             denom: w.denom.to_string(),
             receiver: w.destination_chain_address,
             sender: w.return_address.to_string(),
+            memo: "".to_string(),
         }
     }
 }

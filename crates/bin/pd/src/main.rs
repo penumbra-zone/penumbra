@@ -168,11 +168,6 @@ async fn main() -> anyhow::Result<()> {
             use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
             use penumbra_stake::component::rpc::Server as StakeServer;
 
-            // Set rather permissive CORS headers for pd's gRPC: the service
-            // should be accessible from arbitrary web contexts, such as localhost,
-            // or any FQDN that wants to reference its data.
-            let cors_layer = CorsLayer::permissive();
-
             let mut grpc_server = Server::builder()
                 .trace_fn(|req| match remote_addr(req) {
                     Some(remote_addr) => {
@@ -185,9 +180,6 @@ async fn main() -> anyhow::Result<()> {
                 // typically uses HTTP/2, which requires HTTPS. Accepting HTTP/2
                 // allows local applications such as web browsers to talk to pd.
                 .accept_http1(true)
-                // Add permissive CORS headers, so pd's gRPC services are accessible
-                // from arbitrary web contexts, including from localhost.
-                .layer(cors_layer)
                 // As part of #2932, we are disabling all timeouts until we circle back to our
                 // performance story.
                 // Sets a timeout for all gRPC requests, but note that in the case of streaming
@@ -238,11 +230,20 @@ async fn main() -> anyhow::Result<()> {
                 )));
             }
 
-            // Now we drop down a layer of abstraction, from tonic to axum.
-            //
-            // TODO(kate): this is where we may attach additional routes upon this router in the
-            // future. see #3646 for more information.
-            let router = grpc_server.into_router();
+            // Create Axum routes for the frontend app.
+            let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
+            let node_status = pd::zipserve::router("/", pd::NODE_STATUS_ARCHIVE_BYTES);
+
+            // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
+            let router = grpc_server
+                .into_router()
+                .merge(frontend)
+                .merge(node_status)
+                // Set rather permissive CORS headers for pd's gRPC: the service
+                // should be accessible from arbitrary web contexts, such as localhost,
+                // or any FQDN that wants to reference its data.
+                .layer(CorsLayer::permissive());
+
             let make_svc = router.into_make_service();
 
             // Now start the GRPC server, initializing an ACME client to use as a certificate

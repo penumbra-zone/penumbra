@@ -6,6 +6,7 @@ use tendermint::v0_37::abci::{
     request, response, ConsensusRequest as Request, ConsensusResponse as Response,
 };
 use tokio::sync::mpsc;
+use tower::BoxError;
 use tower_actor::Message;
 use tracing::Instrument;
 
@@ -16,6 +17,8 @@ pub struct Consensus {
     storage: Storage,
     app: App,
 }
+
+pub type ConsensusService = tower_actor::Actor<Request, Response, BoxError>;
 
 fn trace_events(events: &[Event]) {
     for event in events {
@@ -29,7 +32,21 @@ fn trace_events(events: &[Event]) {
 }
 
 impl Consensus {
-    pub async fn new(
+    const QUEUE_SIZE: usize = 10;
+
+    pub fn new(storage: Storage) -> ConsensusService {
+        tower_actor::Actor::new(Self::QUEUE_SIZE, |queue: _| {
+            let storage = storage.clone();
+            async move {
+                Consensus::new_inner(storage.clone(), queue)
+                    .await?
+                    .run()
+                    .await
+            }
+        })
+    }
+
+    async fn new_inner(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
     ) -> Result<Self> {
@@ -42,7 +59,7 @@ impl Consensus {
         })
     }
 
-    pub async fn run(mut self) -> Result<(), tower::BoxError> {
+    async fn run(mut self) -> Result<(), tower::BoxError> {
         while let Some(Message {
             req,
             rsp_sender,

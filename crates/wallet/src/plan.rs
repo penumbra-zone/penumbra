@@ -15,7 +15,7 @@ use penumbra_num::Amount;
 use penumbra_proto::view::v1::NotesRequest;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::validator;
-use penumbra_transaction::{memo::MemoPlaintext, plan::TransactionPlan, TransactionParameters};
+use penumbra_transaction::{memo::MemoPlaintext, TransactionParameters, TransactionPlan};
 pub use penumbra_view::Planner;
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 

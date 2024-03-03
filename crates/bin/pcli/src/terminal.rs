@@ -1,6 +1,6 @@
 use anyhow::Result;
 use penumbra_custody::threshold::Terminal;
-use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::TransactionPlan;
 use tokio::io::{self, AsyncBufReadExt};
 use tonic::async_trait;
 

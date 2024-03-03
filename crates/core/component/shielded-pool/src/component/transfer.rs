@@ -98,7 +98,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 .expect("able to retrieve value balance in ics20 withdrawal! (execute)")
                 .unwrap_or_else(Amount::zero);
 
-            let new_value_balance = existing_value_balance + withdrawal.amount;
+            let new_value_balance = existing_value_balance
+                .checked_add(&withdrawal.amount)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("overflow adding value balance in ics20 withdrawal")
+                })?;
             self.put(
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
@@ -285,8 +289,11 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         let unprefixed_denom: asset::Metadata = packet_data
             .denom
-            .replace(&prefix, "")
-            .as_str()
+            .strip_prefix(&prefix)
+            .context(format!(
+                "denom in packet didn't begin with expected prefix {}",
+                prefix
+            ))?
             .try_into()
             .context("couldnt decode denom in ICS20 transfer")?;
 

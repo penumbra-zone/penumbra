@@ -50,10 +50,7 @@ pub fn new(
             req.create_span()
         }))
         .layer(EventIndexLayer::index_all())
-        .service(tower_actor::Actor::new(10, |queue: _| {
-            let storage = storage.clone();
-            async move { Consensus::new(storage.clone(), queue).await?.run().await }
-        }));
+        .service(Consensus::new(storage.clone()));
     let mempool = tower::ServiceBuilder::new()
         .layer(request_span::layer(|req: &MempoolRequest| {
             use penumbra_tower_trace::v037::RequestExt;

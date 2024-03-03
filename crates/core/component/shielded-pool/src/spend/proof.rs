@@ -1,5 +1,6 @@
 use base64::prelude::*;
 use std::str::FromStr;
+use tct::Root;
 
 use anyhow::Result;
 use ark_r1cs_std::{
@@ -24,13 +25,18 @@ use penumbra_tct as tct;
 use penumbra_tct::r1cs::StateCommitmentVar;
 
 use crate::{note, Note, Rseed};
-use penumbra_asset::{balance, balance::commitment::BalanceCommitmentVar, Value};
+use penumbra_asset::{
+    balance::commitment::BalanceCommitmentVar,
+    balance::{self, Commitment},
+    Value,
+};
 use penumbra_keys::keys::{
     AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
     RandomizedVerificationKey, SeedPhrase, SpendAuthRandomizerVar, SpendKey,
 };
 use penumbra_proof_params::{DummyWitness, VerifyingKeyExt, GROTH16_PROOF_LENGTH_BYTES};
 use penumbra_sct::{Nullifier, NullifierVar};
+use tap::Tap;
 
 /// The public input for a [`SpendProof`].
 #[derive(Clone, Debug)]
@@ -66,11 +72,6 @@ pub struct SpendProofPrivate {
 fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) -> Result<()> {
     use penumbra_keys::keys::FullViewingKey;
 
-    let amount_u128: u128 = private.note.value().amount.into();
-    if amount_u128 == 0u128 {
-        return Ok(());
-    }
-
     let note_commitment = private.note.commit();
     if note_commitment != private.state_commitment_proof.commitment() {
         anyhow::bail!("note commitment did not match state commitment proof");
@@ -85,7 +86,10 @@ fn check_satisfaction(public: &SpendProofPublic, private: &SpendProofPrivate) ->
         anyhow::bail!("nullifier did not match public input");
     }
 
-    private.state_commitment_proof.verify(public.anchor)?;
+    let amount_u128: u128 = private.note.value().amount.into();
+    if amount_u128 != 0u128 {
+        private.state_commitment_proof.verify(public.anchor)?;
+    }
 
     let rk = private.ak.randomize(&private.spend_auth_randomizer);
     if rk != public.rk {
@@ -172,21 +176,19 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
             NullifierVar::new_input(cs.clone(), || Ok(self.public.nullifier))?;
         let rk_var = RandomizedVerificationKey::new_input(cs.clone(), || Ok(self.public.rk))?;
 
-        // We short circuit to true if value released is 0. That means this is a _dummy_ spend.
-        let is_dummy = note_var.amount().is_eq(&FqVar::zero())?;
-        // We use a Boolean constraint to enforce the below constraints only if this is not a
-        // dummy spend.
-        let is_not_dummy = is_dummy.not();
-
         // Note commitment integrity.
         let note_commitment_var = note_var.commit()?;
-        note_commitment_var.conditional_enforce_equal(&claimed_note_commitment, &is_not_dummy)?;
+        note_commitment_var.enforce_equal(&claimed_note_commitment)?;
 
         // Nullifier integrity.
         let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_note_commitment)?;
-        nullifier_var.conditional_enforce_equal(&claimed_nullifier_var, &is_not_dummy)?;
+        nullifier_var.enforce_equal(&claimed_nullifier_var)?;
 
         // Merkle auth path verification against the provided anchor.
+        //
+        // We short circuit the merkle path verification if the note is a _dummy_ spend (a spend
+        // with zero value), since these are never committed to the state commitment tree.
+        let is_not_dummy = note_var.amount().is_eq(&FqVar::zero())?.not();
         merkle_path_var.verify(
             cs.clone(),
             &is_not_dummy,
@@ -197,25 +199,23 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
 
         // Check integrity of randomized verification key.
         let computed_rk_var = ak_element_var.randomize(&spend_auth_randomizer_var)?;
-        computed_rk_var.conditional_enforce_equal(&rk_var, &is_not_dummy)?;
+        computed_rk_var.enforce_equal(&rk_var)?;
 
         // Check integrity of diversified address.
         let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_element_var)?;
         let computed_transmission_key =
             ivk.diversified_public(&note_var.diversified_generator())?;
-        computed_transmission_key
-            .conditional_enforce_equal(&note_var.transmission_key(), &is_not_dummy)?;
+        computed_transmission_key.enforce_equal(&note_var.transmission_key())?;
 
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
-        balance_commitment
-            .conditional_enforce_equal(&claimed_balance_commitment_var, &is_not_dummy)?;
+        balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
 
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.conditional_enforce_not_equal(&note_var.diversified_generator(), &is_not_dummy)?;
+        identity.enforce_not_equal(&note_var.diversified_generator())?;
         // Check the ak is not identity.
-        identity.conditional_enforce_not_equal(&ak_element_var.inner, &is_not_dummy)?;
+        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         Ok(())
     }
@@ -273,6 +273,28 @@ impl DummyWitness for SpendCircuit {
 #[derive(Clone, Debug)]
 pub struct SpendProof([u8; GROTH16_PROOF_LENGTH_BYTES]);
 
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("error deserializing compressed proof: {0:?}")]
+    ProofDeserialize(ark_serialize::SerializationError),
+    #[error("Fq types are Bls12-377 field members")]
+    Anchor,
+    #[error("balance commitment is a Bls12-377 field member")]
+    BalanceCommitment,
+    #[error("nullifier is a Bls12-377 field member")]
+    Nullifier,
+    #[error("could not decompress element points: {0:?}")]
+    DecompressRk(decaf377::EncodingError),
+    #[error("randomized spend key is a Bls12-377 field member")]
+    Rk,
+    #[error("start position is a Bls12-377 field member")]
+    StartPosition,
+    #[error("error verifying proof: {0:?}")]
+    SynthesisError(ark_relations::r1cs::SynthesisError),
+    #[error("spend proof did not verify")]
+    InvalidProof,
+}
+
 impl SpendProof {
     /// Generate a `SpendProof` given the proving key, public inputs,
     /// witness data, and two random elements `blinding_r` and `blinding_s`.
@@ -300,48 +322,48 @@ impl SpendProof {
     pub fn verify(
         &self,
         vk: &PreparedVerifyingKey<Bls12_377>,
-        public: SpendProofPublic,
-    ) -> anyhow::Result<()> {
-        let proof =
-            Proof::deserialize_compressed_unchecked(&self.0[..]).map_err(|e| anyhow::anyhow!(e))?;
-
-        let mut public_inputs = Vec::new();
-        public_inputs.extend([Fq::from(public.anchor.0)]);
-        public_inputs.extend(
-            public
-                .balance_commitment
-                .0
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("balance commitment is not a valid element"))?,
-        );
-        public_inputs.extend(
-            public
-                .nullifier
-                .0
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("nullifier is not a valid element"))?,
-        );
-        let element_rk = decaf377::Encoding(public.rk.to_bytes())
+        SpendProofPublic {
+            anchor: Root(anchor),
+            balance_commitment: Commitment(balance_commitment),
+            nullifier: Nullifier(nullifier),
+            rk,
+        }: SpendProofPublic,
+    ) -> Result<(), VerificationError> {
+        let proof = Proof::deserialize_compressed_unchecked(&self.0[..])
+            .map_err(VerificationError::ProofDeserialize)?;
+        let element_rk = decaf377::Encoding(rk.to_bytes())
             .vartime_decompress()
-            .expect("expect only valid element points");
-        public_inputs.extend(
-            element_rk
-                .to_field_elements()
-                .ok_or_else(|| anyhow::anyhow!("rk is not a valid element"))?,
-        );
+            .map_err(VerificationError::DecompressRk)?;
 
-        tracing::trace!(?public_inputs);
+        /// Shorthand helper, convert expressions into field elements.
+        macro_rules! to_field_elements {
+            ($fe:expr, $err:expr) => {
+                $fe.to_field_elements().ok_or($err)?
+            };
+        }
+
+        use VerificationError::*;
+        let public_inputs = [
+            to_field_elements!(Fq::from(anchor), Anchor),
+            to_field_elements!(balance_commitment, BalanceCommitment),
+            to_field_elements!(nullifier, Nullifier),
+            to_field_elements!(element_rk, Rk),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .tap(|public_inputs| tracing::trace!(?public_inputs));
+
         let start = std::time::Instant::now();
-        let proof_result = Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
+        Groth16::<Bls12_377, LibsnarkReduction>::verify_with_processed_vk(
             vk,
             public_inputs.as_slice(),
             &proof,
         )
-        .map_err(|err| anyhow::anyhow!(err))?;
-        tracing::debug!(?proof_result, elapsed = ?start.elapsed());
-        proof_result
-            .then_some(())
-            .ok_or_else(|| anyhow::anyhow!("spend proof did not verify"))
+        .map_err(VerificationError::SynthesisError)?
+        .tap(|proof_result| tracing::debug!(?proof_result, elapsed = ?start.elapsed()))
+        .then_some(())
+        .ok_or(VerificationError::InvalidProof)
     }
 }
 
@@ -841,19 +863,19 @@ mod tests {
             let ak: VerificationKey<SpendAuth> = sk_sender.spend_auth_key().into();
 
             let mut sct = tct::Tree::new();
-            // We shouldn't need a valid Merkle proof here, so let's generate a dummy one.
-            let rseed = Rseed([0u8; 32]);
-            let dummy_note_commitment = Note::from_parts(sender, value_to_send, rseed).expect("can create note").commit();
-            sct.insert(tct::Witness::Keep, dummy_note_commitment).expect("should be able to insert note commitments into the SCT");
+            sct.insert(tct::Witness::Keep, note_commitment).expect("should be able to insert note commitments into the SCT");
 
-            let anchor = sct.root();
-            let state_commitment_proof = sct.witness(dummy_note_commitment).expect("can witness note commitment");
+            let state_commitment_proof = sct.witness(note_commitment).expect("can witness note commitment");
             let balance_commitment = value_to_send.commit(v_blinding);
             let rk: VerificationKey<SpendAuth> = rsk.into();
             let nullifier = Nullifier::derive(&nk, state_commitment_proof.position(), &note_commitment);
 
+            // use an invalid anchor to verify that the circuit skips inclusion checks for dummy
+            // spends
+            let invalid_anchor = tct::Tree::new().root();
+
             let public = SpendProofPublic {
-                anchor,
+                anchor: invalid_anchor,
                 balance_commitment,
                 nullifier,
                 rk,

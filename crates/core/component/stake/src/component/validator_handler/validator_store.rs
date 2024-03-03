@@ -3,12 +3,12 @@ use std::pin::Pin;
 use crate::{
     rate::RateData,
     validator::{State, Validator},
+    DelegationToken,
 };
 use anyhow::Result;
 use async_trait::async_trait;
 use futures::{Future, FutureExt, TryStreamExt};
 use penumbra_num::Amount;
-use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
 use tendermint::PublicKey;
 use validator::BondingState::*;
 
@@ -53,9 +53,10 @@ pub trait ValidatorDataRead: StateRead {
     async fn get_validator_bonding_state(
         &self,
         identity_key: &IdentityKey,
-    ) -> Result<Option<validator::BondingState>> {
+    ) -> Option<validator::BondingState> {
         self.get(&state_key::validators::bonding_state::by_id(identity_key))
             .await
+            .expect("no deserialization error expected")
     }
 
     /// Convenience method to assemble a [`ValidatorStatus`].
@@ -63,7 +64,7 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Result<Option<validator::Status>> {
-        let bonding_state = self.get_validator_bonding_state(identity_key).await?;
+        let bonding_state = self.get_validator_bonding_state(identity_key).await;
         let state = self.get_validator_state(identity_key).await?;
         let power = self.get_validator_power(identity_key).await?;
         let identity_key = identity_key.clone();
@@ -86,6 +87,12 @@ pub trait ValidatorDataRead: StateRead {
             .boxed()
     }
 
+    async fn get_prev_validator_rate(&self, identity_key: &IdentityKey) -> Option<RateData> {
+        self.get(&state_key::validators::rate::previous_by_id(identity_key))
+            .await
+            .expect("no deserialization error expected")
+    }
+
     fn get_validator_power(
         &self,
         validator: &IdentityKey,
@@ -106,6 +113,14 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
         self.get(&state_key::validators::uptime::by_id(identity_key))
+    }
+
+    async fn get_validator_pool_size(&self, identity_key: &IdentityKey) -> Option<Amount> {
+        use penumbra_shielded_pool::component::SupplyRead;
+
+        self.token_supply(&DelegationToken::from(identity_key).id())
+            .await
+            .expect("no deserialization error expected")
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -135,54 +150,31 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    fn compute_unbonding_delay(
-        current_epoch: Epoch,
-        bonding_state: crate::validator::BondingState,
-        min_delay: u64,
-    ) -> u64 {
-        let epoch_delay = match bonding_state {
-            Bonded => min_delay,
-            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.saturating_sub(current_epoch.index),
-            Unbonded => 0u64,
-        };
-
-        // When the minimum delay parameter changes, an unbonding validator may
-        // have a delay that is larger than the new minimum delay. In this case,
-        // we want to use the new minimum delay.
-        std::cmp::min(epoch_delay, min_delay)
-    }
-
-    /// Compute the number of epochs that will elapse before the validator is unbonded.
-    async fn compute_unbonding_delay_for_validator(
-        &self,
-        current_epoch: Epoch,
-        validator_identity: &IdentityKey,
-    ) -> Result<u64> {
-        let Some(val_bonding_state) = self.get_validator_bonding_state(validator_identity).await?
-        else {
+    /// Compute the unbonding epoch for an undelegation initiated at `starting_epoch`.
+    /// If the pool is unbonded, or already unbonding, the `starting_epoch` is ignored.
+    ///
+    /// This can be used to check if the undelegation is allowed, or to compute the
+    /// epoch at which a delegation pool will be unbonded.
+    async fn compute_unbonding_epoch(&self, id: &IdentityKey, starting_epoch: u64) -> Result<u64> {
+        let Some(val_bonding_state) = self.get_validator_bonding_state(id).await else {
             anyhow::bail!(
                 "validator bonding state not tracked (validator_identity={})",
-                validator_identity
+                id
             )
         };
 
         let min_epoch_delay = self.get_stake_params().await?.unbonding_epochs;
-        Ok(Self::compute_unbonding_delay(
-            current_epoch,
-            val_bonding_state,
-            min_epoch_delay,
-        ))
-    }
 
-    /// Return the epoch index at which the validator will be unbonded.
-    /// This is the minimum of the default unbonding epoch and the validator's
-    /// unbonding epoch.
-    async fn compute_unbonding_epoch_for_validator(&self, id: &IdentityKey) -> Result<u64> {
-        let current_epoch = self.get_current_epoch().await?;
-        let unbonding_delay = self
-            .compute_unbonding_delay_for_validator(current_epoch, id)
-            .await?;
-        let unbonding_epoch = current_epoch.index.saturating_add(unbonding_delay);
+        let upper_bound_epoch = starting_epoch.saturating_add(min_epoch_delay);
+
+        let unbonding_epoch = match val_bonding_state {
+            Bonded => upper_bound_epoch,
+            // When the minimum delay parameter changes, an unbonding validator may
+            // have a delay that is larger than the new minimum delay. In this case,
+            Unbonding { unbonds_at_epoch } => unbonds_at_epoch.min(upper_bound_epoch),
+            Unbonded => starting_epoch,
+        };
+
         Ok(unbonding_epoch)
     }
 
@@ -194,7 +186,7 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> Pin<Box<dyn Future<Output = Result<Option<PublicKey>>> + Send + 'static>> {
         use futures::TryFutureExt;
-        self.get(&state_key::validators::definitions::by_id(&identity_key))
+        self.get(&state_key::validators::definitions::by_id(identity_key))
             .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
             .boxed()
     }
@@ -268,6 +260,13 @@ pub trait ValidatorDataWrite: StateWrite {
             state_key::validators::rate::current_by_id(identity_key),
             rate_data,
         );
+    }
+
+    #[instrument(skip(self))]
+    /// Persist the previous validator rate data, inclusive of accumulated penalties.
+    fn set_prev_validator_rate(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
+        let path = state_key::validators::rate::previous_by_id(identity_key);
+        self.put(path, rate_data)
     }
 }
 
