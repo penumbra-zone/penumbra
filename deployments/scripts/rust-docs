@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rebuild Rust crate documentation
 set -euo pipefail
 
