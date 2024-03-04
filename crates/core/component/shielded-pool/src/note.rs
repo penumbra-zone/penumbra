@@ -554,7 +554,6 @@ impl From<NoteCiphertext> for pb::NoteCiphertext {
 
 #[cfg(test)]
 mod tests {
-    use ark_ff::UniformRand;
     use decaf377::Fr;
     use rand_core::OsRng;
 

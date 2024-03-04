@@ -1,4 +1,3 @@
-use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};

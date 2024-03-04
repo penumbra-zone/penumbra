@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use ark_ec::Group;
-use ark_ff::{One, UniformRand, Zero};
+use ark_ff::{One, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, Compress, Validate};
 use rand_core::{CryptoRngCore, OsRng};
 

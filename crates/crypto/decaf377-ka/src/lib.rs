@@ -4,7 +4,6 @@
 
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::UniformRand;
 use decaf377::{self};
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;

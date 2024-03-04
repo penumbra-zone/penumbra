@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use ibc_proto::ibc::core::client::v1::{
     query_client::QueryClient as IbcClientQueryClient, QueryClientStateRequest,

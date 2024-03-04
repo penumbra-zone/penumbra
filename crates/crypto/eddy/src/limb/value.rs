@@ -1,6 +1,5 @@
 use crate::limb::Ciphertext;
 use crate::EncryptionKey;
-use ark_ff::UniformRand;
 use rand_core::{CryptoRng, RngCore};
 
 /// An individual limb value.

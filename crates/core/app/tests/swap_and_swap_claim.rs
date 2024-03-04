@@ -1,7 +1,6 @@
 mod common;
 
 use self::common::TempStorageExt;
-use ark_ff::UniformRand;
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler, Component};
 use decaf377::Fq;

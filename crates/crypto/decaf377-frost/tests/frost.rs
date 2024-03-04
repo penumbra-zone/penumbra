@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
 
-use ark_ff::UniformRand;
 use decaf377_frost::{self as frost, Identifier};
 use decaf377_rdsa::*;
 use rand_core::OsRng;

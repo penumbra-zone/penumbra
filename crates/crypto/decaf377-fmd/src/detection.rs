@@ -1,6 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
-use ark_ff::{UniformRand, Zero};
+use ark_ff::Zero;
 use ark_serialize::CanonicalDeserialize;
 use bitvec::{order, slice::BitSlice};
 use decaf377::Fr;

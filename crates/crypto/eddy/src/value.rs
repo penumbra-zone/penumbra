@@ -79,7 +79,6 @@ impl Value {
 mod tests {
     use super::*;
 
-    use ark_ff::UniformRand;
     use proptest::prelude::*;
 
     proptest! {

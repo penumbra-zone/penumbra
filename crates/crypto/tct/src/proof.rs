@@ -1,4 +1,3 @@
-use ark_ff::UniformRand;
 use poseidon377::Fq;
 
 use crate::prelude::*;

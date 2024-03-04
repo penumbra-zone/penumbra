@@ -1,5 +1,4 @@
 use anyhow::Result;
-use ark_ff::UniformRand;
 use decaf377::Fq;
 use decaf377_frost as frost;
 use ed25519_consensus::{SigningKey, VerificationKey};

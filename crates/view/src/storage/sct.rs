@@ -10,19 +10,6 @@ use penumbra_tct::{
     structure::Hash,
     Forgotten, Position, StateCommitment,
 };
-use std::{
-    fs::{self, OpenOptions},
-    io::Write as Writer,
-};
-
-fn print_to_file<T: Debug>(data: &T, filename: &str) -> std::io::Result<()> {
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(filename)?;
-    writeln!(file, "{:#?}", data)?;
-    Ok(())
-}
 
 #[derive(Debug)]
 pub struct TreeStore<'a, 'c: 'a>(pub &'a mut Transaction<'c>);
@@ -307,21 +294,16 @@ mod test {
 
     #[test]
     fn tree_store_spot_check() {
-        let _ = fs::remove_file("spend_proof.txt");
         // Set up the database:
         let mut db = r2d2_sqlite::rusqlite::Connection::open_in_memory().unwrap();
         let mut tx = db.transaction().unwrap();
-        print_to_file(&tx, "spend_proof.txt").expect("Failed to write proving key");
         tx.execute_batch(include_str!("schema.sql")).unwrap();
 
         // Now we're exclusively going to talk to the db through the TreeStore:
         let mut store = TreeStore(&mut tx);
-        print_to_file(&store, "spend_proof.txt").expect("Failed to write proving key");
 
         // Check that the currently stored tree is the empty tree:
         let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
-        print_to_file(&deserialized, "spend_proof.txt").expect("Failed to write proving key");
-
         assert_eq!(deserialized, penumbra_tct::Tree::new());
 
         // Make some kind of tree:
