@@ -63,9 +63,13 @@ use penumbra_transaction::{
 
 use crate::{Planner, Storage, Worker};
 
+/// A [`futures::Stream`] of broadcast transaction responses.
+///
+/// See [`ViewService::broadcast_transaction()`].
 type BroadcastTransactionStream = Pin<
     Box<dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>> + Send>,
 >;
+
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
@@ -365,12 +369,7 @@ impl ViewService for ViewServer {
     type UnclaimedSwapsStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::UnclaimedSwapsResponse, tonic::Status>> + Send>,
     >;
-    type BroadcastTransactionStream = Pin<
-        Box<
-            dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>>
-                + Send,
-        >,
-    >;
+    type BroadcastTransactionStream = BroadcastTransactionStream;
     type WitnessAndBuildStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::WitnessAndBuildResponse, tonic::Status>> + Send>,
     >;
