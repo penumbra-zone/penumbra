@@ -25,8 +25,6 @@ mod sync;
 mod transaction_info;
 mod worker;
 
-use worker::Worker;
-
 pub use crate::client::ViewClient;
 pub use crate::metrics::register_metrics;
 pub use crate::note_record::SpendableNoteRecord;

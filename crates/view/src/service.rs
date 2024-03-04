@@ -57,7 +57,7 @@ use penumbra_transaction::{
     AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
-use crate::{Planner, Storage, Worker};
+use crate::{worker::Worker, Planner, Storage};
 
 /// A [`futures::Stream`] of broadcast transaction responses.
 ///
