@@ -25,9 +25,9 @@ impl TransparentEncryptionProof {
             let blinding = &self.blindings[i];
             let limb = &limbs[i];
 
-            let c1 = blinding * decaf377::basepoint();
-            let c2 =
-                blinding * encryption_key.0 + decaf377::Fr::from(limb.0) * decaf377::basepoint();
+            let c1 = blinding * decaf377::Element::GENERATOR;
+            let c2 = blinding * encryption_key.0
+                + decaf377::Fr::from(limb.0) * decaf377::Element::GENERATOR;
 
             if c1 != ctxt.c1 || c2 != ctxt.c2 {
                 anyhow::bail!("TransparentEncryptionProof: verification failed");

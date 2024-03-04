@@ -143,7 +143,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 impl DummyWitness for OutputCircuit {
     fn with_dummy_witness() -> Self {
         let diversifier_bytes = [1u8; 16];
-        let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
+        let pk_d_bytes = decaf377::Element::GENERATOR.vartime_compress().0;
         let clue_key_bytes = [1; 32];
         let diversifier = Diversifier(diversifier_bytes);
         let address = Address::from_components(
@@ -162,7 +162,7 @@ impl DummyWitness for OutputCircuit {
 
         let public = OutputProofPublic {
             note_commitment: note.commit(),
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
         };
         let private = OutputProofPrivate {
             note,

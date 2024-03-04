@@ -131,9 +131,9 @@ impl ExpandedClueKey {
             Fr::from_le_bytes_mod_order(hash.as_bytes())
         };
 
-        let P = r * decaf377::basepoint();
+        let P = r * decaf377::Element::GENERATOR;
         let P_encoding = P.vartime_compress();
-        let Q = z * decaf377::basepoint();
+        let Q = z * decaf377::Element::GENERATOR;
         let Q_encoding = Q.vartime_compress();
 
         let mut ctxts = BitArray::<[u8; 3], order::Lsb0>::ZERO;
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_clue_key_infallible_expand() {
-        let valid_ck = ClueKey(decaf377::basepoint().vartime_compress().0);
+        let valid_ck = ClueKey(decaf377::Element::GENERATOR.vartime_compress().0);
         let ck_fq_invalid = Fq::from_le_bytes_mod_order(&valid_ck.0) + Fq::from(1u64);
         let invalid_ck = ClueKey(ck_fq_invalid.to_bytes());
         let _eck = invalid_ck.expand_infallible();

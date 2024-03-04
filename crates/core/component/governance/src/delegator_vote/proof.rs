@@ -280,7 +280,7 @@ impl DummyWitness for DelegatorVoteCircuit {
 
         let public = DelegatorVoteProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
             nullifier,
             rk,
             start_position,

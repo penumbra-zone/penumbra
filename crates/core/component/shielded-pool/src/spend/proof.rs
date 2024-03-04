@@ -253,7 +253,7 @@ impl DummyWitness for SpendCircuit {
 
         let public = SpendProofPublic {
             anchor,
-            balance_commitment: balance::Commitment(decaf377::basepoint()),
+            balance_commitment: balance::Commitment(decaf377::Element::GENERATOR),
             nullifier,
             rk,
         };

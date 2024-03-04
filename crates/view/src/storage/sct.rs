@@ -4,12 +4,27 @@ use anyhow::Context as _;
 use genawaiter::{rc::gen, yield_};
 use r2d2_sqlite::rusqlite::Transaction;
 
+use core::fmt::Debug;
 use penumbra_tct::{
     storage::{Read, StoredPosition, Write},
     structure::Hash,
     Forgotten, Position, StateCommitment,
 };
+use std::{
+    fs::{self, OpenOptions},
+    io::Write as Writer,
+};
 
+fn print_to_file<T: Debug>(data: &T, filename: &str) -> std::io::Result<()> {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(filename)?;
+    writeln!(file, "{:#?}", data)?;
+    Ok(())
+}
+
+#[derive(Debug)]
 pub struct TreeStore<'a, 'c: 'a>(pub &'a mut Transaction<'c>);
 
 impl Read for TreeStore<'_, '_> {
@@ -102,11 +117,15 @@ impl Read for TreeStore<'_, '_> {
                         let position: i64 = row.get("position")?;
                         let height: u8 = row.get("height")?;
                         let hash: Vec<u8> = row.get("hash")?;
-                        unimplemented!();
-                        // let hash = <[u8; 32]>::try_from(hash)
-                        //     .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
-                        //     .and_then(move |array| Hash::from_bytes(array).map_err(Into::into))?;
-                        // anyhow::Ok((Position::from(position as u64), height, hash))
+                        let hash = <[u8; 32]>::try_from(hash)
+                            .map_err(|_| anyhow::anyhow!("hash was of incorrect length"))
+                            .and_then(|array| {
+                                Hash::from_bytes(array).map_err(|e| {
+                                    // Explicitly convert any error to anyhow::Error
+                                    anyhow::Error::msg(format!("Error converting hash: {}", e))
+                                })
+                            })?;
+                        anyhow::Ok((Position::from(position as u64), height, hash))
                     })
                     .context("couldn't query database")
                 {
@@ -288,16 +307,21 @@ mod test {
 
     #[test]
     fn tree_store_spot_check() {
+        let _ = fs::remove_file("spend_proof.txt");
         // Set up the database:
         let mut db = r2d2_sqlite::rusqlite::Connection::open_in_memory().unwrap();
         let mut tx = db.transaction().unwrap();
+        print_to_file(&tx, "spend_proof.txt").expect("Failed to write proving key");
         tx.execute_batch(include_str!("schema.sql")).unwrap();
 
         // Now we're exclusively going to talk to the db through the TreeStore:
         let mut store = TreeStore(&mut tx);
+        print_to_file(&store, "spend_proof.txt").expect("Failed to write proving key");
 
         // Check that the currently stored tree is the empty tree:
         let deserialized = penumbra_tct::Tree::from_reader(&mut store).unwrap();
+        print_to_file(&deserialized, "spend_proof.txt").expect("Failed to write proving key");
+
         assert_eq!(deserialized, penumbra_tct::Tree::new());
 
         // Make some kind of tree:

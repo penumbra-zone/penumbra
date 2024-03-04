@@ -57,7 +57,7 @@ impl Secret {
     /// Derive a public key for this secret key, using the conventional
     /// `decaf377` generator.
     pub fn public(&self) -> Public {
-        self.diversified_public(&decaf377::basepoint())
+        self.diversified_public(&decaf377::Element::GENERATOR)
     }
 
     /// Derive a diversified public key for this secret key, using the provided
