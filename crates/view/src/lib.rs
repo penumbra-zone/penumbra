@@ -16,12 +16,12 @@ mod worker;
 
 use worker::Worker;
 
+pub use crate::client::ViewClient;
 pub use crate::metrics::register_metrics;
-pub use client::ViewClient;
-pub use note_record::SpendableNoteRecord;
-pub use planner::Planner;
-pub use service::ViewServer;
-pub use status::StatusStreamResponse;
-pub use storage::Storage;
-pub use swap_record::SwapRecord;
-pub use transaction_info::TransactionInfo;
+pub use crate::note_record::SpendableNoteRecord;
+pub use crate::planner::Planner;
+pub use crate::service::ViewServer;
+pub use crate::status::StatusStreamResponse;
+pub use crate::storage::Storage;
+pub use crate::swap_record::SwapRecord;
+pub use crate::transaction_info::TransactionInfo;
