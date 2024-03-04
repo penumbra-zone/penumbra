@@ -18,8 +18,7 @@ use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::instrument;
 use url::Url;
 
-use penumbra_asset::asset::Metadata;
-use penumbra_asset::{asset, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_dex::{
     lp::{
         position::{self, Position},
@@ -29,29 +28,26 @@ use penumbra_dex::{
     TradingPair,
 };
 use penumbra_fee::Fee;
-use penumbra_keys::keys::WalletId;
-use penumbra_keys::AddressView;
 use penumbra_keys::{
+    keys::WalletId,
     keys::{AddressIndex, FullViewingKey},
-    Address,
+    Address, AddressView,
 };
 use penumbra_num::Amount;
-use penumbra_proto::view::v1::broadcast_transaction_response::{BroadcastSuccess, Confirmed};
-use penumbra_proto::view::v1::BroadcastTransactionResponse;
-use penumbra_proto::view::v1::{WalletIdRequest, WalletIdResponse};
 use penumbra_proto::{
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
-    view::v1::broadcast_transaction_response::Status as BroadcastStatus,
     view::v1::{
         self as pb,
+        broadcast_transaction_response::{BroadcastSuccess, Confirmed, Status as BroadcastStatus},
         view_service_client::ViewServiceClient,
         view_service_server::{ViewService, ViewServiceServer},
         AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
-        FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse, StatusResponse,
-        SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
+        BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
+        NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
+        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse, WitnessResponse,
     },
     DomainType,
 };
