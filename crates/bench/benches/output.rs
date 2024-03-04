@@ -25,7 +25,7 @@ fn prove(r: Fq, s: Fq, public: OutputProofPublic, private: OutputProofPrivate) {
 
 fn output_proving_time(c: &mut Criterion) {
     let diversifier_bytes = [1u8; 16];
-    let pk_d_bytes = decaf377::basepoint().vartime_compress().0;
+    let pk_d_bytes = decaf377::Element::GENERATOR.vartime_compress().0;
     let clue_key_bytes = [1; 32];
     let diversifier = Diversifier(diversifier_bytes);
     let address = Address::from_components(

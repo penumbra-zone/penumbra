@@ -7,7 +7,11 @@ use decaf377::{
 use decaf377_rdsa::{SpendAuth, VerificationKey, VerificationKeyBytes};
 use once_cell::sync::Lazy;
 
-pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(decaf377::basepoint);
+fn generator() -> Element {
+    Element::GENERATOR
+}
+
+pub(crate) static SPENDAUTH_BASEPOINT: Lazy<Element> = Lazy::new(generator);
 
 pub struct RandomizedVerificationKey {
     pub inner: ElementVar,

@@ -62,7 +62,7 @@ pub trait DecryptionTable: Send + Sync {
         #[allow(non_snake_case)]
         async move {
             let (mut x, mut xB) = (0u32, decaf377::Element::default());
-            let B = decaf377::basepoint();
+            let B = decaf377::Element::GENERATOR;
 
             let bound = 1 << k;
             while x < bound {

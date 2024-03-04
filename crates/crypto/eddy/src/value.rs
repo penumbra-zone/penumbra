@@ -110,7 +110,7 @@ mod tests {
         #[test]
         fn encrypt_verify_roundtrip(value: u64) {
             let mut rng = rand::thread_rng();
-            let encryption_key = EncryptionKey(decaf377::basepoint() * decaf377::Fr::rand(&mut rng));
+            let encryption_key = EncryptionKey(decaf377::Element::GENERATOR * decaf377::Fr::rand(&mut rng));
             let value = Value::from(value);
             let (ciphertext, proof) = value
                 .transparent_encrypt(&encryption_key, &mut rng)

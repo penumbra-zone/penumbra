@@ -64,7 +64,7 @@ impl Group for Decaf377Group {
     }
 
     fn generator() -> Self::Element {
-        decaf377::basepoint()
+        decaf377::Element::GENERATOR
     }
 
     fn serialize(element: &Self::Element) -> Self::Serialization {
