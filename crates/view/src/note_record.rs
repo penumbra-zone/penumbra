@@ -3,7 +3,7 @@ use penumbra_keys::{keys::AddressIndex, Address, AddressView};
 use penumbra_proto::{view::v1 as pb, DomainType};
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_shielded_pool::{note, Note, Rseed};
-use penumbra_tct as tct;
+use penumbra_tct::Position;
 
 use r2d2_sqlite::rusqlite::Row;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ pub struct SpendableNoteRecord {
     pub nullifier: Nullifier,
     pub height_created: u64,
     pub height_spent: Option<u64>,
-    pub position: tct::Position,
+    pub position: Position,
     pub source: CommitmentSource,
     pub return_address: Option<AddressView>,
 }
@@ -26,6 +26,7 @@ pub struct SpendableNoteRecord {
 impl DomainType for SpendableNoteRecord {
     type Proto = pb::SpendableNoteRecord;
 }
+
 impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
     fn from(v: SpendableNoteRecord) -> Self {
         pb::SpendableNoteRecord {
