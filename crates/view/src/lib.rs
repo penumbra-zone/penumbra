@@ -1,3 +1,14 @@
+//! The view RPC library for the Penumbra Zone.
+//!
+//! This crate provides a [`ViewClient`] and a [`ViewServer`]. These form a client-server pair to
+//! synchronize and interact with public chain state using one or more full viewing keys. See the
+//! documentation of [`ViewClient`] and a [`ViewServer`] for more information.
+//!
+//! This crate also provides a [`Planner`]. This is a planner for
+//! [`TransactionPlan`][penumbra_transaction::TransactionPlan].
+//!
+//! Finally, this crate provides a [`Storage`] type to managing persistent sqlite storage.
+
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
 // Requires nightly.
