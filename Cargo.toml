@@ -136,7 +136,7 @@ criterion                        = { version = "0.4" }
 decaf377                         = { default-features = false, git = "https://github.com/penumbra-zone/decaf377", branch = "visibility", features = ["r1cs", "u32_backend"] }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
 decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
-decaf377-rdsa                    = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps" }
+decaf377-rdsa                    = { git = "https://github.com/penumbra-zone/decaf377-rdsa", branch = "update-deps-updated" }
 derivative                       = { version = "2.2" }
 directories                      = { version = "4.0.1" }
 ed25519-consensus                = { version = "2.1" }
@@ -189,7 +189,7 @@ penumbra-view                    = { path = "crates/view" }
 penumbra-extension               = { path = "crates/penumbra-extension", default-features = false }
 pin-project                      = { version = "1.0.12" }
 pin-project-lite                 = { version = "0.2.9" }
-poseidon377                      = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-deps" }
+poseidon377                      = { git = "https://github.com/penumbra-zone/poseidon377", branch = "update-deps-updated" }
 proptest                         = { version = "1" }
 proptest-derive                  = { version = "0.3" }
 prost                            = { version = "0.12.3" }
