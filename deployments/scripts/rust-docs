@@ -49,6 +49,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-proto \
   -p penumbra-sct \
   -p penumbra-shielded-pool \
+  -p penumbra-stake \
   -p penumbra-tct \
   -p penumbra-transaction \
   -p penumbra-txhash \
