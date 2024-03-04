@@ -107,6 +107,12 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
             );
+
+            // since the notes are burned, decrease the token supply for the native asset. deposits
+            // implicitly increase the supply, since they call 'mint_note'
+            self.decrease_token_supply(&withdrawal.denom.id(), withdrawal.amount)
+                .await
+                .expect("couldn't decrease token supply in ics20 withdrawal!");
         } else {
             // receiver is the source, burn utxos
 
