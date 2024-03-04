@@ -1,5 +1,5 @@
 
-# System-Level 
+# System-Level
 
 #### Invariants
 
@@ -13,9 +13,22 @@
 
 ## Action-Level
 
-### Community Pool Output
+### Output
 
-#### Global Violations
+#### Local Invariants
+
+1. The created output note is spendable by the recipient if its nullifier has not been revealed.
+1.1 The output note is bound to the recipient.
+1.2 The output note can be spent only by the recipient.
+
+#### Local Justification
+
+1.1 The note commitment binds the note to the typed value and the address of the recipient.
+1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
+
+#### Global Justification
+
+1.1 This action contributes the value of the output note, which is summed as part of the transaction value balance. Value is not created due to system level invariant 1, which ensures that transactions contribute a 0 value balance.
 
 ### Spend
 
