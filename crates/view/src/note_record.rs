@@ -26,6 +26,7 @@ pub struct SpendableNoteRecord {
 impl DomainType for SpendableNoteRecord {
     type Proto = pb::SpendableNoteRecord;
 }
+
 impl From<SpendableNoteRecord> for pb::SpendableNoteRecord {
     fn from(v: SpendableNoteRecord) -> Self {
         pb::SpendableNoteRecord {
