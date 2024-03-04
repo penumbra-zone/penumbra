@@ -7,7 +7,7 @@
 //! This crate also provides a [`Planner`]. This is a planner for
 //! [`TransactionPlan`][penumbra_transaction::TransactionPlan].
 //!
-//! Finally, this crate provides a [`Storage`] type to managing persistent sqlite storage.
+//! Finally, this crate provides a [`Storage`] type for managing persistent sqlite storage.
 
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
