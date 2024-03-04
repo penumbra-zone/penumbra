@@ -121,6 +121,33 @@ mod tests {
     use crate::ActionHandler;
 
     #[tokio::test]
+    async fn check_duplicate_note_commitment() -> Result<()> {
+        // Generate two notes controlled by the test address.
+        let value = Value {
+            amount: 100u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+        let note = Note::generate(&mut OsRng, &test_keys::ADDRESS_0, value);
+        let note_commitment = note.commit();
+
+        // Record that note in an SCT, where we can generate an auth path.
+        let mut sct = tct::Tree::new();
+        let pos = sct
+            .insert(tct::Witness::Keep, note_commitment)
+            .expect("can insert the note");
+        dbg!(pos);
+
+        // Duplicate note commitment.. should this not fail?
+        let pos2 = sct
+            .insert(tct::Witness::Keep, note_commitment)
+            .expect("boom");
+        dbg!(pos2);
+        assert_eq!(pos, pos2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn check_stateless_succeeds_on_valid_spend() -> Result<()> {
         // Generate two notes controlled by the test address.
         let value = Value {
