@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context, Result};
-use ark_ff::{UniformRand, Zero};
+use ark_ff::Zero;
 
 use decaf377::{Fq, Fr};
 use penumbra_asset::{balance, Balance, Value};

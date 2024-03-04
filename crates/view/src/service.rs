@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
-use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;

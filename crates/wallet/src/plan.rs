@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use anyhow::Context;
-use ark_std::UniformRand;
+use anyhow::{Context, Result};
 use decaf377::Fq;
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;

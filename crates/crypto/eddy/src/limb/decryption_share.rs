@@ -1,4 +1,3 @@
-use ark_std::UniformRand;
 use decaf377::Fr;
 use rand_core::{CryptoRng, RngCore};
 

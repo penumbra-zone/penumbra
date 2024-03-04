@@ -1,4 +1,3 @@
-use ark_ff::UniformRand;
 use ark_ff::Zero;
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};

@@ -1,4 +1,4 @@
-use ark_ff::{One, UniformRand, Zero};
+use ark_ff::{One, Zero};
 use decaf377::{Element, Fr};
 pub use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use rand_core;
