@@ -27,7 +27,7 @@ decaf377-rdsa = {workspace = true}
 metrics = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
-penumbra-proto = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = false}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
