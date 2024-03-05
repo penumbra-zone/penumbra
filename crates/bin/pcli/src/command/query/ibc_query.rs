@@ -1,9 +1,11 @@
+use std::time::SystemTime;
+
 use anyhow::Result;
 use colored_json::ToColoredJson;
 use comfy_table::Table;
 use ibc_proto::ibc::core::channel::v1::query_client::QueryClient as ChannelQueryClient;
 use ibc_proto::ibc::core::channel::v1::{
-    IdentifiedChannel, QueryChannelRequest, QueryChannelsRequest,
+    IdentifiedChannel, QueryChannelConsensusStateRequest, QueryChannelRequest, QueryChannelsRequest,
 };
 use ibc_proto::ibc::core::client::v1::query_client::QueryClient as ClientQueryClient;
 use ibc_proto::ibc::core::client::v1::{QueryClientStateRequest, QueryClientStatesRequest};
@@ -13,6 +15,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 use ibc_types::core::channel::channel::State;
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
+use ibc_types::lightclients::tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 
 use crate::App;
 
@@ -53,6 +56,7 @@ struct ChannelInfo {
     channel: IdentifiedChannel,
     connection: ConnectionEnd,
     client: TendermintClientState,
+    consensus_state: TendermintConsensusState,
 }
 
 impl IbcCmd {
@@ -150,6 +154,20 @@ impl IbcCmd {
                     .client_state
                     .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
                 let client_state = TendermintClientState::try_from(client_state)?;
+                let channel_consensus_state = channel_client
+                    .channel_consensus_state(QueryChannelConsensusStateRequest {
+                        port_id: port.to_string(),
+                        channel_id: format!("channel-{}", channel_id),
+                        revision_height: client_state.latest_height().revision_height,
+                        revision_number: client_state.latest_height().revision_number,
+                    })
+                    .await?
+                    .into_inner()
+                    .consensus_state
+                    .ok_or_else(|| anyhow::anyhow!("consensus state not found for channel"))?;
+
+                let tendermint_consensus_state =
+                    TendermintConsensusState::try_from(channel_consensus_state)?;
 
                 let mut table = Table::new();
                 table.set_header(vec![
@@ -161,7 +179,16 @@ impl IbcCmd {
                     "Client ID",
                     "Client Height",
                 ]);
-                let state_str = State::from_i32(channel.state).unwrap().to_string();
+                let mut state_str = State::from_i32(channel.state).unwrap().to_string();
+
+                let current_time: time::OffsetDateTime = SystemTime::now().into();
+                let current_time_tm: tendermint::Time = current_time.try_into()?;
+
+                let time_elapsed =
+                    current_time_tm.duration_since(tendermint_consensus_state.timestamp)?;
+                if client_state.expired(time_elapsed) {
+                    state_str = "CLIENT EXPIRED".to_string();
+                }
                 table.add_row(vec![
                     channel_id.to_string(),
                     port.to_string(),
@@ -207,12 +234,27 @@ impl IbcCmd {
                         .into_inner()
                         .client_state
                         .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
+                    let client_state = TendermintClientState::try_from(client_state.clone())?;
+                    let channel_consensus_state = channel_client
+                        .channel_consensus_state(QueryChannelConsensusStateRequest {
+                            port_id: channel.clone().port_id.to_string(),
+                            channel_id: channel.clone().channel_id,
+                            revision_height: client_state.latest_height().revision_height,
+                            revision_number: client_state.latest_height().revision_number,
+                        })
+                        .await?
+                        .into_inner()
+                        .consensus_state
+                        .ok_or_else(|| anyhow::anyhow!("consensus state not found for channel"))?;
 
-                    let client_state = TendermintClientState::try_from(client_state)?;
+                    let tendermint_consensus_state =
+                        TendermintConsensusState::try_from(channel_consensus_state)?;
+
                     channel_infos.push(ChannelInfo {
                         channel,
                         connection,
                         client: client_state,
+                        consensus_state: tendermint_consensus_state,
                     });
                 }
 
@@ -228,7 +270,15 @@ impl IbcCmd {
                 ]);
 
                 for info in channel_infos {
-                    let state_str = State::from_i32(info.channel.state).unwrap().to_string();
+                    let mut state_str = State::from_i32(info.channel.state).unwrap().to_string();
+                    let current_time: time::OffsetDateTime = SystemTime::now().into();
+                    let current_time_tm: tendermint::Time = current_time.try_into()?;
+
+                    let time_elapsed =
+                        current_time_tm.duration_since(info.consensus_state.timestamp)?;
+                    if info.client.expired(time_elapsed) {
+                        state_str = "CLIENT EXPIRED".to_string();
+                    }
                     table.add_row(vec![
                         info.channel.channel_id.to_string(),
                         info.channel.port_id,
