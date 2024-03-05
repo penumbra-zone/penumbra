@@ -96,7 +96,7 @@ pub mod frontier {
     //! then finalized into a [`complete::Node`](super::complete::Node) that it is pruned, if it
     //! contains no witnessed children.
     //!
-    //! At the tip of the frontier, however deeply nested (perhaps within muliple [`Tier`]s), there
+    //! At the tip of the frontier, however deeply nested (perhaps within multiple [`Tier`]s), there
     //! is a single [`Item`], which is either a [`Commitment`](crate::Commitment) or a hash of one.
     //! Commitments can be inserted either with the intent to remember them, or with the intent to
     //! immediately forget them; this determines whether the [`Item`] is a commitment or merely its

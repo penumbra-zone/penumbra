@@ -29,7 +29,7 @@ If you're interested in technical discussion about the project, why not
 Penumbra records all value in a single multi-asset shielded pool based on the
 Zcash Sapling design, but allows private transactions in any kind of IBC
 asset.  Inbound IBC transfers shield value as it moves into the zone, while
-outbound IBC transfers unshield value.  
+outbound IBC transfers unshielded value.  
 
 Unlike Zcash, Penumbra has no notion of transparent transactions or a
 transparent value pool; instead, inbound IBC transfers are analogous to `t2z`

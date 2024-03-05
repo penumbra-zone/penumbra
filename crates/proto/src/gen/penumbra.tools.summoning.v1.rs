@@ -190,7 +190,7 @@ pub mod participate_response {
             )
         }
     }
-    /// Sent to the participant to confim their contribution was accepted.
+    /// Sent to the participant to confirm their contribution was accepted.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Confirm {

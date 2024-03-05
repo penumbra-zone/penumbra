@@ -32,7 +32,7 @@ pub enum FillError {
     /// of the trading pair.
     #[error("input id {0:?} does not belong on pair: {1:?}")]
     AssetIdMismatch(asset::Id, TradingPair),
-    /// Overflow occured when executing against the position corresponding
+    /// Overflow occurred when executing against the position corresponding
     /// to the wrapped asset id.
     #[error("overflow when executing against position {0:?}")]
     ExecutionOverflow(position::Id),

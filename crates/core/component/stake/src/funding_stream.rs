@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 #[serde(try_from = "pb::FundingStream", into = "pb::FundingStream")]
 pub enum FundingStream {
     ToAddress {
-        /// The destinatination address for the funding stream..
+        /// The destination address for the funding stream..
         address: Address,
 
         /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the

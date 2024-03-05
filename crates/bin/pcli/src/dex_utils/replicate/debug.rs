@@ -21,7 +21,7 @@ pub struct PayoffPositionEntry {
 /// to JSON so that we can pipe it into a Julia notebook. The reason why
 /// this is a separate structure from [`position::Position`] is that we
 /// might want to do extra processing, rounding, etc. and we'd rather note
-/// clutter it with serializiation methods that are useful for narrow purposes.
+/// clutter it with serialization methods that are useful for narrow purposes.
 #[derive(Serialize)]
 pub struct PayoffPosition {
     pub p: f64,
