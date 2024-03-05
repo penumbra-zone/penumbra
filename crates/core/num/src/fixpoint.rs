@@ -205,7 +205,7 @@ impl AllocVar<U128x128, Fq> for U128x128Var {
         let inner: U128x128 = *f()?.borrow();
 
         // TODO: in the case of a constant U128x128Var, this will allocate
-        // witness vars intsead of constants, but we don't have much use for
+        // witness vars instead of constants, but we don't have much use for
         // constant U128x128Vars anyways, so this efficiency loss shouldn't be a
         // problem.
 

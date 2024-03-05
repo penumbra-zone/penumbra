@@ -74,7 +74,7 @@ impl ExpandedClueKey {
 
         let current_precision = self.subkeys.borrow().len();
 
-        // The cached expansion is large enough to accomodate the specified precision.
+        // The cached expansion is large enough to accommodate the specified precision.
         if precision <= current_precision {
             return Ok(());
         }

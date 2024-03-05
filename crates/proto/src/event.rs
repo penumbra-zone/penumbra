@@ -9,7 +9,7 @@ pub trait ProtoEvent: Message + Name + Serialize + DeserializeOwned + Sized {
         let kind = Self::full_name();
 
         let event_json = serde_json::to_value(&self)
-            .expect("ProtoEvent constrained values should be JSON serializeable.");
+            .expect("ProtoEvent constrained values should be JSON serializable.");
 
         // WARNING: Assuming that Rust value will always serialize into a valid JSON Object value. This falls apart the moment that isn't true, so we fail hard if that turns out to be the case.
         let mut attributes: Vec<EventAttribute> = event_json

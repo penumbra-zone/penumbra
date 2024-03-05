@@ -35,7 +35,7 @@ where
 
 /// A trait abstracting over the kind of terminal interface we expect.
 ///
-/// This is mainly used to accomodate the kind of interaction we have with the CLI
+/// This is mainly used to accommodate the kind of interaction we have with the CLI
 /// interface, but it can also be plugged in with more general backends.
 #[async_trait]
 pub trait Terminal {
