@@ -134,7 +134,7 @@ impl QueryService for Server {
                     // buffered streams staying full for too long. However, in at least a few
                     // "regular usage" instances we observed client streams stopping too eagerly.
                     // In #2932, it was established that the timeout had to be at least 10s to
-                    // accomodate those usecases.
+                    // accommodate those usecases.
                     //
                     // Although we cannot exclude that clients actually did not poll the stream for
                     // more than `9s`, this seems unlikely. We are removing the timeout mechanism
