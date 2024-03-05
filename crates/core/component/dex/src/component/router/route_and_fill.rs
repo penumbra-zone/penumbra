@@ -274,7 +274,7 @@ pub trait RouteAndFill: StateWrite + Sized {
             }
 
             // Ensure that we've actually executed, or else bail out.
-            let Some(accurate_max_price) = execution.max_price()? else {
+            let Some(accurate_max_price) = execution.max_price() else {
                 tracing::debug!("no traces in execution, exiting route_and_fill");
                 break;
             };
