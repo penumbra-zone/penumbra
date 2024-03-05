@@ -15,17 +15,17 @@ pub struct SwapExecution {
 
 impl SwapExecution {
     /// Returns the price of the latest execution trace.
-    pub fn max_price(&self) -> Result<Option<U128x128>> {
+    pub fn max_price(&self) -> Option<U128x128> {
         let Some((input, output)) = self.traces.last().and_then(|trace| {
             let input = trace.first()?;
             let output = trace.last()?;
             Some((input, output))
         }) else {
-            return Ok(None);
+            return None;
         };
 
-        let price = U128x128::ratio(input.amount, output.amount)?;
-        Ok(Some(price))
+        let price = U128x128::ratio(input.amount, output.amount).ok()?;
+        Some(price)
     }
 }
 
