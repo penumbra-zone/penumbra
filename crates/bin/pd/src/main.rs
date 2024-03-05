@@ -66,6 +66,7 @@ async fn main() -> anyhow::Result<()> {
         registry.init();
     }
 
+    tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {
         RootCommand::Start {
             home,
