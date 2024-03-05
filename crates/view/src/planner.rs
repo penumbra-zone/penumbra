@@ -673,12 +673,26 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
-        // Clear the planner and pull out the plan to return
-        self.balance = Balance::zero();
-        self.vote_intents = BTreeMap::new();
-        self.ibc_actions = Vec::new();
-        self.gas_prices = GasPrices::zero();
-        let plan = mem::take(&mut self.plan);
+        // Clear the planner and pull out the plan that we will return.
+        //
+        // NB: we exhaustively destructure `Self` here so that we'll be sure to reset
+        // fields added in the future.
+        let Self {
+            balance,
+            vote_intents,
+            plan,
+            ibc_actions,
+            gas_prices,
+            // we do not need to do anything with the rng.
+            rng: _,
+            // fee tiers aren't currently reset when the planner generates a plan. see #3955.
+            fee_tier: _,
+        } = self;
+        *balance = Balance::zero();
+        *vote_intents = BTreeMap::new();
+        *ibc_actions = Vec::new();
+        *gas_prices = GasPrices::zero();
+        let plan = mem::take(plan);
 
         Ok(plan)
     }
