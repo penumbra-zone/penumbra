@@ -17,7 +17,7 @@ mod worker;
 use worker::Worker;
 
 pub use crate::metrics::register_metrics;
-pub use client::ViewClient;
+pub use client::{BroadcastStatusStream, ViewClient};
 pub use note_record::SpendableNoteRecord;
 pub use planner::Planner;
 pub use service::ViewServer;

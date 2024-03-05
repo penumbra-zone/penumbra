@@ -8,16 +8,22 @@ homepage.workspace = true
 license.workspace = true
 
 [dependencies]
-anyhow = {workspace = true}
-cnidarium = {workspace = true, default-features = true}
-penumbra-compact-block = {workspace = true, default-features = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-sct = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, features = [
-    "component",
-], default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-transaction = {workspace = true, default-features = true}
-rand_core = {workspace = true}
-
+anyhow = { workspace = true }
+cnidarium = { workspace = true, default-features = true }
+futures = { workspace = true }
+penumbra-app = { workspace = true }
+penumbra-asset = { workspace = true, default-features = true }
+penumbra-compact-block = { workspace = true, default-features = true }
+penumbra-dex = { workspace = true, default-features = true }
+penumbra-fee = { workspace = true, default-features = false }
+penumbra-keys = { workspace = true, default-features = true }
+penumbra-num = {workspace = true, default-features = true}
+penumbra-proto = { workspace = true, features = ["rpc"], default-features = true }
+penumbra-sct = { workspace = true, default-features = true }
+penumbra-shielded-pool = { workspace = true, features = ["component"], default-features = true }
+penumbra-stake = { workspace = true, default-features = false }
+penumbra-tct = { workspace = true, default-features = true }
+penumbra-transaction = { workspace = true, default-features = true }
+penumbra-view = { workspace = true }
+rand_core = { workspace = true }
+tracing = { workspace = true }

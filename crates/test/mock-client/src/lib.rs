@@ -10,6 +10,8 @@ use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, Witn
 use rand_core::OsRng;
 use std::collections::BTreeMap;
 
+mod view;
+
 /// A bare-bones mock client for use exercising the state machine.
 pub struct MockClient {
     latest_height: u64,

@@ -28,7 +28,7 @@ use penumbra_transaction::{
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
 
-pub(crate) type BroadcastStatusStream = Pin<
+pub type BroadcastStatusStream = Pin<
     Box<dyn Future<Output = Result<Streaming<BroadcastTransactionResponse>, anyhow::Error>> + Send>,
 >;
 

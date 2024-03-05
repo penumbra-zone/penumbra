@@ -5255,14 +5255,23 @@ version = "0.68.0"
 dependencies = [
  "anyhow",
  "cnidarium",
+ "futures",
+ "penumbra-app",
+ "penumbra-asset",
  "penumbra-compact-block",
  "penumbra-dex",
+ "penumbra-fee",
  "penumbra-keys",
+ "penumbra-num",
+ "penumbra-proto",
  "penumbra-sct",
  "penumbra-shielded-pool",
+ "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",
+ "penumbra-view",
  "rand_core 0.6.4",
+ "tracing",
 ]
 
 [[package]]
