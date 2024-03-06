@@ -331,6 +331,27 @@ mod tests {
     }
 
     #[test]
+    fn test_compat_encoding() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
+
+        let bech32_addr = dest.compat_encoding();
+
+        let addr = Address::from_str(&bech32_addr).expect("can decode valid address");
+
+        let proto_addr = dest.encode_to_vec();
+
+        let addr2 = Address::decode(proto_addr.as_ref()).expect("can decode valid address");
+
+        assert_eq!(addr, dest);
+        assert_eq!(addr2, dest);
+    }
+
+    #[test]
     fn test_bytes_roundtrip() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
