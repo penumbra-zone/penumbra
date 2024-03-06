@@ -12,11 +12,11 @@ mod submit;
 
 use crate::PenumbraHost;
 
-use super::ActionHandler;
+use super::AppActionHandler;
 use cnidarium_component::ActionHandler as _;
 
 #[async_trait]
-impl ActionHandler for Action {
+impl AppActionHandler for Action {
     type CheckStatelessContext = TransactionContext;
 
     async fn check_stateless(&self, context: TransactionContext) -> Result<()> {
@@ -53,7 +53,7 @@ impl ActionHandler for Action {
         }
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         match self {
             Action::Delegate(action) => action.check_historical(state).await,
             Action::Undelegate(action) => action.check_historical(state).await,
@@ -64,7 +64,7 @@ impl ActionHandler for Action {
             Action::PositionClose(action) => action.check_historical(state).await,
             Action::PositionOpen(action) => action.check_historical(state).await,
             Action::PositionWithdraw(action) => action.check_historical(state).await,
-            Action::ProposalSubmit(action) => action.check_stateful(state).await,
+            Action::ProposalSubmit(action) => action.check_historical(state).await,
             Action::ProposalWithdraw(action) => action.check_historical(state).await,
             Action::ProposalDepositClaim(action) => action.check_historical(state).await,
             Action::Swap(action) => action.check_historical(state).await,
@@ -72,6 +72,8 @@ impl ActionHandler for Action {
             Action::Spend(action) => action.check_historical(state).await,
             Action::Output(action) => action.check_historical(state).await,
             Action::IbcRelay(action) => {
+                // SAFETY: this is safe to check in parallel because IBC enablement cannot
+                // change during transaction execution.
                 if !state.get_ibc_params().await?.ibc_enabled {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
                 }
@@ -89,7 +91,7 @@ impl ActionHandler for Action {
         }
     }
 
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
         match self {
             Action::Delegate(action) => action.check_and_execute(state).await,
             Action::Undelegate(action) => action.check_and_execute(state).await,
@@ -100,7 +102,7 @@ impl ActionHandler for Action {
             Action::PositionClose(action) => action.check_and_execute(state).await,
             Action::PositionOpen(action) => action.check_and_execute(state).await,
             Action::PositionWithdraw(action) => action.check_and_execute(state).await,
-            Action::ProposalSubmit(action) => action.execute(state).await,
+            Action::ProposalSubmit(action) => action.check_and_execute(state).await,
             Action::ProposalWithdraw(action) => action.check_and_execute(state).await,
             Action::ProposalDepositClaim(action) => action.check_and_execute(state).await,
             Action::Swap(action) => action.check_and_execute(state).await,

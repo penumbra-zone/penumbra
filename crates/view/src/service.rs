@@ -165,7 +165,7 @@ impl ViewServer {
         transaction: Transaction,
         await_detection: bool,
     ) -> BroadcastTransactionStream {
-        use penumbra_app::ActionHandler;
+        use penumbra_app::AppActionHandler;
 
         let self2 = self.clone();
         try_stream! {
