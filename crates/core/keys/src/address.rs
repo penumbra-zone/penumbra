@@ -148,6 +148,16 @@ impl Address {
 
         format!("{}…", &full_address[0..num_chars_to_display])
     }
+
+    /// Compat (bech32 non-m) address format
+    pub fn compat_encoding(&self) -> String {
+        let proto_address = pb::Address::from(*self);
+        bech32str::encode(
+            &proto_address.inner,
+            bech32str::compat_address::BECH32_PREFIX,
+            bech32str::Bech32,
+        )
+    }
 }
 
 impl DomainType for Address {
@@ -202,11 +212,23 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        pb::Address {
-            inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
-            alt_bech32m: String::new(),
+        if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
+            pb::Address {
+                inner: bech32str::decode(
+                    s,
+                    bech32str::compat_address::BECH32_PREFIX,
+                    bech32str::Bech32,
+                )?,
+                alt_bech32m: String::new(),
+            }
+            .try_into()
+        } else {
+            pb::Address {
+                inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
+                alt_bech32m: String::new(),
+            }
+            .try_into()
         }
-        .try_into()
     }
 }
 
