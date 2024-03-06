@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 
 use crate::{component::StateWriteExt as _, CommunityPoolSpend};
@@ -16,13 +14,7 @@ impl ActionHandler for CommunityPoolSpend {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // Instead of checking here, we just check during execution, which will fail if we try to
-        // overdraw the Community Pool.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // This will fail if we try to overdraw the Community Pool, so we can never spend more than we have.
         state.community_pool_withdraw(self.value).await
     }

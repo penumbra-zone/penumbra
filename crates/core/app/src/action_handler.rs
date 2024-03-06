@@ -33,9 +33,9 @@ impl<'a, T: ComponentActionHandler + Sync> ActionHandler for crate::Compat<'a, T
         ComponentActionHandler::check_stateless(self.0, context).await
     }
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        ComponentActionHandler::check_stateful(self.0, state).await
+        ComponentActionHandler::check_historical(self.0, state).await
     }
     async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
-        ComponentActionHandler::execute(self.0, state).await
+        ComponentActionHandler::check_and_execute(self.0, state).await
     }
 }

@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 
@@ -30,13 +28,10 @@ impl ActionHandler for ProposalWithdraw {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Any votable proposal can be withdrawn
         state.check_proposal_votable(self.proposal).await?;
-        Ok(())
-    }
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalWithdraw { proposal, reason } = self;
 
         // Update the proposal state to withdrawn

@@ -69,10 +69,10 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 
     // 3. Simulate execution of the Spend action
     spend.check_stateless(transaction_context).await?;
-    spend.check_stateful(state.clone()).await?;
+    spend.check_historical(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
-    spend.execute(&mut state_tx).await?;
+    spend.check_and_execute(&mut state_tx).await?;
     state_tx.apply();
 
     // 4. Execute EndBlock
@@ -253,13 +253,13 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .await
         .expect("can apply first spend");
     spend
-        .check_stateful(state.clone())
+        .check_historical(state.clone())
         .await
         .expect("can apply first spend");
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
     spend
-        .execute(&mut state_tx)
+        .check_and_execute(&mut state_tx)
         .await
         .expect("should be able to apply first spend");
     state_tx.apply();
@@ -280,10 +280,10 @@ async fn spend_duplicate_nullifier_previous_transaction() {
         .check_stateless(transaction_context)
         .await
         .expect("check stateless should succeed");
-    spend.check_stateful(state.clone()).await.unwrap();
+    spend.check_historical(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(2u8);
-    spend.execute(&mut state_tx).await.unwrap();
+    spend.check_and_execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 }
 

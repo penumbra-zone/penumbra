@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use decaf377::Fr;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
 use penumbra_proto::StateWriteProto as _;
@@ -55,12 +53,12 @@ impl ActionHandler for DelegatorVote {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let DelegatorVote {
             body:
                 DelegatorVoteBody {
                     proposal,
-                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    vote,
                     start_position,
                     value,
                     unbonded_amount,
@@ -84,24 +82,6 @@ impl ActionHandler for DelegatorVote {
         state
             .check_unbonded_amount_correct_exchange_for_proposal(*proposal, value, unbonded_amount)
             .await?;
-
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let DelegatorVote {
-            body:
-                DelegatorVoteBody {
-                    proposal,
-                    vote,
-                    nullifier,
-                    unbonded_amount,
-                    value,
-                    start_position: _, // Not needed to execute: used to check validity of vote
-                    rk: _,             // Not needed to execute: used to check auth sig
-                },
-            ..
-        } = self;
 
         state
             .mark_nullifier_voted_on_proposal(*proposal, nullifier)

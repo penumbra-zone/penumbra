@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_proof_params::CONVERT_PROOF_VERIFICATION_KEY;
 use penumbra_sct::component::clock::EpochRead;
 
@@ -31,7 +29,11 @@ impl ActionHandler for UndelegateClaim {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
+        // These checks all formerly happened in the `check_historical` method,
+        // if profiling shows that they cause a bottleneck we could (CAREFULLY)
+        // move some of them back.
+
         // If the validator delegation pool is bonded, or unbonding, check that enough epochs
         // have elapsed to claim the unbonding tokens:
         let current_epoch = state.get_current_epoch().await?;
@@ -60,10 +62,11 @@ impl ActionHandler for UndelegateClaim {
             self.body.penalty == expected_penalty,
             "penalty does not match expected penalty"
         );
-        Ok(())
-    }
 
-    async fn execute<S: StateWrite>(&self, _state: S) -> Result<()> {
+        // (end of former check_historical impl)
+
+        // No state changes here - this action just converts one token to another
+
         // TODO: where should we be tracking token supply changes?
         Ok(())
     }
