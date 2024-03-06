@@ -6,7 +6,7 @@ use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
-use penumbra_app::ActionHandler;
+use penumbra_app::AppActionHandler;
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
 use penumbra_keys::{keys::NullifierKey, test_keys, PayloadKey};

@@ -37,7 +37,7 @@ use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
 use tracing::Instrument;
 
-use crate::action_handler::ActionHandler;
+use crate::action_handler::AppActionHandler;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
@@ -334,7 +334,7 @@ impl App {
         let tx2 = tx.clone();
         let state2 = self.state.clone();
         let stateful = tokio::spawn(
-            async move { tx2.check_stateful(state2).await }.instrument(tracing::Span::current()),
+            async move { tx2.check_historical(state2).await }.instrument(tracing::Span::current()),
         );
 
         stateless
@@ -361,7 +361,7 @@ impl App {
             .await
             .context("storing transactions")?;
 
-        tx.execute(&mut state_tx)
+        tx.check_and_execute(&mut state_tx)
             .await
             .context("executing transaction")?;
 

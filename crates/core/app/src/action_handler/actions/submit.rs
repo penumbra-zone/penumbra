@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use ark_ff::PrimeField;
@@ -9,7 +8,7 @@ use decaf377_rdsa::{VerificationKey, VerificationKeyBytes};
 use ibc_types::core::client::ClientId;
 use once_cell::sync::Lazy;
 
-use cnidarium::{StateDelta, StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_community_pool::component::StateReadExt as _;
 use penumbra_governance::{
@@ -27,7 +26,7 @@ use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::SupplyWrite;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
-use crate::action_handler::ActionHandler;
+use crate::action_handler::AppActionHandler;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;
 use crate::params::AppParameters;
 
@@ -45,7 +44,7 @@ pub const PROPOSAL_TITLE_LIMIT: usize = 80; // ⚠️ DON'T CHANGE THIS (see abo
 pub const PROPOSAL_DESCRIPTION_LIMIT: usize = 10_000; // ⚠️ DON'T CHANGE THIS (see above)!
 
 #[async_trait]
-impl ActionHandler for ProposalSubmit {
+impl AppActionHandler for ProposalSubmit {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
         let ProposalSubmit {
@@ -147,7 +146,11 @@ impl ActionHandler for ProposalSubmit {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // These checks all formerly happened in the `check_historical` method,
+        // if profiling shows that they cause a bottleneck we could (CAREFULLY)
+        // move some of them back.
+
         let ProposalSubmit {
             deposit_amount,
             proposal, // statelessly verified
@@ -194,6 +197,8 @@ impl ActionHandler for ProposalSubmit {
                 // current chain state. This doesn't guarantee that it will execute successfully at
                 // the time when the proposal passes, but we don't want to allow proposals that are
                 // obviously going to fail to execute.
+                //
+                // NOTE: we do not do stateful checks, see below
                 let parsed_transaction_plan = TransactionPlan::decode(&transaction_plan[..])
                     .context("transaction plan was malformed")?;
                 let tx = build_community_pool_transaction(parsed_transaction_plan.clone())
@@ -202,12 +207,19 @@ impl ActionHandler for ProposalSubmit {
                 tx.check_stateless(()).await.context(
                     "submitted Community Pool spend transaction failed stateless checks",
                 )?;
-                tx.check_stateful(state.clone())
+                /*
+                // We skip stateful checks rather than doing them in simulation. Partly this is
+                // because it's easier to not check, but also it avoids having to reason about whether
+                // there are any cases where a transaction could be invalid when submitted but become
+                // valid when voting finishes (e.g., an undelegation?)
+
+                tx.check_historical(state.clone())
                     .await
                     .context("submitted Community Pool spend transaction failed stateful checks")?;
-                tx.execute(StateDelta::new(state)).await.context(
+                tx.check_and_execute(StateDelta::new(state)).await.context(
                     "submitted Community Pool spend transaction failed to execute in current chain state",
                 )?;
+                 */
             }
             ProposalPayload::UpgradePlan { .. } => {
                 // TODO(erwan): no stateful checks for upgrade plan.
@@ -230,10 +242,8 @@ impl ActionHandler for ProposalSubmit {
             }
         }
 
-        Ok(())
-    }
+        // (end of former check_stateful checks)
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalSubmit {
             proposal,
             deposit_amount,
