@@ -69,10 +69,10 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     // 3. Simulate execution of the Swap action
 
     swap.check_stateless(()).await?;
-    swap.check_stateful(state.clone()).await?;
+    swap.check_historical(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
-    swap.execute(&mut state_tx).await?;
+    swap.check_and_execute(&mut state_tx).await?;
     state_tx.apply();
 
     // 4. Execute EndBlock (where the swap is actually executed)
@@ -127,10 +127,10 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     .context();
 
     claim.check_stateless(context.clone()).await?;
-    claim.check_stateful(state.clone()).await?;
+    claim.check_historical(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(2u8);
-    claim.execute(&mut state_tx).await?;
+    claim.check_and_execute(&mut state_tx).await?;
     state_tx.apply();
 
     Ok(())
@@ -184,10 +184,10 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     // 3. Simulate execution of the Swap action
 
     swap.check_stateless(()).await.unwrap();
-    swap.check_stateful(state.clone()).await.unwrap();
+    swap.check_historical(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
-    swap.execute(&mut state_tx).await.unwrap();
+    swap.check_and_execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 
     // 4. Execute EndBlock (where the swap is actually executed)
@@ -241,10 +241,10 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     .context();
 
     claim.check_stateless(context.clone()).await.unwrap();
-    claim.check_stateful(state.clone()).await.unwrap();
+    claim.check_historical(state.clone()).await.unwrap();
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(2u8);
-    claim.execute(&mut state_tx).await.unwrap();
+    claim.check_and_execute(&mut state_tx).await.unwrap();
     state_tx.apply();
 
     // 8. Now form a second SwapClaim action attempting to claim the outputs again.
@@ -259,7 +259,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     let claim = claim_plan.swap_claim(&test_keys::FULL_VIEWING_KEY, &swap_auth_path);
 
     // 9. Execute the second SwapClaim action - the test should panic here
-    claim.check_stateful(state.clone()).await.unwrap();
+    claim.check_historical(state.clone()).await.unwrap();
 }
 
 #[tokio::test]
@@ -304,10 +304,10 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     // 3. Simulate execution of the Swap action
 
     swap.check_stateless(()).await?;
-    swap.check_stateful(state.clone()).await?;
+    swap.check_historical(state.clone()).await?;
     let mut state_tx = state.try_begin_transaction().unwrap();
     state_tx.put_mock_source(1u8);
-    swap.execute(&mut state_tx).await?;
+    swap.check_and_execute(&mut state_tx).await?;
     state_tx.apply();
 
     // 4. Execute EndBlock (where the swap is actually executed)

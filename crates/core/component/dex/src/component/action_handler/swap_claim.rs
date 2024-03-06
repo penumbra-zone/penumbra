@@ -42,11 +42,13 @@ impl ActionHandler for SwapClaim {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let swap_claim = self;
 
         // 1. Validate the epoch duration passed in the swap claim matches
         // what we know.
+        //
+        // SAFETY: this is safe to check here because the epoch duration cannot change during transaction processing.
         let epoch_duration = state.get_epoch_duration_parameter().await?;
         let provided_epoch_duration = swap_claim.epoch_duration;
         if epoch_duration != provided_epoch_duration {
@@ -55,6 +57,9 @@ impl ActionHandler for SwapClaim {
 
         // 2. The stateful check *must* validate that the clearing
         // prices used in the proof are valid.
+        //
+        // SAFETY: this is safe to check here because the historical batch swap
+        // output data will not change.
         let provided_output_height = swap_claim.body.output_data.height;
         let provided_trading_pair = swap_claim.body.output_data.trading_pair;
         let output_data = state
@@ -68,14 +73,14 @@ impl ActionHandler for SwapClaim {
             anyhow::bail!("provided output data does not match chain output data");
         }
 
+        Ok(())
+    }
+
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // 3. Check that the nullifier hasn't been spent before.
         let spent_nullifier = self.body.nullifier;
         state.check_nullifier_unspent(spent_nullifier).await?;
 
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Record the output notes in the state.
         let source = state
             .get_current_source()

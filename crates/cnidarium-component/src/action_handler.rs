@@ -44,33 +44,45 @@ pub trait ActionHandler {
     /// be run in parallel across all transactions in a block.
     async fn check_stateless(&self, context: Self::CheckStatelessContext) -> Result<()>;
 
-    /// Performs all of this action's stateful validity checks.
+    /// Performs those stateful validity checks that can be performed against a
+    /// historical state snapshot.
     ///
     /// This method provides read access to a snapshot of the `State` prior to
-    /// transaction execution.  Because it does not give write access, it's safe
-    /// to run the `ActionHandler` implementations for all actions in a given
-    /// transaction in parallel.
+    /// transaction execution.  It is intended to be run in parallel across all
+    /// actions within a transaction.
     ///
-    /// As much work as possible should be done in `check_stateful`, as it can
-    /// be run in parallel across all actions within a transaction.
+    /// # Warning
+    ///
+    /// Misuse of this method creates TOCTOU vulnerabilities. Checks performed
+    /// in this method must be valid if they are performed against a _prior_
+    /// state, as another action in the same transaction may execute first and
+    /// change the state.
+    ///
+    /// Checks performed in this phase should have a justification for why they
+    /// are safe to run in parallel with other actions in the same transaction,
+    /// and the default behavior should be to perform checks in
+    /// [`ActionHandler::check_and_execute`].
     ///
     /// # Invariants
     ///
     /// This method should only be called on data that has been checked
     /// with [`ActionHandler::check_stateless`].  This method can be called
     /// before [`Component::begin_block`](crate::Component::begin_block).
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()>;
+    async fn check_historical<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
+        // Default behavior: no-op
+        Ok(())
+    }
 
     /// Attempts to execute this action against the provided `state`.
     ///
     /// This method provides read and write access to the `state`. It is
-    /// fallible, so it's possible to perform checks within the `execute`
+    /// fallible, so it's possible to perform checks within the `check_and_execute`
     /// implementation and abort execution on error; the [`StateTransaction`]
     /// mechanism ensures that all writes are correctly discarded.
     ///
     /// Because `execute` must run sequentially, whenever possible, checks
-    /// should be performed in [`ActionHandler::check_stateful`] or
-    /// [`ActionHandler::check_stateless`].  One example of where this is not
+    /// should be performed in [`ActionHandler::check_stateless`], or (more carefully) in
+    /// [`ActionHandler::check_historical`].  One example of where this is not
     /// possible (in fact, the motivating example) is for IBC, where a
     /// transaction may (1) submit a client update and then (2) relay messages
     /// valid relative to the newly updated state.  In this case, the checks for
@@ -81,8 +93,8 @@ pub trait ActionHandler {
     ///
     /// # Invariants
     ///
-    /// This method should only be called immediately after an invocation of
-    /// [`ActionHandler::check_stateful`] on the same transaction.  This method
+    /// This method should only be called after an invocation of
+    /// [`ActionHandler::check_historical`] on the same transaction.  This method
     /// can be called before [`Component::begin_block`](crate::Component::begin_block).
-    async fn execute<S: StateWrite>(&self, state: S) -> Result<()>;
+    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()>;
 }

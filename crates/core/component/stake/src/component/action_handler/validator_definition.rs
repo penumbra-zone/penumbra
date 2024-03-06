@@ -1,9 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_sct::component::clock::EpochRead;
-
-use std::sync::Arc;
 
 use penumbra_proto::DomainType;
 
@@ -60,7 +58,11 @@ impl ActionHandler for validator::Definition {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // These checks all formerly happened in the `check_historical` method,
+        // if profiling shows that they cause a bottleneck we could (CAREFULLY)
+        // move some of them back.
+
         let v = self;
 
         // Check that the sequence numbers of the updated validators is correct...
@@ -103,10 +105,8 @@ impl ActionHandler for validator::Definition {
             }
         }
 
-        Ok(())
-    }
+        // (end of former check_historical impl)
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let v = self;
 
         let current_epoch = state

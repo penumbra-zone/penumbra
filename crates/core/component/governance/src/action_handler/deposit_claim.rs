@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto as _;
 use penumbra_shielded_pool::component::SupplyWrite;
 
@@ -22,17 +20,14 @@ impl ActionHandler for ProposalDepositClaim {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Any finished proposal can have its deposit claimed
         state.check_proposal_claimable(self.proposal).await?;
         // Check that the deposit amount matches the proposal being claimed
         state
             .check_proposal_claim_valid_deposit(self.proposal, self.deposit_amount)
             .await?;
-        Ok(())
-    }
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ProposalDepositClaim {
             proposal,
             deposit_amount: _, // not needed to transition state; deposit is self-minted in tx

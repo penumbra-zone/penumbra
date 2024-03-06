@@ -55,22 +55,22 @@ impl ActionHandler for Action {
 
     async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         match self {
-            Action::Delegate(action) => action.check_stateful(state).await,
-            Action::Undelegate(action) => action.check_stateful(state).await,
-            Action::UndelegateClaim(action) => action.check_stateful(state).await,
-            Action::ValidatorDefinition(action) => action.check_stateful(state).await,
-            Action::DelegatorVote(action) => action.check_stateful(state).await,
-            Action::ValidatorVote(action) => action.check_stateful(state).await,
-            Action::PositionClose(action) => action.check_stateful(state).await,
-            Action::PositionOpen(action) => action.check_stateful(state).await,
-            Action::PositionWithdraw(action) => action.check_stateful(state).await,
+            Action::Delegate(action) => action.check_historical(state).await,
+            Action::Undelegate(action) => action.check_historical(state).await,
+            Action::UndelegateClaim(action) => action.check_historical(state).await,
+            Action::ValidatorDefinition(action) => action.check_historical(state).await,
+            Action::DelegatorVote(action) => action.check_historical(state).await,
+            Action::ValidatorVote(action) => action.check_historical(state).await,
+            Action::PositionClose(action) => action.check_historical(state).await,
+            Action::PositionOpen(action) => action.check_historical(state).await,
+            Action::PositionWithdraw(action) => action.check_historical(state).await,
             Action::ProposalSubmit(action) => action.check_stateful(state).await,
-            Action::ProposalWithdraw(action) => action.check_stateful(state).await,
-            Action::ProposalDepositClaim(action) => action.check_stateful(state).await,
-            Action::Swap(action) => action.check_stateful(state).await,
-            Action::SwapClaim(action) => action.check_stateful(state).await,
-            Action::Spend(action) => action.check_stateful(state).await,
-            Action::Output(action) => action.check_stateful(state).await,
+            Action::ProposalWithdraw(action) => action.check_historical(state).await,
+            Action::ProposalDepositClaim(action) => action.check_historical(state).await,
+            Action::Swap(action) => action.check_historical(state).await,
+            Action::SwapClaim(action) => action.check_historical(state).await,
+            Action::Spend(action) => action.check_historical(state).await,
+            Action::Output(action) => action.check_historical(state).await,
             Action::IbcRelay(action) => {
                 if !state.get_ibc_params().await?.ibc_enabled {
                     anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
@@ -82,31 +82,31 @@ impl ActionHandler for Action {
                     .check_stateful(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_stateful(state).await,
-            Action::CommunityPoolSpend(action) => action.check_stateful(state).await,
-            Action::CommunityPoolOutput(action) => action.check_stateful(state).await,
-            Action::CommunityPoolDeposit(action) => action.check_stateful(state).await,
+            Action::Ics20Withdrawal(action) => action.check_historical(state).await,
+            Action::CommunityPoolSpend(action) => action.check_historical(state).await,
+            Action::CommunityPoolOutput(action) => action.check_historical(state).await,
+            Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
         }
     }
 
     async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
         match self {
-            Action::Delegate(action) => action.execute(state).await,
-            Action::Undelegate(action) => action.execute(state).await,
-            Action::UndelegateClaim(action) => action.execute(state).await,
-            Action::ValidatorDefinition(action) => action.execute(state).await,
-            Action::DelegatorVote(action) => action.execute(state).await,
-            Action::ValidatorVote(action) => action.execute(state).await,
-            Action::PositionClose(action) => action.execute(state).await,
-            Action::PositionOpen(action) => action.execute(state).await,
-            Action::PositionWithdraw(action) => action.execute(state).await,
+            Action::Delegate(action) => action.check_and_execute(state).await,
+            Action::Undelegate(action) => action.check_and_execute(state).await,
+            Action::UndelegateClaim(action) => action.check_and_execute(state).await,
+            Action::ValidatorDefinition(action) => action.check_and_execute(state).await,
+            Action::DelegatorVote(action) => action.check_and_execute(state).await,
+            Action::ValidatorVote(action) => action.check_and_execute(state).await,
+            Action::PositionClose(action) => action.check_and_execute(state).await,
+            Action::PositionOpen(action) => action.check_and_execute(state).await,
+            Action::PositionWithdraw(action) => action.check_and_execute(state).await,
             Action::ProposalSubmit(action) => action.execute(state).await,
-            Action::ProposalWithdraw(action) => action.execute(state).await,
-            Action::ProposalDepositClaim(action) => action.execute(state).await,
-            Action::Swap(action) => action.execute(state).await,
-            Action::SwapClaim(action) => action.execute(state).await,
-            Action::Spend(action) => action.execute(state).await,
-            Action::Output(action) => action.execute(state).await,
+            Action::ProposalWithdraw(action) => action.check_and_execute(state).await,
+            Action::ProposalDepositClaim(action) => action.check_and_execute(state).await,
+            Action::Swap(action) => action.check_and_execute(state).await,
+            Action::SwapClaim(action) => action.check_and_execute(state).await,
+            Action::Spend(action) => action.check_and_execute(state).await,
+            Action::Output(action) => action.check_and_execute(state).await,
             Action::IbcRelay(action) => {
                 action
                     .clone()
@@ -114,10 +114,10 @@ impl ActionHandler for Action {
                     .execute(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.execute(state).await,
-            Action::CommunityPoolSpend(action) => action.execute(state).await,
-            Action::CommunityPoolOutput(action) => action.execute(state).await,
-            Action::CommunityPoolDeposit(action) => action.execute(state).await,
+            Action::Ics20Withdrawal(action) => action.check_and_execute(state).await,
+            Action::CommunityPoolSpend(action) => action.check_and_execute(state).await,
+            Action::CommunityPoolOutput(action) => action.check_and_execute(state).await,
+            Action::CommunityPoolDeposit(action) => action.check_and_execute(state).await,
         }
     }
 }

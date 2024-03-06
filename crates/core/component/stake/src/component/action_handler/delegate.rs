@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_num::Amount;
 
@@ -21,7 +19,11 @@ impl ActionHandler for Delegate {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // These checks all formerly happened in the `check_historical` method,
+        // if profiling shows that they cause a bottleneck we could (CAREFULLY)
+        // move some of them back.
+
         let d = self;
         let next_rate_data = state
             .get_validator_rate(&d.validator_identity)
@@ -91,10 +93,8 @@ impl ActionHandler for Delegate {
             );
         }
 
-        Ok(())
-    }
+        // (end of former check_historical checks)
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let validator = self.validator_identity;
         let unbonded_delegation = self.unbonded_amount;
         // This action is executed in two phases:

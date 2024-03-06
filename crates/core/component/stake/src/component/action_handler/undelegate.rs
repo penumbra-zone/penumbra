@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_shielded_pool::component::SupplyWrite;
 
 use crate::{
@@ -18,7 +16,11 @@ impl ActionHandler for Undelegate {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // These checks all formerly happened in the `check_historical` method,
+        // if profiling shows that they cause a bottleneck we could (CAREFULLY)
+        // move some of them back.
+
         let u = self;
         let rate_data = state
             .get_validator_rate(&u.validator_identity)
@@ -60,10 +62,8 @@ impl ActionHandler for Undelegate {
             expected_unbonded_amount,
         );
 
-        Ok(())
-    }
+        // (end of former check_historical impl)
 
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());
         // Register the undelegation's denom, so clients can look it up later.
