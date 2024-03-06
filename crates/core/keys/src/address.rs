@@ -148,6 +148,16 @@ impl Address {
 
         format!("{}…", &full_address[0..num_chars_to_display])
     }
+
+    /// Compat (bech32 non-m) address format
+    pub fn compat_encoding(&self) -> String {
+        let proto_address = pb::Address::from(*self);
+        bech32str::encode(
+            &proto_address.inner,
+            bech32str::compat_address::BECH32_PREFIX,
+            bech32str::Bech32,
+        )
+    }
 }
 
 impl DomainType for Address {
@@ -202,11 +212,23 @@ impl std::str::FromStr for Address {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        pb::Address {
-            inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
-            alt_bech32m: String::new(),
+        if s.starts_with(bech32str::compat_address::BECH32_PREFIX) {
+            pb::Address {
+                inner: bech32str::decode(
+                    s,
+                    bech32str::compat_address::BECH32_PREFIX,
+                    bech32str::Bech32,
+                )?,
+                alt_bech32m: String::new(),
+            }
+            .try_into()
+        } else {
+            pb::Address {
+                inner: bech32str::decode(s, bech32str::address::BECH32_PREFIX, bech32str::Bech32m)?,
+                alt_bech32m: String::new(),
+            }
+            .try_into()
         }
-        .try_into()
     }
 }
 
@@ -306,6 +328,27 @@ mod tests {
         assert_eq!(addr2, dest);
         assert_eq!(addr3, dest);
         assert_eq!(addr_from_proto, dest);
+    }
+
+    #[test]
+    fn test_compat_encoding() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let ivk = fvk.incoming();
+        let (dest, _dtk_d) = ivk.payment_address(0u32.into());
+
+        let bech32_addr = dest.compat_encoding();
+
+        let addr = Address::from_str(&bech32_addr).expect("can decode valid address");
+
+        let proto_addr = dest.encode_to_vec();
+
+        let addr2 = Address::decode(proto_addr.as_ref()).expect("can decode valid address");
+
+        assert_eq!(addr, dest);
+        assert_eq!(addr2, dest);
     }
 
     #[test]
