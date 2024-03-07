@@ -1,29 +1,14 @@
-use std::ops::Deref;
-
 use chrono::DateTime;
-use penumbra_proto::{self as proto};
-
+use penumbra_proto::{self as proto, DomainType, Message};
 use penumbra_transaction::Transaction;
-use proto::util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyService;
-use proto::util::tendermint_proxy::v1::AbciQueryRequest;
-use proto::util::tendermint_proxy::v1::AbciQueryResponse;
-use proto::util::tendermint_proxy::v1::BroadcastTxAsyncRequest;
-use proto::util::tendermint_proxy::v1::BroadcastTxAsyncResponse;
-use proto::util::tendermint_proxy::v1::BroadcastTxSyncRequest;
-use proto::util::tendermint_proxy::v1::BroadcastTxSyncResponse;
-use proto::util::tendermint_proxy::v1::GetBlockByHeightRequest;
-use proto::util::tendermint_proxy::v1::GetBlockByHeightResponse;
-use proto::util::tendermint_proxy::v1::GetStatusRequest;
-use proto::util::tendermint_proxy::v1::GetStatusResponse;
-use proto::util::tendermint_proxy::v1::GetTxRequest;
-use proto::util::tendermint_proxy::v1::GetTxResponse;
-use proto::util::tendermint_proxy::v1::SyncInfo;
-use proto::util::tendermint_proxy::v1::Tag;
-use proto::util::tendermint_proxy::v1::TxResult;
-use proto::DomainType;
-use proto::Message;
-use tendermint::abci::Code;
-use tendermint::block::Height;
+use proto::util::tendermint_proxy::v1::{
+    tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest, AbciQueryResponse,
+    BroadcastTxAsyncRequest, BroadcastTxAsyncResponse, BroadcastTxSyncRequest,
+    BroadcastTxSyncResponse, GetBlockByHeightRequest, GetBlockByHeightResponse, GetStatusRequest,
+    GetStatusResponse, GetTxRequest, GetTxResponse, SyncInfo, Tag, TxResult,
+};
+use std::ops::Deref;
+use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
