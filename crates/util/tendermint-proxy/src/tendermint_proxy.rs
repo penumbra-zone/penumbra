@@ -27,12 +27,6 @@ use tendermint::block::Height;
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
-// We need to use the tracing-futures version of Instrument,
-// because we want to instrument a Stream, and the Stream trait
-// isn't in std, and the tracing::Instrument trait only works with
-// (stable) std types.
-//use tracing_futures::Instrument;
-
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
 // unimportant right now, and would require additional wrappers
