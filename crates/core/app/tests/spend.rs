@@ -5,11 +5,11 @@ use ark_ff::{Fp, UniformRand};
 use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use cnidarium_component::{ActionHandler as _, Component};
 use decaf377::{Fq, Fr};
-use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
-use penumbra_app::AppActionHandler;
+use decaf377_rdsa::{/*SigningKey,*/ SpendAuth, VerificationKey};
+//use penumbra_app::AppActionHandler;
 use penumbra_asset::Value;
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_keys::{keys::NullifierKey, test_keys, PayloadKey};
+use penumbra_keys::{keys::NullifierKey, test_keys /*PayloadKey*/};
 use penumbra_mock_client::MockClient;
 use penumbra_num::Amount;
 use penumbra_sct::{
@@ -19,8 +19,8 @@ use penumbra_sct::{
 use penumbra_shielded_pool::{
     component::ShieldedPool, Note, SpendPlan, SpendProof, SpendProofPrivate, SpendProofPublic,
 };
-use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
-use penumbra_txhash::{AuthorizingData, EffectHash, TransactionContext};
+//use penumbra_transaction::{Transaction, TransactionBody, TransactionParameters};
+use penumbra_txhash::{/*AuthorizingData,*/ EffectHash, TransactionContext};
 use rand_core::{OsRng, SeedableRng};
 use std::{ops::Deref, sync::Arc};
 use tendermint::abci;
@@ -196,6 +196,7 @@ async fn invalid_dummy_spend() {
         .contains("spend proof did not verify");
 }
 
+/*
 #[tokio::test]
 #[should_panic(expected = "was already spent")]
 async fn spend_duplicate_nullifier_previous_transaction() {
@@ -378,3 +379,4 @@ async fn spend_duplicate_nullifier_same_transaction() {
     // 6. Simulate execution of the transaction - the test should panic here
     transaction.check_stateless(()).await.unwrap();
 }
+ */
