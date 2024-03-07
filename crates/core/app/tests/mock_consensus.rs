@@ -3,6 +3,9 @@
 //  Note: these should eventually replace the existing test cases. mock consensus tests are placed
 //  here while the engine is still in development. See #3588.
 
+use penumbra_proto::view::v1::view_service_server::ViewServiceServer;
+use tempfile::tempdir;
+
 mod common;
 
 use {
@@ -202,5 +205,37 @@ async fn mock_consensus_can_spend_notes_and_detect_outputs() -> anyhow::Result<(
     drop(storage);
     drop(guard);
 
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "this test is not currently expected to pass"] /*TODO(kate)*/
+async fn mock_consensus_view_server_test() -> anyhow::Result<()> {
+    use camino::Utf8PathBuf;
+
+    // Install a test logger, acquire some temporary storage, and start the test node.
+    let guard = common::set_tracing_subscriber();
+    let tempdir = tempdir()?;
+    let storage = TempStorage::new().await?;
+    let _test_node = common::start_test_node(&storage).await?;
+
+    // Spawn the server-side view server...
+    let _ = {};
+
+    // Spawn the client-side view server...
+    let view = {
+        let url = "http:127.0.0.1:8080".parse::<url::Url>()?; /*TODO(kate)*/
+        penumbra_view::ViewServer::load_or_initialize(
+            None::<&camino::Utf8Path>,
+            &*test_keys::FULL_VIEWING_KEY,
+            url,
+        )
+        .await
+        .map(ViewServiceServer::new)?
+    };
+
+    drop(view);
+    drop(tempdir);
+    drop(guard);
     Ok(())
 }
