@@ -13,79 +13,79 @@ default = ["std"]
 std = ["ark-ff/std", "ibc-types/std"]
 
 [dependencies]
-anyhow = {workspace = true}
-ark-ff = {workspace = true, default-features = false}
-async-trait = {workspace = true}
-base64 = {workspace = true}
-bech32 = {workspace = true}
-bincode = {workspace = true}
-bitvec = {workspace = true}
-blake2b_simd = {workspace = true}
-cnidarium = {workspace = true, default-features = true}
-cnidarium-component = {workspace = true, default-features = true}
-decaf377 = {workspace = true, default-features = true}
-decaf377-rdsa = {workspace = true}
-futures = {workspace = true}
-hex = {workspace = true}
-ibc-proto = {workspace = true, default-features = false, features = ["server"]}
-ibc-types = {workspace = true, default-features = false}
-ics23 = {workspace = true}
-im = {workspace = true}
-jmt = {workspace = true}
-metrics = {workspace = true}
-once_cell = {workspace = true}
-parking_lot = {workspace = true}
-penumbra-asset = {workspace = true, default-features = true}
-penumbra-community-pool = {workspace = true, default-features = true}
-penumbra-compact-block = {workspace = true, default-features = true}
-penumbra-dex = {workspace = true, default-features = true}
-penumbra-distributions = {workspace = true, default-features = true}
-penumbra-fee = {workspace = true, default-features = true}
-penumbra-funding = {workspace = true, default-features = true}
-penumbra-genesis = {workspace = true}
-penumbra-governance = {workspace = true, default-features = true}
-penumbra-ibc = {workspace = true, features = ["component"], default-features = true}
-penumbra-keys = {workspace = true, default-features = true}
-penumbra-num = {workspace = true, default-features = true}
-penumbra-proof-params = {workspace = true, default-features = true}
-penumbra-proto = {workspace = true, features = ["cnidarium"], default-features = true}
-penumbra-sct = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, features = ["component"], default-features = true}
-penumbra-stake = {workspace = true, default-features = true}
-penumbra-tct = {workspace = true, default-features = true}
-penumbra-tower-trace = { path = "../../util/tower-trace" }
-penumbra-transaction = {workspace = true, features = ["parallel"], default-features = true}
-penumbra-txhash = {workspace = true, default-features = true}
-prost = {workspace = true}
-rand_chacha = {workspace = true}
-regex = {workspace = true}
-serde = {workspace = true, features = ["derive"]}
-serde_json = {workspace = true}
-serde_unit_struct = {workspace = true}
-serde_with = {workspace = true}
-sha2 = {workspace = true}
-tempfile = {workspace = true}
-tendermint = {workspace = true}
-tendermint-light-client-verifier = {workspace = true}
-tendermint-proto = {workspace = true}
-tokio = {workspace = true, features = ["full", "tracing"]}
-tokio-util = {workspace = true}
-tonic = {workspace = true}
-tower = {workspace = true, features = ["full"]}
-tower-abci = "0.11"
-tower-actor = "0.1.0"
-tower-service = {workspace = true}
-tracing = {workspace = true}
+anyhow                           = { workspace = true }
+ark-ff                           = { workspace = true, default-features = false }
+async-trait                      = { workspace = true }
+base64                           = { workspace = true }
+bech32                           = { workspace = true }
+bincode                          = { workspace = true }
+bitvec                           = { workspace = true }
+blake2b_simd                     = { workspace = true }
+cnidarium                        = { workspace = true, default-features = true }
+cnidarium-component              = { workspace = true, default-features = true }
+decaf377                         = { workspace = true, default-features = true }
+decaf377-rdsa                    = { workspace = true }
+futures                          = { workspace = true }
+hex                              = { workspace = true }
+ibc-proto                        = { workspace = true, default-features = false, features = ["server"] }
+ibc-types                        = { workspace = true, default-features = false }
+ics23                            = { workspace = true }
+im                               = { workspace = true }
+jmt                              = { workspace = true }
+metrics                          = { workspace = true }
+once_cell                        = { workspace = true }
+parking_lot                      = { workspace = true }
+penumbra-asset                   = { workspace = true, default-features = true }
+penumbra-community-pool          = { workspace = true, default-features = true }
+penumbra-compact-block           = { workspace = true, default-features = true }
+penumbra-dex                     = { workspace = true, default-features = true }
+penumbra-distributions           = { workspace = true, default-features = true }
+penumbra-fee                     = { workspace = true, default-features = true }
+penumbra-funding                 = { workspace = true, default-features = true }
+penumbra-genesis                 = { workspace = true }
+penumbra-governance              = { workspace = true, default-features = true }
+penumbra-ibc                     = { workspace = true, features = ["component"], default-features = true }
+penumbra-keys                    = { workspace = true, default-features = true }
+penumbra-num                     = { workspace = true, default-features = true }
+penumbra-proof-params            = { workspace = true, default-features = true }
+penumbra-proto                   = { workspace = true, features = ["cnidarium"], default-features = true }
+penumbra-sct                     = { workspace = true, default-features = true }
+penumbra-shielded-pool           = { workspace = true, features = ["component"], default-features = true }
+penumbra-stake                   = { workspace = true, default-features = true }
+penumbra-tct                     = { workspace = true, default-features = true }
+penumbra-tower-trace             = {  path = "../../util/tower-trace"  }
+penumbra-transaction             = { workspace = true, features = ["parallel"], default-features = true }
+penumbra-txhash                  = { workspace = true, default-features = true }
+prost                            = { workspace = true }
+rand_chacha                      = { workspace = true }
+regex                            = { workspace = true }
+serde                            = { workspace = true, features = ["derive"] }
+serde_json                       = { workspace = true }
+serde_unit_struct                = { workspace = true }
+serde_with                       = { workspace = true }
+sha2                             = { workspace = true }
+tempfile                         = { workspace = true }
+tendermint                       = { workspace = true }
+tendermint-light-client-verifier = { workspace = true }
+tendermint-proto                 = { workspace = true }
+tokio                            = { workspace = true, features = ["full", "tracing"] }
+tokio-util                       = { workspace = true }
+tonic                            = { workspace = true }
+tower                            = { workspace = true, features = ["full"] }
+tower-abci                       = "0.11"
+tower-actor                      = "0.1.0"
+tower-service                    = { workspace = true }
+tracing                          = { workspace = true }
 
 [dev-dependencies]
-ed25519-consensus = {workspace = true}
-penumbra-mock-consensus = {workspace = true}
-penumbra-mock-client = {workspace = true}
-rand = {workspace = true}
-rand_core = {workspace = true}
-rand_chacha = {workspace = true}
-tap = {workspace = true}
-tracing-subscriber = {workspace = true}
+ed25519-consensus       = { workspace = true }
+penumbra-mock-consensus = { workspace = true }
+penumbra-mock-client    = { workspace = true }
+rand                    = { workspace = true }
+rand_core               = { workspace = true }
+rand_chacha             = { workspace = true }
+tap                     = { workspace = true }
+tracing-subscriber      = { workspace = true }
 
 # Enable the feature flags to get proving keys when running tests.
 [dev-dependencies.penumbra-proof-params]
