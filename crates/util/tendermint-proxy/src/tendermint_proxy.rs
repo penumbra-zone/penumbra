@@ -12,6 +12,22 @@ use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
+/// Implements service traits for Tonic gRPC services.
+///
+/// The fields of this struct are the configuration and data
+/// necessary to the gRPC services.
+#[derive(Clone, Debug)]
+pub struct TendermintProxy {
+    /// Address of upstream Tendermint server to proxy requests to.
+    tendermint_url: url::Url,
+}
+
+impl TendermintProxy {
+    pub fn new(tendermint_url: url::Url) -> Self {
+        Self { tendermint_url }
+    }
+}
+
 // Note: the conversions that take place in here could be moved to
 // from/try_from impls, but they're not used anywhere else, so it's
 // unimportant right now, and would require additional wrappers
@@ -473,21 +489,5 @@ impl TendermintProxyService for TendermintProxy {
                 }),
             }),
         }))
-    }
-}
-
-/// Implements service traits for Tonic gRPC services.
-///
-/// The fields of this struct are the configuration and data
-/// necessary to the gRPC services.
-#[derive(Clone, Debug)]
-pub struct TendermintProxy {
-    /// Address of upstream Tendermint server to proxy requests to.
-    tendermint_url: url::Url,
-}
-
-impl TendermintProxy {
-    pub fn new(tendermint_url: url::Url) -> Self {
-        Self { tendermint_url }
     }
 }
