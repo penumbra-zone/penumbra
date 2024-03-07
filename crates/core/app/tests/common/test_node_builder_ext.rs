@@ -1,6 +1,6 @@
 use {
     penumbra_genesis::AppState,
-    penumbra_mock_consensus::{builder::Builder, keyring::Keys},
+    penumbra_mock_consensus::builder::Builder,
     penumbra_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
@@ -27,7 +27,7 @@ impl BuilderExt for Builder {
         let app_state = match self
             .keys
             .as_ref()
-            .map(generate_penumbra_validator)
+            .map(|keys| generate_penumbra_validator(keys.consensus_verification_key))
             .inspect(log_validator)
             .map(std::iter::once)
         {
@@ -75,10 +75,7 @@ where
 
 /// Generates a [`Validator`][PenumbraValidator] given a set of consensus [`Keys`].
 fn generate_penumbra_validator(
-    Keys {
-        consensus_verification_key,
-        ..
-    }: &Keys,
+    consensus_verification_key: ed25519_consensus::VerificationKey,
 ) -> PenumbraValidator {
     /// A temporary stub for validator keys.
     ///
