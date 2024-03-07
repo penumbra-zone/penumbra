@@ -82,12 +82,7 @@ impl Storage {
     ) -> anyhow::Result<Self> {
         if let Some(path) = storage_path.as_ref() {
             if path.as_ref().exists() {
-                return Self::load(
-                    storage_path.expect(
-                        "storage path is not `None` because we already matched on it above",
-                    ),
-                )
-                .await;
+                return Self::load(path).await;
             }
         };
 
