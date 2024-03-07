@@ -67,9 +67,9 @@ fn inject_penumbra_validators(
     }
 }
 
-/// Generates a [`Validator`][PenumbraValidator] given a set of consensus [`Keys`].
+/// Generates a [`Validator`][PenumbraValidator] given a consensus verification key.
 fn generate_penumbra_validator(
-    consensus_verification_key: ed25519_consensus::VerificationKey,
+    consensus_key: ed25519_consensus::VerificationKey,
 ) -> PenumbraValidator {
     /// A temporary stub for validator keys.
     ///
@@ -91,7 +91,7 @@ fn generate_penumbra_validator(
         governance_key: Some(GovernanceKey {
             gk: INVALID_KEY_BYTES.to_vec().clone(),
         }),
-        consensus_key: consensus_verification_key.as_bytes().to_vec(),
+        consensus_key: consensus_key.as_bytes().to_vec(),
         enabled: true,
         sequence_number: 0,
         name: String::default(),
