@@ -76,7 +76,7 @@ where $B_{SpendAuth}$ is the conventional `decaf377` basepoint as described in [
 
 ### Merkle auth path verification
 
-The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. For notes with non-zero values $v \ne 0$, the note can be unrooted from the tree to allow for dummy spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
+The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. Only for notes with non-zero values $v \ne 0$, the note is unrooted from the state commitment tree to allow for these "dummy" spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
 
 ### Diversified Base is not Identity
 
