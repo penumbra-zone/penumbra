@@ -8,7 +8,7 @@ The delegator vote proof demonstrates the properties enumerated below for the fo
 
 * Note amount $v$ (interpreted as an $\mathbb F_q$) and asset `ID` $\isin \mathbb G$
 * Note blinding factor $rcm \isin \mathbb F_q$ used to blind the note commitment
-* Address associated with the note being spent, consisting of diversified basepoint $B_d \isin \mathbb G$, 
+* Address associated with the note being spent, consisting of diversified basepoint $B_d \isin \mathbb G$,
 transmission key $pk_d \isin \mathbb G$, and clue key $\mathsf{ck_d} \isin \mathbb F_q$
 * Note commitment $cm \isin \mathbb F_q$
 * Spend authorization randomizer used for generating the randomized spend authorization key $\alpha \isin \mathbb F_r$
@@ -30,7 +30,7 @@ The zk-SNARK certifies that the position of the staked note `pos` is less than t
 
 `pos < start_pos`
 
-This demonstrates that the staked note used in voting existed prior to the proposal. 
+This demonstrates that the staked note used in voting existed prior to the proposal.
 
 The zk-SNARK also certifies that the commitment index of the start position is zero.
 
@@ -50,7 +50,7 @@ The zk-SNARK certifies that the public input balance commitment $cv$ was derived
 
 $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md). For delegator votes, $[\widetilde{v}] = 0$.
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md). For delegator votes, $[\widetilde{v}] = 0$.
 
 ### Nullifier Integrity
 

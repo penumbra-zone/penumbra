@@ -8,7 +8,7 @@ The spend proof demonstrates the properties enumerated below for the following p
 
 * Note amount $v$ (interpreted as an $\mathbb F_q$) and asset `ID` $\isin \mathbb G$
 * Note blinding factor $rcm \isin \mathbb F_q$ used to blind the note commitment
-* Address associated with the note being spent, consisting of diversified basepoint $B_d \isin \mathbb G$, 
+* Address associated with the note being spent, consisting of diversified basepoint $B_d \isin \mathbb G$,
 transmission key $pk_d \isin \mathbb G$, and clue key $\mathsf{ck_d} \isin \mathbb F_q$
 * Note commitment $cm \isin \mathbb F_q$
 * Blinding factor $\tilde v \isin \mathbb F_r$ used to blind the balance commitment
@@ -44,7 +44,7 @@ The zk-SNARK certifies that for non-zero values $v \ne 0$, the public input bala
 
 $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md).
 
 ### Nullifier Integrity
 
