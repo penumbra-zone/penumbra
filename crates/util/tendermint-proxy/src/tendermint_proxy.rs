@@ -23,6 +23,7 @@ pub struct TendermintProxy {
 }
 
 impl TendermintProxy {
+    /// Returns a new [`TendermintProxy`].
     pub fn new(tendermint_url: url::Url) -> Self {
         Self { tendermint_url }
     }
