@@ -6,7 +6,7 @@
 mod init_chain;
 
 use {
-    crate::{keyring::Keys, TestNode},
+    crate::{keyring::Keyring, TestNode},
     bytes::Bytes,
 };
 
@@ -14,7 +14,7 @@ use {
 #[derive(Default)]
 pub struct Builder {
     pub app_state: Option<Bytes>,
-    pub keys: Option<Keys>,
+    pub keyring: Keyring,
 }
 
 impl TestNode<()> {
@@ -34,7 +34,7 @@ impl Builder {
     /// Generates a single set of validator keys.
     pub fn single_validator(self) -> Self {
         Self {
-            keys: Some(Keys::generate()),
+            keyring: Keyring::new_with_size(1),
             ..self
         }
     }
