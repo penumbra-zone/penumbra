@@ -78,6 +78,7 @@ tower-service                    = { workspace = true }
 tracing                          = { workspace = true }
 
 [dev-dependencies]
+camino                  = { workspace = true }
 ed25519-consensus       = { workspace = true }
 penumbra-mock-consensus = { workspace = true }
 penumbra-mock-client    = { workspace = true }
@@ -87,6 +88,7 @@ rand_core               = { workspace = true }
 rand_chacha             = { workspace = true }
 tap                     = { workspace = true }
 tracing-subscriber      = { workspace = true }
+url                     = { workspace = true }
 
 # Enable the feature flags to get proving keys when running tests.
 [dev-dependencies.penumbra-proof-params]
