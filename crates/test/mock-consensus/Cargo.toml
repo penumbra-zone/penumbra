@@ -7,10 +7,15 @@ repository.workspace = true
 homepage.workspace = true
 license.workspace = true
 
+# NB: to avoid circular dependencies: do not add other `penumbra-*` crates
+# as dependencies, below. we should provide interfaces in terms of generic
+# types, and provide penumbra-specific helper functions via extension traits.
+
 [dependencies]
 anyhow = { workspace = true }
 bytes = { workspace = true }
-serde_json = { workspace = true }
+ed25519-consensus = { workspace = true }
+rand_core = { workspace = true }
 tap = { workspace = true }
 tendermint = { workspace = true }
 tower = { workspace = true, features = ["full"] }

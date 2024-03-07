@@ -4714,6 +4714,7 @@ dependencies = [
  "penumbra-transaction",
  "penumbra-txhash",
  "prost",
+ "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "regex",
@@ -5272,7 +5273,8 @@ version = "0.68.0"
 dependencies = [
  "anyhow",
  "bytes",
- "serde_json",
+ "ed25519-consensus",
+ "rand_core 0.6.4",
  "tap",
  "tendermint",
  "tower",

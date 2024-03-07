@@ -3,15 +3,24 @@
 // NB: Allow dead code, these are in fact shared by files in `tests/`.
 #![allow(dead_code)]
 
-use async_trait::async_trait;
-use cnidarium::TempStorage;
-use penumbra_app::{
-    app::App,
-    server::consensus::{Consensus, ConsensusService},
+pub use self::test_node_builder_ext::BuilderExt;
+
+use {
+    async_trait::async_trait,
+    cnidarium::TempStorage,
+    penumbra_app::{
+        app::App,
+        server::consensus::{Consensus, ConsensusService},
+    },
+    penumbra_genesis::AppState,
+    penumbra_mock_consensus::TestNode,
+    std::ops::Deref,
 };
-use penumbra_genesis::AppState;
-use penumbra_mock_consensus::TestNode;
-use std::ops::Deref;
+
+/// Penumbra-specific extensions to the mock consensus builder.
+///
+/// See [`BuilderExt`].
+mod test_node_builder_ext;
 
 // Installs a tracing subscriber to log events until the returned guard is dropped.
 pub fn set_tracing_subscriber() -> tracing::subscriber::DefaultGuard {
@@ -78,24 +87,5 @@ impl TempStorageExt for TempStorage {
 
     async fn apply_default_genesis(self) -> anyhow::Result<Self> {
         self.apply_genesis(Default::default()).await
-    }
-}
-
-/// Penumbra-specific extensions to the mock consensus builder.
-pub trait BuilderExt: Sized {
-    type Error;
-    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error>;
-}
-
-impl BuilderExt for penumbra_mock_consensus::builder::Builder {
-    type Error = anyhow::Error;
-    fn with_penumbra_auto_app_state(self, app_state: AppState) -> Result<Self, Self::Error> {
-        // what to do here?
-        // - read out list of abci/comet validators from the builder,
-        // - define a penumbra validator for each one
-        // - inject that into the penumbra app state
-        // - serialize to json and then call `with_app_state_bytes`
-        let app_state = serde_json::to_vec(&app_state)?;
-        Ok(self.app_state(app_state))
     }
 }

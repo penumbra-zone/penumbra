@@ -56,6 +56,7 @@ pub struct App {
 }
 
 impl App {
+    /// Constructs a new application, using the provided [`Snapshot`].
     pub async fn new(snapshot: Snapshot) -> Result<Self> {
         tracing::debug!("initializing App instance");
 

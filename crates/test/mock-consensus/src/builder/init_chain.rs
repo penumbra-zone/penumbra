@@ -32,6 +32,7 @@ impl Builder {
 
         let Self {
             app_state: Some(app_state),
+            keyring: _,
         } = self
         else {
             bail!("builder was not fully initialized")
