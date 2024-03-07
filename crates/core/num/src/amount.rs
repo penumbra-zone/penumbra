@@ -144,7 +144,7 @@ impl AmountVar {
         let quo_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?;
         let rem_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?;
 
-        // Constrain either quo_var or divisior_var to be 64 bits to guard against overflow
+        // Constrain either quo_var or divisor_var to be 64 bits to guard against overflow
         let q_is_64_bits = is_bit_constrained(self.cs(), quo_var.amount.clone(), 64)?;
         let d_is_64_bits = is_bit_constrained(self.cs(), divisor_var.amount.clone(), 64)?;
         let q_or_d_is_64_bits = q_is_64_bits.or(&d_is_64_bits)?;

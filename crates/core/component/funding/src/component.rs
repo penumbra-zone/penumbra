@@ -73,7 +73,7 @@ impl Component for Funding {
         histogram!(metrics::FETCH_FUNDING_QUEUE_LATENCY,).record(fetching_funding_queue_duration);
 
         let Some(base_rate) = state.get_previous_base_rate() else {
-            tracing::error!("the ending epoch's base rate has not beed found in object storage, computing rewards is not possible");
+            tracing::error!("the ending epoch's base rate has not been found in object storage, computing rewards is not possible");
             return Ok(());
         };
 
