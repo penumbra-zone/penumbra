@@ -53,8 +53,8 @@ pub trait AppHandlerExecute: Send + Sync {
     async fn chan_close_confirm_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseConfirm);
     async fn chan_close_init_execute<S: StateWrite>(state: S, msg: &MsgChannelCloseInit);
 
-    async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket);
-    async fn timeout_packet_execute<S: StateWrite>(state: S, msg: &MsgTimeout);
+    async fn recv_packet_execute<S: StateWrite>(state: S, msg: &MsgRecvPacket) -> Result<()>;
+    async fn timeout_packet_execute<S: StateWrite>(state: S, msg: &MsgTimeout) -> Result<()>;
     async fn acknowledge_packet_execute<S: StateWrite>(state: S, msg: &MsgAcknowledgement);
 }
 

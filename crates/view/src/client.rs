@@ -6,8 +6,10 @@ use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
 use penumbra_app::params::AppParameters;
-use penumbra_asset::asset::{self, Id, Metadata};
-use penumbra_asset::ValueView;
+use penumbra_asset::{
+    asset::{self, Id, Metadata},
+    ValueView,
+};
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,

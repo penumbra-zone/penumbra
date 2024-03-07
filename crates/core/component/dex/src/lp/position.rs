@@ -32,8 +32,8 @@ pub struct Position {
     /// duplicate position [`Id`]s, so it can track position ownership with a
     /// sequence of stateful NFTs based on the [`Id`].
     pub nonce: [u8; 32],
-    /// Set to `true` if a position is a limit-order, meaning that it will be closed
-    /// after being filled against.
+    /// Set to `true` if a position is a limit-order, meaning that it will be closed after being
+    /// filled against. Note that this is not currently supported in the dex state machine.
     pub close_on_fill: bool,
 }
 

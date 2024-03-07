@@ -1,5 +1,6 @@
 use anyhow::anyhow;
-use penumbra_asset::asset;
+use pbjson_types::Any;
+use penumbra_asset::{asset, EstimatedPrice, Value, ValueView};
 use penumbra_keys::{Address, AddressView, PayloadKey};
 use penumbra_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
@@ -13,7 +14,6 @@ use std::collections::BTreeMap;
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
 #[derive(Debug, Clone, Default)]
-
 pub struct TransactionPerspective {
     /// List of per-action payload keys. These can be used to decrypt
     /// the notes, swaps, and memo keys in the transaction.
@@ -40,28 +40,24 @@ pub struct TransactionPerspective {
     pub denoms: asset::Cache,
     /// The transaction ID associated with this TransactionPerspective
     pub transaction_id: TransactionId,
+    /// Any relevant estimated prices.
+    pub prices: Vec<EstimatedPrice>,
+    /// Any relevant extended metadata.
+    pub extended_metadata: BTreeMap<asset::Id, Any>,
 }
 
 impl TransactionPerspective {
+    pub fn view_value(&self, value: Value) -> ValueView {
+        value
+            .view_with_cache(&self.denoms)
+            .with_prices(&self.prices, &self.denoms)
+            .with_extended_metadata(self.extended_metadata.get(&value.asset_id).cloned())
+    }
+
     pub fn view_note(&self, note: Note) -> NoteView {
-        let note_address = note.address();
-
-        let address = match self
-            .address_views
-            .iter()
-            .find(|av| av.address() == note_address)
-        {
-            Some(av) => av.clone(),
-            None => AddressView::Opaque {
-                address: note_address,
-            },
-        };
-
-        let value = note.value().view_with_cache(&self.denoms);
-
         NoteView {
-            address,
-            value,
+            address: self.view_address(note.address()),
+            value: self.view_value(note.value()),
             rseed: note.rseed(),
         }
     }
@@ -114,6 +110,15 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             address_views,
             denoms,
             transaction_id: Some(msg.transaction_id.into()),
+            prices: msg.prices.into_iter().map(Into::into).collect(),
+            extended_metadata: msg
+                .extended_metadata
+                .into_iter()
+                .map(|(k, v)| pb::transaction_perspective::ExtendedMetadataById {
+                    asset_id: Some(k.into()),
+                    extended_metadata: Some(v),
+                })
+                .collect(),
         }
     }
 }
@@ -184,6 +189,24 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             address_views,
             denoms: denoms.try_into()?,
             transaction_id,
+            prices: msg
+                .prices
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            extended_metadata: msg
+                .extended_metadata
+                .into_iter()
+                .map(|em| {
+                    Ok((
+                        em.asset_id
+                            .ok_or_else(|| anyhow!("missing asset ID in extended metadata"))?
+                            .try_into()?,
+                        em.extended_metadata
+                            .ok_or_else(|| anyhow!("missing extended metadata"))?,
+                    ))
+                })
+                .collect::<Result<_, anyhow::Error>>()?,
         })
     }
 }

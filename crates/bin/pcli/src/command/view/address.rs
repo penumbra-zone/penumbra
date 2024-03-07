@@ -15,6 +15,9 @@ pub struct AddressCmd {
     /// Output in base64 format, instead of the default bech32.
     #[clap(long)]
     base64: bool,
+    /// Use compat (bech32, not bech32m) address encoding, for compatibility with some IBC chains.
+    #[clap(long)]
+    compat: bool,
 }
 
 impl AddressCmd {
@@ -39,6 +42,8 @@ impl AddressCmd {
                     "{}",
                     base64::engine::general_purpose::STANDARD.encode(address.to_vec()),
                 );
+            } else if self.compat {
+                println!("{}", address.compat_encoding());
             } else {
                 println!("{}", address);
             };

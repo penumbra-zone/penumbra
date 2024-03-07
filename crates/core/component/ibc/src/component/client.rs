@@ -472,8 +472,12 @@ mod tests {
         ) {
         }
         async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {}
-        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
+            Ok(())
+        }
+        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) -> Result<()> {
+            Ok(())
+        }
         async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
     }
 

@@ -30,8 +30,7 @@ use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{fmd, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
-use penumbra_stake::{rate::RateData, validator};
-use penumbra_stake::{IdentityKey, UndelegateClaimPlan};
+use penumbra_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
     gas::{self, GasCost},

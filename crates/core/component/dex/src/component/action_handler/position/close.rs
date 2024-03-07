@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_proto::StateWriteProto as _;
 
@@ -18,11 +16,7 @@ impl ActionHandler for PositionClose {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // We don't want to actually close the position here, because otherwise
         // the economic effects could depend on intra-block ordering, and we'd
         // lose the ability to do block-scoped JIT liquidity, where a single

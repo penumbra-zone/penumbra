@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 
 use crate::{
@@ -17,11 +15,8 @@ impl ActionHandler for Ics20Withdrawal {
         self.validate()
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
-        state.withdrawal_check(self).await
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        state.withdrawal_check(self).await?;
         state.withdrawal_execute(self).await
     }
 }

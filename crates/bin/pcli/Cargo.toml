@@ -45,6 +45,7 @@ comfy-table = "5"
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
 dialoguer = "0.10.4"
+time = "0.3"
 directories = {workspace = true}
 ed25519-consensus = {workspace = true}
 futures = {workspace = true}

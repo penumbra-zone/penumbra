@@ -145,7 +145,10 @@ pub trait PositionManager: StateWrite + PositionRead {
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
 
-        let position = self.handle_limit_order(&prev, position);
+        // currently, we are disabling limit orders due to the complexity involved in managing
+        // limit orders in the dex state machine (see
+        // https://github.com/penumbra-zone/penumbra/issues/3850#issuecomment-1977300433)
+        // let position = self.handle_limit_order(&prev, position);
 
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {

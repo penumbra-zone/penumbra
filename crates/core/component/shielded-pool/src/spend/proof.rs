@@ -545,7 +545,7 @@ mod tests {
 
     proptest! {
     #[test]
-    /// Check that the `SpendCircuit` is not satisified when using an incorrect
+    /// Check that the `SpendCircuit` is not satisfied when using an incorrect
     /// TCT root (`anchor`).
     fn spend_proof_verification_merkle_path_integrity_failure((public, private) in arb_invalid_spend_statement_incorrect_anchor()) {
         assert!(check_satisfaction(&public, &private).is_err());
@@ -620,7 +620,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendCircuit` is not satisified when the diversified address is wrong.
+        /// Check that the `SpendCircuit` is not satisfied when the diversified address is wrong.
         fn spend_proof_verification_diversified_address_integrity_failure((public, private) in arb_invalid_spend_statement_diversified_address()) {
             assert!(check_satisfaction(&public, &private).is_err());
             assert!(check_circuit_satisfaction(public, private).is_err());
@@ -693,7 +693,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendCircuit` is not satisified, when using an
+        /// Check that the `SpendCircuit` is not satisfied, when using an
         /// incorrect nullifier.
         fn spend_proof_verification_nullifier_integrity_failure((public, private) in arb_invalid_spend_statement_nullifier()) {
             assert!(check_satisfaction(&public, &private).is_err());
@@ -762,7 +762,7 @@ mod tests {
 
     proptest! {
         #[test]
-        /// Check that the `SpendCircuit` is not satisifed when using balance
+        /// Check that the `SpendCircuit` is not satisfied when using balance
         /// commitments with different blinding factors.
         fn spend_proof_verification_balance_commitment_integrity_failure((public, private) in arb_invalid_spend_statement_v_blinding_factor()) {
             assert!(check_satisfaction(&public, &private).is_err());

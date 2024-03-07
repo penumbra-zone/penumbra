@@ -5459,6 +5459,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.undelegations.is_empty() {
             len += 1;
         }
+        if !self.undelegation_claims.is_empty() {
+            len += 1;
+        }
         if !self.ibc_relay_actions.is_empty() {
             len += 1;
         }
@@ -5502,6 +5505,9 @@ impl serde::Serialize for TransactionPlannerRequest {
         }
         if !self.undelegations.is_empty() {
             struct_ser.serialize_field("undelegations", &self.undelegations)?;
+        }
+        if !self.undelegation_claims.is_empty() {
+            struct_ser.serialize_field("undelegationClaims", &self.undelegation_claims)?;
         }
         if !self.ibc_relay_actions.is_empty() {
             struct_ser.serialize_field("ibcRelayActions", &self.ibc_relay_actions)?;
@@ -5548,6 +5554,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "swapClaims",
             "delegations",
             "undelegations",
+            "undelegation_claims",
+            "undelegationClaims",
             "ibc_relay_actions",
             "ibcRelayActions",
             "ics20_withdrawals",
@@ -5574,6 +5582,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             SwapClaims,
             Delegations,
             Undelegations,
+            UndelegationClaims,
             IbcRelayActions,
             Ics20Withdrawals,
             PositionOpens,
@@ -5611,6 +5620,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "swapClaims" | "swap_claims" => Ok(GeneratedField::SwapClaims),
                             "delegations" => Ok(GeneratedField::Delegations),
                             "undelegations" => Ok(GeneratedField::Undelegations),
+                            "undelegationClaims" | "undelegation_claims" => Ok(GeneratedField::UndelegationClaims),
                             "ibcRelayActions" | "ibc_relay_actions" => Ok(GeneratedField::IbcRelayActions),
                             "ics20Withdrawals" | "ics20_withdrawals" => Ok(GeneratedField::Ics20Withdrawals),
                             "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
@@ -5645,6 +5655,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut swap_claims__ = None;
                 let mut delegations__ = None;
                 let mut undelegations__ = None;
+                let mut undelegation_claims__ = None;
                 let mut ibc_relay_actions__ = None;
                 let mut ics20_withdrawals__ = None;
                 let mut position_opens__ = None;
@@ -5702,6 +5713,12 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                                 return Err(serde::de::Error::duplicate_field("undelegations"));
                             }
                             undelegations__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::UndelegationClaims => {
+                            if undelegation_claims__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("undelegationClaims"));
+                            }
+                            undelegation_claims__ = Some(map_.next_value()?);
                         }
                         GeneratedField::IbcRelayActions => {
                             if ibc_relay_actions__.is_some() {
@@ -5761,6 +5778,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     swap_claims: swap_claims__.unwrap_or_default(),
                     delegations: delegations__.unwrap_or_default(),
                     undelegations: undelegations__.unwrap_or_default(),
+                    undelegation_claims: undelegation_claims__.unwrap_or_default(),
                     ibc_relay_actions: ibc_relay_actions__.unwrap_or_default(),
                     ics20_withdrawals: ics20_withdrawals__.unwrap_or_default(),
                     position_opens: position_opens__.unwrap_or_default(),
@@ -6675,6 +6693,158 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::Undelegate {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.Undelegate", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_planner_request::UndelegateClaim {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_identity.is_some() {
+            len += 1;
+        }
+        if self.start_epoch_index != 0 {
+            len += 1;
+        }
+        if self.penalty.is_some() {
+            len += 1;
+        }
+        if self.unbonding_amount.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.UndelegateClaim", len)?;
+        if let Some(v) = self.validator_identity.as_ref() {
+            struct_ser.serialize_field("validatorIdentity", v)?;
+        }
+        if self.start_epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("startEpochIndex", ToString::to_string(&self.start_epoch_index).as_str())?;
+        }
+        if let Some(v) = self.penalty.as_ref() {
+            struct_ser.serialize_field("penalty", v)?;
+        }
+        if let Some(v) = self.unbonding_amount.as_ref() {
+            struct_ser.serialize_field("unbondingAmount", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateClaim {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_identity",
+            "validatorIdentity",
+            "start_epoch_index",
+            "startEpochIndex",
+            "penalty",
+            "unbonding_amount",
+            "unbondingAmount",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorIdentity,
+            StartEpochIndex,
+            Penalty,
+            UnbondingAmount,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
+                            "penalty" => Ok(GeneratedField::Penalty),
+                            "unbondingAmount" | "unbonding_amount" => Ok(GeneratedField::UnbondingAmount),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_planner_request::UndelegateClaim;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.TransactionPlannerRequest.UndelegateClaim")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_planner_request::UndelegateClaim, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_identity__ = None;
+                let mut start_epoch_index__ = None;
+                let mut penalty__ = None;
+                let mut unbonding_amount__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorIdentity => {
+                            if validator_identity__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                            }
+                            validator_identity__ = map_.next_value()?;
+                        }
+                        GeneratedField::StartEpochIndex => {
+                            if start_epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("startEpochIndex"));
+                            }
+                            start_epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Penalty => {
+                            if penalty__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("penalty"));
+                            }
+                            penalty__ = map_.next_value()?;
+                        }
+                        GeneratedField::UnbondingAmount => {
+                            if unbonding_amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingAmount"));
+                            }
+                            unbonding_amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_planner_request::UndelegateClaim {
+                    validator_identity: validator_identity__,
+                    start_epoch_index: start_epoch_index__.unwrap_or_default(),
+                    penalty: penalty__,
+                    unbonding_amount: unbonding_amount__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerRequest.UndelegateClaim", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TransactionPlannerResponse {

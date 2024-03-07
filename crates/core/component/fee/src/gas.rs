@@ -1,5 +1,7 @@
 use std::{iter::Sum, ops::Add};
 
+use serde::{Deserialize, Serialize};
+
 use penumbra_num::Amount;
 use penumbra_proto::{core::component::fee::v1 as pb, DomainType};
 
@@ -49,7 +51,8 @@ impl Sum for Gas {
 /// These prices have an implicit denominator of 1,000 relative to the base unit
 /// of the staking token, so gas price 1,000 times 1 unit of gas is 1 base unit
 /// of staking token.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, Serialize, Deserialize)]
+#[serde(try_from = "pb::GasPrices", into = "pb::GasPrices")]
 pub struct GasPrices {
     pub block_space_price: u64,
     pub compact_block_space_price: u64,

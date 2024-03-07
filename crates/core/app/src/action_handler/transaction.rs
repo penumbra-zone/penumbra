@@ -8,30 +8,25 @@ use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
-use super::ActionHandler;
+use super::AppActionHandler;
 
 mod stateful;
 mod stateless;
 
 use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
 use stateless::{
-    check_memo_exists_if_outputs_absent_if_not, no_duplicate_spends, no_duplicate_votes,
-    num_clues_equal_to_num_outputs, valid_binding_signature,
+    check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
+    valid_binding_signature,
 };
 
 #[async_trait]
-impl ActionHandler for Transaction {
+impl AppActionHandler for Transaction {
     type CheckStatelessContext = ();
 
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
     #[instrument(skip(self, _context))]
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-
-        // TODO: unify code organization
         valid_binding_signature(self)?;
-        no_duplicate_spends(self)?;
-        no_duplicate_votes(self)?;
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
 
@@ -58,21 +53,27 @@ impl ActionHandler for Transaction {
 
     // We only instrument the top-level `check_stateful`, so we get one span for each transaction.
     #[instrument(skip(self, state))]
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+        let mut action_checks = JoinSet::new();
+
+        // TODO: these could be pushed into the action checks and run concurrently if needed
+
+        // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
+        // SAFETY: FMD parameters cannot change during transaction execution.
         fmd_parameters_valid(state.clone(), self).await?;
+        // SAFETY: gas prices cannot change during transaction execution.
         fee_greater_than_base_fee(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to
         // use the yoke crate, but cloning is almost certainly not a big deal
         // for now.
-        let mut action_checks = JoinSet::new();
         for (i, action) in self.actions().cloned().enumerate() {
             let state2 = state.clone();
             let span = action.create_span(i);
             action_checks
-                .spawn(async move { action.check_stateful(state2).await }.instrument(span));
+                .spawn(async move { action.check_historical(state2).await }.instrument(span));
         }
         // Now check if any component action failed verification.
         while let Some(check) = action_checks.join_next().await {
@@ -84,7 +85,7 @@ impl ActionHandler for Transaction {
 
     // We only instrument the top-level `execute`, so we get one span for each transaction.
     #[instrument(skip(self, state))]
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
         let source = CommitmentSource::Transaction {
@@ -94,7 +95,10 @@ impl ActionHandler for Transaction {
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);
-            action.execute(&mut state).instrument(span).await?;
+            action
+                .check_and_execute(&mut state)
+                .instrument(span)
+                .await?;
         }
 
         // Delete the note source, in case someone else tries to read it.
@@ -118,7 +122,7 @@ mod tests {
     };
     use rand_core::OsRng;
 
-    use crate::ActionHandler;
+    use crate::AppActionHandler;
 
     #[tokio::test]
     async fn check_stateless_succeeds_on_valid_spend() -> Result<()> {

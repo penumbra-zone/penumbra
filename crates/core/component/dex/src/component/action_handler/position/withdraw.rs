@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use anyhow::{anyhow, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use decaf377::Fr;
 use penumbra_proto::StateWriteProto;
@@ -24,13 +22,7 @@ impl ActionHandler for PositionWithdraw {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // Nothing to do here: we defer consistency checks on the reserves to
-        // execution, to avoid having to reason about parallellism in checks.
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // See comment in check_stateful for why we check the position state here:
         // we need to ensure that we're checking the reserves at the moment we execute
         // the withdrawal, to prevent any possibility of TOCTOU attacks.

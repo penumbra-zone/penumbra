@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
+use cnidarium::StateWrite;
 use penumbra_proto::{DomainType, StateWriteProto as _};
 
 use crate::component::StateWriteExt;
@@ -38,17 +36,17 @@ impl ActionHandler for ValidatorVote {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ValidatorVote {
+            auth_sig: _,
             body:
                 ValidatorVoteBody {
                     proposal,
-                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    vote,
                     identity_key,
                     governance_key,
-                    reason: _, // Checked the length in the stateless verification
+                    reason,
                 },
-            auth_sig: _, // We already checked this in stateless verification
         } = self;
 
         state.check_proposal_votable(*proposal).await?;
@@ -61,22 +59,6 @@ impl ActionHandler for ValidatorVote {
         state
             .check_governance_key_matches_validator(identity_key, governance_key)
             .await?;
-
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let ValidatorVote {
-            auth_sig: _,
-            body:
-                ValidatorVoteBody {
-                    proposal,
-                    vote,
-                    identity_key,
-                    governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
-                    reason,
-                },
-        } = self;
 
         let proposal_state = state
             .proposal_state(*proposal)
@@ -96,7 +78,7 @@ impl ActionHandler for ValidatorVote {
         tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cast validator vote");
         state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
 
-        // Emergency proposals are passed immediately afeter receiving +2/3 of
+        // Emergency proposals are passed immediately after receiving +2/3 of
         // validator votes. These include the eponymous `Emergency` proposal but
         // also `IbcFreeze` and `IbcUnfreeze`.
         let proposal_payload = state

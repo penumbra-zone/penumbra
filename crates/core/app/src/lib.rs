@@ -12,7 +12,7 @@ mod community_pool_ext;
 mod penumbra_host_chain;
 
 pub use crate::{
-    action_handler::ActionHandler, app::StateWriteExt,
+    action_handler::AppActionHandler, app::StateWriteExt,
     community_pool_ext::CommunityPoolStateReadExt, metrics::register_metrics,
     penumbra_host_chain::PenumbraHost,
 };
