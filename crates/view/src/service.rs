@@ -13,6 +13,7 @@ use futures::stream::{self, StreamExt, TryStreamExt};
 use penumbra_auction::auction::dutch::actions::view::ActionDutchAuctionWithdrawView;
 use rand::Rng;
 use rand_core::OsRng;
+use tap::Tap;
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
@@ -91,14 +92,27 @@ pub struct ViewServer {
 
 impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
+    #[instrument(
+        skip_all,
+        fields(
+            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str()),
+            url = %node,
+        )
+    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone()).await?;
+        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone())
+            .tap(|_| tracing::trace!("loading or initializing storage"))
+            .await?
+            .tap(|_| tracing::debug!("storage is ready"));
 
-        Self::new(storage, node).await
+        Self::new(storage, node)
+            .tap(|_| tracing::trace!("constructing view server"))
+            .await
+            .tap(|_| tracing::debug!("constructed view server"))
     }
 
     /// Constructs a new [`ViewService`], spawning a sync task internally.
@@ -109,16 +123,19 @@ impl ViewServer {
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
     pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
-        let (worker, sct, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone()).await?;
+        let (worker, state_commitment_tree, error_slot, sync_height_rx) =
+            Worker::new(storage.clone(), node.clone())
+                .tap(|_| tracing::trace!("constructing view server worker"))
+                .await?
+                .tap(|_| tracing::debug!("constructed view server worker"));
 
-        tokio::spawn(worker.run());
+        tokio::spawn(worker.run()).tap(|_| tracing::debug!("spawned view server worker"));
 
         Ok(Self {
             storage,
             error_slot,
             sync_height_rx,
-            state_commitment_tree: sct,
+            state_commitment_tree,
             node,
         })
     }

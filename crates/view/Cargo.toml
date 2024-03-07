@@ -60,6 +60,7 @@ rand_core = {workspace = true, features = ["getrandom"]}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 sha2 = {workspace = true}
+tap = {workspace = true}
 tendermint = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true, features = ["sync"]}
