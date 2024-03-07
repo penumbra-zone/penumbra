@@ -28,14 +28,14 @@ impl TendermintProxy {
     }
 }
 
-// Note: the conversions that take place in here could be moved to
-// from/try_from impls, but they're not used anywhere else, so it's
-// unimportant right now, and would require additional wrappers
-// since none of the structs are defined in our crates :(
-// TODO: move those to proto/src/protobuf.rs
-
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
+    // Note: the conversions that take place in here could be moved to
+    // from/try_from impls, but they're not used anywhere else, so it's
+    // unimportant right now, and would require additional wrappers
+    // since none of the structs are defined in our crates :(
+    // TODO: move those to proto/src/protobuf.rs
+
     async fn get_tx(
         &self,
         req: tonic::Request<GetTxRequest>,
