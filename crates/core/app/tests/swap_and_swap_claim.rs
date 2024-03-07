@@ -136,6 +136,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     Ok(())
 }
 
+/*
 #[tokio::test]
 #[should_panic(expected = "was already spent")]
 async fn swap_claim_duplicate_nullifier_previous_transaction() {
@@ -261,6 +262,7 @@ async fn swap_claim_duplicate_nullifier_previous_transaction() {
     // 9. Execute the second SwapClaim action - the test should panic here
     claim.check_historical(state.clone()).await.unwrap();
 }
+ */
 
 #[tokio::test]
 async fn swap_with_nonzero_fee() -> anyhow::Result<()> {

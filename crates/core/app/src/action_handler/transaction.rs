@@ -15,8 +15,8 @@ mod stateless;
 
 use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
 use stateless::{
-    check_memo_exists_if_outputs_absent_if_not, no_duplicate_spends, no_duplicate_votes,
-    num_clues_equal_to_num_outputs, valid_binding_signature,
+    check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
+    valid_binding_signature,
 };
 
 #[async_trait]
@@ -26,17 +26,9 @@ impl AppActionHandler for Transaction {
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
     #[instrument(skip(self, _context))]
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-
-        // TODO: unify code organization
         valid_binding_signature(self)?;
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
-
-        // These should be redundant given the choice to move these checks into check_and_execute
-        // but are left here for reference and as a defense in depth.
-        no_duplicate_spends(self)?;
-        no_duplicate_votes(self)?;
 
         let context = self.context();
 
@@ -63,6 +55,8 @@ impl AppActionHandler for Transaction {
     #[instrument(skip(self, state))]
     async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let mut action_checks = JoinSet::new();
+
+        // TODO: these could be pushed into the action checks and run concurrently if needed
 
         // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
