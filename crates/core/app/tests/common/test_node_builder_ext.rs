@@ -79,16 +79,23 @@ fn generate_penumbra_validator(
 ) -> PenumbraValidator {
     /// A temporary stub for validator keys.
     ///
+    /// An invalid key is intentionally provided here, until we have test coverage exercising the
+    /// use of these keys. Once we need it we will:
+    /// - generate a random signing key
+    /// - get its verification key
+    /// - use that for the identity key
+    /// - throw the signing key away
+    ///
     /// NB: for now, we will use the same key for governance. See the documentation of
     /// `GovernanceKey` for more information about cold storage of validator keys.
-    const BYTES: [u8; 32] = [0; 32];
+    const INVALID_KEY_BYTES: [u8; 32] = [0; 32];
 
     PenumbraValidator {
         identity_key: Some(IdentityKey {
-            ik: BYTES.to_vec().clone(),
+            ik: INVALID_KEY_BYTES.to_vec().clone(),
         }),
         governance_key: Some(GovernanceKey {
-            gk: BYTES.to_vec().clone(),
+            gk: INVALID_KEY_BYTES.to_vec().clone(),
         }),
         consensus_key: consensus_verification_key.as_bytes().to_vec(),
         enabled: true,
