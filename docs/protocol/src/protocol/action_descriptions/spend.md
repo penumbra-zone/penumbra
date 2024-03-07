@@ -24,13 +24,9 @@ And the corresponding public inputs:
 * Nullifier $nf$ of the note to be spent
 * Randomized verification key $rk \isin \mathbb G$
 
-### Dummy spend
-
-We require each one of the following integrity properties to hold only for notes with non-zero values $v \ne 0$. This is to allow for dummy spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
-
 ### Note Commitment Integrity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the note commitment $cm$ was derived as:
+The zk-SNARK certifies that the note commitment $cm$ was derived as:
 
 $cm = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))$.
 
@@ -40,7 +36,7 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 ### Balance Commitment Integrity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the public input balance commitment $cv$ was derived from the witnessed values as:
+The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
 $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
@@ -48,21 +44,19 @@ where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific
 
 ### Nullifier Integrity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the
-revealed nullifier $nf$ was derived as:
+The zk-SNARK certifies that the revealed nullifier $nf$ was derived as:
 
 $nf = hash_3(ds, (nk, cm, pos))$
 
 using the witnessed values above and where `ds` is a constant domain separator:
 
-`ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q
-`
+`ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q`
 
 as described in [Nullifiers](../notes/nullifiers.md).
 
 ### Diversified address Integrity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the diversified address $pk_d$ associated with the note being spent was derived as:
+The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
 
 $pk_d ​= [ivk] B_d$
 
@@ -74,7 +68,7 @@ as described in [Viewing Keys](../addresses_keys/viewing_keys.md).
 
 ### Randomized verification key Integrity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the randomized verification key $rk$ was derived using the witnessed $ak$ and spend auth randomizer $\alpha$ as:
+The zk-SNARK certifies that the randomized verification key $rk$ was derived using the witnessed $ak$ and spend auth randomizer $\alpha$ as:
 
 $rk = ak + [\alpha]B_{SpendAuth}$
 
@@ -82,14 +76,14 @@ where $B_{SpendAuth}$ is the conventional `decaf377` basepoint as described in [
 
 ### Merkle auth path verification
 
-The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor.
+The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. For notes with non-zero values $v \ne 0$, the note can be unrooted from the tree to allow for dummy spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
 
 ### Diversified Base is not Identity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the diversified basepoint $B_d$ associated with the address on the note is not identity.
+The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the address on the note is not identity.
 
 ### The spend authorization key is not Identity
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the spend authorization key $ak$ is not identity.
+The zk-SNARK certifies that the spend authorization key $ak$ is not identity.
 
 [^1]: Note that [issue 2135](https://github.com/penumbra-zone/penumbra/issues/2135) tracks a bug where dummy spends fail to verify due to the merkle paths.
