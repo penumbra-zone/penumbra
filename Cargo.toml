@@ -35,6 +35,7 @@ members = [
   "crates/core/transaction",
   "crates/core/app",
   "crates/custody",
+  "crates/grpc-server",
   "crates/wallet",
   "crates/view",
   "crates/util/auto-https",
