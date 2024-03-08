@@ -221,6 +221,9 @@ pub struct SwapClaimPlan {
     /// The second blinding factor to use for the ZK swap claim proof.
     #[prost(bytes = "vec", tag = "6")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+    /// Chosen nk
+    #[prost(bytes = "vec", tag = "7")]
+    pub chosen_nk: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for SwapClaimPlan {
     const NAME: &'static str = "SwapClaimPlan";

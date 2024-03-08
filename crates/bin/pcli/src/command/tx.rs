@@ -514,12 +514,13 @@ impl TxCmd {
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
-                        swap_plaintext,
+                        swap_plaintext: swap_plaintext.clone(),
                         position: swap_record.position,
                         output_data: swap_record.output_data,
                         epoch_duration: params.sct_params.epoch_duration,
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
+                        chosen_nk: Fq::rand(&mut OsRng),
                     })
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
@@ -528,6 +529,27 @@ impl TxCmd {
                 // Submit the `SwapClaim` transaction.
                 // BUG: this doesn't wait for confirmation, see
                 // https://github.com/penumbra-zone/penumbra/pull/2091/commits/128b24a6303c2f855a708e35f9342987f1dd34ec
+                app.build_and_submit_transaction(plan).await?;
+
+                println!("PoC: claiming swap outputs again");
+                let mut planner = Planner::new(OsRng);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
+                let plan = planner
+                    .swap_claim(SwapClaimPlan {
+                        swap_plaintext,
+                        position: swap_record.position,
+                        output_data: swap_record.output_data,
+                        epoch_duration: params.sct_params.epoch_duration,
+                        proof_blinding_r: Fq::rand(&mut OsRng),
+                        proof_blinding_s: Fq::rand(&mut OsRng),
+                        chosen_nk: Fq::rand(&mut OsRng),
+                    })
+                    .plan(app.view(), AddressIndex::new(*source))
+                    .await
+                    .context("can't plan swap claim")?;
+
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Delegate {

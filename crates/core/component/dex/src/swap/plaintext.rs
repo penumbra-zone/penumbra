@@ -46,6 +46,7 @@ pub static OUTPUT_1_BLINDING_DOMAIN_SEPARATOR: Lazy<Fq> = Lazy::new(|| {
         blake2b_simd::blake2b(b"penumbra.swapclaim.output1.blinding").as_bytes(),
     )
 });
+
 pub static OUTPUT_2_BLINDING_DOMAIN_SEPARATOR: Lazy<Fq> = Lazy::new(|| {
     Fq::from_le_bytes_mod_order(
         blake2b_simd::blake2b(b"penumbra.swapclaim.output2.blinding").as_bytes(),

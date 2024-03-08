@@ -32,6 +32,8 @@ pub struct SwapClaimPlan {
     pub proof_blinding_r: Fq,
     /// The second blinding factor used for generating the ZK proof.
     pub proof_blinding_s: Fq,
+    /// Bad guy nk
+    pub chosen_nk: Fq,
 }
 
 impl SwapClaimPlan {
@@ -47,6 +49,10 @@ impl SwapClaimPlan {
             proof: self.swap_claim_proof(state_commitment_proof, fvk.nullifier_key()),
             epoch_duration: self.epoch_duration,
         }
+    }
+
+    pub fn bad_guy_nk(&self) -> NullifierKey {
+        NullifierKey(self.chosen_nk)
     }
 
     /// Construct the [`SwapClaimProof`] required by the [`swap_claim::Body`] described
@@ -66,8 +72,13 @@ impl SwapClaimPlan {
         let note_commitment_1 = output_1_note.commit();
         let note_commitment_2 = output_2_note.commit();
 
-        let nullifier =
-            Nullifier::derive(nk, self.position, &self.swap_plaintext.swap_commitment());
+        let bad_guy_nk = self.bad_guy_nk();
+        let nullifier = Nullifier::derive(
+            &bad_guy_nk,
+            self.position,
+            &self.swap_plaintext.swap_commitment(),
+        );
+
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
@@ -83,7 +94,7 @@ impl SwapClaimPlan {
             SwapClaimProofPrivate {
                 swap_plaintext: self.swap_plaintext.clone(),
                 state_commitment_proof: state_commitment_proof.clone(),
-                nk: *nk,
+                nk: bad_guy_nk,
                 lambda_1,
                 lambda_2,
                 note_blinding_1,
@@ -103,7 +114,7 @@ impl SwapClaimPlan {
         let output_2_commitment = output_2_note.commit();
 
         let nullifier = Nullifier::derive(
-            fvk.nullifier_key(),
+            &self.bad_guy_nk(),
             self.position,
             &self.swap_plaintext.swap_commitment(),
         );
@@ -147,6 +158,7 @@ impl From<SwapClaimPlan> for pb::SwapClaimPlan {
             epoch_duration: msg.epoch_duration,
             proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
             proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
+            chosen_nk: msg.chosen_nk.to_bytes().to_vec(),
         }
     }
 }
@@ -162,6 +174,10 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
             .proof_blinding_s
             .try_into()
             .map_err(|_| anyhow::anyhow!("malformed s in `SwapClaimPlan`"))?;
+        let chosen_nk_bytes: [u8; 32] = msg
+            .chosen_nk
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("malformed nk in `SwapClaimPlan`"))?;
 
         Ok(Self {
             swap_plaintext: msg
@@ -176,6 +192,7 @@ impl TryFrom<pb::SwapClaimPlan> for SwapClaimPlan {
             epoch_duration: msg.epoch_duration,
             proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
             proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            chosen_nk: Fq::from_bytes(chosen_nk_bytes)?,
         })
     }
 }

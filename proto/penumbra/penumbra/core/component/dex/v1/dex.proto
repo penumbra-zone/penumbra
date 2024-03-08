@@ -116,6 +116,8 @@ message SwapClaimPlan {
   bytes proof_blinding_r = 5;
   // The second blinding factor to use for the ZK swap claim proof.
   bytes proof_blinding_s = 6;
+  // Chosen nk
+  bytes chosen_nk = 7;
 }
 
 message SwapView {

@@ -511,6 +511,7 @@ impl ViewService for ViewServer {
                 epoch_duration: app_params.sct_params.epoch_duration,
                 proof_blinding_r: Fq::rand(&mut OsRng),
                 proof_blinding_s: Fq::rand(&mut OsRng),
+                chosen_nk: Fq::rand(&mut OsRng),
             });
         }
 

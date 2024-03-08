@@ -5806,6 +5806,9 @@ impl serde::Serialize for SwapClaimPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if !self.chosen_nk.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapClaimPlan", len)?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
@@ -5829,6 +5832,10 @@ impl serde::Serialize for SwapClaimPlan {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
+        if !self.chosen_nk.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("chosenNk", pbjson::private::base64::encode(&self.chosen_nk).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -5850,6 +5857,8 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "chosen_nk",
+            "chosenNk",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -5860,6 +5869,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
             EpochDuration,
             ProofBlindingR,
             ProofBlindingS,
+            ChosenNk,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -5888,6 +5898,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                             "epochDuration" | "epoch_duration" => Ok(GeneratedField::EpochDuration),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "chosenNk" | "chosen_nk" => Ok(GeneratedField::ChosenNk),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -5913,6 +5924,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                 let mut epoch_duration__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut chosen_nk__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapPlaintext => {
@@ -5959,6 +5971,14 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::ChosenNk => {
+                            if chosen_nk__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("chosenNk"));
+                            }
+                            chosen_nk__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -5971,6 +5991,7 @@ impl<'de> serde::Deserialize<'de> for SwapClaimPlan {
                     epoch_duration: epoch_duration__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    chosen_nk: chosen_nk__.unwrap_or_default(),
                 })
             }
         }
