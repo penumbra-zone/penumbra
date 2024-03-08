@@ -9,3 +9,20 @@ license.workspace = true
 publish = false
 
 [dependencies]
+anyhow                 = { workspace = true }
+penumbra-app           = { workspace = true }
+penumbra-compact-block = { workspace = true }
+penumbra-proto         = { workspace = true }
+cnidarium              = { workspace = true, features = ["rpc"] }
+penumbra-ibc           = { workspace = true, features = ["rpc"] }
+tracing                = { workspace = true }
+tonic                  = { workspace = true }
+tonic-web              = { workspace = true }
+tonic-reflection       = { workspace = true }
+penumbra-fee           = { workspace = true }
+penumbra-governance    = { workspace = true }
+penumbra-sct           = { workspace = true }
+penumbra-shielded-pool = { workspace = true }
+penumbra-stake         = { workspace = true }
+penumbra-tower-trace   = { workspace = true }
+ibc-proto              = { workspace = true }

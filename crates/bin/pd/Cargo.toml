@@ -42,17 +42,12 @@ penumbra-stake = {workspace = true, features = [
     "parallel",
 ], default-features = true}
 penumbra-sct = {workspace = true, default-features = true}
-penumbra-fee = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, features = ["parallel"], default-features = true}
-penumbra-governance = {workspace = true, features = [
-    "parallel",
-], default-features = true}
+penumbra-governance = {workspace = true, features = ["parallel"], default-features = true}
 penumbra-ibc = {workspace = true, features = ["rpc"], default-features = true}
-penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, default-features = true}
 penumbra-app = {workspace = true}
 penumbra-custody = {workspace = true}
-penumbra-tower-trace = { path = "../../util/tower-trace" }
 penumbra-tendermint-proxy = { path = "../../util/tendermint-proxy" }
 penumbra-auto-https = { path = "../../util/auto-https" }
 penumbra-genesis = {workspace = true}
@@ -65,9 +60,6 @@ tendermint-proto = {workspace = true}
 tendermint = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
 ibc-types = {workspace = true, default-features = true}
-ibc-proto = {workspace = true, default-features = false, features = [
-    "server",
-]}
 prost = {workspace = true}
 toml = {workspace = true}
 ics23 = {workspace = true}
@@ -92,9 +84,7 @@ regex = {workspace = true}
 reqwest = { version = "0.11", features = ["json"] }
 prost-types = {workspace = true}
 pbjson-types = {workspace = true}
-tonic = {workspace = true}
 tonic-web = {workspace = true}
-tonic-reflection = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
 url = {workspace = true}
 pin-project = {workspace = true}
@@ -129,6 +119,7 @@ axum-server = {workspace = true, features = ["tls-rustls"]}
 zip = "0.6"
 mime_guess = "2"
 axum = "0.6"
+penumbra-grpc-server = { workspace = true }
 
 [dev-dependencies]
 penumbra-proof-params = {workspace = true, features = [

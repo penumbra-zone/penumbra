@@ -171,6 +171,7 @@ penumbra-fee                     = { default-features = false, path = "crates/co
 penumbra-funding                 = { default-features = false, path = "crates/core/component/funding" }
 penumbra-governance              = { default-features = false, path = "crates/core/component/governance" }
 penumbra-genesis                 = { path = "crates/core/genesis" }
+penumbra-grpc-server             = { path = "crates/grpc-server" }
 penumbra-ibc                     = { default-features = false, path = "crates/core/component/ibc" }
 penumbra-keys                    = { default-features = false, path = "crates/core/keys" }
 penumbra-mock-client             = { path = "crates/test/mock-client" }
@@ -183,6 +184,7 @@ penumbra-sct                     = { default-features = false, path = "crates/co
 penumbra-shielded-pool           = { default-features = false, path = "crates/core/component/shielded-pool" }
 penumbra-stake                   = { default-features = false, path = "crates/core/component/stake" }
 penumbra-tct                     = { default-features = false, path = "crates/crypto/tct" }
+penumbra-tower-trace             = { path = "crates/util/tower-trace" }
 penumbra-transaction             = { default-features = false, path = "crates/core/transaction" }
 penumbra-txhash                  = { default-features = false, path = "crates/core/txhash" }
 penumbra-view                    = { path = "crates/view" }

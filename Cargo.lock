@@ -4553,7 +4553,6 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc-proto",
  "ibc-types",
  "ics23",
  "jmt",
@@ -4567,12 +4566,11 @@ dependencies = [
  "penumbra-app",
  "penumbra-asset",
  "penumbra-auto-https",
- "penumbra-compact-block",
  "penumbra-custody",
  "penumbra-dex",
- "penumbra-fee",
  "penumbra-genesis",
  "penumbra-governance",
+ "penumbra-grpc-server",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-proof-params",
@@ -4581,7 +4579,6 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tendermint-proxy",
- "penumbra-tower-trace",
  "penumbra-transaction",
  "pin-project",
  "pin-project-lite",
@@ -4607,8 +4604,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.10",
  "toml 0.7.8",
- "tonic",
- "tonic-reflection",
  "tonic-web",
  "tower",
  "tower-abci",
@@ -5154,6 +5149,25 @@ dependencies = [
 [[package]]
 name = "penumbra-grpc-server"
 version = "0.69.0"
+dependencies = [
+ "anyhow",
+ "cnidarium",
+ "ibc-proto",
+ "penumbra-app",
+ "penumbra-compact-block",
+ "penumbra-fee",
+ "penumbra-governance",
+ "penumbra-ibc",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "penumbra-tower-trace",
+ "tonic",
+ "tonic-reflection",
+ "tonic-web",
+ "tracing",
+]
 
 [[package]]
 name = "penumbra-ibc"
