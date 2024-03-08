@@ -1,6 +1,7 @@
 #![allow(clippy::clone_on_copy)]
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
+
 use std::error::Error;
 use std::io::IsTerminal as _;
 
