@@ -209,10 +209,8 @@ async fn mock_consensus_can_spend_notes_and_detect_outputs() -> anyhow::Result<(
 }
 
 #[tokio::test]
-#[ignore = "this test is not currently expected to pass"] /*TODO(kate)*/
+// #[ignore = "this test is not currently expected to pass"] /*TODO(kate)*/
 async fn mock_consensus_view_server_test() -> anyhow::Result<()> {
-    use camino::Utf8PathBuf;
-
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let tempdir = tempdir()?;
