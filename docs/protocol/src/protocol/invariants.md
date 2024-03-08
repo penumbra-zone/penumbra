@@ -45,6 +45,7 @@
 1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
 2.1. A note's transmission key binds to the nullifier key, and all components of a positioned note, along with this key are hashed to derive the nullifier, in circuit.
 2.2. This is in check_stateful, and an external check about the integrity of each transaction.
+3. The circuit verifies for non-zero amounts that there is a valid Merkle authentication path to the note in the global state commitment tree.
 
 #### Global Justification
 
@@ -73,3 +74,50 @@ proposal being voted on was created.
 2. We maintain a nullifier set for delegator votes and check for duplicate nullifiers in the stateful checks.
 3. The stateful check looks up the proposal ID and ensures it is votable.
 4. c.f. justification for spend circuit
+
+### Swap
+
+#### Local Invariants
+
+#### Local Justification
+
+#### Global Justification
+
+1.1 This action destroys the value of the two input notes (one per asset) consumed, and is reflected in the balance. We do not create value, because of 3.
+1.2 TK (fee commitment)
+
+### SwapClaim
+
+#### Local Invariants
+
+1. You cannot mint swap outputs to a different address than what was specified during the initial swap.
+2. You cannot mint swap outputs to different assets than those specified in the original swap.
+3. You cannot mint swap outputs to different amounts than those specified by the batch swap output data.
+3.1. You can only claim your contribution to the batch swap outputs.
+3.2 You can only claim the outputs using the batch swap output data for the block in which the swap was executed.
+4. You can only claim swap outputs for swaps that occurred.
+5. You can only claim swap outputs once.
+5.1. Each positioned swap has exactly one valid nullifier for it.
+5.2. No two swaps can have the same nullifier.
+
+#### Local Justification
+
+1. The Swap commits to the claim address. The SwapClaim circuit enforces that the same address used to derive the swap commitment is that used to derive the note commitments for the two output notes.
+2. The SwapClaim circuit checks that the trading pair on the original Swap is the same as that on the batch swap output data.
+
+TODO: What happens if we swap the order of asset IDs? There is a canonical ordering OOC for a TradingPair that is not checked in-circuit.
+
+3.1 The output amounts of each note is checked in-circuit to be only due to that user's contribution of the batch swap output data.
+3.2 The circuit checks the block height of the swap matches that of the batch swap output data. The ActionHandler for the SwapClaim checks that the batch swap output data provided by the SwapClaim matches that saved on-chain for that output height and trading pair.
+
+4. The SwapClaim circuit verifies that there is a valid Merkle authentication path to the swap in the global state commitment tree.
+
+5.1. A swap's transmission key binds to the nullifier key, and all components of a positioned swap, along with this key are hashed to derive the nullifier, in circuit.
+
+TODO: The binding of the transmission key to the nullifier key is not currently checked in circuit
+
+5.2. In the ActionHandler for check_stateful we check that the nullifier is unspent.
+
+#### Global Justification
+
+TK
