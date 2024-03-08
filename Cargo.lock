@@ -5152,6 +5152,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-grpc-server"
+version = "0.69.0"
+
+[[package]]
 name = "penumbra-ibc"
 version = "0.69.0"
 dependencies = [
