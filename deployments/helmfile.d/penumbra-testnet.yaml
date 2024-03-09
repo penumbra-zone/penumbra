@@ -107,3 +107,6 @@ releases:
       - part_of: penumbra-testnet
       - nodes:
         - moniker: dex-explorer
+      - postgres:
+          certificateSecretName: penumbra-testnet-wildcard
+          credentialsSecretName: postgres-creds
