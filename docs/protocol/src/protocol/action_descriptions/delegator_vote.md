@@ -6,7 +6,7 @@ Each delegator vote contains an DelegatorVoteBody and a zk-SNARK delegator vote 
 
 The delegator vote proof demonstrates the properties enumerated below for the following private witnesses known by the prover:
 
-* Note amount $v$ (interpreted as an $\mathbb F_q$) and asset `ID` $\isin \mathbb G$
+* Note amount $v$ (interpreted as an $\mathbb F_q$ and constrained to fit in 128 bits) and asset `ID` $\isin \mathbb F_q$
 * Note blinding factor $rcm \isin \mathbb F_q$ used to blind the note commitment
 * Address associated with the note being spent, consisting of diversified basepoint $B_d \isin \mathbb G$,
 transmission key $pk_d \isin \mathbb G$, and clue key $\mathsf{ck_d} \isin \mathbb F_q$
@@ -14,15 +14,15 @@ transmission key $pk_d \isin \mathbb G$, and clue key $\mathsf{ck_d} \isin \math
 * Spend authorization randomizer used for generating the randomized spend authorization key $\alpha \isin \mathbb F_r$
 * Spend authorization key $ak \isin \mathbb G$
 * Nullifier deriving key $nk \isin \mathbb F_q$
-* Merkle proof of inclusion for the note commitment, consisting of a position `pos` and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
+* Merkle proof of inclusion for the note commitment, consisting of a position `pos`, constrained to fit in 48 bits, and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
 
 And the corresponding public inputs:
 
 * Merkle anchor $\isin \mathbb F_q$ of the state commitment tree
 * Balance commitment $cv \isin G$ to the value balance
-* Nullifier $nf$ of the note to be spent
+* Nullifier $nf \isin F_q$ of the note to be spent
 * Randomized verification key $rk \isin \mathbb G$
-* The start position `start_pos` of the proposal being voted on
+* The start position `start_pos` of the proposal being voted on, constrained to fit in 48 bits
 
 ### Start Position Verification
 
