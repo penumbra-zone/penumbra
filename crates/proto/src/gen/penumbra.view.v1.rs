@@ -1352,6 +1352,97 @@ impl ::prost::Name for AssetMetadataByIdResponse {
         ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
     }
 }
+/// Requests `ValueView`s of delegation tokens for the given address index. The
+/// returned `ValueView`s will include the `ValidatorInfo` for the delegated
+/// validator in their `extended_metadata` fields.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegationsByAddressIndexRequest {
+    /// The address index to fetch delegation balances for.
+    #[prost(message, optional, tag = "1")]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    #[prost(enumeration = "delegations_by_address_index_request::Filter", tag = "2")]
+    pub filter: i32,
+}
+/// Nested message and enum types in `DelegationsByAddressIndexRequest`.
+pub mod delegations_by_address_index_request {
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Filter {
+        /// By default, returns delegations for all active validators. For validators
+        /// that the given address index has no delegation tokens for, a `ValueView`
+        /// with a balance of `0` will be returned.
+        Unspecified = 0,
+        /// Returns only delegations to active validators that the given address
+        /// index holds delegation tokens for.
+        AllActiveWithNonzeroBalances = 1,
+        /// Return delegations for all validators, whether active or not. For
+        /// validators that the given address index has no delegation tokens for, a
+        /// `ValueView` with a balance of `0` will be returned.
+        All = 2,
+    }
+    impl Filter {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Filter::Unspecified => "FILTER_UNSPECIFIED",
+                Filter::AllActiveWithNonzeroBalances => {
+                    "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES"
+                }
+                Filter::All => "FILTER_ALL",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "FILTER_UNSPECIFIED" => Some(Self::Unspecified),
+                "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES" => {
+                    Some(Self::AllActiveWithNonzeroBalances)
+                }
+                "FILTER_ALL" => Some(Self::All),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for DelegationsByAddressIndexRequest {
+    const NAME: &'static str = "DelegationsByAddressIndexRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Contains a `ValueView` of delegation tokens for the requested address index.
+/// The `ValueView` includes the `ValidatorInfo` for the delegated validator in
+/// cits `extended_metadata` field.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DelegationsByAddressIndexResponse {
+    #[prost(message, optional, tag = "1")]
+    pub value_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
+}
+impl ::prost::Name for DelegationsByAddressIndexResponse {
+    const NAME: &'static str = "DelegationsByAddressIndexResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_service_client {
@@ -2191,6 +2282,39 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Get delegation tokens for a given address index.
+        pub async fn delegations_by_address_index(
+            &mut self,
+            request: impl tonic::IntoRequest<super::DelegationsByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::DelegationsByAddressIndexResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/DelegationsByAddressIndex",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "DelegationsByAddressIndex",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -2499,6 +2623,23 @@ pub mod view_service_server {
             request: tonic::Request<super::BroadcastTransactionRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::BroadcastTransactionStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the DelegationsByAddressIndex method.
+        type DelegationsByAddressIndexStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::DelegationsByAddressIndexResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Get delegation tokens for a given address index.
+        async fn delegations_by_address_index(
+            &self,
+            request: tonic::Request<super::DelegationsByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::DelegationsByAddressIndexStream>,
             tonic::Status,
         >;
     }
@@ -3793,6 +3934,60 @@ pub mod view_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = BroadcastTransactionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/DelegationsByAddressIndex" => {
+                    #[allow(non_camel_case_types)]
+                    struct DelegationsByAddressIndexSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::DelegationsByAddressIndexRequest,
+                    > for DelegationsByAddressIndexSvc<T> {
+                        type Response = super::DelegationsByAddressIndexResponse;
+                        type ResponseStream = T::DelegationsByAddressIndexStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::DelegationsByAddressIndexRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::delegations_by_address_index(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = DelegationsByAddressIndexSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
