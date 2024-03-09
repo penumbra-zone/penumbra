@@ -374,6 +374,12 @@ impl ViewService for ViewServer {
             dyn futures::Stream<Item = Result<pb::AuthorizeAndBuildResponse, tonic::Status>> + Send,
         >,
     >;
+    type DelegationsByAddressIndexStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::DelegationsByAddressIndexResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
 
     async fn broadcast_transaction(
         &self,
@@ -1626,5 +1632,12 @@ impl ViewService for ViewServer {
         Ok(Response::new(AssetMetadataByIdResponse {
             denom_metadata: metadata.map(Into::into),
         }))
+    }
+
+    async fn delegations_by_address_index(
+        &self,
+        _request: tonic::Request<pb::DelegationsByAddressIndexRequest>,
+    ) -> Result<tonic::Response<Self::DelegationsByAddressIndexStream>, tonic::Status> {
+        unimplemented!("delegations_by_address_index")
     }
 }
