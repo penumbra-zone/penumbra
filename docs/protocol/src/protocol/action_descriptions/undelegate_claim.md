@@ -8,15 +8,15 @@ First we describe the convert circuit, and then the undelegate claim proof.
 
 The convert circuit demonstrates the properties enumerated below for the private witnesses known by the prover:
 
-* Input amount $v_i$ interpreted as an $\mathbb F_q$
+* Input amount $v_i$ interpreted as an $\mathbb F_q$ and constrained to fit in 128 bits
 * Balance blinding factor $\widetilde{v} \isin \mathbb F_r$ used to blind the balance commitment
 
 And the corresponding public inputs:
 
 * Balance commitment $cv \isin G$ to the value balance
 * Rate $p$, a 128-bit fixed point value, represented in circuit as four 64-bit (Boolean constraint) limbs
-* Asset ID $ID_i \isin \mathbb G$ of the input (source) amount
-* Asset ID $ID_t \isin \mathbb G$ of the target amount
+* Asset ID $ID_i \isin \mathbb F_q$ of the input (source) amount
+* Asset ID $ID_t \isin \mathbb F_q$ of the target amount
 
 ### Balance Commitment Integrity
 
@@ -41,5 +41,5 @@ The undelegate claim proof uses the convert circuit statements above where:
 
 * The input amount $v_i$ is set to the unbonding amount
 * The rate is set to the Penalty $p$
-* Asset `ID` $G_i$ is the unbonding token asset ID
-* Asset `ID` $G_t$ is the staking token asset ID
+* Asset `ID` $ID_i$ is the unbonding token asset ID
+* Asset `ID` $ID_t$ is the staking token asset ID

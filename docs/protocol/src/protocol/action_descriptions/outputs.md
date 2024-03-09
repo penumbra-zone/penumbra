@@ -10,7 +10,7 @@ $epk = [esk] B_d$
 
 The output proof demonstrates the properties enumerated below for the private witnesses known by the prover:
 
-* Note amount $v$ (interpreted as an $\mathbb F_q$) and asset `ID` $\isin \mathbb G$
+* Note amount $v$ (interpreted as an $\mathbb F_q$, constrained to fit in 128 bits) and asset `ID` $\isin \mathbb F_q$
 * Blinding factor $rcm \isin \mathbb F_q$ used to blind the note commitment
 * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the address
 * Transmission key $pk_d \isin \mathbb G$ corresponding to the address

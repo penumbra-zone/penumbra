@@ -8,33 +8,31 @@ The swap claim proof demonstrates the properties enumerated below for the privat
 
 * Swap plaintext corresponding to the swap being claimed. This consists of:
   * Trading pair, which consists of two asset IDs $ID_1, ID_2 \isin \mathbb F_q$
-  * Fee value which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ and
- an asset ID $ID_{v_f} \isin \mathbb F_q$
-  * Input amount $\Delta_{1i}$ of the first asset interpreted as an $\mathbb F_q$
-  * Input amount $\Delta_{2i}$ of the second asset interpreted as an $\mathbb F_q$
+  * Fee value which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ constrained to fit in 128 bits and an asset ID $ID_{v_f} \isin \mathbb F_q$
+  * Input amount $\Delta_{1i}$ of the first asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
+  * Input amount $\Delta_{2i}$ of the second asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
   * `Rseed`, interpreted as an $\mathbb F_q$
   * Diversified basepoint $B_d \isin \mathbb G$ corresponding to the claim address
   * Transmission key $pk_d \isin \mathbb G$ corresponding to the claim address
   * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the claim address
 * Swap commitment $scm \isin \mathbb F_q$
-* Merkle proof of inclusion for the swap commitment, consisting of a position `pos` and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
+* Merkle proof of inclusion for the swap commitment, consisting of a position `pos` constrained to fit in 48 bits and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
 * Nullifier deriving key $nk \isin \mathbb F_q$
-* Output amount $\Lambda_{1i}$ of the first asset interpreted as an $\mathbb F_q$
-* Output amount $\Lambda_{2i}$ of the second asset interpreted as an $\mathbb F_q$
+* Output amount $\Lambda_{1i}$ of the first asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
+* Output amount $\Lambda_{2i}$ of the second asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
 * Note blinding factor $rcm_1 \isin \mathbb F_q$ used to blind the first output note commitment
 * Note blinding factor $rcm_2 \isin \mathbb F_q$ used to blind the second output note commitment
 
 And the corresponding public inputs:
 
 * Merkle anchor $\isin \mathbb F_q$ of the state commitment tree
-* Nullifier $nf$ corresponding to the swap
-* Fee to claim the outputs which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ and
- an asset ID $G_{v_f} \isin \mathbb G$
+* Nullifier $nf \isin F_q$ corresponding to the swap
+* Fee to claim the outputs which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ constrained to fit in 128 bits and an asset ID $ID_{v_f} \isin \mathbb F_q$
 * The batch swap output data, which consists of:
   * trading pair, which consists of two asset IDs $ID_{pi1}, ID_{pi2} \isin \mathbb F_q$
   * 128-bit fixed point values (represented in circuit as four 64-bit (Boolean constraint) limbs) for the batched inputs $\Delta_1, \Delta_2$, outputs $\Lambda_1, \Lambda_2$, and the unfilled quantities $U_1, U_2$
-  * block height $h \isin \mathbb F_q$
-  * starting height of the epoch $h_e \isin \mathbb F_q$
+  * block height $h \isin \mathbb F_q$ constrained to fit in 64 bits
+  * starting height of the epoch $h_e \isin \mathbb F_q$ constrained to fit in 64 bits
 * Note commitment of the first output note $cm_1 \isin \mathbb F_q$
 * Note commitment of the second output note $cm_2 \isin \mathbb F_q$
 
@@ -44,7 +42,7 @@ The zk-SNARK certifies that the witnessed swap commitment $scm$ was derived as:
 
 $scm_{inner} = hash_4(ds, (ID_1, ID_2, \Delta_1, \Delta_2))$
 
-$scm = hash_7(ds, (rseed, v_f, G_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner}))$.
+$scm = hash_7(ds, (rseed, v_f, ID_{v_f}, B_d, pk_d, \mathsf{ck_d}, scm_{inner}))$.
 
 using the above witnessed values and where `ds` is a constant domain separator:
 
