@@ -26,3 +26,6 @@ penumbra-shielded-pool = { workspace = true }
 penumbra-stake         = { workspace = true }
 penumbra-tower-trace   = { workspace = true }
 ibc-proto              = { workspace = true }
+
+# XXX(kate): make this a workspace crate later.
+penumbra-tendermint-proxy = { path = "../util/tendermint-proxy" }
