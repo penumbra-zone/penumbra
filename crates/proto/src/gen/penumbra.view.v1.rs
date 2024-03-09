@@ -2282,7 +2282,10 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
-        /// Get delegation tokens for a given address index.
+        /// Get delegation tokens for a given address index. Each delegation token will
+        /// be represented by a `ValueView` with the given address index's balance of
+        /// that token. Each `ValueView`'s `extended_metadata` field will contain the
+        /// `ValidatorInfo` of the delegated validator.
         pub async fn delegations_by_address_index(
             &mut self,
             request: impl tonic::IntoRequest<super::DelegationsByAddressIndexRequest>,
@@ -2634,7 +2637,10 @@ pub mod view_service_server {
             >
             + Send
             + 'static;
-        /// Get delegation tokens for a given address index.
+        /// Get delegation tokens for a given address index. Each delegation token will
+        /// be represented by a `ValueView` with the given address index's balance of
+        /// that token. Each `ValueView`'s `extended_metadata` field will contain the
+        /// `ValidatorInfo` of the delegated validator.
         async fn delegations_by_address_index(
             &self,
             request: tonic::Request<super::DelegationsByAddressIndexRequest>,
