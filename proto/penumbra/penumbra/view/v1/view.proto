@@ -131,7 +131,10 @@ service ViewService {
   // This method streams status updates to the caller before finally returning confirmation.
   rpc BroadcastTransaction(BroadcastTransactionRequest) returns (stream BroadcastTransactionResponse);
 
-  // Get delegation tokens for a given address index.
+  // Get delegation tokens for a given address index. Each delegation token will
+  // be represented by a `ValueView` with the given address index's balance of
+  // that token. Each `ValueView`'s `extended_metadata` field will contain the
+  // `ValidatorInfo` of the delegated validator.
   rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
 }
 
