@@ -108,3 +108,6 @@ releases:
       - part_of: penumbra-preview
       - nodes:
         - moniker: dex-explorer
+      - postgres:
+          certificateSecretName: penumbra-preview-wildcard
+          credentialsSecretName: postgres-creds

@@ -47,6 +47,7 @@ cometbft:
     # Set the indexer strategy. Can be "kv" or "psql".
     indexer: kv
     # URL for connecting to the postgresql database. Only used if `indexer=psql`.
+    # N.B. If `postgres.credentialsSecretName` is set, the value from that Secret will be used instead.
     postgres_connection_url: "postgresql://penumbra:penumbra@localhost:5432/penumbra?sslmode=disable"
 
 # settings for optional postgres sidecar, used for indexing cometbft events
@@ -55,6 +56,18 @@ postgres:
     repository: docker.io/library/postgres
     pullPolicy: IfNotPresent
     tag: "latest"
+  # In order to support TLS for an external db connection, consider reusing a `kubernetes.io/tls`
+  # Secret here, which will be mounted read-only and used for SSL. Requires an externally-provisioned LB.
+  certificateSecretName: ""
+  # Load database auth info from a Secret resource, created out of band. Must have keys:
+  #
+  #   - database
+  #   - username
+  #   - password
+  #   - connection_url
+  #
+  # where `connection_url` is formatted like the example in `cometbft.config.postgres_connection_url`.
+  credentialsSecretName: ""
 
 # Configure nodes. By default, only one is created.
 # Extend this list to add more. Valid node attributes are:

@@ -93,6 +93,17 @@ spec:
               - key: "postgres-cometbft-schema.sql"
                 path: "postgres-cometbft-schema.sql"
       {{ end }}
+      {{- if .Values.postgres.certificateSecretName }}
+        - name: db-certificates
+          secret:
+            secretName: {{ .Values.postgres.certificateSecretName }}
+            defaultMode: 0600
+            items:
+              - key: "tls.crt"
+                path: "server.crt"
+              - key: "tls.key"
+                path: "server.key"
+      {{ end }}
       initContainers:
         - name: pd-init
           securityContext:
@@ -110,8 +121,16 @@ spec:
               value: "{{ .Values.cometbft.config.p2p.max_num_outbound_peers }}"
             - name: PENUMBRA_COMETBFT_INDEXER
               value: "{{ .Values.cometbft.config.indexer }}"
+            {{- if .Values.postgres.credentialsSecretName }}
+            - name: COMETBFT_POSTGRES_CONNECTION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: connection_url
+            {{- else }}
             - name: COMETBFT_POSTGRES_CONNECTION_URL
               value: "{{ .Values.cometbft.config.postgres_connection_url }}"
+            {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
@@ -123,6 +142,35 @@ spec:
               mountPath: /opt/penumbra
             - name: penumbra-config
               mountPath: /penumbra-config
+
+      {{- if .Values.postgres.certificateSecretName }}
+        - name: db-init
+          securityContext:
+            # Run as root during init, so we can chown to postgres uid
+            # The application itself will run as a normal user.
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+          image: "docker.io/debian:stable"
+          imagePullPolicy: IfNotPresent
+          # The TLS files are mounted in via Secret, which means they're read-only.
+          # Postgres requires 999 and no-group access on those files, so we'll copy them out
+          # to a writable directory and chmod them there.
+          command:
+            - sh
+            - -cex
+            - |
+              cert_dir="/var/lib/postgresql/certs"
+              mkdir -p "$cert_dir"
+              chmod "0750" "$cert_dir"
+              cp -v /opt/postgres-certificates/server.crt /opt/postgres-certificates/server.key "$cert_dir"
+              chown -R 999:999 "$cert_dir"
+          volumeMounts:
+            - name: db
+              mountPath: /var/lib/postgresql
+            - name: db-certificates
+              mountPath: /opt/postgres-certificates
+      {{- end }}
 
       containers:
         - name: pd
@@ -209,22 +257,49 @@ spec:
             - sleep
             - infinity
           {{- end }}
+          {{- if .Values.postgres.certificateSecretName }}
+          args:
+          - -c
+          - ssl=on
+          - -c
+          - ssl_cert_file=/var/lib/postgresql/certs/server.crt
+          - -c
+          - ssl_key_file=/var/lib/postgresql/certs/server.key
+          {{- end }}
           ports:
             - name: postgres
               containerPort: 5432
               protocol: TCP
-          # Lazy to hardcode these values, but the db connection is intra-cluster.
           env:
+          {{- if .Values.postgres.credentialsSecretName }}
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: database
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: password
+          {{- else }}
             - name: POSTGRES_DB
               value: penumbra
             - name: POSTGRES_USER
               value: penumbra
             - name: POSTGRES_PASSWORD
               value: penumbra
+          {{- end }}
             - name: ORDINAL_NUMBER
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+
           readinessProbe:
             tcpSocket:
               port: 5432
