@@ -13,20 +13,24 @@ use {
     penumbra_compact_block::component::rpc::Server as CompactBlockServer,
     penumbra_fee::component::rpc::Server as FeeServer,
     penumbra_governance::component::rpc::Server as GovernanceServer,
-    penumbra_proto::core::{
-        app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
-        component::{
-            compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
-            fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
-            governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
-            sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
-            shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
-            stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+    penumbra_proto::{
+        core::{
+            app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+            component::{
+                compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
+                governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+            },
         },
+        util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer,
     },
     penumbra_sct::component::rpc::Server as SctServer,
     penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
     penumbra_stake::component::rpc::Server as StakeServer,
+    penumbra_tendermint_proxy::TendermintProxy,
     penumbra_tower_trace::remote_addr,
     tonic::transport::Server,
     tonic_web::enable as we,
@@ -34,6 +38,7 @@ use {
 
 pub fn new(
     storage: &cnidarium::Storage,
+    tm_proxy: &TendermintProxy,
 ) -> Result<tonic::transport::server::Router, anyhow::Error> {
     // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
     // `Routes` structure to have each component define a method that
@@ -92,6 +97,7 @@ pub fn new(
         .add_service(we(ClientQueryServer::new(ibc.clone())))
         .add_service(we(ChannelQueryServer::new(ibc.clone())))
         .add_service(we(ConnectionQueryServer::new(ibc.clone())))
+        .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
         .add_service(we(tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
             .build()

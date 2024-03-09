@@ -22,7 +22,6 @@ use pd::{
 };
 use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_proto::core::component::dex::v1::simulation_service_server::SimulationServiceServer;
-use penumbra_proto::util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer;
 use penumbra_tendermint_proxy::TendermintProxy;
 use rand::Rng;
 use rand_core::OsRng;
@@ -129,9 +128,7 @@ async fn main() -> anyhow::Result<()> {
                 .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
                 .expect("failed to spawn abci server");
 
-            let mut grpc_server = penumbra_grpc_server::new(&storage)?.add_service(
-                tonic_web::enable(TendermintProxyServiceServer::new(tm_proxy.clone())),
-            );
+            let mut grpc_server = penumbra_grpc_server::new(&storage, &tm_proxy)?;
             if enable_expensive_rpc {
                 use penumbra_dex::component::rpc::Server as DexServer;
                 grpc_server = grpc_server.add_service(tonic_web::enable(
