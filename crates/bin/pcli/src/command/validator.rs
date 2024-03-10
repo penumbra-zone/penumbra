@@ -59,6 +59,12 @@ pub enum VoteCmd {
         /// A comment or justification of the vote. Limited to 1 KB.
         #[clap(long, default_value = "", global = true, display_order = 400)]
         reason: String,
+        /// Use an externally-provided signature to authorize the vote.
+        ///
+        /// This is useful for offline signing, e.g. in an airgap setup. The signature for the
+        /// vote may be generated using the `pcli validator vote sign` command.
+        #[clap(long)]
+        signature: Option<String>,
     },
 }
 
@@ -263,19 +269,12 @@ impl ValidatorCmd {
                 source,
                 vote,
                 reason,
+                signature,
             }) => {
-                let sk = match &app.config.custody {
-                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                    _ => {
-                        anyhow::bail!(
-                            "local validator vote signing currently requires SoftKMS backend"
-                        );
-                    }
-                };
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
 
-                // TODO: support submitting a separate governance key.
-                let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
                 // Currently this is always just copied from the identity key
+                // TODO: support a separate governance key
                 let governance_key = GovernanceKey(identity_key.0);
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
@@ -293,12 +292,38 @@ impl ValidatorCmd {
                     reason: ValidatorVoteReason(reason.clone()),
                 };
 
-                // TODO: support signing with a separate governance key
-                let governance_auth_key = sk.spend_auth_key();
+                // If the user specified a signature, use it. Otherwise, generate a new signature
+                // using local custody
+                let auth_sig = if let Some(signature) = signature {
+                    // The user can specify `-` to read the signature from stdin.
+                    let mut signature = signature.clone();
+                    if signature == "-" {
+                        let mut buf = String::new();
+                        std::io::stdin().read_to_string(&mut buf)?;
+                        signature = buf;
+                    }
+                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                        &URL_SAFE
+                            .decode(signature)
+                            .context("unable to decode signature as base64")?[..],
+                    )
+                    .context("unable to parse decoded signature")?
+                } else {
+                    // TODO: support signing with a separate governance key rather than the spend auth key
+                    let sk = match &app.config.custody {
+                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                        _ => {
+                            anyhow::bail!(
+                                "local validator vote signing currently requires SoftKMS backend"
+                            );
+                        }
+                    };
+                    let governance_auth_key = sk.spend_auth_key();
 
-                // Generate an authorizing signature with the governance key for the vote body
-                let body_bytes = body.encode_to_vec();
-                let auth_sig = governance_auth_key.sign(OsRng, &body_bytes);
+                    // Generate an authorizing signature with the governance key for the vote body
+                    let body_bytes = body.encode_to_vec();
+                    governance_auth_key.sign(OsRng, &body_bytes)
+                };
 
                 let vote = ValidatorVote { body, auth_sig };
 
