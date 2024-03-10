@@ -37,8 +37,16 @@ pub enum ValidatorCmd {
     /// Manage your validator's definition.
     #[clap(subcommand)]
     Definition(DefinitionCmd),
-    /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote`).
-    Vote {
+    /// Submit and sign votes in your capacity as a validator.
+    #[clap(subcommand)]
+    Vote(VoteCmd),
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum VoteCmd {
+    /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote` for
+    /// delegator voting).
+    Cast {
         /// The transaction fee (paid in upenumbra).
         #[clap(long, default_value = "0", global = true, display_order = 200)]
         fee: u64,
@@ -250,12 +258,12 @@ impl ValidatorCmd {
                 // never appear on-chain.
                 println!("Uploaded validator definition");
             }
-            ValidatorCmd::Vote {
+            ValidatorCmd::Vote(VoteCmd::Cast {
                 fee,
                 source,
                 vote,
                 reason,
-            } => {
+            }) => {
                 let sk = match &app.config.custody {
                     CustodyConfig::SoftKms(config) => config.spend_key.clone(),
                     _ => {
