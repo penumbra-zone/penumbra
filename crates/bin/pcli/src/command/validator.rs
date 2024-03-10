@@ -56,7 +56,7 @@ pub enum ValidatorCmd {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum DefinitionCmd {
-    /// Create a ValidatorDefinition transaction to create or update a validator.
+    /// Submit a ValidatorDefinition transaction to create or update a validator.
     Upload {
         /// The TOML file containing the ValidatorDefinition to upload.
         #[clap(long)]
@@ -73,6 +73,15 @@ pub enum DefinitionCmd {
         /// definition may be generated using the `pcli validator definition sign` command.
         #[clap(long)]
         signature: Option<String>,
+    },
+    /// Sign a validator definition offline for submission elsewhere.
+    Sign {
+        /// The TOML file containing the ValidatorDefinition to sign.
+        #[clap(long)]
+        file: String,
+        /// The file to write the signature to [default: stdout].
+        #[clap(long)]
+        signature_file: Option<String>,
     },
     /// Generates a template validator definition for editing.
     ///
@@ -102,10 +111,12 @@ impl ValidatorCmd {
     pub fn offline(&self) -> bool {
         match self {
             ValidatorCmd::Identity { .. } => true,
-            ValidatorCmd::Definition(DefinitionCmd::Upload { .. }) => false,
             ValidatorCmd::Definition(
-                DefinitionCmd::Template { .. } | DefinitionCmd::Fetch { .. },
+                DefinitionCmd::Template { .. } | DefinitionCmd::Sign { .. },
             ) => true,
+            ValidatorCmd::Definition(
+                DefinitionCmd::Upload { .. } | DefinitionCmd::Fetch { .. },
+            ) => false,
             ValidatorCmd::Vote { .. } => false,
         }
     }
@@ -125,37 +136,80 @@ impl ValidatorCmd {
                     println!("{ik}");
                 }
             }
+            ValidatorCmd::Definition(DefinitionCmd::Sign {
+                file,
+                signature_file,
+            }) => {
+                let new_validator = read_validator_toml(file)?;
+
+                let input_file_path = std::fs::canonicalize(file)
+                    .with_context(|| format!("invalid path: {file:?}"))?;
+                let input_file_name = input_file_path
+                    .file_name()
+                    .with_context(|| format!("invalid path: {file:?}"))?;
+
+                // TODO: use the custody abstraction to sign
+                let protobuf_serialized: ProtoValidator = new_validator.clone().into();
+                let v_bytes = protobuf_serialized.encode_to_vec();
+                let sk = match &app.config.custody {
+                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                    _ => {
+                        anyhow::bail!(
+                            "local validator definition signing currently requires SoftKMS backend"
+                        );
+                    }
+                };
+                let signature = sk.spend_auth_key().sign(OsRng, &v_bytes);
+
+                if let Some(output_file) = signature_file {
+                    let output_file_path = std::fs::canonicalize(output_file)
+                        .with_context(|| format!("invalid path: {output_file:?}"))?;
+                    let output_file_name = output_file_path
+                        .file_name()
+                        .with_context(|| format!("invalid path: {output_file:?}"))?;
+                    File::create(output_file)
+                        .with_context(|| format!("cannot create file {output_file:?}"))?
+                        .write_all(URL_SAFE.encode(signature.encode_to_vec()).as_bytes())
+                        .with_context(|| format!("could not write file {output_file:?}"))?;
+                    println!(
+                        "Signed validator definition #{} for {}\nWrote signature to {output_file_path:?}",
+                        new_validator.sequence_number,
+                        new_validator.identity_key,
+                    );
+                    println!(
+                        "To upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} --signature - < {:?}",
+                        input_file_name,
+                        output_file_name,
+                    );
+                } else {
+                    println!(
+                        "Signed validator defintion #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} --signature {}",
+                        new_validator.sequence_number,
+                        new_validator.identity_key,
+                        input_file_name,
+                        URL_SAFE.encode(signature.encode_to_vec())
+                    );
+                }
+            }
             ValidatorCmd::Definition(DefinitionCmd::Upload {
                 file,
                 fee,
                 source,
                 signature,
             }) => {
-                // The definitions are stored in a TOML document,
-                // however for ease of use it's best for us to generate
-                // the signature here based on the configured wallet.
-                //
-                // TODO: eventually we'll probably want to support defining the
-                // identity key in the TOML file.
-                //
-                // We could also support defining multiple validators in a single
-                // file.
-                let mut definition_file =
-                    File::open(file).with_context(|| format!("cannot open file {file:?}"))?;
-                let mut definition: String = String::new();
-                definition_file
-                    .read_to_string(&mut definition)
-                    .with_context(|| format!("failed to read file {file:?}"))?;
-                let new_validator: ValidatorToml =
-                    toml::from_str(&definition).context("Unable to parse validator definition")?;
-                let new_validator: Validator = new_validator
-                    .try_into()
-                    .context("Unable to parse validator definition")?;
+                let new_validator = read_validator_toml(file)?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // Sign the validator definition with the wallet's spend key, or instead attach the
                 // provided signature if present.
                 let auth_sig = if let Some(signature) = signature {
+                    // The user can specify `-` to read the signature from stdin.
+                    let mut signature = signature.clone();
+                    if signature == "-" {
+                        let mut buf = String::new();
+                        std::io::stdin().read_to_string(&mut buf)?;
+                        signature = buf;
+                    }
                     <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
                         &URL_SAFE
                             .decode(signature)
@@ -163,6 +217,7 @@ impl ValidatorCmd {
                     )
                     .context("unable to parse decoded signature")?
                 } else {
+                    // TODO: use the custody abstraction to sign
                     let protobuf_serialized: ProtoValidator = new_validator.clone().into();
                     let v_bytes = protobuf_serialized.encode_to_vec();
                     let sk = match &app.config.custody {
@@ -171,7 +226,7 @@ impl ValidatorCmd {
                             anyhow::bail!("local validator definition signing currently requires SoftKMS backend");
                         }
                     };
-                    sk.spend_auth_key().sign(OsRng, &v_bytes) // TODO: use the custody abstraction to sign
+                    sk.spend_auth_key().sign(OsRng, &v_bytes)
                 };
                 let vd = validator::Definition {
                     validator: new_validator,
@@ -369,4 +424,20 @@ fn generate_new_tendermint_keypair() -> anyhow::Result<tendermint::PrivateKey> {
     let slice_signing_key = signing_key.as_bytes().as_slice();
     let priv_consensus_key = tendermint::PrivateKey::Ed25519(slice_signing_key.try_into()?);
     Ok(priv_consensus_key)
+}
+
+/// Parse a validator definition TOML file and return the parsed definition.
+fn read_validator_toml(file: &str) -> Result<Validator> {
+    let mut definition_file =
+        File::open(file).with_context(|| format!("cannot open file {file:?}"))?;
+    let mut definition: String = String::new();
+    definition_file
+        .read_to_string(&mut definition)
+        .with_context(|| format!("failed to read file {file:?}"))?;
+    let new_validator: ValidatorToml =
+        toml::from_str(&definition).context("unable to parse validator definition")?;
+    let new_validator: Validator = new_validator
+        .try_into()
+        .context("unable to parse validator definition")?;
+    Ok(new_validator)
 }
