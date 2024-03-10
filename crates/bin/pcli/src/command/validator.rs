@@ -63,8 +63,20 @@ pub enum VoteCmd {
         ///
         /// This is useful for offline signing, e.g. in an airgap setup. The signature for the
         /// vote may be generated using the `pcli validator vote sign` command.
-        #[clap(long)]
+        #[clap(long, global = true, display_order = 500)]
         signature: Option<String>,
+    },
+    /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
+    Sign {
+        /// The vote to sign.
+        #[clap(subcommand)]
+        vote: super::tx::VoteCmd,
+        /// A comment or justification of the vote. Limited to 1 KB.
+        #[clap(long, default_value = "", global = true, display_order = 400)]
+        reason: String,
+        /// The file to write the signature to [default: stdout].
+        #[clap(long, global = true, display_order = 500)]
+        signature_file: Option<String>,
     },
 }
 
@@ -263,6 +275,67 @@ impl ValidatorCmd {
                 // successfully, so that we don't store pending notes that will
                 // never appear on-chain.
                 println!("Uploaded validator definition");
+            }
+            ValidatorCmd::Vote(VoteCmd::Sign {
+                vote,
+                reason,
+                signature_file,
+            }) => {
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+
+                // Currently this is always just copied from the identity key
+                // TODO: support a separate governance key
+                let governance_key = GovernanceKey(identity_key.0);
+
+                let (proposal, vote): (u64, Vote) = (*vote).into();
+
+                if reason.len() > MAX_VALIDATOR_VOTE_REASON_LENGTH {
+                    anyhow::bail!("validator vote reason is too long, max 1024 bytes");
+                }
+
+                // Construct the vote body
+                let body = ValidatorVoteBody {
+                    proposal,
+                    vote,
+                    identity_key,
+                    governance_key,
+                    reason: ValidatorVoteReason(reason.clone()),
+                };
+
+                // TODO: support signing with a separate governance key rather than the spend auth key
+                let sk = match &app.config.custody {
+                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                    _ => {
+                        anyhow::bail!(
+                            "local validator vote signing currently requires SoftKMS backend"
+                        );
+                    }
+                };
+                let governance_auth_key = sk.spend_auth_key();
+
+                // Generate an authorizing signature with the governance key for the vote body
+                let body_bytes = body.encode_to_vec();
+                let signature = governance_auth_key.sign(OsRng, &body_bytes);
+
+                if let Some(signature_file) = signature_file {
+                    File::create(signature_file)
+                        .with_context(|| format!("cannot create file {signature_file:?}"))?
+                        .write_all(URL_SAFE.encode(signature.encode_to_vec()).as_bytes())
+                        .context("could not write file")?;
+                    let output_file_path = std::fs::canonicalize(signature_file)
+                        .with_context(|| format!("invalid path: {signature_file:?}"))?;
+                    println!(
+                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nWrote signature to {output_file_path:?}",
+                    );
+                    println!(
+                        "To cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} --signature - < {signature_file:?}",
+                    );
+                } else {
+                    println!(
+                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nTo cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} --signature {}",
+                        URL_SAFE.encode(signature.encode_to_vec())
+                    );
+                }
             }
             ValidatorCmd::Vote(VoteCmd::Cast {
                 fee,
