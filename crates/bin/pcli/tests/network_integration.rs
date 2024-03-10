@@ -323,18 +323,14 @@ fn delegate_and_undelegate() {
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let undelegation_result = undelegate_cmd.assert().try_success();
 
-        tracing::debug!(?undelegation_result, "undelegation done - output");
+        tracing::debug!("undelegation done - output");
+        tracing::trace!(?undelegation_result);
         // If the undelegation command succeeded, we can exit this loop.
         if undelegation_result.is_ok() {
             break;
         } else {
             num_attempts += 1;
-            tracing::info!(
-                ?undelegation_result,
-                num_attempts,
-                max_attempts,
-                "undelegation failed"
-            );
+            tracing::info!(num_attempts, max_attempts, "undelegation failed");
             if num_attempts >= max_attempts {
                 panic!("Exceeded max attempts for fallible command");
             }
