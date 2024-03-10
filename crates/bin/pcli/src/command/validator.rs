@@ -143,7 +143,8 @@ impl ValidatorCmd {
             ValidatorCmd::Definition(
                 DefinitionCmd::Upload { .. } | DefinitionCmd::Fetch { .. },
             ) => false,
-            ValidatorCmd::Vote { .. } => false,
+            ValidatorCmd::Vote(VoteCmd::Sign { .. }) => true,
+            ValidatorCmd::Vote(VoteCmd::Cast { .. }) => false,
         }
     }
 
@@ -209,7 +210,7 @@ impl ValidatorCmd {
                     );
                 } else {
                     println!(
-                        "Signed validator defintion #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} --signature {}",
+                        "Signed validator defintion #{} for {}\nTo upload the definition, use the below command with the exact same definition file:\n\n  $ pcli validator definition upload --file {:?} \\\n      --signature {}",
                         new_validator.sequence_number,
                         new_validator.identity_key,
                         input_file_name,
@@ -332,7 +333,7 @@ impl ValidatorCmd {
                     );
                 } else {
                     println!(
-                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nTo cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} --signature {}",
+                        "Signed validator vote {vote} on proposal #{proposal} by {identity_key}\nTo cast the vote, use the below command:\n\n  $ pcli validator vote cast {vote} --on {proposal} --reason {reason:?} \\\n      --signature {}",
                         URL_SAFE.encode(signature.encode_to_vec())
                     );
                 }
