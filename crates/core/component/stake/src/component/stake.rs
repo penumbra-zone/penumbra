@@ -497,7 +497,9 @@ pub trait ConsensusIndexRead: StateRead {
             .boxed())
     }
 
-    /// Returns whether the given validator should be indexed in the consensus set.
+    /// Returns whether a validator should be indexed in the consensus set.
+    /// Here, "consensus set" refers to the set of active validators as well as
+    /// the "inactive" validators which could be promoted during a view change.
     #[instrument(level = "error", skip(self))]
     async fn belongs_in_index(&self, validator_id: &IdentityKey) -> bool {
         let Some(state) = self

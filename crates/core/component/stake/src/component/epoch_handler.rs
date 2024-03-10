@@ -363,6 +363,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         Ok(reward_queue_entry)
     }
 
+    /// Compute and return the chain base rate ("L1BOR").
     async fn process_chain_base_rate(&mut self) -> Result<BaseRateData> {
         // We are transitioning to the next epoch, so the "current" base rate in
         // the state is now the previous base rate.
