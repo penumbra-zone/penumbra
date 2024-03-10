@@ -4,6 +4,9 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use base64::{engine::general_purpose::URL_SAFE, Engine as _};
+use decaf377_rdsa::{Signature, SpendAuth};
+use ibc_proto::cosmos::base;
 use rand_core::OsRng;
 use serde_json::Value;
 
@@ -65,6 +68,12 @@ pub enum DefinitionCmd {
         /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// Use an externally-provided signature to authorize the validator definition.
+        ///
+        /// This is useful for offline signing, e.g. in an airgap setup. The signature for the
+        /// definition may be generated using the `pcli validator definition sign` command.
+        #[clap(long)]
+        signature: Option<String>,
     },
     /// Generates a template validator definition for editing.
     ///
@@ -104,12 +113,6 @@ impl ValidatorCmd {
 
     // TODO: move use of sk into custody service
     pub async fn exec(&self, app: &mut App) -> Result<()> {
-        let sk = match &app.config.custody {
-            CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-            _ => {
-                anyhow::bail!("Validator commands require SoftKMS backend");
-            }
-        };
         let fvk = app.config.full_viewing_key.clone();
 
         match self {
@@ -123,13 +126,18 @@ impl ValidatorCmd {
                     println!("{ik}");
                 }
             }
-            ValidatorCmd::Definition(DefinitionCmd::Upload { file, fee, source }) => {
-                // The definitions are stored in a JSON document,
+            ValidatorCmd::Definition(DefinitionCmd::Upload {
+                file,
+                fee,
+                source,
+                signature,
+            }) => {
+                // The definitions are stored in a TOML document,
                 // however for ease of use it's best for us to generate
                 // the signature here based on the configured wallet.
                 //
                 // TODO: eventually we'll probably want to support defining the
-                // identity key in the JSON file.
+                // identity key in the TOML file.
                 //
                 // We could also support defining multiple validators in a single
                 // file.
@@ -146,10 +154,26 @@ impl ValidatorCmd {
                     .context("Unable to parse validator definition")?;
                 let fee = Fee::from_staking_token_amount((*fee).into());
 
-                // Sign the validator definition with the wallet's spend key.
-                let protobuf_serialized: ProtoValidator = new_validator.clone().into();
-                let v_bytes = protobuf_serialized.encode_to_vec();
-                let auth_sig = sk.spend_auth_key().sign(OsRng, &v_bytes);
+                // Sign the validator definition with the wallet's spend key, or instead attach the
+                // provided signature if present.
+                let auth_sig = if let Some(signature) = signature {
+                    <Signature<SpendAuth> as penumbra_proto::DomainType>::decode(
+                        &URL_SAFE
+                            .decode(signature)
+                            .context("unable to decode signature as base64")?[..],
+                    )
+                    .context("unable to parse decoded signature")?
+                } else {
+                    let protobuf_serialized: ProtoValidator = new_validator.clone().into();
+                    let v_bytes = protobuf_serialized.encode_to_vec();
+                    let sk = match &app.config.custody {
+                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                        _ => {
+                            anyhow::bail!("local validator definition signing currently requires SoftKMS backend");
+                        }
+                    };
+                    sk.spend_auth_key().sign(OsRng, &v_bytes) // TODO: use the custody abstraction to sign
+                };
                 let vd = validator::Definition {
                     validator: new_validator,
                     auth_sig,
@@ -178,6 +202,15 @@ impl ValidatorCmd {
                 vote,
                 reason,
             } => {
+                let sk = match &app.config.custody {
+                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                    _ => {
+                        anyhow::bail!(
+                            "local validator vote signing currently requires SoftKMS backend"
+                        );
+                    }
+                };
+
                 // TODO: support submitting a separate governance key.
                 let identity_key = IdentityKey(*sk.full_viewing_key().spend_verification_key());
                 // Currently this is always just copied from the identity key
