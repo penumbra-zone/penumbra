@@ -1,10 +1,10 @@
-# Asset IDs and Value Commitments
+# Asset Model
 
-Penumbra's shielded pool can record arbitrary assets.  These assets either
-originate on Penumbra itself, or, more commonly, originate on other
-IBC-connected chains.  To record arbitrary assets and enforce value balance
-between them, we draw on [ideas][multi_asset] originally proposed for Zcash and
-adapt them to the Cosmos context.
+Penumbra can record arbitrary assets.  These assets either originate on Penumbra
+itself, or, more commonly, originate on other IBC-connected chains.  To record
+arbitrary assets and enforce value balance between them, we draw on
+[ideas][multi_asset] originally proposed for Zcash and adapt them to the Cosmos
+context.
 
 ## Asset types and asset IDs
 
@@ -14,8 +14,9 @@ To be precise, we define:
 - an *asset ID* to be an $\mathbb F_q$ element;
 - a *value* to be a typed quantity, i.e., an amount and an asset ID.
 
-Some asset IDs correspond to a *denomination*, an [ADR001]-style denomination
-trace uniquely identifying a cross-chain asset and its provenance, such as:
+All asset IDs are currently computed as the hash of a *denomination*, an
+[ADR001]-style denomination trace uniquely identifying a cross-chain asset and
+its provenance, such as:
 - `denom` (native chain A asset)
 - `transfer/channelToA/denom` (chain B representation of chain A asset)
 - `transfer/channelToB/transfer/channelToA/denom` (chain C representation of chain B representation of chain A asset)
@@ -31,12 +32,21 @@ personalization `label` on input `input`.  Then asset IDs are computed as
 asset_id = from_le_bytes(hash(b"Penumbra_AssetID", asset_type)) mod q
 ```
 
-Other asset IDs do not correspond to denominations, but are computed as hashes
-of other state data.  By making the asset ID itself be a hash of extended state
-data, a note recording value of that type also binds to that extended data, even
-though it has the same size as any other note.  For instance:
-- [The ZSwap mechanism](../zswap/swap.md) has the `Swap` action form a *Swap NFT*, whose asset ID is a Poseidon hash of the user's secret input values address, so that when the `SwapClaim` action spends the NFT, it can (zk)prove consistency of the newly minted swap outputs with the user's inputs and the chain's clearing prices, and that the newly minted outputs are sent to the user's own address.
-- [The LPNFT mechanism](../zswap/lpnft.md) creates asset IDs that bind both a liquidity position ID and the position state, so that the value balance mechanism described below can track state changes to concentrated liquidity positions.
+In the future, Penumbra may have other asset IDs do not correspond to
+denominations, but are computed as hashes of other state data.  By making the
+asset ID itself be a hash of extended state data, a note recording value of that
+type also binds to that extended data, even though it has the same size as any
+other note. Currently, however, all asset IDs are computed as the hashes of
+denomination strings.
+
+## Asset Metadata
+
+Penumbra also supports Cosmos-style `Metadata` for assets. The chain maintains
+an on-chain lookup table of asset IDs to asset metadata, but the on-chain
+metadata is minimal and generally only includes the denomination string.  Client
+software is expected to be opinionated about asset metadata, supplying
+definitions with symbols, logos, etc. to help users understand the assets they
+hold.
 
 ## Value Generators
 
@@ -73,25 +83,6 @@ $$
 Alternatively, this can be thought of as a commitment to a (sparse) vector
 recording the amount of every possible asset type, almost all of whose
 coefficients are zero.
-
-## Binding Signatures
-
-Finally, we'd like to be able to prove that a certain value commitment $C$ is a
-commitment to $0$.  One way to do this would be to prove knowledge of an opening
-to the commitment, i.e., producing $\widetilde{v}$ such that $$C = [\widetilde{v}] \widetilde{V} = \operatorname{Commit}(0, \widetilde{v}).$$  But this is exactly what it means to
-create a Schnorr signature for the verification key $C$, because a Schnorr
-signature is a proof of knowledge of the signing key in the context of the
-message. 
-
-Therefore, we can prove that a value commitment is a commitment to $0$ by
-treating it as a `decaf377-rdsa` verification key and using the corresponding
-signing key (the blinding factor) to sign a message.  This also gives a way to
-bind value commitments to a particular context (e.g., a transaction), by using
-the context as the message to be signed, in order to, e.g., ensure that value
-commitments cannot be replayed across transactions.
-
-
-
 
 [multi_asset]: https://github.com/zcash/zips/blob/626ea6ed78863290371a4e8bc74ccf8e92292099/drafts/zip-user-defined-assets.rst
 [ADR001]: https://docs.cosmos.network/master/architecture/adr-001-coin-source-tracing.html
