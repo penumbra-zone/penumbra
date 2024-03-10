@@ -323,8 +323,7 @@ fn delegate_and_undelegate() {
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let undelegation_result = undelegate_cmd.assert().try_success();
 
-        tracing::debug!("undelegation done - output");
-        tracing::trace!(?undelegation_result);
+        tracing::debug!("undelegation done");
         // If the undelegation command succeeded, we can exit this loop.
         if undelegation_result.is_ok() {
             break;
