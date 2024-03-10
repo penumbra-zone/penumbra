@@ -1,0 +1,49 @@
+# Action Reference
+
+This page is a quick-reference list of transaction actions. Not all actions have proof statements, as only some actions perfom shielded state changes. Actions with proof statements are additionally listed separately for reference.
+
+## Actions by Proof Statement
+
+| Proof | Action |
+| ----- | ------ |
+| Spend | [`core.component.shielded_pool.v1.Spend`](../protocol/action_descriptions/spend.md) |
+| Output | [`core.component.shielded_pool.v1.Output`](../protocol/action_descriptions/output.md) |
+| Convert | [`core.component.stake.v1.UndelegateClaim`](../protocol/action_descriptions/undelegate_claim.md) |
+| Delegator Vote | [`core.component.governance.v1.DelegatorVote`](../protocol/action_descriptions/delegator_vote.md) |
+| Swap | [`core.component.dex.v1.Swap`](../protocol/action_descriptions/swap.md) |
+| Swap Claim | [`core.component.dex.v1.SwapClaim`](../protocol/action_descriptions/swap_claim.md) |
+| Nullifier Derivation | Not used in actions, intended for verifiable transaction perspectives |
+
+## All Actions
+
+This table lists all actions, their high-level purpose, and their contributions
+to the transaction's value balance. For ease of comprehension, shielded and
+transparent contributions to the transaction's value balance are listed
+separately, though they are handled by the same mechanism: the chain forms
+commitments with a zero blinding factor to accumulate transparent and shielded
+contributions together.
+
+| Action | Description | Shielded Balance | Transparent Balance |
+| ------ | ----------- | ------------- | -- |
+| [`shielded_pool.v1.Spend`](../protocol/action_descriptions/spend.md) | Spends a note previously included on-chain, releasing its value into the transaction | $+$ (value of spent note) | |
+| [`shielded_pool.v1.Output`](../protocol/action_descriptions/output.md) | Produces a new note controlled by a specified address and adds it to the chain state | $-$ (value of new note) | |
+| [`dex.v1.Swap`](../protocol/action_descriptions/swap.md) | Submits a swap intent to the chain for batch execution | $-$ (prepaid claim fee) | $-$ (swap inputs) 
+| [`dex.v1.SwapClaim`](../protocol/action_descriptions/swap_claim.md) | Claims the outputs of a swap once the clearing price is known, producing new output notes directly | | $+$ (prepaid claim fee) |
+| `stake.v1.ValidatorDefinition` | Uploads a new validator definition to the chain | | |
+| `stake.v1.Delegate` | Delegates stake to a validator, exchanging the staking token for that validator's delegation token | | $-$ (staking token) $+$ (delegation token)
+| `stake.v1.Undelegate` | Undelegates stake from a validator, exchanging delegation tokens for unbonding tokens | | $-$ (delegation token) $+$ (unbonding token) |
+| `stake.v1.UndelegateClaim` | Converts unbonding tokens to staking tokens after unbonding completes, at a 1:1 rate unless there are slashing penalties | $-$ (unbonding token) $+$ (staking token) |
+| `ibc.v1.IbcRelay` | Relays IBC messages from a counterparty chain | | |
+| `ibc.v1.Ics20Withdrawal` | Initiates an outbound ICS-20 token transfer | | $-$ (transfer amount) |
+| `dex.v1.PositionOpen` | Opens a liquidity position | | $-$ (initial reserves) $+$ (opened LPNFT) |
+| `dex.v1.PositionClose` | Closes a liquidity position | | $-$ (opened LPNFT) $+$ (closed LPNFT) |
+| `dex.v1.PositionWithdraw` | Withdraws reserves or rewards from a liquidity position, with sequence number $n$ | | $-$ (withdrawn seq $n-1$ LPNFT) $+$ (withdrawn seq $n$ LPNFT) $+$ (current position reserves) |
+| `dex.v1.PositionRewardClaim` | Deprecated and unused | | |
+| `governance.v1.ProposalSubmit` | Submits a governance proposal for voting | TODO | TODO |
+| `governance.v1.ProposalWithdraw` | Withdraws a governance proposal from voting | TODO | TODO |
+| `governance.v1.ValidatorVote` | Performs a governance vote as a validator | TODO | TODO |
+| `governance.v1.DelegatorVote` | Performs a governance vote as a delegator | TODO | TODO |
+| `governance.v1.ProposalDepositClaim` | Claims a proposal deposit once voting has finished | TODO | TODO |
+| `governance.v1.CommunityPoolSpend` | Spends funds from the community pool | | $+$ (spent value) |
+| `governance.v1.CommunityPoolOutput` | Like `Output`, but transparent | | $-$ (value of new note)
+| `governance.v1.CommunityPoolDeposit` | Allows deposits into the community pool | | $-$ (value of deposit) |
