@@ -345,6 +345,7 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let testnet_dir = get_testnet_dir(testnet_dir);
             if testnet_dir.exists() {
+                tracing::info!("Removing testnet directory: {}", testnet_dir.display());
                 std::fs::remove_dir_all(testnet_dir)?;
             } else {
                 tracing::info!(
