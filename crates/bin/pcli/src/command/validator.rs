@@ -6,7 +6,6 @@ use std::{
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use decaf377_rdsa::{Signature, SpendAuth};
-use ibc_proto::cosmos::base;
 use rand_core::OsRng;
 use serde_json::Value;
 
