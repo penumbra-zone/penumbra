@@ -1877,7 +1877,7 @@ impl serde::Serialize for Undelegate {
         if self.delegation_amount.is_some() {
             len += 1;
         }
-        if self.start_height != 0 {
+        if self.from_epoch.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.Undelegate", len)?;
@@ -1894,9 +1894,8 @@ impl serde::Serialize for Undelegate {
         if let Some(v) = self.delegation_amount.as_ref() {
             struct_ser.serialize_field("delegationAmount", v)?;
         }
-        if self.start_height != 0 {
-            #[allow(clippy::needless_borrow)]
-            struct_ser.serialize_field("startHeight", ToString::to_string(&self.start_height).as_str())?;
+        if let Some(v) = self.from_epoch.as_ref() {
+            struct_ser.serialize_field("fromEpoch", v)?;
         }
         struct_ser.end()
     }
@@ -1916,8 +1915,8 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             "unbondedAmount",
             "delegation_amount",
             "delegationAmount",
-            "start_height",
-            "startHeight",
+            "from_epoch",
+            "fromEpoch",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1926,7 +1925,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             StartEpochIndex,
             UnbondedAmount,
             DelegationAmount,
-            StartHeight,
+            FromEpoch,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1953,7 +1952,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "delegationAmount" | "delegation_amount" => Ok(GeneratedField::DelegationAmount),
-                            "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
+                            "fromEpoch" | "from_epoch" => Ok(GeneratedField::FromEpoch),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1977,7 +1976,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                 let mut start_epoch_index__ = None;
                 let mut unbonded_amount__ = None;
                 let mut delegation_amount__ = None;
-                let mut start_height__ = None;
+                let mut from_epoch__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -2006,13 +2005,11 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                             }
                             delegation_amount__ = map_.next_value()?;
                         }
-                        GeneratedField::StartHeight => {
-                            if start_height__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startHeight"));
+                        GeneratedField::FromEpoch => {
+                            if from_epoch__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fromEpoch"));
                             }
-                            start_height__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
+                            from_epoch__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -2024,7 +2021,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     delegation_amount: delegation_amount__,
-                    start_height: start_height__.unwrap_or_default(),
+                    from_epoch: from_epoch__,
                 })
             }
         }

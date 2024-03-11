@@ -423,9 +423,9 @@ pub struct Undelegate {
     /// stateless verification that the transaction is internally consistent.
     #[prost(message, optional, tag = "4")]
     pub delegation_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
-    /// The height during which unbonding began.
-    #[prost(uint64, tag = "5")]
-    pub start_height: u64,
+    /// The epoch in which this delegation was performed.
+    #[prost(message, optional, tag = "5")]
+    pub from_epoch: ::core::option::Option<super::super::sct::v1::Epoch>,
 }
 impl ::prost::Name for Undelegate {
     const NAME: &'static str = "Undelegate";
