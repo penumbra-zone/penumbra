@@ -410,6 +410,7 @@ pub struct Undelegate {
         super::super::super::keys::v1::IdentityKey,
     >,
     /// The index of the epoch in which this undelegation was performed.
+    #[deprecated]
     #[prost(uint64, tag = "2")]
     pub start_epoch_index: u64,
     /// The amount to undelegate, in units of unbonding tokens.
@@ -422,6 +423,9 @@ pub struct Undelegate {
     /// stateless verification that the transaction is internally consistent.
     #[prost(message, optional, tag = "4")]
     pub delegation_amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The height during which unbonding began.
+    #[prost(uint64, tag = "5")]
+    pub start_height: u64,
 }
 impl ::prost::Name for Undelegate {
     const NAME: &'static str = "Undelegate";
@@ -468,7 +472,7 @@ pub struct UndelegateClaimBody {
     pub balance_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
     >,
-    /// / The starting height of the `start_epoch` for the claim.
+    /// / The starting height of the epoch during which unbonding began.
     #[prost(uint64, tag = "5")]
     pub unbonding_start_height: u64,
 }
@@ -508,7 +512,7 @@ pub struct UndelegateClaimPlan {
     /// The second blinding factor to use for the ZK undelegate claim proof.
     #[prost(bytes = "vec", tag = "8")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
-    /// The block height at which unbonding began.
+    /// The height during which unbonding began.
     #[prost(uint64, tag = "9")]
     pub unbonding_start_height: u64,
 }

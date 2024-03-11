@@ -209,8 +209,11 @@ pub struct TransactionPlannerRequest {
         transaction_planner_request::PositionWithdraw,
     >,
     /// The epoch index of the transaction being planned.
+    #[deprecated]
     #[prost(uint64, tag = "200")]
     pub epoch_index: u64,
+    #[prost(message, optional, tag = "201")]
+    pub epoch: ::core::option::Option<super::super::core::component::sct::v1::Epoch>,
     /// Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
     #[prost(oneof = "transaction_planner_request::FeeMode", tags = "100, 101")]
     pub fee_mode: ::core::option::Option<transaction_planner_request::FeeMode>,
