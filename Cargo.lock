@@ -5155,6 +5155,28 @@ dependencies = [
 [[package]]
 name = "penumbra-grpc-server"
 version = "0.69.0"
+dependencies = [
+ "anyhow",
+ "cnidarium",
+ "ibc-proto",
+ "penumbra-app",
+ "penumbra-compact-block",
+ "penumbra-dex",
+ "penumbra-fee",
+ "penumbra-governance",
+ "penumbra-ibc",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "penumbra-tendermint-proxy",
+ "penumbra-tower-trace",
+ "tonic",
+ "tonic-reflection",
+ "tonic-web",
+ "tracing",
+ "url",
+]
 
 [[package]]
 name = "penumbra-ibc"
