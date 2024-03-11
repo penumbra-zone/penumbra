@@ -10,9 +10,6 @@ use metrics_util::layers::Stack;
 
 use anyhow::Context;
 use cnidarium::{StateDelta, Storage};
-use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
-use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
-use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
@@ -23,16 +20,11 @@ use pd::{
         join::testnet_join,
     },
 };
-use penumbra_app::{PenumbraHost, SUBSTORE_PREFIXES};
-use penumbra_proto::core::component::dex::v1::simulation_service_server::SimulationServiceServer;
-use penumbra_proto::util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer;
-use penumbra_tendermint_proxy::TendermintProxy;
-use penumbra_tower_trace::remote_addr;
+use penumbra_app::SUBSTORE_PREFIXES;
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
-use tonic::transport::Server;
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
