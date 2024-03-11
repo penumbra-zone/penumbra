@@ -555,7 +555,7 @@ impl TxCmd {
 
                 let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
                 let latest_sync_height = app.view().status().await?.full_sync_height;
-                let epoch_index = sct_client
+                let epoch = sct_client
                     .epoch_by_height(EpochByHeightRequest {
                         height: latest_sync_height,
                     })
@@ -563,14 +563,14 @@ impl TxCmd {
                     .into_inner()
                     .epoch
                     .expect("epoch must be available")
-                    .index;
+                    .into();
 
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .delegate(epoch_index, unbonded_amount, rate_data)
+                    .delegate(epoch, unbonded_amount, rate_data)
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
@@ -609,7 +609,7 @@ impl TxCmd {
 
                 let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
                 let latest_sync_height = app.view().status().await?.full_sync_height;
-                let epoch_index = sct_client
+                let epoch = sct_client
                     .epoch_by_height(EpochByHeightRequest {
                         height: latest_sync_height,
                     })
@@ -617,7 +617,7 @@ impl TxCmd {
                     .into_inner()
                     .epoch
                     .expect("epoch must be available")
-                    .index;
+                    .into();
 
                 let mut planner = Planner::new(OsRng);
                 planner
@@ -625,7 +625,7 @@ impl TxCmd {
                     .set_fee_tier((*fee_tier).into());
 
                 let plan = planner
-                    .undelegate(epoch_index, delegation_value.amount, rate_data)
+                    .undelegate(epoch, delegation_value.amount, rate_data)
                     .plan(
                         app.view
                             .as_mut()
