@@ -1,53 +1,57 @@
-use anyhow::Context;
-use ibc_proto::ibc::core::channel::v1::query_server::QueryServer as ChannelQueryServer;
-use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
-use ibc_proto::ibc::core::connection::v1::query_server::QueryServer as ConnectionQueryServer;
-use penumbra_app::PenumbraHost;
-use penumbra_proto::core::component::dex::v1::simulation_service_server::SimulationServiceServer;
-use penumbra_proto::util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer;
-use penumbra_tendermint_proxy::TendermintProxy;
-use penumbra_tower_trace::remote_addr;
-use tonic::transport::server::Server;
+// TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the `Routes` structure to have each
+// component define a method that returns a `Routes` with all of its query services bundled inside.
+//
+// This means we won't have to import all this shit and recite every single service -- we can e.g.,
+// have the app crate assemble all of its components' query services into a single `Routes` and
+// then just add that to the gRPC server.
+use {
+    anyhow::Context,
+    cnidarium::rpc::{
+        proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
+        Server as StorageServer,
+    },
+    ibc_proto::ibc::core::{
+        channel::v1::query_server::QueryServer as ChannelQueryServer,
+        client::v1::query_server::QueryServer as ClientQueryServer,
+        connection::v1::query_server::QueryServer as ConnectionQueryServer,
+    },
+    penumbra_app::{rpc::Server as AppServer, PenumbraHost},
+    penumbra_compact_block::component::rpc::Server as CompactBlockServer,
+    penumbra_dex::component::rpc::Server as DexServer,
+    penumbra_fee::component::rpc::Server as FeeServer,
+    penumbra_governance::component::rpc::Server as GovernanceServer,
+    penumbra_proto::{
+        core::{
+            app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+            component::{
+                compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                dex::v1::{
+                    query_service_server::QueryServiceServer as DexQueryServiceServer,
+                    simulation_service_server::SimulationServiceServer,
+                },
+                fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
+                governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
+            },
+        },
+        util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer,
+    },
+    penumbra_sct::component::rpc::Server as SctServer,
+    penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
+    penumbra_stake::component::rpc::Server as StakeServer,
+    penumbra_tendermint_proxy::TendermintProxy,
+    penumbra_tower_trace::remote_addr,
+    tonic::transport::server::Server,
+    tonic_web::enable as we,
+};
 
 pub fn f(
     storage: &cnidarium::Storage,
     cometbft_addr: url::Url,
     enable_expensive_rpc: bool,
 ) -> anyhow::Result<tonic::transport::server::Router> {
-    // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the
-    // `Routes` structure to have each component define a method that
-    // returns a `Routes` with all of its query services bundled inside.
-    //
-    // This means we won't have to import all this shit and recite every
-    // single service -- we can e.g., have the app crate assemble all of
-    // its components' query services into a single `Routes` and then
-    // just add that to the gRPC server.
-
-    use cnidarium::rpc::proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer;
-    use penumbra_proto::core::{
-        app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
-        component::{
-            compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
-            dex::v1::query_service_server::QueryServiceServer as DexQueryServiceServer,
-            fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
-            governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
-            sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
-            shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
-            stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
-        },
-    };
-    use tonic_web::enable as we;
-
-    use cnidarium::rpc::Server as StorageServer;
-    use penumbra_app::rpc::Server as AppServer;
-    use penumbra_compact_block::component::rpc::Server as CompactBlockServer;
-    use penumbra_dex::component::rpc::Server as DexServer;
-    use penumbra_fee::component::rpc::Server as FeeServer;
-    use penumbra_governance::component::rpc::Server as GovernanceServer;
-    use penumbra_sct::component::rpc::Server as SctServer;
-    use penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer;
-    use penumbra_stake::component::rpc::Server as StakeServer;
-
     let tm_proxy = TendermintProxy::new(cometbft_addr);
     let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
     let mut grpc_server = Server::builder()
