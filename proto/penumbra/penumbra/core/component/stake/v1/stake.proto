@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.stake.v1;
 
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
 
@@ -161,8 +162,8 @@ message Undelegate {
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
   num.v1.Amount delegation_amount = 4;
-  // The height during which unbonding began.
-  uint64 start_height = 5;
+  // The epoch in which this delegation was performed.
+  penumbra.core.component.sct.v1.Epoch from_epoch = 5;
 }
 
 // A transaction action finishing an undelegation, converting (slashable)
