@@ -406,7 +406,8 @@ impl ViewService for ViewServer {
         request: tonic::Request<pb::TransactionPlannerRequest>,
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
-        let epoch_index = prq.epoch_index;
+        // MERGEBLOCK: let current_epoch = prq.epoch_index;
+        let current_epoch = todo!();
 
         let app_params =
             self.storage.app_params().await.map_err(|e| {
@@ -533,7 +534,7 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.delegate(epoch_index, amount, rate_data);
+            planner.delegate(current_epoch, amount, rate_data);
         }
 
         for undelegation in prq.undelegations {
@@ -553,7 +554,7 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.undelegate(epoch_index, value.amount, rate_data);
+            planner.undelegate(current_epoch, value.amount, rate_data);
         }
 
         for position_open in prq.position_opens {
