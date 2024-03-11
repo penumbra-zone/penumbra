@@ -11,21 +11,21 @@ publish = false
 [dependencies]
 anyhow = {workspace = true}
 cnidarium = {workspace = true, features = ["migration", "rpc"], default-features = true}
-penumbra-proto = {workspace = true, default-features = true}
-tonic = {workspace = true}
-penumbra-stake = {workspace = true, features = ["parallel"], default-features = true}
-url = {workspace = true}
-penumbra-governance = {workspace = true, features = ["parallel"], default-features = true}
-penumbra-compact-block = {workspace = true, default-features = true}
-tonic-web = {workspace = true}
-penumbra-fee = {workspace = true, default-features = true}
+ibc-proto = {workspace = true, default-features = false, features = ["server"]}
 penumbra-app = {workspace = true}
+penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-fee = {workspace = true, default-features = true}
+penumbra-governance = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-ibc = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-proto = {workspace = true, default-features = true}
 penumbra-sct = {workspace = true, default-features = true}
 penumbra-shielded-pool = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-stake = {workspace = true, features = ["parallel"], default-features = true}
 penumbra-tendermint-proxy = { path = "../util/tendermint-proxy" }
 penumbra-tower-trace = { path = "../util/tower-trace" }
-tracing = {workspace = true}
-penumbra-ibc = {workspace = true, features = ["rpc"], default-features = true}
-ibc-proto = {workspace = true, default-features = false, features = ["server"]}
+tonic = {workspace = true}
 tonic-reflection = {workspace = true}
+tonic-web = {workspace = true}
+tracing = {workspace = true}
+url = {workspace = true}
