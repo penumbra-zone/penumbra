@@ -117,7 +117,7 @@ where
             test_node,
         } = self
         else {
-            bail!("builder was not fully initialized")
+            bail!("block builder was not fully initialized")
         };
 
         let height = {
