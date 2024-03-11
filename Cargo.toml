@@ -35,7 +35,6 @@ members = [
   "crates/core/transaction",
   "crates/core/app",
   "crates/custody",
-  "crates/grpc-server",
   "crates/wallet",
   "crates/view",
   "crates/util/auto-https",
@@ -171,7 +170,6 @@ penumbra-fee                     = { default-features = false, path = "crates/co
 penumbra-funding                 = { default-features = false, path = "crates/core/component/funding" }
 penumbra-governance              = { default-features = false, path = "crates/core/component/governance" }
 penumbra-genesis                 = { path = "crates/core/genesis" }
-penumbra-grpc-server             = { path = "crates/grpc-server" }
 penumbra-ibc                     = { default-features = false, path = "crates/core/component/ibc" }
 penumbra-keys                    = { default-features = false, path = "crates/core/keys" }
 penumbra-mock-client             = { path = "crates/test/mock-client" }

@@ -129,7 +129,6 @@ axum-server = {workspace = true, features = ["tls-rustls"]}
 zip = "0.6"
 mime_guess = "2"
 axum = "0.6"
-penumbra-grpc-server = {workspace = true}
 
 [dev-dependencies]
 penumbra-proof-params = {workspace = true, features = [
