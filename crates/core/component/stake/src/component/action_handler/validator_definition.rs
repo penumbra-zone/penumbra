@@ -1,13 +1,15 @@
+use crate::{
+    component::{
+        action_handler::ActionHandler, validator_handler::ValidatorDataRead,
+        validator_handler::ValidatorManager,
+    },
+    rate::RateData,
+    validator,
+};
 use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-
 use penumbra_proto::DomainType;
-
-use crate::{
-    component::action_handler::ActionHandler, component::validator_handler::ValidatorDataRead,
-    component::validator_handler::ValidatorManager, rate::RateData, validator,
-};
 
 #[async_trait]
 impl ActionHandler for validator::Definition {
