@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use penumbra_sct::epoch::Epoch;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -307,13 +308,11 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn delegate(
         &mut self,
-        epoch_index: u64,
+        epoch: Epoch,
         unbonded_amount: Amount,
         rate_data: RateData,
     ) -> &mut Self {
-        let delegation = rate_data
-            .build_delegate(epoch_index, unbonded_amount)
-            .into();
+        let delegation = rate_data.build_delegate(epoch, unbonded_amount).into();
         self.action(delegation);
         self
     }
@@ -324,12 +323,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     #[instrument(skip(self))]
     pub fn undelegate(
         &mut self,
-        epoch_index: u64,
+        epoch: Epoch,
         delegation_amount: Amount,
         rate_data: RateData,
     ) -> &mut Self {
         let undelegation = rate_data
-            .build_undelegate(epoch_index, delegation_amount)
+            .build_undelegate(epoch, delegation_amount)
             .into();
         self.action(undelegation);
         self
