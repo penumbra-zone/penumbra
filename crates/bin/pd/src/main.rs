@@ -125,7 +125,8 @@ async fn main() -> anyhow::Result<()> {
                 .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
                 .expect("failed to spawn abci server");
 
-            let grpc_server = penumbra_app::rpc::f(&storage, cometbft_addr, enable_expensive_rpc)?;
+            let grpc_server =
+                penumbra_app::rpc::router(&storage, cometbft_addr, enable_expensive_rpc)?;
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);

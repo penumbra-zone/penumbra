@@ -49,7 +49,7 @@ use {
     tonic_web::enable as we,
 };
 
-pub fn f(
+pub fn router(
     storage: &cnidarium::Storage,
     cometbft_addr: url::Url,
     enable_expensive_rpc: bool,
