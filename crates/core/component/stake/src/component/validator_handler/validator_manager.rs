@@ -212,7 +212,7 @@ pub trait ValidatorManager: StateWrite {
 
                 self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_height });
 
-                tracing::debug!(penalty, unbonds_at_epoch, "jailed validator");
+                tracing::debug!(penalty, unbonds_at_height, "jailed validator");
             }
 
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
