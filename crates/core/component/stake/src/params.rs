@@ -69,7 +69,7 @@ impl From<StakeParameters> for pb::StakeParameters {
 impl Default for StakeParameters {
     fn default() -> Self {
         Self {
-            unbonding_delay: 719 * 2 + 1,
+            unbonding_delay: 719 * 3 + 1,
             active_validator_limit: 80,
             // Copied from cosmos hub
             signed_blocks_window_len: 10000,

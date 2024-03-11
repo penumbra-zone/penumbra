@@ -167,8 +167,8 @@ impl AppParameters {
                 "epoch duration must be at least one block",
             ),
             (
-                *unbonding_delay >= epoch_duration + 1,
-                "unbonding must take at least one epoch",
+                *unbonding_delay >= epoch_duration * 2 + 1,
+                "unbonding must take at least two epochs",
             ),
             (
                 *active_validator_limit > 3,

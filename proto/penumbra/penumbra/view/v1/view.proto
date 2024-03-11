@@ -221,6 +221,8 @@ message TransactionPlannerRequest {
 
   // The epoch index of the transaction being planned.
   uint64 epoch_index = 200 [deprecated = true];
+
+  // The epoch of the transaction being planned.
   penumbra.core.component.sct.v1.Epoch epoch = 201;
 
   // Request message subtypes

@@ -18,7 +18,7 @@ impl ActionHandler for Undelegate {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        // These checks all formerly happened in the `check_stateful` method,
+        // These checks all formerly happened in the `check_historical` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
         let u = self;
