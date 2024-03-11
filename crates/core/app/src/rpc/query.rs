@@ -1,6 +1,6 @@
 use {
-    super::AppQueryServer,
     crate::app::StateReadExt as _,
+    cnidarium::Storage,
     penumbra_proto::core::app::v1::{
         query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
         TransactionsByHeightRequest, TransactionsByHeightResponse,
@@ -8,6 +8,16 @@ use {
     tonic::Status,
     tracing::instrument,
 };
+
+pub(super) struct AppQueryServer {
+    storage: Storage,
+}
+
+impl AppQueryServer {
+    pub fn new(storage: Storage) -> Self {
+        Self { storage }
+    }
+}
 
 #[tonic::async_trait]
 impl QueryService for AppQueryServer {

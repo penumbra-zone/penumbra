@@ -1,17 +1,5 @@
 mod query;
 
-use cnidarium::Storage;
-
-struct AppQueryServer {
-    storage: Storage,
-}
-
-impl AppQueryServer {
-    pub fn new(storage: Storage) -> Self {
-        Self { storage }
-    }
-}
-
 // TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the `Routes` structure to have each
 // component define a method that returns a `Routes` with all of its query services bundled inside.
 //
@@ -19,6 +7,7 @@ impl AppQueryServer {
 // have the app crate assemble all of its components' query services into a single `Routes` and
 // then just add that to the gRPC server.
 use {
+    self::query::AppQueryServer,
     crate::PenumbraHost,
     anyhow::Context,
     cnidarium::rpc::{
