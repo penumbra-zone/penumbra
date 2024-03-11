@@ -4573,6 +4573,7 @@ dependencies = [
  "penumbra-fee",
  "penumbra-genesis",
  "penumbra-governance",
+ "penumbra-grpc-server",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-proof-params",
