@@ -49,7 +49,7 @@
 
 #### Global Justification
 
-1.1. This action destroys the value of the note spent, and is reflected in the balance. We do not create value, because of 3.
+1.1. This action destroys the value of the note spent, and is reflected in the balance by adding the value to the transaction value balance. We do not create value, because of 3.
 
 ### Delegator Votes
 
@@ -79,12 +79,17 @@ proposal being voted on was created.
 
 #### Local Invariants
 
+1. The swap binds to the specific trading pair.
+2. The swap binds to a specific claim address.
+
 #### Local Justification
+
+1. The swap commitment includes as inputs the trading pair of the two assets.
+2. The swap commitment includes as inputs each component of the claim address.
 
 #### Global Justification
 
-1.1 This action destroys the value of the two input notes (one per asset) consumed, and is reflected in the balance. We do not create value, because of 3.
-1.2 TK (fee commitment)
+1.1 This action consumes the value of the two input notes (one per asset) consumed and the value of the pre-paid fee to be used by the SwapClaim, and is reflected in the balance by subtracting the value from the transaction value balance. We do not create value, because of 3.
 
 ### SwapClaim
 
@@ -114,10 +119,10 @@ TODO: What happens if we swap the order of asset IDs? There is a canonical order
 
 5.1. A swap's transmission key binds to the nullifier key, and all components of a positioned swap, along with this key are hashed to derive the nullifier, in circuit.
 
-TODO: The binding of the transmission key to the nullifier key is not currently checked in circuit
+TODO: The binding of the transmission key to the nullifier key is not currently checked in circuit. Issue: https://github.com/penumbra-zone/penumbra/issues/3978
 
 5.2. In the ActionHandler for check_stateful we check that the nullifier is unspent.
 
 #### Global Justification
 
-TK
+1.1 This action mints the swap's output notes, and is reflected in the balance by adding the value from the transaction value balance. We do not create value, because of 3.
