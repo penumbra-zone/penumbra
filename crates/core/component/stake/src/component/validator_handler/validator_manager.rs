@@ -131,9 +131,13 @@ pub trait ValidatorManager: StateWrite {
     ) -> Result<()> {
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
-        // We use the current epoch index to compute the unbonding epoch for the validator,
-        // when necessary.
-        let current_height = self.get_block_height().await?;
+        // Using the start height of the current epoch let us do block based unbonding delays without
+        // requiring to bind actions to a specific block height (instead they bind to a whole epoch).
+        let unbonding_start_height = {
+            // We scope it strictly to avoid accidentally using the wrong height.
+            let current_height = self.get_block_height().await?;
+            self.get_epoch_by_height(current_height).await?.start_height
+        };
 
         tracing::debug!("trying to execute a state transition");
 
@@ -185,7 +189,7 @@ pub trait ValidatorManager: StateWrite {
                     identity_key,
                     Unbonding {
                         unbonds_at_height: self
-                            .compute_unbonding_height(identity_key, current_height)
+                            .compute_unbonding_height(identity_key, unbonding_start_height)
                             .await?,
                     },
                 );
@@ -207,7 +211,7 @@ pub trait ValidatorManager: StateWrite {
                 // be held accountable for byzantine behavior for the entire
                 // unbonding period.
                 let unbonds_at_height = self
-                    .compute_unbonding_height(identity_key, current_height)
+                    .compute_unbonding_height(identity_key, unbonding_start_height)
                     .await?;
 
                 self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_height });
@@ -572,13 +576,13 @@ pub trait ValidatorManager: StateWrite {
     async fn process_validator_pool_state(
         &mut self,
         validator_identity: &IdentityKey,
-        at_height: u64,
+        from_height: u64,
     ) -> Result<()> {
         let pool_state = self.get_validator_bonding_state(validator_identity).await;
 
         // If the pool is already unbonded, this will return the current epoch.
         let allowed_unbonding_height = self
-            .compute_unbonding_height(validator_identity, at_height)
+            .compute_unbonding_height(validator_identity, from_height)
             .await?;
 
         tracing::debug!(
@@ -587,7 +591,7 @@ pub trait ValidatorManager: StateWrite {
             "processing validator pool state"
         );
 
-        if at_height >= allowed_unbonding_height {
+        if from_height >= allowed_unbonding_height {
             // The validator's delegation pool has finished unbonding, so we
             // transition it to the Unbonded state.
             let _ = self

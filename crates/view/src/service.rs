@@ -406,8 +406,17 @@ impl ViewService for ViewServer {
         request: tonic::Request<pb::TransactionPlannerRequest>,
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
-        // MERGEBLOCK: let current_epoch = prq.epoch_index;
-        let current_epoch = todo!();
+        let current_epoch = prq
+            .epoch
+            .ok_or_else(|| {
+                tonic::Status::invalid_argument(
+                    "Missing current epoch in TransactionPlannerRequest",
+                )
+            })?
+            .try_into()
+            .map_err(|e| {
+                tonic::Status::invalid_argument(format!("Could not parse current epoch: {e:#}"))
+            })?;
 
         let app_params =
             self.storage.app_params().await.map_err(|e| {

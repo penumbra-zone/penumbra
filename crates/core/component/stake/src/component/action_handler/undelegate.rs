@@ -21,16 +21,17 @@ impl ActionHandler for Undelegate {
         // These checks all formerly happened in the `check_stateful` method,
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
-
         let u = self;
 
-        // Check whether the start epoch is correct first, to give a more helpful
-        // error message if it's wrong.
+        // Check that the undelegation was prepared for the current epoch.
+        // This allow us to provide a more helpful error message if an epoch
+        // boundary was crossed. And more importantly, it will ensure that the
+        // unbonding delay is enforced correctly.
         let current_epoch = state.get_current_epoch().await?;
         ensure!(
-            u.start_epoch_index == current_epoch.index,
+            u.from_epoch == current_epoch,
             "undelegation was prepared for epoch {} but the current epoch is {}",
-            u.start_epoch_index,
+            u.from_epoch.index,
             current_epoch.index
         );
 
