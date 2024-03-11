@@ -130,6 +130,12 @@ service ViewService {
   //
   // This method streams status updates to the caller before finally returning confirmation.
   rpc BroadcastTransaction(BroadcastTransactionRequest) returns (stream BroadcastTransactionResponse);
+
+  // Get delegation tokens for a given address index. Each delegation token will
+  // be represented by a `ValueView` with the given address index's balance of
+  // that token. Each `ValueView`'s `extended_metadata` field will contain the
+  // `ValidatorInfo` of the delegated validator.
+  rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
 }
 
 message AuthorizeAndBuildRequest {
@@ -596,4 +602,37 @@ message AssetMetadataByIdResponse {
   //
   // If the requested asset was unknown, this field will not be present.
   core.asset.v1.Metadata denom_metadata = 1;
+}
+
+// Requests `ValueView`s of delegation tokens for the given address index. The
+// returned `ValueView`s will include the `ValidatorInfo` for the delegated
+// validator in their `extended_metadata` fields.
+message DelegationsByAddressIndexRequest {
+  // The address index to fetch delegation balances for.
+  core.keys.v1.AddressIndex address_index = 1;
+
+  enum Filter {
+    // By default, returns delegations for all active validators. For validators
+    // that the given address index has no delegation tokens for, a `ValueView`
+    // with a balance of `0` will be returned.
+    FILTER_UNSPECIFIED = 0;
+
+    // Returns only delegations to active validators that the given address
+    // index holds delegation tokens for.
+    FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES = 1;
+
+    // Return delegations for all validators, whether active or not. For
+    // validators that the given address index has no delegation tokens for, a
+    // `ValueView` with a balance of `0` will be returned.
+    FILTER_ALL = 2;
+  }
+
+  Filter filter = 2;
+}
+
+// Contains a `ValueView` of delegation tokens for the requested address index.
+// The `ValueView` includes the `ValidatorInfo` for the delegated validator in
+// cits `extended_metadata` field.
+message DelegationsByAddressIndexResponse {
+  core.asset.v1.ValueView value_view = 1;
 }
