@@ -4553,7 +4553,6 @@ dependencies = [
  "futures",
  "hex",
  "http",
- "ibc-proto",
  "ibc-types",
  "ics23",
  "jmt",
@@ -4567,12 +4566,11 @@ dependencies = [
  "penumbra-app",
  "penumbra-asset",
  "penumbra-auto-https",
- "penumbra-compact-block",
  "penumbra-custody",
  "penumbra-dex",
- "penumbra-fee",
  "penumbra-genesis",
  "penumbra-governance",
+ "penumbra-grpc-server",
  "penumbra-ibc",
  "penumbra-keys",
  "penumbra-proof-params",
@@ -4581,7 +4579,6 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tendermint-proxy",
- "penumbra-tower-trace",
  "penumbra-transaction",
  "pin-project",
  "pin-project-lite",
@@ -4607,8 +4604,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util 0.7.10",
  "toml 0.7.8",
- "tonic",
- "tonic-reflection",
  "tonic-web",
  "tower",
  "tower-abci",
@@ -4675,6 +4670,7 @@ dependencies = [
  "bincode",
  "bitvec",
  "blake2b_simd 1.0.2",
+ "camino",
  "cnidarium",
  "cnidarium-component",
  "decaf377 0.5.0",
@@ -4713,6 +4709,7 @@ dependencies = [
  "penumbra-tower-trace",
  "penumbra-transaction",
  "penumbra-txhash",
+ "penumbra-view",
  "prost",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -4737,6 +4734,7 @@ dependencies = [
  "tower-service",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
@@ -5148,6 +5146,30 @@ dependencies = [
  "thiserror",
  "tokio",
  "tonic",
+ "tracing",
+]
+
+[[package]]
+name = "penumbra-grpc-server"
+version = "0.69.0"
+dependencies = [
+ "anyhow",
+ "cnidarium",
+ "ibc-proto",
+ "penumbra-app",
+ "penumbra-compact-block",
+ "penumbra-fee",
+ "penumbra-governance",
+ "penumbra-ibc",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-stake",
+ "penumbra-tendermint-proxy",
+ "penumbra-tower-trace",
+ "tonic",
+ "tonic-reflection",
+ "tonic-web",
  "tracing",
 ]
 

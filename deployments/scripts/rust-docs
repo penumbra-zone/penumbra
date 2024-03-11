@@ -40,6 +40,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-fee \
   -p penumbra-genesis \
   -p penumbra-governance \
+  -p penumbra-grpc-server \
   -p penumbra-ibc \
   -p penumbra-keys \
   -p penumbra-measure \

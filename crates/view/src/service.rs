@@ -90,6 +90,12 @@ pub struct ViewServer {
 
 impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
+    #[instrument(
+        skip(storage_path),
+        fields(
+            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str())
+        )
+    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,

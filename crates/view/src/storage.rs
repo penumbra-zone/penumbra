@@ -15,6 +15,7 @@ use tokio::{
     sync::broadcast::{self, error::RecvError},
     task::spawn_blocking,
 };
+use tracing::{error_span, Instrument};
 use url::Url;
 
 use penumbra_app::params::AppParameters;
@@ -75,20 +76,32 @@ pub struct Storage {
 
 impl Storage {
     /// If the database at `storage_path` exists, [`Self::load`] it, otherwise, [`Self::initialize`] it.
+    #[tracing::instrument(
+        skip(storage_path),
+        fields(
+            path = ?storage_path.as_ref().map(|p| p.as_ref().as_str())
+        )
+    )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
         node: Url,
     ) -> anyhow::Result<Self> {
-        if let Some(path) = storage_path.as_ref() {
-            if path.as_ref().exists() {
+        if let Some(path) = storage_path.as_ref().map(AsRef::as_ref) {
+            if path.exists() {
+                tracing::debug!(?path, "database exists");
                 return Self::load(path).await;
+            } else {
+                tracing::debug!(?path, "database does not exist");
             }
         };
 
-        let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+        let mut client = AppQueryServiceClient::connect(node.to_string())
+            .instrument(error_span!("connecting to endpoint"))
+            .await?;
         let params = client
             .app_parameters(tonic::Request::new(AppParametersRequest {}))
+            .instrument(error_span!("getting app parameters"))
             .await?
             .into_inner()
             .try_into()?;
