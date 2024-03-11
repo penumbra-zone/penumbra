@@ -1,4 +1,4 @@
-# Asset Model
+# Assets and Values
 
 Penumbra can record arbitrary assets.  These assets either originate on Penumbra
 itself, or, more commonly, originate on other IBC-connected chains.  To record
@@ -10,7 +10,7 @@ context.
 
 To be precise, we define: 
 
-- an *amount* to be an untyped `u64` quantity of some asset;
+- an *amount* to be an untyped `u128` quantity of some asset;
 - an *asset ID* to be an $\mathbb F_q$ element;
 - a *value* to be a typed quantity, i.e., an amount and an asset ID.
 
