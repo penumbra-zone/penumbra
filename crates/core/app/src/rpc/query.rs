@@ -1,5 +1,5 @@
 use {
-    super::Server,
+    super::AppQueryServer,
     crate::app::StateReadExt as _,
     penumbra_proto::core::app::v1::{
         query_service_server::QueryService, AppParametersRequest, AppParametersResponse,
@@ -10,7 +10,7 @@ use {
 };
 
 #[tonic::async_trait]
-impl QueryService for Server {
+impl QueryService for AppQueryServer {
     #[instrument(skip(self, request))]
     async fn transactions_by_height(
         &self,

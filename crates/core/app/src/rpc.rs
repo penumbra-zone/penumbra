@@ -3,11 +3,11 @@ mod query;
 use cnidarium::Storage;
 
 // TODO: Hide this and only expose a Router?
-pub struct Server {
+pub struct AppQueryServer {
     storage: Storage,
 }
 
-impl Server {
+impl AppQueryServer {
     pub fn new(storage: Storage) -> Self {
         Self { storage }
     }
@@ -20,7 +20,7 @@ impl Server {
 // have the app crate assemble all of its components' query services into a single `Routes` and
 // then just add that to the gRPC server.
 use {
-    crate::{rpc::Server as AppServer, PenumbraHost},
+    crate::PenumbraHost,
     anyhow::Context,
     cnidarium::rpc::{
         proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
@@ -91,7 +91,7 @@ pub fn f(
         .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
             storage.clone(),
         ))))
-        .add_service(we(AppQueryServiceServer::new(AppServer::new(
+        .add_service(we(AppQueryServiceServer::new(AppQueryServer::new(
             storage.clone(),
         ))))
         .add_service(we(CompactBlockQueryServiceServer::new(
