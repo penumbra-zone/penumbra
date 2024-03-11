@@ -131,7 +131,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 .process_validator(
                     validator_identity,
                     epoch_to_end,
-                    end_height,
                     next_base_rate.clone(),
                     total_delegations,
                     total_undelegations,
@@ -171,7 +170,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         &mut self,
         validator_identity: &IdentityKey,
         epoch_to_end: Epoch,
-        epoch_end_height: u64,
         next_base_rate: BaseRateData,
         total_delegations: Amount,
         total_undelegations: Amount,
@@ -345,7 +343,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             final_state = ?final_state,
             "validator's end-epoch has been processed");
 
-        self.process_validator_pool_state(&validator.identity_key, epoch_end_height)
+        self.process_validator_pool_state(&validator.identity_key, epoch_to_end.start_height)
             .await.map_err(|e| {
                 tracing::error!(?e, validator_identity = %validator.identity_key, "failed to process validator pool state");
                 e
