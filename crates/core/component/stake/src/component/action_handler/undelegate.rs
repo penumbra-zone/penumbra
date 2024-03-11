@@ -24,9 +24,8 @@ impl ActionHandler for Undelegate {
         let u = self;
 
         // Check that the undelegation was prepared for the current epoch.
-        // This allow us to provide a more helpful error message if an epoch
-        // boundary was crossed. And more importantly, it will ensure that the
-        // unbonding delay is enforced correctly.
+        // This let us provide a more helpful error message if an epoch boundary was crossed.
+        // And it ensures that the unbonding delay is enforced correctly.
         let current_epoch = state.get_current_epoch().await?;
         ensure!(
             u.from_epoch == current_epoch,

@@ -29,7 +29,7 @@ pub struct UndelegateClaimPlan {
     pub proof_blinding_r: Fq,
     /// The second blinding factor used for generating the ZK proof.
     pub proof_blinding_s: Fq,
-    /// The height at which unbonding began, used to verify the penalty.
+    /// The height at which unbonding began, used to verify the penalty and unbonding delay.
     pub unbonding_start_height: u64,
 }
 
