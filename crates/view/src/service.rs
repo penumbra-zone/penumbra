@@ -406,17 +406,6 @@ impl ViewService for ViewServer {
         request: tonic::Request<pb::TransactionPlannerRequest>,
     ) -> Result<tonic::Response<pb::TransactionPlannerResponse>, tonic::Status> {
         let prq = request.into_inner();
-        let current_epoch = prq
-            .epoch
-            .ok_or_else(|| {
-                tonic::Status::invalid_argument(
-                    "Missing current epoch in TransactionPlannerRequest",
-                )
-            })?
-            .try_into()
-            .map_err(|e| {
-                tonic::Status::invalid_argument(format!("Could not parse current epoch: {e:#}"))
-            })?;
 
         let app_params =
             self.storage.app_params().await.map_err(|e| {
@@ -526,6 +515,25 @@ impl ViewService for ViewServer {
             });
         }
 
+        let current_epoch = if prq.undelegations.is_empty() && prq.delegations.is_empty() {
+            None
+        } else {
+            Some(
+                prq.epoch
+                    .ok_or_else(|| {
+                        tonic::Status::invalid_argument(
+                            "Missing current epoch in TransactionPlannerRequest",
+                        )
+                    })?
+                    .try_into()
+                    .map_err(|e| {
+                        tonic::Status::invalid_argument(format!(
+                            "Could not parse current epoch: {e:#}"
+                        ))
+                    })?,
+            )
+        };
+
         for delegation in prq.delegations {
             let amount: Amount = delegation
                 .amount
@@ -543,7 +551,11 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.delegate(current_epoch, amount, rate_data);
+            planner.delegate(
+                current_epoch.expect("checked that current epoch is present"),
+                amount,
+                rate_data,
+            );
         }
 
         for undelegation in prq.undelegations {
@@ -563,7 +575,11 @@ impl ViewService for ViewServer {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.undelegate(current_epoch, value.amount, rate_data);
+            planner.undelegate(
+                current_epoch.expect("checked that current epoch is present"),
+                value.amount,
+                rate_data,
+            );
         }
 
         for position_open in prq.position_opens {
