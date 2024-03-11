@@ -13,9 +13,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::StreamExt as _;
 use penumbra_num::Amount;
-use penumbra_sct::{
-    component::clock::{EpochManager, EpochRead},
-};
+use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};

@@ -27,7 +27,8 @@ impl ActionHandler for Delegate {
 
         let d = self;
 
-        // We check if the rate data is for the current epoch.
+        // We check if the rate data is for the current epoch to provide a helpful
+        // error message if there is a mismatch.
         let current_epoch = state.get_current_epoch().await?;
         ensure!(
             d.epoch_index == current_epoch.index,
