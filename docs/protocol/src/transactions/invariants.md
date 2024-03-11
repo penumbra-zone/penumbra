@@ -110,8 +110,6 @@ proposal being voted on was created.
 1. The Swap commits to the claim address. The SwapClaim circuit enforces that the same address used to derive the swap commitment is that used to derive the note commitments for the two output notes.
 2. The SwapClaim circuit checks that the trading pair on the original Swap is the same as that on the batch swap output data.
 
-TODO: What happens if we swap the order of asset IDs? There is a canonical ordering OOC for a TradingPair that is not checked in-circuit.
-
 3.1 The output amounts of each note is checked in-circuit to be only due to that user's contribution of the batch swap output data.
 3.2 The circuit checks the block height of the swap matches that of the batch swap output data. The ActionHandler for the SwapClaim checks that the batch swap output data provided by the SwapClaim matches that saved on-chain for that output height and trading pair.
 
@@ -119,10 +117,24 @@ TODO: What happens if we swap the order of asset IDs? There is a canonical order
 
 5.1. A swap's transmission key binds to the nullifier key, and all components of a positioned swap, along with this key are hashed to derive the nullifier, in circuit.
 
-TODO: The binding of the transmission key to the nullifier key is not currently checked in circuit. Issue: https://github.com/penumbra-zone/penumbra/issues/3978
-
-5.2. In the ActionHandler for check_stateful we check that the nullifier is unspent.
+5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
 
 #### Global Justification
 
 1.1 This action mints the swap's output notes, and is reflected in the balance by adding the value from the transaction value balance. We do not create value, because of 3.
+
+### UndelegateClaim
+
+#### Local Invariants
+
+1. You cannot claim undelegations that have not finishing unbonding.
+2. Slashing penalties must be applied when unbonding.
+
+#### Local Justification
+
+1. In the `ActionHandler` for `check_stateful` we check that the undelegations have finished unbonding.
+2. The `ConvertCircuit` verifies that the conversion from the unbonding token to the staking token was done using the correct conversion rate calculated from the penalty. We check in the `ActionHandler` for `check_stateful` that the _correct_ penalty was used.
+
+#### Global Justification
+
+1.1. This action consumes the amount of the unbonding tokens and contributes the unbonded amount of the staking tokens to the transaction's value balance. We do not create value, because of 3.
