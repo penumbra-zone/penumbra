@@ -4,6 +4,7 @@ use penumbra_num::fixpoint::U128x128;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1::CurrentValidatorRateResponse;
 use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_sct::epoch::Epoch;
 use serde::{Deserialize, Serialize};
 
 use crate::{validator::State, FundingStream, IdentityKey};
@@ -231,10 +232,10 @@ impl RateData {
 
     /// Uses this `RateData` to build a `Delegate` transaction action that
     /// delegates `unbonded_amount` of the staking token.
-    pub fn build_delegate(&self, epoch_index: u64, unbonded_amount: Amount) -> Delegate {
+    pub fn build_delegate(&self, epoch: Epoch, unbonded_amount: Amount) -> Delegate {
         Delegate {
             delegation_amount: self.delegation_amount(unbonded_amount),
-            epoch_index,
+            epoch_index: epoch.index,
             unbonded_amount,
             validator_identity: self.identity_key.clone(),
         }
@@ -242,9 +243,10 @@ impl RateData {
 
     /// Uses this `RateData` to build an `Undelegate` transaction action that
     /// undelegates `delegation_amount` of the validator's delegation tokens.
-    pub fn build_undelegate(&self, epoch_index: u64, delegation_amount: Amount) -> Undelegate {
+    pub fn build_undelegate(&self, start_epoch: Epoch, delegation_amount: Amount) -> Undelegate {
         Undelegate {
-            start_epoch_index: epoch_index,
+            start_epoch_index: start_epoch.index,
+            start_height: start_epoch.start_height,
             delegation_amount,
             unbonded_amount: self.unbonded_amount(delegation_amount),
             validator_identity: self.identity_key.clone(),
