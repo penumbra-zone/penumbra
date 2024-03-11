@@ -2,8 +2,7 @@ mod query;
 
 use cnidarium::Storage;
 
-// TODO: Hide this and only expose a Router?
-pub struct AppQueryServer {
+struct AppQueryServer {
     storage: Storage,
 }
 
