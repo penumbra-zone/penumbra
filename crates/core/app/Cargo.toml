@@ -21,7 +21,7 @@ bech32                           = { workspace = true }
 bincode                          = { workspace = true }
 bitvec                           = { workspace = true }
 blake2b_simd                     = { workspace = true }
-cnidarium                        = { workspace = true, default-features = true }
+cnidarium                        = { workspace = true, features = ["migration", "rpc"], default-features = true }
 cnidarium-component              = { workspace = true, default-features = true }
 decaf377                         = { workspace = true, default-features = true }
 decaf377-rdsa                    = { workspace = true }
@@ -44,7 +44,7 @@ penumbra-fee                     = { workspace = true, default-features = true }
 penumbra-funding                 = { workspace = true, default-features = true }
 penumbra-genesis                 = { workspace = true }
 penumbra-governance              = { workspace = true, default-features = true }
-penumbra-ibc                     = { workspace = true, features = ["component"], default-features = true }
+penumbra-ibc                     = { workspace = true, features = ["component", "rpc"], default-features = true }
 penumbra-keys                    = { workspace = true, default-features = true }
 penumbra-num                     = { workspace = true, default-features = true }
 penumbra-proof-params            = { workspace = true, default-features = true }
@@ -53,6 +53,7 @@ penumbra-sct                     = { workspace = true, default-features = true }
 penumbra-shielded-pool           = { workspace = true, features = ["component"], default-features = true }
 penumbra-stake                   = { workspace = true, default-features = true }
 penumbra-tct                     = { workspace = true, default-features = true }
+penumbra-tendermint-proxy        = { path = "../../util/tendermint-proxy" }
 penumbra-tower-trace             = {  path = "../../util/tower-trace"  }
 penumbra-transaction             = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-txhash                  = { workspace = true, default-features = true }
@@ -71,11 +72,14 @@ tendermint-proto                 = { workspace = true }
 tokio                            = { workspace = true, features = ["full", "tracing"] }
 tokio-util                       = { workspace = true }
 tonic                            = { workspace = true }
+tonic-reflection                 = { workspace = true }
+tonic-web                        = { workspace = true }
 tower                            = { workspace = true, features = ["full"] }
 tower-abci                       = "0.11"
 tower-actor                      = "0.1.0"
 tower-service                    = { workspace = true }
 tracing                          = { workspace = true }
+url                              = { workspace = true }
 
 [dev-dependencies]
 ed25519-consensus       = { workspace = true }
