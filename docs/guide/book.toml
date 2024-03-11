@@ -24,3 +24,6 @@ additional-js =["theme/js/mermaid.min.js", "theme/js/mermaid-init.js"]
 # [output.linkcheck]
 # follow-web-links = false
 # warning-policy = "ignore"
+#
+# The buf.build website doesn't support HTTP HEAD calls, returning 405.
+# exclude = ['buf\.build']
