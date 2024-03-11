@@ -49,6 +49,7 @@
 - [Assets and Values](./assets.md)
 - [Transaction Model](./transactions.md)
   - [Transaction Signing](./transactions/signing.md)
+  - [Action Invariants](./transactions/invariants.md)
   - [Action Reference](./transactions/actions.md)
 - [Multi-Asset Shielded Pool](./shielded_pool.md)
   - [Note Plaintexts](./shielded_pool/note_plaintexts.md)
