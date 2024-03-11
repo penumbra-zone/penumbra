@@ -1949,6 +1949,291 @@ impl<'de> serde::Deserialize<'de> for broadcast_transaction_response::Confirmed 
         deserializer.deserialize_struct("penumbra.view.v1.BroadcastTransactionResponse.Confirmed", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for DelegationsByAddressIndexRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.address_index.is_some() {
+            len += 1;
+        }
+        if self.filter != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.DelegationsByAddressIndexRequest", len)?;
+        if let Some(v) = self.address_index.as_ref() {
+            struct_ser.serialize_field("addressIndex", v)?;
+        }
+        if self.filter != 0 {
+            let v = delegations_by_address_index_request::Filter::try_from(self.filter)
+                .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.filter)))?;
+            struct_ser.serialize_field("filter", &v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DelegationsByAddressIndexRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "address_index",
+            "addressIndex",
+            "filter",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AddressIndex,
+            Filter,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            "filter" => Ok(GeneratedField::Filter),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DelegationsByAddressIndexRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.DelegationsByAddressIndexRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegationsByAddressIndexRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut address_index__ = None;
+                let mut filter__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AddressIndex => {
+                            if address_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("addressIndex"));
+                            }
+                            address_index__ = map_.next_value()?;
+                        }
+                        GeneratedField::Filter => {
+                            if filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("filter"));
+                            }
+                            filter__ = Some(map_.next_value::<delegations_by_address_index_request::Filter>()? as i32);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(DelegationsByAddressIndexRequest {
+                    address_index: address_index__,
+                    filter: filter__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.DelegationsByAddressIndexRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for delegations_by_address_index_request::Filter {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let variant = match self {
+            Self::Unspecified => "FILTER_UNSPECIFIED",
+            Self::AllActiveWithNonzeroBalances => "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES",
+            Self::All => "FILTER_ALL",
+        };
+        serializer.serialize_str(variant)
+    }
+}
+impl<'de> serde::Deserialize<'de> for delegations_by_address_index_request::Filter {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "FILTER_UNSPECIFIED",
+            "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES",
+            "FILTER_ALL",
+        ];
+
+        struct GeneratedVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = delegations_by_address_index_request::Filter;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(formatter, "expected one of: {:?}", &FIELDS)
+            }
+
+            fn visit_i64<E>(self, v: i64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Signed(v), &self)
+                    })
+            }
+
+            fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Unsigned(v), &self)
+                    })
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    "FILTER_UNSPECIFIED" => Ok(delegations_by_address_index_request::Filter::Unspecified),
+                    "FILTER_ALL_ACTIVE_WITH_NONZERO_BALANCES" => Ok(delegations_by_address_index_request::Filter::AllActiveWithNonzeroBalances),
+                    "FILTER_ALL" => Ok(delegations_by_address_index_request::Filter::All),
+                    _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
+                }
+            }
+        }
+        deserializer.deserialize_any(GeneratedVisitor)
+    }
+}
+impl serde::Serialize for DelegationsByAddressIndexResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value_view.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.DelegationsByAddressIndexResponse", len)?;
+        if let Some(v) = self.value_view.as_ref() {
+            struct_ser.serialize_field("valueView", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DelegationsByAddressIndexResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value_view",
+            "valueView",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValueView,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "valueView" | "value_view" => Ok(GeneratedField::ValueView),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DelegationsByAddressIndexResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.DelegationsByAddressIndexResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DelegationsByAddressIndexResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value_view__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValueView => {
+                            if value_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("valueView"));
+                            }
+                            value_view__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(DelegationsByAddressIndexResponse {
+                    value_view: value_view__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.DelegationsByAddressIndexResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EphemeralAddressRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
