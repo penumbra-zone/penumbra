@@ -152,7 +152,7 @@ message Undelegate {
   // The identity key of the validator to undelegate from.
   keys.v1.IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
-  uint64 start_epoch_index = 2;
+  uint64 start_epoch_index = 2 [deprecated = true];
   // The amount to undelegate, in units of unbonding tokens.
   num.v1.Amount unbonded_amount = 3;
   // The amount of delegation tokens consumed by this action.
@@ -161,6 +161,8 @@ message Undelegate {
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
   num.v1.Amount delegation_amount = 4;
+  // The height during which unbonding began.
+  uint64 start_height = 5;
 }
 
 // A transaction action finishing an undelegation, converting (slashable)
@@ -180,7 +182,7 @@ message UndelegateClaimBody {
   Penalty penalty = 3;
   // The action's contribution to the transaction's value balance.
   asset.v1.BalanceCommitment balance_commitment = 4;
-  /// The starting height of the `start_epoch` for the claim.
+  /// The starting height of the epoch during which unbonding began.
   uint64 unbonding_start_height = 5;
 }
 
@@ -201,7 +203,7 @@ message UndelegateClaimPlan {
   bytes proof_blinding_r = 7;
   // The second blinding factor to use for the ZK undelegate claim proof.
   bytes proof_blinding_s = 8;
-  // The block height at which unbonding began.
+  // The height during which unbonding began.
   uint64 unbonding_start_height = 9;
 }
 
