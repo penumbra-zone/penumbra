@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use anyhow::{Context, Result};
 use ark_std::UniformRand;
 use decaf377::Fq;
+use penumbra_sct::epoch::Epoch;
 use rand_core::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -62,7 +63,7 @@ where
 pub async fn delegate<V, R>(
     view: &mut V,
     rng: R,
-    epoch_index: u64,
+    epoch: Epoch,
     rate_data: RateData,
     unbonded_amount: Amount,
     fee: Fee,
@@ -74,7 +75,7 @@ where
 {
     Planner::new(rng)
         .fee(fee)
-        .delegate(epoch_index, unbonded_amount, rate_data)
+        .delegate(epoch, unbonded_amount, rate_data)
         .plan(view, source_address)
         .await
         .context("can't build delegate plan")
