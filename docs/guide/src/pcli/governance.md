@@ -67,12 +67,16 @@ received when voting in real life at your polling place.
 ### Voting As A Validator
 
 If you are a validator who was active when the proposal started, you can vote on it using the
-`validator vote` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
+`validator vote cast` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
 would do:
 
 ```bash
-pcli validator vote yes --on 1
+pcli validator vote cast yes --on 1
 ```
+
+If your validator uses an airgap custody setup, you can separately sign and cast your vote using the
+`pcli validator vote sign` command to output your signature, and the `--signature` option on `pcli
+validator vote cast` to attach it and broadcast it.
 
 ### Eligibility And Voting Power
 
