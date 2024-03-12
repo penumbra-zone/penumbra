@@ -149,6 +149,7 @@ impl Component for Staking {
         state.set_delegation_changes(height, changes).await;
     }
 
+    /// Writes validator updates for this block.
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
