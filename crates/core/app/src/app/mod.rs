@@ -392,7 +392,7 @@ impl App {
         // the entirety of application state, and the governance component does not have access to
         // the types defined in this crate.
         //
-        // If a proposal was passed in this block, then `schedule_app_params_change` was called
+        // If a proposal was passed in this block, then `schedule_app_param_update` was called
         // which will set `next_block_pending_app_parameters`.
         //
         // If any validation here fails, the `next_block_pending_app_parameters` will be cleared,
