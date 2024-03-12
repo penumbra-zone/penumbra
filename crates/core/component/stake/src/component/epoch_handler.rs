@@ -1,4 +1,3 @@
-use super::StateWriteExt;
 use crate::{
     component::{
         stake::{
@@ -10,7 +9,7 @@ use crate::{
     },
     rate::BaseRateData,
     state_key, validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey,
-    Penalty, StateReadExt, BPS_SQUARED_SCALING_FACTOR,
+    Penalty, StateReadExt, StateWriteExt, BPS_SQUARED_SCALING_FACTOR,
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;

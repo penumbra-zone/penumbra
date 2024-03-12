@@ -12,7 +12,7 @@ mod uptime;
 pub mod component;
 
 #[cfg(feature = "component")]
-pub use component::StateReadExt;
+pub use component::{StateReadExt, StateWriteExt};
 
 pub static BPS_SQUARED_SCALING_FACTOR: Lazy<penumbra_num::fixpoint::U128x128> =
     Lazy::new(|| 1_0000_0000u128.into());
