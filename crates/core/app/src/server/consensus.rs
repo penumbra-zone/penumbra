@@ -85,12 +85,9 @@ impl Consensus {
                 Request::DeliverTx(deliver_tx) => {
                     Response::DeliverTx(self.deliver_tx(deliver_tx).instrument(span.clone()).await)
                 }
-                Request::EndBlock(end_block) => Response::EndBlock(
-                    self.end_block(end_block)
-                        .instrument(span)
-                        .await
-                        .expect("end_block must succeed"),
-                ),
+                Request::EndBlock(end_block) => {
+                    Response::EndBlock(self.end_block(end_block).instrument(span).await)
+                }
                 Request::Commit => Response::Commit(
                     self.commit()
                         .instrument(span)
@@ -218,7 +215,7 @@ impl Consensus {
         }
     }
 
-    async fn end_block(&mut self, end_block: request::EndBlock) -> Result<response::EndBlock> {
+    async fn end_block(&mut self, end_block: request::EndBlock) -> response::EndBlock {
         tracing::info!(height = ?end_block.height, "ending block");
         let events = self.app.end_block(&end_block).await;
         trace_events(&events);
@@ -234,11 +231,11 @@ impl Consensus {
             "sending validator updates to tendermint"
         );
 
-        Ok(response::EndBlock {
+        response::EndBlock {
             validator_updates,
             consensus_param_updates: None,
             events,
-        })
+        }
     }
 
     async fn commit(&mut self) -> Result<response::Commit> {
