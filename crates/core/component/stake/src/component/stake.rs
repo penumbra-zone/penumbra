@@ -133,22 +133,20 @@ impl Component for Staking {
             .expect("should be able to track uptime");
     }
 
+    /// Writes the delegation changes for this block.
     #[instrument(name = "staking", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
         let state = Arc::get_mut(state).expect("state should be unique");
-        // Write the delegation changes for this block.
-        state
-            .set_delegation_changes(
-                end_block
-                    .height
-                    .try_into()
-                    .expect("should be able to convert i64 into block height"),
-                state.get_delegation_changes_tally().clone(),
-            )
-            .await;
+        let height = end_block
+            .height
+            .try_into()
+            .expect("should be able to convert i64 into block height");
+        let changes = state.get_delegation_changes_tally();
+
+        state.set_delegation_changes(height, changes).await;
     }
 
     #[instrument(name = "staking", skip(state))]
@@ -463,11 +461,19 @@ pub trait RateDataWrite: StateWrite {
         );
     }
 
+    #[tracing::instrument(
+        level = "trace",
+        skip_all,
+        fields(
+            %height,
+            delegations = ?changes.delegations,
+            undelegations = ?changes.undelegations,
+        )
+    )]
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
-        self.put(
-            state_key::chain::delegation_changes::by_height(height.value()),
-            changes,
-        );
+        let key = state_key::chain::delegation_changes::by_height(height.value());
+        tracing::trace!(%key, "setting delegation changes");
+        self.put(key, changes);
     }
 }
 
