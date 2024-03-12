@@ -140,15 +140,12 @@ impl Component for Staking {
     ) {
         let state = Arc::get_mut(state).expect("state should be unique");
         // Write the delegation changes for this block.
-        state
-            .set_delegation_changes(
-                end_block
-                    .height
-                    .try_into()
-                    .expect("should be able to convert i64 into block height"),
-                state.get_delegation_changes_tally().clone(),
-            )
-            .await;
+        let height = end_block
+            .height
+            .try_into()
+            .expect("should be able to convert i64 into block height");
+        let changes = state.get_delegation_changes_tally().clone();
+        state.set_delegation_changes(height, changes).await;
     }
 
     #[instrument(name = "staking", skip(state))]
