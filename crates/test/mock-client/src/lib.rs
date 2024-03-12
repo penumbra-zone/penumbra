@@ -59,7 +59,7 @@ impl MockClient {
                 .compact_block(height)
                 .await?
                 .ok_or_else(|| anyhow::anyhow!("missing compact block for height {}", height))?;
-            self.scan_block(compact_block)?;
+            self.scan_block(compact_block.try_into()?)?;
             let (latest_height, root) = self.latest_height_and_sct_root();
             anyhow::ensure!(latest_height == height, "latest height should be updated");
             let expected_root = state
