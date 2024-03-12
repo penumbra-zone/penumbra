@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use penumbra_sct::epoch::Epoch;
 use rand::{CryptoRng, RngCore};
 use tracing::instrument;
 
@@ -305,8 +306,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// If you don't specify spends or outputs as well, they will be filled in automatically.
     #[instrument(skip(self))]
-    pub fn delegate(&mut self, unbonded_amount: Amount, rate_data: RateData) -> &mut Self {
-        let delegation = rate_data.build_delegate(unbonded_amount).into();
+    pub fn delegate(
+        &mut self,
+        epoch: Epoch,
+        unbonded_amount: Amount,
+        rate_data: RateData,
+    ) -> &mut Self {
+        let delegation = rate_data.build_delegate(epoch, unbonded_amount).into();
         self.action(delegation);
         self
     }
@@ -315,8 +321,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     ///
     /// TODO: can we put the chain parameters into the planner at the start, so we can compute end_epoch_index?
     #[instrument(skip(self))]
-    pub fn undelegate(&mut self, delegation_amount: Amount, rate_data: RateData) -> &mut Self {
-        let undelegation = rate_data.build_undelegate(delegation_amount).into();
+    pub fn undelegate(
+        &mut self,
+        epoch: Epoch,
+        delegation_amount: Amount,
+        rate_data: RateData,
+    ) -> &mut Self {
+        let undelegation = rate_data.build_undelegate(epoch, delegation_amount).into();
         self.action(undelegation);
         self
     }

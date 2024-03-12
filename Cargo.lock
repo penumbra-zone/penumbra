@@ -5809,6 +5809,7 @@ dependencies = [
  "penumbra-keys",
  "penumbra-num",
  "penumbra-proto",
+ "penumbra-sct",
  "penumbra-stake",
  "penumbra-tct",
  "penumbra-transaction",

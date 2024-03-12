@@ -14,8 +14,11 @@ use crate::{component::action_handler::ActionHandler, UnbondingToken};
 impl ActionHandler for UndelegateClaim {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        let unbonding_id =
-            UnbondingToken::new(self.body.validator_identity, self.body.start_epoch_index).id();
+        let unbonding_id = UnbondingToken::new(
+            self.body.validator_identity,
+            self.body.unbonding_start_height,
+        )
+        .id();
 
         self.proof.verify(
             &CONVERT_PROOF_VERIFICATION_KEY,
@@ -34,27 +37,41 @@ impl ActionHandler for UndelegateClaim {
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
 
-        // If the validator delegation pool is bonded, or unbonding, check that enough epochs
-        // have elapsed to claim the unbonding tokens:
-        let current_epoch = state.get_current_epoch().await?;
-        let allowed_unbonding_epoch = state
-            .compute_unbonding_epoch(&self.body.validator_identity, self.body.start_epoch_index)
+        // If the validator delegation pool is bonded, or unbonding, we must
+        // check that the unbonding delay (measured in blocks) has elapsed.
+        let current_height = state.get_block_height().await?;
+
+        // Check if the unbonding height has been reached, it will always be the case if
+        // the validator delegation pool is unbonded.
+        let allowed_unbonding_height = state
+            .compute_unbonding_height(
+                &self.body.validator_identity,
+                self.body.unbonding_start_height,
+            )
             .await?;
 
+        let wait_blocks = allowed_unbonding_height.saturating_sub(current_height);
+
         ensure!(
-            current_epoch.index >= allowed_unbonding_epoch,
-            "cannot claim unbonding tokens before the end epoch (current epoch: {}, unbonding epoch: {})",
-            current_epoch.index,
-            allowed_unbonding_epoch
+            current_height >= allowed_unbonding_height,
+            "cannot claim unbonding tokens before height {} (currently at {}, wait {} blocks)",
+            allowed_unbonding_height,
+            current_height,
+            wait_blocks
         );
 
-        // Compute the penalty for the epoch range [start_epoch_index, unbonding_epoch], and check
+        let unbonding_epoch_start = state
+            .get_epoch_by_height(self.body.unbonding_start_height)
+            .await?;
+        let unbonding_epoch_end = state.get_epoch_by_height(allowed_unbonding_height).await?;
+
+        // Compute the penalty for the epoch range [unbonding_epoch_start, unbonding_epoch_end], and check
         // that it matches the penalty in the claim.
         let expected_penalty = state
             .compounded_penalty_over_range(
                 &self.body.validator_identity,
-                self.body.start_epoch_index,
-                allowed_unbonding_epoch,
+                unbonding_epoch_start.index,
+                unbonding_epoch_end.index,
             )
             .await?;
 
@@ -63,11 +80,9 @@ impl ActionHandler for UndelegateClaim {
             "penalty does not match expected penalty"
         );
 
-        // (end of former check_historical impl)
-
+        /* ---------- execution ----------- */
         // No state changes here - this action just converts one token to another
 
-        // TODO: where should we be tracking token supply changes?
         Ok(())
     }
 }

@@ -116,8 +116,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     /// Writes the current FMD parameters to the JMT.
     fn put_current_fmd_parameters(&mut self, params: fmd::Parameters) {
-        // MERGEBLOCK(erwan): read through the update mechanism for FMD params
-        // do we need to flag that shielded pool params were updated?
         self.put(fmd::state_key::parameters::current().into(), params)
     }
 

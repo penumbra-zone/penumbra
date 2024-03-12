@@ -60,7 +60,6 @@ impl AppParameters {
                 },
             stake_params:
                 StakeParameters {
-                    unbonding_epochs: _,
                     active_validator_limit,
                     base_reward_rate: _,
                     slashing_penalty_misbehavior: _,
@@ -68,6 +67,7 @@ impl AppParameters {
                     signed_blocks_window_len,
                     missed_blocks_maximum: _,
                     min_validator_stake: _,
+                    unbonding_delay: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -148,7 +148,6 @@ impl AppParameters {
                 },
             stake_params:
                 StakeParameters {
-                    unbonding_epochs,
                     active_validator_limit,
                     base_reward_rate,
                     slashing_penalty_misbehavior,
@@ -156,6 +155,7 @@ impl AppParameters {
                     signed_blocks_window_len,
                     missed_blocks_maximum,
                     min_validator_stake,
+                    unbonding_delay,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -167,8 +167,8 @@ impl AppParameters {
                 "epoch duration must be at least one block",
             ),
             (
-                *unbonding_epochs >= 1,
-                "unbonding must take at least one epoch",
+                *unbonding_delay >= epoch_duration * 2 + 1,
+                "unbonding must take at least two epochs",
             ),
             (
                 *active_validator_limit > 3,

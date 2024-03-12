@@ -147,6 +147,9 @@ impl serde::Serialize for BondingState {
         if self.unbonds_at_epoch != 0 {
             len += 1;
         }
+        if self.unbonds_at_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.BondingState", len)?;
         if self.state != 0 {
             let v = bonding_state::BondingStateEnum::try_from(self.state)
@@ -156,6 +159,10 @@ impl serde::Serialize for BondingState {
         if self.unbonds_at_epoch != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("unbondsAtEpoch", ToString::to_string(&self.unbonds_at_epoch).as_str())?;
+        }
+        if self.unbonds_at_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondsAtHeight", ToString::to_string(&self.unbonds_at_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -170,12 +177,15 @@ impl<'de> serde::Deserialize<'de> for BondingState {
             "state",
             "unbonds_at_epoch",
             "unbondsAtEpoch",
+            "unbonds_at_height",
+            "unbondsAtHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             State,
             UnbondsAtEpoch,
+            UnbondsAtHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -200,6 +210,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                         match value {
                             "state" => Ok(GeneratedField::State),
                             "unbondsAtEpoch" | "unbonds_at_epoch" => Ok(GeneratedField::UnbondsAtEpoch),
+                            "unbondsAtHeight" | "unbonds_at_height" => Ok(GeneratedField::UnbondsAtHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -221,6 +232,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
             {
                 let mut state__ = None;
                 let mut unbonds_at_epoch__ = None;
+                let mut unbonds_at_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::State => {
@@ -237,6 +249,14 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::UnbondsAtHeight => {
+                            if unbonds_at_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondsAtHeight"));
+                            }
+                            unbonds_at_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -245,6 +265,7 @@ impl<'de> serde::Deserialize<'de> for BondingState {
                 Ok(BondingState {
                     state: state__.unwrap_or_default(),
                     unbonds_at_epoch: unbonds_at_epoch__.unwrap_or_default(),
+                    unbonds_at_height: unbonds_at_height__.unwrap_or_default(),
                 })
             }
         }
@@ -1604,6 +1625,9 @@ impl serde::Serialize for StakeParameters {
         if self.min_validator_stake.is_some() {
             len += 1;
         }
+        if self.unbonding_delay != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.StakeParameters", len)?;
         if self.unbonding_epochs != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1636,6 +1660,10 @@ impl serde::Serialize for StakeParameters {
         if let Some(v) = self.min_validator_stake.as_ref() {
             struct_ser.serialize_field("minValidatorStake", v)?;
         }
+        if self.unbonding_delay != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingDelay", ToString::to_string(&self.unbonding_delay).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -1662,6 +1690,8 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             "missedBlocksMaximum",
             "min_validator_stake",
             "minValidatorStake",
+            "unbonding_delay",
+            "unbondingDelay",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1674,6 +1704,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
             SignedBlocksWindowLen,
             MissedBlocksMaximum,
             MinValidatorStake,
+            UnbondingDelay,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1704,6 +1735,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                             "signedBlocksWindowLen" | "signed_blocks_window_len" => Ok(GeneratedField::SignedBlocksWindowLen),
                             "missedBlocksMaximum" | "missed_blocks_maximum" => Ok(GeneratedField::MissedBlocksMaximum),
                             "minValidatorStake" | "min_validator_stake" => Ok(GeneratedField::MinValidatorStake),
+                            "unbondingDelay" | "unbonding_delay" => Ok(GeneratedField::UnbondingDelay),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1731,6 +1763,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                 let mut signed_blocks_window_len__ = None;
                 let mut missed_blocks_maximum__ = None;
                 let mut min_validator_stake__ = None;
+                let mut unbonding_delay__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::UnbondingEpochs => {
@@ -1795,6 +1828,14 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                             }
                             min_validator_stake__ = map_.next_value()?;
                         }
+                        GeneratedField::UnbondingDelay => {
+                            if unbonding_delay__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingDelay"));
+                            }
+                            unbonding_delay__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1809,6 +1850,7 @@ impl<'de> serde::Deserialize<'de> for StakeParameters {
                     signed_blocks_window_len: signed_blocks_window_len__.unwrap_or_default(),
                     missed_blocks_maximum: missed_blocks_maximum__.unwrap_or_default(),
                     min_validator_stake: min_validator_stake__,
+                    unbonding_delay: unbonding_delay__.unwrap_or_default(),
                 })
             }
         }
@@ -1835,6 +1877,9 @@ impl serde::Serialize for Undelegate {
         if self.delegation_amount.is_some() {
             len += 1;
         }
+        if self.from_epoch.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.Undelegate", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -1848,6 +1893,9 @@ impl serde::Serialize for Undelegate {
         }
         if let Some(v) = self.delegation_amount.as_ref() {
             struct_ser.serialize_field("delegationAmount", v)?;
+        }
+        if let Some(v) = self.from_epoch.as_ref() {
+            struct_ser.serialize_field("fromEpoch", v)?;
         }
         struct_ser.end()
     }
@@ -1867,6 +1915,8 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             "unbondedAmount",
             "delegation_amount",
             "delegationAmount",
+            "from_epoch",
+            "fromEpoch",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1875,6 +1925,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
             StartEpochIndex,
             UnbondedAmount,
             DelegationAmount,
+            FromEpoch,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1901,6 +1952,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "unbondedAmount" | "unbonded_amount" => Ok(GeneratedField::UnbondedAmount),
                             "delegationAmount" | "delegation_amount" => Ok(GeneratedField::DelegationAmount),
+                            "fromEpoch" | "from_epoch" => Ok(GeneratedField::FromEpoch),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1924,6 +1976,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                 let mut start_epoch_index__ = None;
                 let mut unbonded_amount__ = None;
                 let mut delegation_amount__ = None;
+                let mut from_epoch__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -1952,6 +2005,12 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                             }
                             delegation_amount__ = map_.next_value()?;
                         }
+                        GeneratedField::FromEpoch => {
+                            if from_epoch__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fromEpoch"));
+                            }
+                            from_epoch__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1962,6 +2021,7 @@ impl<'de> serde::Deserialize<'de> for Undelegate {
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     unbonded_amount: unbonded_amount__,
                     delegation_amount: delegation_amount__,
+                    from_epoch: from_epoch__,
                 })
             }
         }
@@ -2103,6 +2163,9 @@ impl serde::Serialize for UndelegateClaimBody {
         if self.balance_commitment.is_some() {
             len += 1;
         }
+        if self.unbonding_start_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.UndelegateClaimBody", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -2116,6 +2179,10 @@ impl serde::Serialize for UndelegateClaimBody {
         }
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
+        }
+        if self.unbonding_start_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -2134,6 +2201,8 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             "penalty",
             "balance_commitment",
             "balanceCommitment",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2142,6 +2211,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
             StartEpochIndex,
             Penalty,
             BalanceCommitment,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2168,6 +2238,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2191,6 +2262,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                 let mut start_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut balance_commitment__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -2219,6 +2291,14 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                             }
                             balance_commitment__ = map_.next_value()?;
                         }
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
+                            }
+                            unbonding_start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2229,6 +2309,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimBody {
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     balance_commitment: balance_commitment__,
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }
@@ -2264,6 +2345,9 @@ impl serde::Serialize for UndelegateClaimPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if self.unbonding_start_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.UndelegateClaimPlan", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -2290,6 +2374,10 @@ impl serde::Serialize for UndelegateClaimPlan {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
         }
+        if self.unbonding_start_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -2313,6 +2401,8 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2324,6 +2414,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
             BalanceBlinding,
             ProofBlindingR,
             ProofBlindingS,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2353,6 +2444,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                             "balanceBlinding" | "balance_blinding" => Ok(GeneratedField::BalanceBlinding),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2379,6 +2471,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                 let mut balance_blinding__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -2431,6 +2524,14 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
+                            }
+                            unbonding_start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2444,6 +2545,7 @@ impl<'de> serde::Deserialize<'de> for UndelegateClaimPlan {
                     balance_blinding: balance_blinding__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }

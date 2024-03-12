@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_num::Amount;
+use penumbra_sct::component::clock::EpochRead;
 
 use crate::{
     component::{validator_handler::ValidatorDataRead, StateWriteExt as _},
@@ -25,48 +26,16 @@ impl ActionHandler for Delegate {
         // move some of them back.
 
         let d = self;
-        let next_rate_data = state
-            .get_validator_rate(&d.validator_identity)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("unknown validator identity {}", d.validator_identity))?
-            .clone();
 
-        // Check whether the epoch is correct first, to give a more helpful
-        // error message if it's wrong.
-        if d.epoch_index != next_rate_data.epoch_index {
-            anyhow::bail!(
-                "delegation was prepared for epoch {} but the next epoch is {}",
-                d.epoch_index,
-                next_rate_data.epoch_index
-            );
-        }
-
-        // Check whether the delegation is allowed
-        // The delegation is allowed if:
-        // - the validator definition is "enabled" by the operator
-        // - the validator is not jailed or tombstoned
-        let validator = state
-            .get_validator_definition(&d.validator_identity)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
-        let validator_state = state
-            .get_validator_state(&d.validator_identity)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
-
-        if !validator.enabled {
-            anyhow::bail!(
-                "delegations are only allowed to enabled validators, but {} is disabled",
-                d.validator_identity,
-            );
-        }
-        if !matches!(validator_state, Defined | Inactive | Active) {
-            anyhow::bail!(
-                "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
-                d.validator_identity,
-                validator_state,
-            );
-        }
+        // We check if the rate data is for the current epoch to provide a helpful
+        // error message if there is a mismatch.
+        let current_epoch = state.get_current_epoch().await?;
+        ensure!(
+            d.epoch_index == current_epoch.index,
+            "delegation was prepared for epoch {} but the current epoch is {}",
+            d.epoch_index,
+            current_epoch.index
+        );
 
         // For delegations, we enforce correct computation (with rounding)
         // of the *delegation amount based on the unbonded amount*, because
@@ -82,25 +51,55 @@ impl ActionHandler for Delegate {
         //
         // should give approximately the same results, they may not give
         // exactly the same results.
-        let expected_delegation_amount = next_rate_data.delegation_amount(d.unbonded_amount);
+        let validator_rate = state
+            .get_validator_rate(&d.validator_identity)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("unknown validator identity {}", d.validator_identity))?
+            .clone();
 
-        if expected_delegation_amount != d.delegation_amount {
-            anyhow::bail!(
-                "given {} unbonded stake, expected {} delegation tokens but description produces {}",
-                d.unbonded_amount,
-                expected_delegation_amount,
-                d.delegation_amount
-            );
-        }
+        let expected_delegation_amount = validator_rate.delegation_amount(d.unbonded_amount);
+
+        ensure!(
+            expected_delegation_amount == d.delegation_amount,
+            "given {} unbonded stake, expected {} delegation tokens but description produces {}",
+            d.unbonded_amount,
+            expected_delegation_amount,
+            d.delegation_amount,
+        );
+
+        // The delegation is only allowed if both conditions are met:
+        // - the validator definition is `enabled` by the operator
+        // - the validator is not jailed or tombstoned
+        let validator = state
+            .get_validator_definition(&d.validator_identity)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("missing definition for validator"))?;
+        let validator_state = state
+            .get_validator_state(&d.validator_identity)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("missing state for validator"))?;
+
+        ensure!(
+            validator.enabled,
+            "delegations are only allowed to enabled validators, but {} is disabled",
+            d.validator_identity,
+        );
+
+        ensure!(
+            matches!(validator_state, Defined | Inactive | Active),
+            "delegations are only allowed to active or inactive validators, but {} is in state {:?}",
+            d.validator_identity,
+            validator_state,
+        );
 
         // (end of former check_historical checks)
 
         let validator = self.validator_identity;
         let unbonded_delegation = self.unbonded_amount;
+
         // This action is executed in two phases:
         // 1. We check if the self-delegation requirement is met.
         // 2. We queue the delegation for the next epoch.
-
         let validator_state = state
             .get_validator_state(&self.validator_identity)
             .await?

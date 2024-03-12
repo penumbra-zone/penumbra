@@ -5762,6 +5762,12 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.position_withdraws.is_empty() {
             len += 1;
         }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.epoch.is_some() {
+            len += 1;
+        }
         if self.fee_mode.is_some() {
             len += 1;
         }
@@ -5809,6 +5815,13 @@ impl serde::Serialize for TransactionPlannerRequest {
         if !self.position_withdraws.is_empty() {
             struct_ser.serialize_field("positionWithdraws", &self.position_withdraws)?;
         }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.epoch.as_ref() {
+            struct_ser.serialize_field("epoch", v)?;
+        }
         if let Some(v) = self.fee_mode.as_ref() {
             match v {
                 transaction_planner_request::FeeMode::AutoFee(v) => {
@@ -5851,6 +5864,9 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             "positionCloses",
             "position_withdraws",
             "positionWithdraws",
+            "epoch_index",
+            "epochIndex",
+            "epoch",
             "auto_fee",
             "autoFee",
             "manual_fee",
@@ -5873,6 +5889,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
             PositionOpens,
             PositionCloses,
             PositionWithdraws,
+            EpochIndex,
+            Epoch,
             AutoFee,
             ManualFee,
             __SkipField__,
@@ -5911,6 +5929,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             "positionOpens" | "position_opens" => Ok(GeneratedField::PositionOpens),
                             "positionCloses" | "position_closes" => Ok(GeneratedField::PositionCloses),
                             "positionWithdraws" | "position_withdraws" => Ok(GeneratedField::PositionWithdraws),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "epoch" => Ok(GeneratedField::Epoch),
                             "autoFee" | "auto_fee" => Ok(GeneratedField::AutoFee),
                             "manualFee" | "manual_fee" => Ok(GeneratedField::ManualFee),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -5946,6 +5966,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                 let mut position_opens__ = None;
                 let mut position_closes__ = None;
                 let mut position_withdraws__ = None;
+                let mut epoch_index__ = None;
+                let mut epoch__ = None;
                 let mut fee_mode__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -6035,6 +6057,20 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                             }
                             position_withdraws__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::Epoch => {
+                            if epoch__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epoch"));
+                            }
+                            epoch__ = map_.next_value()?;
+                        }
                         GeneratedField::AutoFee => {
                             if fee_mode__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("autoFee"));
@@ -6069,6 +6105,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerRequest {
                     position_opens: position_opens__.unwrap_or_default(),
                     position_closes: position_closes__.unwrap_or_default(),
                     position_withdraws: position_withdraws__.unwrap_or_default(),
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    epoch: epoch__,
                     fee_mode: fee_mode__,
                 })
             }

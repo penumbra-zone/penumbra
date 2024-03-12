@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.stake.v1;
 
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
 
@@ -67,7 +68,7 @@ message FundingStream {
 // Describes the reward and exchange rates and voting power for a validator in some epoch.
 message RateData {
   keys.v1.IdentityKey identity_key = 1;
-  uint64 epoch_index = 2;
+  uint64 epoch_index = 2 [deprecated = true];
   num.v1.Amount validator_reward_rate = 4;
   num.v1.Amount validator_exchange_rate = 5;
 }
@@ -96,7 +97,8 @@ message BondingState {
     BONDING_STATE_ENUM_UNBONDED = 3;
   }
   BondingStateEnum state = 1;
-  uint64 unbonds_at_epoch = 2;
+  uint64 unbonds_at_epoch = 2 [deprecated = true];
+  uint64 unbonds_at_height = 3;
 }
 
 // Describes the state of a validator
@@ -151,7 +153,7 @@ message Undelegate {
   // The identity key of the validator to undelegate from.
   keys.v1.IdentityKey validator_identity = 1;
   // The index of the epoch in which this undelegation was performed.
-  uint64 start_epoch_index = 2;
+  uint64 start_epoch_index = 2 [deprecated = true];
   // The amount to undelegate, in units of unbonding tokens.
   num.v1.Amount unbonded_amount = 3;
   // The amount of delegation tokens consumed by this action.
@@ -160,6 +162,8 @@ message Undelegate {
   // (and should be checked in transaction validation!), but including it allows
   // stateless verification that the transaction is internally consistent.
   num.v1.Amount delegation_amount = 4;
+  // The epoch in which this delegation was performed.
+  penumbra.core.component.sct.v1.Epoch from_epoch = 5;
 }
 
 // A transaction action finishing an undelegation, converting (slashable)
@@ -173,19 +177,21 @@ message UndelegateClaimBody {
   // The identity key of the validator to finish undelegating from.
   keys.v1.IdentityKey validator_identity = 1;
   // The epoch in which unbonding began, used to verify the penalty.
-  uint64 start_epoch_index = 2;
+  uint64 start_epoch_index = 2 [deprecated = true];
   // The penalty applied to undelegation, in bps^2 (10e-8).
   // In the happy path (no slashing), this is 0.
   Penalty penalty = 3;
   // The action's contribution to the transaction's value balance.
   asset.v1.BalanceCommitment balance_commitment = 4;
+  /// The starting height of the epoch during which unbonding began.
+  uint64 unbonding_start_height = 5;
 }
 
 message UndelegateClaimPlan {
   // The identity key of the validator to finish undelegating from.
   keys.v1.IdentityKey validator_identity = 1;
   // The epoch in which unbonding began, used to verify the penalty.
-  uint64 start_epoch_index = 2;
+  uint64 start_epoch_index = 2 [deprecated = true];
   // The penalty applied to undelegation, in bps^2 (10e-8).
   // In the happy path (no slashing), this is 0.
   Penalty penalty = 4;
@@ -198,6 +204,8 @@ message UndelegateClaimPlan {
   bytes proof_blinding_r = 7;
   // The second blinding factor to use for the ZK undelegate claim proof.
   bytes proof_blinding_s = 8;
+  // The height during which unbonding began.
+  uint64 unbonding_start_height = 9;
 }
 
 // A list of pending delegations and undelegations.
@@ -273,7 +281,7 @@ message CurrentValidatorRateResponse {
 // Staking configuration data.
 message StakeParameters {
   // The number of epochs an unbonding note for before being released.
-  uint64 unbonding_epochs = 1;
+  uint64 unbonding_epochs = 1 [deprecated = true];
   // The maximum number of validators in the consensus set.
   uint64 active_validator_limit = 2;
   // The base reward rate, expressed in basis points of basis points
@@ -288,6 +296,8 @@ message StakeParameters {
   uint64 missed_blocks_maximum = 7;
   // The minimum amount of stake required for a validator to be indexed by the protocol.
   num.v1.Amount min_validator_stake = 8;
+  // The number of blocks that must elapse before an unbonding note can be claimed.
+  uint64 unbonding_delay = 9;
 }
 
 // Genesis data for the staking component.

@@ -546,19 +546,31 @@ impl TxCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
-                let rate_data: RateData = client
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let rate_data: RateData = stake_client
                     .current_validator_rate(tonic::Request::new(to.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
+
+                let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
+                let latest_sync_height = app.view().status().await?.full_sync_height;
+                let epoch = sct_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: latest_sync_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .expect("epoch must be available")
+                    .into();
 
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .delegate(unbonded_amount, rate_data)
+                    .delegate(epoch, unbonded_amount, rate_data)
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
@@ -588,12 +600,24 @@ impl TxCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
-                let rate_data: RateData = client
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let rate_data: RateData = stake_client
                     .current_validator_rate(tonic::Request::new(from.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
+
+                let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
+                let latest_sync_height = app.view().status().await?.full_sync_height;
+                let epoch = sct_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: latest_sync_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .expect("epoch must be available")
+                    .into();
 
                 let mut planner = Planner::new(OsRng);
                 planner
@@ -601,7 +625,7 @@ impl TxCmd {
                     .set_fee_tier((*fee_tier).into());
 
                 let plan = planner
-                    .undelegate(delegation_value.amount, rate_data)
+                    .undelegate(epoch, delegation_value.amount, rate_data)
                     .plan(
                         app.view
                             .as_mut()
@@ -651,15 +675,26 @@ impl TxCmd {
                         })
                     {
                         println!("claiming {}", token.denom().default_unit());
+
                         let validator_identity = token.validator();
-                        let start_epoch_index = token.start_epoch_index();
+                        let unbonding_start_height = token.unbonding_start_height();
                         let end_epoch_index = current_epoch.index;
 
-                        let mut client = StakeQueryServiceClient::new(channel.clone());
-                        let penalty: Penalty = client
+                        let mut sct_client = SctQueryServiceClient::new(channel.clone());
+                        let epoch_start = sct_client
+                            .epoch_by_height(EpochByHeightRequest {
+                                height: unbonding_start_height,
+                            })
+                            .await?
+                            .into_inner()
+                            .epoch
+                            .context("unable to get epoch for unbonding start height")?;
+
+                        let mut stake_client = StakeQueryServiceClient::new(channel.clone());
+                        let penalty: Penalty = stake_client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
                                 identity_key: Some(validator_identity.into()),
-                                start_epoch_index,
+                                start_epoch_index: epoch_start.index,
                                 end_epoch_index,
                             }))
                             .await?
@@ -685,7 +720,7 @@ impl TxCmd {
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
-                                start_epoch_index,
+                                unbonding_start_height,
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),

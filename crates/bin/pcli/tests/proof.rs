@@ -426,8 +426,8 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
         let validator_identity = IdentityKey((&sk).into());
         let unbonding_amount = Amount::from(value1_amount);
 
-        let start_epoch_index = 1;
-        let unbonding_token = UnbondingToken::new(validator_identity, start_epoch_index);
+        let start_height = 1;
+        let unbonding_token = UnbondingToken::new(validator_identity, start_height);
         let unbonding_id = unbonding_token.id();
         let penalty = Penalty::from_bps_squared(penalty_amount);
         let balance = penalty.balance_for_claim(unbonding_id, unbonding_amount);

@@ -13,10 +13,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::StreamExt as _;
 use penumbra_num::Amount;
-use penumbra_sct::{
-    component::clock::{EpochManager, EpochRead},
-    epoch::Epoch,
-};
+use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
@@ -134,9 +131,13 @@ pub trait ValidatorManager: StateWrite {
     ) -> Result<()> {
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
-        // We use the current epoch index to compute the unbonding epoch for the validator,
-        // when necessary.
-        let current_epoch = self.get_current_epoch().await?;
+        // Using the start height of the current epoch let us do block based unbonding delays without
+        // requiring to bind actions to a specific block height (instead they bind to a whole epoch).
+        let unbonding_start_height = {
+            // We scope it strictly to avoid accidentally using the wrong height.
+            let current_height = self.get_block_height().await?;
+            self.get_epoch_by_height(current_height).await?.start_height
+        };
 
         tracing::debug!("trying to execute a state transition");
 
@@ -187,8 +188,8 @@ pub trait ValidatorManager: StateWrite {
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
-                        unbonds_at_epoch: self
-                            .compute_unbonding_epoch(identity_key, current_epoch.index)
+                        unbonds_at_height: self
+                            .compute_unbonding_height(identity_key, unbonding_start_height)
                             .await?,
                     },
                 );
@@ -205,17 +206,19 @@ pub trait ValidatorManager: StateWrite {
                 self.record_slashing_penalty(identity_key, Penalty::from_bps_squared(penalty))
                     .await;
 
-                // The validator's delegation pool begins unbonding.
-                let unbonds_at_epoch = self
-                    .compute_unbonding_epoch(identity_key, current_epoch.index)
+                // The validator's delegation pool begins unbonding.  Jailed
+                // validators are not unbonded immediately, because they need to
+                // be held accountable for byzantine behavior for the entire
+                // unbonding period.
+                let unbonds_at_height = self
+                    .compute_unbonding_height(identity_key, unbonding_start_height)
                     .await?;
 
-                // Note: `Jailed` validators are not unbonded immediately, so that they
-                // can be held accountable for byzantine behavior.
-                self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_epoch });
+                self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_height });
 
-                tracing::debug!(penalty, unbonds_at_epoch, "jailed validator");
+                tracing::debug!(penalty, unbonds_at_height, "jailed validator");
             }
+
             (Defined | Disabled | Inactive | Active | Jailed, Tombstoned) => {
                 // When we detect byzantine misbehavior from a validator, we:
                 // 1. Record the maximum slashing penalty for the corresponding pool
@@ -367,9 +370,8 @@ pub trait ValidatorManager: StateWrite {
     ) -> Result<()> {
         let initial_validator_rate = RateData {
             identity_key: validator.identity_key.clone(),
-            epoch_index: genesis_base_rate.epoch_index,
-            validator_reward_rate: 0u128.into(),
-            validator_exchange_rate: 1_0000_0000u128.into(), // 1 represented as 1e8
+            validator_reward_rate: genesis_base_rate.base_reward_rate.clone(),
+            validator_exchange_rate: genesis_base_rate.base_exchange_rate.clone(),
         };
         // The initial allocations to the validator are specified in `genesis_allocations`.
         // In this case, the validator's delegation pool size is exactly its allocation
@@ -574,22 +576,22 @@ pub trait ValidatorManager: StateWrite {
     async fn process_validator_pool_state(
         &mut self,
         validator_identity: &IdentityKey,
-        at_epoch: Epoch,
+        from_height: u64,
     ) -> Result<()> {
         let pool_state = self.get_validator_bonding_state(validator_identity).await;
 
         // If the pool is already unbonded, this will return the current epoch.
-        let unbonding_epoch_target = self
-            .compute_unbonding_epoch(validator_identity, at_epoch.index)
+        let allowed_unbonding_height = self
+            .compute_unbonding_height(validator_identity, from_height)
             .await?;
 
         tracing::debug!(
-            validator_identity = %validator_identity,
             ?pool_state,
-            ?unbonding_epoch_target,
-            "processing validator pool state");
+            ?allowed_unbonding_height,
+            "processing validator pool state"
+        );
 
-        if at_epoch.index >= unbonding_epoch_target {
+        if from_height >= allowed_unbonding_height {
             // The validator's delegation pool has finished unbonding, so we
             // transition it to the Unbonded state.
             let _ = self
