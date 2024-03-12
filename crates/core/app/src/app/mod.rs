@@ -372,9 +372,11 @@ impl App {
         Ok(state_tx.apply().1)
     }
 
+    #[tracing::instrument(skip_all, fields(height = %end_block.height))]
     pub async fn end_block(&mut self, end_block: &request::EndBlock) -> Vec<abci::Event> {
         let state_tx = StateDelta::new(self.state.clone());
 
+        tracing::debug!("running app components' `end_block` hooks");
         let mut arc_state_tx = Arc::new(state_tx);
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
@@ -387,6 +389,7 @@ impl App {
         Funding::end_block(&mut arc_state_tx, end_block).await;
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
+        tracing::debug!("finished app components' `end_block` hooks");
 
         // Validate governance proposals here. We must do this here because proposals can affect
         // the entirety of application state, and the governance component does not have access to
