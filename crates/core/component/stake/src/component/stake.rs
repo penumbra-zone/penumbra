@@ -157,7 +157,10 @@ impl Component for Staking {
             .get_current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
-        state.end_epoch(epoch_ending).await?;
+        state
+            .end_epoch(epoch_ending)
+            .await
+            .context("should be able to write end_epoch")?;
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
