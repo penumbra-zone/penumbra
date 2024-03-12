@@ -4,7 +4,6 @@
 
 use {
     crate::TestNode,
-    anyhow::bail,
     tap::Tap,
     tendermint::{
         account,
@@ -25,7 +24,7 @@ pub struct Builder<'e, C> {
     test_node: &'e mut TestNode<C>,
 
     /// Transaction data.
-    data: Option<Vec<Vec<u8>>>,
+    data: Vec<Vec<u8>>,
 
     /// Evidence of malfeasance.
     evidence: evidence::List,
@@ -47,10 +46,13 @@ impl<C> TestNode<C> {
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
     pub fn with_data(self, data: Vec<Vec<u8>>) -> Self {
-        Self {
-            data: Some(data),
-            ..self
-        }
+        Self { data, ..self }
+    }
+
+    /// Appends the given tx to this block's data.
+    pub fn add_tx(mut self, tx: Vec<u8>) -> Self {
+        self.data.push(tx);
+        self
     }
 
     /// Sets the evidence [`List`][evidence::List] for this block.
@@ -112,13 +114,10 @@ where
     fn finish(self) -> Result<(&'e mut TestNode<C>, Block), anyhow::Error> {
         tracing::trace!("building block");
         let Self {
-            data: Some(data),
+            data,
             evidence,
             test_node,
-        } = self
-        else {
-            bail!("builder was not fully initialized")
-        };
+        } = self;
 
         let height = {
             let height = test_node.height.increment();
