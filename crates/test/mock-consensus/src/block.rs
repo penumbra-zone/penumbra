@@ -49,6 +49,12 @@ impl<'e, C> Builder<'e, C> {
         Self { data, ..self }
     }
 
+    /// Appends the given tx to this block's data.
+    pub fn add_tx(mut self, tx: Vec<u8>) -> Self {
+        self.data.push(tx);
+        self
+    }
+
     /// Sets the evidence [`List`][evidence::List] for this block.
     pub fn with_evidence(self, evidence: evidence::List) -> Self {
         Self { evidence, ..self }
