@@ -1,9 +1,6 @@
 use decaf377::{FieldExt, Fq};
 use penumbra_asset::{Balance, Value};
-use penumbra_keys::{
-    keys::{IncomingViewingKey, NullifierKey},
-    FullViewingKey,
-};
+use penumbra_keys::{keys::IncomingViewingKey, FullViewingKey};
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
 use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use penumbra_sct::Nullifier;
@@ -44,7 +41,7 @@ impl SwapClaimPlan {
     ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            proof: self.swap_claim_proof(state_commitment_proof, fvk.nullifier_key()),
+            proof: self.swap_claim_proof(state_commitment_proof, fvk),
             epoch_duration: self.epoch_duration,
         }
     }
@@ -54,7 +51,7 @@ impl SwapClaimPlan {
     pub fn swap_claim_proof(
         &self,
         state_commitment_proof: &tct::Proof,
-        nk: &NullifierKey,
+        fvk: &FullViewingKey,
     ) -> SwapClaimProof {
         let (lambda_1, lambda_2) = self
             .output_data
@@ -66,8 +63,11 @@ impl SwapClaimPlan {
         let note_commitment_1 = output_1_note.commit();
         let note_commitment_2 = output_2_note.commit();
 
-        let nullifier =
-            Nullifier::derive(nk, self.position, &self.swap_plaintext.swap_commitment());
+        let nullifier = Nullifier::derive(
+            fvk.nullifier_key(),
+            self.position,
+            &self.swap_plaintext.swap_commitment(),
+        );
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
@@ -83,7 +83,8 @@ impl SwapClaimPlan {
             SwapClaimProofPrivate {
                 swap_plaintext: self.swap_plaintext.clone(),
                 state_commitment_proof: state_commitment_proof.clone(),
-                nk: *nk,
+                nk: *fvk.nullifier_key(),
+                ak: *fvk.spend_verification_key(),
                 lambda_1,
                 lambda_2,
                 note_blinding_1,
