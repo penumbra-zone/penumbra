@@ -388,9 +388,9 @@ impl App {
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
-        // Since governance proposals can affect the entirety of application state, and the
-        // governance component does not have access to the types defined in this crate so we need
-        // to handle validating them here.
+        // Validate governance proposals here. We must do this here because proposals can affect
+        // the entirety of application state, and the governance component does not have access to
+        // the types defined in this crate.
         //
         // If a proposal was passed in this block, then `schedule_app_params_change` was called
         // which will set `next_block_pending_app_parameters`.
