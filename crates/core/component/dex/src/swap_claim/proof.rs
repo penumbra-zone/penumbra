@@ -7,7 +7,11 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{r1cs::FqVar, Bls12_377, Fq};
+use decaf377::{
+    r1cs::{ElementVar, FqVar},
+    Bls12_377, Fq,
+};
+use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
 use penumbra_tct as tct;
@@ -17,7 +21,10 @@ use penumbra_asset::{
     asset::{self, Id},
     Value, ValueVar,
 };
-use penumbra_keys::keys::{Bip44Path, NullifierKey, NullifierKeyVar, SeedPhrase, SpendKey};
+use penumbra_keys::keys::{
+    AuthorizationKeyVar, Bip44Path, IncomingViewingKeyVar, NullifierKey, NullifierKeyVar,
+    SeedPhrase, SpendKey,
+};
 use penumbra_num::{Amount, AmountVar};
 use penumbra_sct::{Nullifier, NullifierVar};
 use penumbra_shielded_pool::{
@@ -59,6 +66,8 @@ pub struct SwapClaimProofPrivate {
     pub swap_plaintext: SwapPlaintext,
     /// Inclusion proof for the swap commitment
     pub state_commitment_proof: tct::Proof,
+    /// The spend verification key
+    pub ak: VerificationKey<SpendAuth>,
     // The nullifier deriving key for the Swap NFT note.
     pub nk: NullifierKey,
     /// Output amount 1
@@ -76,6 +85,8 @@ fn check_satisfaction(
     public: &SwapClaimProofPublic,
     private: &SwapClaimProofPrivate,
 ) -> Result<()> {
+    use penumbra_keys::FullViewingKey;
+
     let swap_commitment = private.swap_plaintext.swap_commitment();
     if swap_commitment != private.state_commitment_proof.commitment() {
         anyhow::bail!("swap commitment integrity check failed");
@@ -91,6 +102,22 @@ fn check_satisfaction(
     if nullifier != public.nullifier {
         anyhow::bail!("nullifier did not match public input");
     }
+
+    let fvk = FullViewingKey::from_components(private.ak, private.nk);
+    let ivk = fvk.incoming();
+    let transmission_key = ivk.diversified_public(private.swap_plaintext.diversified_generator());
+    anyhow::ensure!(
+        transmission_key == *private.swap_plaintext.transmission_key(),
+        "transmission key did not match swap plaintext"
+    );
+    anyhow::ensure!(
+        !private.swap_plaintext.diversified_generator().is_identity(),
+        "diversified generator is identity"
+    );
+    anyhow::ensure!(
+        !private.ak.is_identity(),
+        "diversified generator is identity"
+    );
 
     if private.swap_plaintext.claim_fee != public.claim_fee {
         anyhow::bail!("claim fee did not match public input");
@@ -176,6 +203,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof)
         })?;
+        let ak_var = AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
         let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_1))?;
         let lambda_2_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_2))?;
@@ -210,6 +238,18 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         // Nullifier integrity.
         let nullifier_var = NullifierVar::derive(&nk_var, &position_var, &claimed_swap_commitment)?;
         nullifier_var.enforce_equal(&claimed_nullifier_var)?;
+
+        // Connection between nullifier key and address
+        let ivk = IncomingViewingKeyVar::derive(&nk_var, &ak_var)?;
+        let computed_transmission_key =
+            ivk.diversified_public(&swap_plaintext_var.claim_address.diversified_generator)?;
+        computed_transmission_key
+            .enforce_equal(&swap_plaintext_var.claim_address.transmission_key)?;
+        // Check the diversified base is not identity.
+        let identity = ElementVar::new_constant(cs.clone(), decaf377::Element::default())?;
+        identity.enforce_not_equal(&swap_plaintext_var.claim_address.diversified_generator)?;
+        // Check the ak is not identity.
+        identity.enforce_not_equal(&ak_var.inner)?;
 
         // Fee consistency check.
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
@@ -281,6 +321,7 @@ impl DummyWitness for SwapClaimCircuit {
         let fvk_sender = sk_sender.full_viewing_key();
         let ivk_sender = fvk_sender.incoming();
         let (address, _dtk_d) = ivk_sender.payment_address(0u32.into());
+        let ak = *fvk_sender.spend_verification_key();
         let nk = *sk_sender.nullifier_key();
 
         let delta_1_i = 10u64.into();
@@ -338,6 +379,7 @@ impl DummyWitness for SwapClaimCircuit {
             swap_plaintext,
             state_commitment_proof,
             nk,
+            ak,
             lambda_1,
             lambda_2,
             note_blinding_1,
@@ -561,6 +603,7 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
         let nk = *sk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -621,6 +664,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,
@@ -691,6 +735,7 @@ mod tests {
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
         let nk = *sk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -751,6 +796,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,
@@ -779,7 +825,8 @@ mod tests {
         let fvk_recipient = sk_recipient.full_viewing_key();
         let ivk_recipient = fvk_recipient.incoming();
         let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
-        let nk = *sk_recipient.nullifier_key();
+        let nk = *fvk_recipient.nullifier_key();
+        let ak = *fvk_recipient.spend_verification_key();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -849,6 +896,7 @@ mod tests {
         let private = SwapClaimProofPrivate {
             swap_plaintext,
             state_commitment_proof,
+            ak,
             nk,
             lambda_1,
             lambda_2,

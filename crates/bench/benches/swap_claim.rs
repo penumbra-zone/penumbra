@@ -32,6 +32,7 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let ivk_recipient = fvk_recipient.incoming();
     let (claim_address, _dtk_d) = ivk_recipient.payment_address(0u32.into());
     let nk = *sk_recipient.nullifier_key();
+    let ak = *fvk_recipient.spend_verification_key();
 
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -91,6 +92,7 @@ fn swap_claim_proving_time(c: &mut Criterion) {
     let private = SwapClaimProofPrivate {
         swap_plaintext,
         state_commitment_proof,
+        ak,
         nk,
         lambda_1,
         lambda_2,
