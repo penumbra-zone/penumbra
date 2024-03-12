@@ -461,11 +461,19 @@ pub trait RateDataWrite: StateWrite {
         );
     }
 
+    #[tracing::instrument(
+        level = "trace",
+        skip_all,
+        fields(
+            %height,
+            delegations = ?changes.delegations,
+            undelegations = ?changes.undelegations,
+        )
+    )]
     async fn set_delegation_changes(&mut self, height: block::Height, changes: DelegationChanges) {
-        self.put(
-            state_key::chain::delegation_changes::by_height(height.value()),
-            changes,
-        );
+        let key = state_key::chain::delegation_changes::by_height(height.value());
+        tracing::trace!(%key, "setting delegation changes");
+        self.put(key, changes);
     }
 }
 
