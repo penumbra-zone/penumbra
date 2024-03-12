@@ -32,19 +32,19 @@ pub use component::{StateReadExt, StateWriteExt};
 pub static BPS_SQUARED_SCALING_FACTOR: once_cell::sync::Lazy<penumbra_num::fixpoint::U128x128> =
     once_cell::sync::Lazy::new(|| 1_0000_0000u128.into());
 
-pub use delegate::Delegate;
-pub use undelegate::Undelegate;
-pub use undelegate_claim::{
+pub use self::delegate::Delegate;
+pub use self::undelegate::Undelegate;
+pub use self::undelegate_claim::{
     UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan, UndelegateClaimProof,
 };
 
-pub use delegation_token::DelegationToken;
-pub use governance_key::GovernanceKey;
-pub use identity_key::IdentityKey;
-pub use penalty::Penalty;
-pub use unbonding_token::UnbondingToken;
+pub use self::delegation_token::DelegationToken;
+pub use self::governance_key::GovernanceKey;
+pub use self::identity_key::IdentityKey;
+pub use self::penalty::Penalty;
+pub use self::unbonding_token::UnbondingToken;
 
-pub use changes::DelegationChanges;
-pub use current_consensus_keys::CurrentConsensusKeys;
-pub use funding_stream::{FundingStream, FundingStreams};
-pub use uptime::Uptime;
+pub use self::changes::DelegationChanges;
+pub use self::current_consensus_keys::CurrentConsensusKeys;
+pub use self::funding_stream::{FundingStream, FundingStreams};
+pub use self::uptime::Uptime;
