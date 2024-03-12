@@ -133,18 +133,19 @@ impl Component for Staking {
             .expect("should be able to track uptime");
     }
 
+    /// Writes the delegation changes for this block.
     #[instrument(name = "staking", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
         let state = Arc::get_mut(state).expect("state should be unique");
-        // Write the delegation changes for this block.
         let height = end_block
             .height
             .try_into()
             .expect("should be able to convert i64 into block height");
         let changes = state.get_delegation_changes_tally();
+
         state.set_delegation_changes(height, changes).await;
     }
 
