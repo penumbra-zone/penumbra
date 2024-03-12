@@ -5,7 +5,12 @@
 
 mod changes;
 mod current_consensus_keys;
+mod delegation_token;
 mod event;
+mod governance_key;
+mod identity_key;
+mod penalty;
+mod unbonding_token;
 mod uptime;
 
 #[cfg(feature = "component")]
@@ -31,12 +36,6 @@ pub use undelegate::Undelegate;
 pub use undelegate_claim::{
     UndelegateClaim, UndelegateClaimBody, UndelegateClaimPlan, UndelegateClaimProof,
 };
-
-mod delegation_token;
-mod governance_key;
-mod identity_key;
-mod penalty;
-mod unbonding_token;
 
 pub use delegation_token::DelegationToken;
 pub use governance_key::GovernanceKey;
