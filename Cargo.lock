@@ -4710,6 +4710,7 @@ dependencies = [
  "penumbra-shielded-pool",
  "penumbra-stake",
  "penumbra-tct",
+ "penumbra-tendermint-proxy",
  "penumbra-tower-trace",
  "penumbra-transaction",
  "penumbra-txhash",
@@ -4731,12 +4732,15 @@ dependencies = [
  "tokio",
  "tokio-util 0.7.10",
  "tonic",
+ "tonic-reflection",
+ "tonic-web",
  "tower",
  "tower-abci",
  "tower-actor",
  "tower-service",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
