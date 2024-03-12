@@ -94,6 +94,10 @@ async fn spend_happy_path() -> anyhow::Result<()> {
 // PoC for issue surfaced in zellic audit: https://github.com/penumbra-zone/penumbra/issues/3859
 // test that 0-value spends with invalid proofs are not accepted
 #[tokio::test]
+// Arkworks uses debug assertions that trigger if a constraint system is not satisfied.
+// This is a bit annoying because this gets in the way of testing bad dummy spends.
+// Indeed, this test passes when run in release-mode but panics in debug mode.
+// We need the config attribute below:
 #[cfg_attr(
     debug_assertions,
     should_panic = "assertion failed: cs.is_satisfied().unwrap()"
@@ -188,12 +192,12 @@ async fn invalid_dummy_spend() {
     };
 
     // 3. Simulate execution of the Spend action
-    spend
+    assert!(spend
         .check_stateless(transaction_context)
         .await
         .unwrap_err()
         .to_string()
-        .contains("spend proof did not verify");
+        .contains("spend proof did not verify"));
 }
 
 /*
