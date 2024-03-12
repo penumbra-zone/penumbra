@@ -20,7 +20,7 @@ use {
     },
     rand_core::OsRng,
     tap::Tap,
-    tracing::{error_span, info, Instrument},
+    tracing::info,
 };
 
 /// Exercises that a test node can be instantiated using the consensus service.
@@ -83,29 +83,12 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
     let storage = TempStorage::new().await?;
     let mut test_node = common::start_test_node(&storage).await?;
 
-    // Check that we begin at height 0, before any blocks have been generated.
-    assert_eq!(
-        storage.latest_snapshot().get_block_height().await?,
-        0,
-        "height should begin at 0"
-    );
+    let height = || async { storage.latest_snapshot().get_block_height().await };
 
-    for expected in 1..=8 {
-        // Generate an empty block.
-        test_node
-            .block()
-            .with_data(vec![])
-            .execute()
-            .instrument(error_span!("executing block", %expected))
-            .await?;
-
-        // Check that the latest snapshot has the expected block height.
-        let height = storage.latest_snapshot().get_block_height().await?;
-        assert_eq!(
-            height, expected,
-            "height should continue to incrementally grow"
-        );
-    }
+    // Fast forward eight blocks, and show that the height is 8 after doing so.
+    assert_eq!(height().await?, 0, "height should begin at 0");
+    test_node.fast_forward(8).await?;
+    assert_eq!(height().await?, 8_u64, "height should grow");
 
     // Free our temporary storage.
     drop(storage);

@@ -40,3 +40,42 @@ impl<C> TestNode<C> {
         format!("{:02X?}", self.last_app_hash)
     }
 }
+
+impl<C> TestNode<C>
+where
+    C: tower::Service<
+            tendermint::v0_37::abci::ConsensusRequest,
+            Response = tendermint::v0_37::abci::ConsensusResponse,
+            Error = tower::BoxError,
+        > + Send
+        + Clone
+        + 'static,
+    C::Future: Send + 'static,
+    C::Error: Sized,
+{
+    /// Fast forwards a number of blocks.
+    #[tracing::instrument(
+        skip(self),
+        fields(
+            height = %self.height,
+            fast_forward.blocks = %blocks,
+        )
+    )]
+    pub async fn fast_forward(&mut self, blocks: usize) -> anyhow::Result<()> {
+        use {
+            tap::Tap,
+            tracing::{info, trace},
+        };
+
+        for i in 0..blocks {
+            self.block()
+                .with_data(vec![])
+                .execute()
+                .tap(|_| trace!(%i, "executing empty block"))
+                .await
+                .tap(|_| trace!(%i, "finished executing empty block"))?;
+        }
+
+        Ok(()).tap(|_| info!("finished fast forward"))
+    }
+}
