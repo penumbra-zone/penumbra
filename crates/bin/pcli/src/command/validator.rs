@@ -20,17 +20,26 @@ use penumbra_proto::{
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
-    FundingStream, FundingStreams, GovernanceKey, IdentityKey,
+    FundingStream, FundingStreams, IdentityKey,
 };
 use penumbra_wallet::plan;
 
-use crate::{config::CustodyConfig, App};
+use crate::{
+    config::{CustodyConfig, GovernanceCustodyConfig},
+    App,
+};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
     /// Display the validator identity key derived from this wallet's spend seed.
     Identity {
         /// Use Base64 encoding for the identity key, rather than the default of Bech32.
+        #[clap(long)]
+        base64: bool,
+    },
+    /// Display the validator's governance subkey derived from this wallet's governance seed.
+    GovernanceKey {
+        /// Use Base64 encoding for the governance key, rather than the default of Bech32.
         #[clap(long)]
         base64: bool,
     },
@@ -125,7 +134,7 @@ pub enum DefinitionCmd {
         #[clap(short = 'k', long)]
         tendermint_validator_keyfile: Option<camino::Utf8PathBuf>,
     },
-    /// Fetches the definition for your validator.
+    /// Fetches the definition for your validator
     Fetch {
         /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
@@ -137,6 +146,7 @@ impl ValidatorCmd {
     pub fn offline(&self) -> bool {
         match self {
             ValidatorCmd::Identity { .. } => true,
+            ValidatorCmd::GovernanceKey { .. } => true,
             ValidatorCmd::Definition(
                 DefinitionCmd::Template { .. } | DefinitionCmd::Sign { .. },
             ) => true,
@@ -161,6 +171,16 @@ impl ValidatorCmd {
                     println!("{}", Base64Display::new(&ik.0.to_bytes(), &STANDARD));
                 } else {
                     println!("{ik}");
+                }
+            }
+            ValidatorCmd::GovernanceKey { base64 } => {
+                let gk = app.config.governance_key();
+
+                if *base64 {
+                    use base64::{display::Base64Display, engine::general_purpose::STANDARD};
+                    println!("{}", Base64Display::new(&gk.0.to_bytes(), &STANDARD));
+                } else {
+                    println!("{gk}");
                 }
             }
             ValidatorCmd::Definition(DefinitionCmd::Sign {
@@ -250,7 +270,9 @@ impl ValidatorCmd {
                     let sk = match &app.config.custody {
                         CustodyConfig::SoftKms(config) => config.spend_key.clone(),
                         _ => {
-                            anyhow::bail!("local validator definition signing currently requires SoftKMS backend");
+                            anyhow::bail!(
+                                    "local validator definition signing currently requires SoftKMS backend"
+                                );
                         }
                     };
                     sk.spend_auth_key().sign(OsRng, &v_bytes)
@@ -283,10 +305,7 @@ impl ValidatorCmd {
                 signature_file,
             }) => {
                 let identity_key = IdentityKey(fvk.spend_verification_key().clone());
-
-                // Currently this is always just copied from the identity key
-                // TODO: support a separate governance key
-                let governance_key = GovernanceKey(identity_key.0);
+                let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
 
@@ -303,12 +322,20 @@ impl ValidatorCmd {
                     reason: ValidatorVoteReason(reason.clone()),
                 };
 
-                // TODO: support signing with a separate governance key rather than the spend auth key
-                let sk = match &app.config.custody {
-                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                    _ => {
+                // TODO: use the custody abstraction to sign
+                let sk = match &app.config.governance_custody {
+                    None => match &app.config.custody {
+                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                        _ => {
+                            anyhow::bail!(
+                                "local validator definition signing currently requires SoftKMS backend"
+                            );
+                        }
+                    },
+                    Some(GovernanceCustodyConfig::SoftKms(config)) => config.spend_key.clone(),
+                    Some(_) => {
                         anyhow::bail!(
-                            "local validator vote signing currently requires SoftKMS backend"
+                            "local validator definition signing currently requires SoftKMS backend"
                         );
                     }
                 };
@@ -346,10 +373,7 @@ impl ValidatorCmd {
                 signature,
             }) => {
                 let identity_key = IdentityKey(fvk.spend_verification_key().clone());
-
-                // Currently this is always just copied from the identity key
-                // TODO: support a separate governance key
-                let governance_key = GovernanceKey(identity_key.0);
+                let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
 
@@ -383,13 +407,21 @@ impl ValidatorCmd {
                     )
                     .context("unable to parse decoded signature")?
                 } else {
-                    // TODO: support signing with a separate governance key rather than the spend auth key
-                    let sk = match &app.config.custody {
-                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                        _ => {
+                    // TODO: use the custody abstraction to sign
+                    let sk = match &app.config.governance_custody {
+                        None => match &app.config.custody {
+                            CustodyConfig::SoftKms(config) => config.spend_key.clone(),
+                            _ => {
+                                anyhow::bail!(
+                                    "local validator definition signing currently requires SoftKMS backend"
+                                );
+                            }
+                        },
+                        Some(GovernanceCustodyConfig::SoftKms(config)) => config.spend_key.clone(),
+                        Some(_) => {
                             anyhow::bail!(
-                                "local validator vote signing currently requires SoftKMS backend"
-                            );
+                            "local validator definition signing currently requires SoftKMS backend"
+                        );
                         }
                     };
                     let governance_auth_key = sk.spend_auth_key();
@@ -427,7 +459,7 @@ impl ValidatorCmd {
                 // By default, the template sets the governance key to the same verification key as
                 // the identity key, but a validator can change this if they want to use different
                 // key material.
-                let governance_key = GovernanceKey(identity_key.0);
+                let governance_key = app.config.governance_key();
 
                 // Honor the filepath to `priv_validator_key.json`, if set. Otherwise, generate
                 // a random pubkey and emit a warning about it.
