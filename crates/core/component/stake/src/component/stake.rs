@@ -144,7 +144,7 @@ impl Component for Staking {
             .height
             .try_into()
             .expect("should be able to convert i64 into block height");
-        let changes = state.get_delegation_changes_tally().clone();
+        let changes = state.get_delegation_changes_tally();
         state.set_delegation_changes(height, changes).await;
     }
 
