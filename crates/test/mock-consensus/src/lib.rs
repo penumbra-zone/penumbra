@@ -69,7 +69,6 @@ where
 
         for i in 0..blocks {
             self.block()
-                .with_data(vec![])
                 .execute()
                 .tap(|_| trace!(%i, "executing empty block"))
                 .await
