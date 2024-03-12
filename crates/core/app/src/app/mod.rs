@@ -388,13 +388,15 @@ impl App {
         let mut state_tx = Arc::try_unwrap(arc_state_tx)
             .expect("components did not retain copies of shared state");
 
-        // Since governance proposals can affect the entirety of application state, and the governance component
-        // does not have access to the types defined in this crate so we need to handle validating them here.
+        // Validate governance proposals here. We must do this here because proposals can affect
+        // the entirety of application state, and the governance component does not have access to
+        // the types defined in this crate.
         //
-        // If a proposal was passed in this block, then `schedule_app_params_change` was called which will set `next_block_pending_app_parameters`.
+        // If a proposal was passed in this block, then `schedule_app_param_update` was called
+        // which will set `next_block_pending_app_parameters`.
         //
-        // If any validation here fails, the `next_block_pending_app_parameters` will be cleared, and no change will be enacted during the next
-        // block's `begin_block`.
+        // If any validation here fails, the `next_block_pending_app_parameters` will be cleared,
+        // and no change will be enacted during the next block's `begin_block`.
         if let Some(params) = self
             .state
             .next_block_pending_app_parameters()
@@ -408,8 +410,8 @@ impl App {
             // at the time the proposal was created.
             let old_app_params = AppParameters::from_changed_params(&params.old, None)
                 .expect("should be able to parse old app params");
-            // `new_app_params` should be sparse and only the components whose parameters were changed
-            // by the proposal should be `Some`.
+            // `new_app_params` should be sparse and only the components whose parameters were
+            // changed by the proposal should be `Some`.
             let new_app_params =
                 AppParameters::from_changed_params(&params.new, Some(&old_app_params))
                     .expect("should be able to parse new app params");
