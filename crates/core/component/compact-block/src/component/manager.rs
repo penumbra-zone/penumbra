@@ -1,15 +1,12 @@
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
-use penumbra_dex::component::StateReadExt;
-use penumbra_dex::component::SwapManager as _;
+use penumbra_dex::component::{StateReadExt, SwapManager as _};
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_proto::DomainType;
 use penumbra_sct::component::clock::EpochRead;
-use penumbra_sct::component::tree::SctManager as _;
-use penumbra_sct::component::tree::SctRead;
+use penumbra_sct::component::tree::{SctManager as _, SctRead};
 use penumbra_shielded_pool::component::NoteManager as _;
 use tracing::instrument;
 
