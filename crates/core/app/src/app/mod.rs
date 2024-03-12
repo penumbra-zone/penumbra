@@ -477,7 +477,7 @@ impl App {
             .expect("able to detect upgrade heights");
 
         if is_end_epoch || is_chain_upgrade {
-            tracing::info!(?current_height, "ending epoch");
+            tracing::info!(%is_end_epoch, %is_chain_upgrade, ?current_height, "ending epoch");
 
             let mut arc_state_tx = Arc::new(state_tx);
 
