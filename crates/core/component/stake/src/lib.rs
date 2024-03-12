@@ -13,6 +13,16 @@ mod penalty;
 mod unbonding_token;
 mod uptime;
 
+pub mod delegate;
+pub mod funding_stream;
+pub mod genesis;
+pub mod params;
+pub mod rate;
+pub mod state_key;
+pub mod undelegate;
+pub mod undelegate_claim;
+pub mod validator;
+
 #[cfg(feature = "component")]
 pub mod component;
 
@@ -21,14 +31,6 @@ pub use component::{StateReadExt, StateWriteExt};
 
 pub static BPS_SQUARED_SCALING_FACTOR: Lazy<penumbra_num::fixpoint::U128x128> =
     Lazy::new(|| 1_0000_0000u128.into());
-
-pub mod delegate;
-pub mod funding_stream;
-pub mod rate;
-pub mod state_key;
-pub mod undelegate;
-pub mod undelegate_claim;
-pub mod validator;
 
 pub use delegate::Delegate;
 use once_cell::sync::Lazy;
@@ -47,6 +49,3 @@ pub use changes::DelegationChanges;
 pub use current_consensus_keys::CurrentConsensusKeys;
 pub use funding_stream::{FundingStream, FundingStreams};
 pub use uptime::Uptime;
-
-pub mod genesis;
-pub mod params;
