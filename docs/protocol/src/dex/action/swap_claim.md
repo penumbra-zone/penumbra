@@ -18,6 +18,7 @@ The swap claim proof demonstrates the properties enumerated below for the privat
 * Swap commitment $scm \isin \mathbb F_q$
 * Merkle proof of inclusion for the swap commitment, consisting of a position `pos` constrained to fit in 48 bits and an authentication path consisting of 72 $\mathbb F_q$ elements (3 siblings each per 24 levels)
 * Nullifier deriving key $nk \isin \mathbb F_q$
+* Spend verification key $ak \isin \mathbb G$
 * Output amount $\Lambda_{1i}$ of the first asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
 * Output amount $\Lambda_{2i}$ of the second asset interpreted as an $\mathbb F_q$ constrained to fit in 128 bits
 * Note blinding factor $rcm_1 \isin \mathbb F_q$ used to blind the first output note commitment
@@ -63,6 +64,20 @@ using the witnessed values above and where `ds` is a constant domain separator:
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q`
 
 as described in [Nullifiers](../notes/nullifiers.md).
+
+### Nullifier Key Linking
+
+The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
+
+$pk_d ​= [ivk] B_d$
+
+where $B_d$ is the witnessed diversified basepoint and $ivk$ is the incoming viewing key computed using a rate-2 Poseidon hash from the witnessed $nk$ and $ak$ as:
+
+`ivk = hash_2(from_le_bytes(b"penumbra.derive.ivk"), nk, decaf377_s(ak)) mod r`
+
+The zk-SNARK also certifies that:
+- $ak \neq 0$
+- $pk_d \neq 0$
 
 ### Fee Consistency Check
 
