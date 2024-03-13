@@ -2,6 +2,26 @@
 
 Each swap contains a SwapBody and a zk-SNARK swap proof.
 
+## Invariants
+
+The invariants that the Swap upholds are described below.
+
+#### Local Invariants
+
+1. The swap binds to the specific trading pair.
+
+2. The swap binds to a specific claim address.
+
+#### Local Justification
+
+1. The swap commitment includes as inputs the trading pair of the two assets, demonstrated in circuit by the [Swap Commitment Integrity](#swap-commitment-integrity) check.
+
+2. The swap commitment includes as inputs each component of the claim address, demonstrated in circuit by the [Swap Commitment Integrity](#swap-commitment-integrity) check.
+
+#### Global Justification
+
+1.1 This action consumes the value of the two input notes (one per asset) consumed and the value of the pre-paid fee to be used by the SwapClaim, and is reflected in the balance by subtracting the value from the transaction value balance. Value is not created due to [system level invariant 1](../../transactions/invariants.md), which ensures that transactions contribute a 0 value balance.
+
 ## Swap zk-SNARK Statements
 
 The swap proof demonstrates the properties enumerated below for the private witnesses known by the prover:
@@ -23,7 +43,7 @@ And the corresponding public inputs:
 * Fee commitment $cv_f \isin G$ to the value of the fee
 * Swap commitment $scm \isin \mathbb F_q$
 
-### Swap Commitment Integrity
+### [Swap Commitment Integrity](#swap-commitment-integrity)
 
 The zk-SNARK certifies that the public input swap commitment $scm$ was derived as:
 

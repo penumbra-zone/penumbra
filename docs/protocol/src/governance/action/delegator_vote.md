@@ -1,8 +1,47 @@
-# Delegator Vote Descriptions
+# DelegatorVote Descriptions
 
 Each delegator vote contains an DelegatorVoteBody and a zk-SNARK delegator vote proof.
 
-## Delegator Vote zk-SNARK Statements
+## Invariants
+
+The invariants that the DelegatorVote upholds are described below.
+
+#### Local Invariants
+
+Privacy note: Value of staked note used for voting is revealed during a delegator vote.
+
+1. Available voting power for a proposal = total delegated stake to active validators when the proposal was created
+
+    1.1 Voting power must have been present before the proposal was created.
+
+    1.2 You can't vote with a note that was spent prior to proposal start.
+
+    1.3 That staked note must correspond to a validator that was in the active set when the
+proposal being voted on was created.
+
+2. You can't use the same voting power twice on a proposal.
+
+3. You can't vote on a proposal that is not votable, i.e. it has not been withdrawn or voting has finished.
+
+4. All invariants with regards to spending a note apply to voting with it.
+
+#### Local Justification
+
+1. We check the available voting power for a proposal equals the total delegated stake to active validators when the proposal was created via:
+
+    1.1 The circuit checks the age of the staked note, and the stateful check verifies that the claimed position matches that of the proposal.
+
+    1.2 We check that the note was spent only after the block of the proposal.
+
+    1.3 The stateful check for the exchange rate makes sure the validator was active at that time.
+
+2. We maintain a nullifier set for delegator votes and check for duplicate nullifiers in the stateful checks.
+
+3. The stateful check looks up the proposal ID and ensures it is votable.
+
+4. c.f. justification for spend circuit [here](../../shielded_pool/action/spend.md)
+
+## DelegatorVote zk-SNARK Statements
 
 The delegator vote proof demonstrates the properties enumerated below for the following private witnesses known by the prover:
 
