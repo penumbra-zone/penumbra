@@ -19,11 +19,11 @@ use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
-use tap::Tap;
+use tap::{Tap, TapFallible, TapOptional};
 use tendermint::v0_37::abci;
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tracing::{instrument, trace};
+use tracing::{error, instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
 use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
@@ -257,7 +257,9 @@ pub trait StateReadExt: StateRead {
             .get(&state_key::chain::delegation_changes::by_height(
                 height.value(),
             ))
-            .await?
+            .await
+            .tap_err(|err| error!(?err, "delegation changes for block exist but are invalid"))?
+            .tap_none(|| error!("could not find delegation changes for block"))
             .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
     }
 }
