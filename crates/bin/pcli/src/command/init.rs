@@ -231,7 +231,7 @@ impl InitCmd {
         // Create the config directory, if
 
         let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
-        println!("Writing generated configs to {}", config_path);
+        println!("Writing generated config to {}", config_path);
         config.save(config_path)?;
 
         Ok(())

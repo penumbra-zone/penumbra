@@ -9,7 +9,7 @@ YOUR PRIVATE SEED PHRASE:
 [SEED PHRASE]
 Save this in a safe place!
 DO NOT SHARE WITH ANYONE!
-Writing generated configs to [PATH TO PCLI DATA]
+Writing generated config to [PATH TO PCLI DATA]
 ```
 This uses the `soft-kms` backend, which saves the generated spend key in the config file.
 
@@ -17,7 +17,7 @@ Alternatively, to import an existing wallet, try
 ```bash
 $ pcli init soft-kms import-phrase
 Enter seed phrase:
-Writing generated configs to [PATH TO PCLI DATA]
+Writing generated config to [PATH TO PCLI DATA]
 ```
 
 Penumbra's design automatically creates `2^32` (four billion) numbered accounts

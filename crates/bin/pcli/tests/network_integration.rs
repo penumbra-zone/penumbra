@@ -63,7 +63,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     setup_cmd
         .assert()
-        .stdout(predicate::str::contains("Writing generated configs"));
+        .stdout(predicate::str::contains("Writing generated config"));
 
     tmpdir
 }
