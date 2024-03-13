@@ -199,6 +199,7 @@ impl<T: StateWrite + ?Sized> ConsensusUpdateWrite for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
+    #[instrument(skip(self), level = "trace")]
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
             .await
@@ -207,15 +208,18 @@ pub trait StateReadExt: StateRead {
     }
 
     /// Indicates if the stake parameters have been updated in this block.
+    #[instrument(skip(self), level = "trace")]
     fn stake_params_updated(&self) -> bool {
         self.object_get::<()>(state_key::parameters::updated_flag())
             .is_some()
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
         Ok(self.get_stake_params().await?.signed_blocks_window_len)
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn missed_blocks_maximum(&self) -> Result<u64> {
         Ok(self.get_stake_params().await?.missed_blocks_maximum)
     }
@@ -223,26 +227,31 @@ pub trait StateReadExt: StateRead {
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
+    #[instrument(skip(self), level = "trace")]
     fn get_delegation_changes_tally(&self) -> DelegationChanges {
         self.object_get(state_key::chain::delegation_changes::key())
             .unwrap_or_default()
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn get_current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::chain::base_rate::current())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
+    #[instrument(skip(self), level = "trace")]
     fn get_previous_base_rate(&self) -> Option<BaseRateData> {
         self.object_get(state_key::chain::base_rate::previous())
     }
 
     /// Returns the funding queue from object storage (end-epoch).
+    #[instrument(skip(self), level = "trace")]
     fn get_funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
         self.object_get(state_key::validators::rewards::staking())
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         Ok(self
             .get(&state_key::chain::delegation_changes::by_height(
