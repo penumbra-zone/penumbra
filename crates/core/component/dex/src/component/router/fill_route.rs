@@ -255,7 +255,16 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     tracing::debug!(?swap_execution, "returning swap execution of filled route");
 
     // Apply the state transaction now that we've reached the end without errors.
-    this.apply();
+    //
+    // We have to manually extract events and push them down to the state to avoid losing them.
+    // TODO: in a commit not intended to be cherry-picked, we should fix this hazardous API:
+    // - rename `StateDelta::apply` to `StateDelta::apply_extracting_events`
+    // - add `StateDelta::apply_with_events` that pushes the events down.
+    // - go through all uses of `apply_extracting_events` and determine what behavior is correct
+    let (mut state, events) = this.apply();
+    for event in events {
+        state.record(event);
+    }
 
     let fill_elapsed = fill_start.elapsed();
     metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
