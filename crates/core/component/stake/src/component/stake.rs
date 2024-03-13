@@ -251,6 +251,7 @@ pub trait StateReadExt: StateRead {
         self.object_get(state_key::validators::rewards::staking())
     }
 
+    /// Returns the [`DelegationChanges`] at the given [`Height`][block::Height].
     #[instrument(skip(self), level = "trace")]
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
         self.get(&state_key::chain::delegation_changes::by_height(
