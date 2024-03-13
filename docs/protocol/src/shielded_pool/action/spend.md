@@ -2,6 +2,38 @@
 
 Each spend contains an SpendBody and a zk-SNARK spend proof.
 
+## Invariants
+
+The invariants that the Spend upholds are described below.
+
+#### Local Invariants
+
+1. You must have spend authority over the note to spend
+
+2. You can't spend a positioned note twice.
+
+    2.1. Each positioned note has exactly one valid nullifier for it.
+
+    2.2. No two spends on the ledger, even in the same transaction, can have the same nullifier.
+
+3. You can't spend a note that has not been created, unless the amount of that note is 0.
+
+#### Local Justification
+
+1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
+
+2. The following checks prevent spending a positioned note twice:
+
+    2.1. A note's transmission key binds to the nullifier key in circuit as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned note, along with this key are hashed to derive the nullifier in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
+
+    2.2. This is in the `ActionHandler` implementation on `check_stateful`, and an external check about the integrity of each transaction.
+
+3. The circuit verifies for non-zero amounts that there is a valid [Merkle authentication path](#merkle-auth-path-verification) to the note in the global state commitment tree.
+
+#### Global Justification
+
+1.1. This action destroys the value of the note spent, and is reflected in the balance by adding the value to the transaction value balance. Value is not created due to [system level invariant 1](../../transactions/invariants.md), which ensures that transactions contribute a 0 value balance. We do not create value, because of 3.
+
 ## Spend zk-SNARK Statements
 
 The spend proof demonstrates the properties enumerated below for the following private witnesses known by the prover:
@@ -24,7 +56,7 @@ And the corresponding public inputs:
 * Nullifier $nf \isin F_q$ of the note to be spent
 * Randomized verification key $rk \isin \mathbb G$
 
-### Note Commitment Integrity
+### [Note Commitment Integrity](#note-commitment-integrity)
 
 The zk-SNARK certifies that the note commitment $cm$ was derived as:
 
@@ -42,7 +74,7 @@ $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
 where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md).
 
-### Nullifier Integrity
+### [Nullifier Integrity](#nullifier-integrity)
 
 The zk-SNARK certifies that the revealed nullifier $nf$ was derived as:
 
@@ -54,7 +86,7 @@ using the witnessed values above and where `ds` is a constant domain separator:
 
 as described in [Nullifiers](../notes/nullifiers.md).
 
-### Diversified address Integrity
+### [Diversified address Integrity](#diversified-address-integrity)
 
 The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
 
@@ -74,9 +106,9 @@ $rk = ak + [\alpha]B_{SpendAuth}$
 
 where $B_{SpendAuth}$ is the conventional `decaf377` basepoint as described in [The Decaf377 Group](../../crypto/decaf377.md).
 
-### Merkle auth path verification
+### [Merkle auth path verification](#merkle-auth-path-verification)
 
-The zk-SNARK certifies that for non-zero values[^1] $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. Only for notes with non-zero values $v \ne 0$, the note is unrooted from the state commitment tree to allow for these "dummy" spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. Only for notes with non-zero values $v \ne 0$, the note is unrooted from the state commitment tree to allow for these "dummy" spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
 
 ### Diversified Base is not Identity
 
@@ -85,5 +117,3 @@ The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the 
 ### The spend authorization key is not Identity
 
 The zk-SNARK certifies that the spend authorization key $ak$ is not identity.
-
-[^1]: Note that [issue 2135](https://github.com/penumbra-zone/penumbra/issues/2135) tracks a bug where dummy spends fail to verify due to the merkle paths.

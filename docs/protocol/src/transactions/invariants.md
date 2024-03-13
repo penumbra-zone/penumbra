@@ -15,53 +15,9 @@
 
 ## Action-Level
 
-### Output
+* [Output Invariants](../shielded_pool/action/output.md)
 
-#### Local Invariants
-
-1. The created output note is spendable by the recipient if its nullifier has not been revealed.
-
-1.1 The output note is bound to the recipient.
-
-1.2 The output note can be spent only by the recipient.
-
-#### Local Justification
-
-1.1 The note commitment binds the note to the typed value and the address of the recipient.
-
-1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
-
-#### Global Justification
-
-1.1 This action contributes the value of the output note, which is summed as part of the transaction value balance. Value is not created due to system level invariant 1, which ensures that transactions contribute a 0 value balance.
-
-### Spend
-
-#### Local Invariants
-
-1. You must have spend authority over the note to spend
-
-2. You can't spend a positioned note twice.
-
-2.1. Each positioned note has exactly one valid nullifier for it.
-
-2.2. No two spends on the ledger, even in the same transaction, can have the same nullifier.
-
-3. You can't spend a note that has not been created, unless the amount of that note is 0.
-
-#### Local Justification
-
-1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
-
-2.1. A note's transmission key binds to the nullifier key, and all components of a positioned note, along with this key are hashed to derive the nullifier, in circuit.
-
-2.2. This is in check_stateful, and an external check about the integrity of each transaction.
-
-3. The circuit verifies for non-zero amounts that there is a valid Merkle authentication path to the note in the global state commitment tree.
-
-#### Global Justification
-
-1.1. This action destroys the value of the note spent, and is reflected in the balance by adding the value to the transaction value balance. We do not create value, because of 3.
+* [Spend Invariants](../shielded_pool/action/spend.md)
 
 ### Delegator Votes
 
