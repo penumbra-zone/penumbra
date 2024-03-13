@@ -1,6 +1,28 @@
 # Undelegate Claim Descriptions
 
-Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate claim proof. The undelegate claim proof is implemented as an instance of a generic convert circuit which converts a private amount of one input asset into a target asset, given a public conversion rate.
+Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate claim proof.
+
+# Invariants
+
+#### Local Invariants
+
+1. You cannot claim undelegations that have not finishing unbonding.
+
+2. Slashing penalties must be applied when unbonding.
+
+#### Local Justification
+
+1. In the `ActionHandler` for `check_stateful` we check that the undelegations have finished unbonding.
+
+2. The `ConvertCircuit` verifies that the conversion from the unbonding token to the staking token was done using the correct conversion rate calculated from the penalty. We check in the `ActionHandler` for `check_stateful` that the _correct_ penalty rate was used.
+
+#### Global Justification
+
+1.1. This action consumes the amount of the unbonding tokens and contributes the unbonded amount of the staking tokens to the transaction's value balance. Value is not created due to [system level invariant 1](../../transactions/invariants.md), which ensures that transactions contribute a 0 value balance.
+
+# zk-SNARK Statements
+
+The undelegate claim proof is implemented as an instance of a generic convert circuit which converts a private amount of one input asset into a target asset, given a public conversion rate.
 
 First we describe the convert circuit, and then the undelegate claim proof.
 

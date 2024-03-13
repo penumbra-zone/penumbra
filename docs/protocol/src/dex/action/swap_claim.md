@@ -2,6 +2,54 @@
 
 Each swap claim contains a SwapClaimBody and a zk-SNARK swap claim proof.
 
+## Invariants
+
+The invariants that the SwapClaim upholds are described below.
+
+#### Local Invariants
+
+1. You cannot mint swap outputs to a different address than what was specified during the initial swap.
+
+2. You cannot mint swap outputs to different assets than those specified in the original swap.
+
+3. You cannot mint swap outputs to different amounts than those specified by the batch swap output data.
+
+    3.1. You can only claim your contribution to the batch swap outputs.
+
+    3.2. You can only claim the outputs using the batch swap output data for the block in which the swap was executed.
+
+4. You can only claim swap outputs for swaps that occurred.
+
+5. You can only claim swap outputs once.
+
+    5.1. Each positioned swap has exactly one valid nullifier for it.
+
+    5.2. No two swaps can have the same nullifier.
+
+#### Local Justification
+
+1. The Swap commits to the claim address. The SwapClaim circuit enforces that the same address used to derive the swap commitment is that used to derive the note commitments for the two output notes via the [Swap Commitment Integrity](#swap-commitment-integrity) and [Output Note Commitment Integrity](#output-note-commitment-integrity) checks.
+
+2. The SwapClaim circuit checks that the trading pair on the original Swap is the same as that on the batch swap output data via the [Trading Pair Consistency Check](#trading-pair-consistency-check).
+
+3. You cannot mint outputs to different amounts via:
+
+    3.1. The output amounts of each note is checked in-circuit to be only due to that user's contribution of the batch swap output data via the [Output Amounts Integrity](#output-amounts-integrity) check.
+
+    3.2. The circuit checks the block height of the swap matches that of the batch swap output data via the [Height Consistency Check](#height-consistency-check). The `ActionHandler` for the SwapClaim checks that the batch swap output data provided by the SwapClaim matches that saved on-chain for that output height and trading pair.
+
+4. The SwapClaim circuit verifies that there is a valid [Merkle authentication path](#merkle-auth-path-verification) to the swap in the global state commitment tree.
+
+5. You can only claim swap outputs once via:
+
+    5.1. A swap's transmission key binds to the nullifier key as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
+
+    5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
+
+#### Global Justification
+
+1.1. This action mints the swap's output notes, and is reflected in the balance by adding the value from the transaction value balance. Value is not created due to [system level invariant 1](../../transactions/invariants.md), which ensures that transactions contribute a 0 value balance.
+
 ## SwapClaim zk-SNARK Statements
 
 The swap claim proof demonstrates the properties enumerated below for the private witnesses known by the prover:
@@ -36,7 +84,7 @@ And the corresponding public inputs:
 * Note commitment of the first output note $cm_1 \isin \mathbb F_q$
 * Note commitment of the second output note $cm_2 \isin \mathbb F_q$
 
-### Swap Commitment Integrity
+### [Swap Commitment Integrity](#swap-commitment-integrity)
 
 The zk-SNARK certifies that the witnessed swap commitment $scm$ was derived as:
 
@@ -48,11 +96,11 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.swap")) mod q`
 
-### Merkle auth path verification
+### [Merkle auth path verification](#merkle-auth-path-verification)
 
 The zk-SNARK certifies that the witnessed Merkle authentication path is a valid Merkle path of the swap commitment to the provided public anchor.
 
-### Nullifier Integrity
+### [Nullifier Integrity](#nullifier-integrity)
 
 The zk-SNARK certifies that the nullifier $nf$ was derived as:
 
@@ -69,7 +117,7 @@ as described in [Nullifiers](../notes/nullifiers.md).
 The zk-SNARK certifies that the public claim fee is equal to the value
 witnessed as part of the swap plaintext.
 
-### Height Consistency Check
+### [Height Consistency Check](#height-consistency-check)
 
 The zk-SNARK certifies that the swap commitment's height is equal to the height
 of the batch swap output data (the clearing price height).
@@ -81,7 +129,7 @@ $h = h_e + h_b$
 
 where $h, h_e$ are provided on the batch swap output data as a public input.
 
-### Trading Pair Consistency Check
+### [Trading Pair Consistency Check](#trading-pair-consistency-check)
 
 The zk-SNARK certifies that the trading pair included in the swap plaintext corresponds
 to the trading pair included on the batch swap output data, i.e.:
@@ -90,13 +138,13 @@ $ID_1 = ID_{pi1}$
 
 $ID_2 = ID_{pi2}$
 
-### Output amounts integrity
+### [Output Amounts Integrity](#output-amounts-integrity)
 
 The zk-SNARK certifies that the claimed output amounts $\Lambda_{1i}, \Lambda_{2i}$
 were computed correctly following the pro-rata output calculation performed
 using the correct batch swap output data.
 
-### Output Note Commitment Integrity
+### [Output Note Commitment Integrity](#output-note-commitment-integrity)
 
 The zk-SNARK certifies that the note commitments $cm_1$ and $cm_2$ were derived as:
 
