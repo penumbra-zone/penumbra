@@ -37,7 +37,6 @@ pub trait NoteManager: StateWrite {
         // Hashing the current SCT root would be sufficient, since it will
         // change every time we insert a new note.  But computing the SCT root
         // is very slow, so instead we hash the current position.
-
         let position: u64 = self
             .get_sct()
             .await

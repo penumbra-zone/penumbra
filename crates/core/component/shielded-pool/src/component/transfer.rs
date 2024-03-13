@@ -137,11 +137,6 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
             );
-
-            // update supply tracking of burned note
-            self.decrease_token_supply(&withdrawal.denom.id(), withdrawal.amount)
-                .await
-                .expect("couldn't update token supply in ics20 withdrawal!");
         }
 
         self.send_packet_execute(checked_packet).await;
