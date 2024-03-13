@@ -56,21 +56,19 @@ where
     /// Fast forwards a number of blocks.
     #[tracing::instrument(
         skip(self),
-        fields(
-            height = %self.height,
-            fast_forward.blocks = %blocks,
-        )
+        fields(fast_forward.blocks = %blocks)
     )]
     pub async fn fast_forward(&mut self, blocks: usize) -> anyhow::Result<()> {
         use {
             tap::Tap,
-            tracing::{info, trace},
+            tracing::{info, trace, trace_span, Instrument},
         };
 
         for i in 0..blocks {
             self.block()
                 .execute()
                 .tap(|_| trace!(%i, "executing empty block"))
+                .instrument(trace_span!("executing empty block", %i))
                 .await
                 .tap(|_| trace!(%i, "finished executing empty block"))?;
         }
