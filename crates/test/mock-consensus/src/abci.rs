@@ -2,7 +2,7 @@
 
 use {
     super::TestNode,
-    anyhow::anyhow,
+    anyhow::{anyhow, Context},
     bytes::Bytes,
     tap::{Tap, TapFallible},
     tendermint::{
@@ -110,7 +110,13 @@ where
     /// Sends a [`ConsensusRequest::EndBlock`] request to the ABCI application.
     #[instrument(level = "debug", skip_all)]
     pub async fn end_block(&mut self) -> Result<response::EndBlock, anyhow::Error> {
-        let request = ConsensusRequest::EndBlock(request::EndBlock { height: 1 });
+        let height = self
+            .height
+            .value()
+            .try_into()
+            .context("converting height into `i64`")?;
+        let request = ConsensusRequest::EndBlock(request::EndBlock { height });
+
         let service = self.service().await?;
         match service
             .call(request)
