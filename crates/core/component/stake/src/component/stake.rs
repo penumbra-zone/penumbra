@@ -253,14 +253,13 @@ pub trait StateReadExt: StateRead {
 
     #[instrument(skip(self), level = "trace")]
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
-        Ok(self
-            .get(&state_key::chain::delegation_changes::by_height(
-                height.value(),
-            ))
-            .await
-            .tap_err(|err| error!(?err, "delegation changes for block exist but are invalid"))?
-            .tap_none(|| error!("could not find delegation changes for block"))
-            .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
+        self.get(&state_key::chain::delegation_changes::by_height(
+            height.value(),
+        ))
+        .await
+        .tap_err(|err| error!(?err, "delegation changes for block exist but are invalid"))?
+        .tap_none(|| error!("could not find delegation changes for block"))
+        .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))
     }
 }
 
