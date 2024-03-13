@@ -217,12 +217,16 @@ pub trait StateReadExt: StateRead {
 
     #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.signed_blocks_window_len)
+        self.get_stake_params()
+            .await
+            .map(|p| p.signed_blocks_window_len)
     }
 
     #[instrument(skip(self), level = "trace")]
     async fn missed_blocks_maximum(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.missed_blocks_maximum)
+        self.get_stake_params()
+            .await
+            .map(|p| p.missed_blocks_maximum)
     }
 
     /// Delegation changes accumulated over the course of this block, to be
