@@ -203,7 +203,9 @@ pub trait StateReadExt: StateRead {
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
             .await
+            .tap_err(|err| error!(?err, "could not deserialize stake parameters"))
             .expect("no deserialization error should happen")
+            .tap_none(|| error!("could not find stake parameters"))
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
