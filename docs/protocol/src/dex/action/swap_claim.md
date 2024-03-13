@@ -115,7 +115,8 @@ as described in [Nullifiers](../notes/nullifiers.md).
 
 ### Nullifier Key Linking
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
+The zk-SNARK certifies that the diversified address $pk_d$ associated with the
+swap being claimed was derived as:
 
 $pk_d ​= [ivk] B_d$
 
