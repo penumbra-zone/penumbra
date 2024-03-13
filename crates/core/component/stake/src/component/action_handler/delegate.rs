@@ -6,10 +6,8 @@ use penumbra_num::Amount;
 use penumbra_sct::component::clock::EpochRead;
 
 use crate::{
-    component::{validator_handler::ValidatorDataRead, StateWriteExt as _},
-    event,
-    validator::State::*,
-    Delegate, StateReadExt as _,
+    component::validator_handler::ValidatorDataRead, event, validator::State::*, Delegate,
+    StateReadExt as _, StateWriteExt as _,
 };
 
 #[async_trait]

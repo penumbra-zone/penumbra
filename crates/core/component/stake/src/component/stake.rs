@@ -19,11 +19,11 @@ use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
-use tap::Tap;
+use tap::{Tap, TapFallible, TapOptional};
 use tendermint::v0_37::abci;
 use tendermint::validator::Update;
 use tendermint::{block, PublicKey};
-use tracing::{instrument, trace};
+use tracing::{error, instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
 use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
@@ -149,6 +149,7 @@ impl Component for Staking {
         state.set_delegation_changes(height, changes).await;
     }
 
+    /// Writes validator updates for this block.
     #[instrument(name = "staking", skip(state))]
     async fn end_epoch<S: StateWrite + 'static>(state: &mut Arc<S>) -> anyhow::Result<()> {
         let state = Arc::get_mut(state).context("state should be unique")?;
@@ -156,7 +157,10 @@ impl Component for Staking {
             .get_current_epoch()
             .await
             .context("should be able to get current epoch during end_epoch")?;
-        state.end_epoch(epoch_ending).await?;
+        state
+            .end_epoch(epoch_ending)
+            .await
+            .context("should be able to write end_epoch")?;
         // Since we only update the validator set at epoch boundaries,
         // we only need to build the validator set updates here in end_epoch.
         state
@@ -195,23 +199,29 @@ impl<T: StateWrite + ?Sized> ConsensusUpdateWrite for T {}
 #[async_trait]
 pub trait StateReadExt: StateRead {
     /// Gets the stake parameters from the JMT.
+    #[instrument(skip(self), level = "trace")]
     async fn get_stake_params(&self) -> Result<StakeParameters> {
         self.get(state_key::parameters::key())
             .await
+            .tap_err(|err| error!(?err, "could not deserialize stake parameters"))
             .expect("no deserialization error should happen")
+            .tap_none(|| error!("could not find stake parameters"))
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
     /// Indicates if the stake parameters have been updated in this block.
+    #[instrument(skip(self), level = "trace")]
     fn stake_params_updated(&self) -> bool {
         self.object_get::<()>(state_key::parameters::updated_flag())
             .is_some()
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
         Ok(self.get_stake_params().await?.signed_blocks_window_len)
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn missed_blocks_maximum(&self) -> Result<u64> {
         Ok(self.get_stake_params().await?.missed_blocks_maximum)
     }
@@ -219,33 +229,40 @@ pub trait StateReadExt: StateRead {
     /// Delegation changes accumulated over the course of this block, to be
     /// persisted at the end of the block for processing at the end of the next
     /// epoch.
+    #[instrument(skip(self), level = "trace")]
     fn get_delegation_changes_tally(&self) -> DelegationChanges {
         self.object_get(state_key::chain::delegation_changes::key())
             .unwrap_or_default()
     }
 
+    #[instrument(skip(self), level = "trace")]
     async fn get_current_base_rate(&self) -> Result<BaseRateData> {
         self.get(state_key::chain::base_rate::current())
             .await
             .map(|rate_data| rate_data.expect("rate data must be set after init_chain"))
     }
 
+    #[instrument(skip(self), level = "trace")]
     fn get_previous_base_rate(&self) -> Option<BaseRateData> {
         self.object_get(state_key::chain::base_rate::previous())
     }
 
     /// Returns the funding queue from object storage (end-epoch).
+    #[instrument(skip(self), level = "trace")]
     fn get_funding_queue(&self) -> Option<Vec<(IdentityKey, FundingStreams, Amount)>> {
         self.object_get(state_key::validators::rewards::staking())
     }
 
+    /// Returns the [`DelegationChanges`] at the given [`Height`][block::Height].
+    #[instrument(skip(self), level = "trace")]
     async fn get_delegation_changes(&self, height: block::Height) -> Result<DelegationChanges> {
-        Ok(self
-            .get(&state_key::chain::delegation_changes::by_height(
-                height.value(),
-            ))
-            .await?
-            .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))?)
+        self.get(&state_key::chain::delegation_changes::by_height(
+            height.value(),
+        ))
+        .await
+        .tap_err(|err| error!(?err, "delegation changes for block exist but are invalid"))?
+        .tap_none(|| error!("could not find delegation changes for block"))
+        .ok_or_else(|| anyhow!("missing delegation changes for block {}", height))
     }
 }
 

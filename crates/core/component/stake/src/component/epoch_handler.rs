@@ -1,37 +1,30 @@
-use penumbra_distributions::component::StateReadExt as _;
-use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
-use std::collections::{BTreeMap, BTreeSet};
-
-use anyhow::{Context, Result};
-use async_trait::async_trait;
-use futures::StreamExt;
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
-
-use cnidarium::StateWrite;
-use futures::TryStreamExt;
-use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
-use tendermint::validator::Update;
-use tendermint::PublicKey;
-use tokio::task::JoinSet;
-use tracing::instrument;
-
-use crate::state_key;
-use crate::BPS_SQUARED_SCALING_FACTOR;
 use crate::{
     component::{
-        stake::{ConsensusUpdateWrite, InternalStakingData, RateDataWrite},
+        stake::{
+            ConsensusIndexRead, ConsensusIndexWrite, ConsensusUpdateWrite, InternalStakingData,
+            RateDataWrite,
+        },
         validator_handler::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
         SlashingData,
     },
     rate::BaseRateData,
-    validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey, Penalty,
-    StateReadExt,
+    state_key, validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey,
+    Penalty, StateReadExt, StateWriteExt, BPS_SQUARED_SCALING_FACTOR,
 };
-
-use super::StateWriteExt;
-use crate::component::stake::{ConsensusIndexRead, ConsensusIndexWrite};
+use anyhow::{Context, Result};
+use async_trait::async_trait;
+use cnidarium::StateWrite;
+use futures::{StreamExt, TryStreamExt};
+use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+use penumbra_distributions::component::StateReadExt as _;
+use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
+use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
+use std::collections::{BTreeMap, BTreeSet};
+use tendermint::{validator::Update, PublicKey};
+use tokio::task::JoinSet;
+use tracing::instrument;
 
 #[async_trait]
 pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
