@@ -3,7 +3,7 @@ use crate::{
     rate::RateData,
     state_key,
     validator::{self, BondingState::*, State, Validator},
-    DelegationToken, IdentityKey, Uptime,
+    IdentityKey, Uptime,
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -46,7 +46,16 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> Option<validator::BondingState> {
-        self.get(&state_key::validators::bonding_state::by_id(identity_key))
+        self.get(&state_key::validators::pool::bonding_state::by_id(
+            identity_key,
+        ))
+        .await
+        .expect("no deserialization error expected")
+    }
+
+    /// Returns the amount of delegation tokens in the specified validator's pool.
+    async fn get_validator_pool_size(&self, identity_key: &IdentityKey) -> Option<Amount> {
+        self.get(&state_key::validators::pool::balance::by_id(identity_key))
             .await
             .expect("no deserialization error expected")
     }
@@ -105,14 +114,6 @@ pub trait ValidatorDataRead: StateRead {
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
         self.get(&state_key::validators::uptime::by_id(identity_key))
-    }
-
-    async fn get_validator_pool_size(&self, identity_key: &IdentityKey) -> Option<Amount> {
-        use penumbra_shielded_pool::component::SupplyRead;
-
-        self.token_supply(&DelegationToken::from(identity_key).id())
-            .await
-            .expect("no deserialization error expected")
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -199,7 +200,7 @@ pub trait ValidatorDataRead: StateRead {
 impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
 
 #[async_trait]
-pub trait ValidatorDataWrite: StateWrite {
+pub(crate) trait ValidatorDataWrite: StateWrite {
     fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
         self.put(state_key::validators::uptime::by_id(identity_key), uptime);
     }
@@ -211,7 +212,7 @@ pub trait ValidatorDataWrite: StateWrite {
     ) {
         tracing::debug!(?state, validator_identity = %identity_key, "set bonding state for validator");
         self.put(
-            state_key::validators::bonding_state::by_id(identity_key),
+            state_key::validators::pool::bonding_state::by_id(identity_key),
             state,
         );
     }
@@ -267,3 +268,52 @@ pub trait ValidatorDataWrite: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> ValidatorDataWrite for T {}
+
+#[async_trait]
+pub(crate) trait ValidatorPoolTracker: StateWrite {
+    /// Checked increase of the validator pool size by the given amount.
+    /// Returns the new pool size, or `None` if the update failed.
+    async fn increase_validator_pool_size(
+        &mut self,
+        identity_key: &IdentityKey,
+        add: Amount,
+    ) -> Option<Amount> {
+        let state_path = state_key::validators::pool::balance::by_id(identity_key);
+        let old_supply = self
+            .get(&state_path)
+            .await
+            .expect("no deserialization error expected")
+            .unwrap_or(Amount::zero());
+
+        if let Some(new_supply) = old_supply.checked_add(&add) {
+            self.put(state_path, new_supply);
+            Some(new_supply)
+        } else {
+            None
+        }
+    }
+
+    /// Checked increase of the validator pool size by the given amount.
+    /// Returns the new pool size, or `None` if the update failed.
+    async fn decrease_validator_pool_size(
+        &mut self,
+        identity_key: &IdentityKey,
+        sub: Amount,
+    ) -> Option<Amount> {
+        let state_path = state_key::validators::pool::balance::by_id(identity_key);
+        let old_supply = self
+            .get(&state_path)
+            .await
+            .expect("no deserialization error expected")
+            .unwrap_or(Amount::zero());
+
+        if let Some(new_supply) = old_supply.checked_sub(&sub) {
+            self.put(state_path, new_supply);
+            Some(new_supply)
+        } else {
+            None
+        }
+    }
+}
+
+impl<T: StateWrite + ?Sized> ValidatorPoolTracker for T {}

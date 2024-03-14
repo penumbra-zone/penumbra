@@ -444,7 +444,7 @@ pub(crate) trait InternalStakingData: StateRead {
 impl<T: StateRead + ?Sized> InternalStakingData for T {}
 
 #[async_trait]
-pub trait RateDataWrite: StateWrite {
+pub(crate) trait RateDataWrite: StateWrite {
     #[instrument(skip(self))]
     fn set_base_rate(&mut self, rate_data: BaseRateData) {
         tracing::debug!("setting base rate");

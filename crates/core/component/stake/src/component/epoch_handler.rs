@@ -4,23 +4,23 @@ use crate::{
             ConsensusIndexRead, ConsensusIndexWrite, ConsensusUpdateWrite, InternalStakingData,
             RateDataWrite,
         },
-        validator_handler::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
+        validator_handler::{
+            ValidatorDataRead, ValidatorDataWrite, ValidatorManager, ValidatorPoolTracker,
+        },
         SlashingData,
     },
     rate::BaseRateData,
-    state_key, validator, CurrentConsensusKeys, DelegationToken, FundingStreams, IdentityKey,
-    Penalty, StateReadExt, StateWriteExt, BPS_SQUARED_SCALING_FACTOR,
+    state_key, validator, CurrentConsensusKeys, FundingStreams, IdentityKey, Penalty, StateReadExt,
+    StateWriteExt, BPS_SQUARED_SCALING_FACTOR,
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use futures::{StreamExt, TryStreamExt};
-use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_distributions::component::StateReadExt as _;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::{component::clock::EpochRead, epoch::Epoch};
-use penumbra_shielded_pool::component::{SupplyRead, SupplyWrite};
 use std::collections::{BTreeMap, BTreeSet};
 use tendermint::{validator::Update, PublicKey};
 use tokio::task::JoinSet;
@@ -227,10 +227,6 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
         // an absolute value and then re-apply the sign, since .unbonded_amount operates
         // on unsigned values.
         let absolute_delegation_change = Amount::from(delegation_delta.unsigned_abs());
-        let absolute_unbonded_amount =
-            prev_validator_rate.unbonded_amount(absolute_delegation_change);
-
-        let delegation_token_id = DelegationToken::from(&validator.identity_key).id();
 
         // Staking tokens are being delegated, so the staking token supply decreases and
         // the delegation token supply increases.
@@ -238,15 +234,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             tracing::debug!(
                 validator = ?validator.identity_key,
                 "staking tokens are being delegated, so the staking token supply decreases and the delegation token supply increases");
-            self.decrease_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
-                .await
-                .with_context(|| {
-                    format!(
-                        "failed to decrease staking token supply by {}",
-                        absolute_unbonded_amount
-                    )
-                })?;
-            self.increase_token_supply(&delegation_token_id, absolute_delegation_change)
+            self.increase_validator_pool_size(validator_identity, absolute_delegation_change)
                 .await
                 .with_context(|| {
                     format!(
@@ -260,15 +248,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
                 "staking tokens are being undelegated, so the staking token supply increases and the delegation token supply decreases");
             // Vice-versa: staking tokens are being undelegated, so the staking token supply
             // increases and the delegation token supply decreases.
-            self.increase_token_supply(&STAKING_TOKEN_ASSET_ID, absolute_unbonded_amount)
-                .await
-                .with_context(|| {
-                    format!(
-                        "failed to increase staking token supply by {}",
-                        absolute_unbonded_amount
-                    )
-                })?;
-            self.decrease_token_supply(&delegation_token_id, absolute_delegation_change)
+            self.decrease_validator_pool_size(validator_identity, absolute_delegation_change)
                 .await
                 .with_context(|| {
                     format!(
@@ -284,9 +264,9 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
 
         // Get the updated delegation token supply for use calculating voting power.
         let delegation_token_supply = self
-            .token_supply(&delegation_token_id)
-            .await?
-            .expect("delegation token should be known");
+            .get_validator_pool_size(validator_identity)
+            .await
+            .unwrap_or(Amount::zero());
 
         // Calculate the voting power in the newly beginning epoch
         let voting_power = next_validator_rate.voting_power(delegation_token_supply);
