@@ -36,22 +36,22 @@ impl DelegationToken {
         }
     }
 
-    /// Get the base denomination for this delegation token.
+    /// Returns the base denomination for this delegation token.
     pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 
-    /// Get the default display denomination for this delegation token.
+    /// Returns the default display denomination for this delegation token.
     pub fn default_unit(&self) -> asset::Unit {
         self.base_denom.default_unit()
     }
 
-    /// Get the asset ID for this delegation token.
+    /// Returns the asset ID for this delegation token.
     pub fn id(&self) -> asset::Id {
         self.base_denom.id()
     }
 
-    /// Get the identity key of the validator this delegation token is associated with.
+    /// Returns the identity key of the validator this delegation token is associated with.
     pub fn validator(&self) -> IdentityKey {
         self.validator_identity.clone()
     }
