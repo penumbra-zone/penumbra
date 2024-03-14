@@ -172,9 +172,9 @@ impl App {
         //   the target, presuming that some transactions might be yanked.
         // For more details, see the specification:
         // - Adapting existing applications to use ABCI+:
-        //  https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
+        //  https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_comet_expected_behavior.md#adapting-existing-applications-that-use-abci
         // - Application requirements:
-        // https://github.com/cometbft/cometbft/blob/v0.37.2/spec/abci/abci%2B%2B_app_requirements
+        // https://github.com/cometbft/cometbft/blob/v0.37.5/spec/abci/abci%2B%2B_app_requirements
         for tx in proposal.txs {
             let tx_len_bytes = tx.len() as u64;
             proposal_size_bytes = proposal_size_bytes.saturating_add(tx_len_bytes);

@@ -92,7 +92,7 @@ cometbft:
     repository: cometbft/cometbft
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
-    tag: "v0.37.2"
+    tag: "v0.37.5"
   containerArgs:
     - start
     - --proxy_app=tcp://127.0.0.1:26658
