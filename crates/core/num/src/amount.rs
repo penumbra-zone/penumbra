@@ -340,6 +340,22 @@ impl From<u32> for Amount {
     }
 }
 
+impl From<u16> for Amount {
+    fn from(amount: u16) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<u8> for Amount {
+    fn from(amount: u8) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
 impl From<Amount> for f64 {
     fn from(amount: Amount) -> f64 {
         amount.inner as f64
