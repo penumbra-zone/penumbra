@@ -25,6 +25,7 @@ impl From<&IdentityKey> for DelegationToken {
 }
 
 impl DelegationToken {
+    /// Returns a new [`DelegationToken`] with the provided identity.
     pub fn new(validator_identity: IdentityKey) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
