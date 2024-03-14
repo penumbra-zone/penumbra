@@ -1,0 +1,54 @@
+name: Docs lint
+on: pull_request
+
+jobs:
+  rustdocs:
+    # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
+    # and refactors to rust deps can break that generation. Let's ensure this script exits 0
+    # on PRs, but we'll still only deploy after merge into main.
+    name: rustdoc-lint
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Install rust toolchain
+        # The script for rustdoc build requires nightly toolchain.
+        uses: dtolnay/rust-toolchain@nightly
+
+      # Loading cache takes ~15s, but saves us minutes of build.
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      # Building with warm cache takes ~40s, depending on changes.
+      - name: Build rustdocs
+        run: ./deployments/scripts/rust-docs
+
+  # Also validate that the `mdbook` docs (guide & protocol) build correctly.
+  # In particular, links are checked within the docs.
+  mdbook:
+    name: mdbook-lint
+    # Downgrading runner size to 4vcpu, since we're not compiling code.
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+
+      # It's OK to install from crates, building from source, because of cache use
+      # on previous step. Install takes ~5s with warm cache.
+      - name: Install mdbook dependencies
+        run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
+
+      - name: Build guide docs
+        run: cd docs/guide && mdbook build
+
+      - name: Build protocol docs
+        run: cd docs/protocol && mdbook build

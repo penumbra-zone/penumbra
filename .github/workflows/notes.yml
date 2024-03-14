@@ -26,8 +26,11 @@ jobs:
         id: get_version
       - name: Print version component of deployment path
         run: echo ${{ steps.get_version.outputs.version }}
-      - name: Install mdbook
-        run: cargo install mdbook mdbook-katex mdbook-mermaid
+
+      # Ostensibly building from source, but the cache-loading above
+      # ensures we don't need to rebuild frequently.
+      - name: Install mdbook dependencies
+        run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
       - name: Build software guide
         run: cd docs/guide && mdbook build

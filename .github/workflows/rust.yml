@@ -42,7 +42,7 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
       - name: Install rust toolchain
@@ -52,21 +52,3 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
-
-  docs:
-    # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
-    # and refactors to rust deps can break that generation. Let's ensure this script exits 0
-    # on PRs, but we'll still only deploy after merge into main.
-    name: Check that rustdocs build OK
-    runs-on: buildjet-16vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Install rust toolchain
-        # The script for rustdoc build requires nightly toolchain.
-        uses: dtolnay/rust-toolchain@nightly
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Build rustdocs
-        run: ./deployments/scripts/rust-docs
