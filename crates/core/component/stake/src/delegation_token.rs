@@ -20,7 +20,7 @@ impl From<IdentityKey> for DelegationToken {
 
 impl From<&IdentityKey> for DelegationToken {
     fn from(v: &IdentityKey) -> Self {
-        DelegationToken::new(v.clone())
+        DelegationToken::new(*v)
     }
 }
 
@@ -53,7 +53,7 @@ impl DelegationToken {
 
     /// Returns the identity key of the validator this delegation token is associated with.
     pub fn validator(&self) -> IdentityKey {
-        self.validator_identity.clone()
+        self.validator_identity
     }
 }
 
