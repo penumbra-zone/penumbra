@@ -38,7 +38,7 @@ cometbft:
     repository: cometbft/cometbft
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
-    tag: "v0.37.2"
+    tag: "v0.37.5"
   # Override sections of the CometBFT config. Applies to all nodes.
   config:
     p2p:
