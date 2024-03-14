@@ -333,6 +333,46 @@ impl TestnetConfig {
     }
 }
 
+/// Create a new testnet definition, including genesis and at least one
+/// validator config. Write all configs to the target testnet dir,
+/// defaulting to `~/.penumbra/testnet_data`, as usual.
+#[allow(clippy::too_many_arguments)]
+pub fn testnet_generate(
+    testnet_dir: PathBuf,
+    chain_id: &str,
+    active_validator_limit: Option<u64>,
+    tendermint_timeout_commit: Option<tendermint::Timeout>,
+    epoch_duration: Option<u64>,
+    unbonding_epochs: Option<u64>,
+    peer_address_template: Option<String>,
+    external_addresses: Vec<TendermintAddress>,
+    validators_input_file: Option<PathBuf>,
+    allocations_input_file: Option<PathBuf>,
+    proposal_voting_blocks: Option<u64>,
+) -> anyhow::Result<()> {
+    tracing::info!(?chain_id, "Generating network config");
+    let t = TestnetConfig::generate(
+        chain_id,
+        Some(testnet_dir),
+        peer_address_template,
+        Some(external_addresses),
+        allocations_input_file,
+        validators_input_file,
+        tendermint_timeout_commit,
+        active_validator_limit,
+        epoch_duration,
+        unbonding_epochs,
+        proposal_voting_blocks,
+    )?;
+    tracing::info!(
+        n_validators = t.validators.len(),
+        chain_id = %t.genesis.chain_id,
+        "Writing config files for network"
+    );
+    t.write_configs()?;
+    Ok(())
+}
+
 /// Represents initial allocations to the testnet.
 #[derive(Debug, Deserialize)]
 pub struct TestnetAllocation {
@@ -500,8 +540,8 @@ impl TryFrom<&TestnetValidator> for Validator {
             // Currently there's no way to set validator keys beyond
             // manually editing the genesis.json. Otherwise they
             // will be randomly generated keys.
-            identity_key: tv.keys.validator_id_vk,
-            governance_key: GovernanceKey(tv.keys.validator_id_vk.0),
+            identity_key: IdentityKey(tv.keys.validator_id_vk),
+            governance_key: GovernanceKey(tv.keys.validator_id_vk),
             consensus_key: tv.keys.validator_cons_pk,
             name: tv.name.clone(),
             website: tv.website.clone(),
