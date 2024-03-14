@@ -271,6 +271,14 @@ impl<T: StateWrite + ?Sized> ValidatorDataWrite for T {}
 
 #[async_trait]
 pub(crate) trait ValidatorPoolTracker: StateWrite {
+    /// Set the validator pool size, overwriting any existing value.
+    fn set_validator_pool_size(&mut self, identity_key: &IdentityKey, amount: Amount) {
+        self.put(
+            state_key::validators::pool::balance::by_id(identity_key),
+            amount,
+        );
+    }
+
     /// Checked increase of the validator pool size by the given amount.
     /// Returns the new pool size, or `None` if the update failed.
     async fn increase_validator_pool_size(
