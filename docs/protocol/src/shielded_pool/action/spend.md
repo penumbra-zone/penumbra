@@ -18,6 +18,16 @@ The invariants that the Spend upholds are described below.
 
 3. You can't spend a note that has not been created, unless the amount of that note is 0.
 
+4. The spend does not reveal the amount, asset type, sender identity, or recipient identity.
+
+    4.1 The spend data included in a transaction preserves this property.
+
+    4.2 The integrity checks as described above are done privately.
+
+    4.3 Spends should not be linkable.
+
+5. The balance contribution of the value of the note being spent is private.
+
 #### Local Justification
 
 1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
@@ -29,6 +39,16 @@ The invariants that the Spend upholds are described below.
     2.2. This is in the `ActionHandler` implementation on `check_stateful`, and an external check about the integrity of each transaction.
 
 3. The circuit verifies for non-zero amounts that there is a valid [Merkle authentication path](#merkle-auth-path-verification) to the note in the global state commitment tree.
+
+4. The privacy of a spend is enforced via:
+
+    4.1 The nullifier appears in public, but the nullifier does not reveal anything about the note commitment it nullifies. The spender demonstrates [knowledge of the pre-image of the hash used for nullifier derivation in zero-knowledge](#nullifier-integrity).
+
+    4.2 Merkle path verification, and all other integrity checks involving private data about the note (address, amount, asset type) are done in zero-knowledge.
+
+    4.3 A randomized verification key is used to prevent linkability of spends. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#randomized-verification-key-integrity). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being spent](#diversified-address-integrity).
+
+5. The balance contribution of the value of the note being spent is hidden via the hiding property of the balance commitment scheme. Knowledge of the opening of the [balance commitment is done in zero-knowledge](#balance-commitment-integrity).
 
 #### Global Justification
 
@@ -66,7 +86,7 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.notecommit")) mod q`
 
-### Balance Commitment Integrity
+### [Balance Commitment Integrity](#balance-commitment-integrity)
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
@@ -98,7 +118,7 @@ where $B_d$ is the witnessed diversified basepoint and $ivk$ is the incoming vie
 
 as described in [Viewing Keys](../../addresses_keys/viewing_keys.md).
 
-### Randomized verification key Integrity
+### [Randomized verification key Integrity](#randomized-verification-key-integrity)
 
 The zk-SNARK certifies that the randomized verification key $rk$ was derived using the witnessed $ak$ and spend auth randomizer $\alpha$ as:
 

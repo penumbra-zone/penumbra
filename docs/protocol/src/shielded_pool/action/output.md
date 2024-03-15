@@ -10,15 +10,33 @@ The invariants that the Output upholds are described below.
 
 1. The created output note is spendable by the recipient if its nullifier has not been revealed.
 
-1.1 The output note is bound to the recipient.
+    1.1 The output note is bound to the recipient.
 
-1.2 The output note can be spent only by the recipient.
+    1.2 The output note can be spent only by the recipient.
+
+2. The output data in the transaction does not reveal the amount, asset type, sender identity, or recipient identity.
+
+    2.1 The output data included in a transaction preserves this property.
+
+    2.2 The integrity checks as described above are done privately.
+
+3. The balance contribution of the value of the note is private.
 
 #### Local Justification
 
-1.1 The note commitment binds the note to the typed value and the address of the recipient.
+1. The created note is spendable only by the recipient if its nullifier has not been revealed since:
 
-1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
+    1.1 The note commitment binds the note to the typed value and the address of the recipient.
+
+    1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
+
+2. The privacy of the note data is enforced via:
+
+    2.1 The output note, which includes the amount, asset, and address of the recipient, is symmetrically encrypted to a key that only the recipient and sender can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender address can *optionally* be included in the symmetrically encrypted memo field of the transaction, which can be decrypted by any output in that transaction as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender or recipient can authorize other parties to view the contents of the note by disclosure of these symmetric keys.
+
+    2.2 The note commitment scheme used for property 1 preserves privacy via the hiding property of the note commitment scheme. The sender demonstrates knowledge of the opening of the [note commitment in zero-knowledge](#note-commitment-integrity).
+
+3. The balance contribution of the value of the note is hidden via the hiding property of the balance commitment scheme. Knowledge of the opening of the [balance commitment is done in zero-knowledge](#balance-commitment-integrity).
 
 #### Global Justification
 
@@ -46,7 +64,7 @@ And the corresponding public inputs:
 * Balance commitment $cv \isin G$ to the value balance
 * Note commitment $cm \isin \mathbb F_q$
 
-### Note Commitment Integrity
+### [Note Commitment Integrity](#note-commitment-integrity)
 
 The zk-SNARK certifies that the public input note commitment $cm$ was derived as:
 
@@ -56,7 +74,7 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.notecommit")) mod q`
 
-### Balance Commitment Integrity
+### [Balance Commitment Integrity](#balance-commitment-integrity)
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
