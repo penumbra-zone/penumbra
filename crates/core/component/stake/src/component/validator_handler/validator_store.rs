@@ -293,6 +293,8 @@ pub(crate) trait ValidatorPoolTracker: StateWrite {
             .expect("no deserialization error expected")
             .unwrap_or(Amount::zero());
 
+        tracing::debug!(validator_identity = %identity_key, ?add, ?old_supply, "expanding validator pool size");
+
         if let Some(new_supply) = old_supply.checked_add(&add) {
             self.put(state_path, new_supply);
             Some(new_supply)
@@ -314,6 +316,8 @@ pub(crate) trait ValidatorPoolTracker: StateWrite {
             .await
             .expect("no deserialization error expected")
             .unwrap_or(Amount::zero());
+
+        tracing::debug!(validator_identity = %identity_key, ?sub, ?old_supply, "contracting validator pool size");
 
         if let Some(new_supply) = old_supply.checked_sub(&sub) {
             self.put(state_path, new_supply);

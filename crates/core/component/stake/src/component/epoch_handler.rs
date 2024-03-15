@@ -222,40 +222,19 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             "net delegation change for validator's pool for the epoch"
         );
 
-        // Delegations and undelegations created in the previous epoch were created
-        // with the prev_validator_rate.  To compute the staking delta, we need to take
-        // an absolute value and then re-apply the sign, since .unbonded_amount operates
-        // on unsigned values.
-        let absolute_delegation_change = Amount::from(delegation_delta.unsigned_abs());
+        let abs_delegation_change = Amount::from(delegation_delta.unsigned_abs());
 
-        // Staking tokens are being delegated, so the staking token supply decreases and
-        // the delegation token supply increases.
+        // We need to either contract or expand the validator pool size,
+        // and panic if we encounter an under/overflow, because it can only
+        // happen if something has gone seriously wrong with the validator rate data.
         if delegation_delta > 0 {
-            tracing::debug!(
-                validator = ?validator.identity_key,
-                "staking tokens are being delegated, so the staking token supply decreases and the delegation token supply increases");
-            self.increase_validator_pool_size(validator_identity, absolute_delegation_change)
+            self.increase_validator_pool_size(validator_identity, abs_delegation_change)
                 .await
-                .with_context(|| {
-                    format!(
-                        "failed to increase delegation token supply by {}",
-                        absolute_delegation_change
-                    )
-                })?;
+                .expect("overflow should be impossible");
         } else if delegation_delta < 0 {
-            tracing::debug!(
-                validator = ?validator.identity_key,
-                "staking tokens are being undelegated, so the staking token supply increases and the delegation token supply decreases");
-            // Vice-versa: staking tokens are being undelegated, so the staking token supply
-            // increases and the delegation token supply decreases.
-            self.decrease_validator_pool_size(validator_identity, absolute_delegation_change)
+            self.decrease_validator_pool_size(validator_identity, abs_delegation_change)
                 .await
-                .with_context(|| {
-                    format!(
-                        "failed to decrease delegation token supply by {}",
-                        absolute_delegation_change
-                    )
-                })?;
+                .expect("underflow should be impossible");
         } else {
             tracing::debug!(
                 validator = ?validator.identity_key,
