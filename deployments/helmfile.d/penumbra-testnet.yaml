@@ -110,3 +110,24 @@ releases:
       - postgres:
           certificateSecretName: penumbra-testnet-wildcard
           credentialsSecretName: postgres-creds
+
+  - name: penumbra-testnet-gov-dash-node
+    chart: ../charts/penumbra-node
+    values:
+      - penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
+      - ingressRoute:
+          enabled: false
+      - image:
+          tag: latest
+      - persistence:
+          enabled: true
+          size: 300G
+      - cometbft:
+          config:
+            indexer: psql
+      - part_of: penumbra-testnet
+      - nodes:
+        - moniker: gov-dash
+      - postgres:
+          certificateSecretName: penumbra-testnet-wildcard
+          credentialsSecretName: postgres-creds-gov-dash
