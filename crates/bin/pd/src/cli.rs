@@ -144,9 +144,9 @@ pub enum TestnetCommand {
         /// Number of blocks per epoch.
         #[clap(long)]
         epoch_duration: Option<u64>,
-        /// Number of epochs before unbonding stake is released.
+        /// Number of blocks that must elapse before unbonding stake is released.
         #[clap(long)]
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         /// Maximum number of validators in the consensus set.
         #[clap(long)]
         active_validator_limit: Option<u64>,

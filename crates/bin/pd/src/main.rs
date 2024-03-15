@@ -306,7 +306,7 @@ async fn main() -> anyhow::Result<()> {
                     peer_address_template,
                     timeout_commit,
                     epoch_duration,
-                    unbonding_epochs,
+                    unbonding_delay,
                     active_validator_limit,
                     allocations_input_file,
                     validators_input_file,
@@ -368,7 +368,7 @@ async fn main() -> anyhow::Result<()> {
                 timeout_commit,
                 active_validator_limit,
                 epoch_duration,
-                unbonding_epochs,
+                unbonding_delay,
                 proposal_voting_blocks,
             )?;
             tracing::info!(
