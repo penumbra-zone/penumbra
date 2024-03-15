@@ -13,7 +13,7 @@ use penumbra_sct::CommitmentSource;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use super::{NoteManager, SupplyWrite};
+use super::{AssetRegistry, NoteManager};
 
 pub struct ShieldedPool {}
 

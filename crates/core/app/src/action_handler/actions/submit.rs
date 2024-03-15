@@ -23,7 +23,7 @@ use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::SctRead;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_shielded_pool::component::AssetRegistry;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
 use crate::action_handler::AppActionHandler;

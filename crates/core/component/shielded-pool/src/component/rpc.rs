@@ -7,7 +7,7 @@ use penumbra_proto::core::component::shielded_pool::v1::{
 use tonic::Status;
 use tracing::instrument;
 
-use super::SupplyRead;
+use super::AssetRegistryRead;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {

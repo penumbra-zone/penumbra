@@ -9,17 +9,17 @@ use tracing::instrument;
 use crate::state_key;
 
 #[async_trait]
-pub trait SupplyRead: StateRead {
+pub trait AssetRegistryRead: StateRead {
     async fn denom_by_asset(&self, asset_id: &asset::Id) -> Result<Option<Metadata>> {
         self.get(&state_key::denom_by_asset(asset_id)).await
     }
 }
 
-impl<T: StateRead + ?Sized> SupplyRead for T {}
+impl<T: StateRead + ?Sized> AssetRegistryRead for T {}
 
 #[async_trait]
-pub trait SupplyWrite: StateWrite {
-    // TODO: why not make this infallible and synchronous?
+pub trait AssetRegistry: StateWrite {
+    /// Register a new asset present in the shielded pool.
     #[instrument(skip(self))]
     async fn register_denom(&mut self, denom: &Metadata) -> Result<()> {
         let id = denom.id();
@@ -35,4 +35,4 @@ pub trait SupplyWrite: StateWrite {
     }
 }
 
-impl<T: StateWrite + ?Sized> SupplyWrite for T {}
+impl<T: StateWrite + ?Sized> AssetRegistry for T {}

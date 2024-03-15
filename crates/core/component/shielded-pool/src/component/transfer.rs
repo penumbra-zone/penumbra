@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    component::{NoteManager, SupplyWrite},
+    component::{AssetRegistry, NoteManager},
     Ics20Withdrawal,
 };
 use anyhow::{Context, Result};

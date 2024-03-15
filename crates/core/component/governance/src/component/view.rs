@@ -17,7 +17,7 @@ use penumbra_sct::{
     component::{clock::EpochRead, tree::SctRead},
     Nullifier,
 };
-use penumbra_shielded_pool::component::SupplyRead;
+use penumbra_shielded_pool::component::AssetRegistryRead;
 use penumbra_stake::{
     component::{validator_handler::ValidatorDataRead, ConsensusIndexRead},
     DelegationToken, GovernanceKey, IdentityKey,
