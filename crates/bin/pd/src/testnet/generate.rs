@@ -67,7 +67,7 @@ impl TestnetConfig {
         tendermint_timeout_commit: Option<tendermint::Timeout>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
@@ -96,7 +96,7 @@ impl TestnetConfig {
             validators.to_vec(),
             active_validator_limit,
             epoch_duration,
-            unbonding_epochs,
+            unbonding_delay,
             proposal_voting_blocks,
         )?;
         let genesis = Self::make_genesis(app_state)?;
@@ -343,7 +343,7 @@ pub fn testnet_generate(
     active_validator_limit: Option<u64>,
     tendermint_timeout_commit: Option<tendermint::Timeout>,
     epoch_duration: Option<u64>,
-    unbonding_epochs: Option<u64>,
+    unbonding_delay: Option<u64>,
     peer_address_template: Option<String>,
     external_addresses: Vec<TendermintAddress>,
     validators_input_file: Option<PathBuf>,
@@ -361,7 +361,7 @@ pub fn testnet_generate(
         tendermint_timeout_commit,
         active_validator_limit,
         epoch_duration,
-        unbonding_epochs,
+        unbonding_delay,
         proposal_voting_blocks,
     )?;
     tracing::info!(
