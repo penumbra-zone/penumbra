@@ -63,9 +63,18 @@ pub mod validators {
             format!("staking/validators/data/power/{id}")
         }
     }
-    pub mod bonding_state {
-        pub fn by_id(id: &crate::IdentityKey) -> String {
-            format!("staking/validators/data/bonding_state/{id}")
+
+    pub mod pool {
+        pub mod balance {
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("staking/validators/data/pool/balance/{id}")
+            }
+        }
+
+        pub mod bonding_state {
+            pub fn by_id(id: &crate::IdentityKey) -> String {
+                format!("staking/validators/data/pool/bonding_state/{id}")
+            }
         }
     }
 
@@ -93,6 +102,10 @@ pub mod chain {
         pub fn previous() -> &'static str {
             "staking/chain/base_rate/previous"
         }
+    }
+
+    pub fn total_bonded() -> &'static str {
+        "staking/chain/total_bonded"
     }
 
     pub mod delegation_changes {

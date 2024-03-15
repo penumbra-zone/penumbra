@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto as _;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_shielded_pool::component::AssetRegistry;
 
 use crate::{
     action_handler::ActionHandler,
@@ -45,7 +45,7 @@ impl ActionHandler for ProposalWithdraw {
         // Register the denom for the withdrawn proposal NFT
         state
             .register_denom(&ProposalNft::unbonding_deposit(*proposal).denom())
-            .await?;
+            .await;
 
         state.record_proto(event::proposal_withdraw(self));
 

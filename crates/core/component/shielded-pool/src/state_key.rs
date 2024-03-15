@@ -1,14 +1,6 @@
 use penumbra_asset::asset;
 use std::string::String;
 
-pub fn token_supply(asset_id: &asset::Id) -> String {
-    format!("shielded_pool/assets/{asset_id}/token_supply")
-}
-
-pub fn known_assets() -> &'static str {
-    "shielded_pool/known_assets"
-}
-
 pub fn denom_by_asset(asset_id: &asset::Id) -> String {
     format!("shielded_pool/assets/{asset_id}/denom")
 }

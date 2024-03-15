@@ -2,8 +2,8 @@ use crate::params::StakeParameters;
 use crate::rate::BaseRateData;
 use crate::validator::{self, Validator};
 use crate::{
-    state_key, CurrentConsensusKeys, Delegate, DelegationChanges, DelegationToken, FundingStreams,
-    IdentityKey, Penalty, Undelegate,
+    state_key, CurrentConsensusKeys, Delegate, DelegationChanges, FundingStreams, IdentityKey,
+    Penalty, Undelegate,
 };
 use anyhow::Context;
 use anyhow::{anyhow, Result};
@@ -14,7 +14,6 @@ use futures::{StreamExt, TryStreamExt};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
-use penumbra_shielded_pool::component::SupplyRead;
 use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
@@ -418,9 +417,14 @@ pub(crate) trait InternalStakingData: StateRead {
             }
 
             let delegation_token_supply = self
-                .token_supply(&DelegationToken::from(validator_identity).id())
-                .await?
-                .expect("delegation token should be known");
+                .get_validator_pool_size(&validator_identity)
+                .await
+                .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "validator delegation pool not found for {}",
+                    validator_identity
+                )
+            })?;
 
             let validator_rate = self
                 .get_validator_rate(&validator_identity)
@@ -444,7 +448,7 @@ pub(crate) trait InternalStakingData: StateRead {
 impl<T: StateRead + ?Sized> InternalStakingData for T {}
 
 #[async_trait]
-pub trait RateDataWrite: StateWrite {
+pub(crate) trait RateDataWrite: StateWrite {
     #[instrument(skip(self))]
     fn set_base_rate(&mut self, rate_data: BaseRateData) {
         tracing::debug!("setting base rate");

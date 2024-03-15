@@ -2,7 +2,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_sct::component::clock::EpochRead;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_shielded_pool::component::AssetRegistry;
 
 use crate::{
     component::action_handler::ActionHandler,
@@ -66,9 +66,7 @@ impl ActionHandler for Undelegate {
         /* ----- execution ------ */
 
         // Register the undelegation's denom, so clients can look it up later.
-        state
-            .register_denom(&self.unbonding_token().denom())
-            .await?;
+        state.register_denom(&self.unbonding_token().denom()).await;
 
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());

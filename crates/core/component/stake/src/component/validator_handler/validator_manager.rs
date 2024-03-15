@@ -14,7 +14,7 @@ use async_trait::async_trait;
 use futures::StreamExt as _;
 use penumbra_num::Amount;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_shielded_pool::component::{SupplyRead as _, SupplyWrite};
+use penumbra_shielded_pool::component::AssetRegistry;
 use sha2::{Digest as _, Sha256};
 use tendermint::abci::types::{CommitInfo, Misbehavior};
 use tokio::task::JoinSet;
@@ -25,6 +25,7 @@ use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto;
 use tracing::{instrument, Instrument};
 
+use crate::component::validator_handler::validator_store::ValidatorPoolTracker;
 use crate::{
     component::validator_handler::ValidatorDataRead,
     component::StateReadExt as _,
@@ -393,6 +394,7 @@ pub trait ValidatorManager: StateWrite {
             // All genesis validators start in the "Bonded" bonding state:
             validator::BondingState::Bonded,
             power,
+            total_delegation_tokens,
         )
         .await?;
 
@@ -421,7 +423,8 @@ pub trait ValidatorManager: StateWrite {
             rate_data,
             validator::State::Defined,
             validator::BondingState::Unbonded,
-            0u128.into(),
+            Amount::zero(),
+            Amount::zero(),
         )
         .await
     }
@@ -442,6 +445,7 @@ pub trait ValidatorManager: StateWrite {
         initial_state: validator::State,
         initial_bonding_state: validator::BondingState,
         initial_voting_power: Amount,
+        initial_delegation_pool_size: Amount,
     ) -> Result<()> {
         tracing::debug!("adding validator");
         if !matches!(initial_state, State::Defined | State::Active) {
@@ -465,7 +469,7 @@ pub trait ValidatorManager: StateWrite {
             .await;
         // We register the validator's delegation token in the token registry...
         self.register_denom(&DelegationToken::from(&validator_identity).denom())
-            .await?;
+            .await;
         // ... and its reward rate data in the JMT.
         self.set_validator_rate_data(&validator_identity, initial_rate_data);
 
@@ -473,6 +477,7 @@ pub trait ValidatorManager: StateWrite {
         self.set_initial_validator_state(&validator_identity, initial_state)?;
         self.set_validator_power(&validator_identity, initial_voting_power)?;
         self.set_validator_bonding_state(&validator_identity, initial_bonding_state);
+        self.set_validator_pool_size(&validator_identity, initial_delegation_pool_size);
 
         // Finally, update metrics for the new validator.
         match initial_state {
@@ -499,7 +504,7 @@ pub trait ValidatorManager: StateWrite {
         let current_state = self
             .get_validator_state(id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+            .ok_or_else(|| anyhow::anyhow!("updated validator has no recorded state"))?;
 
         tracing::debug!(?current_state, ?validator.enabled, "updating validator state");
 
@@ -512,14 +517,14 @@ pub trait ValidatorManager: StateWrite {
                 // The operator has re-enabled their validator, if it has enough stake it will become
                 // inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
-                let current_validator_rate = self
-                    .get_validator_rate(id)
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let current_validator_rate =
+                    self.get_validator_rate(id).await?.ok_or_else(|| {
+                        anyhow::anyhow!("updated validator has no recorded rate data")
+                    })?;
                 let delegation_token_supply = self
-                    .token_supply(&DelegationToken::from(id).id())
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                    .get_validator_pool_size(id)
+                    .await
+                    .unwrap_or_else(Amount::zero);
                 let unbonded_amount =
                     current_validator_rate.unbonded_amount(delegation_token_supply);
 
@@ -536,11 +541,11 @@ pub trait ValidatorManager: StateWrite {
                 let validator_rate_data = self
                     .get_validator_rate(id)
                     .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                    .ok_or_else(|| anyhow::anyhow!("updated validator has no recorded state"))?;
                 let delegation_pool_size = self
-                    .token_supply(&DelegationToken::from(id).id())
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                    .get_validator_pool_size(id)
+                    .await
+                    .unwrap_or_else(Amount::zero);
 
                 let unbonded_pool_size = validator_rate_data.unbonded_amount(delegation_pool_size);
 

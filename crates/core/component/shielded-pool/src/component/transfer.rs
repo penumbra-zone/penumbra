@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    component::{NoteManager, SupplyWrite},
+    component::{AssetRegistry, NoteManager},
     Ics20Withdrawal,
 };
 use anyhow::{Context, Result};
@@ -137,11 +137,6 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
             );
-
-            // update supply tracking of burned note
-            self.decrease_token_supply(&withdrawal.denom.id(), withdrawal.amount)
-                .await
-                .expect("couldn't update token supply in ics20 withdrawal!");
         }
 
         self.send_packet_execute(checked_packet).await;
@@ -364,10 +359,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .as_str()
             .try_into()
             .context("unable to parse denom in ics20 transfer as DenomMetadata")?;
-        state
-            .register_denom(&denom)
-            .await
-            .context("unable to register denom in ics20 transfer")?;
+        state.register_denom(&denom).await;
 
         let value = Value {
             amount: receiver_amount,

@@ -23,7 +23,7 @@ use penumbra_keys::keys::{FullViewingKey, NullifierKey};
 use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::SctRead;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_shielded_pool::component::AssetRegistry;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
 use crate::action_handler::AppActionHandler;
@@ -276,12 +276,12 @@ impl AppActionHandler for ProposalSubmit {
         // Register the denom for the voting proposal NFT
         state
             .register_denom(&ProposalNft::deposit(proposal_id).denom())
-            .await?;
+            .await;
 
         // Register the denom for the vote receipt tokens
         state
             .register_denom(&VotingReceiptToken::new(proposal_id).denom())
-            .await?;
+            .await;
 
         // Set the proposal state to voting (votes start immediately)
         state.put_proposal_state(proposal_id, ProposalState::Voting);

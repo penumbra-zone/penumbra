@@ -22,6 +22,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
 
+// IMPORTANT: Changing this implementation is state-breaking.
 impl std::str::FromStr for IdentityKey {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -32,6 +33,7 @@ impl std::str::FromStr for IdentityKey {
     }
 }
 
+// IMPORTANT: Changing this implementation is state-breaking.
 impl std::fmt::Display for IdentityKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&bech32str::encode(

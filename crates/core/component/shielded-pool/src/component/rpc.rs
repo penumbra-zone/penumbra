@@ -7,7 +7,7 @@ use penumbra_proto::core::component::shielded_pool::v1::{
 use tonic::Status;
 use tracing::instrument;
 
-use super::SupplyRead;
+use super::AssetRegistryRead;
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -36,10 +36,7 @@ impl QueryService for Server {
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("could not parse asset_id: {e}")))?;
 
-        let denom = state
-            .denom_by_asset(&id)
-            .await
-            .map_err(|e| Status::internal(e.to_string()))?;
+        let denom = state.denom_by_asset(&id).await;
 
         let rsp = match denom {
             Some(denom) => {

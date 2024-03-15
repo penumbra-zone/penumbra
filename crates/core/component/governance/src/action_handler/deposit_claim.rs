@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_proto::StateWriteProto as _;
-use penumbra_shielded_pool::component::SupplyWrite;
+use penumbra_shielded_pool::component::AssetRegistry;
 
 use crate::action_handler::ActionHandler;
 use crate::component::{StateReadExt as _, StateWriteExt as _};
@@ -60,7 +60,7 @@ impl ActionHandler for ProposalDepositClaim {
                     }
                     .denom(),
                 )
-                .await?;
+                .await;
 
             // Set the proposal state to claimed
             state.put_proposal_state(*proposal, ProposalState::Claimed { outcome });

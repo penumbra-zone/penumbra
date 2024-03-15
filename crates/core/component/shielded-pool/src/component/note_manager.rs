@@ -12,8 +12,6 @@ use tracing::instrument;
 use crate::state_key;
 use crate::{Note, NotePayload, Rseed};
 
-use super::SupplyWrite;
-
 /// Manages the addition of new notes to the chain state.
 #[async_trait]
 pub trait NoteManager: StateWrite {
@@ -39,7 +37,6 @@ pub trait NoteManager: StateWrite {
         // Hashing the current SCT root would be sufficient, since it will
         // change every time we insert a new note.  But computing the SCT root
         // is very slow, so instead we hash the current position.
-
         let position: u64 = self
             .get_sct()
             .await
@@ -56,9 +53,6 @@ pub trait NoteManager: StateWrite {
             .try_into()?;
 
         let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
-        // Now record the note and update the total supply:
-        self.increase_token_supply(&value.asset_id, value.amount)
-            .await?;
         self.add_note_payload(note.payload(), source).await;
 
         Ok(())
