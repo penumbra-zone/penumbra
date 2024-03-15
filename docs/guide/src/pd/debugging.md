@@ -19,7 +19,7 @@ Specifically, check that `catching_up=false`. You can also compare the `latest_b
 value with the tip of the chain visible when running `pcli view sync`.
 
 ## How long does it take to synchronize with the network?
-A new node will sync at a rate of approximately 50,000 blocks per 24h.
+A new node will sync at a rate of approximately 100,000 blocks per 6h.
 
 ## How do I check whether my validator is active?
 
