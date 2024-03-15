@@ -504,7 +504,7 @@ pub trait ValidatorManager: StateWrite {
         let current_state = self
             .get_validator_state(id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+            .ok_or_else(|| anyhow::anyhow!("updated validator has no recorded state"))?;
 
         tracing::debug!(?current_state, ?validator.enabled, "updating validator state");
 
@@ -517,10 +517,10 @@ pub trait ValidatorManager: StateWrite {
                 // The operator has re-enabled their validator, if it has enough stake it will become
                 // inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
-                let current_validator_rate = self
-                    .get_validator_rate(id)
-                    .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                let current_validator_rate =
+                    self.get_validator_rate(id).await?.ok_or_else(|| {
+                        anyhow::anyhow!("updated validator has no recorded rate data")
+                    })?;
                 let delegation_token_supply = self
                     .get_validator_pool_size(id)
                     .await
@@ -541,7 +541,7 @@ pub trait ValidatorManager: StateWrite {
                 let validator_rate_data = self
                     .get_validator_rate(id)
                     .await?
-                    .ok_or_else(|| anyhow::anyhow!("updated validator not found in JMT"))?;
+                    .ok_or_else(|| anyhow::anyhow!("updated validator has no recorded state"))?;
                 let delegation_pool_size = self
                     .get_validator_pool_size(id)
                     .await
