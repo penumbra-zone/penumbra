@@ -64,7 +64,7 @@ where
             tracing::{info, trace, trace_span, Instrument},
         };
 
-        for i in 0..blocks {
+        for i in 1..=blocks {
             self.block()
                 .execute()
                 .tap(|_| trace!(%i, "executing empty block"))
