@@ -359,10 +359,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .as_str()
             .try_into()
             .context("unable to parse denom in ics20 transfer as DenomMetadata")?;
-        state
-            .register_denom(&denom)
-            .await
-            .context("unable to register denom in ics20 transfer")?;
+        state.register_denom(&denom).await;
 
         let value = Value {
             amount: receiver_amount,

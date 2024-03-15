@@ -272,7 +272,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Look up the validator for a given asset ID, if it is a delegation token.
     async fn validator_by_delegation_asset(&self, asset_id: asset::Id) -> Result<IdentityKey> {
         // Attempt to find the denom for the asset ID of the specified value
-        let Some(denom) = self.denom_by_asset(&asset_id).await? else {
+        let Some(denom) = self.denom_by_asset(&asset_id).await else {
             anyhow::bail!("asset ID {} does not correspond to a known denom", asset_id);
         };
 

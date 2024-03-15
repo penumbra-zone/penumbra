@@ -66,9 +66,7 @@ impl ActionHandler for Undelegate {
         /* ----- execution ------ */
 
         // Register the undelegation's denom, so clients can look it up later.
-        state
-            .register_denom(&self.unbonding_token().denom())
-            .await?;
+        state.register_denom(&self.unbonding_token().denom()).await;
 
         tracing::debug!(?self, "queuing undelegation for next epoch");
         state.push_undelegation(self.clone());

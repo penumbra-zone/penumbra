@@ -45,7 +45,7 @@ impl ActionHandler for ProposalWithdraw {
         // Register the denom for the withdrawn proposal NFT
         state
             .register_denom(&ProposalNft::unbonding_deposit(*proposal).denom())
-            .await?;
+            .await;
 
         state.record_proto(event::proposal_withdraw(self));
 

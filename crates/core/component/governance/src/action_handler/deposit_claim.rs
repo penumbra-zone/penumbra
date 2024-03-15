@@ -60,7 +60,7 @@ impl ActionHandler for ProposalDepositClaim {
                     }
                     .denom(),
                 )
-                .await?;
+                .await;
 
             // Set the proposal state to claimed
             state.put_proposal_state(*proposal, ProposalState::Claimed { outcome });

@@ -41,10 +41,7 @@ impl Component for ShieldedPool {
                         "Genesis allocations contain empty note",
                     );
 
-                    state
-                        .register_denom(&allocation.denom())
-                        .await
-                        .expect("able to register denom for genesis allocation");
+                    state.register_denom(&allocation.denom()).await;
                     state
                         .mint_note(
                             allocation.value(),
