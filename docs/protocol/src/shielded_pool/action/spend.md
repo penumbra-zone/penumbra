@@ -46,7 +46,7 @@ The invariants that the Spend upholds are described below.
 
     4.2 Merkle path verification, and all other integrity checks involving private data about the note (address, amount, asset type) are done in zero-knowledge.
 
-    4.3 A randomized verification key is used to prevent linkability of spends. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#randomized-verification-key-integrity). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being spent](#diversified-address-integrity).
+    4.3 A randomized verification key (provided on each spend) is used to prevent linkability of spends. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#randomized-verification-key-integrity). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being spent](#diversified-address-integrity).
 
 5. The balance contribution of the value of the note being spent is hidden via the hiding property of the balance commitment scheme. Knowledge of the opening of the [balance commitment is done in zero-knowledge](#balance-commitment-integrity).
 

@@ -8,8 +8,6 @@ The invariants that the DelegatorVote upholds are described below.
 
 #### Local Invariants
 
-Privacy note: Value of staked note used for voting is revealed during a delegator vote.
-
 1. Available voting power for a proposal = total delegated stake to active validators when the proposal was created
 
     1.1 Voting power must have been present before the proposal was created.
@@ -23,7 +21,11 @@ proposal being voted on was created.
 
 3. You can't vote on a proposal that is not votable, i.e. it has not been withdrawn or voting has finished.
 
-4. All invariants with regards to spending a note apply to voting with it.
+4. Invariants 1-3 with regards to spending a note apply to voting with it.
+
+5. The voting power (amount and asset type of the staked note used for voting), the vote, as well as the proposal being voted on, is revealed during a delegator vote. However, they are anonymous in that they do not reveal the address of the voter.
+
+6. Currently, votes across proposals can be linked if the same staked note is used.
 
 #### Local Justification
 
@@ -40,6 +42,10 @@ proposal being voted on was created.
 3. The stateful check looks up the proposal ID and ensures it is votable.
 
 4. c.f. justification for spend circuit [here](../../shielded_pool/action/spend.md)
+
+5. A randomized verification key is used to prevent linkability of votes across the same spend authority. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#spend-authority). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being used for voting](#diversified-address-integrity).
+
+6. The nullifier revealed in the DelegatorVote will be the same if the same staked note is used. Thus, the nullifier can be used to link votes across proposals.
 
 ## DelegatorVote zk-SNARK Statements
 
@@ -59,7 +65,7 @@ And the corresponding public inputs:
 
 * Merkle anchor $\isin \mathbb F_q$ of the state commitment tree
 * Balance commitment $cv \isin G$ to the value balance
-* Nullifier $nf \isin F_q$ of the note to be spent
+* Nullifier $nf \isin F_q$ of the note to be used for voting
 * Randomized verification key $rk \isin \mathbb G$
 * The start position `start_pos` of the proposal being voted on, constrained to fit in 48 bits
 
@@ -115,7 +121,7 @@ where $B_d$ is the witnessed diversified basepoint and $ivk$ is the incoming vie
 
 as described in [Viewing Keys](../../addresses_keys/viewing_keys.md).
 
-### Spend Authority
+### [Spend Authority](#spend-authority)
 
 The zk-SNARK certifies that for the randomized verification key $rk$ was derived using the witnessed $ak$ and spend auth randomizer $\alpha$ as:
 

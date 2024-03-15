@@ -12,11 +12,27 @@ The invariants that the Swap upholds are described below.
 
 2. The swap binds to a specific claim address.
 
+3. The swap does not reveal the swapper identity. The swap *does* reveal the assets being swapped, as well as the amounts of those assets.
+
+    3.1 The swap data included in a transaction preserves this property.
+
+    3.2 The integrity checks as described above in invariant 1 are done privately.
+
+4. The balance contribution of the pre-paid claim fee is private.
+
 #### Local Justification
 
 1. The swap commitment includes as inputs the trading pair of the two assets, demonstrated in circuit by the [Swap Commitment Integrity](#swap-commitment-integrity) check.
 
 2. The swap commitment includes as inputs each component of the claim address, demonstrated in circuit by the [Swap Commitment Integrity](#swap-commitment-integrity) check.
+
+3. The privacy property of the swap is preserved via:
+
+    3.1 The swap, which includes the claim address of the swapper, is symmetrically encrypted to a key that only the swapper can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The swapper can authorize other parties to view the contents of the swap by disclosure of this symmetric key.
+
+    3.2 The swapper demonstrates knowledge of the [opening of the swap commitment in zero-knowledge](#swap-commitment-integrity).
+
+4. The fee contribution is hidden via the hiding property of the balance commitment scheme. Knowledge of the opening of the [fee commitment is done in zero-knowledge](#fee-commitment-integrity).
 
 #### Global Justification
 
@@ -55,7 +71,7 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.swap")) mod q`
 
-### Fee Commitment Integrity
+### [Fee Commitment Integrity](#fee-commitment-integrity)
 
 The zk-SNARK certifies that the public input fee commitment $cv_f$ was derived from the witnessed values as:
 
@@ -63,7 +79,7 @@ $cv_f = [-v_f] G_{v_f} + [\widetilde{v_f}] G_{\widetilde{v}}$
 
 where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived in-circuit from the asset ID $ID_{v_f}$ as described in [Assets and Values](../../assets.md).
 
-### Balance Commitment Integrity
+### [Balance Commitment Integrity](#balance-commitment-integrity)
 
 The zk-SNARK certifies that the total public input balance commitment $cv$ was derived from the witnessed values as:
 

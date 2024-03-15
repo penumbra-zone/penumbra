@@ -26,6 +26,10 @@ The invariants that the SwapClaim upholds are described below.
 
     5.2. No two swaps can have the same nullifier.
 
+6. The SwapClaim does not reveal the amounts or asset types of the swap output notes, nor does it reveal the identity of the claimant.
+
+7. The balance contribution of the value of the swap output notes is private.
+
 #### Local Justification
 
 1. The Swap commits to the claim address. The SwapClaim circuit enforces that the same address used to derive the swap commitment is that used to derive the note commitments for the two output notes via the [Swap Commitment Integrity](#swap-commitment-integrity) and [Output Note Commitment Integrity](#output-note-commitment-integrity) checks.
@@ -45,6 +49,10 @@ The invariants that the SwapClaim upholds are described below.
     5.1. A swap's transmission key binds to the nullifier key as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
     5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
+
+6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check.
+
+7. The balance contribution of the two output notes is zero. The only contribution to the balance is the pre-paid SwapClaim fee.
 
 #### Global Justification
 
@@ -128,7 +136,7 @@ The zk-SNARK also certifies that:
 - $ak \neq 0$
 - $pk_d \neq 0$
 
-### Fee Consistency Check
+### [Fee Consistency Check](#fee-consistency-check)
 
 The zk-SNARK certifies that the public claim fee is equal to the value
 witnessed as part of the swap plaintext.
