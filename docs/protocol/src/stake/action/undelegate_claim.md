@@ -10,11 +10,19 @@ Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate c
 
 2. Slashing penalties must be applied when unbonding.
 
+3. The UndelegateClaim reveals the validator identity, but not the unbonding amount.
+
+4. The balance contribution of the value of the undelegation is private.
+
 #### Local Justification
 
 1. In the `ActionHandler` for `check_stateful` we check that the undelegations have finished unbonding.
 
 2. The `ConvertCircuit` verifies that the conversion from the unbonding token to the staking token was done using the correct conversion rate calculated from the penalty. We check in the `ActionHandler` for `check_stateful` that the _correct_ penalty rate was used.
+
+3. The `UndelegateClaim` performs the above [conversion check in 2 in zero-knowledge](#balance-commitment-integrity) using the private unbonding amount.
+
+4. The balance contribution of the value of the undelegation is hidden via the hiding property of the balance commitment scheme. Knowledge of the opening of the [balance commitment is done in zero-knowledge](#balance-commitment-integrity).
 
 #### Global Justification
 
@@ -40,7 +48,7 @@ And the corresponding public inputs:
 * Asset ID $ID_i \isin \mathbb F_q$ of the input (source) amount
 * Asset ID $ID_t \isin \mathbb F_q$ of the target amount
 
-### Balance Commitment Integrity
+### [Balance Commitment Integrity](#balance-commitment-integrity)
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
