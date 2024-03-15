@@ -303,7 +303,7 @@ pub(crate) trait ValidatorPoolTracker: StateWrite {
         }
     }
 
-    /// Checked increase of the validator pool size by the given amount.
+    /// Checked decrease of the validator pool size by the given amount.
     /// Returns the new pool size, or `None` if the update failed.
     async fn decrease_validator_pool_size(
         &mut self,
