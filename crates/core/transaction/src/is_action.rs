@@ -331,7 +331,9 @@ impl IsAction for Swap {
         ActionView::Swap(match plaintext {
             Some(swap_plaintext) => SwapView::Visible {
                 swap: self.to_owned(),
-                swap_plaintext,
+                swap_plaintext: swap_plaintext.clone(),
+                output_1: None,
+                output_2: None,
             },
             None => SwapView::Opaque {
                 swap: self.to_owned(),
@@ -356,6 +358,7 @@ impl IsAction for SwapClaim {
                     swap_claim: self.to_owned(),
                     output_1: txp.view_note(output_1.to_owned()),
                     output_2: txp.view_note(output_2.to_owned()),
+                    swap_tx: None,
                 };
                 ActionView::SwapClaim(swap_claim_view)
             }

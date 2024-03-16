@@ -1,4 +1,7 @@
-use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_proto::{
+    core::component::shielded_pool::v1::NoteView, penumbra::core::component::dex::v1 as pb,
+    DomainType,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{Swap, SwapPlaintext};
@@ -10,6 +13,8 @@ pub enum SwapView {
     Visible {
         swap: Swap,
         swap_plaintext: SwapPlaintext,
+        output_1: Option<NoteView>,
+        output_2: Option<NoteView>,
     },
     Opaque {
         swap: Swap,
@@ -37,6 +42,8 @@ impl TryFrom<pb::SwapView> for SwapView {
                     .swap_plaintext
                     .ok_or_else(|| anyhow::anyhow!("missing swap plaintext field"))?
                     .try_into()?,
+                output_1: x.output_1,
+                output_2: x.output_2,
             }),
             pb::swap_view::SwapView::Opaque(x) => Ok(SwapView::Opaque {
                 swap: x
@@ -55,6 +62,8 @@ impl From<SwapView> for pb::SwapView {
             SwapView::Visible {
                 swap,
                 swap_plaintext,
+                output_1,
+                output_2,
             } => Self {
                 swap_view: Some(sv::SwapView::Visible(sv::Visible {
                     swap: Some(swap.into()),
@@ -65,8 +74,8 @@ impl From<SwapView> for pb::SwapView {
                     asset_1_metadata: None,
                     asset_2_metadata: None,
                     batch_swap_output_data: None,
-                    output_1: None,
-                    output_2: None,
+                    output_1,
+                    output_2,
                 })),
             },
             SwapView::Opaque { swap } => Self {
@@ -84,6 +93,8 @@ impl From<SwapView> for Swap {
             SwapView::Visible {
                 swap,
                 swap_plaintext: _,
+                output_1: _,
+                output_2: _,
             } => swap,
             SwapView::Opaque { swap } => swap,
         }
