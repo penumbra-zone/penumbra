@@ -10,6 +10,7 @@ use penumbra_transaction::{AuthorizationData, TransactionPlan};
 use crate::AuthorizeRequest;
 
 pub use self::config::Config;
+use self::sign::SigningRequest;
 
 mod config;
 mod dkg;
@@ -43,7 +44,7 @@ pub trait Terminal {
     ///
     /// In an actual terminal, this should display the transaction in a human readable
     /// form, and then get feedback from the user.
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool>;
+    async fn confirm_request(&self, request: &SigningRequest) -> Result<bool>;
 
     /// Push an explanatory message to the terminal.
     ///
@@ -79,7 +80,10 @@ pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
             .ok_or(anyhow!("expected message from coordinator"))?;
         from_json(&string)?
     };
-    if !terminal.confirm_transaction(&round1_message.plan()).await? {
+    if !terminal
+        .confirm_request(&round1_message.signing_request())
+        .await?
+    {
         return Ok(());
     }
     let (round1_reply, round1_state) = sign::follower_round1(&mut OsRng, config, round1_message)?;
@@ -166,7 +170,7 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
     dkg::round3(&mut OsRng, state, round2_replies)
 }
 
-/// A custody backend using threshold signing.  
+/// A custody backend using threshold signing.
 ///
 /// This backend is initialized with a full viewing key, but only a share
 /// of the spend key, which is not enough to sign on its own. Instead,
@@ -189,7 +193,11 @@ impl<T: Terminal> Threshold<T> {
         let plan = request.plan;
 
         // Round 1
-        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, plan)?;
+        let (round1_message, state1) = sign::coordinator_round1(
+            &mut OsRng,
+            &self.config,
+            SigningRequest::TransactionPlan(plan),
+        )?;
         self.terminal
             .explain("Send this message to the other signers:")
             .await?;
@@ -319,7 +327,7 @@ mod test {
 
     #[async_trait]
     impl Terminal for FollowerTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 
@@ -357,7 +365,7 @@ mod test {
 
     #[async_trait]
     impl Terminal for CoordinatorTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 

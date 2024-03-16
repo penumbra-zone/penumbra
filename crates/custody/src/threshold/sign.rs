@@ -9,7 +9,9 @@ use rand_core::CryptoRngCore;
 
 use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
+use penumbra_governance::ValidatorVoteBody;
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
+use penumbra_stake::validator::Validator;
 use penumbra_transaction::{AuthorizationData, TransactionPlan};
 use penumbra_txhash::EffectHash;
 
@@ -20,22 +22,40 @@ use super::config::Config;
 /// This is nominally "round 1", even though it's the only message the coordinator ever sends.
 #[derive(Debug, Clone)]
 pub struct CoordinatorRound1 {
-    plan: TransactionPlan,
+    request: SigningRequest,
+}
+
+#[derive(Debug, Clone)]
+pub enum SigningRequest {
+    TransactionPlan(TransactionPlan),
+    ValidatorDefinition(Validator),
+    ValidatorVote(ValidatorVoteBody),
 }
 
 impl CoordinatorRound1 {
     /// View the transaction plan associated with the first message.
     ///
     /// We need this method to be able to prompt users correctly.
-    pub fn plan(&self) -> &TransactionPlan {
-        &self.plan
+    pub fn signing_request(&self) -> &SigningRequest {
+        &self.request
     }
 }
 
 impl From<CoordinatorRound1> for pb::CoordinatorRound1 {
     fn from(value: CoordinatorRound1) -> Self {
-        Self {
-            plan: Some(value.plan.into()),
+        match value.request {
+            SigningRequest::TransactionPlan(plan) => Self {
+                plan: Some(plan.into()),
+                ..Default::default()
+            },
+            SigningRequest::ValidatorDefinition(validator) => Self {
+                validator_definition: Some(validator.into()),
+                ..Default::default()
+            },
+            SigningRequest::ValidatorVote(vote) => Self {
+                validator_vote: Some(vote.into()),
+                ..Default::default()
+            },
         }
     }
 }
@@ -44,9 +64,20 @@ impl TryFrom<pb::CoordinatorRound1> for CoordinatorRound1 {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::CoordinatorRound1) -> Result<Self, Self::Error> {
-        Ok(Self {
-            plan: value.plan.ok_or(anyhow!("missing plan"))?.try_into()?,
-        })
+        match (value.plan, value.validator_definition, value.validator_vote) {
+            (Some(plan), None, None) => Ok(Self {
+                request: SigningRequest::TransactionPlan(plan.try_into()?),
+            }),
+            (None, Some(validator), None) => Ok(Self {
+                request: SigningRequest::ValidatorDefinition(validator.try_into()?),
+            }),
+            (None, None, Some(vote)) => Ok(Self {
+                request: SigningRequest::ValidatorVote(vote.try_into()?),
+            }),
+            _ => anyhow::bail!(
+                "exactly one of plan, validator_definition, or validator_vote must be set"
+            ),
+        }
     }
 }
 
@@ -288,37 +319,45 @@ impl DomainType for FollowerRound2 {
 /// Calculate the number of required signatures for a plan.
 ///
 /// A plan can require more than one signature, hence the need for this method.
-fn required_signatures(plan: &TransactionPlan) -> usize {
-    plan.spend_plans().count() + plan.delegator_vote_plans().count()
+fn required_signatures(request: &SigningRequest) -> usize {
+    match request {
+        SigningRequest::TransactionPlan(plan) => {
+            plan.spend_plans().count() + plan.delegator_vote_plans().count()
+        }
+        SigningRequest::ValidatorDefinition(_) => 1,
+        SigningRequest::ValidatorVote(_) => 1,
+    }
 }
 
 pub struct CoordinatorState1 {
-    plan: TransactionPlan,
+    request: SigningRequest,
     my_round1_reply: FollowerRound1,
     my_round1_state: FollowerState,
 }
 
 pub struct CoordinatorState2 {
-    plan: TransactionPlan,
+    request: SigningRequest,
     my_round2_reply: FollowerRound2,
     effect_hash: EffectHash,
     signing_packages: Vec<frost::SigningPackage>,
 }
 
 pub struct FollowerState {
-    plan: TransactionPlan,
+    request: SigningRequest,
     nonces: Vec<frost::round1::SigningNonces>,
 }
 
 pub fn coordinator_round1(
     rng: &mut impl CryptoRngCore,
     config: &Config,
-    plan: TransactionPlan,
+    request: SigningRequest,
 ) -> Result<(CoordinatorRound1, CoordinatorState1)> {
-    let message = CoordinatorRound1 { plan: plan.clone() };
+    let message = CoordinatorRound1 {
+        request: request.clone(),
+    };
     let (my_round1_reply, my_round1_state) = follower_round1(rng, config, message.clone())?;
     let state = CoordinatorState1 {
-        plan,
+        request,
         my_round1_reply,
         my_round1_state,
     };
@@ -330,7 +369,7 @@ pub fn coordinator_round2(
     state: CoordinatorState1,
     follower_messages: &[FollowerRound1],
 ) -> Result<(CoordinatorRound2, CoordinatorState2)> {
-    let mut all_commitments = vec![BTreeMap::new(); required_signatures(&state.plan)];
+    let mut all_commitments = vec![BTreeMap::new(); required_signatures(&state.request)];
     for message in follower_messages
         .iter()
         .cloned()
@@ -349,7 +388,12 @@ pub fn coordinator_round2(
     let reply = CoordinatorRound2 { all_commitments };
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
-    let effect_hash = state.plan.effect_hash(config.fvk())?;
+
+    let SigningRequest::TransactionPlan(plan) = &state.request else {
+        todo!("effect hash for non-transaction requests");
+    };
+
+    let effect_hash = plan.effect_hash(config.fvk())?;
     let signing_packages = {
         reply
             .all_commitments
@@ -358,7 +402,7 @@ pub fn coordinator_round2(
             .collect()
     };
     let state = CoordinatorState2 {
-        plan: state.plan,
+        request: state.request,
         my_round2_reply,
         effect_hash,
         signing_packages,
@@ -372,7 +416,7 @@ pub fn coordinator_round3(
     follower_messages: &[FollowerRound2],
 ) -> Result<AuthorizationData> {
     let mut share_maps: Vec<HashMap<frost::Identifier, frost::round2::SignatureShare>> =
-        vec![HashMap::new(); required_signatures(&state.plan)];
+        vec![HashMap::new(); required_signatures(&state.request)];
     for message in follower_messages
         .iter()
         .cloned()
@@ -387,11 +431,15 @@ pub fn coordinator_round3(
             map_i.insert(identifier, share_i);
         }
     }
-    let mut spend_auths = state
-        .plan
+
+    let SigningRequest::TransactionPlan(plan) = state.request else {
+        todo!("effect hash for non-transaction requests");
+    };
+
+    let mut spend_auths = plan
         .spend_plans()
         .map(|x| x.randomizer)
-        .chain(state.plan.delegator_vote_plans().map(|x| x.randomizer))
+        .chain(plan.delegator_vote_plans().map(|x| x.randomizer))
         .zip(share_maps.iter())
         .zip(state.signing_packages.iter())
         .map(|((randomizer, share_map), signing_package)| {
@@ -403,7 +451,7 @@ pub fn coordinator_round3(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let delegator_vote_auths = spend_auths.split_off(state.plan.spend_plans().count());
+    let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
     Ok(AuthorizationData {
         effect_hash: Some(state.effect_hash),
         spend_auths,
@@ -416,13 +464,13 @@ pub fn follower_round1(
     config: &Config,
     coordinator: CoordinatorRound1,
 ) -> Result<(FollowerRound1, FollowerState)> {
-    let required = required_signatures(&coordinator.plan);
+    let required = required_signatures(&coordinator.request);
     let (nonces, commitments) = (0..required)
         .map(|_| frost::round1::commit(&config.key_package().secret_share(), rng))
         .unzip();
     let reply = FollowerRound1::make(config.signing_key(), commitments);
     let state = FollowerState {
-        plan: coordinator.plan,
+        request: coordinator.request,
         nonces,
     };
     Ok((reply, state))
@@ -433,16 +481,19 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let effect_hash = state.plan.effect_hash(config.fvk())?;
+    let SigningRequest::TransactionPlan(plan) = state.request else {
+        todo!("effect hash for non-transaction requests");
+    };
+
+    let effect_hash = plan.effect_hash(config.fvk())?;
     let signing_packages = coordinator
         .all_commitments
         .into_iter()
         .map(|tree| frost::SigningPackage::new(tree, effect_hash.as_ref()));
-    let shares = state
-        .plan
+    let shares = plan
         .spend_plans()
         .map(|x| x.randomizer)
-        .chain(state.plan.delegator_vote_plans().map(|x| x.randomizer))
+        .chain(plan.delegator_vote_plans().map(|x| x.randomizer))
         .zip(signing_packages)
         .zip(state.nonces.into_iter())
         .map(|((randomizer, signing_package), signer_nonces)| {
