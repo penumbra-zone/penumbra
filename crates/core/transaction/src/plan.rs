@@ -331,6 +331,22 @@ impl TransactionPlan {
         self.spend_plans().count()
     }
 
+    /// Convenience method to get the number of proofs in this transaction.
+    pub fn num_proofs(&self) -> usize {
+        self.actions
+            .iter()
+            .map(|action| match action {
+                ActionPlan::Spend(_) => 1,
+                ActionPlan::Output(_) => 1,
+                ActionPlan::Swap(_) => 1,
+                ActionPlan::SwapClaim(_) => 1,
+                ActionPlan::UndelegateClaim(_) => 1,
+                ActionPlan::DelegatorVote(_) => 1,
+                _ => 0,
+            })
+            .sum()
+    }
+
     /// Method to populate the detection data for this transaction plan.
     pub fn populate_detection_data<R: CryptoRng + Rng>(
         &mut self,
