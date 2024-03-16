@@ -111,7 +111,7 @@ using the witnessed values above and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q`
 
-as described in [Nullifiers](../notes/nullifiers.md).
+as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### Nullifier Key Linking
 

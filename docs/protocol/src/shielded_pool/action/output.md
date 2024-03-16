@@ -62,7 +62,9 @@ The zk-SNARK certifies that the public input balance commitment $cv$ was derived
 
 $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific
+generator point derived in-circuit as described in [Assets and
+Values](../../assets.md).
 
 ### Diversified Base is not Identity
 

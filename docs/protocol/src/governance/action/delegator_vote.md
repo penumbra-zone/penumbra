@@ -89,7 +89,7 @@ The zk-SNARK certifies that the public input balance commitment $cv$ was derived
 
 $cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md). For delegator votes, $[\widetilde{v}] = 0$.
+where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific generator point derived in-circuit as described in [Assets and Values](../../assets.md). For delegator votes, $[\widetilde{v}] = 0$.
 
 ### Nullifier Integrity
 
@@ -101,7 +101,7 @@ using the witnessed values above and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.nullifier")) mod q`
 
-as described in [Nullifiers](../notes/nullifiers.md).
+as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### Diversified Address Integrity
 
@@ -113,7 +113,7 @@ where $B_d$ is the witnessed diversified basepoint and $ivk$ is the incoming vie
 
 `ivk = hash_2(from_le_bytes(b"penumbra.derive.ivk"), nk, decaf377_s(ak)) mod r`
 
-as described in [Viewing Keys](../addresses_keys/viewing_keys.md).
+as described in [Viewing Keys](../../addresses_keys/viewing_keys.md).
 
 ### Spend Authority
 

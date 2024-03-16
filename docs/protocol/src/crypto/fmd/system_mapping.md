@@ -9,7 +9,7 @@ Each Penumbra diversified address includes as part of the encoded address an
 S-FMD *clue key*. This key can be used to derive a *clue* for a given output.
 
 See the
-[Addresses](../../protocol/addresses_keys/addresses.md) section for more details.
+[Addresses](../../addresses_keys/addresses.md) section for more details.
 
 ## Detection Keys
 

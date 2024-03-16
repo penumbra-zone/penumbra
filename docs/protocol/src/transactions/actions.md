@@ -6,12 +6,12 @@ This page is a quick-reference list of transaction actions. Not all actions have
 
 | Proof | Action |
 | ----- | ------ |
-| Spend | [`core.component.shielded_pool.v1.Spend`](../protocol/action_descriptions/spend.md) |
-| Output | [`core.component.shielded_pool.v1.Output`](../protocol/action_descriptions/output.md) |
-| Convert | [`core.component.stake.v1.UndelegateClaim`](../protocol/action_descriptions/undelegate_claim.md) |
-| Delegator Vote | [`core.component.governance.v1.DelegatorVote`](../protocol/action_descriptions/delegator_vote.md) |
-| Swap | [`core.component.dex.v1.Swap`](../protocol/action_descriptions/swap.md) |
-| Swap Claim | [`core.component.dex.v1.SwapClaim`](../protocol/action_descriptions/swap_claim.md) |
+| Spend | [`core.component.shielded_pool.v1.Spend`](../shielded_pool/action/spend.md) |
+| Output | [`core.component.shielded_pool.v1.Output`](../shielded_pool/action/output.md) |
+| Convert | [`core.component.stake.v1.UndelegateClaim`](../stake/action/undelegate_claim.md) |
+| Delegator Vote | [`core.component.governance.v1.DelegatorVote`](../governance/action/delegator_vote.md) |
+| Swap | [`core.component.dex.v1.Swap`](../dex/action/swap.md) |
+| Swap Claim | [`core.component.dex.v1.SwapClaim`](../dex/action/swap_claim.md) |
 | Nullifier Derivation | Not used in actions, intended for verifiable transaction perspectives |
 
 ## All Actions
@@ -25,10 +25,10 @@ contributions together.
 
 | Action | Description | Shielded Balance | Transparent Balance |
 | ------ | ----------- | ------------- | -- |
-| [`shielded_pool.v1.Spend`](../protocol/action_descriptions/spend.md) | Spends a note previously included on-chain, releasing its value into the transaction | $+$ (value of spent note) | |
-| [`shielded_pool.v1.Output`](../protocol/action_descriptions/output.md) | Produces a new note controlled by a specified address and adds it to the chain state | $-$ (value of new note) | |
-| [`dex.v1.Swap`](../protocol/action_descriptions/swap.md) | Submits a swap intent to the chain for batch execution | $-$ (prepaid claim fee) | $-$ (swap inputs) 
-| [`dex.v1.SwapClaim`](../protocol/action_descriptions/swap_claim.md) | Claims the outputs of a swap once the clearing price is known, producing new output notes directly | | $+$ (prepaid claim fee) |
+| [`shielded_pool.v1.Spend`](../shielded_pool/action/spend.md) | Spends a note previously included on-chain, releasing its value into the transaction | $+$ (value of spent note) | |
+| [`shielded_pool.v1.Output`](../shielded_pool/action/output.md) | Produces a new note controlled by a specified address and adds it to the chain state | $-$ (value of new note) | |
+| [`dex.v1.Swap`](../dex/action/swap.md) | Submits a swap intent to the chain for batch execution | $-$ (prepaid claim fee) | $-$ (swap inputs) 
+| [`dex.v1.SwapClaim`](../dex/action/swap_claim.md) | Claims the outputs of a swap once the clearing price is known, producing new output notes directly | | $+$ (prepaid claim fee) |
 | `stake.v1.ValidatorDefinition` | Uploads a new validator definition to the chain | | |
 | `stake.v1.Delegate` | Delegates stake to a validator, exchanging the staking token for that validator's delegation token | | $-$ (staking token) $+$ (delegation token)
 | `stake.v1.Undelegate` | Undelegates stake from a validator, exchanging delegation tokens for unbonding tokens | | $-$ (delegation token) $+$ (unbonding token) |
