@@ -54,7 +54,7 @@ impl BuilderExt for Builder {
 }
 
 /// Generates a [`Validator`][PenumbraValidator] given a consensus verification key.
-pub fn generate_penumbra_validator(
+fn generate_penumbra_validator(
     consensus_key: &ed25519_consensus::VerificationKey,
 ) -> (PenumbraValidator, Allocation, penumbra_keys::keys::SpendKey) {
     use decaf377_rdsa::VerificationKey;
