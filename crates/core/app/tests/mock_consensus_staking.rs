@@ -101,29 +101,23 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
 
     // Make a transaction that defines a new validator.
     let new_validator_vk = node.keyring_mut().add_key();
-    let (new_validator_pb, _) = self::common::generate_penumbra_validator(&new_validator_vk);
+    let (new_validator_pb, _, new_validator_spend_key) =
+        self::common::generate_penumbra_validator(&new_validator_vk);
     let new_validator = penumbra_stake::validator::Validator::try_from(new_validator_pb.clone())?;
-    let tx = {
+    let mut plan = {
         use {
-            penumbra_keys::keys::{SpendKey, SpendKeyBytes},
             penumbra_proto::Message,
             penumbra_stake::validator,
             penumbra_transaction::{ActionPlan, TransactionParameters, TransactionPlan},
-            rand::Rng,
             rand_core::OsRng,
         };
-        let auth_sig = {
-            // TODO(kate): for now, we generate a throwaway key. figure out how to present a
-            // *valid* authentication signature here later.
-            let bytes = new_validator_pb.encode_to_vec();
-            let seed = SpendKeyBytes(OsRng.gen());
-            SpendKey::from(seed).spend_auth_key().sign(OsRng, &bytes)
-        };
+        let bytes = new_validator_pb.encode_to_vec();
+        let auth_sig = new_validator_spend_key.spend_auth_key().sign(OsRng, &bytes);
         let action = ActionPlan::ValidatorDefinition(validator::Definition {
-            validator,
+            validator: new_validator.clone(),
             auth_sig,
         });
-        let mut plan = TransactionPlan {
+        TransactionPlan {
             actions: vec![action.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: None,
@@ -132,10 +126,10 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(OsRng, 0);
-        client.witness_auth_build(&plan).await?
+        }
     };
+    plan.populate_detection_data(rand_core::OsRng, 0);
+    let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
     node.block()
@@ -154,19 +148,20 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
             Some(State::Active),
             "validator should be active"
         );
-        // TODO(kate): the transaction fails right now due to an invalid signature. good!
-        assert!(
+        // The new validator should be defined, but not yet active. It should not be inclueded in
+        // consensus yet.
+        assert_eq!(
             snapshot
                 .get_validator_state(&new_validator.identity_key)
-                .await?
-                .is_none(),
-            "validator definition with a bad signature should not be defined"
+                .await?,
+            Some(State::Defined),
+            "new validator definition should be defined but not active"
         );
         // The original validator should still be the only validator in the consensus set.
         assert_eq!(
             get_consensus_set(&snapshot_start).await?.len(),
             1,
-            "there should still only be a single validator defined"
+            "the new validator should not be part of the consensus set yet"
         );
     }
 
