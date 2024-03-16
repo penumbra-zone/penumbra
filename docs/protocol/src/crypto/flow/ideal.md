@@ -81,7 +81,7 @@ In the case of same-block decryption,
 this assumption requires some care to integrate with the process for coming to
 consensus on the block containing transactions to batch and decrypt, but this is
 out-of-scope for flow encryption itself.  See [Flow Encryption and
-Consensus](../../protocol/flow-consensus.md) for details on this aspect in
+Consensus](../flow-encryption/flow-consensus.md) for details on this aspect in
 Penumbra specifically.
 
 ###### `FlowEnc/PreDecrypt`
@@ -133,7 +133,7 @@ that in the case where decryptors are validators, they can jointly learn the
 batched flow at the same time as they finalize a block and commit its state
 changes.  This property is important to avoid requiring a pipelined execution
 model.  For more details, see [Flow Encryption and
-Consensus](../../protocol/flow-consensus.md).
+Consensus](../flow-encryption/flow-consensus.md).
 
 Note that we do not require that any *specific* subset of decryption shares is
 used to get the (unique) decryption result in `FlowEnc/Decrypt`.  This permits a

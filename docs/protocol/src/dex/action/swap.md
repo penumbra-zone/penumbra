@@ -61,7 +61,7 @@ The zk-SNARK certifies that the public input fee commitment $cv_f$ was derived f
 
 $cv_f = [-v_f] G_{v_f} + [\widetilde{v_f}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived in-circuit from the asset ID $ID_{v_f}$ as described in [Value Commitments](../../protocol/value_commitments.md).
+where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-specific generator point derived in-circuit from the asset ID $ID_{v_f}$ as described in [Assets and Values](../../assets.md).
 
 ### Balance Commitment Integrity
 
@@ -69,4 +69,4 @@ The zk-SNARK certifies that the total public input balance commitment $cv$ was d
 
 $cv = [-v_1] G_1 + [-v_2] G_2 + cv_f$
 
-where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md), and $cv_f$ is the fee commitment.
+where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Value Commitments](../../assets.md), and $cv_f$ is the fee commitment.

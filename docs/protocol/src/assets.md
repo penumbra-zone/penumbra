@@ -58,7 +58,7 @@ rate-1 Poseidon hashing with domain separator
 `from_le_bytes(b"penumbra.value.generator")` and then the `decaf377` CDH
 map-to-group method.
 
-## Homomorphic Commitments
+## Homomorphic Value Commitments
 
 We use the value generator associated to an asset ID to construct homomorphic
 commitments to (typed) value.  To do this, we first define the *blinding

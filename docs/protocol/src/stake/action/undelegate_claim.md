@@ -55,7 +55,7 @@ $v_e = [-v_i] G_{v_i} + [p * v_i] G_{v_t}$
 
 where $G_{v_i}$ is the asset-specific generator corresponding to the input
 token with asset ID $ID_i$ and $G_{v_t}$ is the asset-specific generator corresponding to the
-target token with asset ID $ID_t$. Both these asset-specific bases are derived in-circuit as described in [Value Commitments](../../protocol/value_commitments.md).
+target token with asset ID $ID_t$. Both these asset-specific bases are derived in-circuit as described in [Assets and Values](../../assets.md).
 
 ## Undelegate Claim
 

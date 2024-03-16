@@ -44,7 +44,7 @@ In the rest of this section, we describe how each key is derived.
 
 A shared secret `shared_secret` is derived between sender and recipient by performing Diffie-Hellman
 key exchange between:
-* an ephemeral secret ($esk \in \mathbb F_r$) and the diversified transmission key $pk_d$ of the recipient (described in more detail in the [Addresses](../protocol/addresses_keys/addresses.md) section),
+* an ephemeral secret ($esk \in \mathbb F_r$) and the diversified transmission key $pk_d$ of the recipient (described in more detail in the [Addresses](./addresses.md) section),
 * the ephemeral public key $epk$ (where $epk = [esk] B_d$), provided as a public field in the action, and the recipient's incoming viewing key $ivk$.
 
 This allows both sender and recipient to generate the shared secret based on the keys they possess.

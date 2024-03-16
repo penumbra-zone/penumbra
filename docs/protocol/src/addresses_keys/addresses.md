@@ -21,7 +21,7 @@ Each diversifier $d$ is used to generate a *diversified basepoint* $B_d$ as
 $$B_d = H_{\mathbb G}^{\mathsf d}(d),$$
 where 
 $$H_{\mathbb G}^{\mathsf d} : \{0, 1\}^{128} \rightarrow \mathbb G$$
-performs [hash-to-group] for `decaf377` as follows: first, apply BLAKE2b-512
+performs [hash-to-group](../crypto/decaf377/group_hash.md) for `decaf377` as follows: first, apply BLAKE2b-512
 with personalization `b"Penumbra_Divrsfy"` to the input, then, interpret the
 64-byte output as an integer in little-endian byte order and reduce it modulo
 $q$, and finally, use the resulting $\mathbb F_q$ element as input to the
@@ -30,7 +30,7 @@ $q$, and finally, use the resulting $\mathbb F_q$ element as input to the
 ## Detection Keys
 
 Each address has an associated *detection key*, allowing the creator of the
-address to delegate a [probabilistic detection capability][fmd] to a third-party
+address to delegate a [probabilistic detection capability](../crypto/fmd.md) to a third-party
 scanning service.
 
 The detection key consists of one component,

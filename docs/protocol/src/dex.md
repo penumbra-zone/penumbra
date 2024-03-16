@@ -93,7 +93,7 @@ them to transmute one asset type to another, provably updating their private
 state without interacting with any other users' private state.
 
 This mechanism is described in more detail in the [Sealed-Bid Batch
-Swaps](./zswap/swap.md) section.
+Swaps](./dex/swap.md) section.
 
 ## Concentrated Liquidity
 
@@ -148,67 +148,7 @@ as long as they take care to avoid linking their positions (e.g., by timing or
 amount).
 
 Handling of concentrated liquidity is described in more detail in the
-[Concentrated Liquidity](./zswap/concentrated_liquidity.md) section.
-
-## Liquidity Compensation
-
-Systems that support both staking and liquidity provision need a mechanism to
-manage the [competitive equilibrium][staking-lending-competition] between these
-two uses of the staking token.  If staking rewards are too high relative to LP
-returns, LPs will choose to stake instead, causing liquidity to dry up.  On the
-other hand, if LP returns are too high relative to staking rewards, stakers will
-choose to provide liquidity instead, weakening the chain's economic security.
-
-Penumbra's staking design, which provides native delegation tokens for each
-validator, poses additional challenges.  LPs are disincentivized to provide
-liquidity in the staking token, if they could otherwise provide liquidity for a
-delegation token and get staking rewards as well as LP returns.  This is
-undesirable for a number of reasons: it fragments liquidity across many
-different delegation tokens, it undermines the security model to some extent (by
-making it easier to unload delegation tokens before misbehavior is detected),
-and it drives staking centralization (since larger validators would presumably
-have deeper liquidity in their delegation token, making it a more attractive
-asset).  
-
-To address these challenges, and allow the protocol to stabilize competition
-between staking and liquidity provision, ZSwap uses a mechanism called
-*liquidity compensation*, so named because it compensates LPs for the
-opportunity cost of not staking.  Instead of issuing staking rewards only to
-delegators, the total issuance in each epoch is split between delegators and
-liquidity providers.  To determine the split, the chain sets a target ratio of
-bonded stake to stake used for liquidity provision, and compares the actual
-ratio to the target ratio, similarly to the way that other systems adjust
-staking rewards based on the proportion of tokens staked.
-
-At the end of each epoch, the share of issuance used for liquidity compensation
-is allocated to each eligible liquidity position active during that epoch, pro
-rata to liquidity provided.  Eligible liquidity positions are any positions in
-trading pairs where one asset is the staking token, and the other asset is not a
-delegation token.
-
-This mechanism has several nice properties:
-
-- Although the amount of liquidity compensation is determined on the basis of
-value locked, it's allocated on the basis of liquidity provided.  This
-incentivizes LPs to efficiently deploy their capital, since LPs who can create
-finer liquidity positions will receive disproportionate liquidity compensation
-rewards.
-
-- Because markets in delegation tokens are not eligible for liquidity
-compensation, marketmakers providing liquidity between bonded and unbonded forms
-of the staking token must take on the opportunity cost of not staking the
-unbonded side.  Therefore, fees in those markets must be sufficient to cover
-that opportunity cost, so that there's no free, instant withdrawal from a
-delegation pool.
-
-- The mechanism is credibly neutral, applying to any trading pair involving the
-staking token, rather than artificially subsidizing certain tokens via
-governance proposals.
-
-This mechanism is described in more detail in the [Liquidity
-Compensation](./zswap/liquidity_compensation.md) section.
-
-
+[Concentrated Liquidity](./dex/concentrated_liquidity.md) section.
 
 
 [bwh]: https://ethresear.ch/t/why-you-cant-build-a-private-uniswap-with-zkps/7754
