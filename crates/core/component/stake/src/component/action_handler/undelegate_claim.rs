@@ -48,7 +48,8 @@ impl ActionHandler for UndelegateClaim {
                 &self.body.validator_identity,
                 self.body.unbonding_start_height,
             )
-            .await?;
+            .await?
+            .unwrap_or(current_height);
 
         let wait_blocks = allowed_unbonding_height.saturating_sub(current_height);
 
