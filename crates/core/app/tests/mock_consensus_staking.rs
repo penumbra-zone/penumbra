@@ -1,3 +1,5 @@
+mod common;
+
 use {
     self::common::BuilderExt,
     anyhow::Context,
@@ -18,8 +20,9 @@ use {
     tracing::{error_span, info, Instrument},
 };
 
-mod common;
-
+/// The length of the [`penumbra_sct`] epoch.
+///
+/// This test relies on many epochs turning over, so we will work with a shorter epoch duration.
 const EPOCH_DURATION: u64 = 8;
 
 #[tokio::test]
@@ -49,7 +52,7 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     }?;
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
-    let client = MockClient::new(test_keys::SPEND_KEY.clone())
+    let mut client = MockClient::new(test_keys::SPEND_KEY.clone())
         .with_sync_to_storage(&storage)
         .await?
         .tap(|c| info!(client.notes = %c.notes.len(), "mock client synced to test storage"));
@@ -57,7 +60,7 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     // Fast forward to the next epoch.
     let snapshot_start = storage.latest_snapshot();
     node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!("fast forwarding test node to next epoch"))
+        .instrument(error_span!("fast forwarding test node to second epoch"))
         .await
         .context("fast forwarding {EPOCH_LENGTH} blocks")?;
     let snapshot_end = storage.latest_snapshot();
@@ -170,13 +173,20 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
-    node.block().add_tx(tx.encode_to_vec()).execute().await?;
+    node.block()
+        .add_tx(tx.encode_to_vec())
+        .execute()
+        .instrument(error_span!(
+            "executing block with validator definition transaction"
+        ))
+        .await?;
     let post_tx_snapshot = storage.latest_snapshot();
 
     // Show that the set of validators looks correct.
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
         let snapshot = post_tx_snapshot;
+        info!("checking consensus set in block after validator definition");
         // The original validator should still be active.
         assert_eq!(
             snapshot.get_validator_state(&existing_validator_id).await?,
@@ -193,6 +203,256 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
         // The original validator should still be the only validator in the consensus set.
         assert_eq!(
             snapshot_start.get_consensus_set().await?.len(),
+            1,
+            "the new validator should not be part of the consensus set yet"
+        );
+    }
+
+    // Now, create a transaction that delegates to the new validator.
+    let plan = {
+        use {
+            penumbra_asset::STAKING_TOKEN_ASSET_ID,
+            penumbra_sct::component::clock::EpochRead,
+            penumbra_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_transaction::{
+                memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
+            },
+        };
+        let snapshot = storage.latest_snapshot();
+        client.sync_to_latest(snapshot.clone()).await?;
+        let rate = snapshot
+            .get_validator_rate(&new_validator_id)
+            .await?
+            .ok_or(anyhow::anyhow!("new validator has a rate"))?
+            .tap(|rate| tracing::info!(?rate, "got new validator rate"));
+        let note = client
+            .notes
+            .values()
+            .filter(|n| n.asset_id() == *STAKING_TOKEN_ASSET_ID)
+            .cloned()
+            .next()
+            .expect("the test account should have one staking token note");
+        let spend = SpendPlan::new(
+            &mut rand_core::OsRng,
+            note.clone(),
+            client
+                .position(note.commit())
+                .expect("note should be in mock client's tree"),
+        );
+        let delegate = rate.build_delegate(
+            storage.latest_snapshot().get_current_epoch().await?,
+            note.amount(),
+        );
+        let output = OutputPlan::new(
+            &mut rand_core::OsRng,
+            delegate.delegation_value(),
+            *test_keys::ADDRESS_1,
+        );
+        let mut plan = TransactionPlan {
+            actions: vec![spend.into(), output.into(), delegate.into()],
+            // Now fill out the remaining parts of the transaction needed for verification:
+            memo: MemoPlan::new(&mut OsRng, MemoPlaintext::blank_memo(*test_keys::ADDRESS_0))
+                .map(Some)?,
+            detection_data: None, // We'll set this automatically below
+            transaction_parameters: TransactionParameters {
+                chain_id: TestNode::<()>::CHAIN_ID.to_string(),
+                ..Default::default()
+            },
+        };
+        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan
+    };
+    let tx = client.witness_auth_build(&plan).await?;
+
+    // Execute the transaction, applying it to the chain state.
+    node.block()
+        .add_tx(tx.encode_to_vec())
+        .execute()
+        .instrument(error_span!("executing block with delegation transaction"))
+        .await?;
+    let post_delegate_snapshot = storage.latest_snapshot();
+
+    // Show that the set of validators still looks correct. We should not see any changes yet.
+    {
+        use penumbra_stake::{component::ConsensusIndexRead, validator::State};
+        let snapshot = post_delegate_snapshot;
+        info!("checking consensus set in block after delegation");
+        // The original validator should still be active.
+        assert_eq!(
+            snapshot.get_validator_state(&existing_validator_id).await?,
+            Some(State::Active),
+            "validator should be active"
+        );
+        // The new validator should be defined, but not yet active. It should not be inclueded in
+        // consensus yet.
+        assert_eq!(
+            snapshot.get_validator_state(&new_validator_id).await?,
+            Some(State::Defined),
+            "new validator definition should be defined but not active"
+        );
+        // The original validator should still be the only validator in the consensus set.
+        assert_eq!(
+            snapshot.get_consensus_set().await?.len(),
+            1,
+            "the new validator should not be part of the consensus set yet"
+        );
+    }
+
+    // Fast forward to the next epoch.
+    node.fast_forward(EPOCH_DURATION)
+        .instrument(error_span!(
+            "fast forwarding test node to epoch after delegation"
+        ))
+        .await
+        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    let post_delegate_next_epoch_snapshot = storage.latest_snapshot();
+
+    // Show that now, after an epoch and with a delegation, the validator is marked active.
+    {
+        use penumbra_stake::{component::ConsensusIndexRead, validator::State};
+        info!("checking consensus set in epoch after delegation");
+        let snapshot = post_delegate_next_epoch_snapshot;
+        // The original validator should still be active.
+        assert_eq!(
+            snapshot.get_validator_state(&existing_validator_id).await?,
+            Some(State::Active),
+            "validator should be active"
+        );
+        // The new validator should now be active.
+        assert_eq!(
+            snapshot.get_validator_state(&new_validator_id).await?,
+            Some(State::Active),
+            "new validator should be active"
+        );
+        // There should now be two validators in the consensus set.
+        assert_eq!(
+            snapshot.get_consensus_set().await?.len(),
+            2,
+            "the new validator should now be part of the consensus set"
+        );
+    }
+
+    // Build a transaction that will now undelegate from the validator.
+    let plan = {
+        use {
+            penumbra_sct::component::clock::EpochRead,
+            penumbra_shielded_pool::{OutputPlan, SpendPlan},
+            penumbra_stake::DelegationToken,
+            penumbra_transaction::{
+                memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
+            },
+        };
+        let snapshot = storage.latest_snapshot();
+        client.sync_to_latest(snapshot.clone()).await?;
+        let rate = snapshot
+            .get_validator_rate(&new_validator_id)
+            .await?
+            .ok_or(anyhow::anyhow!("new validator has a rate"))?
+            .tap(|rate| tracing::info!(?rate, "got new validator rate"));
+
+        let undelegation_id = DelegationToken::new(new_validator_id).id();
+        let note = client
+            .notes
+            .values()
+            .filter(|n| n.asset_id() == undelegation_id)
+            .cloned()
+            .next()
+            .expect("the test account should have one staking token note");
+        let spend = SpendPlan::new(
+            &mut rand_core::OsRng,
+            note.clone(),
+            client
+                .position(note.commit())
+                .expect("note should be in mock client's tree"),
+        );
+        let undelegate = rate.build_undelegate(
+            storage.latest_snapshot().get_current_epoch().await?,
+            note.amount(),
+        );
+        let output = OutputPlan::new(
+            &mut rand_core::OsRng,
+            undelegate.unbonded_value(),
+            *test_keys::ADDRESS_1,
+        );
+
+        let mut plan = TransactionPlan {
+            actions: vec![spend.into(), output.into(), undelegate.into()],
+            // Now fill out the remaining parts of the transaction needed for verification:
+            memo: MemoPlan::new(&mut OsRng, MemoPlaintext::blank_memo(*test_keys::ADDRESS_0))
+                .map(Some)?,
+            detection_data: None, // We'll set this automatically below
+            transaction_parameters: TransactionParameters {
+                chain_id: TestNode::<()>::CHAIN_ID.to_string(),
+                ..Default::default()
+            },
+        };
+        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan
+    };
+    let tx = client.witness_auth_build(&plan).await?;
+
+    // Execute the transaction, applying it to the chain state.
+    node.block()
+        .add_tx(tx.encode_to_vec())
+        .execute()
+        .instrument(error_span!("executing block with undelegation transaction"))
+        .await?;
+    let post_undelegate_snapshot = storage.latest_snapshot();
+
+    // Show that the consensus set has not changed yet.
+    {
+        use penumbra_stake::{component::ConsensusIndexRead, validator::State};
+        let snapshot = post_undelegate_snapshot;
+        info!("checking consensus set in block after undelegation");
+        // The original validator should still be active.
+        assert_eq!(
+            snapshot.get_validator_state(&existing_validator_id).await?,
+            Some(State::Active),
+            "validator should be active"
+        );
+        // The new validator should now be active.
+        assert_eq!(
+            snapshot.get_validator_state(&new_validator_id).await?,
+            Some(State::Active),
+            "new validator should be active"
+        );
+        // There should now be two validators in the consensus set.
+        assert_eq!(
+            snapshot.get_consensus_set().await?.len(),
+            2,
+            "the new validator should now be part of the consensus set"
+        );
+    }
+
+    // Fast forward to the next epoch.
+    node.fast_forward(EPOCH_DURATION)
+        .instrument(error_span!(
+            "fast forwarding test node to epoch after undelegation"
+        ))
+        .await
+        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    let post_undelegate_next_epoch_snapshot = storage.latest_snapshot();
+
+    // Show that after undelegating, the validator is no longer marked active.
+    {
+        use penumbra_stake::{component::ConsensusIndexRead, validator::State};
+        info!("checking consensus set in epoch after undelegation");
+        let snapshot = post_undelegate_next_epoch_snapshot;
+        // The original validator should still be active.
+        assert_eq!(
+            snapshot.get_validator_state(&existing_validator_id).await?,
+            Some(State::Active),
+            "validator should be active"
+        );
+        // The new validator should now have reverted to be defined. It no longer has enough
+        // delegated stake to participate in consensus.
+        assert_eq!(
+            snapshot.get_validator_state(&new_validator_id).await?,
+            Some(State::Defined),
+            "new validator definition should be defined but not active"
+        );
+        assert_eq!(
+            snapshot.get_consensus_set().await?.len(),
             1,
             "the new validator should not be part of the consensus set yet"
         );
