@@ -45,7 +45,8 @@ proposal being voted on was created.
 
 5. A randomized verification key is used to prevent linkability of votes across the same spend authority. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#spend-authority). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being used for voting](#diversified-address-integrity).
 
-6. The nullifier revealed in the DelegatorVote will be the same if the same staked note is used. Thus, the nullifier can be used to link votes across proposals.
+6. The nullifier revealed in the DelegatorVote will be the same if the same staked note is used. Thus, the nullifier can be used to link votes across proposals. Clients
+can roll over a staked note that was used for voting for privacy (this is currently done in `Planner::plan_with_spendable_and_votable_notes`).
 
 ## DelegatorVote zk-SNARK Statements
 
