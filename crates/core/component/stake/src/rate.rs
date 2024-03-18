@@ -27,7 +27,7 @@ impl RateData {
     ///
     /// # Panics
     /// This method panics if the validator's funding streams exceed 100%.
-    /// The stateless checks in the [`ValidatorDefinition`] action handler
+    /// The stateless checks in the [`Definition`](crate::validator::Definition) action handler
     /// should prevent this from happening.
     pub fn next_epoch(
         &self,

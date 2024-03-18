@@ -60,7 +60,7 @@ pub trait ValidatorDataRead: StateRead {
             .expect("no deserialization error expected")
     }
 
-    /// Convenience method to assemble a [`ValidatorStatus`].
+    /// Convenience method to assemble a [`ValidatorStatus`](crate::validator::Status).
     async fn get_validator_status(
         &self,
         identity_key: &IdentityKey,
@@ -143,14 +143,13 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    /// Compute the unbonding height for a hypothetical undelegation at `unbonding_start_height`,
+    /// Compute the unbonding height for an undelegation initiated at `start_height`,
     /// relative to the **current** state of the validator pool.
     ///
-    /// Returns `None` if the pool is [`Unbonded`][unbonded].
+    /// Returns `None` if the pool is [`Unbonded`](crate::validator::State).
     ///
     /// This can be used to check if the undelegation is allowed, or compute a penalty range,
     /// or to compute the epoch at which a delegation pool will be unbonded.
-    /// [unbonded]: validator::BondingState::Unbonded
     async fn compute_unbonding_height(
         &self,
         id: &IdentityKey,
