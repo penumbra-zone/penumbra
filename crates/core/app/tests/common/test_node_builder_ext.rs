@@ -31,7 +31,7 @@ impl BuilderExt for Builder {
         for (consensus_vk, _) in keyring {
             // Generate a penumbra validator with this consensus key, and a corresponding
             // allocation of delegation tokens.
-            let (validator, allocation, _) = generate_penumbra_validator(consensus_vk);
+            let (validator, allocation) = generate_penumbra_validator(consensus_vk);
 
             // Add the validator to the staking component's genesis content.
             trace!(?validator, "adding validator to staking genesis content");
@@ -56,7 +56,7 @@ impl BuilderExt for Builder {
 /// Generates a [`Validator`][PenumbraValidator] given a consensus verification key.
 fn generate_penumbra_validator(
     consensus_key: &ed25519_consensus::VerificationKey,
-) -> (PenumbraValidator, Allocation, penumbra_keys::keys::SpendKey) {
+) -> (PenumbraValidator, Allocation) {
     use decaf377_rdsa::VerificationKey;
     use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
     use penumbra_stake::DelegationToken;
@@ -100,7 +100,7 @@ fn generate_penumbra_validator(
         address,
     };
 
-    (v, allocation, spend_key)
+    (v, allocation)
 }
 
 fn log_validator(
