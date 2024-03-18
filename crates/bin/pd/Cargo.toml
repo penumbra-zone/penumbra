@@ -35,18 +35,12 @@ penumbra-proto = {workspace = true, default-features = true}
 cnidarium = {workspace = true, features = ["migration", "rpc"], default-features = true}
 penumbra-asset = {workspace = true, default-features = true}
 penumbra-keys = {workspace = true, default-features = true}
-penumbra-shielded-pool = {workspace = true, features = [
-    "parallel",
-], default-features = true}
-penumbra-stake = {workspace = true, features = [
-    "parallel",
-], default-features = true}
+penumbra-shielded-pool = {workspace = true, features = ["parallel"], default-features = true}
+penumbra-stake = {workspace = true, features = ["parallel"], default-features = true}
 penumbra-sct = {workspace = true, default-features = true}
 penumbra-fee = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, features = ["parallel"], default-features = true}
-penumbra-governance = {workspace = true, features = [
-    "parallel",
-], default-features = true}
+penumbra-governance = {workspace = true, features = ["parallel"], default-features = true}
 penumbra-ibc = {workspace = true, features = ["rpc"], default-features = true}
 penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-transaction = {workspace = true, default-features = true}
@@ -65,9 +59,7 @@ tendermint-proto = {workspace = true}
 tendermint = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
 ibc-types = {workspace = true, default-features = true}
-ibc-proto = {workspace = true, default-features = false, features = [
-    "server",
-]}
+ibc-proto = {workspace = true, default-features = false, features = ["server"]}
 prost = {workspace = true}
 toml = {workspace = true}
 ics23 = {workspace = true}
@@ -109,9 +101,7 @@ rand = {workspace = true}
 rand_chacha = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
 metrics = {workspace = true}
-metrics-exporter-prometheus = { version = "0.13", features = [
-    "http-listener",
-] }
+metrics-exporter-prometheus = { version = "0.13", features = ["http-listener"] }
 http = {workspace = true}
 ed25519-consensus = {workspace = true}
 async-trait = {workspace = true}
