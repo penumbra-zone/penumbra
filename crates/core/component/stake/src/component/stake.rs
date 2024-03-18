@@ -217,12 +217,16 @@ pub trait StateReadExt: StateRead {
 
     #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.signed_blocks_window_len)
+        self.get_stake_params()
+            .await
+            .map(|p| p.signed_blocks_window_len)
     }
 
     #[instrument(skip(self), level = "trace")]
     async fn missed_blocks_maximum(&self) -> Result<u64> {
-        Ok(self.get_stake_params().await?.missed_blocks_maximum)
+        self.get_stake_params()
+            .await
+            .map(|p| p.missed_blocks_maximum)
     }
 
     /// Delegation changes accumulated over the course of this block, to be
@@ -524,6 +528,12 @@ pub trait ConsensusIndexRead: StateRead {
                 })
             })
             .boxed())
+    }
+
+    /// Returns the [`IdentityKey`]s of validators that are currently in the consensus set.
+    async fn get_consensus_set(&self) -> anyhow::Result<Vec<IdentityKey>> {
+        use futures::TryStreamExt;
+        self.consensus_set_stream()?.try_collect().await
     }
 
     /// Returns whether a validator should be indexed in the consensus set.

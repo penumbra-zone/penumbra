@@ -1,7 +1,7 @@
 //! Shared integration testing facilities.
 
-// NB: Allow dead code, these are in fact shared by files in `tests/`.
-#![allow(dead_code)]
+// NB: Allow dead code, and unused imports. these are shared and consumed by files in `tests/`.
+#![allow(dead_code, unused_imports)]
 
 pub use self::test_node_builder_ext::BuilderExt;
 

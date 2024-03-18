@@ -1,5 +1,7 @@
 //! Provides a [`Keyring`] for managing consensus keys.
 
+use crate::TestNode;
+
 use {
     ed25519_consensus::{SigningKey, VerificationKey},
     rand_core::{CryptoRng, OsRng, RngCore},
@@ -12,6 +14,8 @@ pub struct Keyring(BTreeMap<VerificationKey, SigningKey>);
 
 /// An entry in a [`Keyring`].
 pub type Entry = (VerificationKey, SigningKey);
+
+// === impl Keyring ===
 
 impl Keyring {
     /// Creates a new [`Keyring`].
@@ -33,6 +37,11 @@ impl Keyring {
     /// Returns `true` if the keyring contains no elements.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    /// Returns the number of entries in the keyring.
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 
     /// Gets an iterator over the consensus verification keys in the keyring.
@@ -101,5 +110,20 @@ impl FromIterator<Entry> for Keyring {
     {
         let k = iter.into_iter().collect();
         Self(k)
+    }
+}
+
+// === impl TestNode ===
+
+/// Keyring-related interfaces for a test node.
+impl<C> TestNode<C> {
+    /// Returns a reference to the test node's set of consensus keys.
+    pub fn keyring(&self) -> &Keyring {
+        &self.keyring
+    }
+
+    /// Returns a mutable reference to the test node's set of consensus keys.
+    pub fn keyring_mut(&mut self) -> &mut Keyring {
+        &mut self.keyring
     }
 }

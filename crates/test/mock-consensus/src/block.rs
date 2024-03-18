@@ -13,7 +13,7 @@ use {
         AppHash, Hash,
     },
     tower::{BoxError, Service},
-    tracing::{info, instrument},
+    tracing::{instrument, trace},
 };
 
 /// A builder, used to prepare and instantiate a new [`Block`].
@@ -92,7 +92,7 @@ where
                 .record("time", block.header.time.unix_timestamp());
         });
 
-        info!("sending block");
+        trace!("sending block");
         test_node.begin_block(header).await?;
         for tx in data {
             let tx = tx.into();
@@ -100,7 +100,7 @@ where
         }
         test_node.end_block().await?;
         test_node.commit().await?;
-        info!("finished sending block");
+        trace!("finished sending block");
 
         Ok(())
     }
