@@ -4,9 +4,13 @@
 //
 //  see penumbra-zone/penumbra#3588.
 
+use {
+    ed25519_consensus::{SigningKey, VerificationKey},
+    std::collections::BTreeMap,
+};
+
 pub mod block;
 pub mod builder;
-pub mod keyring;
 
 mod abci;
 
@@ -23,8 +27,13 @@ pub struct TestNode<C> {
     consensus: C,
     last_app_hash: Vec<u8>,
     height: tendermint::block::Height,
-    keyring: self::keyring::Keyring,
+    keyring: Keyring,
 }
+
+/// An ordered map of consensus keys.
+///
+/// Entries in this keyring consist of a [`VerificationKey`] and a [`SigningKey`].
+type Keyring = BTreeMap<VerificationKey, SigningKey>;
 
 impl<C> TestNode<C> {
     pub const CHAIN_ID: &'static str = "penumbra-test-chain";
@@ -39,6 +48,16 @@ impl<C> TestNode<C> {
         // Use upper-case hexadecimal integers, include leading zeroes.
         // - https://doc.rust-lang.org/std/fmt/#formatting-traits
         format!("{:02X?}", self.last_app_hash)
+    }
+
+    /// Returns a reference to the test node's set of consensus keys.
+    pub fn keyring(&self) -> &Keyring {
+        &self.keyring
+    }
+
+    /// Returns a mutable reference to the test node's set of consensus keys.
+    pub fn keyring_mut(&mut self) -> &mut Keyring {
+        &mut self.keyring
     }
 }
 
