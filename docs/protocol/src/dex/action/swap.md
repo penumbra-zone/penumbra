@@ -18,7 +18,7 @@ The invariants that the Swap upholds are described below.
 
     3.2 The integrity checks as described above in invariant 1 are done privately.
 
-4. The balance contribution of the pre-paid claim fee is private.
+4. The swap does not reveal the pre-paid claim fee.
 
 #### Local Justification
 
