@@ -89,18 +89,11 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
         assert_eq!(end, Some(State::Active));
     }
 
-    async fn get_consensus_set(
-        snapshot: &cnidarium::Snapshot,
-    ) -> anyhow::Result<Vec<penumbra_stake::IdentityKey>> {
-        use futures::TryStreamExt;
-        use penumbra_stake::component::ConsensusIndexRead;
-        snapshot.consensus_set_stream()?.try_collect().await
-    }
-
     // Show that the validator was, and still is, in the consensus set.
     {
-        let start = get_consensus_set(&snapshot_start).await?;
-        let end = get_consensus_set(&snapshot_end).await?;
+        use penumbra_stake::component::ConsensusIndexRead;
+        let start = snapshot_start.get_consensus_set().await?;
+        let end = snapshot_end.get_consensus_set().await?;
         let expected = [existing_validator_id];
         assert_eq!(
             start, expected,
@@ -172,7 +165,7 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
 
     // Show that the set of validators looks correct.
     {
-        use penumbra_stake::validator::State;
+        use penumbra_stake::{component::ConsensusIndexRead, validator::State};
         let snapshot = post_tx_snapshot;
         // The original validator should still be active.
         assert_eq!(
@@ -189,7 +182,7 @@ async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
         );
         // The original validator should still be the only validator in the consensus set.
         assert_eq!(
-            get_consensus_set(&snapshot_start).await?.len(),
+            snapshot_start.get_consensus_set().await?.len(),
             1,
             "the new validator should not be part of the consensus set yet"
         );

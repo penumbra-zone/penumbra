@@ -530,6 +530,12 @@ pub trait ConsensusIndexRead: StateRead {
             .boxed())
     }
 
+    /// Returns the [`IdentityKey`]s of validators that are currently in the consensus set.
+    async fn get_consensus_set(&self) -> anyhow::Result<Vec<IdentityKey>> {
+        use futures::TryStreamExt;
+        self.consensus_set_stream()?.try_collect().await
+    }
+
     /// Returns whether a validator should be indexed in the consensus set.
     /// Here, "consensus set" refers to the set of active validators as well as
     /// the "inactive" validators which could be promoted during a view change.
