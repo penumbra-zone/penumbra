@@ -143,16 +143,19 @@ pub trait ValidatorDataRead: StateRead {
         }
     }
 
-    /// Compute the unbonding epoch for an undelegation initiated at `unbonding_height_start`.
-    /// If the pool is unbonded, or already unbonding, the `unbonding_height_start` is ignored.
+    /// Compute the unbonding height for a hypothetical undelegation at `unbonding_start_height`,
+    /// relative to the **current** state of the validator pool.
     ///
-    /// This can be used to check if the undelegation is allowed, or to compute the
-    /// epoch at which a delegation pool will be unbonded.
+    /// Returns `None` if the pool is [`Unbonded`][unbonded].
+    ///
+    /// This can be used to check if the undelegation is allowed, or compute a penalty range,
+    /// or to compute the epoch at which a delegation pool will be unbonded.
+    /// [unbonded]: validator::BondingState::Unbonded
     async fn compute_unbonding_height(
         &self,
         id: &IdentityKey,
-        unbonding_start_height: u64,
-    ) -> Result<u64> {
+        start_height: u64,
+    ) -> Result<Option<u64>> {
         let Some(val_bonding_state) = self.get_validator_bonding_state(id).await else {
             anyhow::bail!(
                 "validator bonding state not tracked (validator_identity={})",
@@ -162,14 +165,14 @@ pub trait ValidatorDataRead: StateRead {
 
         let min_block_delay = self.get_stake_params().await?.unbonding_delay;
 
-        let upper_bound_height = unbonding_start_height.saturating_add(min_block_delay);
+        let upper_bound_height = start_height.saturating_add(min_block_delay);
 
         let unbonding_height = match val_bonding_state {
-            Bonded => upper_bound_height,
+            Bonded => Some(upper_bound_height),
             // When the minimum delay parameter changes, an unbonding validator may
             // have a delay that is larger than the new minimum delay. In this case,
-            Unbonding { unbonds_at_height } => unbonds_at_height.min(upper_bound_height),
-            Unbonded => unbonding_start_height,
+            Unbonding { unbonds_at_height } => Some(unbonds_at_height.min(upper_bound_height)),
+            Unbonded => None,
         };
 
         Ok(unbonding_height)

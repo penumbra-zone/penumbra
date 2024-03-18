@@ -191,7 +191,8 @@ pub trait ValidatorManager: StateWrite {
                     Unbonding {
                         unbonds_at_height: self
                             .compute_unbonding_height(identity_key, unbonding_start_height)
-                            .await?,
+                            .await?
+                            .expect("active validators MUST be bonded"),
                     },
                 );
             }
@@ -213,7 +214,8 @@ pub trait ValidatorManager: StateWrite {
                 // unbonding period.
                 let unbonds_at_height = self
                     .compute_unbonding_height(identity_key, unbonding_start_height)
-                    .await?;
+                    .await?
+                    .expect("active validators MUST be bonded");
 
                 self.set_validator_bonding_state(identity_key, Unbonding { unbonds_at_height });
 
@@ -588,7 +590,8 @@ pub trait ValidatorManager: StateWrite {
         // If the pool is already unbonded, this will return the current epoch.
         let allowed_unbonding_height = self
             .compute_unbonding_height(validator_identity, from_height)
-            .await?;
+            .await?
+            .unwrap_or(from_height); // If the pool is unbonded, the unbonding height is the current height.
 
         tracing::debug!(
             ?pool_state,
