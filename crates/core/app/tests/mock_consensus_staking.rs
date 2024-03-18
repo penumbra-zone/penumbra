@@ -21,7 +21,7 @@ use {
 mod common;
 
 #[tokio::test]
-async fn mock_consensus_can_delegate_to_a_validator() -> anyhow::Result<()> {
+async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
