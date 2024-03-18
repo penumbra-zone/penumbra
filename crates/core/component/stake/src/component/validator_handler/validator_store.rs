@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::{Future, FutureExt, TryStreamExt};
 use penumbra_num::Amount;
-use penumbra_proto::{state::future::DomainFuture, StateReadProto, StateWriteProto};
+use penumbra_proto::{state::future::DomainFuture, DomainType, StateReadProto, StateWriteProto};
 use std::pin::Pin;
 use tendermint::PublicKey;
 use tracing::instrument;
@@ -113,7 +113,8 @@ pub trait ValidatorDataRead: StateRead {
         &self,
         identity_key: &IdentityKey,
     ) -> DomainFuture<Uptime, Self::GetRawFut> {
-        self.get(&state_key::validators::uptime::by_id(identity_key))
+        let key = state_key::validators::uptime::by_id(identity_key);
+        self.nonverifiable_get(key.as_bytes())
     }
 
     // Tendermint validators are referenced to us by their Tendermint consensus key,
@@ -204,7 +205,12 @@ impl<T: StateRead + ?Sized> ValidatorDataRead for T {}
 #[async_trait]
 pub(crate) trait ValidatorDataWrite: StateWrite {
     fn set_validator_uptime(&mut self, identity_key: &IdentityKey, uptime: Uptime) {
-        self.put(state_key::validators::uptime::by_id(identity_key), uptime);
+        self.nonverifiable_put_raw(
+            state_key::validators::uptime::by_id(identity_key)
+                .as_bytes()
+                .to_vec(),
+            uptime.encode_to_vec(),
+        );
     }
 
     fn set_validator_bonding_state(
