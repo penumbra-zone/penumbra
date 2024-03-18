@@ -98,7 +98,6 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
 }
 
 #[tokio::test]
-#[ignore]
 async fn mock_consensus_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
