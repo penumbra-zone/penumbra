@@ -73,7 +73,7 @@ pub struct Validator {
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ValidatorToml {
     /// The sequence number determines which validator data takes priority, and
-    /// prevents replay attacks.  The chain only accepts new [`Definition`]s with 
+    /// prevents replay attacks.  The chain only accepts new [`Definition`]s with
     /// with increasing sequence numbers, preventing a third-party from replaying
     /// previously valid but stale configuration data as an update.
     pub sequence_number: u32,
