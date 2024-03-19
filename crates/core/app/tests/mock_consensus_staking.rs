@@ -20,16 +20,27 @@ use {
 
 mod common;
 
+const EPOCH_DURATION: u64 = 8;
+
 #[tokio::test]
 async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
 
+    // Configure an AppState with slightly shorter epochs than usual.
+    let app_state = AppState::Content(penumbra_genesis::Content {
+        sct_content: penumbra_sct::genesis::Content {
+            sct_params: penumbra_sct::params::SctParameters {
+                epoch_duration: EPOCH_DURATION,
+            },
+        },
+        ..Default::default()
+    });
+
     // Start the test node.
     let mut node = {
         let consensus = Consensus::new(storage.as_ref().clone());
-        let app_state = AppState::default();
         TestNode::builder()
             .single_validator()
             .with_penumbra_auto_app_state(app_state)?
@@ -43,12 +54,9 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
         .await?
         .tap(|c| info!(client.notes = %c.notes.len(), "mock client synced to test storage"));
 
-    // TODO(kate): get this number by querying the chain parameters.
-    const EPOCH_LENGTH: usize = 1000;
-
     // Fast forward to the next epoch.
     let snapshot_start = storage.latest_snapshot();
-    node.fast_forward(EPOCH_LENGTH)
+    node.fast_forward(EPOCH_DURATION)
         .instrument(error_span!("fast forwarding test node to next epoch"))
         .await
         .context("fast forwarding {EPOCH_LENGTH} blocks")?;
