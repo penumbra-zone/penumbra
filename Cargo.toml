@@ -150,7 +150,7 @@ ibig                             = { version = "0.3" }
 ics23                            = { version = "0.11.0" }
 im                               = { version = "^15.1.0" }
 indicatif                        = { version = "0.16" }
-jmt                              = { version = "0.9" }
+jmt                              = { git = "https://github.com/penumbra-zone/jmt", branch = "erwan/in_place_value_sets", features = ["migration"] }
 metrics                          = { version = "0.22" }
 metrics-tracing-context          = { version = "0.15" }
 num-bigint                       = { version = "0.4" }
