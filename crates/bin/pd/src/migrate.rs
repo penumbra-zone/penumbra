@@ -4,6 +4,7 @@
 //! node operators must coordinate to perform a chain upgrade.
 //! This module declares how local `pd` state should be altered, if at all,
 //! in order to be compatible with the network post-chain-upgrade.
+use anyhow::Context;
 use std::path::PathBuf;
 
 use cnidarium::{StateDelta, StateWrite, Storage};
@@ -15,6 +16,10 @@ use penumbra_stake::{
 };
 
 use crate::testnet::generate::TestnetConfig;
+
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use std::fs::File;
 
 /// The kind of migration that should be performed.
 pub enum Migration {
@@ -36,9 +41,8 @@ impl Migration {
         match self {
             Migration::Noop => (),
             Migration::SimpleMigration => {
-                let mut db_path = path_to_export.clone();
-                db_path.push("rocksdb");
-                let storage = Storage::load(db_path, SUBSTORE_PREFIXES.to_vec()).await?;
+                let rocksdb_dir = path_to_export.join("rocksdb");
+                let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
                 let export_state = storage.latest_snapshot();
                 let root_hash = export_state.root_hash().await.expect("can get root hash");
                 let app_hash_pre_migration: RootHash = root_hash.into();
@@ -97,12 +101,10 @@ impl Migration {
 
                 let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
                 tracing::info!("genesis: {}", genesis_json);
-                let mut genesis_path = path_to_export.clone();
-                genesis_path.push("genesis.json");
+                let genesis_path = path_to_export.join("genesis.json");
                 std::fs::write(genesis_path, genesis_json).expect("can write genesis");
 
-                let mut validator_state_path = path_to_export.clone();
-                validator_state_path.push("priv_validator_state.json");
+                let validator_state_path = path_to_export.join("priv_validator_state.json");
                 let fresh_validator_state =
                     crate::testnet::generate::TestnetValidator::initial_state();
                 std::fs::write(validator_state_path, fresh_validator_state)
@@ -112,4 +114,36 @@ impl Migration {
         }
         Ok(())
     }
+}
+
+/// Compress single directory to gzipped tar archive. Accepts an Option for naming
+/// the subdir within the tar archive, which defaults to ".", meaning no nesting.
+pub fn archive_directory(
+    src_directory: PathBuf,
+    archive_filepath: PathBuf,
+    subdir_within_archive: Option<String>,
+) -> anyhow::Result<()> {
+    // Don't clobber an existing target archive.
+    if archive_filepath.exists() {
+        tracing::error!(
+            "export archive filepath already exists: {}",
+            archive_filepath.display()
+        );
+        anyhow::bail!("refusing to overwrite existing archive");
+    }
+
+    tracing::info!(
+        "creating archive {} -> {}",
+        src_directory.display(),
+        archive_filepath.display()
+    );
+    let tarball_file = File::create(&archive_filepath)
+        .context("failed to create file for archive: check parent directory and permissions")?;
+    let enc = GzEncoder::new(tarball_file, Compression::default());
+    let mut tarball = tar::Builder::new(enc);
+    let subdir_within_archive = subdir_within_archive.unwrap_or(String::from("."));
+    tarball
+        .append_dir_all(subdir_within_archive, src_directory.as_path())
+        .context("failed to package archive contents")?;
+    Ok(())
 }
