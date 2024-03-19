@@ -137,15 +137,6 @@ securityContext:
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
 
-# The chart uses a top-level `ingressRoute` rather than `ingress` value map,
-# because use of Traefik CRD `IngressRoute` is required for h2c support,
-# so that pd's gRPC service can have an HTTPS reverse proxy in front of it.
-ingressRoute:
-  enabled: false
-  hosts:
-    pd: grpc.chart-example.local
-    tm: rpc.chart-example.local
-
 resources: {}
   # limits:
   #   cpu: 100m
