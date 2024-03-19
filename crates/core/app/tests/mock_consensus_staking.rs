@@ -119,7 +119,9 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     // Now define the validator's configuration data.
     let new_validator = Validator {
         identity_key: new_validator_id.clone(),
-        // TODO: upstream a direct conversion from ed25519_consensus
+        // TODO: when https://github.com/informalsystems/tendermint-rs/pull/1401 is released,
+        // replace this with a direct `Into::into()` call. at the time of writing, v0.35.0 is the
+        // latest version. check for new releases at https://crates.io/crates/tendermint/versions.
         consensus_key: tendermint::PublicKey::from_raw_ed25519(&new_validator_consensus.to_bytes())
             .expect("consensus key is valid"),
         governance_key: GovernanceKey(new_validator_id_sk.into()),
