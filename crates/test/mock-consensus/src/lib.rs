@@ -78,7 +78,7 @@ where
         skip(self),
         fields(fast_forward.blocks = %blocks)
     )]
-    pub async fn fast_forward(&mut self, blocks: usize) -> anyhow::Result<()> {
+    pub async fn fast_forward(&mut self, blocks: u64) -> anyhow::Result<()> {
         use {
             tap::Tap,
             tracing::{info, trace, trace_span, Instrument},
