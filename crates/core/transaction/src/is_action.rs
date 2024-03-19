@@ -15,6 +15,7 @@ use penumbra_governance::{
     ValidatorVote, VotingReceiptToken,
 };
 use penumbra_ibc::IbcRelay;
+use penumbra_proto::core::txhash::v1::TransactionId;
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
@@ -351,6 +352,12 @@ impl IsAction for SwapClaim {
         // Get the advice notes for each output from the swap claim
         let output_1 = txp.advice_notes.get(&self.body.output_1_commitment);
         let output_2 = txp.advice_notes.get(&self.body.output_2_commitment);
+        let nullifier = self.body.nullifier;
+        let swap_tx: Option<TransactionId> =
+            match txp.transaction_ids_by_nullifier.get(&nullifier.to_string()) {
+                Some(transaction_id) => Some(transaction_id.clone()),
+                None => None,
+            };
 
         match (output_1, output_2) {
             (Some(output_1), Some(output_2)) => {
@@ -358,7 +365,7 @@ impl IsAction for SwapClaim {
                     swap_claim: self.to_owned(),
                     output_1: txp.view_note(output_1.to_owned()),
                     output_2: txp.view_note(output_2.to_owned()),
-                    swap_tx: None,
+                    swap_tx,
                 };
                 ActionView::SwapClaim(swap_claim_view)
             }

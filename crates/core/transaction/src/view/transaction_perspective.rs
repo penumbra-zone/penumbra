@@ -5,11 +5,11 @@ use penumbra_keys::{Address, AddressView, PayloadKey};
 use penumbra_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
+use penumbra_proto::core::txhash::v1::TransactionId;
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, NoteView};
-use penumbra_txhash::TransactionId;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
@@ -40,6 +40,9 @@ pub struct TransactionPerspective {
     pub denoms: asset::Cache,
     /// The transaction ID associated with this TransactionPerspective
     pub transaction_id: TransactionId,
+    // A map of base64-encoded nullfiers to the IDs of the transactions
+    // containing the outputs that they nullify.
+    pub transaction_ids_by_nullifier: HashMap<String, TransactionId>,
     /// Any relevant estimated prices.
     pub prices: Vec<EstimatedPrice>,
     /// Any relevant extended metadata.
@@ -110,6 +113,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             address_views,
             denoms,
             transaction_id: Some(msg.transaction_id.into()),
+            transaction_ids_by_nullifier: HashMap::new(),
             prices: msg.prices.into_iter().map(Into::into).collect(),
             extended_metadata: msg
                 .extended_metadata
@@ -177,7 +181,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             );
         }
 
-        let transaction_id: penumbra_txhash::TransactionId = match msg.transaction_id {
+        let transaction_id: TransactionId = match msg.transaction_id {
             Some(tx_id) => tx_id.try_into()?,
             None => TransactionId::default(),
         };
@@ -189,6 +193,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             address_views,
             denoms: denoms.try_into()?,
             transaction_id,
+            transaction_ids_by_nullifier: msg.transaction_ids_by_nullifier,
             prices: msg
                 .prices
                 .into_iter()
