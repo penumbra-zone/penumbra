@@ -19,3 +19,13 @@ sqlite> SELECT json_object('tx_hash', quote(tx_hash)) FROM tx;
 
 Note that because binary data is stored directly in the db (see `BLOB` in pragma),
 you'll need to decode the blob as a JSON object to get readable info.
+
+## Viewing IBC assets
+
+To list assets that have been transferred in via IBC, query on the denom for
+a prefix of `transfer/`:
+
+```
+sqlite> SELECT denom, json_object('asset_id', quote(asset_id)) FROM assets WHERE denom LIKE 'transfer/%' ;
+transfer/channel-0/uosmo|{"asset_id":"X'8C8A30604A6832BF8B418AA30D512740EEA1CB36FDADA5716CED462F20F19612'"}
+```
