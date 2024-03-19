@@ -74,6 +74,11 @@ fn check_circuit_satisfaction(
 }
 
 /// Groth16 proof for correct nullifier derivation.
+///
+/// # Safety
+///
+/// This proof is only for client-side use and not on chain. The nullifier-deriving
+/// key is not linked in the circuit to the address associated with the note commitment.
 #[derive(Clone, Debug)]
 pub struct NullifierDerivationCircuit {
     public: NullifierDerivationProofPublic,
