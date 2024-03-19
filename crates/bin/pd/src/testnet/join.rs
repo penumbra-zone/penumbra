@@ -8,6 +8,10 @@ use std::path::PathBuf;
 use tendermint_config::net::Address as TendermintAddress;
 use url::Url;
 
+use flate2::read::GzDecoder;
+use std::io::Write;
+use tokio_stream::StreamExt;
+
 use crate::testnet::config::{parse_tm_address, TestnetTendermintConfig};
 use crate::testnet::generate::TestnetValidator;
 
@@ -228,6 +232,81 @@ pub async fn fetch_peers(tm_url: &Url) -> anyhow::Result<Vec<TendermintAddress>>
     // TODO handle seeds and peers differently. For now, all peers are used as seeds.
     seeds.extend(peers);
     Ok(seeds)
+}
+
+/// Download a gzipped tarball from a URL, and extract its contents as the starting state
+/// config for the fullnode. Allows bootstrapping from archived state, which is useful
+/// for nodes joining after a chain upgrade has been performed.
+///
+/// Supports archive files generated via `pd export`, which contain only the rocksdb dir,
+/// and via `pd migrate`, which contain the rocksdb dir, new genesis content, and a private
+/// validator state file.
+///
+/// The `output_dir` should be the same argument as passed to `pd testnet --testnet-dir <dir> join`;
+/// relative paths for pd and cometbft will be created from this base path.
+pub async fn unpack_state_archive(archive_url: Url, output_dir: PathBuf) -> anyhow::Result<()> {
+    tracing::info!(%archive_url, "downloading compressed node state");
+    // Download.
+    // Here we inspect HEAD so we can infer filename.
+    let response = reqwest::get(archive_url).await?;
+    let fname = response
+        .url()
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .and_then(|name| if name.is_empty() { None } else { Some(name) })
+        .unwrap_or("pd-node-state-archive.tar.gz");
+
+    let archive_filepath = output_dir.join(fname);
+    let mut download_opts = std::fs::OpenOptions::new();
+    download_opts.create_new(true).write(true);
+    let mut archive_file = download_opts.open(&archive_filepath)?;
+
+    // Download via stream, in case file is too large to shove into RAM.
+    let mut stream = response.bytes_stream();
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result?;
+        archive_file.write_all(&chunk)?;
+    }
+    archive_file.flush()?;
+    tracing::info!("download complete: {}", archive_filepath.display());
+
+    // Extract.
+    // Re-open downloaded file for unpacking, for a fresh filehandle.
+    let mut unpack_opts = std::fs::OpenOptions::new();
+    unpack_opts.read(true);
+    let f = unpack_opts.open(&archive_filepath)?;
+    let tar = GzDecoder::new(f);
+    let mut archive = tar::Archive::new(tar);
+    // This dir-path building is duplicated in the config gen code.
+    let pd_home = output_dir.join("node0").join("pd");
+    archive
+        .unpack(&pd_home)
+        .context("failed to extract tar.gz archive")?;
+
+    // If the archive we consumed was generated via `pd migrate`, then it will contain
+    // a new genesis file and priv_validator_state.json, both of which should be applied
+    // over the generted cometbft config files. If the archive was generated via `pd export`,
+    // then those extra files will be missing, and only rocksdb data will be present.
+    let new_genesis = pd_home.join("genesis.json");
+    let new_val_state = pd_home.join("priv_validator_state.json");
+    let cometbft_dir = output_dir.join("node0").join("cometbft");
+    let copy_opts = fs_extra::dir::CopyOptions::new().overwrite(true);
+
+    if new_genesis.exists() {
+        tracing::info!(new_genesis = %new_genesis.display(), "copying new genesis content from archive");
+        let f = vec![new_genesis];
+        fs_extra::move_items(&f, cometbft_dir.join("config"), &copy_opts)?;
+    }
+    if new_val_state.exists() {
+        tracing::info!(new_val_state = %new_val_state.display(), "copying new priv_validator_state.json content from archive");
+        let f = vec![new_val_state];
+        fs_extra::move_items(&f, cometbft_dir.join("data"), &copy_opts)?;
+    }
+
+    tracing::info!("archived node state unpacked to {}", pd_home.display());
+    // Post-extraction, clean up the downloaded tarball.
+    std::fs::remove_file(archive_filepath)?;
+    Ok(())
 }
 
 /// Check whether SocketAddress spec is likely to be externally-accessible.

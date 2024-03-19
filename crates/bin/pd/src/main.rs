@@ -255,6 +255,7 @@ async fn main() -> anyhow::Result<()> {
             tn_cmd:
                 TestnetCommand::Join {
                     node,
+                    archive_url,
                     moniker,
                     external_address,
                     tendermint_rpc_bind,
@@ -290,7 +291,7 @@ async fn main() -> anyhow::Result<()> {
             // Join the target testnet, looking up network info and writing
             // local configs for pd and tendermint.
             testnet_join(
-                output_dir,
+                output_dir.clone(),
                 node,
                 &node_name,
                 external_address,
@@ -298,6 +299,11 @@ async fn main() -> anyhow::Result<()> {
                 tendermint_p2p_bind,
             )
             .await?;
+
+            // Download and extract archive URL, if set.
+            if let Some(archive_url) = archive_url {
+                pd::testnet::join::unpack_state_archive(archive_url, output_dir).await?;
+            }
         }
 
         RootCommand::Testnet {
@@ -379,44 +385,79 @@ async fn main() -> anyhow::Result<()> {
             t.write_configs()?;
         }
         RootCommand::Export {
-            mut home,
-            mut export_path,
+            home,
+            export_directory,
+            export_archive,
             prune,
         } => {
             use fs_extra;
 
-            tracing::info!("exporting state to {}", export_path.display());
+            // Export state as directory.
+            let src_rocksdb_dir = home.join("rocksdb");
+            tracing::info!(
+                "copying node state {} -> {}",
+                src_rocksdb_dir.display(),
+                export_directory.display()
+            );
+            std::fs::create_dir_all(&export_directory)?;
             let copy_opts = fs_extra::dir::CopyOptions::new();
-            home.push("rocksdb");
-            let from = [home.as_path()];
-            tracing::info!(?home, ?export_path, "copying from data dir to export dir",);
-            std::fs::create_dir_all(&export_path)?;
-            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
+            fs_extra::copy_items(
+                &[src_rocksdb_dir.as_path()],
+                export_directory.as_path(),
+                &copy_opts,
+            )?;
+            tracing::info!("finished copying node state");
 
-            tracing::info!("done copying");
-            if !prune {
-                return Ok(());
+            let dst_rocksdb_dir = export_directory.join("rocksdb");
+            // If prune=true, then export-directory is required, because we must munge state prior
+            // to compressing. So we'll just mandate the presence of the --export-directory arg
+            // always.
+            if prune {
+                tracing::info!("pruning JMT tree");
+                let export = Storage::load(dst_rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
+                let _ = StateDelta::new(export.latest_snapshot());
+                // TODO:
+                // - add utilities in `cnidarium` to prune a tree
+                // - apply the delta to the exported storage
+                // - apply checks: root hash, size, etc.
+                todo!()
             }
 
-            tracing::info!("pruning JMT tree");
-            export_path.push("rocksdb");
-            let export = Storage::load(export_path, SUBSTORE_PREFIXES.to_vec()).await?;
-            let _ = StateDelta::new(export.latest_snapshot());
-            // TODO:
-            // - add utilities in `cnidarium` to prune a tree
-            // - apply the delta to the exported storage
-            // - apply checks: root hash, size, etc.
-            todo!()
+            // Compress to tarball if requested.
+            if let Some(archive_filepath) = export_archive {
+                pd::migrate::archive_directory(
+                    dst_rocksdb_dir.clone(),
+                    archive_filepath.clone(),
+                    Some("rocksdb".to_owned()),
+                )?;
+                tracing::info!("export complete: {}", archive_filepath.display());
+            } else {
+                // Provide friendly "OK" message that's still accurate without archiving.
+                tracing::info!("export complete: {}", export_directory.display());
+            }
         }
         RootCommand::Migrate {
-            target_dir,
+            target_directory,
             genesis_start,
+            migrate_archive,
         } => {
-            tracing::info!("migrating state from {}", target_dir.display());
+            tracing::info!("migrating state in {}", target_directory.display());
             SimpleMigration
-                .migrate(target_dir.clone(), genesis_start)
+                .migrate(target_directory.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;
+            // Compress to tarball if requested.
+            if let Some(archive_filepath) = migrate_archive {
+                pd::migrate::archive_directory(
+                    target_directory.clone(),
+                    archive_filepath.clone(),
+                    None,
+                )?;
+                tracing::info!("migration complete: {}", archive_filepath.display());
+            } else {
+                // Provide friendly "OK" message that's still accurate without archiving.
+                tracing::info!("migration complete: {}", target_directory.display());
+            }
         }
     }
     Ok(())
