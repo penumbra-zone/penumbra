@@ -199,6 +199,13 @@ pub struct TransactionPerspective {
     /// The transaction ID associated with this TransactionPerspective
     #[prost(message, optional, tag = "6")]
     pub transaction_id: ::core::option::Option<super::super::txhash::v1::TransactionId>,
+    /// A map of base64-encoded nullfiers to the IDs of the transactions containing
+    /// the outputs that they nullify.
+    #[prost(map = "string, message", tag = "7")]
+    pub transaction_ids_by_nullifier: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        super::super::txhash::v1::TransactionId,
+    >,
     /// Any relevant estimated prices
     #[prost(message, repeated, tag = "20")]
     pub prices: ::prost::alloc::vec::Vec<super::super::asset::v1::EstimatedPrice>,

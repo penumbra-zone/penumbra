@@ -3200,6 +3200,9 @@ impl serde::Serialize for TransactionPerspective {
         if self.transaction_id.is_some() {
             len += 1;
         }
+        if !self.transaction_ids_by_nullifier.is_empty() {
+            len += 1;
+        }
         if !self.prices.is_empty() {
             len += 1;
         }
@@ -3224,6 +3227,9 @@ impl serde::Serialize for TransactionPerspective {
         }
         if let Some(v) = self.transaction_id.as_ref() {
             struct_ser.serialize_field("transactionId", v)?;
+        }
+        if !self.transaction_ids_by_nullifier.is_empty() {
+            struct_ser.serialize_field("transactionIdsByNullifier", &self.transaction_ids_by_nullifier)?;
         }
         if !self.prices.is_empty() {
             struct_ser.serialize_field("prices", &self.prices)?;
@@ -3252,6 +3258,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "denoms",
             "transaction_id",
             "transactionId",
+            "transaction_ids_by_nullifier",
+            "transactionIdsByNullifier",
             "prices",
             "extended_metadata",
             "extendedMetadata",
@@ -3265,6 +3273,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             AddressViews,
             Denoms,
             TransactionId,
+            TransactionIdsByNullifier,
             Prices,
             ExtendedMetadata,
             __SkipField__,
@@ -3295,6 +3304,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
                             "denoms" => Ok(GeneratedField::Denoms),
                             "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
+                            "transactionIdsByNullifier" | "transaction_ids_by_nullifier" => Ok(GeneratedField::TransactionIdsByNullifier),
                             "prices" => Ok(GeneratedField::Prices),
                             "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -3322,6 +3332,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut address_views__ = None;
                 let mut denoms__ = None;
                 let mut transaction_id__ = None;
+                let mut transaction_ids_by_nullifier__ = None;
                 let mut prices__ = None;
                 let mut extended_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3362,6 +3373,14 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             }
                             transaction_id__ = map_.next_value()?;
                         }
+                        GeneratedField::TransactionIdsByNullifier => {
+                            if transaction_ids_by_nullifier__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionIdsByNullifier"));
+                            }
+                            transaction_ids_by_nullifier__ = Some(
+                                map_.next_value::<std::collections::HashMap<_, _>>()?
+                            );
+                        }
                         GeneratedField::Prices => {
                             if prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("prices"));
@@ -3386,6 +3405,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     address_views: address_views__.unwrap_or_default(),
                     denoms: denoms__.unwrap_or_default(),
                     transaction_id: transaction_id__,
+                    transaction_ids_by_nullifier: transaction_ids_by_nullifier__.unwrap_or_default(),
                     prices: prices__.unwrap_or_default(),
                     extended_metadata: extended_metadata__.unwrap_or_default(),
                 })
