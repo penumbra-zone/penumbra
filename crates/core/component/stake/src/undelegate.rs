@@ -36,15 +36,8 @@ impl EffectingData for Undelegate {
 impl Undelegate {
     /// Return the balance after consuming delegation tokens, and producing unbonding tokens.
     pub fn balance(&self) -> Balance {
-        let stake = Balance::from(Value {
-            amount: self.unbonded_amount,
-            asset_id: self.unbonding_token().id(),
-        });
-
-        let delegation = Balance::from(Value {
-            amount: self.delegation_amount,
-            asset_id: self.delegation_token().id(),
-        });
+        let stake: Balance = self.unbonded_value().into();
+        let delegation: Balance = self.delegation_value().into();
 
         // We consume the delegation tokens and produce the staking tokens.
         stake - delegation
@@ -57,8 +50,24 @@ impl Undelegate {
         )
     }
 
+    /// Returns the [`Value`] of the unbonded [`Amount`].
+    pub fn unbonded_value(&self) -> Value {
+        Value {
+            amount: self.unbonded_amount,
+            asset_id: self.unbonding_token().id(),
+        }
+    }
+
     pub fn delegation_token(&self) -> DelegationToken {
         DelegationToken::new(self.validator_identity.clone())
+    }
+
+    /// Returns the [`Value`] of the delegation [`Amount`].
+    pub fn delegation_value(&self) -> Value {
+        Value {
+            amount: self.delegation_amount,
+            asset_id: self.delegation_token().id(),
+        }
     }
 }
 
