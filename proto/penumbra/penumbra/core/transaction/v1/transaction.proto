@@ -114,6 +114,9 @@ message TransactionPerspective {
   repeated asset.v1.Metadata denoms = 5;
   // The transaction ID associated with this TransactionPerspective
   txhash.v1.TransactionId transaction_id = 6;
+  // A map of base64-encoded nullfiers to the IDs of the transactions containing
+  // the outputs that they nullify.
+  map<string, txhash.v1.TransactionId> transaction_ids_by_nullifier = 7;
 
   // Any relevant estimated prices
   repeated asset.v1.EstimatedPrice prices = 20;
