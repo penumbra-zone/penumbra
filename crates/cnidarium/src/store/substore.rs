@@ -360,7 +360,8 @@ impl SubstoreStorage {
         self,
         cache: Cache,
         mut write_batch: rocksdb::WriteBatch,
-        new_version: jmt::Version,
+        write_version: jmt::Version,
+        perform_migration: bool,
     ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
 
@@ -369,8 +370,6 @@ impl SubstoreStorage {
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let jmt = jmt::Sha256Jmt::new(&self.substore_snapshot);
-
-                        // TODO(erwan): this could be folded with sharding the changesets.
                         let unwritten_changes: Vec<_> = cache
                             .unwritten_changes
                             .into_iter()
@@ -394,10 +393,15 @@ impl SubstoreStorage {
                             };
                         }
 
-                        let (root_hash, batch) = jmt.put_value_set(
-                            unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
-                            new_version,
-                        )?;
+                        // We only track the keyhash and possible values; at the time of writing,
+                        // `rustfmt` panics on inlining the closure, so we use a helper function to skip the key.
+                        let skip_key = |(keyhash, _key, some_value)| (keyhash, some_value);
+
+                        let (root_hash, batch)= if perform_migration {
+                            jmt.append_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        } else {
+                            jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        };
 
                         self.write_node_batch(&batch.node_batch)?;
                         tracing::trace!(?root_hash, "wrote node batch to backing store");
