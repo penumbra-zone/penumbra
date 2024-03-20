@@ -68,6 +68,9 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     let mut counter = 0;
     let num_ops = 10;
 
+    /* ************************ */
+    /*      write some keys     */
+    /* ************************ */
     let mut kvs = vec![];
     for i in 0..num_ops {
         /* write some value at version `i` */
@@ -155,7 +158,7 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     );
 
     /* ************************ */
-    /*   Check the migration    */
+    /*   check the migration    */
     /* ************************ */
     let (some_value, proof) = storage
         .latest_snapshot()
@@ -182,6 +185,9 @@ async fn test_simple_migration() -> anyhow::Result<()> {
         .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
         .expect("membership proof verifies");
 
+    /* ************************ */
+    /*      write new keys      */
+    /* ************************ */
     for i in num_ops..num_ops * 2 {
         /* write some value at version `i` */
         let mut delta = StateDelta::new(storage.latest_snapshot());
