@@ -69,7 +69,6 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     let num_ops = 10;
 
     let mut kvs = vec![];
-    let mut roots = vec![];
     for i in 0..num_ops {
         /* write some value at version `i` */
         let mut delta = StateDelta::new(storage.latest_snapshot());
@@ -78,8 +77,9 @@ async fn test_simple_migration() -> anyhow::Result<()> {
         delta.put_raw(key.clone(), value.clone());
         let root_hash = storage.commit(delta).await?;
 
+        tracing::info!(%key, ?root_hash, version = %i, "committed key-value pair");
+
         kvs.push((key, value));
-        roots.push(root_hash);
         counter += 1;
     }
 
@@ -91,10 +91,13 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     // extra careful and make sure that we can load the storage.
     storage.release().await;
     let storage = Storage::load(db_path.clone(), substore_prefixes.clone()).await?;
+    let premigration_root = storage
+        .latest_snapshot()
+        .root_hash()
+        .await
+        .expect("infaillible");
 
     for (i, (key, value)) in kvs.clone().into_iter().enumerate() {
-        let root_i = roots[i];
-
         let snapshot = storage.latest_snapshot();
         let (some_value, proof) = snapshot.get_with_proof(key.as_bytes().to_vec()).await?;
         let retrieved_value = some_value.expect("key is found in the latest snapshot");
@@ -104,7 +107,7 @@ async fn test_simple_migration() -> anyhow::Result<()> {
             key_path: vec![key],
         };
         let merkle_root = MerkleRoot {
-            hash: root_i.0.to_vec(),
+            hash: premigration_root.0.to_vec(),
         };
 
         proof
@@ -115,19 +118,15 @@ async fn test_simple_migration() -> anyhow::Result<()> {
                 retrieved_value,
                 0,
             )
-            .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
+            .map_err(|e| tracing::error!(?e, key_index = ?i, "proof verification failed"))
             .expect("membership proof verifies");
 
         counter += 1;
     }
 
     assert_eq!(counter, num_ops);
+    counter = 0;
 
-    let premigration_root = storage
-        .latest_snapshot()
-        .root_hash()
-        .await
-        .expect("infaillible");
     let old_version = storage.latest_version();
     assert_eq!(old_version, num_ops - 1);
 
@@ -138,27 +137,30 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     let migration_key = "migration".to_string();
     let migration_value = "migration data".as_bytes().to_vec();
     delta.put_raw(migration_key.clone(), migration_value.clone());
-    let new_global_root = storage.commit_in_place(delta).await?;
+    let postmigration_root = storage.commit_in_place(delta).await?;
 
+    // We have to reload the storage instance to get the latest snapshot.
     storage.release().await;
     let storage = Storage::load(db_path, substore_prefixes).await?;
 
     let new_version = storage.latest_version();
 
     assert_ne!(
-        premigration_root, new_global_root,
-        "migration did not effect the root hash"
+        premigration_root, postmigration_root,
+        "migration should change the root hash"
+    );
+    assert_eq!(
+        old_version, new_version,
+        "the post-migration version number should not change"
     );
 
-    assert_eq!(old_version, new_version, "the version number has changed!");
-
-    assert_eq!(counter, num_ops);
-
+    /* ************************ */
+    /*   Check the migration    */
+    /* ************************ */
     let (some_value, proof) = storage
         .latest_snapshot()
         .get_with_proof(migration_key.as_bytes().to_vec())
         .await?;
-
     let retrieved_value = some_value.expect("migration key is found in the latest snapshot");
     assert_eq!(retrieved_value, migration_value);
 
@@ -166,7 +168,7 @@ async fn test_simple_migration() -> anyhow::Result<()> {
         key_path: vec![migration_key],
     };
     let merkle_root = MerkleRoot {
-        hash: new_global_root.0.to_vec(),
+        hash: postmigration_root.0.to_vec(),
     };
 
     proof
@@ -179,6 +181,58 @@ async fn test_simple_migration() -> anyhow::Result<()> {
         )
         .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
         .expect("membership proof verifies");
+
+    for i in num_ops..num_ops * 2 {
+        /* write some value at version `i` */
+        let mut delta = StateDelta::new(storage.latest_snapshot());
+        let key = format!("key_{i}");
+        let value = format!("value_{i}").as_bytes().to_vec();
+        delta.put_raw(key.clone(), value.clone());
+        let root_hash = storage.commit(delta).await?;
+
+        tracing::info!(%key, ?root_hash, version = %i, "committed key-value pair");
+
+        kvs.push((key, value));
+        counter += 1;
+    }
+
+    assert_eq!(counter, num_ops);
+    counter = 0;
+
+    let final_root = storage
+        .latest_snapshot()
+        .root_hash()
+        .await
+        .expect("infaillible");
+
+    for (i, (key, value)) in kvs.clone().into_iter().enumerate() {
+        let snapshot = storage.latest_snapshot();
+        let (some_value, proof) = snapshot.get_with_proof(key.as_bytes().to_vec()).await?;
+        let retrieved_value = some_value.expect("key is found in the latest snapshot");
+        assert_eq!(retrieved_value, value);
+
+        let merkle_path = MerklePath {
+            key_path: vec![key],
+        };
+        let merkle_root = MerkleRoot {
+            hash: final_root.0.to_vec(),
+        };
+
+        proof
+            .verify_membership(
+                &MAIN_STORE_PROOF_SPEC,
+                merkle_root,
+                merkle_path,
+                retrieved_value,
+                0,
+            )
+            .map_err(|e| tracing::error!(?e, key_index = ?i, "proof verification failed"))
+            .expect("membership proof verifies");
+
+        counter += 1;
+    }
+
+    assert_eq!(counter, num_ops * 2);
 
     Ok(())
 }
