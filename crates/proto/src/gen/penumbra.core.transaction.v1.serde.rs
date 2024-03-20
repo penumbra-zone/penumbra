@@ -3203,6 +3203,9 @@ impl serde::Serialize for TransactionPerspective {
         if !self.transaction_ids_by_nullifier.is_empty() {
             len += 1;
         }
+        if !self.transaction_ids_by_commitment.is_empty() {
+            len += 1;
+        }
         if !self.prices.is_empty() {
             len += 1;
         }
@@ -3230,6 +3233,9 @@ impl serde::Serialize for TransactionPerspective {
         }
         if !self.transaction_ids_by_nullifier.is_empty() {
             struct_ser.serialize_field("transactionIdsByNullifier", &self.transaction_ids_by_nullifier)?;
+        }
+        if !self.transaction_ids_by_commitment.is_empty() {
+            struct_ser.serialize_field("transactionIdsByCommitment", &self.transaction_ids_by_commitment)?;
         }
         if !self.prices.is_empty() {
             struct_ser.serialize_field("prices", &self.prices)?;
@@ -3260,6 +3266,8 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "transactionId",
             "transaction_ids_by_nullifier",
             "transactionIdsByNullifier",
+            "transaction_ids_by_commitment",
+            "transactionIdsByCommitment",
             "prices",
             "extended_metadata",
             "extendedMetadata",
@@ -3274,6 +3282,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             Denoms,
             TransactionId,
             TransactionIdsByNullifier,
+            TransactionIdsByCommitment,
             Prices,
             ExtendedMetadata,
             __SkipField__,
@@ -3305,6 +3314,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "denoms" => Ok(GeneratedField::Denoms),
                             "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
                             "transactionIdsByNullifier" | "transaction_ids_by_nullifier" => Ok(GeneratedField::TransactionIdsByNullifier),
+                            "transactionIdsByCommitment" | "transaction_ids_by_commitment" => Ok(GeneratedField::TransactionIdsByCommitment),
                             "prices" => Ok(GeneratedField::Prices),
                             "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -3333,6 +3343,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut denoms__ = None;
                 let mut transaction_id__ = None;
                 let mut transaction_ids_by_nullifier__ = None;
+                let mut transaction_ids_by_commitment__ = None;
                 let mut prices__ = None;
                 let mut extended_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
@@ -3381,6 +3392,14 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                                 map_.next_value::<std::collections::HashMap<_, _>>()?
                             );
                         }
+                        GeneratedField::TransactionIdsByCommitment => {
+                            if transaction_ids_by_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionIdsByCommitment"));
+                            }
+                            transaction_ids_by_commitment__ = Some(
+                                map_.next_value::<std::collections::HashMap<_, _>>()?
+                            );
+                        }
                         GeneratedField::Prices => {
                             if prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("prices"));
@@ -3406,6 +3425,7 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     denoms: denoms__.unwrap_or_default(),
                     transaction_id: transaction_id__,
                     transaction_ids_by_nullifier: transaction_ids_by_nullifier__.unwrap_or_default(),
+                    transaction_ids_by_commitment: transaction_ids_by_commitment__.unwrap_or_default(),
                     prices: prices__.unwrap_or_default(),
                     extended_metadata: extended_metadata__.unwrap_or_default(),
                 })
