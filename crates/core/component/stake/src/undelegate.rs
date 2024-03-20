@@ -36,11 +36,11 @@ impl EffectingData for Undelegate {
 impl Undelegate {
     /// Return the balance after consuming delegation tokens, and producing unbonding tokens.
     pub fn balance(&self) -> Balance {
-        let stake: Balance = self.unbonded_value().into();
+        let undelegation: Balance = self.unbonded_value().into();
         let delegation: Balance = self.delegation_value().into();
 
-        // We consume the delegation tokens and produce the staking tokens.
-        stake - delegation
+        // We consume the delegation tokens and produce the unbonding tokens.
+        undelegation - delegation
     }
 
     pub fn unbonding_token(&self) -> UnbondingToken {
