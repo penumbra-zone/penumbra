@@ -57,7 +57,7 @@ use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
 use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
-use penumbra_view::ViewClient;
+use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
 
@@ -660,20 +660,36 @@ impl TxCmd {
                 // We want to claim them into the same address index that currently holds the tokens.
                 let notes = view.unspent_notes_by_address_and_asset().await?;
 
+                let notes: Vec<(
+                    AddressIndex,
+                    Vec<(UnbondingToken, Vec<SpendableNoteRecord>)>,
+                )> = notes
+                    .into_iter()
+                    .map(|(address_index, notes_by_asset)| {
+                        let mut filtered_notes: Vec<(UnbondingToken, Vec<SpendableNoteRecord>)> =
+                            notes_by_asset
+                                .into_iter()
+                                .filter_map(|(asset_id, notes)| {
+                                    // Filter for notes that are unbonding tokens.
+                                    let denom = asset_cache
+                                        .get(&asset_id)
+                                        .expect("asset ID should exist in asset cache")
+                                        .clone();
+                                    match UnbondingToken::try_from(denom) {
+                                        Ok(token) => Some((token, notes)),
+                                        Err(_) => None,
+                                    }
+                                })
+                                .collect();
+
+                        filtered_notes.sort_by_key(|(token, _)| token.unbonding_start_height());
+
+                        (address_index, filtered_notes)
+                    })
+                    .collect();
+
                 for (address_index, notes_by_asset) in notes.into_iter() {
-                    for (token, notes) in
-                        notes_by_asset.into_iter().filter_map(|(asset_id, notes)| {
-                            // Filter for notes that are unbonding tokens.
-                            let denom = asset_cache
-                                .get(&asset_id)
-                                .expect("asset ID should exist in asset cache")
-                                .clone();
-                            match UnbondingToken::try_from(denom) {
-                                Ok(token) => Some((token, notes)),
-                                Err(_) => None,
-                            }
-                        })
-                    {
+                    for (token, notes) in notes_by_asset.into_iter() {
                         println!("claiming {}", token.denom().default_unit());
 
                         let validator_identity = token.validator();
@@ -685,7 +701,8 @@ impl TxCmd {
                             .epoch_by_height(EpochByHeightRequest {
                                 height: unbonding_start_height,
                             })
-                            .await?
+                            .await
+                            .expect("can get epoch by height")
                             .into_inner()
                             .epoch
                             .context("unable to get epoch for unbonding start height")?;
