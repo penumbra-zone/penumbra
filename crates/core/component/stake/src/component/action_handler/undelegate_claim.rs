@@ -37,17 +37,17 @@ impl ActionHandler for UndelegateClaim {
         // if profiling shows that they cause a bottleneck we could (CAREFULLY)
         // move some of them back.
 
-        // If the validator delegation pool is bonded, or unbonding, we must
-        // check that the unbonding delay (measured in blocks) has elapsed.
         let current_height = state.get_block_height().await?;
+        let unbonding_start_height = self.body.unbonding_start_height;
+        ensure!(
+            current_height >= unbonding_start_height,
+            "the unbonding start height must be less than or equal to the current height"
+        );
 
-        // Check if the unbonding height has been reached, it will always be the case if
-        // the validator delegation pool is unbonded.
+        // Compute the unbonding height for the claim, and check that it is less than or equal to the current height.
+        // If the pool is `Unbonded` or unbonding at an already elapsed height, we default to the current height.
         let allowed_unbonding_height = state
-            .compute_unbonding_height(
-                &self.body.validator_identity,
-                self.body.unbonding_start_height,
-            )
+            .compute_unbonding_height(&self.body.validator_identity, unbonding_start_height)
             .await?
             .unwrap_or(current_height);
 
@@ -66,6 +66,13 @@ impl ActionHandler for UndelegateClaim {
             .await?;
         let unbonding_epoch_end = state.get_epoch_by_height(allowed_unbonding_height).await?;
 
+        // This should never happen, but if it did we want to make sure that it wouldn't
+        // crash the mempool.
+        ensure!(
+            unbonding_epoch_end.index >= unbonding_epoch_start.index,
+            "unbonding epoch end must be greater than or equal to unbonding epoch start"
+        );
+
         // Compute the penalty for the epoch range [unbonding_epoch_start, unbonding_epoch_end], and check
         // that it matches the penalty in the claim.
         let expected_penalty = state
@@ -78,7 +85,9 @@ impl ActionHandler for UndelegateClaim {
 
         ensure!(
             self.body.penalty == expected_penalty,
-            "penalty does not match expected penalty"
+            "penalty (kept_rate: {}) does not match expected penalty (kept_rate: {})",
+            self.body.penalty.kept_rate(),
+            expected_penalty.kept_rate(),
         );
 
         /* ---------- execution ----------- */
