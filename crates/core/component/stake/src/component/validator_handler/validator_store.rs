@@ -164,14 +164,30 @@ pub trait ValidatorDataRead: StateRead {
         };
 
         let min_block_delay = self.get_stake_params().await?.unbonding_delay;
-
         let upper_bound_height = start_height.saturating_add(min_block_delay);
 
         let unbonding_height = match val_bonding_state {
+            // The pool is bonded, so the unbonding height is the start height plus the delay.
             Bonded => Some(upper_bound_height),
-            // When the minimum delay parameter changes, an unbonding validator may
-            // have a delay that is larger than the new minimum delay. In this case,
-            Unbonding { unbonds_at_height } => Some(unbonds_at_height.min(upper_bound_height)),
+            // The pool is unbonding at a specific height, so we can use that.
+            Unbonding { unbonds_at_height } => {
+                if unbonds_at_height > start_height {
+                    // The unbonding height is the minimum of the unbonding height and the upper bound.
+                    // There are a couple reasons:
+                    // - The unbonding delay parameter can change, and in particular, it can decrease.
+                    // - We might be processing an undelegation that was initiated before the validator
+                    //   began unbonding, and the unbonding height is in the past.
+                    Some(unbonds_at_height.min(upper_bound_height))
+                } else {
+                    // In some cases, the allowed unbonding height can be smaller than
+                    // undelgation start height, for example if the unbonding delay has
+                    // changed in a parameter update, or if the unbonding has finished
+                    // and the validator is not indexed by the staking module anymore.
+                    // This is functionally equivalent to dealing with an `Unbonded` pool.
+                    None
+                }
+            }
+            // The pool is unbonded, so the unbonding height can be decided by the caller.
             Unbonded => None,
         };
 

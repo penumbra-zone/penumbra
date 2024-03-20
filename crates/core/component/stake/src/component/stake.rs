@@ -388,6 +388,9 @@ pub trait SlashingData: StateRead {
         epoch_index_start: u64,
         epoch_index_end: u64,
     ) -> Result<Penalty> {
+        if epoch_index_start > epoch_index_end {
+            anyhow::bail!("invalid penalty window")
+        }
         let range = self
             .get_penalty_for_range(id, epoch_index_start, epoch_index_end)
             .await;
