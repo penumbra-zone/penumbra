@@ -1,5 +1,6 @@
 use penumbra_proto::{
-    core::component::shielded_pool::v1::NoteView, penumbra::core::component::dex::v1 as pb,
+    core::{component::shielded_pool::v1::NoteView, txhash::v1::TransactionId},
+    penumbra::core::component::dex::v1 as pb,
     DomainType,
 };
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,7 @@ pub enum SwapView {
         swap_plaintext: SwapPlaintext,
         output_1: Option<NoteView>,
         output_2: Option<NoteView>,
+        claim_tx: Option<TransactionId>,
     },
     Opaque {
         swap: Swap,
@@ -44,6 +46,7 @@ impl TryFrom<pb::SwapView> for SwapView {
                     .try_into()?,
                 output_1: x.output_1,
                 output_2: x.output_2,
+                claim_tx: x.claim_tx,
             }),
             pb::swap_view::SwapView::Opaque(x) => Ok(SwapView::Opaque {
                 swap: x
@@ -64,18 +67,19 @@ impl From<SwapView> for pb::SwapView {
                 swap_plaintext,
                 output_1,
                 output_2,
+                claim_tx,
             } => Self {
                 swap_view: Some(sv::SwapView::Visible(sv::Visible {
                     swap: Some(swap.into()),
                     swap_plaintext: Some(swap_plaintext.into()),
-                    // Swap claim crossreferencing is not yet supported in the Rust stack.
-                    claim_tx: None,
+                    output_1,
+                    output_2,
+                    claim_tx,
+
                     // These fields are also not yet supported in the Rust stack.
                     asset_1_metadata: None,
                     asset_2_metadata: None,
                     batch_swap_output_data: None,
-                    output_1,
-                    output_2,
                 })),
             },
             SwapView::Opaque { swap } => Self {
@@ -95,6 +99,7 @@ impl From<SwapView> for Swap {
                 swap_plaintext: _,
                 output_1: _,
                 output_2: _,
+                claim_tx: _,
             } => swap,
             SwapView::Opaque { swap } => swap,
         }

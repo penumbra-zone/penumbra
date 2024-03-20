@@ -117,6 +117,9 @@ message TransactionPerspective {
   // A map of base64-encoded nullfiers to the IDs of the transactions containing
   // the outputs that they nullify.
   map<string, txhash.v1.TransactionId> transaction_ids_by_nullifier = 7;
+  // A map of base64-encoded commitments to the IDs of the transactions
+  // containing those commitments.
+  map<string, txhash.v1.TransactionId> transaction_ids_by_commitment = 8;
 
   // Any relevant estimated prices
   repeated asset.v1.EstimatedPrice prices = 20;

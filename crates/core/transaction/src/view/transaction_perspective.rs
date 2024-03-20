@@ -43,6 +43,9 @@ pub struct TransactionPerspective {
     // A map of base64-encoded nullfiers to the IDs of the transactions
     // containing the outputs that they nullify.
     pub transaction_ids_by_nullifier: HashMap<String, TransactionId>,
+    // A map of base64-encoded commitments to the IDs of the transactions
+    // containing those commitments.
+    pub transaction_ids_by_commitment: HashMap<String, TransactionId>,
     /// Any relevant estimated prices.
     pub prices: Vec<EstimatedPrice>,
     /// Any relevant extended metadata.
@@ -114,6 +117,7 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             denoms,
             transaction_id: Some(msg.transaction_id.into()),
             transaction_ids_by_nullifier: HashMap::new(),
+            transaction_ids_by_commitment: HashMap::new(),
             prices: msg.prices.into_iter().map(Into::into).collect(),
             extended_metadata: msg
                 .extended_metadata
@@ -194,6 +198,7 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             denoms: denoms.try_into()?,
             transaction_id,
             transaction_ids_by_nullifier: msg.transaction_ids_by_nullifier,
+            transaction_ids_by_commitment: msg.transaction_ids_by_commitment,
             prices: msg
                 .prices
                 .into_iter()

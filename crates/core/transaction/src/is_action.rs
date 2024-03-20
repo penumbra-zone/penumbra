@@ -329,12 +329,21 @@ impl IsAction for Swap {
             .ok()
         });
 
+        let claim_tx: Option<TransactionId> = match txp
+            .transaction_ids_by_commitment
+            .get(&commitment.to_string())
+        {
+            Some(transaction_id) => Some(transaction_id.clone()),
+            None => None,
+        };
+
         ActionView::Swap(match plaintext {
             Some(swap_plaintext) => SwapView::Visible {
                 swap: self.to_owned(),
                 swap_plaintext: swap_plaintext.clone(),
                 output_1: None,
                 output_2: None,
+                claim_tx,
             },
             None => SwapView::Opaque {
                 swap: self.to_owned(),
