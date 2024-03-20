@@ -3,7 +3,10 @@ use cnidarium::StateDelta;
 use cnidarium::StateRead;
 use cnidarium::StateWrite;
 use cnidarium::Storage;
+use ibc_types::core::commitment::MerklePath;
+use ibc_types::core::commitment::MerkleRoot;
 use jmt::RootHash;
+use once_cell::sync::Lazy;
 use tempfile;
 use tokio;
 
@@ -22,7 +25,36 @@ use tokio;
  * write to both the main store and any number of substores without incrementing
  * their version number.
  *
+ * Testing menu:
+ * - test_simple_migration: the most basic migration scenario where we write to the main store.
+ * - test_substore_migration: a migration scenario where we write to the main store and substores.
+ * - prop_migration: property-based testing of the migration operation.
+ *
+ * Each test has the following pattern:
+ * - Write a collection of keys, incrementing the version number at each step.
+ * - Check that the version number has incremented.
+ * - Check that the keys are present in the latest snapshot.
+ * - Check that the keys have valid proofs.
+ * - Perform a migration, writing/removing a key in the main store and/or substores.
+ * - Check that the version number has not changed.
+ * - Check that the root hash for the main store and/or substores has changed.
+ * - Check that the migration key is present in the latest snapshot.
+ * - Check that the migration key has a valid proof.
+ * - Check that the migration key has the expected value.
+ * - Write a new collection of keys, incrementing the version number at each step.
+ * - Check that the version number has incremented.
+ * - Check that the new keys are present in the latest snapshot.
+ * - Check that the new keys have valid proofs.
+ * - Check that the new keys have the expected values.
  */
+
+/// The proof specs for the main store.
+pub static MAIN_STORE_PROOF_SPEC: Lazy<Vec<ics23::ProofSpec>> =
+    Lazy::new(|| vec![cnidarium::ics23_spec()]);
+
+/// The proof specs for keys located in substores (e.g. `ibc` keys)
+pub static FULL_PROOF_SPECS: Lazy<Vec<ics23::ProofSpec>> =
+    Lazy::new(|| vec![cnidarium::ics23_spec(), cnidarium::ics23_spec()]);
 
 #[tokio::test]
 /// Test that we can commit to the main store without incrementing its version.
@@ -31,52 +63,122 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     let tmpdir = tempfile::tempdir()?;
     let db_path = tmpdir.into_path();
     let substore_prefixes = vec![];
-    let storage = Storage::load(db_path, substore_prefixes).await?;
+    let storage = Storage::load(db_path.clone(), substore_prefixes.clone()).await?;
 
     let mut counter = 0;
-    let num_writes = 10;
+    let num_ops = 10;
 
-    for i in 0..num_writes {
+    let mut kvs = vec![];
+    let mut roots = vec![];
+    for i in 0..num_ops {
+        /* write some value at version `i` */
         let mut delta = StateDelta::new(storage.latest_snapshot());
-        let key_1 = format!("key_{i}");
-        let value_1 = format!("value_{i}").as_bytes().to_vec();
-        delta.put_raw(key_1.clone(), value_1.clone());
+        let key = format!("key_{i}");
+        let value = format!("value_{i}").as_bytes().to_vec();
+        delta.put_raw(key.clone(), value.clone());
+        let root_hash = storage.commit(delta).await?;
 
-        let _ = storage.commit(delta).await?;
-        // Check that we can read the values back out.
-        let snapshot = storage.latest_snapshot();
-
-        let retrieved_value = snapshot.get_raw(key_1.as_str()).await?.unwrap();
-        assert_eq!(retrieved_value, value_1);
+        kvs.push((key, value));
+        roots.push(root_hash);
         counter += 1;
     }
 
-    let old_global_root = storage
+    assert_eq!(counter, num_ops);
+
+    counter = 0;
+
+    // We don't _need_ to toss the storage instance, but let's be
+    // extra careful and make sure that we can load the storage.
+    storage.release().await;
+    let storage = Storage::load(db_path.clone(), substore_prefixes.clone()).await?;
+
+    for (i, (key, value)) in kvs.clone().into_iter().enumerate() {
+        let root_i = roots[i];
+
+        let snapshot = storage.latest_snapshot();
+        let (some_value, proof) = snapshot.get_with_proof(key.as_bytes().to_vec()).await?;
+        let retrieved_value = some_value.expect("key is found in the latest snapshot");
+        assert_eq!(retrieved_value, value);
+
+        let merkle_path = MerklePath {
+            key_path: vec![key],
+        };
+        let merkle_root = MerkleRoot {
+            hash: root_i.0.to_vec(),
+        };
+
+        proof
+            .verify_membership(
+                &MAIN_STORE_PROOF_SPEC,
+                merkle_root,
+                merkle_path,
+                retrieved_value,
+                0,
+            )
+            .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
+            .expect("membership proof verifies");
+
+        counter += 1;
+    }
+
+    assert_eq!(counter, num_ops);
+
+    let premigration_root = storage
         .latest_snapshot()
         .root_hash()
         .await
         .expect("infaillible");
     let old_version = storage.latest_version();
-    assert_eq!(old_version, counter - 1);
+    assert_eq!(old_version, num_ops - 1);
 
     /* ********************* */
     /* perform the migration */
     /* ********************* */
     let mut delta = StateDelta::new(storage.latest_snapshot());
-    let key_root_2 = "migration".to_string();
-    let value_root_2 = "migration data".as_bytes().to_vec();
-    delta.put_raw(key_root_2, value_root_2);
+    let migration_key = "migration".to_string();
+    let migration_value = "migration data".as_bytes().to_vec();
+    delta.put_raw(migration_key.clone(), migration_value.clone());
     let new_global_root = storage.commit_in_place(delta).await?;
+
+    storage.release().await;
+    let storage = Storage::load(db_path, substore_prefixes).await?;
+
     let new_version = storage.latest_version();
 
     assert_ne!(
-        old_global_root, new_global_root,
+        premigration_root, new_global_root,
         "migration did not effect the root hash"
     );
 
     assert_eq!(old_version, new_version, "the version number has changed!");
 
-    assert_eq!(counter, num_writes);
+    assert_eq!(counter, num_ops);
+
+    let (some_value, proof) = storage
+        .latest_snapshot()
+        .get_with_proof(migration_key.as_bytes().to_vec())
+        .await?;
+
+    let retrieved_value = some_value.expect("migration key is found in the latest snapshot");
+    assert_eq!(retrieved_value, migration_value);
+
+    let merkle_path = MerklePath {
+        key_path: vec![migration_key],
+    };
+    let merkle_root = MerkleRoot {
+        hash: new_global_root.0.to_vec(),
+    };
+
+    proof
+        .verify_membership(
+            &MAIN_STORE_PROOF_SPEC,
+            merkle_root,
+            merkle_path,
+            retrieved_value,
+            0,
+        )
+        .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
+        .expect("membership proof verifies");
 
     Ok(())
 }

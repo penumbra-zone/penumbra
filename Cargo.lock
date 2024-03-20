@@ -3603,8 +3603,7 @@ checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
 [[package]]
 name = "jmt"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2950721a65dff82492e30fe67076127135d0d710aa0140f21efafda2aee7849"
+source = "git+https://github.com/penumbra-zone/jmt?branch=erwan/in_place_value_sets#5d551cf0984a3692a228ce6e3cdebed0834673cd"
 dependencies = [
  "anyhow",
  "borsh",
