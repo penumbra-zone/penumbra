@@ -223,6 +223,9 @@ impl TransactionViewExt for TransactionView {
                     match swap {
                         SwapView::Visible {
                             swap: _,
+                            output_1: _,
+                            output_2: _,
+                            claim_tx: _,
                             swap_plaintext,
                         } => {
                             let (from_asset, from_value, to_asset) = match (
@@ -273,6 +276,7 @@ impl TransactionViewExt for TransactionView {
                             swap_claim,
                             output_1,
                             output_2,
+                            swap_tx: _,
                         } => {
                             // View service can't see SwapClaims: https://github.com/penumbra-zone/penumbra/issues/2547
                             dbg!(swap_claim);
