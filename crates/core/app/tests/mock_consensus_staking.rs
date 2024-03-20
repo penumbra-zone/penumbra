@@ -2,7 +2,7 @@ mod common;
 
 use {
     self::common::BuilderExt,
-    anyhow::Context,
+    anyhow::{anyhow, Context},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth},
     penumbra_app::server::consensus::Consensus,
@@ -185,7 +185,7 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     // Show that the set of validators looks correct.
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
-        let snapshot = post_tx_snapshot;
+        let snapshot = post_tx_snapshot.clone();
         info!("checking consensus set in block after validator definition");
         // The original validator should still be active.
         assert_eq!(
@@ -208,6 +208,25 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
         );
     }
 
+    // Show that the validators have different rates. The second validator was created later, and
+    // should thus have a different rate than a validator that has existed since genesis.
+    {
+        use penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead;
+        let snapshot = post_tx_snapshot;
+        let existing = snapshot
+            .get_validator_rate(&existing_validator_id)
+            .await?
+            .ok_or(anyhow!("existing validator has a rate"))?;
+        let new = snapshot
+            .get_validator_rate(&new_validator_id)
+            .await?
+            .ok_or(anyhow!("new validator has a rate"))?;
+        assert_ne!(
+            existing, new,
+            "validators created at different times should have different rates"
+        );
+    }
+
     // Now, create a transaction that delegates to the new validator.
     let plan = {
         use {
@@ -223,7 +242,7 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
         let rate = snapshot
             .get_validator_rate(&new_validator_id)
             .await?
-            .ok_or(anyhow::anyhow!("new validator has a rate"))?
+            .ok_or(anyhow!("new validator has a rate"))?
             .tap(|rate| tracing::info!(?rate, "got new validator rate"));
         let note = client
             .notes
@@ -347,7 +366,7 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
         let rate = snapshot
             .get_validator_rate(&new_validator_id)
             .await?
-            .ok_or(anyhow::anyhow!("new validator has a rate"))?
+            .ok_or(anyhow!("new validator has a rate"))?
             .tap(|rate| tracing::info!(?rate, "got new validator rate"));
 
         let undelegation_id = DelegationToken::new(new_validator_id).id();
