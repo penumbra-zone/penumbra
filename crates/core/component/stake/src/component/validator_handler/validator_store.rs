@@ -172,7 +172,12 @@ pub trait ValidatorDataRead: StateRead {
             // The pool is unbonding at a specific height, so we can use that.
             Unbonding { unbonds_at_height } => {
                 if unbonds_at_height > start_height {
-                    Some(unbonds_at_height)
+                    // The unbonding height is the minimum of the unbonding height and the upper bound.
+                    // There are a couple reasons:
+                    // - The unbonding delay parameter can change, and in particular, it can decrease.
+                    // - We might be processing an undelegation that was initiated before the validator
+                    //   began unbonding, and the unbonding height is in the past.
+                    Some(unbonds_at_height.min(upper_bound_height))
                 } else {
                     // In some cases, the allowed unbonding height can be smaller than
                     // undelgation start height, for example if the unbonding delay has
