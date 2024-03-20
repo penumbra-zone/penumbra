@@ -50,6 +50,11 @@ use tokio;
  * - Check that the new keys are present in the latest snapshot.
  * - Check that the new keys have valid proofs.
  * - Check that the new keys have the expected values.
+ * Operation:
+ *              Try to generate proofs for keys that are NOT present in the jmt
+ * Checks:
+ * - Check that no value is returned for the keys.
+ * - Check that the nonexistence proofs are valid.
  */
 
 /// The proof specs for the main store.
@@ -242,6 +247,29 @@ async fn test_simple_migration() -> anyhow::Result<()> {
     }
 
     assert_eq!(counter, num_ops * 2);
+
+    /* ****************************** */
+    /*      read nonexistent keys     */
+    /* ****************************** */
+    let final_snapshot = storage.latest_snapshot();
+    let final_root = final_snapshot.root_hash().await.expect("infaillible");
+
+    let key = format!("nonexistent_key");
+    let (some_value, proof) = final_snapshot
+        .get_with_proof(key.as_bytes().to_vec())
+        .await?;
+    assert!(some_value.is_none());
+    let merkle_path = MerklePath {
+        key_path: vec![key],
+    };
+    let merkle_root = MerkleRoot {
+        hash: final_root.0.to_vec(),
+    };
+
+    proof
+        .verify_non_membership(&MAIN_STORE_PROOF_SPEC, merkle_root, merkle_path)
+        .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
+        .expect("nonmembership proof verifies");
 
     Ok(())
 }
@@ -579,6 +607,28 @@ async fn test_substore_migration() -> anyhow::Result<()> {
         // For each substore, we wrote `num_ops_per_substore` keys twice.
         substore_prefixes.len() as u64 * num_ops_per_substore * 2
     );
+
+    /* ****************************** */
+    /*      read nonexistent keys     */
+    /* ****************************** */
+    for (idx, substore) in substore_prefixes.iter().enumerate() {
+        let key = format!("{substore}/nonexistent_key_{idx}");
+        let (some_value, proof) = postmigration_snapshot
+            .get_with_proof(key.as_bytes().to_vec())
+            .await?;
+        assert!(some_value.is_none());
+        let merkle_path = MerklePath {
+            key_path: key.split('/').map(|s| s.to_string()).collect(),
+        };
+        let merkle_root = MerkleRoot {
+            hash: final_root.0.to_vec(),
+        };
+
+        proof
+            .verify_non_membership(&FULL_PROOF_SPECS, merkle_root, merkle_path)
+            .map_err(|e| tracing::error!("proof verification failed: {:?}", e))
+            .expect("nonmembership proof verifies");
+    }
 
     Ok(())
 }
