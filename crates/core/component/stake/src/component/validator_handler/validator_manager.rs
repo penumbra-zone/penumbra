@@ -1,40 +1,31 @@
-use std::collections::BTreeMap;
-
-use crate::{
-    component::{
-        metrics, stake::ConsensusIndexRead, stake::ConsensusIndexWrite, stake::RateDataWrite,
-        validator_handler::ValidatorDataWrite,
+use {
+    super::{validator_store::ValidatorPoolTracker, ValidatorDataRead, ValidatorDataWrite},
+    crate::{
+        component::{
+            metrics,
+            stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
+            StateReadExt as _, StateWriteExt as _,
+        },
+        rate::{BaseRateData, RateData},
+        state_key,
+        validator::{self, BondingState::*, State, State::*, Validator},
+        DelegationToken, IdentityKey, Penalty, Uptime,
     },
-    rate::{BaseRateData, RateData},
-    validator::{State, Validator},
-    DelegationToken,
+    anyhow::Result,
+    async_trait::async_trait,
+    cnidarium::StateWrite,
+    futures::StreamExt as _,
+    penumbra_asset::asset,
+    penumbra_num::Amount,
+    penumbra_proto::StateWriteProto,
+    penumbra_sct::component::clock::{EpochManager, EpochRead},
+    penumbra_shielded_pool::component::AssetRegistry,
+    sha2::{Digest as _, Sha256},
+    std::collections::BTreeMap,
+    tendermint::abci::types::{CommitInfo, Misbehavior},
+    tokio::task::JoinSet,
+    tracing::{instrument, Instrument},
 };
-use anyhow::Result;
-use async_trait::async_trait;
-use futures::StreamExt as _;
-use penumbra_num::Amount;
-use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_shielded_pool::component::AssetRegistry;
-use sha2::{Digest as _, Sha256};
-use tendermint::abci::types::{CommitInfo, Misbehavior};
-use tokio::task::JoinSet;
-use validator::BondingState::*;
-use validator::State::*;
-
-use cnidarium::StateWrite;
-use penumbra_proto::StateWriteProto;
-use tracing::{instrument, Instrument};
-
-use crate::component::validator_handler::validator_store::ValidatorPoolTracker;
-use crate::{
-    component::validator_handler::ValidatorDataRead,
-    component::StateReadExt as _,
-    component::StateWriteExt as _,
-    state_key,
-    validator::{self},
-    IdentityKey, Penalty, Uptime,
-};
-use penumbra_asset::asset;
 
 #[async_trait]
 /// Defines the validator state machine of the staking component.
