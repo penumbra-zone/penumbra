@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use cnidarium::{StateDelta, StateWrite, Storage};
 use jmt::RootHash;
-use penumbra_app::SUBSTORE_PREFIXES;
+use penumbra_app::{app::StateReadExt, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_stake::{
     component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
@@ -51,7 +51,10 @@ impl Migration {
                 /* --------- writing to the jmt  ------------ */
                 tracing::info!(?app_hash_pre_migration, "app hash pre-upgrade");
                 let mut delta = StateDelta::new(export_state);
-                delta.put_raw("has_migrated".to_string(), "yes".into());
+                delta.put_raw(
+                    "banana".to_string(),
+                    "a good fruit (and migration works!)".into(),
+                );
                 delta.put_block_height(0u64);
                 let root_hash = storage.commit_in_place(delta).await?;
                 let app_hash_post_migration: RootHash = root_hash.into();
@@ -65,10 +68,12 @@ impl Migration {
                 tracing::info!(?root_hash, "root hash from snapshot (post-upgrade)");
 
                 /* ---------- generate genesis ------------  */
+                let chain_id = migrated_state.get_chain_id().await?;
                 let validators = migrated_state.validator_definitions().await?;
                 let app_state = penumbra_genesis::Content {
+                    chain_id,
                     stake_content: StakeContent {
-                        // TODO(erwan): should remove this.
+                        // TODO(erwan): See https://github.com/penumbra-zone/penumbra/issues/3846
                         validators: validators.into_iter().map(Into::into).collect(),
                         ..Default::default()
                     },
