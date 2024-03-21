@@ -77,6 +77,11 @@ impl Uptime {
     pub fn num_missed_blocks(&self) -> usize {
         self.signatures.iter_zeros().len()
     }
+
+    /// Returns the block height up to which this tracker has recorded.
+    pub fn as_of_height(&self) -> u64 {
+        self.as_of_block_height
+    }
 }
 
 impl DomainType for Uptime {
