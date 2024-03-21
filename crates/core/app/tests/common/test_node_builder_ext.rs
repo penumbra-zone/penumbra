@@ -102,19 +102,3 @@ fn generate_penumbra_validator(
 
     (v, allocation)
 }
-
-fn log_validator(
-    PenumbraValidator {
-        name,
-        enabled,
-        sequence_number,
-        ..
-    }: &PenumbraValidator,
-) {
-    tracing::trace!(
-        %name,
-        %enabled,
-        %sequence_number,
-        "injecting validator into app state"
-    )
-}
