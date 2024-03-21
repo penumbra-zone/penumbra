@@ -208,11 +208,14 @@ spec:
               mountPath: /penumbra-config
           securityContext:
             runAsUser: {{ .Values.maintenanceMode | ternary 0 .Values.securityContext.runAsUser }}
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
           readinessProbe:
             tcpSocket:
               port: pd-grpc
             timeoutSeconds: 10
             initialDelaySeconds: 10
+          {{- end }}
 
         - name: cometbft
           securityContext:
@@ -235,11 +238,14 @@ spec:
             - name: tm-rpc
               containerPort: 26657
               protocol: TCP
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
           readinessProbe:
             tcpSocket:
               port: tm-rpc
             timeoutSeconds: 10
             initialDelaySeconds: 10
+          {{- end }}
           resources:
             {{- toYaml .Values.cometbft.resources | nindent 12 }}
           volumeMounts:

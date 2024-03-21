@@ -97,11 +97,14 @@ spec:
             - name: pd-abci
               containerPort: 26658
               protocol: TCP
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
           readinessProbe:
             tcpSocket:
               port: pd-grpc
             timeoutSeconds: 5
             initialDelaySeconds: 20
+          {{- end }}
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
           securityContext:
@@ -132,11 +135,14 @@ spec:
             - name: tm-metrics
               containerPort: 26660
               protocol: TCP
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
           readinessProbe:
             tcpSocket:
               port: tm-rpc
             timeoutSeconds: 10
             initialDelaySeconds: 10
+          {{- end }}
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
           volumeMounts:
