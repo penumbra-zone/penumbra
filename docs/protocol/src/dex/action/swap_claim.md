@@ -46,7 +46,7 @@ The invariants that the SwapClaim upholds are described below.
 
 5. You can only claim swap outputs once via:
 
-    5.1. A swap's transmission key binds to the nullifier key as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
+    5.1. A swap's transmission key binds to the nullifier key as described in the [Nullifier Key Linking](#nullifier-key-linking) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
     5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
 
@@ -121,7 +121,7 @@ using the witnessed values above and where `ds` is a constant domain separator:
 
 as described in [Nullifiers](../../sct/nullifiers.md).
 
-### Nullifier Key Linking
+### [Nullifier Key Linking](#nullifier-key-linking)
 
 The zk-SNARK certifies that the diversified address $pk_d$ associated with the
 swap being claimed was derived as:

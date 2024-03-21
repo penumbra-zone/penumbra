@@ -2,6 +2,44 @@
 
 Each swap contains a SwapBody and a zk-SNARK swap proof.
 
+## [Swap Body](#swap-body)
+
+The body of an `Swap` has five parts:
+
+1. A `SwapPayload`, which consists of the swap commitment and the `SwapCiphertext`,
+2. A fee balance commitment, which commits to the value balance of the pre-paid fee;
+3. The `TradingPair` which is the canonical representation of the two asset IDs involved in the trade,
+4. `delta_1_i`, the amount of the _first_ asset ID being traded,
+5. `delta_2_i`, the amount of the _second_ asset ID being traded.
+
+The `SwapCiphertext` is 272 bytes in length, and is encrypted symmetrically using the
+payload key derived from the `OutgoingViewingKey` and the swap commitment as
+described [here](../../addresses_keys/transaction_crypto.md#per-action-swap-key).
+
+The corresponding plaintext, `SwapPlaintext` consists of:
+
+* the `TradingPair` which as above is the canonical representation of the two asset IDs involved in the trade,
+* `delta_1_i`, the amount of the _first_ asset ID being traded,
+* `delta_2_i`, the amount of the _second_ asset ID being traded,
+* the value of the pre-paid claim fee used to claim the outputs of the swap,
+* the address used to claim the outputs of the swap,
+* the swap `Rseed`, which is used to derive the `Rseed` for the two output notes.
+
+The output notes for the `Swap` can be computed given the `SwapPlaintext` and the
+`BatchSwapOutputData` from that block. The `Rseed` for each output note are computed from
+the `SwapPlaintext` using rate-1 Poseidon hashing with domain separators $ds_1$ and $ds_2$ defined as the `Fq` element constructed using:
+
+`ds_1 = from_le_bytes(BLAKE2b-512(b"penumbra.swapclaim.output1.blinding")) mod q`
+
+`ds_2 = from_le_bytes(BLAKE2b-512(b"penumbra.swapclaim.output2.blinding")) mod q`
+
+The rseed for each note is then constructed using the above domain separator and
+hashing together the swap rseed $rseed$:
+
+`rseed_1 = hash_1(ds_1, (rseed))`
+
+`rseed_2 = hash_1(ds_2, (rseed))`
+
 ## Invariants
 
 The invariants that the Swap upholds are described below.

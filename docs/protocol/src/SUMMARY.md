@@ -51,6 +51,7 @@
   - [Transaction Signing](./transactions/signing.md)
   - [Action Invariants](./transactions/invariants.md)
   - [Action Reference](./transactions/actions.md)
+  - [Transaction Memo](./transactions/memo.md)
 - [Multi-Asset Shielded Pool](./shielded_pool.md)
   - [Note Plaintexts](./shielded_pool/note_plaintexts.md)
   - [Note Commitments](./shielded_pool/note_commitments.md)

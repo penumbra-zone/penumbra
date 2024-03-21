@@ -35,7 +35,7 @@ pub struct SwapPlaintext {
     pub delta_2_i: Amount,
     // Prepaid fee to claim the swap
     pub claim_fee: Fee,
-    // Address to receive the Swap NFT and SwapClaim outputs
+    // Address to receive the SwapClaim outputs
     pub claim_address: Address,
     // Swap rseed
     pub rseed: Rseed,

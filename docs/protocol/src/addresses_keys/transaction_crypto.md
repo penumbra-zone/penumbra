@@ -7,7 +7,7 @@ For the symmetric encryption described in this section, we use ChaCha20-Poly1305
 It is security-critical that `(key, nonce)` pairs are not reused. We do this by either:
 
 * deriving per-action keys from ephemeral shared secrets using a fixed nonce (used for notes and memo keys),
-* deriving per-action keys from the outgoing viewing key using a nonce derived from a commitment.
+* deriving per-action keys from the outgoing viewing key using a nonce derived from a commitment (used for swaps).
 
 We use each key at maximum once with a given nonce. We describe the nonces and keys below.
 
@@ -24,7 +24,7 @@ We use a different nonce to encrypt each type of item using the following `[u8; 
 
 We have several keys involved in transaction-level symmetric cryptography:
 * A *shared secret* derived between sender and recipient,
-* A *per-action payload key* used to encrypt a single note, or memo key (one of each type).
+* A *per-action payload key* used to encrypt a single note or memo key (one of each type).
 It is derived from the shared secret. It is used for a single action.
 * A *per-action swap payload key* used to encrypt a single swap. It is derived from the outgoing viewing key. It is used for a single action.
 * A *random payload key* used to encrypt a memo. It is generated randomly and is shared between all
@@ -49,7 +49,7 @@ key exchange between:
 
 This allows both sender and recipient to generate the shared secret based on the keys they possess.
 
-### Per-action Payload Key: Notes and Memo Keys
+### [Per-action Payload Key: Notes and Memo Keys](#per-action-payload-note-memo-key)
 
 The symmetric per-action payload key is a 32-byte key derived from the `shared_secret`, the $epk$ and
 personalization string "Penumbra_Payload":
@@ -61,7 +61,7 @@ action_payload_key = BLAKE2b-512("Penumbra_Payload", shared_secret, epk)
 This symmetric key is then used with the nonces specified above to encrypt a memo key or note.
 It should not be used to encrypt two items of the same type.
 
-### Per-action Payload Key: Swaps
+### [Per-action Payload Key: Swaps](#per-action-swap-key)
 
 The symmetric per-action payload key is a 32-byte key derived from the outgoing viewing
 key `ovk`, the swap commitment `cm`, and personalization string "Penumbra_Payswap":
@@ -74,7 +74,7 @@ This symmetric key is used with the nonces specified above to encrypt a swap onl
 We use the outgoing viewing key for swaps since third parties cannot create
 swaps for a given recipient, i.e. the user only sends swaps to themselves.
 
-### Random Payload Key: Memos
+### [Random Payload Key: Memo](#random-memo-key)
 
 The random payload key is a 32-byte key generated randomly. This
 symmetric key is used with the nonces specified above to encrypt memos only.
@@ -96,7 +96,7 @@ outgoing cipher key is to enable the sender to view their outgoing transactions
 using only their outgoing viewing key. The outgoing cipher key is used to encrypt data that
 they will need to later reconstruct any outgoing transaction details.
 
-### OVK Wrapped Key
+### [OVK Wrapped Key](#ovk-wrapped-key)
 
 To decrypt outgoing notes or memo keys, the sender needs to store the shared secret encrypted
 using the outgoing cipher key described above. This encrypted data,
