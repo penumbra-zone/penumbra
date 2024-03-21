@@ -2,7 +2,7 @@ use {
     super::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
     crate::{
         component::{metrics, stake::ConsensusIndexRead, StateReadExt as _},
-        validator,
+        validator, IdentityKey, Uptime,
     },
     anyhow::Result,
     async_trait::async_trait,
@@ -12,9 +12,15 @@ use {
     sha2::{Digest as _, Sha256},
     std::collections::BTreeMap,
     tendermint::abci::types::CommitInfo,
-    tokio::task::JoinSet,
+    tokio::task::{AbortHandle, JoinSet},
     tracing::instrument,
 };
+
+/// A bundle of information about a validator used to track its uptime.
+type ValidatorInformation = (IdentityKey, tendermint::PublicKey, Uptime);
+
+/// A collection of tasks retrieving [`ValidatorInformation`].
+type Lookups = JoinSet<anyhow::Result<Option<ValidatorInformation>>>;
 
 /// Tracks validator uptimes.
 ///
@@ -42,42 +48,17 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // Since we don't have a lookup from "addresses" to identity keys,
         // iterate over our app's validators, and match them up with the vote data.
         // We can fetch all the data required for processing each validator concurrently:
-        let mut js = JoinSet::new();
+        let mut lookups = Lookups::new();
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await {
             let identity_key = identity_key?;
-            let state = self.get_validator_state(&identity_key);
-            let uptime = self.get_validator_uptime(&identity_key);
-            let consensus_key = self.fetch_validator_consensus_key(&identity_key);
-            js.spawn(async move {
-                let state = state
-                    .await?
-                    .expect("every known validator must have a recorded state");
-
-                match state {
-                    validator::State::Active => {
-                        // If the validator is active, we need its consensus key and current uptime data:
-                        Ok(Some((
-                            identity_key,
-                            consensus_key
-                                .await?
-                                .expect("every known validator must have a recorded consensus key"),
-                            uptime
-                                .await?
-                                .expect("every known validator must have a recorded uptime"),
-                        )))
-                    }
-                    _ => {
-                        // Otherwise, we don't need to track its uptime, and there's no data to fetch.
-                        anyhow::Ok(None)
-                    }
-                }
-            });
+            self.spawn_validator_lookup_fut(identity_key, &mut lookups);
         }
+
         // Now process the data we fetched concurrently.
         // Note that this will process validator uptime changes in a random order, but because they are all
         // independent, this doesn't introduce any nondeterminism into the complete state change.
-        while let Some(data) = js.join_next().await.transpose()? {
+        while let Some(data) = lookups.join_next().await.transpose()? {
             if let Some((identity_key, consensus_key, mut uptime)) = data? {
                 // for some reason last_commit_info has truncated sha256 hashes
                 let addr: [u8; 20] =
@@ -112,6 +93,51 @@ pub trait ValidatorUptimeTracker: StateWrite {
         }
 
         Ok(())
+    }
+
+    /// Spawns a future that will retrieve validator information.
+    ///
+    /// NB: This function is synchronous, but the lookup will run asynchronously as part of the
+    /// provided [`JoinSet`]. This permits us to fetch information about all of the validators
+    /// in the consensus set in parallel.
+    ///
+    /// # Panics
+    ///
+    /// This will panic if there is no recorded state for a validator with the given
+    /// [`IdentityKey`].
+    fn spawn_validator_lookup_fut(
+        &self,
+        identity_key: crate::IdentityKey,
+        lookups: &mut Lookups,
+    ) -> AbortHandle {
+        let state = self.get_validator_state(&identity_key);
+        let uptime = self.get_validator_uptime(&identity_key);
+        let consensus_key = self.fetch_validator_consensus_key(&identity_key);
+
+        lookups.spawn(async move {
+            let state = state
+                .await?
+                .expect("every known validator must have a recorded state");
+
+            match state {
+                validator::State::Active => {
+                    // If the validator is active, we need its consensus key and current uptime data:
+                    Ok(Some((
+                        identity_key,
+                        consensus_key
+                            .await?
+                            .expect("every known validator must have a recorded consensus key"),
+                        uptime
+                            .await?
+                            .expect("every known validator must have a recorded uptime"),
+                    )))
+                }
+                _ => {
+                    // Otherwise, we don't need to track its uptime, and there's no data to fetch.
+                    anyhow::Ok(None)
+                }
+            }
+        })
     }
 }
 
