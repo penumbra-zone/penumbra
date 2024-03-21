@@ -50,8 +50,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // We can fetch all the data required for processing each validator concurrently:
         let mut lookups = Lookups::new();
         let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
+        while let Some(identity_key) = validator_identity_stream.next().await.transpose()? {
             self.spawn_validator_lookup_fut(identity_key, &mut lookups);
         }
 
