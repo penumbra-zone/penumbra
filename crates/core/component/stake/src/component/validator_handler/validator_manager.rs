@@ -10,6 +10,11 @@ use {
         state_key,
         validator::{self, BondingState::*, State, State::*, Validator},
         DelegationToken, IdentityKey, Penalty, Uptime,
+
+    component::{
+        metrics,
+        stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
+        validator_handler::ValidatorDataWrite,
     },
     anyhow::Result,
     async_trait::async_trait,
@@ -123,13 +128,11 @@ pub trait ValidatorManager: StateWrite {
     ) -> Result<()> {
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
+        let current_height = self.get_block_height().await?;
+
         // Using the start height of the current epoch let us do block based unbonding delays without
         // requiring to bind actions to a specific block height (instead they bind to a whole epoch).
-        let unbonding_start_height = {
-            // We scope it strictly to avoid accidentally using the wrong height.
-            let current_height = self.get_block_height().await?;
-            self.get_epoch_by_height(current_height).await?.start_height
-        };
+        let unbonding_start_height = self.get_epoch_by_height(current_height).await?.start_height;
 
         tracing::debug!("trying to execute a state transition");
 
@@ -154,6 +157,7 @@ pub trait ValidatorManager: StateWrite {
             (Inactive | Jailed | Defined, Disabled) => {
                 // The validator was disabled by its operator.
                 // If necessary, the epoch-handler will deindex this validator after processing it.
+                // We record the height at which the validator was disabled outside of the `match`.
             }
             (Inactive, Active) => {
                 // The delegator has been promoted into the active set, we initialize its uptime tracker,
@@ -177,6 +181,7 @@ pub trait ValidatorManager: StateWrite {
                 // When a validator is honorably discharged from the active set, we begin unbonding
                 // its delegation pool. The epoch-handler will decide whether it wants to keep it in
                 // the consensus set index or not.
+                // In the special case of a validator being disabled, we record the height at which it was disabled.
                 self.set_validator_bonding_state(
                     identity_key,
                     Unbonding {
@@ -282,6 +287,12 @@ pub trait ValidatorManager: StateWrite {
                     new_state
                 )
             }
+        }
+
+        // Now that we have validated the state transition, we can record the last disabled height.
+        // Doing this here lets us keep the match statement clean and focused on the critical transitions.
+        if new_state == Disabled {
+            self.set_last_disabled_height(identity_key, current_height)
         }
 
         // At this point, we are guaranteed that this state transition is valid.
@@ -489,7 +500,10 @@ pub trait ValidatorManager: StateWrite {
         Ok(())
     }
 
-    /// Update a validator definition
+    /// Create a new validator definition or update an existing one.
+    /// # Errors
+    /// This method errors if the validator state is not found in the state,
+    /// or if the validator definition has been disabled too recently.
     #[tracing::instrument(skip(self, validator), fields(id = ?validator.identity_key))]
     async fn update_validator_definition(&mut self, validator: Validator) -> Result<()> {
         tracing::debug!(definition = ?validator, "updating validator definition");
@@ -507,6 +521,27 @@ pub trait ValidatorManager: StateWrite {
                 self.set_validator_state(id, Disabled).await?;
             }
             (Disabled, true) => {
+                let last_disabled_height = self.get_last_disabled_height(id).await;
+                if let Some(last_disabled) = last_disabled_height {
+                    let current_height = self.get_block_height().await?;
+                    let epoch_duration = self.get_sct_params().await?.epoch_duration;
+
+                    // The actual delay is not too load-bearing, what we want here is to make sure that
+                    // there is a buffer between the last disabled height and the current height.
+                    // See #4067 for details about epoch-grinding.
+                    let allowed_enabled_height = last_disabled.saturating_add(epoch_duration);
+                    let wait_duration = current_height.saturating_sub(allowed_enabled_height);
+                    ensure!(
+                        current_height >= allowed_enabled_height,
+                        "validator has been disabled too recently (last_disabled={}, current_height={}, epoch_duration={}), wait {} blocks",
+                        last_disabled,
+                        current_height,
+                        epoch_duration,
+                        wait_duration
+                    );
+                } else {
+                    tracing::warn!(validator_identity = %id, "validator has no recorded last_disabled_height but is disabled");
+                }
                 // The operator has re-enabled their validator, if it has enough stake it will become
                 // inactive, otherwise it will become defined.
                 let min_validator_stake = self.get_stake_params().await?.min_validator_stake;
