@@ -1035,6 +1035,140 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataResponse {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.BatchSwapOutputDataResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for DexParameters {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.is_enabled {
+            len += 1;
+        }
+        if !self.fixed_candidates.is_empty() {
+            len += 1;
+        }
+        if self.max_hops != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.DexParameters", len)?;
+        if self.is_enabled {
+            struct_ser.serialize_field("isEnabled", &self.is_enabled)?;
+        }
+        if !self.fixed_candidates.is_empty() {
+            struct_ser.serialize_field("fixedCandidates", &self.fixed_candidates)?;
+        }
+        if self.max_hops != 0 {
+            struct_ser.serialize_field("maxHops", &self.max_hops)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for DexParameters {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "is_enabled",
+            "isEnabled",
+            "fixed_candidates",
+            "fixedCandidates",
+            "max_hops",
+            "maxHops",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IsEnabled,
+            FixedCandidates,
+            MaxHops,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "isEnabled" | "is_enabled" => Ok(GeneratedField::IsEnabled),
+                            "fixedCandidates" | "fixed_candidates" => Ok(GeneratedField::FixedCandidates),
+                            "maxHops" | "max_hops" => Ok(GeneratedField::MaxHops),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = DexParameters;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.DexParameters")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<DexParameters, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut is_enabled__ = None;
+                let mut fixed_candidates__ = None;
+                let mut max_hops__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IsEnabled => {
+                            if is_enabled__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("isEnabled"));
+                            }
+                            is_enabled__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::FixedCandidates => {
+                            if fixed_candidates__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fixedCandidates"));
+                            }
+                            fixed_candidates__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::MaxHops => {
+                            if max_hops__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("maxHops"));
+                            }
+                            max_hops__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(DexParameters {
+                    is_enabled: is_enabled__.unwrap_or_default(),
+                    fixed_candidates: fixed_candidates__.unwrap_or_default(),
+                    max_hops: max_hops__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.DexParameters", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for DirectedTradingPair {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2278,6 +2412,102 @@ impl<'de> serde::Deserialize<'de> for EventSwapClaim {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventSwapClaim", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for GenesisContent {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.dex_params.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.GenesisContent", len)?;
+        if let Some(v) = self.dex_params.as_ref() {
+            struct_ser.serialize_field("dexParams", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for GenesisContent {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "dex_params",
+            "dexParams",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            DexParams,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "dexParams" | "dex_params" => Ok(GeneratedField::DexParams),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = GenesisContent;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.GenesisContent")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<GenesisContent, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut dex_params__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::DexParams => {
+                            if dex_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dexParams"));
+                            }
+                            dex_params__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(GenesisContent {
+                    dex_params: dex_params__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.GenesisContent", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for LiquidityPositionByIdRequest {

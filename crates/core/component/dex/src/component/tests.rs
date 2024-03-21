@@ -11,6 +11,7 @@ use rand_core::OsRng;
 //use crate::TempStorageExt;
 
 use crate::lp::action::PositionOpen;
+use crate::DexParameters;
 use crate::{
     component::{
         router::FillRoute,
@@ -44,6 +45,7 @@ impl TempStorageExt for TempStorage {
                 start_height: 0,
             },
         );
+        state.put_dex_params(DexParameters::default());
 
         self.commit(state).await?;
 
@@ -578,8 +580,9 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
+        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -683,14 +686,9 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0u32.into(),
-            0,
-            RoutingParams::default(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -790,9 +788,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     state_tx.apply();
 
     // Now we should be able to arb 10penumbra => 10gn => 20gm => 20penumbra.
-    state
-        .arbitrage(penumbra.id(), vec![penumbra.id(), gm.id(), gn.id()])
-        .await?;
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), gm.id(), gn.id()]),
+    };
+    state.arbitrage(penumbra.id(), routing_params).await?;
 
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     assert_eq!(
@@ -880,9 +881,15 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 
     tracing::info!("we are triggering the arbitrage logic");
 
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), test_usd.id()]),
+    };
+
     let arb_profit = tokio::time::timeout(
         tokio::time::Duration::from_secs(2),
-        state.arbitrage(penumbra.id(), vec![penumbra.id(), test_usd.id()]),
+        state.arbitrage(penumbra.id(), routing_params),
     )
     .await??;
 

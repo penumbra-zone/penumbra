@@ -106,6 +106,7 @@ impl ProposalKindCmd {
                     sct_params: None,
                     shielded_pool_params: None,
                     stake_params: None,
+                    dex_params: None,
                 }),
             },
             ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {

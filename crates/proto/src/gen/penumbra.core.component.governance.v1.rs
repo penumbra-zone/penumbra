@@ -1043,6 +1043,9 @@ pub struct ChangedAppParameters {
     pub shielded_pool_params: ::core::option::Option<
         super::super::shielded_pool::v1::ShieldedPoolParameters,
     >,
+    /// DEX component parameters
+    #[prost(message, optional, tag = "10")]
+    pub dex_params: ::core::option::Option<super::super::dex::v1::DexParameters>,
 }
 impl ::prost::Name for ChangedAppParameters {
     const NAME: &'static str = "ChangedAppParameters";

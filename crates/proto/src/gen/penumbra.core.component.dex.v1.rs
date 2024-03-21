@@ -1444,6 +1444,42 @@ impl ::prost::Name for EventArbExecution {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DexParameters {
+    /// Whether or not the DEX is enabled.
+    #[prost(bool, tag = "1")]
+    pub is_enabled: bool,
+    /// The list of fixed candidates for routing.
+    #[prost(message, repeated, tag = "2")]
+    pub fixed_candidates: ::prost::alloc::vec::Vec<
+        super::super::super::asset::v1::AssetId,
+    >,
+    /// The number of hops to traverse while routing from A to B.
+    #[prost(uint32, tag = "3")]
+    pub max_hops: u32,
+}
+impl ::prost::Name for DexParameters {
+    const NAME: &'static str = "DexParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The initial parameters for the DEX.
+    #[prost(message, optional, tag = "1")]
+    pub dex_params: ::core::option::Option<DexParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

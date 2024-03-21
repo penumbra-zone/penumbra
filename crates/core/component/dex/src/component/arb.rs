@@ -19,31 +19,22 @@ use super::{
 pub trait Arbitrage: StateWrite + Sized {
     /// Attempts to extract as much as possible of the `arb_token` from the available
     /// liquidity positions, and returns the amount of `arb_token` extracted.
-    #[instrument(skip(self, arb_token, fixed_candidates))]
+    #[instrument(skip(self, arb_token, routing_params))]
     async fn arbitrage(
         self: &mut Arc<Self>,
         arb_token: asset::Id,
-        fixed_candidates: Vec<asset::Id>,
+        routing_params: RoutingParams,
     ) -> Result<Value>
     where
         Self: 'static,
     {
-        tracing::debug!(?arb_token, ?fixed_candidates, "beginning arb search");
+        tracing::debug!(?arb_token, ?routing_params, "beginning arb search");
         let arb_start = std::time::Instant::now();
 
         // Work in a new `StateDelta`, so we can transactionally apply any state
         // changes, and roll them back if we fail (e.g., if for some reason we
         // discover at the end that the arb wasn't profitable).
         let mut this = Arc::new(StateDelta::new(self.clone()));
-
-        // TODO: Build an extended candidate set with:
-        // - both ends of all trading pairs for which there were swaps in the block
-        // - both ends of all trading pairs for which positions were opened
-        let params = RoutingParams {
-            max_hops: 5,
-            price_limit: Some(1u64.into()),
-            fixed_candidates: Arc::new(fixed_candidates),
-        };
 
         // Create a flash-loan 2^64 of the arb token to ourselves.
         let flash_loan = Value {
@@ -57,7 +48,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 arb_token,
                 arb_token,
                 flash_loan.amount,
-                params,
+                routing_params,
                 execution_circuit_breaker,
             )
             .await?;

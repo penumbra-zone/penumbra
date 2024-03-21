@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use anyhow::Result;
 use penumbra_community_pool::params::CommunityPoolParameters;
+use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_funding::params::FundingParameters;
@@ -68,6 +69,12 @@ impl AppParameters {
                     missed_blocks_maximum: _,
                     min_validator_stake: _,
                     unbonding_delay: _,
+                },
+            dex_params:
+                DexParameters {
+                    is_enabled: _,
+                    fixed_candidates: _,
+                    max_hops: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -156,6 +163,12 @@ impl AppParameters {
                     missed_blocks_maximum,
                     min_validator_stake,
                     unbonding_delay,
+                },
+            dex_params:
+                DexParameters {
+                    is_enabled: _,
+                    fixed_candidates: _,
+                    max_hops: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -246,6 +259,7 @@ impl AppParameters {
             shielded_pool_params: Some(self.shielded_pool_params.clone()),
             sct_params: Some(self.sct_params.clone()),
             stake_params: Some(self.stake_params.clone()),
+            dex_params: Some(self.dex_params.clone()),
         }
     }
 
@@ -323,6 +337,11 @@ impl AppParameters {
             stake_params: new.stake_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .stake_params
+                    .clone()
+            }),
+            dex_params: new.dex_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .dex_params
                     .clone()
             }),
         })

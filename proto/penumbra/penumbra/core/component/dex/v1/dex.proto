@@ -668,3 +668,17 @@ message EventArbExecution {
   // The record of execution for the arb execution.
   SwapExecution swap_execution = 2;
 }
+
+message DexParameters {
+  // Whether or not the DEX is enabled.
+  bool is_enabled = 1;
+  // The list of fixed candidates for routing.
+  repeated asset.v1.AssetId fixed_candidates = 2;
+  // The number of hops to traverse while routing from A to B.
+  uint32 max_hops = 3;
+}
+
+message GenesisContent {
+  // The initial parameters for the DEX.
+  DexParameters dex_params = 1;
+}

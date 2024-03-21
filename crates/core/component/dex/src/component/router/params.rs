@@ -10,55 +10,15 @@ pub struct RoutingParams {
     pub max_hops: usize,
 }
 
-impl Default for RoutingParams {
-    fn default() -> Self {
-        Self {
-            price_limit: None,
-            fixed_candidates: Arc::new(vec![
-                asset::Cache::with_known_assets()
-                    .get_unit("test_usd")
-                    .expect("hardcoded \"test_usd\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("penumbra")
-                    .expect("hardcoded \"penumbra\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("gm")
-                    .expect("hardcoded \"gm\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("gn")
-                    .expect("hardcoded \"gn\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("test_atom")
-                    .expect("hardcoded \"test_atom\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("test_osmo")
-                    .expect("hardcoded \"test_osmo\" denom should be known")
-                    .id(),
-                asset::Cache::with_known_assets()
-                    .get_unit("test_btc")
-                    .expect("hardcoded \"test_btc\" denom should be known")
-                    .id(),
-            ]),
-            max_hops: 4,
-        }
-    }
-}
-
 impl RoutingParams {
-    /// Like `Default::default()`, but extends the default fixed candidates with the given list.
-    ///
-    /// If you want to _set_ the fixed candidates, just use `..Default::default()`.
-    pub fn default_with_extra_candidates(iter: impl IntoIterator<Item = asset::Id>) -> Self {
-        let mut params = Self::default();
-        Arc::get_mut(&mut params.fixed_candidates)
-            .expect("just created unique ref")
-            .extend(iter);
-        params
+    pub fn with_extra_candidates(self, iter: impl IntoIterator<Item = asset::Id>) -> Self {
+        let mut fixed_candidates: Vec<_> = (*self.fixed_candidates).clone();
+        fixed_candidates.extend(iter);
+
+        Self {
+            fixed_candidates: Arc::new(fixed_candidates),
+            ..self
+        }
     }
 
     /// Clamps the spill price to the price limit and returns whether or not it was clamped.

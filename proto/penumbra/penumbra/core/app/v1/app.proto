@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.app.v1;
 
 import "penumbra/core/component/community_pool/v1/community_pool.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/distributions/v1/distributions.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/funding/v1/funding.proto";
@@ -55,11 +56,12 @@ message AppParameters {
   core.component.funding.v1.FundingParameters funding_params = 9;
   // Shielded pool module parameters.
   core.component.shielded_pool.v1.ShieldedPoolParameters shielded_pool_params = 10;
+  // DEX module parameters.
+  core.component.dex.v1.DexParameters dex_params = 11;
 }
 
 // Requests the global configuration data for the app.
-message AppParametersRequest {
-}
+message AppParametersRequest {}
 
 message AppParametersResponse {
   AppParameters app_parameters = 1;
@@ -93,4 +95,6 @@ message GenesisContent {
   core.component.distributions.v1.GenesisContent distributions_content = 9;
   // Funding module genesis state.
   core.component.funding.v1.GenesisContent funding_content = 10;
+  // DEX component genesis state.
+  core.component.dex.v1.GenesisContent dex_content = 11;
 }

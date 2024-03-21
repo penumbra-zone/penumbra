@@ -1,4 +1,5 @@
 use penumbra_community_pool::genesis::Content as CommunityPoolContent;
+use penumbra_dex::genesis::Content as DexContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_funding::genesis::Content as FundingContent;
@@ -44,6 +45,8 @@ pub struct Content {
     pub shielded_pool_content: ShieldedPoolContent,
     /// Stake module genesis state.
     pub stake_content: StakeContent,
+    /// Dex component genesis state.
+    pub dex_content: DexContent,
 }
 
 impl DomainType for Content {
@@ -84,6 +87,7 @@ impl From<Content> for pb::GenesisContent {
             sct_content: Some(genesis.sct_content.into()),
             shielded_pool_content: Some(genesis.shielded_pool_content.into()),
             stake_content: Some(genesis.stake_content.into()),
+            dex_content: Some(genesis.dex_content.into()),
         }
     }
 }
@@ -147,6 +151,10 @@ impl TryFrom<pb::GenesisContent> for Content {
             stake_content: msg
                 .stake_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing stake content"))?
+                .try_into()?,
+            dex_content: msg
+                .dex_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing dex content"))?
                 .try_into()?,
         })
     }

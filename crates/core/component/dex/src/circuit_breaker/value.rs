@@ -42,7 +42,7 @@ mod tests {
     use std::sync::Arc;
 
     use crate::component::position_manager::Inner as _;
-    use crate::component::router::{HandleBatchSwaps as _, RoutingParams};
+    use crate::component::router::HandleBatchSwaps as _;
     use crate::component::{StateReadExt as _, StateWriteExt as _};
     use crate::{
         component::{router::limit_buy, tests::TempStorageExt, PositionManager as _},
@@ -241,8 +241,9 @@ mod tests {
         state_tx.apply();
 
         // This call should panic due to the outflow of gn not being covered by the circuit breaker.
+        let routing_params = state.routing_params().await.unwrap();
         state
-            .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
+            .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
             .await
             .expect("unable to process batch swaps");
     }

@@ -29,10 +29,7 @@ use crate::{
     state_key, DirectedTradingPair, SwapExecution, TradingPair,
 };
 
-use super::{
-    router::{RouteAndFill, RoutingParams},
-    PositionRead, StateReadExt,
-};
+use super::{router::RouteAndFill, PositionRead, StateReadExt};
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -521,15 +518,18 @@ impl SimulationService for Server {
                 tonic::Status::invalid_argument(format!("error parsing output id: {:#}", e))
             })?;
 
-        let routing_params = match routing_strategy {
-            Setting::Default(_) => RoutingParams::default(),
-            Setting::SingleHop(_) => RoutingParams {
-                max_hops: 1,
-                ..RoutingParams::default()
-            },
-        };
-
         let state = self.storage.latest_snapshot();
+
+        let mut routing_params = state.routing_params().await.unwrap();
+        match routing_strategy {
+            Setting::SingleHop(_) => {
+                routing_params.max_hops = 1;
+            }
+            Setting::Default(_) => {
+                // no-op, use the default
+            }
+        }
+
         let mut state_tx = Arc::new(StateDelta::new(state));
         let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = state_tx

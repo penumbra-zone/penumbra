@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
+use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::params::FeeParameters;
 use penumbra_ibc::params::IBCParameters;
@@ -444,6 +445,7 @@ pub struct ChangedAppParameters {
     pub sct_params: Option<SctParameters>,
     pub shielded_pool_params: Option<ShieldedPoolParameters>,
     pub stake_params: Option<StakeParameters>,
+    pub dex_params: Option<DexParameters>,
 }
 
 impl DomainType for ChangedAppParameters {
@@ -473,6 +475,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
                 .map(TryInto::try_into)
                 .transpose()?,
             stake_params: msg.stake_params.map(TryInto::try_into).transpose()?,
+            dex_params: msg.dex_params.map(TryInto::try_into).transpose()?,
         })
     }
 }
@@ -489,6 +492,7 @@ impl From<ChangedAppParameters> for pb::ChangedAppParameters {
             sct_params: params.sct_params.map(Into::into),
             shielded_pool_params: params.shielded_pool_params.map(Into::into),
             stake_params: params.stake_params.map(Into::into),
+            dex_params: params.dex_params.map(Into::into),
         }
     }
 }

@@ -5087,6 +5087,7 @@ version = "0.69.0"
 dependencies = [
  "anyhow",
  "penumbra-community-pool",
+ "penumbra-dex",
  "penumbra-distributions",
  "penumbra-fee",
  "penumbra-funding",
@@ -5127,6 +5128,7 @@ dependencies = [
  "pbjson-types",
  "penumbra-asset",
  "penumbra-community-pool",
+ "penumbra-dex",
  "penumbra-distributions",
  "penumbra-fee",
  "penumbra-funding",
