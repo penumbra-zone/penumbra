@@ -51,7 +51,7 @@ impl Migration {
                 /* --------- writing to the jmt  ------------ */
                 tracing::info!(?app_hash_pre_migration, "app hash pre-upgrade");
                 let mut delta = StateDelta::new(export_state);
-                delta.put_raw("has_migrated".to_string(), "yes".into());
+                delta.put_raw("banana".to_string(), "a good fruit".into());
                 delta.put_block_height(0u64);
                 let root_hash = storage.commit_in_place(delta).await?;
                 let app_hash_post_migration: RootHash = root_hash.into();
