@@ -33,7 +33,7 @@ pub struct Ics20Withdrawal {
     // prevent relayer censorship attacks. The core IBC implementation does this
     // in its handling of validation of timeouts.
     pub timeout_height: IbcHeight,
-    // the timestamp at which this transfer expires.
+    // the timestamp at which this transfer expires, in nanoseconds after unix epoch.
     pub timeout_time: u64,
     // the source channel used for the withdrawal
     pub source_channel: ChannelId,
@@ -75,6 +75,15 @@ impl Ics20Withdrawal {
     pub fn validate(&self) -> anyhow::Result<()> {
         if self.timeout_time == 0 {
             anyhow::bail!("timeout time must be non-zero");
+        }
+
+        // in order to prevent clients from inadvertantly identifying themselves by their clock
+        // skew, enforce that timeout time is rounded to the nearest even second
+        if self.timeout_time % 2_000_000_000 != 0 {
+            anyhow::bail!(
+                "withdrawal timeout timestamp {} is not an even number of seconds",
+                self.timeout_time
+            );
         }
 
         // NOTE: we could validate the destination chain address as bech32 to prevent mistyped

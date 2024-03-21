@@ -1051,23 +1051,20 @@ impl TxCmd {
                     }
                 };
 
-                // get the current time on the local machine (rounded to the nearest even second)
-                let mut current_time_s = SystemTime::now()
+                // get the current time on the local machine
+                let current_time_ns = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
-                    .as_secs() as u64;
-
-                if current_time_s % 2 != 0 {
-                    current_time_s += 1
-                }
-
-                let current_time_ns = current_time_s * 1_000_000_000;
+                    .as_nanos() as u64;
 
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
                     timeout_timestamp = current_time_ns + 1.728e14 as u64;
                 }
+
+                // round to the nearest even second
+                timeout_timestamp += timeout_timestamp % 2_000_000_000;
 
                 fn parse_denom_and_amount(value_str: &str) -> anyhow::Result<(Amount, Metadata)> {
                     let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
