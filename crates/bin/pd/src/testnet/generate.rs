@@ -248,7 +248,7 @@ impl TestnetConfig {
             chain_id: app_state
                 .chain_id
                 .parse::<tendermint::chain::Id>()
-                .context("failed to parseto create chain ID")?,
+                .context("failed to parse chain ID")?,
             initial_height: 0,
             consensus_params: tendermint::consensus::Params {
                 abci: AbciParams::default(),
