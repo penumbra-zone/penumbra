@@ -13,7 +13,7 @@ use {
     std::collections::BTreeMap,
     tendermint::abci::types::CommitInfo,
     tokio::task::{AbortHandle, JoinSet},
-    tracing::instrument,
+    tracing::{error_span, instrument, Instrument},
 };
 
 /// A bundle of information about a validator used to track its uptime.
@@ -109,34 +109,47 @@ pub trait ValidatorUptimeTracker: StateWrite {
         identity_key: crate::IdentityKey,
         lookups: &mut Lookups,
     ) -> AbortHandle {
+        // Define, but do not yet `.await` upon, a collection of futures fetching information
+        // about a validator.
         let state = self.get_validator_state(&identity_key);
         let uptime = self.get_validator_uptime(&identity_key);
         let consensus_key = self.fetch_validator_consensus_key(&identity_key);
 
-        lookups.spawn(async move {
-            let state = state
-                .await?
-                .expect("every known validator must have a recorded state");
+        // Define a span indicating that the spawned future follows from the current context.
+        let span = {
+            let span = error_span!("fetching validator information", %identity_key);
+            let current = tracing::Span::current();
+            span.follows_from(current);
+            span
+        };
 
-            match state {
-                validator::State::Active => {
-                    // If the validator is active, we need its consensus key and current uptime data:
-                    Ok(Some((
-                        identity_key,
-                        consensus_key
-                            .await?
-                            .expect("every known validator must have a recorded consensus key"),
-                        uptime
-                            .await?
-                            .expect("every known validator must have a recorded uptime"),
-                    )))
-                }
-                _ => {
-                    // Otherwise, we don't need to track its uptime, and there's no data to fetch.
-                    Ok(None)
+        lookups.spawn(
+            async move {
+                let state = state
+                    .await?
+                    .expect("every known validator must have a recorded state");
+
+                match state {
+                    validator::State::Active => {
+                        // If the validator is active, we need its consensus key and current uptime data:
+                        Ok(Some((
+                            identity_key,
+                            consensus_key
+                                .await?
+                                .expect("every known validator must have a recorded consensus key"),
+                            uptime
+                                .await?
+                                .expect("every known validator must have a recorded uptime"),
+                        )))
+                    }
+                    _ => {
+                        // Otherwise, we don't need to track its uptime, and there's no data to fetch.
+                        Ok(None)
+                    }
                 }
             }
-        })
+            .instrument(span),
+        )
     }
 }
 
