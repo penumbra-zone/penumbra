@@ -75,3 +75,35 @@ jobs:
           # Wait for rollout to complete. Will block until pods are marked Ready.
           kubectl rollout status deployment \
               -l "app.kubernetes.io/instance=galileo"
+
+  # Deploys a standalone instance of pd,
+  # specifically to exercise the auto-https direct-serve logic.
+  standalone:
+    name: deploy standalone pd node, preview
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    needs:
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure ssh identity
+        run: |-
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_PRIVKEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_HOSTKEYS" > ~/.ssh/known_hosts
+        env:
+          SSH_PRIVKEY: ${{ secrets.CI_RUNNER_SSH_PRIVKEY }}
+          SSH_HOSTKEYS: ${{ secrets.CI_RUNNER_SSH_HOSTKEYS }}
+
+      - name: deploy
+        shell: bash
+        run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
+          export PENUMBRA_ENVIRONMENT="penumbra-testnet"
+          ./deployments/scripts/redeploy-ci-fullnode-via-runner
