@@ -25,7 +25,9 @@ use tendermint::{block, PublicKey};
 use tracing::{error, instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
-use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
+use crate::component::validator_handler::{
+    ValidatorDataRead, ValidatorManager, ValidatorUptimeTracker,
+};
 
 pub struct Staking {}
 
