@@ -133,7 +133,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
                 }
                 _ => {
                     // Otherwise, we don't need to track its uptime, and there's no data to fetch.
-                    anyhow::Ok(None)
+                    Ok(None)
                 }
             }
         })
