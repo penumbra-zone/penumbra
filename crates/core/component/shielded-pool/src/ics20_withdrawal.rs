@@ -78,8 +78,8 @@ impl Ics20Withdrawal {
         }
 
         // in order to prevent clients from inadvertantly identifying themselves by their clock
-        // skew, enforce that timeout time is rounded to the nearest second
-        if self.timeout_time % 1_000_000_000 != 0 {
+        // skew, enforce that timeout time is rounded to the nearest minute
+        if self.timeout_time % 60_000_000_000 != 0 {
             anyhow::bail!(
                 "withdrawal timeout timestamp {} is not rounded to one second",
                 self.timeout_time
