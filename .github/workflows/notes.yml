@@ -34,12 +34,13 @@ jobs:
 
       - name: Build software guide
         run: cd docs/guide && mdbook build
+
       - name: Move software guide to subdirectory
         run: |
           cd docs/guide
-          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
 
       - name: Deploy software guide to firebase
@@ -57,9 +58,9 @@ jobs:
       - name: Move protocol spec to subdirectory
         run: |
           cd docs/protocol
-          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
 
       - name: Deploy protocol spec to firebase
