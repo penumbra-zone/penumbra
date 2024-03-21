@@ -2,6 +2,16 @@ use std::string::String;
 
 use crate::{lp::position, DirectedTradingPair, TradingPair};
 
+pub mod config {
+    pub fn dex_params() -> &'static str {
+        "sct/config/dex_params"
+    }
+
+    pub fn dex_params_updated() -> &'static str {
+        "sct/config/dex_params_updated"
+    }
+}
+
 pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
     format!("dex/positions/{trading_pair}/opened/{position_id}")
 }

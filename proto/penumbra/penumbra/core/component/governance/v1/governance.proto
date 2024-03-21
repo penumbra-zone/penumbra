@@ -4,6 +4,7 @@ package penumbra.core.component.governance.v1;
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/community_pool/v1/community_pool.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/distributions/v1/distributions.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/funding/v1/funding.proto";
@@ -449,6 +450,8 @@ message ChangedAppParameters {
   core.component.funding.v1.FundingParameters funding_params = 8;
   // Shielded pool module parameters
   core.component.shielded_pool.v1.ShieldedPoolParameters shielded_pool_params = 9;
+  // DEX component parameters
+  core.component.dex.v1.DexParameters dex_params = 10;
 }
 
 message ChangedAppParametersSet {
@@ -485,8 +488,7 @@ message AllTalliedDelegatorVotesForProposalResponse {
   keys.v1.IdentityKey identity_key = 2;
 }
 
-message NextProposalIdRequest {
-}
+message NextProposalIdRequest {}
 
 message NextProposalIdResponse {
   // The next proposal ID.

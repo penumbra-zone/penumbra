@@ -60,6 +60,7 @@ penumbra-num = {workspace = true, default-features = false}
 penumbra-proof-params = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
+penumbra-dex = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 penumbra-tct = {workspace = true, default-features = true}

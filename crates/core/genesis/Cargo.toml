@@ -12,6 +12,7 @@ anyhow = { workspace = true }
 penumbra-community-pool = { workspace = true }
 penumbra-distributions = { workspace = true }
 penumbra-fee = { workspace = true }
+penumbra-dex = { workspace = true }
 penumbra-funding = { workspace = true }
 penumbra-governance = { workspace = true }
 penumbra-ibc = { workspace = true }

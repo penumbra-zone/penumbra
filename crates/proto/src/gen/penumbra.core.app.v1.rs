@@ -84,6 +84,11 @@ pub struct AppParameters {
     pub shielded_pool_params: ::core::option::Option<
         super::super::component::shielded_pool::v1::ShieldedPoolParameters,
     >,
+    /// DEX module parameters.
+    #[prost(message, optional, tag = "11")]
+    pub dex_params: ::core::option::Option<
+        super::super::component::dex::v1::DexParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";
@@ -190,6 +195,11 @@ pub struct GenesisContent {
     #[prost(message, optional, tag = "10")]
     pub funding_content: ::core::option::Option<
         super::super::component::funding::v1::GenesisContent,
+    >,
+    /// DEX component genesis state.
+    #[prost(message, optional, tag = "11")]
+    pub dex_content: ::core::option::Option<
+        super::super::component::dex::v1::GenesisContent,
     >,
 }
 impl ::prost::Name for GenesisContent {

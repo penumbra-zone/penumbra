@@ -9,7 +9,8 @@ use jmt::RootHash;
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
-use penumbra_dex::component::Dex;
+use penumbra_dex::component::StateReadExt as _;
+use penumbra_dex::component::{Dex, StateWriteExt as _};
 use penumbra_distributions::component::{Distributions, StateReadExt as _, StateWriteExt as _};
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
@@ -117,7 +118,7 @@ impl App {
                 )
                 .await;
                 Ibc::init_chain(&mut state_tx, Some(&genesis.ibc_content)).await;
-                Dex::init_chain(&mut state_tx, Some(&())).await;
+                Dex::init_chain(&mut state_tx, Some(&genesis.dex_content)).await;
                 CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
                 Governance::init_chain(&mut state_tx, Some(&genesis.governance_content)).await;
@@ -240,6 +241,9 @@ impl App {
             }
             if let Some(stake_params) = app_params.new.stake_params {
                 state_tx.put_stake_params(stake_params);
+            }
+            if let Some(dex_params) = app_params.new.dex_params {
+                state_tx.put_dex_params(dex_params);
             }
         }
 
@@ -681,6 +685,7 @@ pub trait StateReadExt: StateRead {
         let sct_params = self.get_sct_params().await?;
         let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
+        let dex_params = self.get_dex_params().await?;
 
         Ok(AppParameters {
             chain_id,
@@ -693,6 +698,7 @@ pub trait StateReadExt: StateRead {
             sct_params,
             shielded_pool_params,
             stake_params,
+            dex_params,
         })
     }
 
