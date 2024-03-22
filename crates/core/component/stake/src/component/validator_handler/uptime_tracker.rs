@@ -18,9 +18,10 @@ use {
     futures::StreamExt as _,
     penumbra_sct::component::clock::EpochRead,
     std::collections::BTreeMap,
+    tap::Tap,
     tendermint::abci::types::CommitInfo,
     tokio::task::{AbortHandle, JoinSet},
-    tracing::{error_span, instrument, Instrument},
+    tracing::{debug, error_span, instrument, trace, Instrument},
 };
 
 /// A bundle of information about a validator used to track its uptime.
@@ -48,8 +49,23 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
         let did_address_vote = last_commit_info
             .votes
-            .iter()
+            .as_slice()
+            .tap(|votes| {
+                if votes.is_empty() {
+                    debug!("no validators voted")
+                } else {
+                    debug!(len = %votes.len(), "collecting validator votes")
+                }
+            })
+            .into_iter()
             .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
+            .inspect(|(address, voted)| {
+                trace!(
+                    address = %hex::encode(address),
+                    %voted,
+                    "validator vote information"
+                )
+            })
             .collect::<BTreeMap<Address, bool>>();
 
         // Since we don't have a lookup from "addresses" to identity keys,
