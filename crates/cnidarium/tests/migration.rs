@@ -640,7 +640,7 @@ mod proptests {
         prelude::prop,
         prop_assert, prop_assert_eq, prop_assert_ne, prop_oneof,
         strategy::{BoxedStrategy, Just, Strategy},
-        test_runner::FileFailurePersistence,
+        test_runner::{FileFailurePersistence, TestCaseError},
     };
     use sha2::Sha256;
     use std::{
@@ -791,6 +791,65 @@ mod proptests {
         }
     }
 
+    async fn check_proofs(
+        state: cnidarium::Snapshot,
+        reference_store: &ReferenceStore,
+        root_hash: jmt::RootHash,
+        phase: &str,
+    ) -> Result<(), TestCaseError> {
+        for (storage_key, reference_value) in reference_store.final_kv.iter() {
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                ?phase,
+                "checking proofs"
+            );
+            let result_proof = state
+                .get_with_proof(storage_key.encode_path())
+                .await
+                .map_err(|e| tracing::error!(?e, "get_with_proof failed"));
+
+            prop_assert!(result_proof.is_ok(), "can get with proof");
+
+            let (retrieved_value, proof) = result_proof.expect("can get with proof");
+            prop_assert_eq!(&retrieved_value, reference_value);
+
+            let merkle_path = storage_key.merkle_path();
+            let merkle_root = MerkleRoot {
+                hash: root_hash.0.to_vec(),
+            };
+            let specs = storage_key.proof_spec();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                num_proofs = proof.proofs.len(),
+                spec_len = specs.len(),
+                ?key_hash,
+                abridged_key = storage_key.abridged_key(),
+                is_existence = reference_value.is_some(),
+                "proof verification"
+            );
+
+            let proof_verifies = if let Some(value) = retrieved_value.clone() {
+                proof
+                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
+                    .map_err(|e| tracing::error!(?e, "existence proof failed"))
+            } else {
+                proof
+                    .verify_non_membership(&specs, merkle_root, merkle_path)
+                    .map_err(|e| tracing::error!(?e, "nonexistence proof failed"))
+            };
+
+            prop_assert!(proof_verifies.is_ok());
+        }
+        Ok(())
+    }
+
     #[proptest(async = "tokio", cases = 100, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
     async fn test_migration_substores(
         #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
@@ -849,56 +908,14 @@ mod proptests {
             "premigration operations have been committed"
         );
 
-        for (storage_key, reference_value) in reference_store.final_kv.iter() {
-            let key_hash = storage_key.hash();
-            let key_path = storage_key.path();
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
-                ?key_hash,
-                "premigration: checking proofs"
-            );
-            let result_proof = storage
-                .latest_snapshot()
-                .get_with_proof(storage_key.encode_path())
-                .await
-                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
-
-            prop_assert!(result_proof.is_ok(), "can get with proof");
-
-            let (retrieved_value, proof) = result_proof.expect("can get with proof");
-            prop_assert_eq!(&retrieved_value, reference_value);
-
-            let merkle_path = storage_key.merkle_path();
-            let merkle_root = MerkleRoot {
-                hash: premigration_root_hash.clone().0.to_vec(),
-            };
-            let specs = storage_key.proof_spec();
-            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                num_proofs = proof.proofs.len(),
-                spec_len = specs.len(),
-                ?key_hash,
-                abridged_key = storage_key.abridged_key(),
-                is_existence = reference_value.is_some(),
-                "premigration proof verification"
-            );
-
-            let proof_verifies = if let Some(value) = retrieved_value.clone() {
-                proof
-                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
-                    .map_err(|e| tracing::error!(?e, "premigration existence proof failed"))
-            } else {
-                proof
-                    .verify_non_membership(&specs, merkle_root, merkle_path)
-                    .map_err(|e| tracing::error!(?e, "premigration nonexistence proof failed"))
-            };
-
-            prop_assert!(proof_verifies.is_ok());
-        }
+        let premigration_snapshot = storage.latest_snapshot();
+        let _ = check_proofs(
+            premigration_snapshot,
+            &reference_store,
+            premigration_root_hash,
+            "premigration",
+        )
+        .await?;
 
         // Migration: write and delete keys
         let mut migration_delta = StateDelta::new(storage.latest_snapshot());
@@ -932,58 +949,15 @@ mod proptests {
             "migration operations have been committed"
         );
 
-        for (storage_key, reference_value) in reference_store.final_kv.iter() {
-            let key_hash = storage_key.hash();
-            let key_path = storage_key.path();
+        let migration_snapshot = storage.latest_snapshot();
 
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
-                ?key_hash,
-                "migration: checking proofs"
-            );
-
-            let result_proof = storage
-                .latest_snapshot()
-                .get_with_proof(storage_key.encode_path())
-                .await
-                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
-
-            prop_assert!(result_proof.is_ok(), "can get with proof");
-
-            let (retrieved_value, proof) = result_proof.expect("can get with proof");
-            prop_assert_eq!(&retrieved_value, reference_value);
-
-            let merkle_path = storage_key.merkle_path();
-            let merkle_root = MerkleRoot {
-                hash: migration_root_hash.0.to_vec(),
-            };
-            let specs = storage_key.proof_spec();
-            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
-
-            prop_assert_eq!(&retrieved_value, reference_value);
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                num_proofs = proof.proofs.len(),
-                spec_len = specs.len(),
-                ?key_hash,
-                abridged_key = storage_key.abridged_key(),
-                "migration proof verification"
-            );
-
-            let proof_verifies = if let Some(value) = retrieved_value.clone() {
-                proof
-                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
-                    .map_err(|e| tracing::error!(?e, "migration: existence proof failed"))
-            } else {
-                proof
-                    .verify_non_membership(&specs, merkle_root, merkle_path)
-                    .map_err(|e| tracing::error!(?e, "migration: nonexistence proof failed"))
-            };
-
-            prop_assert!(proof_verifies.is_ok());
-        }
+        let _ = check_proofs(
+            migration_snapshot,
+            &reference_store,
+            migration_root_hash,
+            "migration",
+        )
+        .await?;
 
         // We toss the storage instance and reload it.
         storage.release().await;
@@ -1022,59 +996,15 @@ mod proptests {
             "postmigration root hash should be different than the migration root hash"
         );
 
-        for (storage_key, reference_value) in reference_store.final_kv.iter() {
-            let key_hash = storage_key.hash();
-            let key_path = storage_key.path();
+        let post_migration_snapshot = storage.latest_snapshot();
 
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                key = &storage_key.abridged_key(),
-                ?key_hash,
-                "postmigration: checking proofs"
-            );
-
-            let result_proof = storage
-                .latest_snapshot()
-                .get_with_proof(storage_key.encode_path())
-                .await
-                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
-
-            prop_assert!(result_proof.is_ok(), "can get with proof");
-
-            let (retrieved_value, proof) = result_proof.expect("can get with proof");
-            prop_assert_eq!(&retrieved_value, reference_value);
-
-            let merkle_path = storage_key.merkle_path();
-            let merkle_root = MerkleRoot {
-                hash: postmigration_root_hash.0.to_vec(),
-            };
-            let specs = storage_key.proof_spec();
-            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                num_proofs = proof.proofs.len(),
-                spec_len = specs.len(),
-                ?key_hash,
-                abridged_key = &storage_key.abridged_key(),
-                "postmigration proof verification"
-            );
-
-            let proof_verifies = if let Some(value) = retrieved_value.clone() {
-                let v1 = value.clone();
-                let v2 = reference_value.clone().unwrap();
-                assert_eq!(v1, v2, "Values not equal");
-                proof
-                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
-                    .map_err(|e| tracing::error!(?e, "postmigration: existence proof failed"))
-            } else {
-                proof
-                    .verify_non_membership(&specs, merkle_root, merkle_path)
-                    .map_err(|e| tracing::error!(?e, "postmigration: nonexistence proof failed"))
-            };
-
-            prop_assert!(proof_verifies.is_ok());
-        }
+        let _ = check_proofs(
+            post_migration_snapshot,
+            &reference_store,
+            postmigration_root_hash,
+            "postmigration",
+        )
+        .await?;
 
         // Check random keys that should not exist
         for op in nonexistence_keys {
