@@ -32,10 +32,23 @@ impl ::prost::Name for Signature {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CoordinatorRound1 {
-    /// The plan that the coordinator would like the followers to sign.
+    /// The plan that the coordinator would like the followers to sign (mutually exclusive with
+    /// `validator_definition` and `validator_vote`).
     #[prost(message, optional, tag = "1")]
     pub plan: ::core::option::Option<
         super::super::super::core::transaction::v1::TransactionPlan,
+    >,
+    /// The validator definition the coordinator would like the followers to sign (mutually exclusive
+    /// with `plan` and `validator_vote`).
+    #[prost(message, optional, tag = "2")]
+    pub validator_definition: ::core::option::Option<
+        super::super::super::core::component::stake::v1::Validator,
+    >,
+    /// The validator vote the coordinator would like the followers to sign (mutually exclusive with
+    /// `plan` and `validator_definition`).
+    #[prost(message, optional, tag = "3")]
+    pub validator_vote: ::core::option::Option<
+        super::super::super::core::component::governance::v1::ValidatorVoteBody,
     >,
 }
 impl ::prost::Name for CoordinatorRound1 {
