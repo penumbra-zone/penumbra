@@ -397,7 +397,7 @@ impl SubstoreStorage {
                         // `rustfmt` panics on inlining the closure, so we use a helper function to skip the key.
                         let skip_key = |(keyhash, _key, some_value)| (keyhash, some_value);
 
-                        let (root_hash, batch)= if perform_migration {
+                        let (root_hash, batch) = if perform_migration {
                             jmt.append_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
                         } else {
                             jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
