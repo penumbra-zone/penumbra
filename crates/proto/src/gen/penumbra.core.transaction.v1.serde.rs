@@ -3200,16 +3200,19 @@ impl serde::Serialize for TransactionPerspective {
         if self.transaction_id.is_some() {
             len += 1;
         }
-        if !self.transaction_ids_by_nullifier.is_empty() {
-            len += 1;
-        }
-        if !self.transaction_ids_by_commitment.is_empty() {
-            len += 1;
-        }
         if !self.prices.is_empty() {
             len += 1;
         }
         if !self.extended_metadata.is_empty() {
+            len += 1;
+        }
+        if !self.creation_transaction_ids_by_nullifier.is_empty() {
+            len += 1;
+        }
+        if !self.nullification_transaction_ids_by_commitment.is_empty() {
+            len += 1;
+        }
+        if !self.batch_swap_output_data.is_empty() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective", len)?;
@@ -3231,17 +3234,20 @@ impl serde::Serialize for TransactionPerspective {
         if let Some(v) = self.transaction_id.as_ref() {
             struct_ser.serialize_field("transactionId", v)?;
         }
-        if !self.transaction_ids_by_nullifier.is_empty() {
-            struct_ser.serialize_field("transactionIdsByNullifier", &self.transaction_ids_by_nullifier)?;
-        }
-        if !self.transaction_ids_by_commitment.is_empty() {
-            struct_ser.serialize_field("transactionIdsByCommitment", &self.transaction_ids_by_commitment)?;
-        }
         if !self.prices.is_empty() {
             struct_ser.serialize_field("prices", &self.prices)?;
         }
         if !self.extended_metadata.is_empty() {
             struct_ser.serialize_field("extendedMetadata", &self.extended_metadata)?;
+        }
+        if !self.creation_transaction_ids_by_nullifier.is_empty() {
+            struct_ser.serialize_field("creationTransactionIdsByNullifier", &self.creation_transaction_ids_by_nullifier)?;
+        }
+        if !self.nullification_transaction_ids_by_commitment.is_empty() {
+            struct_ser.serialize_field("nullificationTransactionIdsByCommitment", &self.nullification_transaction_ids_by_commitment)?;
+        }
+        if !self.batch_swap_output_data.is_empty() {
+            struct_ser.serialize_field("batchSwapOutputData", &self.batch_swap_output_data)?;
         }
         struct_ser.end()
     }
@@ -3264,13 +3270,15 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             "denoms",
             "transaction_id",
             "transactionId",
-            "transaction_ids_by_nullifier",
-            "transactionIdsByNullifier",
-            "transaction_ids_by_commitment",
-            "transactionIdsByCommitment",
             "prices",
             "extended_metadata",
             "extendedMetadata",
+            "creation_transaction_ids_by_nullifier",
+            "creationTransactionIdsByNullifier",
+            "nullification_transaction_ids_by_commitment",
+            "nullificationTransactionIdsByCommitment",
+            "batch_swap_output_data",
+            "batchSwapOutputData",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -3281,10 +3289,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
             AddressViews,
             Denoms,
             TransactionId,
-            TransactionIdsByNullifier,
-            TransactionIdsByCommitment,
             Prices,
             ExtendedMetadata,
+            CreationTransactionIdsByNullifier,
+            NullificationTransactionIdsByCommitment,
+            BatchSwapOutputData,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3313,10 +3322,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             "addressViews" | "address_views" => Ok(GeneratedField::AddressViews),
                             "denoms" => Ok(GeneratedField::Denoms),
                             "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
-                            "transactionIdsByNullifier" | "transaction_ids_by_nullifier" => Ok(GeneratedField::TransactionIdsByNullifier),
-                            "transactionIdsByCommitment" | "transaction_ids_by_commitment" => Ok(GeneratedField::TransactionIdsByCommitment),
                             "prices" => Ok(GeneratedField::Prices),
                             "extendedMetadata" | "extended_metadata" => Ok(GeneratedField::ExtendedMetadata),
+                            "creationTransactionIdsByNullifier" | "creation_transaction_ids_by_nullifier" => Ok(GeneratedField::CreationTransactionIdsByNullifier),
+                            "nullificationTransactionIdsByCommitment" | "nullification_transaction_ids_by_commitment" => Ok(GeneratedField::NullificationTransactionIdsByCommitment),
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3342,10 +3352,11 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                 let mut address_views__ = None;
                 let mut denoms__ = None;
                 let mut transaction_id__ = None;
-                let mut transaction_ids_by_nullifier__ = None;
-                let mut transaction_ids_by_commitment__ = None;
                 let mut prices__ = None;
                 let mut extended_metadata__ = None;
+                let mut creation_transaction_ids_by_nullifier__ = None;
+                let mut nullification_transaction_ids_by_commitment__ = None;
+                let mut batch_swap_output_data__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PayloadKeys => {
@@ -3384,22 +3395,6 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                             }
                             transaction_id__ = map_.next_value()?;
                         }
-                        GeneratedField::TransactionIdsByNullifier => {
-                            if transaction_ids_by_nullifier__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transactionIdsByNullifier"));
-                            }
-                            transaction_ids_by_nullifier__ = Some(
-                                map_.next_value::<std::collections::HashMap<_, _>>()?
-                            );
-                        }
-                        GeneratedField::TransactionIdsByCommitment => {
-                            if transaction_ids_by_commitment__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("transactionIdsByCommitment"));
-                            }
-                            transaction_ids_by_commitment__ = Some(
-                                map_.next_value::<std::collections::HashMap<_, _>>()?
-                            );
-                        }
                         GeneratedField::Prices => {
                             if prices__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("prices"));
@@ -3411,6 +3406,24 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                                 return Err(serde::de::Error::duplicate_field("extendedMetadata"));
                             }
                             extended_metadata__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::CreationTransactionIdsByNullifier => {
+                            if creation_transaction_ids_by_nullifier__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("creationTransactionIdsByNullifier"));
+                            }
+                            creation_transaction_ids_by_nullifier__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::NullificationTransactionIdsByCommitment => {
+                            if nullification_transaction_ids_by_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nullificationTransactionIdsByCommitment"));
+                            }
+                            nullification_transaction_ids_by_commitment__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = Some(map_.next_value()?);
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -3424,14 +3437,128 @@ impl<'de> serde::Deserialize<'de> for TransactionPerspective {
                     address_views: address_views__.unwrap_or_default(),
                     denoms: denoms__.unwrap_or_default(),
                     transaction_id: transaction_id__,
-                    transaction_ids_by_nullifier: transaction_ids_by_nullifier__.unwrap_or_default(),
-                    transaction_ids_by_commitment: transaction_ids_by_commitment__.unwrap_or_default(),
                     prices: prices__.unwrap_or_default(),
                     extended_metadata: extended_metadata__.unwrap_or_default(),
+                    creation_transaction_ids_by_nullifier: creation_transaction_ids_by_nullifier__.unwrap_or_default(),
+                    nullification_transaction_ids_by_commitment: nullification_transaction_ids_by_commitment__.unwrap_or_default(),
+                    batch_swap_output_data: batch_swap_output_data__.unwrap_or_default(),
                 })
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_perspective::CreationTransactionIdByNullifier {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.nullifier.is_some() {
+            len += 1;
+        }
+        if self.transaction_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective.CreationTransactionIdByNullifier", len)?;
+        if let Some(v) = self.nullifier.as_ref() {
+            struct_ser.serialize_field("nullifier", v)?;
+        }
+        if let Some(v) = self.transaction_id.as_ref() {
+            struct_ser.serialize_field("transactionId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_perspective::CreationTransactionIdByNullifier {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "nullifier",
+            "transaction_id",
+            "transactionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Nullifier,
+            TransactionId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "nullifier" => Ok(GeneratedField::Nullifier),
+                            "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_perspective::CreationTransactionIdByNullifier;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.TransactionPerspective.CreationTransactionIdByNullifier")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_perspective::CreationTransactionIdByNullifier, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut nullifier__ = None;
+                let mut transaction_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Nullifier => {
+                            if nullifier__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("nullifier"));
+                            }
+                            nullifier__ = map_.next_value()?;
+                        }
+                        GeneratedField::TransactionId => {
+                            if transaction_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionId"));
+                            }
+                            transaction_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_perspective::CreationTransactionIdByNullifier {
+                    nullifier: nullifier__,
+                    transaction_id: transaction_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective.CreationTransactionIdByNullifier", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for transaction_perspective::ExtendedMetadataById {
@@ -3546,6 +3673,119 @@ impl<'de> serde::Deserialize<'de> for transaction_perspective::ExtendedMetadataB
             }
         }
         deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective.ExtendedMetadataById", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for transaction_perspective::NullificationTransactionIdByCommitment {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.commitment.is_some() {
+            len += 1;
+        }
+        if self.transaction_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.TransactionPerspective.NullificationTransactionIdByCommitment", len)?;
+        if let Some(v) = self.commitment.as_ref() {
+            struct_ser.serialize_field("commitment", v)?;
+        }
+        if let Some(v) = self.transaction_id.as_ref() {
+            struct_ser.serialize_field("transactionId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for transaction_perspective::NullificationTransactionIdByCommitment {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "commitment",
+            "transaction_id",
+            "transactionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Commitment,
+            TransactionId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "commitment" => Ok(GeneratedField::Commitment),
+                            "transactionId" | "transaction_id" => Ok(GeneratedField::TransactionId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = transaction_perspective::NullificationTransactionIdByCommitment;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.transaction.v1.TransactionPerspective.NullificationTransactionIdByCommitment")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<transaction_perspective::NullificationTransactionIdByCommitment, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut commitment__ = None;
+                let mut transaction_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Commitment => {
+                            if commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("commitment"));
+                            }
+                            commitment__ = map_.next_value()?;
+                        }
+                        GeneratedField::TransactionId => {
+                            if transaction_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transactionId"));
+                            }
+                            transaction_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(transaction_perspective::NullificationTransactionIdByCommitment {
+                    commitment: commitment__,
+                    transaction_id: transaction_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.transaction.v1.TransactionPerspective.NullificationTransactionIdByCommitment", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for TransactionPlan {

@@ -15,7 +15,6 @@ use penumbra_governance::{
     ValidatorVote, VotingReceiptToken,
 };
 use penumbra_ibc::IbcRelay;
-use penumbra_proto::core::txhash::v1::TransactionId;
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, Output, OutputView, Spend, SpendView};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 
@@ -329,22 +328,45 @@ impl IsAction for Swap {
             .ok()
         });
 
-        let claim_tx: Option<TransactionId> = match txp
-            .transaction_ids_by_commitment
-            .get(&commitment.to_string())
-        {
-            Some(transaction_id) => Some(transaction_id.clone()),
-            None => None,
-        };
-
         ActionView::Swap(match plaintext {
-            Some(swap_plaintext) => SwapView::Visible {
-                swap: self.to_owned(),
-                swap_plaintext: swap_plaintext.clone(),
-                output_1: None,
-                output_2: None,
-                claim_tx,
-            },
+            Some(swap_plaintext) => {
+                // If we can find a matching BSOD in the TxP, use it to compute the output notes
+                // for the swap.
+                let bsod = txp
+                    .batch_swap_output_data
+                    .iter()
+                    // This finds the first matching one; there should only be one
+                    // per trading pair per block and we trust the TxP provider not to lie about it.
+                    .find(|bsod| bsod.trading_pair == swap_plaintext.trading_pair);
+
+                let (output_1, output_2) = match bsod.map(|bsod| swap_plaintext.output_notes(bsod))
+                {
+                    Some((output_1, output_2)) => {
+                        (Some(txp.view_note(output_1)), Some(txp.view_note(output_2)))
+                    }
+                    None => (None, None),
+                };
+
+                SwapView::Visible {
+                    swap: self.to_owned(),
+                    swap_plaintext: swap_plaintext.clone(),
+                    output_1,
+                    output_2,
+                    claim_tx: txp
+                        .nullification_transaction_ids_by_commitment
+                        .get(&commitment)
+                        .cloned(),
+                    batch_swap_output_data: bsod.cloned(),
+                    asset_1_metadata: txp
+                        .denoms
+                        .get(&swap_plaintext.trading_pair.asset_1())
+                        .cloned(),
+                    asset_2_metadata: txp
+                        .denoms
+                        .get(&swap_plaintext.trading_pair.asset_2())
+                        .cloned(),
+                }
+            }
             None => SwapView::Opaque {
                 swap: self.to_owned(),
             },
@@ -361,12 +383,6 @@ impl IsAction for SwapClaim {
         // Get the advice notes for each output from the swap claim
         let output_1 = txp.advice_notes.get(&self.body.output_1_commitment);
         let output_2 = txp.advice_notes.get(&self.body.output_2_commitment);
-        let nullifier = self.body.nullifier;
-        let swap_tx: Option<TransactionId> =
-            match txp.transaction_ids_by_nullifier.get(&nullifier.to_string()) {
-                Some(transaction_id) => Some(transaction_id.clone()),
-                None => None,
-            };
 
         match (output_1, output_2) {
             (Some(output_1), Some(output_2)) => {
@@ -374,7 +390,10 @@ impl IsAction for SwapClaim {
                     swap_claim: self.to_owned(),
                     output_1: txp.view_note(output_1.to_owned()),
                     output_2: txp.view_note(output_2.to_owned()),
-                    swap_tx,
+                    swap_tx: txp
+                        .creation_transaction_ids_by_nullifier
+                        .get(&self.body.nullifier)
+                        .cloned(),
                 };
                 ActionView::SwapClaim(swap_claim_view)
             }
