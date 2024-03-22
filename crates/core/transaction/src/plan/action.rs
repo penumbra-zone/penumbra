@@ -171,17 +171,16 @@ impl ActionPlan {
             ActionPlan::ValidatorVote(_) => 20,
             ActionPlan::DelegatorVote(_) => 21,
             ActionPlan::ProposalDepositClaim(_) => 22,
-            ActionPlan::Withdrawal(_) => 23,
             ActionPlan::PositionOpen(_) => 30,
             ActionPlan::PositionClose(_) => 31,
             ActionPlan::PositionWithdraw(_) => 32,
-            ActionPlan::PositionRewardClaim(_) => 34,
             ActionPlan::Delegate(_) => 40,
             ActionPlan::Undelegate(_) => 41,
             ActionPlan::UndelegateClaim(_) => 42,
-            ActionPlan::DaoSpend(_) => 50,
-            ActionPlan::DaoOutput(_) => 51,
-            ActionPlan::DaoDeposit(_) => 52,
+            ActionPlan::CommunityPoolSpend(_) => 50,
+            ActionPlan::CommunityPoolOutput(_) => 51,
+            ActionPlan::CommunityPoolDeposit(_) => 52,
+            ActionPlan::Ics20Withdrawal(_) => 200,
         }
     }
 

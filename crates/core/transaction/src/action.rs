@@ -128,13 +128,12 @@ impl Action {
             Action::PositionOpen(_) => 30,
             Action::PositionClose(_) => 31,
             Action::PositionWithdraw(_) => 32,
-            Action::PositionRewardClaim(_) => 34,
             Action::Delegate(_) => 40,
             Action::Undelegate(_) => 41,
             Action::UndelegateClaim(_) => 42,
-            Action::DaoSpend(_) => 50,
-            Action::DaoOutput(_) => 51,
-            Action::DaoDeposit(_) => 52,
+            Action::CommunityPoolSpend(_) => 50,
+            Action::CommunityPoolOutput(_) => 51,
+            Action::CommunityPoolDeposit(_) => 52,
             Action::Ics20Withdrawal(_) => 200,
         }
     }
