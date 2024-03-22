@@ -633,6 +633,7 @@ async fn test_substore_migration() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "migration-proptests")]
 mod proptests {
     use proptest::{
         arbitrary::any,
