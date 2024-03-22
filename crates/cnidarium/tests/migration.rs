@@ -646,6 +646,7 @@ mod proptests {
     use std::{
         collections::BTreeMap,
         fmt::{Debug, Display, Formatter},
+        path::PathBuf,
     };
     use test_strategy::proptest;
 
@@ -850,29 +851,27 @@ mod proptests {
         Ok(())
     }
 
-    #[proptest(async = "tokio", cases = 100, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
-    async fn test_migration_substores(
-        #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
-        #[strategy(operations_strategy())] migration_transcript: Vec<Operation>,
-        #[strategy(operations_strategy())] postmigration_transcript: Vec<Operation>,
-        #[strategy(insert_ops_strategy())] nonexistence_keys: Vec<Operation>,
-    ) {
-        let _ = tracing_subscriber::fmt::try_init();
-        let tmpdir = tempfile::tempdir().expect("Failed to create a temp dir");
-        let db_path = tmpdir.into_path();
+    /// Implements a standard migration test which consists of three phases:
+    /// - premigration: write and delete keys, check ex/nex proofs
+    /// - migration: write and delete keys using a migration commit, check ex/nex proofs
+    /// - postmigration: write new keys, check ex/nex proofs
+    async fn standard_migration_test(
+        db_path: PathBuf,
+        premigration_transcript: Vec<Operation>,
+        migration_transcript: Vec<Operation>,
+        postmigration_transcript: Vec<Operation>,
+    ) -> Result<(), TestCaseError> {
         let substore_prefixes = substore_list();
 
         let premigration_len = premigration_transcript.len();
         let migration_len = migration_transcript.len();
         let postmigration_len = postmigration_transcript.len();
-        let nonexistence_len = nonexistence_keys.len();
-        let total_ops = premigration_len + migration_len + postmigration_len + nonexistence_len;
+        let total_ops = premigration_len + migration_len + postmigration_len;
 
         tracing::info!(
             premigration_len,
             migration_len,
             postmigration_len,
-            nonexistence_len,
             total_ops,
             "starting test"
         );
@@ -880,7 +879,7 @@ mod proptests {
         let storage = Storage::load(db_path.clone(), substore_prefixes.clone())
             .await
             .expect("Failed to load storage");
-        // The reference store is an in-memory store that tracks the latest value for each key
+        // `ReferenceStore` is an in-memory store that tracks the latest value for each key
         // To do this, the store execute each operation in the transcript and tracks the final value.
         // It serves as a source of truth to compare the storage against.
         let mut reference_store = ReferenceStore::new();
@@ -1005,6 +1004,37 @@ mod proptests {
             "postmigration",
         )
         .await?;
+        Ok(())
+    }
+
+    #[proptest(async = "tokio", cases = 100, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
+    async fn test_migration_substores(
+        #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
+        #[strategy(operations_strategy())] migration_transcript: Vec<Operation>,
+        #[strategy(operations_strategy())] postmigration_transcript: Vec<Operation>,
+        #[strategy(insert_ops_strategy())] nonexistence_keys: Vec<Operation>,
+    ) {
+        let _ = tracing_subscriber::fmt::try_init();
+
+        let tmpdir = tempfile::tempdir().expect("Failed to create a temp dir");
+        let db_path = tmpdir.into_path();
+        let _ = standard_migration_test(
+            db_path.clone(),
+            premigration_transcript,
+            migration_transcript,
+            postmigration_transcript,
+        )
+        .await;
+
+        let storage = Storage::load(db_path.clone(), substore_list())
+            .await
+            .expect("can reload storage");
+
+        let postmigration_root_hash = storage
+            .latest_snapshot()
+            .root_hash()
+            .await
+            .expect("infaillible");
 
         // Check random keys that should not exist
         for op in nonexistence_keys {
