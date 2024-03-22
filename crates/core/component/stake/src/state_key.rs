@@ -84,6 +84,12 @@ pub mod validators {
         }
     }
 
+    pub mod last_disabled {
+        pub fn by_id(id: &crate::IdentityKey) -> String {
+            format!("staking/validators/data/last_disabled/{id}")
+        }
+    }
+
     /// Tracks the funding rewards of the previously active validator set
     /// in object storage. Consumed by the funding component.
     pub mod rewards {

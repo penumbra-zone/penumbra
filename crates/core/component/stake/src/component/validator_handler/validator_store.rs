@@ -101,6 +101,17 @@ pub trait ValidatorDataRead: StateRead {
         self.get(&state_key::validators::power::by_id(validator))
     }
 
+    /// Returns the block height at which the validator was last disabled.
+    /// If the validator was never disabled, returns `None`.
+    async fn get_last_disabled_height(&self, identity_key: &IdentityKey) -> Option<u64> {
+        self.nonverifiable_get_raw(
+            state_key::validators::last_disabled::by_id(identity_key).as_bytes(),
+        )
+        .await
+        .expect("no deserialization error expected")
+        .map(|bytes| u64::from_be_bytes(bytes.try_into().expect("we only write 8 bytes")))
+    }
+
     async fn get_validator_definition(
         &self,
         identity_key: &IdentityKey,
@@ -288,6 +299,19 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
     fn set_prev_validator_rate(&mut self, identity_key: &IdentityKey, rate_data: RateData) {
         let path = state_key::validators::rate::previous_by_id(identity_key);
         self.put(path, rate_data)
+    }
+
+    #[instrument(skip(self))]
+    /// Set the block height at which the validator was last disabled.
+    /// This is useful to make sure that the validator is not re-enabled too soon.
+    /// See #4067 for details about epoch-grinding.
+    fn set_last_disabled_height(&mut self, identity_key: &IdentityKey, height: u64) {
+        self.nonverifiable_put_raw(
+            state_key::validators::last_disabled::by_id(identity_key)
+                .as_bytes()
+                .to_vec(),
+            height.to_be_bytes().to_vec(),
+        );
     }
 }
 
