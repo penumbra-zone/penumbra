@@ -104,6 +104,8 @@ spec:
               - key: "tls.key"
                 path: "server.key"
       {{ end }}
+      {{- if .Values.maintenanceMode }}
+      {{- else }}
       initContainers:
         - name: pd-init
           securityContext:
@@ -170,6 +172,7 @@ spec:
               mountPath: /var/lib/postgresql
             - name: db-certificates
               mountPath: /opt/postgres-certificates
+      {{- end }}
       {{- end }}
 
       containers:
@@ -262,7 +265,7 @@ spec:
           command:
             - sleep
             - infinity
-          {{- end }}
+          {{- else }}
           {{- if .Values.postgres.certificateSecretName }}
           args:
           - -c
@@ -271,6 +274,7 @@ spec:
           - ssl_cert_file=/var/lib/postgresql/certs/server.crt
           - -c
           - ssl_key_file=/var/lib/postgresql/certs/server.key
+          {{- end }}
           {{- end }}
           ports:
             - name: postgres
@@ -305,12 +309,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
-
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
           readinessProbe:
             tcpSocket:
               port: 5432
             timeoutSeconds: 10
             initialDelaySeconds: 10
+          {{- end }}
           resources:
             {{- toYaml .Values.postgres.resources | nindent 12 }}
           volumeMounts:
