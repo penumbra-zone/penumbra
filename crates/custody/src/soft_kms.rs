@@ -59,6 +59,20 @@ impl pb::custody_service_server::CustodyService for SoftKms {
         Ok(Response::new(authorization_response))
     }
 
+    async fn authorize_validator_definition(
+        &self,
+        _request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        Err(Status::unimplemented("authorize_validator_definition"))
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        _request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        Err(Status::unimplemented("authorize_validator_vote"))
+    }
+
     async fn export_full_viewing_key(
         &self,
         _request: Request<pb::ExportFullViewingKeyRequest>,
