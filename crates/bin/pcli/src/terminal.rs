@@ -1,6 +1,5 @@
 use anyhow::Result;
 use penumbra_custody::threshold::{SigningRequest, Terminal};
-use penumbra_transaction::TransactionPlan;
 use tokio::io::{self, AsyncBufReadExt};
 use tonic::async_trait;
 

@@ -5,7 +5,7 @@ use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::{AuthorizationData, TransactionAuthorizationData};
+use penumbra_transaction::AuthorizationData;
 
 use crate::AuthorizeRequest;
 

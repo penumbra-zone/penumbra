@@ -1,9 +1,6 @@
 use decaf377_rdsa::{Signature, SpendAuth};
 
-use penumbra_proto::{
-    core::{component::sct::v1::commitment_source::Transaction, transaction::v1 as pb},
-    DomainType,
-};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 use penumbra_txhash::EffectHash;
 
 /// Authorization data returned in response to some signing request, which may be a request to
@@ -36,6 +33,18 @@ impl DomainType for AuthorizationData {
     type Proto = pb::AuthorizationData;
 }
 
+impl From<TransactionAuthorizationData> for AuthorizationData {
+    fn from(msg: TransactionAuthorizationData) -> Self {
+        Self::Transaction(msg)
+    }
+}
+
+impl From<TransactionAuthorizationData> for pb::AuthorizationData {
+    fn from(msg: TransactionAuthorizationData) -> Self {
+        AuthorizationData::from(msg).into()
+    }
+}
+
 impl From<AuthorizationData> for pb::AuthorizationData {
     fn from(msg: AuthorizationData) -> Self {
         match msg {
@@ -65,6 +74,24 @@ impl From<AuthorizationData> for pb::AuthorizationData {
                 validator_vote_auth: Some(sig.into()),
             },
         }
+    }
+}
+
+impl TryFrom<pb::AuthorizationData> for TransactionAuthorizationData {
+    type Error = anyhow::Error;
+    fn try_from(value: pb::AuthorizationData) -> Result<Self, Self::Error> {
+        let data = value.try_into()?;
+        let kind = match data {
+            AuthorizationData::Transaction(_) => "transaction",
+            AuthorizationData::ValidatorDefinition(_) => "validator definition",
+            AuthorizationData::ValidatorVote(_) => "validator vote",
+        };
+        let AuthorizationData::Transaction(data) = data else {
+            anyhow::bail!(
+                "expected transaction authorization data but got {kind} authorization data"
+            );
+        };
+        Ok(data)
     }
 }
 
