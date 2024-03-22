@@ -1,7 +1,7 @@
 use penumbra_proto::{
-    core::component::stake::v1alpha1::CurrentValidatorRateRequest,
+    core::component::stake::v1::CurrentValidatorRateRequest,
     // TODO: why is this not in the keys crate?
-    core::keys::v1alpha1 as pb,
+    core::keys::v1 as pb,
     serializers::bech32str::{self, validator_identity_key::BECH32_PREFIX},
     DomainType,
 };
@@ -22,6 +22,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
 pub struct IdentityKey(pub VerificationKey<SpendAuth>);
 
+// IMPORTANT: Changing this implementation is state-breaking.
 impl std::str::FromStr for IdentityKey {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -32,6 +33,7 @@ impl std::str::FromStr for IdentityKey {
     }
 }
 
+// IMPORTANT: Changing this implementation is state-breaking.
 impl std::fmt::Display for IdentityKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&bech32str::encode(
@@ -71,7 +73,6 @@ impl From<IdentityKey> for CurrentValidatorRateRequest {
     fn from(k: IdentityKey) -> Self {
         CurrentValidatorRateRequest {
             identity_key: Some(k.into()),
-            chain_id: Default::default(),
         }
     }
 }

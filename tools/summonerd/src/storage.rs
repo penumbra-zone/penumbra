@@ -13,7 +13,7 @@ use penumbra_proof_setup::{
     single::log::Hashable,
 };
 use penumbra_proto::{
-    penumbra::tools::summoning::v1alpha1::{
+    penumbra::tools::summoning::v1::{
         self as pb, participate_request::Contribution as PBContribution,
     },
     Message,
@@ -81,7 +81,7 @@ impl Storage {
             let tx = conn.transaction()?;
 
             // Create the tables
-            tx.execute_batch(include_str!("storage/schema.sql"))?;
+            tx.execute_batch(include_str!("storage/schema-new.sql"))?;
 
             tx.commit()?;
 
@@ -105,11 +105,12 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES (0, 1, ?1, NULL, NULL, ?2)",
-            (
-                pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec(),
-                current_time_unix(),
-            ),
+            "INSERT INTO phase1_contribution_data VALUES (0, ?1)",
+            (pb::CeremonyCrs::try_from(phase_1_root)?.encode_to_vec(),),
+        )?;
+        tx.execute(
+            "INSERT INTO phase1_contributions VALUES (0, 1, NULL, NULL, ?1)",
+            (current_time_unix(),),
         )?;
 
         tx.commit()?;
@@ -127,11 +128,12 @@ impl Storage {
         let tx = conn.transaction()?;
 
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES (0, 1, ?1, NULL, NULL, ?2)",
-            (
-                pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec(),
-                current_time_unix(),
-            ),
+            "INSERT INTO phase2_contribution_data VALUES (0, ?1)",
+            (pb::CeremonyCrs::try_from(phase_2_root)?.encode_to_vec(),),
+        )?;
+        tx.execute(
+            "INSERT INTO phase2_contributions VALUES (0, 1, NULL, NULL, ?1)",
+            (current_time_unix(),),
         )?;
         tx.execute(
             "INSERT INTO transition_aux VALUES (0, ?1)",
@@ -227,11 +229,16 @@ impl Storage {
     pub async fn phase1_current_crs(&self) -> Result<Option<Phase1CeremonyCRS>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-        let maybe_data = tx.query_row(
-            "SELECT is_root, contribution_or_crs FROM phase1_contributions ORDER BY slot DESC LIMIT 1",
-            [],
-            |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
-        ).optional()?;
+        let maybe_data = tx
+            .query_row(
+                "SELECT p1.is_root, p1_data.contribution_or_crs
+            FROM phase1_contributions AS p1
+            JOIN phase1_contribution_data AS p1_data ON p1.slot = p1_data.slot
+            ORDER BY p1.slot DESC LIMIT 1",
+                [],
+                |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
+            )
+            .optional()?;
         let (is_root, contribution_or_crs) = match maybe_data {
             None => return Ok(None),
             Some(x) => x,
@@ -254,11 +261,16 @@ impl Storage {
     pub async fn phase2_current_crs(&self) -> Result<Option<Phase2CeremonyCRS>> {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
-        let maybe_data = tx.query_row(
-            "SELECT is_root, contribution_or_crs FROM phase2_contributions ORDER BY slot DESC LIMIT 1",
-            [],
-            |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
-        ).optional()?;
+        let maybe_data = tx
+            .query_row(
+                "SELECT p2.is_root, p2_data.contribution_or_crs
+            FROM phase2_contributions AS p2
+            JOIN phase2_contribution_data AS p2_data ON p2.slot = p2_data.slot
+            ORDER BY p2.slot DESC LIMIT 1",
+                [],
+                |row| Ok((row.get::<usize, bool>(0)?, row.get::<usize, Vec<u8>>(1)?)),
+            )
+            .optional()?;
         let (is_root, contribution_or_crs) = match maybe_data {
             None => return Ok(None),
             Some(x) => x,
@@ -288,13 +300,12 @@ impl Storage {
         let contributor_bytes = contributor.to_vec();
         let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2, ?3, ?4)",
-            (
-                PBContribution::try_from(contribution)?.encode_to_vec(),
-                hash,
-                contributor_bytes,
-                current_time_unix(),
-            ),
+            "INSERT INTO phase1_contribution_data VALUES(NULL, ?1)",
+            (PBContribution::try_from(contribution)?.encode_to_vec(),),
+        )?;
+        tx.execute(
+            "INSERT INTO phase1_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
+            (hash, contributor_bytes, current_time_unix()),
         )?;
         tx.commit()?;
         Ok(())
@@ -310,13 +321,12 @@ impl Storage {
         let contributor_bytes = contributor.to_vec();
         let hash = contribution.hash().as_ref().to_owned();
         tx.execute(
-            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2, ?3, ?4)",
-            (
-                PBContribution::try_from(contribution)?.encode_to_vec(),
-                hash,
-                contributor_bytes,
-                current_time_unix(),
-            ),
+            "INSERT INTO phase2_contribution_data VALUES(NULL, ?1)",
+            (PBContribution::try_from(contribution)?.encode_to_vec(),),
+        )?;
+        tx.execute(
+            "INSERT INTO phase2_contributions VALUES(NULL, 0, ?1, ?2, ?3)",
+            (hash, contributor_bytes, current_time_unix()),
         )?;
         tx.commit()?;
         Ok(())
@@ -341,7 +351,10 @@ impl Storage {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let data = tx.query_row(
-            "SELECT contribution_or_crs FROM phase1_contributions WHERE is_root LIMIT 1",
+            "SELECT p1_data.contribution_or_crs
+ FROM phase1_contribution_data AS p1_data
+ JOIN phase1_contributions AS p1 ON p1_data.slot = p1.slot
+ WHERE p1.is_root LIMIT 1",
             [],
             |row| row.get::<usize, Vec<u8>>(0),
         )?;
@@ -381,12 +394,7 @@ impl Storage {
             let hash: String = hex::encode_upper(hash_bytes);
             let address_bytes: Vec<u8> = row.get(3)?;
             let address: Address = address_bytes.try_into()?;
-            out.push((
-                slot,
-                hash,
-                date_time.to_string(),
-                address.display_short_form(),
-            ));
+            out.push((slot, hash, date_time.to_string(), format!("{}", address)));
         }
 
         Ok(out)
@@ -397,7 +405,10 @@ impl Storage {
         let mut conn = self.pool.get()?;
         let tx = conn.transaction()?;
         let data = tx.query_row(
-            "SELECT contribution_or_crs FROM phase2_contributions WHERE is_root LIMIT 1",
+            "SELECT p2_data.contribution_or_crs
+ FROM phase2_contribution_data AS p2_data
+ JOIN phase2_contributions AS p2 ON p2_data.slot = p2.slot
+ WHERE p2.is_root LIMIT 1",
             [],
             |row| row.get::<usize, Vec<u8>>(0),
         )?;

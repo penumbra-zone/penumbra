@@ -1,8 +1,8 @@
 use crate::{DomainType, Message};
 
 use anyhow::Result;
+use cnidarium::StateRead;
 use futures::{Stream, StreamExt};
-use penumbra_storage::StateRead;
 use std::{fmt::Debug, pin::Pin};
 
 use super::future::{DomainFuture, ProtoFuture};
@@ -22,6 +22,24 @@ pub trait StateReadProto: StateRead + Send + Sync {
     {
         DomainFuture {
             inner: self.get_raw(key),
+            _marker: std::marker::PhantomData,
+        }
+    }
+
+    /// Gets a value from the nonverifiable key-value store as a domain type.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(v))` if the value is present and parseable as a domain type `D`;
+    /// * `Ok(None)` if the value is missing;
+    /// * `Err(_)` if the value is present but not parseable as a domain type `D`, or if an underlying storage error occurred.
+    fn nonverifiable_get<D>(&self, key: &[u8]) -> DomainFuture<D, Self::GetRawFut>
+    where
+        D: DomainType + std::fmt::Debug,
+        anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
+    {
+        DomainFuture {
+            inner: self.nonverifiable_get_raw(key),
             _marker: std::marker::PhantomData,
         }
     }

@@ -11,7 +11,7 @@ on:
 
 jobs:
   penumbra:
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -145,30 +145,6 @@ jobs:
           fi
           cd deployments/
           ./scripts/gha-repository-dispatch penumbra-zone/galileo
-
-  hermes:
-    runs-on: ubuntu-latest
-    needs:
-      - penumbra
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # We use the GHA Repository Dispatch functionality to trigger a container
-      # build in the penumbra-zone/hermes repo.
-      - name: Trigger remote build
-        shell: bash
-        env:
-          GITHUB_PAT: ${{ secrets.GH_PAT }}
-        run: |-
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
-          # Hermes only runs against public testnets, so we need only build tags, but for now
-          # we build even on main, to ensure a working build as ibc code changes.
-          cd deployments/
-          ./scripts/gha-repository-dispatch penumbra-zone/hermes
 
   relayer:
     runs-on: ubuntu-latest

@@ -1,0 +1,18 @@
+[package]
+name = "penumbra-auto-https"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+description = "Automatic HTTPS management for Penumbra"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+
+[dependencies]
+anyhow = {workspace = true}
+futures = {workspace = true}
+rustls = "0.20.9"
+axum-server = {workspace = true, features = []}
+rustls-acme = { version = "0.6.0", features = ["axum"] }
+tracing = {workspace = true}

@@ -2,6 +2,16 @@ use std::string::String;
 
 use crate::{lp::position, DirectedTradingPair, TradingPair};
 
+pub mod config {
+    pub fn dex_params() -> &'static str {
+        "dex/config/dex_params"
+    }
+
+    pub fn dex_params_updated() -> &'static str {
+        "dex/config/dex_params_updated"
+    }
+}
+
 pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
     format!("dex/positions/{trading_pair}/opened/{position_id}")
 }
@@ -57,6 +67,10 @@ pub fn pending_payloads() -> &'static str {
 
 pub fn pending_outputs() -> &'static str {
     "dex/pending_outputs"
+}
+
+pub fn aggregate_value() -> &'static str {
+    "dex/aggregate_value"
 }
 
 /// Encompasses non-consensus state keys.

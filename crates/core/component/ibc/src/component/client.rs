@@ -7,28 +7,20 @@ use ibc_types::core::client::Height;
 
 use ibc_types::path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath};
 
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::lightclients::tendermint::{
     client_state::ClientState as TendermintClientState,
     consensus_state::ConsensusState as TendermintConsensusState,
     header::Header as TendermintHeader,
 };
-use penumbra_chain::component::StateReadExt as _;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::client_counter::{ClientCounter, VerifiedHeights};
 use crate::prefix::MerklePrefixExt;
 use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
-
-// TODO(erwan): remove before opening PR
-// + replace concrete types with trait objects
-// + evaluate how to make penumbra_proto::Protobuf more friendly with the erased protobuf traits that
-//   underpins the ics02 traits
-// + ADR004 defers LC state/consensus deserialization later, maybe we should have a preprocessing step before execution
-// . to distinguish I/O errors from actual execution errors. It would also make things a little less boilerplaty.
-// +
+use super::HostInterface;
 
 #[async_trait]
 pub(crate) trait Ics2ClientExt: StateWrite {
@@ -45,7 +37,7 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         // if we have a stored consensus state for this height that conflicts, we need to freeze
         // the client. if it doesn't conflict, we can return early
         if let Ok(stored_cs_state) = self
-            .get_verified_consensus_state(verified_header.height(), client_id.clone())
+            .get_verified_consensus_state(&verified_header.height(), &client_id)
             .await
         {
             if stored_cs_state == verified_consensus_state {
@@ -66,11 +58,11 @@ pub(crate) trait Ics2ClientExt: StateWrite {
         // have. In that case, we need to verify that the timestamp is correct. if it isn't, freeze
         // the client.
         let next_consensus_state = self
-            .next_verified_consensus_state(&client_id, verified_header.height())
+            .next_verified_consensus_state(&client_id, &verified_header.height())
             .await
             .expect("able to get next verified consensus state");
         let prev_consensus_state = self
-            .prev_verified_consensus_state(&client_id, verified_header.height())
+            .prev_verified_consensus_state(&client_id, &verified_header.height())
             .await
             .expect("able to get previous verified consensus state");
 
@@ -111,6 +103,52 @@ pub(crate) trait Ics2ClientExt: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> Ics2ClientExt for T {}
+
+#[async_trait]
+pub trait ConsensusStateWriteExt: StateWrite + Sized {
+    async fn put_verified_consensus_state<HI: HostInterface>(
+        &mut self,
+        height: Height,
+        client_id: ClientId,
+        consensus_state: TendermintConsensusState,
+    ) -> Result<()> {
+        self.put(
+            IBC_COMMITMENT_PREFIX
+                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+            consensus_state,
+        );
+
+        let current_height = HI::get_block_height(&self).await?;
+        let current_time: ibc_types::timestamp::Timestamp =
+            HI::get_block_timestamp(&self).await?.into();
+
+        self.put_proto::<u64>(
+            state_key::client_processed_times(&client_id, &height),
+            current_time.nanoseconds(),
+        );
+
+        self.put(
+            state_key::client_processed_heights(&client_id, &height),
+            ibc_types::core::client::Height::new(0, current_height)?,
+        );
+
+        // update verified heights
+        let mut verified_heights =
+            self.get_verified_heights(&client_id)
+                .await?
+                .unwrap_or(VerifiedHeights {
+                    heights: Vec::new(),
+                });
+
+        verified_heights.heights.push(height);
+
+        self.put_verified_heights(&client_id, verified_heights);
+
+        Ok(())
+    }
+}
+
+impl<T: StateWrite> ConsensusStateWriteExt for T {}
 
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
@@ -154,47 +192,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             format!("penumbra_consensus_states/{height}"),
             consensus_state,
         );
-    }
-
-    async fn put_verified_consensus_state(
-        &mut self,
-        height: Height,
-        client_id: ClientId,
-        consensus_state: TendermintConsensusState,
-    ) -> Result<()> {
-        self.put(
-            IBC_COMMITMENT_PREFIX
-                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
-            consensus_state,
-        );
-
-        let current_height = self.get_block_height().await?;
-        let current_time: ibc_types::timestamp::Timestamp =
-            self.get_block_timestamp().await?.into();
-
-        self.put_proto::<u64>(
-            state_key::client_processed_times(&client_id, &height),
-            current_time.nanoseconds(),
-        );
-
-        self.put(
-            state_key::client_processed_heights(&client_id, &height),
-            ibc_types::core::client::Height::new(0, current_height)?,
-        );
-
-        // update verified heights
-        let mut verified_heights =
-            self.get_verified_heights(&client_id)
-                .await?
-                .unwrap_or(VerifiedHeights {
-                    heights: Vec::new(),
-                });
-
-        verified_heights.heights.push(height);
-
-        self.put_verified_heights(&client_id, verified_heights);
-
-        Ok(())
     }
 }
 
@@ -252,12 +249,12 @@ pub trait StateReadExt: StateRead {
 
     async fn get_verified_consensus_state(
         &self,
-        height: Height,
-        client_id: ClientId,
+        height: &Height,
+        client_id: &ClientId,
     ) -> Result<TendermintConsensusState> {
         self.get(
             &IBC_COMMITMENT_PREFIX
-                .apply_string(ClientConsensusStatePath::new(&client_id, &height).to_string()),
+                .apply_string(ClientConsensusStatePath::new(client_id, height).to_string()),
         )
         .await?
         .ok_or_else(|| {
@@ -304,7 +301,7 @@ pub trait StateReadExt: StateRead {
     async fn next_verified_consensus_state(
         &self,
         client_id: &ClientId,
-        height: Height,
+        height: &Height,
     ) -> Result<Option<TendermintConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
@@ -322,7 +319,7 @@ pub trait StateReadExt: StateRead {
             .find(|&verified_height| verified_height > &height)
         {
             let next_cons_state = self
-                .get_verified_consensus_state(*next_height, client_id.clone())
+                .get_verified_consensus_state(next_height, client_id)
                 .await?;
             return Ok(Some(next_cons_state));
         } else {
@@ -335,7 +332,7 @@ pub trait StateReadExt: StateRead {
     async fn prev_verified_consensus_state(
         &self,
         client_id: &ClientId,
-        height: Height,
+        height: &Height,
     ) -> Result<Option<TendermintConsensusState>> {
         let mut verified_heights =
             self.get_verified_heights(client_id)
@@ -353,7 +350,7 @@ pub trait StateReadExt: StateRead {
             .find(|&verified_height| verified_height < &height)
         {
             let prev_cons_state = self
-                .get_verified_consensus_state(*prev_height, client_id.clone())
+                .get_verified_consensus_state(prev_height, client_id)
                 .await?;
             return Ok(Some(prev_cons_state));
         } else {
@@ -366,18 +363,19 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 #[cfg(test)]
 mod tests {
+    use base64::prelude::*;
     use std::sync::Arc;
 
     use super::*;
+    use cnidarium::{ArcStateDeltaExt, StateDelta};
     use ibc_types::core::client::msgs::MsgUpdateClient;
     use ibc_types::{core::client::msgs::MsgCreateClient, DomainType};
-    use penumbra_chain::component::StateWriteExt;
-    use penumbra_component::ActionHandler;
-    use penumbra_storage::{ArcStateDeltaExt, StateDelta};
+    use penumbra_sct::component::clock::{EpochManager as _, EpochRead};
     use std::str::FromStr;
     use tendermint::Time;
 
-    use crate::component::ibc_action_with_handler::IbcActionWithHandler;
+    use crate::component::ibc_action_with_handler::IbcRelayWithHandlers;
+    use crate::component::ClientStateReadExt;
     use crate::IbcRelay;
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
@@ -385,6 +383,27 @@ mod tests {
         MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck,
         MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry, MsgRecvPacket, MsgTimeout,
     };
+
+    struct MockHost {}
+
+    #[async_trait]
+    impl HostInterface for MockHost {
+        async fn get_chain_id<S: StateRead>(_state: S) -> Result<String> {
+            Ok("mock_chain_id".to_string())
+        }
+
+        async fn get_revision_number<S: StateRead>(_state: S) -> Result<u64> {
+            Ok(0u64)
+        }
+
+        async fn get_block_height<S: StateRead>(state: S) -> Result<u64> {
+            Ok(state.get_block_height().await?)
+        }
+
+        async fn get_block_timestamp<S: StateRead>(state: S) -> Result<tendermint::Time> {
+            state.get_block_timestamp().await
+        }
+    }
 
     struct MockAppHandler {}
 
@@ -453,8 +472,12 @@ mod tests {
         ) {
         }
         async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) {}
-        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) {}
+        async fn recv_packet_execute<S: StateWrite>(_state: S, _msg: &MsgRecvPacket) -> Result<()> {
+            Ok(())
+        }
+        async fn timeout_packet_execute<S: StateWrite>(_state: S, _msg: &MsgTimeout) -> Result<()> {
+            Ok(())
+        }
         async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}
     }
 
@@ -464,27 +487,26 @@ mod tests {
     // test that we can create and update a light client.
     #[tokio::test]
     async fn test_create_and_update_light_client() -> anyhow::Result<()> {
+        use penumbra_sct::epoch::Epoch;
         // create a storage backend for testing
 
-        // TODO: we can't use apply_default_genesis because it needs the entire
-        // application, and we're in a component now
-        //let storage = TempStorage::new().await?.apply_default_genesis().await?;
+        // TODO(erwan): `apply_default_genesis` is not available here. We need a component
+        // equivalent.
         let mut state = Arc::new(StateDelta::new(()));
         {
-            // TODO: this is copied out of App::init_chain, can we put it in penumbra-chain or sth?
+            // TODO: this is copied out of App::init_chain, can we put it somewhere else?
             let mut state_tx = state.try_begin_transaction().unwrap();
-            state_tx.put_chain_params(Default::default());
             state_tx.put_block_height(0);
             state_tx.put_epoch_by_height(
                 0,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: 0,
                     start_height: 0,
                 },
             );
             state_tx.put_epoch_by_height(
                 1,
-                penumbra_chain::Epoch {
+                Epoch {
                     index: 0,
                     start_height: 0,
                 },
@@ -499,13 +521,10 @@ mod tests {
         let timestamp = Time::parse_from_rfc3339("2022-02-11T17:30:50.425417198Z")?;
         let mut state_tx = state.try_begin_transaction().unwrap();
         state_tx.put_block_timestamp(timestamp);
-        // TODO(erwan): check that this is a correct assumption to make?
-        //              the ibc::ics02::Height constructor forbids building `Height` with value zero.
-        //              Semantically this seem to correspond to a blockchain that has not begun to produce blocks
         state_tx.put_block_height(1);
         state_tx.put_epoch_by_height(
             1,
-            penumbra_chain::Epoch {
+            Epoch {
                 index: 0,
                 start_height: 0,
             },
@@ -515,24 +534,26 @@ mod tests {
         // base64 encoded MsgCreateClient that was used to create the currently in-use Stargaze
         // light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/13C1ECC54F088473E2925AD497DDCC092101ADE420BC64BADE67D34A75769CE9
-        let msg_create_client_stargaze_raw =
-            base64::decode(include_str!("./test/create_client.msg").replace('\n', "")).unwrap();
+        let msg_create_client_stargaze_raw = BASE64_STANDARD
+            .decode(include_str!("./test/create_client.msg").replace('\n', ""))
+            .unwrap();
         let msg_create_stargaze_client =
             MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
 
         // base64 encoded MsgUpdateClient that was used to issue the first update to the in-use stargaze light client on the cosmos hub:
         // https://cosmos.bigdipper.live/transactions/24F1E19F218CAF5CA41D6E0B653E85EB965843B1F3615A6CD7BCF336E6B0E707
-        let msg_update_client_stargaze_raw =
-            base64::decode(include_str!("./test/update_client_1.msg").replace('\n', "")).unwrap();
+        let msg_update_client_stargaze_raw = BASE64_STANDARD
+            .decode(include_str!("./test/update_client_1.msg").replace('\n', ""))
+            .unwrap();
         let mut msg_update_stargaze_client =
             MsgUpdateClient::decode(msg_update_client_stargaze_raw.as_slice()).unwrap();
 
         msg_update_stargaze_client.client_id = ClientId::from_str("07-tendermint-0").unwrap();
 
-        let create_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+        let create_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
             IbcRelay::CreateClient(msg_create_stargaze_client),
         );
-        let update_client_action = IbcActionWithHandler::<MockAppHandler>::new(
+        let update_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
             IbcRelay::UpdateClient(msg_update_stargaze_client),
         );
 
@@ -554,13 +575,15 @@ mod tests {
 
         // We've had one client update, yes. What about second client update?
         // https://cosmos.bigdipper.live/transactions/ED217D360F51E622859F7B783FEF98BDE3544AA32BBD13C6C77D8D0D57A19FFD
-        let msg_update_second =
-            base64::decode(include_str!("./test/update_client_2.msg").replace('\n', "")).unwrap();
+        let msg_update_second = BASE64_STANDARD
+            .decode(include_str!("./test/update_client_2.msg").replace('\n', ""))
+            .unwrap();
 
         let mut second_update = MsgUpdateClient::decode(msg_update_second.as_slice()).unwrap();
         second_update.client_id = ClientId::from_str("07-tendermint-0").unwrap();
-        let second_update_client_action =
-            IbcActionWithHandler::<MockAppHandler>::new(IbcRelay::UpdateClient(second_update));
+        let second_update_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
+            IbcRelay::UpdateClient(second_update),
+        );
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action

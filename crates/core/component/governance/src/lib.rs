@@ -1,11 +1,12 @@
 #![deny(clippy::unwrap_used)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![recursion_limit = "512"]
 
 pub mod delegator_vote;
 pub use delegator_vote::{
     DelegatorVote, DelegatorVoteBody, DelegatorVoteCircuit, DelegatorVotePlan, DelegatorVoteProof,
-    DelegatorVoteView,
+    DelegatorVoteProofPrivate, DelegatorVoteProofPublic, DelegatorVoteView,
 };
 
 pub mod proposal_deposit_claim;
@@ -33,7 +34,7 @@ pub mod voting_receipt_token;
 pub use proposal_nft::ProposalNft;
 pub use voting_receipt_token::VotingReceiptToken;
 
-pub(crate) mod event;
+pub mod event;
 
 mod metrics;
 pub use crate::metrics::register_metrics;
@@ -42,15 +43,12 @@ pub mod state_key;
 pub mod tally;
 pub use tally::Tally;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 pub mod component;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 mod action_handler;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "component")))]
 #[cfg(feature = "component")]
 pub use component::{StateReadExt, StateWriteExt};
 

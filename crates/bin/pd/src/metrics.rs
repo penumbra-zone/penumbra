@@ -11,6 +11,7 @@
 //! This trick is probably good to avoid in general, because it could be
 //! confusing, but in this limited case, it seems like a clean option.
 
+#[allow(unused_imports)] // It is okay if this reëxport isn't used, see above.
 pub use metrics::*;
 
 /// Registers all metrics used by this crate.
@@ -20,13 +21,4 @@ pub use metrics::*;
 pub fn register_metrics() {
     // This will register metrics for all components.
     penumbra_app::register_metrics();
-
-    register_counter!(MEMPOOL_CHECKTX_TOTAL);
-    describe_counter!(
-        MEMPOOL_CHECKTX_TOTAL,
-        Unit::Count,
-        "The total number of checktx requests made to the mempool"
-    );
 }
-
-pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";

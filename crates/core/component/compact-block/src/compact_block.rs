@@ -1,14 +1,14 @@
 use std::{collections::BTreeMap, convert::TryFrom};
 
 use anyhow::Result;
-use penumbra_chain::params::FmdParameters;
 use penumbra_dex::{BatchSwapOutputData, TradingPair};
 use penumbra_fee::GasPrices;
 use penumbra_proto::{
-    core::component::compact_block::v1alpha1::CompactBlockRangeResponse,
-    penumbra::core::component::compact_block::v1alpha1 as pb, DomainType,
+    core::component::compact_block::v1::CompactBlockRangeResponse,
+    penumbra::core::component::compact_block::v1 as pb, DomainType,
 };
 use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::fmd;
 use penumbra_tct::builder::{block, epoch};
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +29,7 @@ pub struct CompactBlock {
     /// The epoch root of this epoch, if this block ends an epoch (`None` otherwise).
     pub epoch_root: Option<epoch::Root>,
     /// Latest FMD parameters. `None` if unchanged.
-    pub fmd_parameters: Option<FmdParameters>,
+    pub fmd_parameters: Option<fmd::Parameters>,
     /// If the block indicated a proposal was being started.
     pub proposal_started: bool,
     /// Output prices for batch swaps occurring in this block.

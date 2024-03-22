@@ -5,10 +5,12 @@ use std::{
     ops::{Add, Neg, Sub},
 };
 
+use serde::{Deserialize, Serialize};
+
 /// An imbalance is either a required amount or a provided amount.
 ///
 /// This is used exclusively when the type contained is non-zero.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Imbalance<T> {
     /// Something is required, i.e. it must be cancelled out by a provided thing.
     Required(T),

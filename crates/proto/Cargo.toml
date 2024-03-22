@@ -1,38 +1,45 @@
 [package]
 name = "penumbra-proto"
-version = "0.63.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-decaf377-fmd = { path = "../crypto/decaf377-fmd" }
-decaf377-rdsa = { version = "0.7" }
-bytes = { version = "1", features = ["serde"] }
-prost = "0.12.3"
-tonic = { version = "0.10", optional = true }
-serde = { version = "1", features = ["derive"] }
-hex = "0.4"
-anyhow = "1.0"
-subtle-encoding = "0.5"
-bech32 = "0.8"
-penumbra-storage = { path = "../storage", optional = true }
-ibc-types = { version = "0.10.0", features = ["std"]}
-pin-project = "1"
-async-trait = "0.1.52"
-async-stream = "0.2.0"
-tracing = "0.1"
-futures = "0.3"
-pbjson = "0.6"
-pbjson-types = "0.6"
-
-ibc-proto = { version = "0.39.0", default-features = false, features = ["std", "serde"] }
-
-ics23 = "0.11.0"
-tendermint = "0.34.0"
+version = {workspace = true}
+edition = {workspace = true}
 
 [build-dependencies]
 anyhow = "1"
+
 [features]
 rpc = ["dep:tonic", "ibc-proto/client"]
-penumbra-storage = ["dep:penumbra-storage"]
+box-grpc = ["dep:http-body", "dep:tonic", "dep:tower"]
+cnidarium = ["dep:cnidarium"]
+
+[dependencies]
+anyhow = {workspace = true}
+async-trait = {workspace = true}
+bech32 = {workspace = true}
+bytes = {workspace = true, features = ["serde"]}
+cnidarium = {workspace = true, optional = true, default-features = true}
+decaf377-fmd = {workspace = true}
+decaf377-rdsa = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+http-body = {workspace = true, optional = true}
+ibc-types = {workspace = true, features = ["std"], default-features = true}
+ics23 = {workspace = true}
+pbjson = {workspace = true}
+pbjson-types = {workspace = true}
+pin-project = {workspace = true}
+prost = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+subtle-encoding = "0.5"
+tendermint = {workspace = true}
+tonic = {workspace = true, optional = true}
+tower = {workspace = true, features = ["full"], optional = true}
+tracing = {workspace = true}
+
+[dependencies.ibc-proto]
+workspace = true
+default-features = false
+features = [
+    "std",
+    "serde",
+]

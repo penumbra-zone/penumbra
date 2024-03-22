@@ -1,50 +1,55 @@
+use std::str::FromStr;
+use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use penumbra_app::params::AppParameters;
-use penumbra_asset::{asset, asset::DenomMetadata, asset::Id, Value};
-use penumbra_chain::params::{ChainParameters, FmdParameters};
-use penumbra_dao::params::DaoParameters;
-use penumbra_dex::{
-    lp::position::{self, Position, State},
-    TradingPair,
-};
-use penumbra_distributions::params::DistributionsParameters;
-use penumbra_fee::{FeeParameters, GasPrices};
-use penumbra_governance::params::GovernanceParameters;
-use penumbra_ibc::params::IBCParameters;
-use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
-use penumbra_num::Amount;
-use penumbra_proto::{
-    core::app::v1alpha1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
-    },
-    DomainType,
-};
-use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{note, Note, Rseed};
-use penumbra_stake::{params::StakeParameters, DelegationToken, IdentityKey};
-use penumbra_tct as tct;
-use penumbra_transaction::Transaction;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
 };
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
-use tct::StateCommitment;
 use tokio::{
     sync::broadcast::{self, error::RecvError},
     task::spawn_blocking,
 };
 use url::Url;
 
+use penumbra_app::params::AppParameters;
+use penumbra_asset::{asset, asset::Id, asset::Metadata, Value};
+use penumbra_dex::{
+    lp::position::{self, Position, State},
+    TradingPair,
+};
+use penumbra_fee::GasPrices;
+use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
+use penumbra_num::Amount;
+use penumbra_proto::{
+    core::app::v1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+    },
+    DomainType,
+};
+use penumbra_sct::{CommitmentSource, Nullifier};
+use penumbra_shielded_pool::{fmd, note, Note, Rseed};
+use penumbra_stake::{DelegationToken, IdentityKey};
+use penumbra_tct as tct;
+use penumbra_transaction::Transaction;
+use sct::TreeStore;
+use tct::StateCommitment;
+
 use crate::{sync::FilteredBlock, SpendableNoteRecord, SwapRecord};
 
 mod sct;
-use sct::TreeStore;
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BalanceEntry {
+    pub id: Id,
+    pub amount: u128,
+    pub address_index: AddressIndex,
+}
 
 /// The hash of the schema for the database.
 static SCHEMA_HASH: Lazy<String> =
@@ -77,20 +82,13 @@ impl Storage {
     ) -> anyhow::Result<Self> {
         if let Some(path) = storage_path.as_ref() {
             if path.as_ref().exists() {
-                return Self::load(
-                    storage_path.expect(
-                        "storage path is not `None` because we already matched on it above",
-                    ),
-                )
-                .await;
+                return Self::load(path).await;
             }
         };
 
         let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
         let params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: String::new(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .try_into()?;
@@ -177,7 +175,7 @@ impl Storage {
 
             Ok(storage)
         })
-        .await?
+            .await?
     }
 
     pub async fn initialize(
@@ -198,55 +196,14 @@ impl Storage {
             // Create the tables
             tx.execute_batch(include_str!("storage/schema.sql"))?;
 
-            let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
+            let params_bytes = params.encode_to_vec();
             tx.execute(
-                "INSERT INTO chain_params (bytes) VALUES (?1)",
-                [chain_params_bytes],
+                "INSERT INTO kv (k, v) VALUES ('app_params', ?1)",
+                [&params_bytes[..]],
             )?;
 
-            let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
-            tx.execute(
-                "INSERT INTO stake_params (bytes) VALUES (?1)",
-                [stake_params_bytes],
-            )?;
-
-            let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
-            tx.execute(
-                "INSERT INTO ibc_params (bytes) VALUES (?1)",
-                [ibc_params_bytes],
-            )?;
-
-            let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
-            tx.execute(
-                "INSERT INTO fee_params (bytes) VALUES (?1)",
-                [fee_params_bytes],
-            )?;
-
-            let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
-            tx.execute(
-                "INSERT INTO dao_params (bytes) VALUES (?1)",
-                [dao_params_bytes],
-            )?;
-
-            let distributions_params_bytes =
-                &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
-            tx.execute(
-                "INSERT INTO distributions_params (bytes) VALUES (?1)",
-                [distributions_params_bytes],
-            )?;
-
-            let governance_params_bytes =
-                &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
-            tx.execute(
-                "INSERT INTO governance_params (bytes) VALUES (?1)",
-                [governance_params_bytes],
-            )?;
-
-            let fvk_bytes = &FullViewingKey::encode_to_vec(&fvk)[..];
-            tx.execute(
-                "INSERT INTO full_viewing_key (bytes) VALUES (?1)",
-                [fvk_bytes],
-            )?;
+            let fvk_bytes = fvk.encode_to_vec();
+            tx.execute("INSERT INTO kv (k, v) VALUES ('fvk', ?1)", [&fvk_bytes[..]])?;
 
             // Insert -1 as a signaling value for pre-genesis.
             // We just have to be careful to treat negative values as None
@@ -284,7 +241,7 @@ impl Storage {
         &self,
         address_index: Option<AddressIndex>,
         asset_id: Option<asset::Id>,
-    ) -> anyhow::Result<BTreeMap<Id, u128>> {
+    ) -> anyhow::Result<Vec<BalanceEntry>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -295,7 +252,7 @@ impl Storage {
 
             tracing::debug!(?query);
 
-            let mut balances = BTreeMap::new();
+            let mut entries = Vec::new();
 
             for result in pool.get()?.prepare_cached(query)?.query_map([], |row| {
                 let asset_id = row.get::<&str, Vec<u8>>("asset_id")?;
@@ -324,19 +281,19 @@ impl Storage {
                         continue;
                     }
                 }
-                // Skip this entry if not captured by asset id filter
                 if let Some(asset_id) = asset_id {
                     if asset_id != id {
                         continue;
                     }
                 }
 
-                balances
-                    .entry(id)
-                    .and_modify(|x| *x += amount)
-                    .or_insert(amount);
+                entries.push(BalanceEntry {
+                    id,
+                    amount,
+                    address_index: index,
+                });
             }
-            Ok(balances)
+            Ok(entries)
         })
         .await?
     }
@@ -368,9 +325,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                     WHERE notes.note_commitment = x'{}'",
                     hex::encode(note_commitment.0.to_bytes())
                 ))?
@@ -568,53 +527,13 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            let chain_bytes = pool
+            let params_bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM chain_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing chain params"))?;
-            let stake_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM stake_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing stake params"))?;
-            let ibc_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM ibc_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing ibc params"))?;
-            let governance_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM governance_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing governance params"))?;
-            let dao_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM dao_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing dao params"))?;
-            let fee_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM fee_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing fee params"))?;
-            let distributions_bytes = pool
-                .get()?
-                .prepare_cached("SELECT bytes FROM distributions_params LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing distributions params"))?;
+                .prepare_cached("SELECT v FROM kv WHERE k IS 'app_params' LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("v"))?
+                .ok_or_else(|| anyhow!("missing app_params in kv table"))?;
 
-            Ok(AppParameters {
-                chain_params: ChainParameters::decode(chain_bytes.as_slice())?,
-                stake_params: StakeParameters::decode(stake_bytes.as_slice())?,
-                ibc_params: IBCParameters::decode(ibc_bytes.as_slice())?,
-                governance_params: GovernanceParameters::decode(governance_bytes.as_slice())?,
-                dao_params: DaoParameters::decode(dao_bytes.as_slice())?,
-                fee_params: FeeParameters::decode(fee_bytes.as_slice())?,
-                distributions_params: DistributionsParameters::decode(
-                    distributions_bytes.as_slice(),
-                )?,
-            })
+            AppParameters::decode(params_bytes.as_slice())
         })
         .await?
     }
@@ -625,26 +544,26 @@ impl Storage {
         spawn_blocking(move || {
             let bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM gas_prices LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing gas prices"))?;
+                .prepare_cached("SELECT v FROM kv WHERE k IS 'gas_prices' LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("v"))?
+                .ok_or_else(|| anyhow!("missing gas_prices in kv table"))?;
 
             GasPrices::decode(bytes.as_slice())
         })
         .await?
     }
 
-    pub async fn fmd_parameters(&self) -> anyhow::Result<FmdParameters> {
+    pub async fn fmd_parameters(&self) -> anyhow::Result<fmd::Parameters> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
             let bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM fmd_parameters LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing fmd parameters"))?;
+                .prepare_cached("SELECT v FROM kv WHERE k IS 'fmd_params' LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("v"))?
+                .ok_or_else(|| anyhow!("missing fmd_params in kv table"))?;
 
-            FmdParameters::decode(bytes.as_slice())
+            fmd::Parameters::decode(bytes.as_slice())
         })
         .await?
     }
@@ -655,9 +574,9 @@ impl Storage {
         spawn_blocking(move || {
             let bytes = pool
                 .get()?
-                .prepare_cached("SELECT bytes FROM full_viewing_key LIMIT 1")?
-                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("bytes"))?
-                .ok_or_else(|| anyhow!("missing full viewing key"))?;
+                .prepare_cached("SELECT v FROM kv WHERE k is 'fvk' LIMIT 1")?
+                .query_row([], |row| row.get::<_, Option<Vec<u8>>>("v"))?
+                .ok_or_else(|| anyhow!("missing fvk in kv table"))?;
 
             FullViewingKey::decode(bytes.as_slice())
         })
@@ -787,9 +706,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                     FROM notes
                     JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                    LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                     WHERE hex(spendable_notes.nullifier) = \"{}\"",
                     hex::encode_upper(nullifier_bytes)
                 ))?
@@ -836,7 +757,7 @@ impl Storage {
         }
     }
 
-    pub async fn all_assets(&self) -> anyhow::Result<Vec<DenomMetadata>> {
+    pub async fn all_assets(&self) -> anyhow::Result<Vec<Metadata>> {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
@@ -857,7 +778,7 @@ impl Storage {
         .await?
     }
 
-    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<DenomMetadata>> {
+    pub async fn asset_by_id(&self, id: &Id) -> anyhow::Result<Option<Metadata>> {
         let id = id.to_bytes().to_vec();
 
         let pool = self.pool.clone();
@@ -881,7 +802,7 @@ impl Storage {
 
     // Get assets whose denoms match the given SQL LIKE pattern, with the `_` and `%` wildcards,
     // where `\` is the escape character.
-    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<DenomMetadata>> {
+    pub async fn assets_matching(&self, pattern: String) -> anyhow::Result<Vec<Metadata>> {
         let pattern = pattern.to_owned();
 
         let pool = self.pool.clone();
@@ -917,7 +838,7 @@ impl Storage {
         };
 
         // If set, only return notes with the specified asset id.
-        // core.crypto.v1alpha1.AssetId asset_id = 3;
+        // core.crypto.v1.AssetId asset_id = 3;
         let asset_clause = asset_id
             .map(|id| format!("x'{}'", hex::encode(id.to_bytes())))
             .unwrap_or_else(|| "asset_id".to_string());
@@ -960,9 +881,11 @@ impl Storage {
                         spendable_notes.source,
                         spendable_notes.height_spent,
                         spendable_notes.nullifier,
-                        spendable_notes.position
+                        spendable_notes.position,
+                        tx.return_address
                 FROM notes
                 JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
+                LEFT JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
                 WHERE spendable_notes.height_spent IS {spent_clause}
                 AND notes.asset_id IS {asset_clause}
                 AND spendable_notes.address_index IS {address_clause}"
@@ -1063,7 +986,7 @@ impl Storage {
                 let denom: String = dbtx.query_row_and_then(
                     "SELECT denom FROM assets WHERE asset_id = ?1",
                     [asset_id],
-                    |row| row.get("denom")
+                    |row| row.get("denom"),
                 )?;
 
                 let identity_key = DelegationToken::from_str(&denom)
@@ -1074,11 +997,10 @@ impl Storage {
             }
 
             Ok(results)
-
         }).await?
     }
 
-    pub async fn record_asset(&self, asset: DenomMetadata) -> anyhow::Result<()> {
+    pub async fn record_asset(&self, asset: Metadata) -> anyhow::Result<()> {
         let asset_id = asset.id().to_bytes().to_vec();
         let denom = asset.base_denom().denom;
 
@@ -1132,7 +1054,7 @@ impl Storage {
                 )
                 .map_err(anyhow::Error::from)
         })
-        .await??;
+            .await??;
 
         Ok(())
     }
@@ -1292,7 +1214,7 @@ impl Storage {
                 })?
                 .collect()
         })
-        .await?
+            .await?
     }
 
     pub async fn record_block(
@@ -1335,9 +1257,7 @@ impl Storage {
             let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
             Some(
                 client
-                    .app_parameters(tonic::Request::new(AppParametersRequest {
-                        chain_id: String::new(),
-                    }))
+                    .app_parameters(tonic::Request::new(AppParametersRequest {}))
                     .await?
                     .into_inner()
                     .try_into()?,
@@ -1360,68 +1280,36 @@ impl Storage {
             let mut dbtx = lock.transaction()?;
 
             if let Some(params) = new_app_parameters {
-               // Update the various parameter structures.
-                let chain_params_bytes = &ChainParameters::encode_to_vec(&params.chain_params)[..];
+                let params_bytes = params.encode_to_vec();
+                // We expect app_params to be present already but may as well use an upsert
                 dbtx.execute(
-                    "UPDATE chain_params SET bytes = ?1",
-                    [chain_params_bytes],
-                )?;
-
-                let stake_params_bytes = &StakeParameters::encode_to_vec(&params.stake_params)[..];
-                dbtx.execute(
-                    "UPDATE stake_params SET bytes = ?1",
-                    [stake_params_bytes],
-                )?;
-
-                let ibc_params_bytes = &IBCParameters::encode_to_vec(&params.ibc_params)[..];
-                dbtx.execute(
-                    "UPDATE ibc_params SET bytes = ?1",
-                    [ibc_params_bytes],
-                )?;
-
-                let fee_params_bytes = &FeeParameters::encode_to_vec(&params.fee_params)[..];
-                dbtx.execute(
-                    "UPDATE fee_params SET bytes = ?1",
-                    [fee_params_bytes],
-                )?;
-
-                let dao_params_bytes = &DaoParameters::encode_to_vec(&params.dao_params)[..];
-                dbtx.execute(
-                    "UPDATE dao_params SET bytes = ?1",
-                    [dao_params_bytes],
-                )?;
-
-                let distributions_params_bytes = &DistributionsParameters::encode_to_vec(&params.distributions_params)[..];
-                dbtx.execute(
-                    "UPDATE distributions_params SET bytes = ?1",
-                    [distributions_params_bytes],
-                )?;
-
-                let governance_params_bytes =
-                    &GovernanceParameters::encode_to_vec(&params.governance_params)[..];
-                dbtx.execute(
-                    "UPDATE governance_params SET bytes = ?1",
-                    [governance_params_bytes],
+                    "INSERT INTO kv (k, v) VALUES ('app_params', ?1) 
+                    ON CONFLICT(k) DO UPDATE SET v = excluded.v",
+                    [&params_bytes[..]],
                 )?;
             }
 
             // Insert new note records into storage
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 let note_commitment = note_record.note_commitment.0.to_bytes().to_vec();
                 let height_created = filtered_block.height as i64;
                 let address_index = note_record.address_index.to_bytes().to_vec();
                 let nullifier = note_record.nullifier.to_bytes().to_vec();
                 let position = (u64::from(note_record.position)) as i64;
-                let source = note_record.source.to_bytes().to_vec();
+                let source = note_record.source.encode_to_vec();
+                // Check if the note is from a transaction, if so, include the tx hash (id)
+                let tx_hash = match note_record.source {
+                    CommitmentSource::Transaction { id } => id,
+                    _ => None,
+                };
 
                 // Record the inner note data in the notes table
-
-                Storage::record_note_inner(&dbtx,&note_record.note)?;
+                Storage::record_note_inner(&dbtx, &note_record.note)?;
 
                 dbtx.execute(
                     "INSERT INTO spendable_notes
-                    (note_commitment, nullifier, position, height_created, address_index, source, height_spent)
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL)",
+                    (note_commitment, nullifier, position, height_created, address_index, source, height_spent, tx_hash)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)",
                     (
                         &note_commitment,
                         &nullifier,
@@ -1430,17 +1318,18 @@ impl Storage {
                         &address_index,
                         &source,
                         // height_spent is NULL because the note is newly discovered
+                        &tx_hash,
                     ),
                 )?;
             }
 
             // Insert new swap records into storage
-            for swap in &filtered_block.new_swaps {
+            for swap in filtered_block.new_swaps.values() {
                 let swap_commitment = swap.swap_commitment.0.to_bytes().to_vec();
                 let swap_bytes = swap.swap.encode_to_vec();
                 let position = (u64::from(swap.position)) as i64;
                 let nullifier = swap.nullifier.to_bytes().to_vec();
-                let source = swap.source.to_bytes().to_vec();
+                let source = swap.source.encode_to_vec();
                 let output_data = swap.output_data.encode_to_vec();
 
                 dbtx.execute(
@@ -1466,41 +1355,41 @@ impl Storage {
                 let spent_commitment: Option<StateCommitment> = dbtx.prepare_cached(
                     "UPDATE spendable_notes SET height_spent = ?1 WHERE nullifier = ?2 RETURNING note_commitment"
                 )?
-                .query_and_then(
-                    (height_spent, &nullifier_bytes),
-                    |row| {
-                        let bytes: Vec<u8> = row.get("note_commitment")?;
-                        StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
-                    }
-                )?
-                .next()
-                .transpose()?;
+                    .query_and_then(
+                        (height_spent, &nullifier_bytes),
+                        |row| {
+                            let bytes: Vec<u8> = row.get("note_commitment")?;
+                            StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
+                        },
+                    )?
+                    .next()
+                    .transpose()?;
 
                 let swap_commitment: Option<StateCommitment> = dbtx.prepare_cached(
-                        "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
-                    )?
+                    "UPDATE swaps SET height_claimed = ?1 WHERE nullifier = ?2 RETURNING swap_commitment"
+                )?
                     .query_and_then(
                         (height_spent, &nullifier_bytes),
                         |row| {
                             let bytes: Vec<u8> = row.get("swap_commitment")?;
                             StateCommitment::try_from(&bytes[..]).context("invalid commitment bytes")
-                        }
+                        },
                     )?
                     .next()
                     .transpose()?;
 
                 // Check denom type
                 let spent_denom: String
-                = dbtx.prepare_cached(
-                        "SELECT denom FROM assets
+                    = dbtx.prepare_cached(
+                    "SELECT denom FROM assets
                         WHERE asset_id ==
                             (SELECT asset_id FROM notes
                              WHERE note_commitment ==
                                 (SELECT note_commitment FROM spendable_notes WHERE nullifier = ?1))"
-                    )?
+                )?
                     .query_and_then(
                         [&nullifier_bytes],
-                        |row| row.get("denom")
+                        |row| row.get("denom"),
                     )?
                     .next()
                     .transpose()?
@@ -1536,7 +1425,7 @@ impl Storage {
                 let tx_hash_owned = sha2::Sha256::digest(&tx_bytes);
                 let tx_hash = tx_hash_owned.as_slice();
                 let tx_block_height = filtered_block.height as i64;
-                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.return_address.to_vec()));
+                let return_address = transaction.decrypt_memo(&fvk).map_or(None, |x| Some(x.return_address().to_vec()));
 
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
@@ -1558,9 +1447,13 @@ impl Storage {
             // Update FMD parameters if they've changed.
             if filtered_block.fmd_parameters.is_some() {
                 let fmd_parameters_bytes =
-                    &FmdParameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
+                    &fmd::Parameters::encode_to_vec(&filtered_block.fmd_parameters.ok_or_else(|| anyhow::anyhow!("missing fmd parameters in filtered block"))?)[..];
 
-                dbtx.execute("INSERT INTO fmd_parameters (bytes) VALUES (?1)", [&fmd_parameters_bytes])?;
+                dbtx.execute(
+                    "INSERT INTO kv (k, v) VALUES ('fmd_params', ?1)
+                    ON CONFLICT(k) DO UPDATE SET v = excluded.v",
+                    [&fmd_parameters_bytes],
+                )?;
             }
 
             // Update gas prices if they've changed.
@@ -1568,7 +1461,11 @@ impl Storage {
                 let gas_prices_bytes =
                     &GasPrices::encode_to_vec(&filtered_block.gas_prices.ok_or_else(|| anyhow::anyhow!("missing gas prices in filtered block"))?)[..];
 
-                dbtx.execute("INSERT INTO gas_prices (bytes) VALUES (?1)", [&gas_prices_bytes])?;
+                dbtx.execute(
+                    "INSERT INTO kv (k, v) VALUES ('gas_prices', ?1)
+                    ON CONFLICT(k) DO UPDATE SET v = excluded.v",
+                    [&gas_prices_bytes],
+                )?;
             }
 
             // Record block height as latest synced height
@@ -1590,7 +1487,7 @@ impl Storage {
             // Broadcast all committed note records to channel
             // Done following tx.commit() to avoid notifying of a new SpendableNoteRecord before it is actually committed to the database
 
-            for note_record in &filtered_block.new_notes {
+            for note_record in filtered_block.new_notes.values() {
                 // This will fail to be broadcast if there is no active receiver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do
@@ -1604,7 +1501,7 @@ impl Storage {
                 let _ = scanned_nullifiers_tx.send(*nullifier);
             }
 
-            for swap_record in filtered_block.new_swaps {
+            for swap_record in filtered_block.new_swaps.values() {
                 // This will fail to be broadcast if there is no active rece∑iver (such as on initial
                 // sync) The error is ignored, as this isn't a problem, because if there is no
                 // active receiver there is nothing to do
@@ -1613,7 +1510,7 @@ impl Storage {
 
             anyhow::Ok(new_sct)
         })
-        .await??;
+            .await??;
 
         Ok(())
     }
@@ -1680,7 +1577,7 @@ impl Storage {
             spendable_notes.position
             FROM notes
             JOIN spendable_notes ON notes.note_commitment = spendable_notes.note_commitment
-            JOIN tx ON spendable_notes.source = tx.tx_hash
+            JOIN tx ON spendable_notes.tx_hash = tx.tx_hash
             WHERE tx.return_address = ?1";
 
         let return_address = return_address.to_vec();

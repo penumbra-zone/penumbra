@@ -3,7 +3,9 @@ use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
 use penumbra_governance::{proposal::ChangedAppParameters, Proposal, ProposalPayload};
 use penumbra_proto::DomainType;
-use penumbra_transaction::plan::TransactionPlan;
+use penumbra_transaction::TransactionPlan;
+
+use super::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ProposalCmd {
@@ -12,7 +14,7 @@ pub enum ProposalCmd {
         /// The file to output the template to.
         #[clap(long, global = true)]
         file: Option<camino::Utf8PathBuf>,
-        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or dao-spend].
+        /// The kind of the proposal to template [one of: signaling, emergency, parameter-change, or community-pool-spend].
         #[clap(subcommand)]
         kind: ProposalKindCmd,
     },
@@ -27,6 +29,9 @@ pub enum ProposalCmd {
         /// The amount of the staking token to deposit alongside the proposal.
         #[clap(long)]
         deposit_amount: u64,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Withdraw a governance proposal that you previously submitted.
     Withdraw {
@@ -39,6 +44,9 @@ pub enum ProposalCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
     ///
@@ -51,6 +59,9 @@ pub enum ProposalCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
 }
 
@@ -62,8 +73,8 @@ pub enum ProposalKindCmd {
     Emergency,
     /// Generate a template for a parameter change proposal.
     ParameterChange,
-    /// Generate a template for a DAO spend proposal.
-    DaoSpend {
+    /// Generate a template for a Community Pool spend proposal.
+    CommunityPoolSpend {
         /// The transaction plan to include in the proposal, in JSON format.
         ///
         /// If not specified, the default empty transaction plan will be included, to be replaced
@@ -71,7 +82,7 @@ pub enum ProposalKindCmd {
         #[clap(long)]
         transaction_plan: Option<camino::Utf8PathBuf>,
     },
-    /// Generate a template for an upgrade propopsal,
+    /// Generate a template for an upgrade proposal,
     UpgradePlan,
 }
 
@@ -86,18 +97,21 @@ impl ProposalKindCmd {
             ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
                 old: Box::new(app_params.as_changed_params()),
                 new: Box::new(ChangedAppParameters {
-                    chain_params: None,
-                    dao_params: None,
-                    ibc_params: None,
-                    stake_params: None,
-                    fee_params: None,
-                    governance_params: None,
+                    community_pool_params: None,
                     distributions_params: None,
+                    ibc_params: None,
+                    fee_params: None,
+                    funding_params: None,
+                    governance_params: None,
+                    sct_params: None,
+                    shielded_pool_params: None,
+                    stake_params: None,
+                    dex_params: None,
                 }),
             },
-            ProposalKindCmd::DaoSpend { transaction_plan } => {
+            ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {
                 if let Some(file) = transaction_plan {
-                    ProposalPayload::DaoSpend {
+                    ProposalPayload::CommunityPoolSpend {
                         transaction_plan: serde_json::from_reader(
                             std::fs::File::open(file).with_context(|| {
                                 format!("Failed to open transaction plan file {:?}", file)
@@ -108,7 +122,7 @@ impl ProposalKindCmd {
                         })?,
                     }
                 } else {
-                    ProposalPayload::DaoSpend {
+                    ProposalPayload::CommunityPoolSpend {
                         transaction_plan: TransactionPlan::default().encode_to_vec(),
                     }
                 }

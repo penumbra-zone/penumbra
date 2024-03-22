@@ -139,6 +139,28 @@ pub mod address {
     }
 }
 
+pub mod compat_address {
+    use super::*;
+
+    /// The Bech32 prefix used for compat addresses (Bech32, not Bech32m, addresses).
+    pub const BECH32_PREFIX: &str = "penumbracompat1";
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserialize_bech32(deserializer, BECH32_PREFIX, Variant::Bech32)
+    }
+
+    pub fn serialize<S, T>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: AsRef<[u8]>,
+    {
+        serialize_bech32(value, serializer, BECH32_PREFIX, Variant::Bech32)
+    }
+}
+
 pub mod asset_id {
     use super::*;
 

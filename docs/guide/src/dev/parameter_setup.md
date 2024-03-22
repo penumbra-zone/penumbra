@@ -11,8 +11,7 @@ For development purposes *only*, we have a crate in `tools/parameter-setup`
 that lets one generate the proving and verifying keys:
 
 ```shell
-cd tools/parameter-setup
-cargo run
+cargo run --release --bin penumbra-parameter-setup
 ```
 
 The verifying and proving keys for each circuit will be created in a serialized

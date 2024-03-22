@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use penumbra_chain::NoteSource;
-use penumbra_sct::component::SctManager as _;
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
+use penumbra_sct::{component::tree::SctManager, CommitmentSource};
 use penumbra_tct as tct;
 use tracing::instrument;
 
@@ -11,27 +10,25 @@ use crate::{state_key, swap::SwapPayload};
 #[async_trait]
 pub trait SwapManager: StateWrite {
     #[instrument(skip(self, swap), fields(commitment = ?swap.commitment))]
-    async fn add_swap_payload(&mut self, swap: SwapPayload, source: NoteSource) {
+    async fn add_swap_payload(&mut self, swap: SwapPayload, source: CommitmentSource) {
         tracing::debug!("adding swap payload");
 
         // 0. Record an ABCI event for transaction indexing.
         //self.record(event::state_payload(&payload));
 
         // 1. Insert it into the SCT, recording its source
-        let position = self.add_sct_commitment(swap.commitment, Some(source))
+        let position = self.add_sct_commitment(swap.commitment, source.clone())
             .await
             // TODO: why? can't we exceed the number of state commitments in a block?
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
         // 3. Finally, record it to be inserted into the compact block:
-        let mut payloads: im::Vector<(tct::Position, SwapPayload, NoteSource)> = self
-            .object_get(state_key::pending_payloads())
-            .unwrap_or_default();
+        let mut payloads = self.pending_swap_payloads();
         payloads.push_back((position, swap, source));
         self.object_put(state_key::pending_payloads(), payloads);
     }
 
-    async fn pending_swap_payloads(&self) -> im::Vector<(tct::Position, SwapPayload, NoteSource)> {
+    fn pending_swap_payloads(&self) -> im::Vector<(tct::Position, SwapPayload, CommitmentSource)> {
         self.object_get(state_key::pending_payloads())
             .unwrap_or_default()
     }

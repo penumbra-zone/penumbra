@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use futures::TryStreamExt;
 use penumbra_governance::Vote;
-use penumbra_proto::core::component::governance::v1alpha1::{
+use penumbra_proto::core::component::governance::v1::{
     query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
     AllTalliedDelegatorVotesForProposalRequest, ProposalDataRequest, ProposalListRequest,
     ProposalListResponse, ValidatorVotesRequest, ValidatorVotesResponse,

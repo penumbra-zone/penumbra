@@ -1,46 +1,42 @@
-use std::ops::Deref;
-
 use chrono::DateTime;
-use penumbra_proto::{self as proto};
-
+use penumbra_proto::{self as proto, DomainType, Message};
 use penumbra_transaction::Transaction;
-use proto::util::tendermint_proxy::v1alpha1::tendermint_proxy_service_server::TendermintProxyService;
-use proto::util::tendermint_proxy::v1alpha1::AbciQueryRequest;
-use proto::util::tendermint_proxy::v1alpha1::AbciQueryResponse;
-use proto::util::tendermint_proxy::v1alpha1::BroadcastTxAsyncRequest;
-use proto::util::tendermint_proxy::v1alpha1::BroadcastTxAsyncResponse;
-use proto::util::tendermint_proxy::v1alpha1::BroadcastTxSyncRequest;
-use proto::util::tendermint_proxy::v1alpha1::BroadcastTxSyncResponse;
-use proto::util::tendermint_proxy::v1alpha1::GetBlockByHeightRequest;
-use proto::util::tendermint_proxy::v1alpha1::GetBlockByHeightResponse;
-use proto::util::tendermint_proxy::v1alpha1::GetStatusRequest;
-use proto::util::tendermint_proxy::v1alpha1::GetStatusResponse;
-use proto::util::tendermint_proxy::v1alpha1::GetTxRequest;
-use proto::util::tendermint_proxy::v1alpha1::GetTxResponse;
-use proto::util::tendermint_proxy::v1alpha1::SyncInfo;
-use proto::util::tendermint_proxy::v1alpha1::Tag;
-use proto::util::tendermint_proxy::v1alpha1::TxResult;
-use proto::DomainType;
-use proto::Message;
-use tendermint::abci::Code;
-use tendermint::block::Height;
+use proto::util::tendermint_proxy::v1::{
+    tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest, AbciQueryResponse,
+    BroadcastTxAsyncRequest, BroadcastTxAsyncResponse, BroadcastTxSyncRequest,
+    BroadcastTxSyncResponse, GetBlockByHeightRequest, GetBlockByHeightResponse, GetStatusRequest,
+    GetStatusResponse, GetTxRequest, GetTxResponse, SyncInfo, Tag, TxResult,
+};
+use std::ops::Deref;
+use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
 
-// We need to use the tracing-futures version of Instrument,
-// because we want to instrument a Stream, and the Stream trait
-// isn't in std, and the tracing::Instrument trait only works with
-// (stable) std types.
-//use tracing_futures::Instrument;
+/// Implements service traits for Tonic gRPC services.
+///
+/// The fields of this struct are the configuration and data
+/// necessary to the gRPC services.
+#[derive(Clone, Debug)]
+pub struct TendermintProxy {
+    /// Address of upstream Tendermint server to proxy requests to.
+    tendermint_url: url::Url,
+}
 
-// Note: the conversions that take place in here could be moved to
-// from/try_from impls, but they're not used anywhere else, so it's
-// unimportant right now, and would require additional wrappers
-// since none of the structs are defined in our crates :(
-// TODO: move those to proto/src/protobuf.rs
+impl TendermintProxy {
+    /// Returns a new [`TendermintProxy`].
+    pub fn new(tendermint_url: url::Url) -> Self {
+        Self { tendermint_url }
+    }
+}
 
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
+    // Note: the conversions that take place in here could be moved to
+    // from/try_from impls, but they're not used anywhere else, so it's
+    // unimportant right now, and would require additional wrappers
+    // since none of the structs are defined in our crates :(
+    // TODO: move those to proto/src/protobuf.rs
+
     async fn get_tx(
         &self,
         req: tonic::Request<GetTxRequest>,
@@ -494,21 +490,5 @@ impl TendermintProxyService for TendermintProxy {
                 }),
             }),
         }))
-    }
-}
-
-/// Implements service traits for Tonic gRPC services.
-///
-/// The fields of this struct are the configuration and data
-/// necessary to the gRPC services.
-#[derive(Clone, Debug)]
-pub struct TendermintProxy {
-    /// Address of upstream Tendermint server to proxy requests to.
-    tendermint_url: url::Url,
-}
-
-impl TendermintProxy {
-    pub fn new(tendermint_url: url::Url) -> Self {
-        Self { tendermint_url }
     }
 }

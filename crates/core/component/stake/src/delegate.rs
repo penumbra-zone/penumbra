@@ -1,6 +1,7 @@
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{DelegationToken, IdentityKey};
@@ -22,25 +23,40 @@ pub struct Delegate {
     /// This is implied by the validator's exchange rate in the specified epoch
     /// (and should be checked in transaction validation!), but including it allows
     /// stateless verification that the transaction is internally consistent.
-    /// TODO(erwan): make sure this is checked in tx validation
     pub delegation_amount: Amount,
+}
+
+impl EffectingData for Delegate {
+    fn effect_hash(&self) -> EffectHash {
+        // For delegations, the entire action is considered effecting data.
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl Delegate {
     /// Return the balance resulting from issuing delegation tokens from staking tokens.
     pub fn balance(&self) -> Balance {
-        let stake = Balance::from(Value {
-            amount: self.unbonded_amount,
-            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
-        });
-
-        let delegation = Balance::from(Value {
-            amount: self.delegation_amount,
-            asset_id: DelegationToken::new(self.validator_identity.clone()).id(),
-        });
+        let stake: Balance = self.unbonded_value().into();
+        let delegation: Balance = self.delegation_value().into();
 
         // We produce the delegation tokens and consume the staking tokens.
         delegation - stake
+    }
+
+    /// Returns the [`Value`] of the delegation [`Amount`].
+    pub fn delegation_value(&self) -> Value {
+        Value {
+            amount: self.delegation_amount,
+            asset_id: DelegationToken::new(self.validator_identity.clone()).id(),
+        }
+    }
+
+    /// Returns the [`Value`] of the unbonded [`Amount`].
+    pub fn unbonded_value(&self) -> Value {
+        Value {
+            amount: self.unbonded_amount,
+            asset_id: STAKING_TOKEN_ASSET_ID.clone(),
+        }
     }
 }
 

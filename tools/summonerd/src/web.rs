@@ -13,11 +13,11 @@ use crate::{config::Config, PhaseMarker};
 use crate::{queue::ParticipantQueue, storage::Storage};
 
 /// The number of previous contributions to display
-const LAST_N: u64 = 10_000;
+const LAST_N: u64 = 50_000;
 
 /// Represents the storage used by the web application.
 pub struct WebAppState {
-    address: Address,
+    _address: Address,
     config: Config,
     phase: PhaseMarker,
     queue: ParticipantQueue,
@@ -67,14 +67,14 @@ async fn serve_woff2(filename: &str) -> impl IntoResponse {
 }
 
 pub fn web_app(
-    address: Address,
+    _address: Address,
     config: Config,
     phase: PhaseMarker,
     queue: ParticipantQueue,
     storage: Storage,
 ) -> Router {
     let shared_state = Arc::new(WebAppState {
-        address,
+        _address,
         config,
         phase,
         queue,
@@ -122,7 +122,7 @@ pub async fn main_page(State(state): State<Arc<WebAppState>>) -> impl IntoRespon
         .unwrap_or(0);
 
     let template = MainTemplate {
-        address: state.address.to_string(),
+        _address: state._address.to_string(),
         min_bid: format!("{}penumbra", state.config.min_bid_u64),
         phase_number,
         phase_1_completed,
@@ -205,7 +205,7 @@ pub async fn phase_2(State(state): State<Arc<WebAppState>>) -> impl IntoResponse
 #[derive(Template)]
 #[template(path = "main.html")]
 struct MainTemplate {
-    address: String,
+    _address: String,
     min_bid: String,
     phase_number: u64,
     phase_1_completed: u64,

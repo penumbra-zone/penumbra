@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::penumbra::core::component::dex::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::dex::v1 as pb;
 use serde::{Deserialize, Serialize};
 
 use super::{SwapCiphertext, SwapPlaintext};

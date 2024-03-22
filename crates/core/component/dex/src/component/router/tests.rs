@@ -1,14 +1,15 @@
+use cnidarium::ArcStateDeltaExt;
+use cnidarium::TempStorage;
+use cnidarium::{StateDelta, StateWrite};
 use core::panic;
 use futures::StreamExt;
 use penumbra_asset::{asset, Value};
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_storage::ArcStateDeltaExt;
-use penumbra_storage::TempStorage;
-use penumbra_storage::{StateDelta, StateWrite};
 use rand_core::OsRng;
 use std::sync::Arc;
 
 use crate::lp::SellOrder;
+use crate::DexParameters;
 use crate::{
     component::{
         router::{FillRoute, HandleBatchSwaps, Path},
@@ -22,12 +23,14 @@ use crate::{
     DirectedTradingPair, DirectedUnitPair,
 };
 
-use super::{PathSearch, RoutingParams};
+use super::PathSearch;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn path_search_basic() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());
+    state.put_dex_params(DexParameters::default());
+
     create_test_positions_basic(&mut state, true).await;
     let state = Arc::new(state);
 
@@ -38,30 +41,18 @@ async fn path_search_basic() {
         .get_unit("penumbra")
         .unwrap();
 
+    let mut routing_params = state.routing_params().await.unwrap();
     tracing::info!(src = %gm, dst = %penumbra, "searching for path");
     let (_path, _spill) = state
-        .path_search(
-            gm.id(),
-            penumbra.id(),
-            RoutingParams {
-                max_hops: 4,
-                ..Default::default()
-            },
-        )
+        .path_search(gm.id(), penumbra.id(), routing_params.clone())
         .await
         .unwrap();
 
     // Now try routing from "penumbra" to "penumbra".
     tracing::info!(src = %penumbra, dst = %penumbra, "searching for path");
+    routing_params.max_hops = 8;
     let (_path, _spill) = state
-        .path_search(
-            penumbra.id(),
-            penumbra.id(),
-            RoutingParams {
-                max_hops: 8,
-                ..Default::default()
-            },
-        )
+        .path_search(penumbra.id(), penumbra.id(), routing_params)
         .await
         .unwrap();
 }
@@ -965,15 +956,10 @@ async fn simple_route() -> anyhow::Result<()> {
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
+    let mut routing_params = state.routing_params().await.unwrap();
+    routing_params.max_hops = 1;
     let (path, _spill) = state
-        .path_search(
-            gn.id(),
-            penumbra.id(),
-            RoutingParams {
-                max_hops: 1,
-                ..Default::default()
-            },
-        )
+        .path_search(gn.id(), penumbra.id(), routing_params)
         .await
         .unwrap();
 
@@ -1005,8 +991,9 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
+    let routing_params = state.routing_params().await.unwrap();
     let (path, _spill) = state
-        .path_search(gn.id(), penumbra.id(), RoutingParams::default())
+        .path_search(gn.id(), penumbra.id(), routing_params)
         .await
         .unwrap();
 
@@ -1029,14 +1016,9 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0u32.into(),
-            0,
-            RoutingParams::default(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -1150,8 +1132,9 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // Now if we swap 1000gm into penumbra, we should not get total execution, but we should
     // consume all penumbra liquidity on the direct gm:penumbra pairs, as well as route through the
     // gm:gn and gn:penumbra pairs to obtain penumbra.
+    let routing_params = state.routing_params().await.unwrap();
     let (path, _spill) = state
-        .path_search(gm.id(), penumbra.id(), RoutingParams::default())
+        .path_search(gm.id(), penumbra.id(), routing_params)
         .await
         .unwrap();
 
@@ -1172,14 +1155,9 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0u32.into(),
-            0,
-            RoutingParams::default(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 

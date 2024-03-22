@@ -7,7 +7,7 @@ on:
 
 jobs:
   smoke_test:
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -22,22 +22,27 @@ jobs:
           toolchain: stable
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-
       - name: Install cometbft binary
-        run: |
-          COMETBFT_VERSION="0.37.2"
-          curl -L -O "https://github.com/cometbft/cometbft/releases/download/v${COMETBFT_VERSION}/cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz"
-          tar -xzf "cometbft_${COMETBFT_VERSION}_linux_amd64.tar.gz" cometbft
-          mkdir -p $HOME/bin
-          cp cometbft $HOME/bin
-          echo $PATH
-          export PATH=$HOME/bin:$PATH
-          which cometbft
-          cometbft version
-
+        run: ./deployments/scripts/install-cometbft
       - name: Run the smoke test suite
         run: |
           export PATH="$HOME/bin:$PATH"
           ./deployments/scripts/smoke-test.sh
-        env:
-          TESTNET_RUNTIME: 2m
+      - name: Display comet logs
+        if: always()
+        run: cat deployments/logs/comet.log
+      - name: Display pd runtime logs
+        if: always()
+        run: cat deployments/logs/pd.log
+      - name: Display pd test logs
+        if: always()
+        run: cat deployments/logs/pd-tests.log
+      - name: Display pclientd logs
+        if: always()
+        run: cat deployments/logs/pclientd.log
+      - name: Display pcli logs
+        if: always()
+        run: cat deployments/logs/pcli.log
+    env:
+      TESTNET_RUNTIME: 2m
+

@@ -135,7 +135,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_component_compact_block_compact_block_range_served_total[5m])",
+          "expr": "rate(cnidarium_component_compact_block_compact_block_range_served_total[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -227,7 +227,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "penumbra_component_compact_block_compact_block_range_active_connections",
+          "expr": "cnidarium_component_compact_block_compact_block_range_active_connections",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -319,7 +319,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_nonverifiable_get_raw_duration_seconds_sum[5m]) / rate(cnidarium_nonverifiable_get_raw_duration_seconds_count[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -411,7 +411,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(tendermint_consensus_latest_block_height[5m])",
+          "expr": "rate(cometbft_consensus_latest_block_height[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -503,7 +503,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_storage_get_raw_duration_seconds_sum[5m]) / rate(penumbra_storage_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_get_raw_duration_seconds_sum[5m]) / rate(cnidarium_get_raw_duration_seconds_count[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -595,7 +595,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "tendermint_consensus_height",
+          "expr": "cometbft_consensus_height",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -687,7 +687,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_storage_nonverifiable_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_nonverifiable_get_raw_duration_seconds_count[5m])",
           "instant": false,
           "range": true,
           "refId": "A"
@@ -779,7 +779,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(penumbra_storage_get_raw_duration_seconds_count[5m])",
+          "expr": "rate(cnidarium_get_raw_duration_seconds_count[5m])",
           "hide": false,
           "instant": false,
           "range": true,

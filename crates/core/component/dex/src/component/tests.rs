@@ -2,15 +2,16 @@ use std::sync::Arc;
 
 use anyhow::Ok;
 use async_trait::async_trait;
+use cnidarium::{ArcStateDeltaExt, StateDelta, TempStorage};
 use futures::StreamExt;
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
-use penumbra_storage::{ArcStateDeltaExt, StateDelta, TempStorage};
 use rand_core::OsRng;
 
 //use crate::TempStorageExt;
 
 use crate::lp::action::PositionOpen;
+use crate::DexParameters;
 use crate::{
     component::{
         router::FillRoute,
@@ -33,22 +34,18 @@ pub trait TempStorageExt: Sized {
 #[async_trait]
 impl TempStorageExt for TempStorage {
     async fn apply_minimal_genesis(self) -> anyhow::Result<Self> {
-        use penumbra_chain::component::StateWriteExt;
-
+        use penumbra_sct::component::clock::EpochManager as _;
         let mut state = StateDelta::new(self.latest_snapshot());
-
-        // TODO: this corresponds to code in App that should be part of
-        // penumbra_chain or something (TBD: how to split up penumbra-chain?
-        // params should be at the top, stuff like this should be at the bottom)
 
         state.put_block_height(0);
         state.put_epoch_by_height(
             0,
-            penumbra_chain::Epoch {
+            penumbra_sct::epoch::Epoch {
                 index: 0,
                 start_height: 0,
             },
         );
+        state.put_dex_params(DexParameters::default());
 
         self.commit(state).await?;
 
@@ -230,7 +227,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
         );
     }
 
-    // After executing 100 swaps of `1000gm` into `gn`. We should have acquried `1199gn*100` or `119900gn`.
+    // After executing 100 swaps of `1000gm` into `gn`. We should have acquired `1199gn*100` or `119900gn`.
     // We consume the last `100gn` in the next swap.
     let delta_gm = Value {
         amount: 84u64.into(),
@@ -449,7 +446,7 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
 #[tokio::test]
 /// Test that submitting a position that provisions no inventory fails.
 async fn empty_order_fails() -> anyhow::Result<()> {
-    use penumbra_component::ActionHandler;
+    use cnidarium_component::ActionHandler;
     let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
     let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
@@ -583,8 +580,9 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, RoutingParams::default())
+        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -688,14 +686,9 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     Arc::get_mut(&mut state)
         .unwrap()
         .put_swap_flow(&trading_pair, swap_flow.clone());
+    let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(
-            trading_pair,
-            swap_flow,
-            0u32.into(),
-            0,
-            RoutingParams::default(),
-        )
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -795,9 +788,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
     state_tx.apply();
 
     // Now we should be able to arb 10penumbra => 10gn => 20gm => 20penumbra.
-    state
-        .arbitrage(penumbra.id(), vec![penumbra.id(), gm.id(), gn.id()])
-        .await?;
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), gm.id(), gn.id()]),
+    };
+    state.arbitrage(penumbra.id(), routing_params).await?;
 
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     assert_eq!(
@@ -885,9 +881,15 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 
     tracing::info!("we are triggering the arbitrage logic");
 
+    let routing_params = RoutingParams {
+        max_hops: 4 + 2,
+        price_limit: Some(1u64.into()),
+        fixed_candidates: Arc::new(vec![penumbra.id(), test_usd.id()]),
+    };
+
     let arb_profit = tokio::time::timeout(
         tokio::time::Duration::from_secs(2),
-        state.arbitrage(penumbra.id(), vec![penumbra.id(), test_usd.id()]),
+        state.arbitrage(penumbra.id(), routing_params),
     )
     .await??;
 

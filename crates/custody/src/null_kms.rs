@@ -1,7 +1,7 @@
 //! A basic software key management system that stores keys in memory but
 //! presents as an asynchronous signer.
 
-use penumbra_proto::custody::v1alpha1::{self as pb};
+use penumbra_proto::custody::v1::{self as pb};
 use tonic::{async_trait, Request, Response, Status};
 
 /// A "null KMS" that has no keys and errors on any requests.
@@ -11,7 +11,7 @@ use tonic::{async_trait, Request, Response, Status};
 pub struct NullKms {}
 
 #[async_trait]
-impl pb::custody_protocol_service_server::CustodyProtocolService for NullKms {
+impl pb::custody_service_server::CustodyService for NullKms {
     async fn authorize(
         &self,
         _request: Request<pb::AuthorizeRequest>,

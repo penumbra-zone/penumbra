@@ -1,5 +1,5 @@
 use penumbra_keys::Address;
-use penumbra_proto::penumbra::tools::summoning::v1alpha1::{
+use penumbra_proto::penumbra::tools::summoning::v1::{
     self as pb, ceremony_coordinator_service_server as server,
     participate_request::{Identify, Msg},
 };
@@ -88,7 +88,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             ContributionAllowed::Banned => {
                 tracing::debug!(?address, "is banned");
                 return Err(Status::permission_denied(
-                    "nyo contwibution *cries* fow you".to_string(),
+                    "Unfortunately, you have been banned from participating in the ceremony, most likely because of timeouts. Repeatedly timing out prevents other users from participating, and we want to enable as many people to participate as possible. Your machine's network connection and performance are not sufficient to participate, and re-attempting without changing these will result in another timeout and your contribution not being included.".to_string(),
                 ));
             }
             ContributionAllowed::AlreadyContributed => {

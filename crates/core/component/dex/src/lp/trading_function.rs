@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_asset::{asset, Value};
 use penumbra_num::{fixpoint::U128x128, Amount};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 

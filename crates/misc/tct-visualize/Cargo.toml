@@ -1,38 +1,10 @@
 [package]
 name = "penumbra-tct-visualize"
-version = "0.63.1"
-edition = "2021"
+version = {workspace = true}
+edition = {workspace = true}
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-# We are visualizing the TCT, so we need to import it
-penumbra-tct = { path = "../../crypto/tct", features = ["arbitrary"] }
-decaf377 = "0.5"
-
-# Dependencies for live-view server
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7", features = ["full"] }
-tonic = { version = "0.10" }
-prost = { version = "0.12" }
-tokio-stream = { version = "0.1" }
-axum = { version = "0.5", features = ["headers", "query"] }
-axum-server = { version = "0.4", features = ["tls-rustls"] }
-serde_json = { version = "1", features = ["preserve_order"] }
-include-flate = { version = "0.1", features = ["stable"] }
-bytes = { version = "1.2" }
-parking_lot = "0.12"
-rand = "0.8"
-serde = "1.0"
-futures = "0.3"
-serde_urlencoded = "0.7"
-clap = { version = "3.2", features = ["derive"] }
-tower-http = { version = "0.3", features = ["trace"] }
-anyhow = "1.0"
-rand_distr = "0.4"
-tracing-subscriber = "0.3.15"
-hex = "0.4"
-rand_chacha = "0.3"
+[package.metadata.dist]
+dist = false
 
 [[bin]]
 name = "tct-visualize"
@@ -40,5 +12,29 @@ name = "tct-visualize"
 [[bin]]
 name = "tct-live-edit"
 
-[package.metadata.dist]
-dist = false
+
+[dependencies]
+penumbra-tct = {workspace = true, features = ["arbitrary"], default-features = true}
+decaf377 = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-util = {workspace = true, features = ["full"]}
+tonic = {workspace = true}
+prost = {workspace = true}
+tokio-stream = {workspace = true}
+axum = {workspace = true, features = ["headers", "query"]}
+axum-server = {workspace = true, features = ["tls-rustls"]}
+serde_json = {workspace = true, features = ["preserve_order"]}
+include-flate = { version = "0.1", features = ["stable"] }
+bytes = {workspace = true}
+parking_lot = {workspace = true}
+rand = {workspace = true}
+serde = {workspace = true}
+futures = {workspace = true}
+serde_urlencoded = "0.7"
+clap = {workspace = true, features = ["derive"]}
+tower-http = {workspace = true, features = ["trace"]}
+anyhow = {workspace = true}
+rand_distr = "0.4"
+tracing-subscriber = {workspace = true}
+hex = {workspace = true}
+rand_chacha = {workspace = true}

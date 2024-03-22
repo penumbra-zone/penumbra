@@ -1,24 +1,22 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::client::{events, ClientType};
 use ibc_types::core::client::{msgs::MsgSubmitMisbehaviour, ClientId};
 use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use ibc_types::lightclients::tendermint::header::Header as TendermintHeader;
 use ibc_types::lightclients::tendermint::misbehaviour::Misbehaviour as TendermintMisbehavior;
 use ibc_types::lightclients::tendermint::TENDERMINT_CLIENT_TYPE;
-use penumbra_chain::component::StateReadExt as _;
-use penumbra_storage::{StateRead, StateWrite};
 use tendermint_light_client_verifier::{
     types::{TrustedBlockState, UntrustedBlockState},
     ProdVerifier, Verdict, Verifier,
 };
 
-use crate::component::client::StateWriteExt as _;
-use crate::component::client_counter::ics02_validation;
-use crate::component::ClientStateReadExt as _;
-
 use super::update_client::verify_header_validator_set;
 use super::MsgHandler;
+use crate::component::client::StateWriteExt as _;
+use crate::component::HostInterface;
+use crate::component::{ics02_validation, ClientStateReadExt as _};
 
 #[async_trait]
 impl MsgHandler for MsgSubmitMisbehaviour {
@@ -38,7 +36,7 @@ impl MsgHandler for MsgSubmitMisbehaviour {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, H, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         let untrusted_misbehavior =
@@ -63,16 +61,16 @@ impl MsgHandler for MsgSubmitMisbehaviour {
 
         let trusted_client_state = client_state;
 
-        verify_misbehavior_header(
+        verify_misbehavior_header::<&S, HI>(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header1,
             &trusted_client_state,
         )
         .await?;
-        verify_misbehavior_header(
+        verify_misbehavior_header::<&S, HI>(
             &state,
-            untrusted_misbehavior.client_id.clone(),
+            &untrusted_misbehavior.client_id,
             &untrusted_misbehavior.header2,
             &trusted_client_state,
         )
@@ -114,15 +112,15 @@ fn client_is_not_frozen(client: &TendermintClientState) -> anyhow::Result<()> {
     }
 }
 
-async fn verify_misbehavior_header<S: StateRead>(
+async fn verify_misbehavior_header<S: StateRead, HI: HostInterface>(
     state: S,
-    client_id: ClientId,
+    client_id: &ClientId,
     mb_header: &TendermintHeader,
     trusted_client_state: &TendermintClientState,
 ) -> Result<()> {
     let trusted_height = mb_header.trusted_height;
     let last_trusted_consensus_state = state
-        .get_verified_consensus_state(trusted_height, client_id)
+        .get_verified_consensus_state(&trusted_height, &client_id)
         .await?;
 
     let trusted_height = trusted_height
@@ -154,7 +152,7 @@ async fn verify_misbehavior_header<S: StateRead>(
         untrusted_state,
         trusted_state,
         &options,
-        state.get_block_timestamp().await?,
+        HI::get_block_timestamp(&state).await?,
     );
 
     match verdict {

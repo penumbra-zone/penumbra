@@ -1,56 +1,47 @@
 [package]
 name = "summonerd"
-version = "0.63.1"
-authors = ["Penumbra Labs <team@penumbra.zone>"]
-edition = "2021"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
 description = "Coordination node for summoning ceremony"
-repository = "https://github.com/penumbra-zone/penumbra/"
-homepage = "https://penumbra.zone"
-license = "MIT OR Apache-2.0"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
 publish = false
-# Pin a MSRV. Anything more recent than this value is OK.
-# If a lower version is used for build, the build will fail.
 rust-version = "1.65"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = "1"
-ark-groth16 = "0.4"
-ark-serialize = "0.4"
-async-trait = "0.1.52"
-atty = "0.2"
+anyhow = {workspace = true}
+ark-groth16 = {workspace = true}
+ark-serialize = {workspace = true}
 askama = "0.11"
-axum = "0.6"
-bytes = "1"
-camino = "1"
-clap = { version = "3", features = ["derive", "env", "color"] }
-chrono = "0.4"
-console-subscriber = "0.2"
-decaf377 = "0.5"
-futures = "0.3.28"
-hex = "0.4"
-http-body = "0.4.5"
-metrics-tracing-context = "0.11.0"
-penumbra-asset = { path = "../../crates/core/asset/" }
-penumbra-keys = { path = "../../crates/core/keys/" }
-penumbra-num = { path = "../../crates/core/num/" }
-penumbra-proof-params = { path = "../../crates/crypto/proof-params" }
-penumbra-proof-setup = { path = "../../crates/crypto/proof-setup/", features = ["parallel"] }
-penumbra-proto = { path = "../../crates/proto/" }
-penumbra-view = { path = "../../crates/view/" }
-rand = "0.8"
-rand_core = "0.6.4"
-tokio = { version = "1.22", features = ["full"] }
-tokio-stream = "0.1"
-tonic = "0.10"
-tonic-web = "0.10"
-tower = "0.4"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-url = "2"
-r2d2 = "0.8"
-# Depending on our fork of r2d2-sqlite, which updates the rusqlite dependency to 0.29
-r2d2_sqlite = { version = "0.22", git = "https://github.com/penumbra-zone/r2d2-sqlite.git", features = [
-    "bundled",
-] }
+async-trait = {workspace = true}
+axum = {workspace = true}
+bytes = {workspace = true}
+camino = {workspace = true}
+chrono = {workspace = true}
+clap = {workspace = true, features = ["derive", "env", "color"]}
+console-subscriber = {workspace = true}
+decaf377 = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+http-body = {workspace = true}
+metrics-tracing-context = {workspace = true}
+penumbra-asset = {workspace = true, default-features = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-num = {workspace = true, default-features = true}
+penumbra-proof-params = {workspace = true, default-features = true}
+penumbra-proof-setup = {workspace = true, features = ["parallel"]}
+penumbra-proto = {workspace = true, default-features = true}
+penumbra-view = {workspace = true}
+r2d2 = {workspace = true}
+r2d2_sqlite = {workspace = true, features = ["bundled"]}
+rand = {workspace = true}
+rand_core = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tokio-stream = {workspace = true}
+tonic = {workspace = true}
+tower = {workspace = true}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true}
+url = {workspace = true}

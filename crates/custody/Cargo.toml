@@ -1,35 +1,35 @@
 [package]
 name = "penumbra-custody"
-version = "0.63.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [dependencies]
-# Workspace dependencies
-ark-ff = "0.4"
-decaf377 = "0.5"
-decaf377-rdsa = "0.7"
+anyhow = {workspace = true}
+ark-ff = {workspace = true}
+ark-serialize = {workspace = true}
+base64 = {workspace = true}
+blake2b_simd = {workspace = true}
+bytes = {workspace = true, features = ["serde"]}
+chacha20poly1305 = {workspace = true}
+decaf377 = {workspace = true}
 decaf377-frost = { path = "../crypto/decaf377-frost" }
-penumbra-chain = { path = "../core/component/chain" }
-penumbra-keys = { path = "../core/keys" }
-penumbra-proto = { path = "../proto" , features = ["rpc"] }
-penumbra-transaction = { path = "../core/transaction" }
-
-tokio = { version = "1.21.1", features = ["full"]}
-anyhow = "1"
-serde_json = "1"
-serde = { version = "1", features = ["derive"] }
-serde_with = { version = "2.2", features = ["hex"] }
-tracing = "0.1"
-tonic = "0.10"
-bytes = { version = "1", features = ["serde"] }
-prost = "0.12.3"
-futures = "0.3"
-hex = "0.4"
-rand_core = "0.6"
-ed25519-consensus = "2.1"
-base64 = "0.20"
+decaf377-ka = {workspace = true}
+decaf377-rdsa = {workspace = true}
+ed25519-consensus = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+penumbra-keys = {workspace = true, default-features = true}
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-transaction = {workspace = true, default-features = true}
+penumbra-txhash = {workspace = true, default-features = true}
+prost = {workspace = true}
+rand_core = {workspace = true}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+serde_with = {workspace = true, features = ["hex"]}
+tokio = {workspace = true, features = ["full"]}
+tonic = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]
-toml = "0.5"
+toml = {workspace = true}

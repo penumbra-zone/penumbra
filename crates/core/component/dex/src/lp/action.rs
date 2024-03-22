@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{balance, Balance, Value};
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use super::{position, position::Position, LpNft};
 
@@ -17,6 +18,14 @@ pub struct PositionOpen {
     /// Positions are immutable, so the `PositionData` (and hence the `PositionId`)
     /// are unchanged over the entire lifetime of the position.
     pub position: Position,
+}
+
+impl EffectingData for PositionOpen {
+    fn effect_hash(&self) -> EffectHash {
+        // The position open action consists only of the position, which
+        // we consider effecting data.
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl PositionOpen {
@@ -47,6 +56,12 @@ impl PositionOpen {
 #[serde(try_from = "pb::PositionClose", into = "pb::PositionClose")]
 pub struct PositionClose {
     pub position_id: position::Id,
+}
+
+impl EffectingData for PositionClose {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl PositionClose {
@@ -80,21 +95,14 @@ pub struct PositionWithdraw {
     ///
     /// The chain will check this commitment by recomputing it with the on-chain state.
     pub reserves_commitment: balance::Commitment,
+    /// The sequence number of the withdrawal, allowing multiple withdrawals from the same position.
+    pub sequence: u64,
 }
 
-/// A transaction action that claims retroactive rewards for a historical
-/// position.
-///
-/// This action's contribution to the transaction's value balance is to consume a
-/// withdrawn position NFT and contribute its reward balance.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "pb::PositionRewardClaim", into = "pb::PositionRewardClaim")]
-pub struct PositionRewardClaim {
-    pub position_id: position::Id,
-    /// A transparent (zero blinding factor) commitment to the position's accumulated rewards.
-    ///
-    /// The chain will check this commitment by recomputing it with the on-chain state.
-    pub rewards_commitment: balance::Commitment,
+impl EffectingData for PositionWithdraw {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for PositionOpen {
@@ -156,6 +164,7 @@ impl From<PositionWithdraw> for pb::PositionWithdraw {
         Self {
             position_id: Some(value.position_id.into()),
             reserves_commitment: Some(value.reserves_commitment.into()),
+            sequence: value.sequence,
         }
     }
 }
@@ -173,36 +182,7 @@ impl TryFrom<pb::PositionWithdraw> for PositionWithdraw {
                 .reserves_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
-        })
-    }
-}
-
-impl DomainType for PositionRewardClaim {
-    type Proto = pb::PositionRewardClaim;
-}
-
-impl From<PositionRewardClaim> for pb::PositionRewardClaim {
-    fn from(value: PositionRewardClaim) -> Self {
-        Self {
-            position_id: Some(value.position_id.into()),
-            rewards_commitment: Some(value.rewards_commitment.into()),
-        }
-    }
-}
-
-impl TryFrom<pb::PositionRewardClaim> for PositionRewardClaim {
-    type Error = anyhow::Error;
-
-    fn try_from(value: pb::PositionRewardClaim) -> Result<Self, Self::Error> {
-        Ok(Self {
-            position_id: value
-                .position_id
-                .ok_or_else(|| anyhow::anyhow!("missing position_id"))?
-                .try_into()?,
-            rewards_commitment: value
-                .rewards_commitment
-                .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
-                .try_into()?,
+            sequence: value.sequence,
         })
     }
 }

@@ -1,0 +1,12 @@
+[package]
+name = "penumbra-txhash"
+version = {workspace = true}
+edition = {workspace = true}
+
+[dependencies]
+anyhow = {workspace = true}
+blake2b_simd = {workspace = true}
+hex = {workspace = true}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-tct = {workspace = true, default-features = true}
+serde = {workspace = true}

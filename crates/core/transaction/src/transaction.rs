@@ -6,20 +6,17 @@ use std::{
 use anyhow::{Context, Error};
 use ark_ff::Zero;
 use decaf377::Fr;
-use decaf377_fmd::Clue;
 use decaf377_rdsa::{Binding, Signature, VerificationKey, VerificationKeyBytes};
-use penumbra_chain::TransactionContext;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
     swap::Swap,
 };
-use penumbra_fee::Fee;
 use penumbra_governance::{DelegatorVote, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{FullViewingKey, PayloadKey};
 use penumbra_proto::{
-    core::transaction::v1alpha1::{self as pbt},
+    core::transaction::v1::{self as pbt},
     DomainType, Message,
 };
 use penumbra_sct::Nullifier;
@@ -27,36 +24,86 @@ use penumbra_shielded_pool::{Note, Output, Spend};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use penumbra_tct as tct;
 use penumbra_tct::StateCommitment;
+use penumbra_txhash::{
+    AuthHash, AuthorizingData, EffectHash, EffectingData, TransactionContext, TransactionId,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     memo::{MemoCiphertext, MemoPlaintext},
     view::{action_view::OutputView, MemoView, TransactionBodyView},
-    Action, ActionView, Id, IsAction, MemoPlaintextView, TransactionPerspective, TransactionView,
+    Action, ActionView, DetectionData, IsAction, MemoPlaintextView, TransactionParameters,
+    TransactionPerspective, TransactionView,
 };
 
 #[derive(Clone, Debug, Default)]
 pub struct TransactionBody {
     pub actions: Vec<Action>,
     pub transaction_parameters: TransactionParameters,
-    pub fee: Fee,
     pub detection_data: Option<DetectionData>,
     pub memo: Option<MemoCiphertext>,
 }
 
-#[derive(Clone, Debug, Default)]
-/// Parameters determining when the transaction should be accepted to the chain.
-pub struct TransactionParameters {
-    pub expiry_height: u64,
-    pub chain_id: String,
+impl EffectingData for TransactionBody {
+    fn effect_hash(&self) -> EffectHash {
+        let mut state = blake2b_simd::Params::new()
+            .personal(b"PenumbraEfHs")
+            .to_state();
+
+        let parameters_hash = self.transaction_parameters.effect_hash();
+        let memo_hash = self
+            .memo
+            .as_ref()
+            .map(|memo| memo.effect_hash())
+            // If the memo is not present, use the all-zero hash to record its absence in
+            // the overall effect hash.
+            .unwrap_or_default();
+        let detection_data_hash = self
+            .detection_data
+            .as_ref()
+            .map(|detection_data| detection_data.effect_hash())
+            // If the detection data is not present, use the all-zero hash to
+            // record its absence in the overall effect hash.
+            .unwrap_or_default();
+
+        // Hash the fixed data of the transaction body.
+        state.update(parameters_hash.as_bytes());
+        state.update(memo_hash.as_bytes());
+        state.update(detection_data_hash.as_bytes());
+
+        // Hash the number of actions, then each action.
+        let num_actions = self.actions.len() as u32;
+        state.update(&num_actions.to_le_bytes());
+        for action in &self.actions {
+            state.update(action.effect_hash().as_bytes());
+        }
+
+        EffectHash(state.finalize().as_array().clone())
+    }
 }
 
-#[derive(Clone, Debug, Default)]
-/// Detection data used by a detection server using Fuzzy Message Detection.
-///
-/// Only present if outputs are present.
-pub struct DetectionData {
-    pub fmd_clues: Vec<Clue>,
+impl EffectingData for Transaction {
+    fn effect_hash(&self) -> EffectHash {
+        self.transaction_body.effect_hash()
+    }
+}
+
+impl AuthorizingData for TransactionBody {
+    fn auth_hash(&self) -> AuthHash {
+        AuthHash(
+            blake2b_simd::Params::default()
+                .hash(&self.encode_to_vec())
+                .as_bytes()[0..32]
+                .try_into()
+                .expect("blake2b output is always 32 bytes long"),
+        )
+    }
+}
+
+impl AuthorizingData for Transaction {
+    fn auth_hash(&self) -> AuthHash {
+        self.transaction_body.auth_hash()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -207,11 +254,10 @@ impl Transaction {
                 | Action::PositionOpen(_)
                 | Action::PositionClose(_)
                 | Action::PositionWithdraw(_)
-                | Action::PositionRewardClaim(_)
                 | Action::Ics20Withdrawal(_)
-                | Action::DaoSpend(_)
-                | Action::DaoOutput(_)
-                | Action::DaoDeposit(_) => {}
+                | Action::CommunityPoolSpend(_)
+                | Action::CommunityPoolOutput(_)
+                | Action::CommunityPoolDeposit(_) => {}
             }
         }
 
@@ -254,8 +300,8 @@ impl Transaction {
             Some(ciphertext) => match memo_plaintext {
                 Some(plaintext) => {
                     let plaintext_view: MemoPlaintextView = MemoPlaintextView {
-                        return_address: txp.view_address(plaintext.return_address),
-                        text: plaintext.text,
+                        return_address: txp.view_address(plaintext.return_address()),
+                        text: plaintext.text().to_owned(),
                     };
                     Some(MemoView::Visible {
                         plaintext: plaintext_view,
@@ -279,7 +325,6 @@ impl Transaction {
             body_view: TransactionBodyView {
                 action_views,
                 transaction_parameters: self.transaction_parameters(),
-                fee: self.transaction_body().fee,
                 detection_data,
                 memo_view,
             },
@@ -416,9 +461,29 @@ impl Transaction {
         })
     }
 
-    pub fn dao_deposits(&self) -> impl Iterator<Item = &DaoDeposit> {
+    pub fn state_commitments(&self) -> impl Iterator<Item = StateCommitment> + '_ {
+        self.actions()
+            .flat_map(|action| {
+                // Note: adding future actions that include state commitments
+                // will need to be matched here.
+                match action {
+                    Action::Output(output) => {
+                        [Some(output.body.note_payload.note_commitment), None]
+                    }
+                    Action::Swap(swap) => [Some(swap.body.payload.commitment), None],
+                    Action::SwapClaim(claim) => [
+                        Some(claim.body.output_1_commitment),
+                        Some(claim.body.output_2_commitment),
+                    ],
+                    _ => [None, None],
+                }
+            })
+            .filter_map(|x| x)
+    }
+
+    pub fn community_pool_deposits(&self) -> impl Iterator<Item = &CommunityPoolDeposit> {
         self.actions().filter_map(|action| {
-            if let Action::DaoDeposit(d) = action {
+            if let Action::CommunityPoolDeposit(d) = action {
                 Some(d)
             } else {
                 None
@@ -426,9 +491,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_spends(&self) -> impl Iterator<Item = &DaoSpend> {
+    pub fn community_pool_spends(&self) -> impl Iterator<Item = &CommunityPoolSpend> {
         self.actions().filter_map(|action| {
-            if let Action::DaoSpend(s) = action {
+            if let Action::CommunityPoolSpend(s) = action {
                 Some(s)
             } else {
                 None
@@ -446,9 +511,9 @@ impl Transaction {
         })
     }
 
-    pub fn dao_outputs(&self) -> impl Iterator<Item = &DaoOutput> {
+    pub fn community_pool_outputs(&self) -> impl Iterator<Item = &CommunityPoolOutput> {
         self.actions().filter_map(|action| {
-            if let Action::DaoOutput(o) = action {
+            if let Action::CommunityPoolOutput(o) = action {
                 Some(o)
             } else {
                 None
@@ -488,14 +553,14 @@ impl Transaction {
         &self.binding_sig
     }
 
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> TransactionId {
         use sha2::{Digest, Sha256};
 
         let tx_bytes: Vec<u8> = self.clone().try_into().expect("can serialize transaction");
         let mut id_bytes = [0; 32];
         id_bytes[..].copy_from_slice(Sha256::digest(&tx_bytes).as_slice());
 
-        Id(id_bytes)
+        TransactionId(id_bytes)
     }
 
     /// Compute the binding verification key from the transaction data.
@@ -507,7 +572,11 @@ impl Transaction {
 
         // Add fee into binding verification key computation.
         let fee_v_blinding = Fr::zero();
-        let fee_value_commitment = self.transaction_body.fee.commit(fee_v_blinding);
+        let fee_value_commitment = self
+            .transaction_body
+            .transaction_parameters
+            .fee
+            .commit(fee_v_blinding);
         balance_commitments += fee_value_commitment.0;
 
         let binding_verification_key_bytes: VerificationKeyBytes<Binding> =
@@ -519,83 +588,17 @@ impl Transaction {
     }
 }
 
-impl From<TransactionBody> for Vec<u8> {
-    fn from(transaction_body: TransactionBody) -> Vec<u8> {
-        let protobuf_serialized: pbt::TransactionBody = transaction_body.into();
-        protobuf_serialized.encode_to_vec()
-    }
-}
-
-impl DomainType for TransactionParameters {
-    type Proto = pbt::TransactionParameters;
-}
-
-impl TryFrom<pbt::TransactionParameters> for TransactionParameters {
-    type Error = Error;
-
-    fn try_from(proto: pbt::TransactionParameters) -> anyhow::Result<Self, Self::Error> {
-        Ok(TransactionParameters {
-            expiry_height: proto.expiry_height,
-            chain_id: proto.chain_id,
-        })
-    }
-}
-
-impl From<TransactionParameters> for pbt::TransactionParameters {
-    fn from(msg: TransactionParameters) -> Self {
-        pbt::TransactionParameters {
-            expiry_height: msg.expiry_height,
-            chain_id: msg.chain_id,
-        }
-    }
-}
-
-impl DomainType for DetectionData {
-    type Proto = pbt::DetectionData;
-}
-
-impl TryFrom<pbt::DetectionData> for DetectionData {
-    type Error = Error;
-
-    fn try_from(proto: pbt::DetectionData) -> anyhow::Result<Self, Self::Error> {
-        let fmd_clues = proto
-            .fmd_clues
-            .into_iter()
-            .map(|x| x.try_into())
-            .collect::<Result<Vec<Clue>, Error>>()?;
-        Ok(DetectionData { fmd_clues })
-    }
-}
-
-impl From<DetectionData> for pbt::DetectionData {
-    fn from(msg: DetectionData) -> Self {
-        let fmd_clues = msg.fmd_clues.into_iter().map(|x| x.into()).collect();
-
-        pbt::DetectionData { fmd_clues }
-    }
-}
-
 impl DomainType for TransactionBody {
     type Proto = pbt::TransactionBody;
 }
 
 impl From<TransactionBody> for pbt::TransactionBody {
     fn from(msg: TransactionBody) -> Self {
-        let encrypted_memo: pbt::MemoData = match msg.memo {
-            Some(memo) => pbt::MemoData {
-                encrypted_memo: memo.0.to_vec(),
-            },
-            None => pbt::MemoData {
-                encrypted_memo: Default::default(),
-            },
-        };
-
         pbt::TransactionBody {
             actions: msg.actions.into_iter().map(|x| x.into()).collect(),
             transaction_parameters: Some(msg.transaction_parameters.into()),
-            fee: Some(msg.fee.into()),
             detection_data: msg.detection_data.map(|x| x.into()),
-            memo_data: Some(encrypted_memo),
+            memo: msg.memo.map(Into::into),
         }
     }
 }
@@ -613,34 +616,17 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
             );
         }
 
-        let fee: Fee = proto
-            .fee
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing fee"))?
-            .try_into()
-            .context("fee malformed")?;
+        let memo = proto
+            .memo
+            .map(TryFrom::try_from)
+            .transpose()
+            .context("encrypted memo malformed while parsing transaction body")?;
 
-        let encrypted_memo = proto
-            .memo_data
-            .ok_or_else(|| anyhow::anyhow!("transaction body missing memo data field"))?
-            .encrypted_memo;
-
-        let memo: Option<MemoCiphertext> = if encrypted_memo.is_empty() {
-            None
-        } else {
-            Some(
-                encrypted_memo[..]
-                    .try_into()
-                    .context("encrypted memo malformed while parsing transaction body")?,
-            )
-        };
-
-        let detection_data = match proto.detection_data {
-            Some(data) => Some(
-                data.try_into()
-                    .context("detection data malformed while parsing transaction body")?,
-            ),
-            None => None,
-        };
+        let detection_data = proto
+            .detection_data
+            .map(TryFrom::try_from)
+            .transpose()
+            .context("detection data malformed while parsing transaction body")?;
 
         let transaction_parameters = proto
             .transaction_parameters
@@ -651,7 +637,6 @@ impl TryFrom<pbt::TransactionBody> for TransactionBody {
         Ok(TransactionBody {
             actions,
             transaction_parameters,
-            fee,
             detection_data,
             memo,
         })
@@ -664,11 +649,10 @@ impl DomainType for Transaction {
 
 impl From<Transaction> for pbt::Transaction {
     fn from(msg: Transaction) -> Self {
-        let sig_bytes: [u8; 64] = msg.binding_sig.into();
         pbt::Transaction {
             body: Some(msg.transaction_body.into()),
             anchor: Some(msg.anchor.into()),
-            binding_sig: sig_bytes.to_vec(),
+            binding_sig: Some(msg.binding_sig.into()),
         }
     }
 }
@@ -689,7 +673,9 @@ impl TryFrom<pbt::Transaction> for Transaction {
             .try_into()
             .context("transaction body malformed")?;
 
-        let sig_bytes: [u8; 64] = proto.binding_sig[..]
+        let binding_sig = proto
+            .binding_sig
+            .ok_or_else(|| anyhow::anyhow!("transaction missing binding signature"))?
             .try_into()
             .context("transaction binding signature malformed")?;
 
@@ -701,7 +687,7 @@ impl TryFrom<pbt::Transaction> for Transaction {
 
         Ok(Transaction {
             transaction_body,
-            binding_sig: sig_bytes.into(),
+            binding_sig,
             anchor,
         })
     }

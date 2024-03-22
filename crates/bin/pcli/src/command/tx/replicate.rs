@@ -1,23 +1,25 @@
-use crate::{warning, App};
+use std::io::Write;
 use std::path::PathBuf;
 
-use crate::dex_utils;
-use crate::dex_utils::replicate::debug;
 use anyhow::{anyhow, bail, Context, Result};
 use dialoguer::Confirm;
+use rand_core::OsRng;
+
 use penumbra_asset::Value;
 use penumbra_dex::{lp::position::Position, DirectedUnitPair};
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
-    core::component::dex::v1alpha1::{
+    core::component::dex::v1::{
         query_service_client::QueryServiceClient as DexQueryServiceClient, SpreadRequest,
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_view::{Planner, ViewClient};
-use rand_core::OsRng;
-use std::io::Write;
+
+use crate::dex_utils;
+use crate::dex_utils::replicate::debug;
+use crate::{warning, App};
 
 /// Queries the chain for a transaction by hash.
 #[derive(Debug, clap::Subcommand)]
@@ -168,7 +170,6 @@ impl ConstantProduct {
                 app.view
                     .as_mut()
                     .context("view service must be initialized")?,
-                app.config.full_viewing_key.wallet_id(),
                 AddressIndex::new(self.source),
             )
             .await?;
@@ -199,7 +200,6 @@ impl ConstantProduct {
         let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
         let spread_data = client
             .spread(SpreadRequest {
-                chain_id: "".to_string(),
                 trading_pair: Some(self.pair.into_directed_trading_pair().to_canonical().into()),
             })
             .await?

@@ -3,11 +3,14 @@
 //! for Penumbra.
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
-use penumbra_app::{genesis, params::AppParameters};
-use penumbra_chain::{genesis::Content as ChainContent, params::ChainParameters};
+use penumbra_app::params::AppParameters;
+use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
-use penumbra_shielded_pool::genesis::{
-    self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent,
+use penumbra_sct::genesis::Content as SctContent;
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::{
+    genesis::{self as shielded_pool_genesis, Allocation, Content as ShieldedPoolContent},
+    params::ShieldedPoolParameters,
 };
 use penumbra_stake::{
     genesis::Content as StakeContent, params::StakeParameters, validator::Validator,
@@ -32,7 +35,7 @@ pub struct TestnetConfig {
     /// The name of the network
     pub name: String,
     /// The Tendermint genesis for initial chain state.
-    pub genesis: Genesis<genesis::AppState>,
+    pub genesis: Genesis<penumbra_genesis::AppState>,
     /// Path to local directory where config files will be written to
     pub testnet_dir: PathBuf,
     /// Set of validators at genesis. Uses the convenient wrapper type
@@ -64,7 +67,8 @@ impl TestnetConfig {
         tendermint_timeout_commit: Option<tendermint::Timeout>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
+        unbonding_delay: Option<u64>,
+        proposal_voting_blocks: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
 
@@ -92,7 +96,8 @@ impl TestnetConfig {
             validators.to_vec(),
             active_validator_limit,
             epoch_duration,
-            unbonding_epochs,
+            unbonding_delay,
+            proposal_voting_blocks,
         )?;
         let genesis = Self::make_genesis(app_state)?;
 
@@ -179,30 +184,43 @@ impl TestnetConfig {
         validators: Vec<Validator>,
         active_validator_limit: Option<u64>,
         epoch_duration: Option<u64>,
-        unbonding_epochs: Option<u64>,
-    ) -> anyhow::Result<genesis::Content> {
+        unbonding_delay: Option<u64>,
+        proposal_voting_blocks: Option<u64>,
+    ) -> anyhow::Result<penumbra_genesis::Content> {
+        let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
+
+        let gov_params = penumbra_governance::params::GovernanceParameters {
+            proposal_voting_blocks: proposal_voting_blocks
+                .unwrap_or(default_gov_params.proposal_voting_blocks),
+            ..default_gov_params
+        };
+
         // Look up default app params, so we can fill in defaults.
-        let default_params = AppParameters::default();
-        let app_state = genesis::Content {
+        let default_app_params = AppParameters::default();
+
+        let app_state = penumbra_genesis::Content {
+            chain_id: chain_id.to_string(),
             stake_content: StakeContent {
                 validators: validators.into_iter().map(Into::into).collect(),
                 stake_params: StakeParameters {
                     active_validator_limit: active_validator_limit
-                        .unwrap_or(default_params.stake_params.active_validator_limit),
-                    unbonding_epochs: unbonding_epochs
-                        .unwrap_or(default_params.stake_params.unbonding_epochs),
+                        .unwrap_or(default_app_params.stake_params.active_validator_limit),
+                    unbonding_delay: unbonding_delay
+                        .unwrap_or(default_app_params.stake_params.unbonding_delay),
                     ..Default::default()
                 },
             },
+            governance_content: GovernanceContent {
+                governance_params: gov_params,
+            },
             shielded_pool_content: ShieldedPoolContent {
+                shielded_pool_params: ShieldedPoolParameters::default(),
                 allocations: allocations.clone(),
             },
-            chain_content: ChainContent {
-                chain_params: ChainParameters {
-                    chain_id: chain_id.to_string(),
-                    // Fall back to chain param defaults
+            sct_content: SctContent {
+                sct_params: SctParameters {
                     epoch_duration: epoch_duration
-                        .unwrap_or(default_params.chain_params.epoch_duration),
+                        .unwrap_or(default_app_params.sct_params.epoch_duration),
                 },
             },
             ..Default::default()
@@ -212,8 +230,8 @@ impl TestnetConfig {
 
     /// Build Tendermint genesis data, based on Penumbra initial application state.
     pub(crate) fn make_genesis(
-        app_state: genesis::Content,
-    ) -> anyhow::Result<Genesis<genesis::AppState>> {
+        app_state: penumbra_genesis::Content,
+    ) -> anyhow::Result<Genesis<penumbra_genesis::AppState>> {
         // Use now as genesis time
         let genesis_time = Time::from_unix_timestamp(
             SystemTime::now()
@@ -228,11 +246,9 @@ impl TestnetConfig {
         let genesis = Genesis {
             genesis_time,
             chain_id: app_state
-                .chain_content
-                .chain_params
                 .chain_id
                 .parse::<tendermint::chain::Id>()
-                .context("failed to parseto create chain ID")?,
+                .context("failed to parse chain ID")?,
             initial_height: 0,
             consensus_params: tendermint::consensus::Params {
                 abci: AbciParams::default(),
@@ -256,7 +272,7 @@ impl TestnetConfig {
             },
             // always empty in genesis json
             app_hash: tendermint::AppHash::default(),
-            app_state: genesis::AppState::Content(app_state),
+            app_state: penumbra_genesis::AppState::Content(app_state),
             // Set empty validator set for Tendermint config, which falls back to reading
             // validators from the AppState, via ResponseInitChain:
             // https://docs.tendermint.com/v0.32/tendermint-core/using-tendermint.html
@@ -266,12 +282,12 @@ impl TestnetConfig {
     }
 
     pub(crate) fn make_checkpoint(
-        genesis: Genesis<genesis::AppState>,
+        genesis: Genesis<penumbra_genesis::AppState>,
         checkpoint: Option<Vec<u8>>,
-    ) -> Genesis<genesis::AppState> {
+    ) -> Genesis<penumbra_genesis::AppState> {
         match checkpoint {
             Some(checkpoint) => Genesis {
-                app_state: genesis::AppState::Checkpoint(checkpoint),
+                app_state: penumbra_genesis::AppState::Checkpoint(checkpoint),
                 ..genesis
             },
             None => genesis,
@@ -327,11 +343,12 @@ pub fn testnet_generate(
     active_validator_limit: Option<u64>,
     tendermint_timeout_commit: Option<tendermint::Timeout>,
     epoch_duration: Option<u64>,
-    unbonding_epochs: Option<u64>,
+    unbonding_delay: Option<u64>,
     peer_address_template: Option<String>,
     external_addresses: Vec<TendermintAddress>,
     validators_input_file: Option<PathBuf>,
     allocations_input_file: Option<PathBuf>,
+    proposal_voting_blocks: Option<u64>,
 ) -> anyhow::Result<()> {
     tracing::info!(?chain_id, "Generating network config");
     let t = TestnetConfig::generate(
@@ -344,7 +361,8 @@ pub fn testnet_generate(
         tendermint_timeout_commit,
         active_validator_limit,
         epoch_duration,
-        unbonding_epochs,
+        unbonding_delay,
+        proposal_voting_blocks,
     )?;
     tracing::info!(
         n_validators = t.validators.len(),
@@ -446,8 +464,8 @@ impl TestnetValidator {
             // Add an initial allocation of 25,000 delegation tokens,
             // starting them with 2.5x the individual allocations to discord users.
             // 25,000 delegation tokens * 1e6 udelegation factor
-            amount: (25_000 * 10u128.pow(6)).into(),
-            denom: delegation_denom.to_string(),
+            raw_amount: (25_000 * 10u128.pow(6)).into(),
+            raw_denom: delegation_denom.to_string(),
         })
     }
     /// Return a URL for Tendermint P2P service for this node.
@@ -552,8 +570,8 @@ impl TryFrom<TestnetAllocation> for shielded_pool_genesis::Allocation {
 
     fn try_from(a: TestnetAllocation) -> anyhow::Result<shielded_pool_genesis::Allocation> {
         Ok(shielded_pool_genesis::Allocation {
-            amount: a.amount.into(),
-            denom: a.denom.clone(),
+            raw_amount: a.amount.into(),
+            raw_denom: a.denom.clone(),
             address: Address::from_str(&a.address)
                 .context("invalid address format in genesis allocations")?,
         })
@@ -612,14 +630,14 @@ mod tests {
         let allos = TestnetAllocation::from_reader(csv_content.as_bytes())?;
 
         let a1 = &allos[0];
-        assert!(a1.denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
+        assert!(a1.raw_denom == "udelegation_penumbravalid1jzcc6vsm29am9ggs8z0d7s9jk9uf8tfrqg7hglc9ufs7r23nu5yqtw77ex");
         assert!(a1.address == Address::from_str("penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk")?);
-        assert!(a1.amount.value() == 100000);
+        assert!(a1.raw_amount.value() == 100000);
 
         let a2 = &allos[1];
-        assert!(a2.denom == "upenumbra");
+        assert!(a2.raw_denom == "upenumbra");
         assert!(a2.address == Address::from_str("penumbra1rqcd3hfvkvc04c4c9vc0ac87lh4y0z8l28k4xp6d0cnd5jc6f6k0neuzp6zdwtpwyfpswtdzv9jzqtpjn5t6wh96pfx3flq2dhqgc42u7c06kj57dl39w2xm6tg0wh4zc8kjjk")?);
-        assert!(a2.amount.value() == 100000);
+        assert!(a2.raw_amount.value() == 100000);
 
         Ok(())
     }
@@ -649,11 +667,13 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
         // No external address template was given, so only 1 validator will be present.
-        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        else {
             unimplemented!("TODO: support checkpointed app state")
         };
         assert_eq!(app_state.stake_content.validators.len(), 1);
@@ -676,10 +696,12 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-4567");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
-        let genesis::AppState::Content(app_state) = testnet_config.genesis.app_state else {
+        let penumbra_genesis::AppState::Content(app_state) = testnet_config.genesis.app_state
+        else {
             unimplemented!("TODO: support checkpointed app state")
         };
         assert_eq!(app_state.stake_content.validators.len(), 2);

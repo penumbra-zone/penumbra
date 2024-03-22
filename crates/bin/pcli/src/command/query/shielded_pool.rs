@@ -1,9 +1,7 @@
 use anyhow::Result;
 use colored_json::prelude::*;
-use penumbra_chain::{NoteSource, SpendInfo};
-use penumbra_compact_block::CompactBlock;
 use penumbra_proto::DomainType;
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, NullificationInfo, Nullifier};
 use penumbra_tct::StateCommitment;
 
 #[derive(Debug, clap::Subcommand)]
@@ -12,16 +10,6 @@ pub enum ShieldedPool {
     Anchor {
         /// The height to query.
         height: u64,
-    },
-    /// Queries the state commitment tree's block anchor for a given height.
-    BlockAnchor {
-        /// The height to query.
-        height: u64,
-    },
-    /// Queries the state commitment tree's epoch anchor for a given epoch index.
-    EpochAnchor {
-        /// The epoch to query.
-        epoch: u64,
     },
     /// Queries the source of a given commitment.
     Commitment {
@@ -41,16 +29,16 @@ pub enum ShieldedPool {
 
 impl ShieldedPool {
     pub fn key(&self) -> String {
-        use penumbra_compact_block::state_key as cb_state_key;
         use penumbra_sct::state_key as sct_state_key;
-        use penumbra_shielded_pool::state_key;
         match self {
-            ShieldedPool::Anchor { height } => sct_state_key::anchor_by_height(*height),
-            ShieldedPool::BlockAnchor { height } => sct_state_key::block_anchor_by_height(*height),
-            ShieldedPool::EpochAnchor { epoch } => sct_state_key::epoch_anchor_by_index(*epoch),
-            ShieldedPool::CompactBlock { height } => cb_state_key::compact_block(*height),
-            ShieldedPool::Commitment { commitment } => sct_state_key::note_source(commitment),
-            ShieldedPool::Nullifier { nullifier } => state_key::spent_nullifier_lookup(nullifier),
+            ShieldedPool::Anchor { height } => sct_state_key::tree::anchor_by_height(*height),
+            ShieldedPool::CompactBlock { .. } => {
+                unreachable!("should be handled at outer level via rpc");
+            }
+            ShieldedPool::Commitment { commitment } => sct_state_key::tree::note_source(commitment),
+            ShieldedPool::Nullifier { nullifier } => {
+                sct_state_key::nullifier_set::spent_nullifier_lookup(nullifier)
+            }
         }
     }
 
@@ -60,24 +48,15 @@ impl ShieldedPool {
                 let anchor = penumbra_tct::Root::decode(bytes)?;
                 serde_json::to_string_pretty(&anchor)?
             }
-            ShieldedPool::BlockAnchor { .. } => {
-                let anchor = penumbra_tct::builder::block::Root::decode(bytes)?;
-                serde_json::to_string_pretty(&anchor)?
-            }
-            ShieldedPool::EpochAnchor { .. } => {
-                let anchor = penumbra_tct::builder::epoch::Root::decode(bytes)?;
-                serde_json::to_string_pretty(&anchor)?
-            }
             ShieldedPool::CompactBlock { .. } => {
-                let compact_block = CompactBlock::decode(bytes)?;
-                serde_json::to_string_pretty(&compact_block)?
+                unreachable!("should be handled at outer level via rpc");
             }
             ShieldedPool::Commitment { .. } => {
-                let note_source = NoteSource::decode(bytes)?;
-                serde_json::to_string_pretty(&note_source)?
+                let commitment_source = CommitmentSource::decode(bytes)?;
+                serde_json::to_string_pretty(&commitment_source)?
             }
             ShieldedPool::Nullifier { .. } => {
-                let note_source = SpendInfo::decode(bytes)?;
+                let note_source = NullificationInfo::decode(bytes)?;
                 serde_json::to_string_pretty(&note_source)?
             }
         };

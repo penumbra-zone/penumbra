@@ -9,12 +9,24 @@ use std::{
 use anyhow::{Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
-use ibc_types::core::{channel::ChannelId, client::Height as IbcHeight};
+use ibc_proto::ibc::core::client::v1::{
+    query_client::QueryClient as IbcClientQueryClient, QueryClientStateRequest,
+};
+use ibc_proto::ibc::core::connection::v1::query_client::QueryClient as IbcConnectionQueryClient;
+use ibc_proto::ibc::core::{
+    channel::v1::{query_client::QueryClient as IbcChannelQueryClient, QueryChannelRequest},
+    connection::v1::QueryConnectionRequest,
+};
+use ibc_types::core::{
+    channel::{ChannelId, PortId},
+    client::Height as IbcHeight,
+};
+use ibc_types::lightclients::tendermint::client_state::ClientState as TendermintClientState;
 use rand_core::OsRng;
 use regex::Regex;
 
 use liquidity_position::PositionCmd;
-use penumbra_asset::{asset, asset::DenomMetadata, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
@@ -22,31 +34,30 @@ use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
-        chain::v1alpha1::{
-            query_service_client::QueryServiceClient as ChainQueryServiceClient,
-            EpochByHeightRequest,
-        },
-        dex::v1alpha1::{
+        dex::v1::{
             query_service_client::QueryServiceClient as DexQueryServiceClient,
             LiquidityPositionByIdRequest, PositionId,
         },
-        governance::v1alpha1::{
+        governance::v1::{
             query_service_client::QueryServiceClient as GovernanceQueryServiceClient,
             NextProposalIdRequest, ProposalDataRequest, ProposalInfoRequest, ProposalInfoResponse,
             ProposalRateDataRequest,
         },
-        stake::v1alpha1::{
+        sct::v1::{
+            query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
+        },
+        stake::v1::{
             query_service_client::QueryServiceClient as StakeQueryServiceClient,
             ValidatorPenaltyRequest,
         },
     },
-    view::v1alpha1::GasPricesRequest,
+    view::v1::GasPricesRequest,
 };
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
 use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
-use penumbra_view::ViewClient;
+use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
 
@@ -72,6 +83,9 @@ pub enum TxCmd {
         /// Optional. Set the transaction's memo field to the provided text.
         #[clap(long)]
         memo: Option<String>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Deposit stake into a validator's delegation pool.
     #[clap(display_order = 200)]
@@ -84,6 +98,9 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Withdraw stake from a validator's delegation pool.
     #[clap(display_order = 200)]
@@ -93,10 +110,17 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Claim any undelegations that have finished unbonding.
     #[clap(display_order = 200)]
-    UndelegateClaim {},
+    UndelegateClaim {
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
+    },
     /// Swap tokens of one denomination for another using the DEX.
     ///
     /// Swaps are batched and executed at the market-clearing price.
@@ -115,6 +139,9 @@ pub enum TxCmd {
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
     #[clap(display_order = 400)]
@@ -125,18 +152,24 @@ pub enum TxCmd {
         source: u32,
         #[clap(subcommand)]
         vote: VoteCmd,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Submit or withdraw a governance proposal.
     #[clap(display_order = 500, subcommand)]
     Proposal(ProposalCmd),
-    /// Deposit funds into the DAO.
+    /// Deposit funds into the Community Pool.
     #[clap(display_order = 600)]
-    DaoDeposit {
+    CommunityPoolDeposit {
         /// The amounts to send, written as typed values 1.87penumbra, 12cubes, etc.
         values: Vec<String>,
         /// Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Manage liquidity positions.
     #[clap(display_order = 500, subcommand, visible_alias = "lp")]
@@ -179,8 +212,8 @@ pub enum TxCmd {
         /// height, e.g. `5-1000000` means "chain revision 5, block height of 1000000".
         /// You must know the chain id of the counterparty chain beforehand, e.g. `osmosis-testnet-5`,
         /// to know the revision number.
-        #[clap(long, default_value = "0-0", display_order = 100)]
-        timeout_height: IbcHeight,
+        #[clap(long, display_order = 100)]
+        timeout_height: Option<IbcHeight>,
         /// Timestamp, specified in epoch time, after which the withdrawal will be considered
         /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
@@ -189,7 +222,47 @@ pub enum TxCmd {
         /// Only withdraw funds from the specified wallet id within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
+
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
+}
+
+// A fee tier enum suitable for use with clap.
+#[derive(Copy, Clone, clap::ValueEnum, Debug)]
+pub enum FeeTier {
+    Low,
+    Medium,
+    High,
+}
+
+impl Default for FeeTier {
+    fn default() -> Self {
+        Self::Low
+    }
+}
+
+// Convert from the internal fee tier enum to the clap-compatible enum.
+impl From<penumbra_fee::FeeTier> for FeeTier {
+    fn from(tier: penumbra_fee::FeeTier) -> Self {
+        match tier {
+            penumbra_fee::FeeTier::Low => Self::Low,
+            penumbra_fee::FeeTier::Medium => Self::Medium,
+            penumbra_fee::FeeTier::High => Self::High,
+        }
+    }
+}
+
+// Convert from the the clap-compatible fee tier enum to the internal fee tier enum.
+impl From<FeeTier> for penumbra_fee::FeeTier {
+    fn from(tier: FeeTier) -> Self {
+        match tier {
+            FeeTier::Low => Self::Low,
+            FeeTier::Medium => Self::Medium,
+            FeeTier::High => Self::High,
+        }
+    }
 }
 
 /// Vote on a governance proposal.
@@ -240,7 +313,7 @@ impl TxCmd {
             TxCmd::UndelegateClaim { .. } => false,
             TxCmd::Vote { .. } => false,
             TxCmd::Proposal(proposal_cmd) => proposal_cmd.offline(),
-            TxCmd::DaoDeposit { .. } => false,
+            TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
         }
@@ -264,6 +337,7 @@ impl TxCmd {
                 to,
                 source: from,
                 memo,
+                fee_tier,
             } => {
                 // Parse all of the values provided.
                 let values = values
@@ -273,19 +347,21 @@ impl TxCmd {
                 let to = to
                     .parse()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
-                let memo_ephemeral_address = app
+
+                let return_address = app
                     .config
                     .full_viewing_key
-                    .ephemeral_address(OsRng, AddressIndex::new(*from))
+                    .payment_address((*from).into())
                     .0;
 
-                let memo_plaintext = MemoPlaintext {
-                    return_address: memo_ephemeral_address,
-                    text: memo.clone().unwrap_or_default(),
-                };
+                let memo_plaintext =
+                    MemoPlaintext::new(return_address, memo.clone().unwrap_or_default())?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 for value in values.iter().cloned() {
                     planner.output(value, to);
                 }
@@ -295,30 +371,34 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*from),
                     )
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::DaoDeposit { values, source } => {
+            TxCmd::CommunityPoolDeposit {
+                values,
+                source,
+                fee_tier,
+            } => {
                 let values = values
                     .iter()
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 for value in values {
-                    planner.dao_deposit(value);
+                    planner.community_pool_deposit(value);
                 }
                 let plan = planner
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -326,7 +406,6 @@ impl TxCmd {
             }
             TxCmd::Sweep => loop {
                 let plans = plan::sweep(
-                    app.config.full_viewing_key.wallet_id(),
                     app.view
                         .as_mut()
                         .context("view service must be initialized")?,
@@ -337,21 +416,18 @@ impl TxCmd {
 
                 for (i, plan) in plans.into_iter().enumerate() {
                     println!("building sweep {i} of {num_plans}");
-                    let tx = app.build_transaction(plan).await?;
-                    app.submit_transaction_unconfirmed(tx).await?;
+                    app.build_and_submit_transaction(plan).await?;
                 }
                 if num_plans == 0 {
                     println!("finished sweeping");
                     break;
-                } else {
-                    println!("awaiting confirmations...");
-                    tokio::time::sleep(std::time::Duration::from_secs(6)).await;
                 }
             },
             TxCmd::Swap {
                 input,
                 into,
                 source,
+                fee_tier,
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
@@ -364,7 +440,9 @@ impl TxCmd {
                     fvk.incoming().payment_address(AddressIndex::new(*source));
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices.clone());
+                planner
+                    .set_gas_prices(gas_prices.clone())
+                    .set_fee_tier((*fee_tier).into());
                 // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
                 // This shouldn't be an issue, since the planner will account for the difference and add additional
                 // spends alongside the swap claim transaction as necessary.
@@ -376,13 +454,12 @@ impl TxCmd {
                 // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
                 // call the helper method directly.
                 let estimated_claim_fee = Fee::from_staking_token_amount(
-                    Amount::from(2u32) * gas_prices.price(&swap_claim_gas_cost()),
+                    Amount::from(2u32) * gas_prices.fee(&swap_claim_gas_cost()),
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
                 let plan = planner
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap transaction")?;
 
@@ -401,7 +478,7 @@ impl TxCmd {
                 // Fetch the SwapRecord with the claimable swap.
                 let swap_record = app
                     .view()
-                    .swap_by_commitment(wallet_id, swap_plaintext.swap_commitment())
+                    .swap_by_commitment(swap_plaintext.swap_commitment())
                     .await?;
 
                 let asset_cache = app.view().assets().await?;
@@ -424,8 +501,6 @@ impl TxCmd {
                     .format(&asset_cache),
                 );
 
-                let wallet_id = app.config.full_viewing_key.wallet_id();
-
                 let params = app
                     .view
                     .as_mut()
@@ -434,17 +509,19 @@ impl TxCmd {
                     .await?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
                         swap_plaintext,
                         position: swap_record.position,
                         output_data: swap_record.output_data,
-                        epoch_duration: params.chain_params.epoch_duration,
+                        epoch_duration: params.sct_params.epoch_duration,
                         proof_blinding_r: Fq::rand(&mut OsRng),
                         proof_blinding_s: Fq::rand(&mut OsRng),
                     })
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan swap claim")?;
 
@@ -453,7 +530,12 @@ impl TxCmd {
                 // https://github.com/penumbra-zone/penumbra/pull/2091/commits/128b24a6303c2f855a708e35f9342987f1dd34ec
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Delegate { to, amount, source } => {
+            TxCmd::Delegate {
+                to,
+                amount,
+                source,
+                fee_tier,
+            } => {
                 let unbonded_amount = {
                     let Value { amount, asset_id } = amount.parse::<Value>()?;
                     if asset_id != *STAKING_TOKEN_ASSET_ID {
@@ -464,25 +546,42 @@ impl TxCmd {
 
                 let to = to.parse::<IdentityKey>()?;
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
-                let rate_data: RateData = client
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let rate_data: RateData = stake_client
                     .current_validator_rate(tonic::Request::new(to.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
 
+                let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
+                let latest_sync_height = app.view().status().await?.full_sync_height;
+                let epoch = sct_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: latest_sync_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .expect("epoch must be available")
+                    .into();
+
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
-                let wallet_id = app.config.full_viewing_key.wallet_id().clone();
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .delegate(unbonded_amount.value(), rate_data)
-                    .plan(app.view(), wallet_id, AddressIndex::new(*source))
+                    .delegate(epoch, unbonded_amount, rate_data)
+                    .plan(app.view(), AddressIndex::new(*source))
                     .await
                     .context("can't plan delegation")?;
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Undelegate { amount, source } => {
+            TxCmd::Undelegate {
+                amount,
+                source,
+                fee_tier,
+            } => {
                 let delegation_value @ Value {
                     amount: _,
                     asset_id,
@@ -501,23 +600,36 @@ impl TxCmd {
 
                 let from = delegation_token.validator();
 
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
-                let rate_data: RateData = client
+                let mut stake_client = StakeQueryServiceClient::new(app.pd_channel().await?);
+                let rate_data: RateData = stake_client
                     .current_validator_rate(tonic::Request::new(from.into()))
                     .await?
                     .into_inner()
                     .try_into()?;
 
+                let mut sct_client = SctQueryServiceClient::new(app.pd_channel().await?);
+                let latest_sync_height = app.view().status().await?.full_sync_height;
+                let epoch = sct_client
+                    .epoch_by_height(EpochByHeightRequest {
+                        height: latest_sync_height,
+                    })
+                    .await?
+                    .into_inner()
+                    .epoch
+                    .expect("epoch must be available")
+                    .into();
+
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 let plan = planner
-                    .undelegate(delegation_value.amount, rate_data)
+                    .undelegate(epoch, delegation_value.amount, rate_data)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await
@@ -525,17 +637,15 @@ impl TxCmd {
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::UndelegateClaim {} => {
-                let wallet_id = app.config.full_viewing_key.wallet_id(); // this should be optional? or saved in the client statefully?
-
+            TxCmd::UndelegateClaim { fee_tier } => {
                 let channel = app.pd_channel().await?;
                 let view: &mut dyn ViewClient = app
                     .view
                     .as_mut()
                     .context("view service must be initialized")?;
 
-                let current_height = view.status(wallet_id).await?.full_sync_height;
-                let mut client = ChainQueryServiceClient::new(channel.clone());
+                let current_height = view.status().await?.full_sync_height;
+                let mut client = SctQueryServiceClient::new(channel.clone());
                 let current_epoch = client
                     .epoch_by_height(EpochByHeightRequest {
                         height: current_height,
@@ -548,40 +658,60 @@ impl TxCmd {
 
                 // Query the view client for the list of undelegations that are ready to be claimed.
                 // We want to claim them into the same address index that currently holds the tokens.
-                let notes = view.unspent_notes_by_address_and_asset(wallet_id).await?;
+                let notes = view.unspent_notes_by_address_and_asset().await?;
+
+                let notes: Vec<(
+                    AddressIndex,
+                    Vec<(UnbondingToken, Vec<SpendableNoteRecord>)>,
+                )> = notes
+                    .into_iter()
+                    .map(|(address_index, notes_by_asset)| {
+                        let mut filtered_notes: Vec<(UnbondingToken, Vec<SpendableNoteRecord>)> =
+                            notes_by_asset
+                                .into_iter()
+                                .filter_map(|(asset_id, notes)| {
+                                    // Filter for notes that are unbonding tokens.
+                                    let denom = asset_cache
+                                        .get(&asset_id)
+                                        .expect("asset ID should exist in asset cache")
+                                        .clone();
+                                    match UnbondingToken::try_from(denom) {
+                                        Ok(token) => Some((token, notes)),
+                                        Err(_) => None,
+                                    }
+                                })
+                                .collect();
+
+                        filtered_notes.sort_by_key(|(token, _)| token.unbonding_start_height());
+
+                        (address_index, filtered_notes)
+                    })
+                    .collect();
 
                 for (address_index, notes_by_asset) in notes.into_iter() {
-                    for (token, notes) in
-                        notes_by_asset.into_iter().filter_map(|(asset_id, notes)| {
-                            // Filter for notes that are unbonding tokens.
-                            let denom = asset_cache
-                                .get(&asset_id)
-                                .expect("asset ID should exist in asset cache")
-                                .clone();
-                            match UnbondingToken::try_from(denom) {
-                                Ok(token) => Some((token, notes)),
-                                Err(_) => None,
-                            }
-                        })
-                    {
+                    for (token, notes) in notes_by_asset.into_iter() {
                         println!("claiming {}", token.denom().default_unit());
+
                         let validator_identity = token.validator();
-                        let start_epoch_index = token.start_epoch_index();
+                        let unbonding_start_height = token.unbonding_start_height();
                         let end_epoch_index = current_epoch.index;
 
-                        let params = app
-                            .view
-                            .as_mut()
-                            .context("view service must be initialized")?
-                            .app_params()
-                            .await?;
+                        let mut sct_client = SctQueryServiceClient::new(channel.clone());
+                        let epoch_start = sct_client
+                            .epoch_by_height(EpochByHeightRequest {
+                                height: unbonding_start_height,
+                            })
+                            .await
+                            .expect("can get epoch by height")
+                            .into_inner()
+                            .epoch
+                            .context("unable to get epoch for unbonding start height")?;
 
-                        let mut client = StakeQueryServiceClient::new(channel.clone());
-                        let penalty: Penalty = client
+                        let mut stake_client = StakeQueryServiceClient::new(channel.clone());
+                        let penalty: Penalty = stake_client
                             .validator_penalty(tonic::Request::new(ValidatorPenaltyRequest {
-                                chain_id: params.chain_params.chain_id.to_string(),
                                 identity_key: Some(validator_identity.into()),
-                                start_epoch_index,
+                                start_epoch_index: epoch_start.index,
                                 end_epoch_index,
                             }))
                             .await?
@@ -596,7 +726,9 @@ impl TxCmd {
                             .try_into()?;
 
                         let mut planner = Planner::new(OsRng);
-                        planner.set_gas_prices(gas_prices.clone());
+                        planner
+                            .set_gas_prices(gas_prices.clone())
+                            .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
                         for note in notes {
                             planner.spend(note.note, note.position);
@@ -605,7 +737,7 @@ impl TxCmd {
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
                                 validator_identity,
-                                start_epoch_index,
+                                unbonding_start_height,
                                 penalty,
                                 unbonding_amount,
                                 balance_blinding: Fr::rand(&mut OsRng),
@@ -616,7 +748,6 @@ impl TxCmd {
                                 app.view
                                     .as_mut()
                                     .context("view service must be initialized")?,
-                                app.config.full_viewing_key.wallet_id(),
                                 address_index,
                             )
                             .await?;
@@ -628,6 +759,7 @@ impl TxCmd {
                 file,
                 source,
                 deposit_amount,
+                fee_tier,
             }) => {
                 let mut proposal_file = File::open(file).context("can't open proposal file")?;
                 let mut proposal_string = String::new();
@@ -641,14 +773,15 @@ impl TxCmd {
                     .context("can't parse proposal file")?;
 
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .proposal_submit(proposal, Amount::from(*deposit_amount))
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -658,16 +791,18 @@ impl TxCmd {
                 proposal_id,
                 reason,
                 source,
+                fee_tier,
             }) => {
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
                 let plan = planner
                     .proposal_withdraw(*proposal_id, reason.clone())
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -680,9 +815,7 @@ impl TxCmd {
                 // Find out what the latest proposal ID is so we can include the next ID in the template:
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let next_proposal_id: u64 = client
-                    .next_proposal_id(NextProposalIdRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
-                    })
+                    .next_proposal_id(NextProposalIdRequest {})
                     .await?
                     .into_inner()
                     .next_proposal_id;
@@ -703,11 +836,11 @@ impl TxCmd {
             TxCmd::Proposal(ProposalCmd::DepositClaim {
                 proposal_id,
                 source,
+                fee_tier,
             }) => {
                 let mut client = GovernanceQueryServiceClient::new(app.pd_channel().await?);
                 let proposal = client
                     .proposal_data(ProposalDataRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
                         proposal_id: *proposal_id,
                     })
                     .await?
@@ -742,19 +875,24 @@ impl TxCmd {
                 };
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .proposal_deposit_claim(*proposal_id, deposit_amount, outcome)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
 
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Vote { vote, source } => {
+            TxCmd::Vote {
+                vote,
+                source,
+                fee_tier,
+            } => {
                 let (proposal_id, vote): (u64, Vote) = (*vote).into();
 
                 // Before we vote on the proposal, we have to gather some information about it so
@@ -771,19 +909,13 @@ impl TxCmd {
                     start_block_height,
                     start_position,
                 } = client
-                    .proposal_info(ProposalInfoRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
-                        proposal_id,
-                    })
+                    .proposal_info(ProposalInfoRequest { proposal_id })
                     .await?
                     .into_inner();
                 let start_position = start_position.into();
 
                 let mut rate_data_stream = client
-                    .proposal_rate_data(ProposalRateDataRequest {
-                        chain_id: app.view().app_params().await?.chain_params.chain_id,
-                        proposal_id,
-                    })
+                    .proposal_rate_data(ProposalRateDataRequest { proposal_id })
                     .await?
                     .into_inner();
 
@@ -801,6 +933,7 @@ impl TxCmd {
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .delegator_vote(
                         proposal_id,
                         start_block_height,
@@ -812,7 +945,6 @@ impl TxCmd {
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -823,19 +955,18 @@ impl TxCmd {
                 let asset_cache = app.view().assets().await?;
 
                 tracing::info!(?order);
-                let fee = Fee::from_staking_token_amount(order.fee().into());
                 let source = AddressIndex::new(order.source());
                 let position = order.as_position(&asset_cache, OsRng)?;
                 tracing::info!(?position);
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier(order.fee_tier().into())
                     .position_open(position)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         source,
                     )
                     .await?;
@@ -848,14 +979,77 @@ impl TxCmd {
                 timeout_timestamp,
                 channel,
                 source,
+                fee_tier,
             } => {
                 let destination_chain_address = to;
 
-                let fee = Fee::from_staking_token_amount(Amount::zero());
                 let (ephemeral_return_address, _) = app
                     .config
                     .full_viewing_key
                     .ephemeral_address(OsRng, AddressIndex::from(*source));
+
+                let timeout_height = match timeout_height {
+                    Some(h) => h.clone(),
+                    None => {
+                        // look up the height for the counterparty and add 2 days of block time
+                        // (assuming 10 seconds per block) to it
+
+                        // look up the client state from the channel by looking up channel id -> connection id -> client state
+                        let mut ibc_channel_client =
+                            IbcChannelQueryClient::new(app.pd_channel().await?);
+
+                        let req = QueryChannelRequest {
+                            port_id: PortId::transfer().to_string(),
+                            channel_id: format!("channel-{}", channel),
+                        };
+
+                        let channel = ibc_channel_client
+                            .channel(req)
+                            .await?
+                            .into_inner()
+                            .channel
+                            .ok_or_else(|| anyhow::anyhow!("channel not found"))?;
+
+                        let connection_id = channel.connection_hops[0].clone();
+
+                        let mut ibc_connection_client =
+                            IbcConnectionQueryClient::new(app.pd_channel().await?);
+
+                        let req = QueryConnectionRequest {
+                            connection_id: connection_id.clone(),
+                        };
+                        let connection = ibc_connection_client
+                            .connection(req)
+                            .await?
+                            .into_inner()
+                            .connection
+                            .ok_or_else(|| anyhow::anyhow!("connection not found"))?;
+
+                        let mut ibc_client_client =
+                            IbcClientQueryClient::new(app.pd_channel().await?);
+                        let req = QueryClientStateRequest {
+                            client_id: connection.client_id,
+                        };
+                        let client_state = ibc_client_client
+                            .client_state(req)
+                            .await?
+                            .into_inner()
+                            .client_state
+                            .ok_or_else(|| anyhow::anyhow!("client state not found"))?;
+
+                        let tm_client_state = TendermintClientState::try_from(client_state)?;
+
+                        let last_update_height = tm_client_state.latest_height;
+
+                        // 10 seconds per block, 2 days
+                        let timeout_n_blocks = ((24 * 60 * 60) / 10) * 2;
+
+                        IbcHeight {
+                            revision_number: last_update_height.revision_number,
+                            revision_height: last_update_height.revision_height + timeout_n_blocks,
+                        }
+                    }
+                };
 
                 // get the current time on the local machine
                 let current_time_u64_ms = SystemTime::now()
@@ -863,16 +1057,13 @@ impl TxCmd {
                     .expect("Time went backwards")
                     .as_nanos() as u64;
 
-                let timeout_height = *timeout_height;
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
                     timeout_timestamp = current_time_u64_ms + 1.728e14 as u64;
                 }
 
-                fn parse_denom_and_amount(
-                    value_str: &str,
-                ) -> anyhow::Result<(Amount, DenomMetadata)> {
+                fn parse_denom_and_amount(value_str: &str) -> anyhow::Result<(Amount, Metadata)> {
                     let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
                     if let Some(captures) = denom_re.captures(value_str) {
                         let numeric_str = captures.get(1).expect("matched regex").as_str();
@@ -902,13 +1093,13 @@ impl TxCmd {
                 };
 
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .ics20_withdrawal(withdrawal)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
@@ -916,28 +1107,26 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Close {
                 position_id,
-                fee,
                 source,
+                fee_tier,
             }) => {
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .position_close(*position_id)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::CloseAll {
-                fee,
                 source,
                 trading_pair,
+                fee_tier,
             }) => {
                 let view: &mut dyn ViewClient = app
                     .view
@@ -953,10 +1142,10 @@ impl TxCmd {
                     return Ok(());
                 }
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 for position_id in owned_position_ids {
                     // Close the position
@@ -964,21 +1153,19 @@ impl TxCmd {
                 }
 
                 let final_plan = planner
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
                 app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::WithdrawAll {
-                fee,
                 source,
                 trading_pair,
+                fee_tier,
             }) => {
                 let view: &mut dyn ViewClient = app
                     .view
@@ -994,19 +1181,12 @@ impl TxCmd {
                     return Ok(());
                 }
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let mut planner = Planner::new(OsRng);
-                planner.set_gas_prices(gas_prices);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
 
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
-
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
 
                 for position_id in owned_position_ids {
                     // Withdraw the position
@@ -1014,7 +1194,6 @@ impl TxCmd {
                     // Fetch the information regarding the position from the view service.
                     let position = client
                         .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                            chain_id: params.chain_params.chain_id.to_string(),
                             position_id: Some(position_id.into()),
                         })
                         .await?
@@ -1041,35 +1220,25 @@ impl TxCmd {
                 }
 
                 let final_plan = planner
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;
                 app.build_and_submit_transaction(final_plan).await?;
             }
             TxCmd::Position(PositionCmd::Withdraw {
-                fee,
                 source,
                 position_id,
+                fee_tier,
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
-
-                let params = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?
-                    .app_params()
-                    .await?;
 
                 // Fetch the information regarding the position from the view service.
                 let position = client
                     .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                        chain_id: params.chain_params.chain_id.to_string(),
                         position_id: Some(PositionId::from(*position_id)),
                     })
                     .await?
@@ -1089,17 +1258,14 @@ impl TxCmd {
                     .pair
                     .expect("missing trading function pair");
 
-                let fee = Fee::from_staking_token_amount((*fee).into());
-
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
-                    .fee(fee)
                     .plan(
                         app.view
                             .as_mut()
                             .context("view service must be initialized")?,
-                        app.config.full_viewing_key.wallet_id(),
                         AddressIndex::new(*source),
                     )
                     .await?;

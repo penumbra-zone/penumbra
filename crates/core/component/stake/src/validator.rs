@@ -1,7 +1,7 @@
 //! Penumbra validators and related structures.
 
 use penumbra_keys::Address;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use serde_unit_struct::{Deserialize_unit_struct, Serialize_unit_struct};
 use serde_with::{serde_as, DisplayFromStr};
@@ -22,8 +22,7 @@ pub use status::Status;
 
 /// Describes a Penumbra validator's configuration data.
 ///
-/// This data is unauthenticated; the
-/// [`ValidatorDefinition`](crate::action::ValidatorDefiniition) action includes
+/// This data is unauthenticated; the [`Definition`] action includes
 /// a signature over the transaction with the validator's identity key.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 #[serde(try_from = "pb::Validator", into = "pb::Validator")]
@@ -39,12 +38,15 @@ pub struct Validator {
     pub consensus_key: tendermint::PublicKey,
 
     /// The validator's (human-readable) name.
+    /// Length: <= 140 characters.
     pub name: String,
 
     /// The validator's website URL.
+    /// Length: <= 70 characters.
     pub website: String,
 
     /// The validator's description.
+    /// Length: <= 280 characters.
     pub description: String,
 
     /// Whether the validator is enabled or not.
@@ -61,7 +63,7 @@ pub struct Validator {
 
     /// The sequence number determines which validator data takes priority, and
     /// prevents replay attacks.  The chain only accepts new
-    /// [`ValidatorDefinition`]s with increasing sequence numbers, preventing a
+    /// [`Definition`]s with increasing sequence numbers, preventing a
     /// third party from replaying previously valid but stale configuration data
     /// as an update.
     pub sequence_number: u32,
@@ -71,10 +73,9 @@ pub struct Validator {
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ValidatorToml {
     /// The sequence number determines which validator data takes priority, and
-    /// prevents replay attacks.  The chain only accepts new
-    /// [`ValidatorDefinition`]s with increasing sequence numbers, preventing a
-    /// third party from replaying previously valid but stale configuration data
-    /// as an update.
+    /// prevents replay attacks.  The chain only accepts new [`Definition`]s with
+    /// with increasing sequence numbers, preventing a third-party from replaying
+    /// previously valid but stale configuration data as an update.
     pub sequence_number: u32,
 
     /// Whether the validator is enabled or not.
@@ -163,16 +164,15 @@ pub enum FundingStreamToml {
         address: Address,
         rate_bps: u16,
     },
-    Dao {
-        recipient: DAO,
+    CommunityPool {
+        recipient: CommunityPool,
         rate_bps: u16,
     },
 }
 
-// Unit struct solely to add a `recipient = "DAO"` field to the TOML representation
-#[allow(non_camel_case_types)] // no way to use `rename` with `serde_unit_struct`
+// Unit struct solely to add a `recipient = "CommunityPool"` field to the TOML representation
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize_unit_struct, Serialize_unit_struct)]
-pub struct DAO;
+pub struct CommunityPool;
 
 impl From<FundingStream> for FundingStreamToml {
     fn from(f: FundingStream) -> Self {
@@ -180,9 +180,9 @@ impl From<FundingStream> for FundingStreamToml {
             FundingStream::ToAddress { address, rate_bps } => {
                 FundingStreamToml::Address { address, rate_bps }
             }
-            FundingStream::ToDao { rate_bps } => FundingStreamToml::Dao {
+            FundingStream::ToCommunityPool { rate_bps } => FundingStreamToml::CommunityPool {
                 rate_bps,
-                recipient: DAO,
+                recipient: CommunityPool,
             },
         }
     }
@@ -194,7 +194,9 @@ impl From<FundingStreamToml> for FundingStream {
             FundingStreamToml::Address { address, rate_bps } => {
                 FundingStream::ToAddress { address, rate_bps }
             }
-            FundingStreamToml::Dao { rate_bps, .. } => FundingStream::ToDao { rate_bps },
+            FundingStreamToml::CommunityPool { rate_bps, .. } => {
+                FundingStream::ToCommunityPool { rate_bps }
+            }
         }
     }
 }

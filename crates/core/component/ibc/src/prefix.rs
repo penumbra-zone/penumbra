@@ -2,17 +2,17 @@ use ibc_types::core::commitment::MerklePrefix;
 use once_cell::sync::Lazy;
 
 /// The substore prefix used for IBC data.
-pub static IBC_SUBSTORE_PREFIX: &'static str = "ibc-data/";
+pub static IBC_SUBSTORE_PREFIX: &'static str = "ibc-data";
 
 /// The IBC commitment prefix used for the IBC substore, as a [`MerklePrefix`].
 pub static IBC_COMMITMENT_PREFIX: Lazy<MerklePrefix> = Lazy::new(|| MerklePrefix {
     key_prefix: IBC_SUBSTORE_PREFIX.as_bytes().to_vec(),
 });
 
-// Vendored from the jmt crate, rather than importing it from e.g., penumbra-storage
+// Vendored from the jmt crate, rather than importing it from e.g., cnidarium
 // The proof specs need to be available for use cases like relayers, so it should be
 // outside of the feature-gated component implementation, and we only depend on
-// penumbra-storage when actually implementing the component (since that pulls in all of rocksdb, etc).
+// cnidarium when actually implementing the component (since that pulls in all of rocksdb, etc).
 // Vendoring isn't ideal, but this data is effectively "vendored" anyways since it needs to
 // be replicated across relayers, chain configs, ....
 mod vendored {

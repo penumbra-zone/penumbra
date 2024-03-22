@@ -1,29 +1,35 @@
 #![deny(clippy::unwrap_used)]
-mod action_handler;
-mod dao_ext;
-mod mock_client;
-mod temp_storage_ext;
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-pub use action_handler::ActionHandler;
-pub use dao_ext::DaoStateReadExt;
-pub use mock_client::MockClient;
-pub use temp_storage_ext::TempStorageExt;
+pub mod app;
+pub mod metrics;
+pub mod params;
+pub mod rpc;
+pub mod server;
+
+mod action_handler;
+mod community_pool_ext;
+mod penumbra_host_chain;
+
+pub use crate::{
+    action_handler::AppActionHandler, app::StateWriteExt,
+    community_pool_ext::CommunityPoolStateReadExt, metrics::register_metrics,
+    penumbra_host_chain::PenumbraHost,
+};
 
 use once_cell::sync::Lazy;
 
-pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> =
-    Lazy::new(|| vec![penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string()]);
+pub const APP_VERSION: u64 = 1;
 
-pub mod app;
-pub mod genesis;
-pub mod params;
+pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
+    vec![
+        penumbra_ibc::IBC_SUBSTORE_PREFIX.to_string(),
+        COMETBFT_SUBSTORE_PREFIX.to_string(),
+    ]
+});
 
-pub mod metrics;
-pub mod rpc;
-pub use self::metrics::register_metrics;
-
-#[cfg(test)]
-mod tests;
+/// The substore prefix used for storing historical CometBFT block data.
+pub static COMETBFT_SUBSTORE_PREFIX: &'static str = "cometbft-data";
 
 /// Temporary compat wrapper for duplicate trait impls
 pub struct Compat<'a, T>(&'a T);

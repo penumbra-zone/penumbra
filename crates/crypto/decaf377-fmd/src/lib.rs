@@ -2,6 +2,8 @@
 //!
 //! [fmd]: https://protocol.penumbra.zone/main/crypto/fmd.html
 #![deny(clippy::unwrap_used)]
+// Requires nightly.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 mod clue;
 mod clue_key;

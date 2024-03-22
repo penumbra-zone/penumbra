@@ -2,21 +2,22 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
+use penumbra_num::fixpoint::U128x128;
 use penumbra_proto::{
-    core::app::v1alpha1::{
+    core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
-    core::component::chain::v1alpha1::{
-        query_service_client::QueryServiceClient as ChainQueryServiceClient, EpochByHeightRequest,
+    core::component::sct::v1::{
+        query_service_client::QueryServiceClient as SctQueryServiceClient, EpochByHeightRequest,
     },
-    core::component::stake::v1alpha1::{
+    core::component::stake::v1::{
         query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
     },
-    util::tendermint_proxy::v1alpha1::{
+    util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
 };
-use penumbra_stake::validator;
+use penumbra_stake::{validator, BPS_SQUARED_SCALING_FACTOR};
 
 // TODO: remove this subcommand and merge into `pcli q`
 
@@ -49,44 +50,58 @@ impl ChainCmd {
     pub async fn print_app_params(&self, app: &mut App) -> Result<()> {
         let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
         let params: AppParameters = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
+            .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .await?
             .into_inner()
             .app_parameters
             .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?
             .try_into()?;
 
+        fn scale_rate(rate_bps_sq: u64) -> U128x128 {
+            let rate_bps_sq = U128x128::from(rate_bps_sq);
+            (rate_bps_sq / *BPS_SQUARED_SCALING_FACTOR).expect("non zero denominator")
+        }
+
+        fn display_rate_percent(rate_bps_sq: u64) -> String {
+            let rate = scale_rate(rate_bps_sq);
+            let hundred = U128x128::from(100u128);
+            let rate_pct: U128x128 = (rate * hundred).expect("rate is around 1");
+            format!("{}%", rate_pct)
+        }
+
         println!("Chain Parameters:");
         let mut table = Table::new();
         table.load_preset(presets::NOTHING);
         table
             .set_header(vec!["", ""])
-            .add_row(vec!["Chain ID", &params.chain_params.chain_id])
+            .add_row(vec!["Chain ID", &params.chain_id])
             .add_row(vec![
-                "Epoch Duration",
-                &format!("{}", params.chain_params.epoch_duration),
+                "Epoch Duration (# of blocks)",
+                &format!("{}", params.sct_params.epoch_duration),
             ])
             .add_row(vec![
-                "Unbonding Epochs",
-                &format!("{}", params.stake_params.unbonding_epochs),
+                "Unbonding delay (# of blocks)",
+                &format!("{}", params.stake_params.unbonding_delay),
+            ])
+            .add_row(vec![
+                "Minimum Validator Stake (upenumbra)",
+                &format!("{}", params.stake_params.min_validator_stake),
             ])
             .add_row(vec![
                 "Active Validator Limit",
                 &format!("{}", params.stake_params.active_validator_limit),
             ])
             .add_row(vec![
-                "Base Reward Rate (bps^2)",
-                &format!("{}", params.stake_params.base_reward_rate),
+                "Base Reward Rate",
+                &display_rate_percent(params.stake_params.base_reward_rate),
             ])
             .add_row(vec![
-                "Slashing Penalty (Misbehavior) (bps^2)",
-                &format!("{}", params.stake_params.slashing_penalty_misbehavior),
+                "Slashing Penalty (Misbehavior)",
+                &display_rate_percent(params.stake_params.slashing_penalty_misbehavior),
             ])
             .add_row(vec![
-                "Slashing Penalty (Downtime) (bps^2)",
-                &format!("{}", params.stake_params.slashing_penalty_downtime),
+                "Slashing Penalty (Downtime)",
+                &display_rate_percent(params.stake_params.slashing_penalty_downtime),
             ])
             .add_row(vec![
                 "Signed Blocks Window (blocks)",
@@ -130,7 +145,7 @@ impl ChainCmd {
             .ok_or_else(|| anyhow!("missing sync_info"))?
             .latest_block_height;
 
-        let mut client = ChainQueryServiceClient::new(channel.clone());
+        let mut client = SctQueryServiceClient::new(channel.clone());
         let current_epoch: u64 = client
             .epoch_by_height(tonic::Request::new(EpochByHeightRequest {
                 height: current_block_height.clone(),
@@ -141,25 +156,11 @@ impl ChainCmd {
             .context("failed to find EpochByHeight message")?
             .index;
 
-        let mut client = AppQueryServiceClient::new(channel.clone());
-        let app_params = client
-            .app_parameters(tonic::Request::new(AppParametersRequest {
-                chain_id: "".to_string(),
-            }))
-            .await?
-            .into_inner()
-            .app_parameters
-            .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?;
-
         // Fetch validators.
         let mut client = StakeQueryServiceClient::new(channel.clone());
         let validators = client
             .validator_info(ValidatorInfoRequest {
                 show_inactive: true,
-                chain_id: app_params
-                    .chain_params
-                    .ok_or_else(|| anyhow::anyhow!("missing chain_params in app params"))?
-                    .chain_id,
             })
             .await?
             .into_inner()

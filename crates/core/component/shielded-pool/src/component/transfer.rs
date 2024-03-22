@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
 use crate::{
-    component::{NoteManager, SupplyWrite},
+    component::{AssetRegistry, NoteManager},
     Ics20Withdrawal,
 };
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::{
     core::channel::{
         channel::Order as ChannelOrder,
@@ -18,15 +19,13 @@ use ibc_types::{
     },
     transfer::acknowledgement::TokenTransferAcknowledgement,
 };
-use penumbra_asset::{asset, asset::DenomMetadata, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_proto::{
-    penumbra::core::component::ibc::v1alpha1::FungibleTokenPacketData, StateReadProto,
-    StateWriteProto,
+    penumbra::core::component::ibc::v1::FungibleTokenPacketData, StateReadProto, StateWriteProto,
 };
-use penumbra_storage::{StateRead, StateWrite};
-use prost::Message;
+use penumbra_sct::CommitmentSource;
 
 use penumbra_ibc::component::{
     app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute},
@@ -51,7 +50,7 @@ use penumbra_ibc::component::{
 fn is_source(
     source_port: &PortId,
     source_channel: &ChannelId,
-    denom: &DenomMetadata,
+    denom: &Metadata,
     is_refund: bool,
 ) -> bool {
     let prefix = format!("{source_port}/{source_channel}/");
@@ -83,7 +82,7 @@ impl<T: StateRead + ?Sized> Ics20TransferReadExt for T {}
 
 #[async_trait]
 pub trait Ics20TransferWriteExt: StateWrite {
-    async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) {
+    async fn withdrawal_execute(&mut self, withdrawal: &Ics20Withdrawal) -> Result<()> {
         // create packet, assume it's already checked since the component caller contract calls `check` before `execute`
         let checked_packet = IBCPacket::<Unchecked>::from(withdrawal.clone()).assume_checked();
 
@@ -99,7 +98,11 @@ pub trait Ics20TransferWriteExt: StateWrite {
                 .expect("able to retrieve value balance in ics20 withdrawal! (execute)")
                 .unwrap_or_else(Amount::zero);
 
-            let new_value_balance = existing_value_balance + withdrawal.amount;
+            let new_value_balance = existing_value_balance
+                .checked_add(&withdrawal.amount)
+                .ok_or_else(|| {
+                    anyhow::anyhow!("overflow adding value balance in ics20 withdrawal")
+                })?;
             self.put(
                 state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
                 new_value_balance,
@@ -107,25 +110,44 @@ pub trait Ics20TransferWriteExt: StateWrite {
         } else {
             // receiver is the source, burn utxos
 
-            // NOTE: this burning should already be accomplished by the value balance check from
-            // the withdrawal's balance commitment, so nothing to do here.
+            // double check the value balance here.
             //
+            // for assets not originating from Penumbra, never transfer out more tokens than were
+            // transferred in. (Our counterparties should be checking this anyways, since if we
+            // were Byzantine we could lie to them).
+            let value_balance: Amount = self
+                .get(&state_key::ics20_value_balance(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id(),
+                ))
+                .await?
+                .unwrap_or_else(Amount::zero);
 
-            // update supply tracking of burned note
-            self.update_token_supply(&withdrawal.denom.id(), -(withdrawal.amount.value() as i128))
-                .await
-                .expect("couldn't update token supply in ics20 withdrawal!");
+            if value_balance < withdrawal.amount {
+                anyhow::bail!("insufficient balance to withdraw tokens");
+            }
+
+            let new_value_balance =
+                value_balance
+                    .checked_sub(&withdrawal.amount)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("underflow subtracting value balance in ics20 withdrawal")
+                    })?;
+            self.put(
+                state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
+                new_value_balance,
+            );
         }
 
         self.send_packet_execute(checked_packet).await;
+
+        Ok(())
     }
 }
 
 impl<T: StateWrite + ?Sized> Ics20TransferWriteExt for T {}
 
-// TODO: Ics20 implementation.
 // see: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer
-// TODO (ava): add versioning to AppHandlers
 #[async_trait]
 impl AppHandlerCheck for Ics20Transfer {
     async fn chan_open_init_check<S: StateRead>(_state: S, msg: &MsgChannelOpenInit) -> Result<()> {
@@ -192,8 +214,9 @@ impl AppHandlerCheck for Ics20Transfer {
     }
 
     async fn timeout_packet_check<S: StateRead>(state: S, msg: &MsgTimeout) -> Result<()> {
-        let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-        let denom: asset::DenomMetadata = packet_data.denom.as_str().try_into()?;
+        let packet_data: FungibleTokenPacketData =
+            serde_json::from_slice(msg.packet.data.as_slice())?;
+        let denom: asset::Metadata = packet_data.denom.as_str().try_into()?;
 
         if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
             // check if we have enough balance to refund tokens to sender
@@ -233,10 +256,10 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
     //
     // https://github.com/cosmos/ibc/tree/main/spec/app/ics-020-fungible-token-transfer (onRecvPacket)
     //
-    // NOTE: spec says proto but thsi is actualy JSON according to the ibc-go implementation
+    // NOTE: spec says proto but this is actually JSON according to the ibc-go implementation
     let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())
         .with_context(|| "failed to decode FTPD packet")?;
-    let denom: asset::DenomMetadata = packet_data
+    let denom: asset::Metadata = packet_data
         .denom
         .as_str()
         .try_into()
@@ -259,10 +282,13 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             source_chan = msg.packet.chan_on_a
         );
 
-        let unprefixed_denom: asset::DenomMetadata = packet_data
+        let unprefixed_denom: asset::Metadata = packet_data
             .denom
-            .replace(&prefix, "")
-            .as_str()
+            .strip_prefix(&prefix)
+            .context(format!(
+                "denom in packet didn't begin with expected prefix {}",
+                prefix
+            ))?
             .try_into()
             .context("couldnt decode denom in ICS20 transfer")?;
 
@@ -290,7 +316,12 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Ics20Transfer, // TODO
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    // We are chain A
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
             )
             .await
             .context("unable to mint note when receiving ics20 transfer packet")?;
@@ -319,20 +350,16 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // prefixedDenomination = prefix + data.denom
         //
         // then mint that denom to packet_data.receiver in packet_data.amount
-        // no value balance to update here since this is an exogenous denom
         let prefixed_denomination = format!(
             "{}/{}/{}",
             msg.packet.port_on_b, msg.packet.chan_on_b, packet_data.denom
         );
 
-        let denom: asset::DenomMetadata = prefixed_denomination
+        let denom: asset::Metadata = prefixed_denomination
             .as_str()
             .try_into()
             .context("unable to parse denom in ics20 transfer as DenomMetadata")?;
-        state
-            .register_denom(&denom)
-            .await
-            .context("unable to register denom in ics20 transfer")?;
+        state.register_denom(&denom).await;
 
         let value = Value {
             amount: receiver_amount,
@@ -343,10 +370,30 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .mint_note(
                 value,
                 &receiver_address,
-                penumbra_chain::NoteSource::Ics20Transfer,
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    // We are chain A
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
             )
             .await
             .context("failed to mint notes in ibc transfer")?;
+
+        // update the value balance
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_b,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
+        let new_value_balance = value_balance.saturating_add(&value.amount);
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
+            new_value_balance,
+        );
     }
 
     Ok(())
@@ -354,8 +401,8 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
 // see: https://github.com/cosmos/ibc/blob/8326e26e7e1188b95c32481ff00348a705b23700/spec/app/ics-020-fungible-token-transfer/README.md?plain=1#L297
 async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
-    let packet_data = FungibleTokenPacketData::decode(msg.packet.data.as_slice())?;
-    let denom: asset::DenomMetadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
+    let packet_data: FungibleTokenPacketData = serde_json::from_slice(msg.packet.data.as_slice())?;
+    let denom: asset::Metadata = packet_data // CRITICAL: verify that this denom is validated in upstream timeout handling
         .denom
         .as_str()
         .try_into()
@@ -366,7 +413,10 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         .try_into()
         .context("couldn't decode amount in ics20 transfer timeout")?;
 
-    let receiver = Address::from_str(&packet_data.receiver)
+    // packet_data.sender is the original sender for this packet that was not committed on the
+    // other chain but was sent from penumbra. so, the penumbra refund receiver address is the
+    // sender
+    let receiver = Address::from_str(&packet_data.sender)
         .context("couldn't decode receiver address in ics20 timeout")?;
 
     let value: Value = Value {
@@ -389,7 +439,15 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
         }
 
         state
-            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer)
+            .mint_note(
+                value,
+                &receiver,
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
+            )
             .await
             .context("couldn't mint note in timeout_packet_inner")?;
 
@@ -411,10 +469,33 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             new_value_balance,
         );
     } else {
+        let value_balance: Amount = state
+            .get(&state_key::ics20_value_balance(
+                &msg.packet.chan_on_a,
+                &denom.id(),
+            ))
+            .await?
+            .unwrap_or_else(Amount::zero);
+
         state
-            .mint_note(value, &receiver, penumbra_chain::NoteSource::Ics20Transfer) // NOTE: should this be Ics20TransferTimeout?
+            .mint_note(
+                value,
+                &receiver,
+                // NOTE: should this be Ics20TransferTimeout?
+                CommitmentSource::Ics20Transfer {
+                    packet_seq: msg.packet.sequence.0,
+                    channel_id: msg.packet.chan_on_a.0.clone(),
+                    sender: packet_data.sender.clone(),
+                },
+            )
             .await
             .context("failed to mint return voucher in ics20 transfer timeout")?;
+
+        let new_value_balance = value_balance.saturating_add(&value.amount);
+        state.put(
+            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            new_value_balance,
+        );
     }
 
     Ok(())
@@ -429,7 +510,7 @@ impl AppHandlerExecute for Ics20Transfer {
     async fn chan_open_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelOpenConfirm) {}
     async fn chan_close_confirm_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseConfirm) {}
     async fn chan_close_init_execute<S: StateWrite>(_state: S, _msg: &MsgChannelCloseInit) {}
-    async fn recv_packet_execute<S: StateWrite>(mut state: S, msg: &MsgRecvPacket) {
+    async fn recv_packet_execute<S: StateWrite>(mut state: S, msg: &MsgRecvPacket) -> Result<()> {
         // recv packet should never fail a transaction, but it should record a failure acknowledgement.
         let ack: Vec<u8> = match recv_transfer_packet_inner(&mut state, msg).await {
             Ok(_) => {
@@ -446,14 +527,18 @@ impl AppHandlerExecute for Ics20Transfer {
         state
             .write_acknowledgement(&msg.packet, &ack)
             .await
-            .expect("able to write acknowledgement");
+            .context("able to write acknowledgement")?;
+
+        Ok(())
     }
 
-    async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) {
-        // timeouts should never fail
+    async fn timeout_packet_execute<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> Result<()> {
+        // timeouts may fail due to counterparty chains sending transfers of u128-1
         timeout_packet_inner(&mut state, msg)
             .await
-            .expect("able to timeout packet");
+            .context("able to timeout packet")?;
+
+        Ok(())
     }
 
     async fn acknowledge_packet_execute<S: StateWrite>(_state: S, _msg: &MsgAcknowledgement) {}

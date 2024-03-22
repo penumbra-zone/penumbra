@@ -29,7 +29,7 @@ struct Args {
     /// The probability that any commitment is remembered.
     #[clap(long, default_value = "0.1")]
     remember: f64,
-    /// The probability that any remebered commitment is forgotten by the end.
+    /// The probability that any remembered commitment is forgotten by the end.
     #[clap(long, default_value = "0.0")]
     forget: f64,
     /// The mean number of commitments in each block.

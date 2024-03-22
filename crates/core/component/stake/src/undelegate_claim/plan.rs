@@ -1,8 +1,8 @@
 use decaf377::{FieldExt, Fq, Fr};
 use penumbra_asset::{asset, balance, Balance};
 use penumbra_num::Amount;
-use penumbra_proof_params::UNDELEGATECLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proof_params::CONVERT_PROOF_PROVING_KEY;
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,13 +11,13 @@ use crate::{
     UndelegateClaimProof,
 };
 
+use super::UndelegateClaimProofPublic;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "pb::UndelegateClaimPlan", into = "pb::UndelegateClaimPlan")]
 pub struct UndelegateClaimPlan {
     /// The identity key of the validator to undelegate from.
     pub validator_identity: IdentityKey,
-    /// The epoch in which unbonding began, used to verify the penalty.
-    pub start_epoch_index: u64,
     /// The penalty applied to undelegation, in bps^2.
     pub penalty: Penalty,
     /// The amount of unbonding tokens to claim. This is a bare number because its denom is determined by the preceding data.
@@ -29,6 +29,8 @@ pub struct UndelegateClaimPlan {
     pub proof_blinding_r: Fq,
     /// The second blinding factor used for generating the ZK proof.
     pub proof_blinding_s: Fq,
+    /// The height at which unbonding began, used to verify the penalty and unbonding delay.
+    pub unbonding_start_height: u64,
 }
 
 impl UndelegateClaimPlan {
@@ -44,7 +46,7 @@ impl UndelegateClaimPlan {
     pub fn undelegate_claim_body(&self) -> UndelegateClaimBody {
         UndelegateClaimBody {
             validator_identity: self.validator_identity,
-            start_epoch_index: self.start_epoch_index,
+            unbonding_start_height: self.unbonding_start_height,
             penalty: self.penalty,
             balance_commitment: self.balance().commit(self.balance_blinding),
         }
@@ -55,18 +57,22 @@ impl UndelegateClaimPlan {
         UndelegateClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
-            &UNDELEGATECLAIM_PROOF_PROVING_KEY,
-            self.unbonding_amount,
-            self.balance_blinding,
-            self.balance_commitment(),
-            self.unbonding_id(),
-            self.penalty,
+            &CONVERT_PROOF_PROVING_KEY,
+            UndelegateClaimProofPublic {
+                balance_commitment: self.balance_commitment(),
+                unbonding_id: self.unbonding_id(),
+                penalty: self.penalty,
+            },
+            super::UndelegateClaimProofPrivate {
+                unbonding_amount: self.unbonding_amount,
+                balance_blinding: self.balance_blinding,
+            },
         )
         .expect("can generate undelegate claim proof")
     }
 
     pub fn unbonding_token(&self) -> UnbondingToken {
-        UnbondingToken::new(self.validator_identity, self.start_epoch_index)
+        UnbondingToken::new(self.validator_identity, self.unbonding_start_height)
     }
 
     pub fn unbonding_id(&self) -> asset::Id {
@@ -88,12 +94,14 @@ impl DomainType for UndelegateClaimPlan {
 }
 
 impl From<UndelegateClaimPlan> for pb::UndelegateClaimPlan {
+    #[allow(deprecated)]
     fn from(msg: UndelegateClaimPlan) -> Self {
         Self {
             validator_identity: Some(msg.validator_identity.into()),
-            start_epoch_index: msg.start_epoch_index,
+            start_epoch_index: 0,
             penalty: Some(msg.penalty.into()),
             unbonding_amount: Some(msg.unbonding_amount.into()),
+            unbonding_start_height: msg.unbonding_start_height,
             balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
             proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
             proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
@@ -118,7 +126,6 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
                 .validator_identity
                 .ok_or_else(|| anyhow::anyhow!("missing validator_identity"))?
                 .try_into()?,
-            start_epoch_index: msg.start_epoch_index,
             penalty: msg
                 .penalty
                 .ok_or_else(|| anyhow::anyhow!("missing penalty"))?
@@ -135,6 +142,7 @@ impl TryFrom<pb::UndelegateClaimPlan> for UndelegateClaimPlan {
             .map_err(|_| anyhow::anyhow!("invalid balance_blinding"))?,
             proof_blinding_r: Fq::from_bytes(proof_blinding_r_bytes)?,
             proof_blinding_s: Fq::from_bytes(proof_blinding_s_bytes)?,
+            unbonding_start_height: msg.unbonding_start_height,
         })
     }
 }

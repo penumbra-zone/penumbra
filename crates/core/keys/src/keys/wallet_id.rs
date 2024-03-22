@@ -1,17 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::core::keys::v1alpha1;
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, serializers::bech32str};
+use penumbra_proto::core::keys::v1;
+use penumbra_proto::{penumbra::core::keys::v1 as pb, serializers::bech32str};
 
 /// The hash of a full viewing key, used as an account identifier.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(try_from = "pb::WalletId", into = "pb::WalletId")]
 pub struct WalletId(pub [u8; 32]);
 
-impl TryFrom<v1alpha1::WalletId> for WalletId {
+impl TryFrom<v1::WalletId> for WalletId {
     type Error = anyhow::Error;
 
-    fn try_from(value: v1alpha1::WalletId) -> Result<Self, Self::Error> {
+    fn try_from(value: v1::WalletId) -> Result<Self, Self::Error> {
         Ok(WalletId(
             value
                 .inner
@@ -21,9 +21,9 @@ impl TryFrom<v1alpha1::WalletId> for WalletId {
     }
 }
 
-impl From<WalletId> for v1alpha1::WalletId {
-    fn from(value: WalletId) -> v1alpha1::WalletId {
-        v1alpha1::WalletId {
+impl From<WalletId> for v1::WalletId {
+    fn from(value: WalletId) -> v1::WalletId {
+        v1::WalletId {
             inner: value.0.to_vec(),
         }
     }

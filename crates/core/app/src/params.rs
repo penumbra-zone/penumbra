@@ -1,26 +1,33 @@
-use penumbra_chain::params::ChainParameters;
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
+use penumbra_dex::DexParameters;
 use penumbra_distributions::DistributionsParameters;
 use penumbra_fee::FeeParameters;
+use penumbra_funding::FundingParameters;
 use penumbra_governance::params::GovernanceParameters;
 use penumbra_ibc::params::IBCParameters;
-use penumbra_proto::core::app::v1alpha1 as pb;
-use penumbra_proto::view::v1alpha1 as pb_view;
+use penumbra_proto::core::app::v1 as pb;
+use penumbra_proto::view::v1 as pb_view;
 use penumbra_proto::DomainType;
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 use serde::{Deserialize, Serialize};
 
 pub mod change;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
-    pub chain_params: ChainParameters,
-    pub dao_params: DaoParameters,
+    pub chain_id: String,
+    pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
+    pub dex_params: DexParameters,
     pub fee_params: FeeParameters,
+    pub funding_params: FundingParameters,
     pub governance_params: GovernanceParameters,
     pub ibc_params: IBCParameters,
+    pub sct_params: SctParameters,
+    pub shielded_pool_params: ShieldedPoolParameters,
     pub stake_params: StakeParameters,
 }
 
@@ -33,13 +40,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
 
     fn try_from(msg: pb::AppParameters) -> anyhow::Result<Self> {
         Ok(AppParameters {
-            chain_params: msg
-                .chain_params
-                .ok_or_else(|| anyhow::anyhow!("proto response missing chain params"))?
-                .try_into()?,
-            dao_params: msg
-                .dao_params
-                .ok_or_else(|| anyhow::anyhow!("proto response missing dao params"))?
+            chain_id: msg.chain_id,
+            community_pool_params: msg
+                .community_pool_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing community pool params"))?
                 .try_into()?,
             distributions_params: msg
                 .distributions_params
@@ -49,6 +53,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .fee_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing fee params"))?
                 .try_into()?,
+            funding_params: msg
+                .funding_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing funding params"))?
+                .try_into()?,
             governance_params: msg
                 .governance_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing governance params"))?
@@ -57,9 +65,21 @@ impl TryFrom<pb::AppParameters> for AppParameters {
                 .ibc_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing ibc params"))?
                 .try_into()?,
+            sct_params: msg
+                .sct_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing sct params"))?
+                .try_into()?,
+            shielded_pool_params: msg
+                .shielded_pool_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing shielded pool params"))?
+                .try_into()?,
             stake_params: msg
                 .stake_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing stake params"))?
+                .try_into()?,
+            dex_params: msg
+                .dex_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing dex params"))?
                 .try_into()?,
         })
     }
@@ -68,13 +88,17 @@ impl TryFrom<pb::AppParameters> for AppParameters {
 impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
-            chain_params: Some(params.chain_params.into()),
-            dao_params: Some(params.dao_params.into()),
+            chain_id: params.chain_id,
+            community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
+            fee_params: Some(params.fee_params.into()),
+            funding_params: Some(params.funding_params.into()),
             governance_params: Some(params.governance_params.into()),
             ibc_params: Some(params.ibc_params.into()),
+            sct_params: Some(params.sct_params.into()),
+            shielded_pool_params: Some(params.shielded_pool_params.into()),
             stake_params: Some(params.stake_params.into()),
-            fee_params: Some(params.fee_params.into()),
+            dex_params: Some(params.dex_params.into()),
         }
     }
 }

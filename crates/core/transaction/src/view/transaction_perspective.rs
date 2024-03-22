@@ -1,20 +1,20 @@
 use anyhow::anyhow;
-use penumbra_asset::asset;
+use pbjson_types::Any;
+use penumbra_asset::{asset, EstimatedPrice, Value, ValueView};
+use penumbra_dex::BatchSwapOutputData;
 use penumbra_keys::{Address, AddressView, PayloadKey};
-use penumbra_proto::core::transaction::v1alpha1::{
+use penumbra_proto::core::transaction::v1::{
     self as pb, NullifierWithNote, PayloadKeyWithCommitment,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{note, Note, NoteView};
+use penumbra_txhash::TransactionId;
 
 use std::collections::BTreeMap;
-
-use crate::Id;
 
 /// This represents the data to understand an individual transaction without
 /// disclosing viewing keys.
 #[derive(Debug, Clone, Default)]
-
 pub struct TransactionPerspective {
     /// List of per-action payload keys. These can be used to decrypt
     /// the notes, swaps, and memo keys in the transaction.
@@ -40,29 +40,37 @@ pub struct TransactionPerspective {
     /// Any relevant denoms for viewed assets.
     pub denoms: asset::Cache,
     /// The transaction ID associated with this TransactionPerspective
-    pub transaction_id: Id,
+    pub transaction_id: TransactionId,
+    /// Any relevant estimated prices.
+    pub prices: Vec<EstimatedPrice>,
+    /// Any relevant extended metadata.
+    pub extended_metadata: BTreeMap<asset::Id, Any>,
+    /// Associates nullifiers with the transaction IDs that created the state commitments.
+    ///
+    /// Allows walking backwards from a spend to the transaction that created the note.
+    pub creation_transaction_ids_by_nullifier: BTreeMap<Nullifier, TransactionId>,
+    /// Associates commitments with the transaction IDs that eventually nullified them.
+    ///
+    /// Allows walking forwards from an output to the transaction that later spent it.
+    pub nullification_transaction_ids_by_commitment: BTreeMap<note::StateCommitment, TransactionId>,
+    /// Any relevant batch swap output data.
+    ///
+    /// This can be used to fill in information about swap outputs.
+    pub batch_swap_output_data: Vec<BatchSwapOutputData>,
 }
 
 impl TransactionPerspective {
+    pub fn view_value(&self, value: Value) -> ValueView {
+        value
+            .view_with_cache(&self.denoms)
+            .with_prices(&self.prices, &self.denoms)
+            .with_extended_metadata(self.extended_metadata.get(&value.asset_id).cloned())
+    }
+
     pub fn view_note(&self, note: Note) -> NoteView {
-        let note_address = note.address();
-
-        let address = match self
-            .address_views
-            .iter()
-            .find(|av| av.address() == note_address)
-        {
-            Some(av) => av.clone(),
-            None => AddressView::Opaque {
-                address: note_address,
-            },
-        };
-
-        let value = note.value().view_with_cache(&self.denoms);
-
         NoteView {
-            address,
-            value,
+            address: self.view_address(note.address()),
+            value: self.view_value(note.value()),
             rseed: note.rseed(),
         }
     }
@@ -72,6 +80,13 @@ impl TransactionPerspective {
             Some(av) => av.clone(),
             None => AddressView::Opaque { address },
         }
+    }
+
+    pub fn get_and_view_advice_note(&self, commitment: &note::StateCommitment) -> Option<NoteView> {
+        self.advice_notes
+            .get(commitment)
+            .cloned()
+            .map(|note| self.view_note(note))
     }
 }
 
@@ -115,6 +130,40 @@ impl From<TransactionPerspective> for pb::TransactionPerspective {
             address_views,
             denoms,
             transaction_id: Some(msg.transaction_id.into()),
+            prices: msg.prices.into_iter().map(Into::into).collect(),
+            extended_metadata: msg
+                .extended_metadata
+                .into_iter()
+                .map(|(k, v)| pb::transaction_perspective::ExtendedMetadataById {
+                    asset_id: Some(k.into()),
+                    extended_metadata: Some(v),
+                })
+                .collect(),
+            creation_transaction_ids_by_nullifier: msg
+                .creation_transaction_ids_by_nullifier
+                .into_iter()
+                .map(
+                    |(k, v)| pb::transaction_perspective::CreationTransactionIdByNullifier {
+                        nullifier: Some(k.into()),
+                        transaction_id: Some(v.into()),
+                    },
+                )
+                .collect(),
+            nullification_transaction_ids_by_commitment: msg
+                .nullification_transaction_ids_by_commitment
+                .into_iter()
+                .map(
+                    |(k, v)| pb::transaction_perspective::NullificationTransactionIdByCommitment {
+                        commitment: Some(k.into()),
+                        transaction_id: Some(v.into()),
+                    },
+                )
+                .collect(),
+            batch_swap_output_data: msg
+                .batch_swap_output_data
+                .into_iter()
+                .map(Into::into)
+                .collect(),
         }
     }
 }
@@ -173,9 +222,9 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             );
         }
 
-        let transaction_id: crate::Id = match msg.transaction_id {
+        let transaction_id: TransactionId = match msg.transaction_id {
             Some(tx_id) => tx_id.try_into()?,
-            None => Id::default(),
+            None => TransactionId::default(),
         };
 
         Ok(Self {
@@ -185,6 +234,63 @@ impl TryFrom<pb::TransactionPerspective> for TransactionPerspective {
             address_views,
             denoms: denoms.try_into()?,
             transaction_id,
+            prices: msg
+                .prices
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
+            extended_metadata: msg
+                .extended_metadata
+                .into_iter()
+                .map(|em| {
+                    Ok((
+                        em.asset_id
+                            .ok_or_else(|| anyhow!("missing asset ID in extended metadata"))?
+                            .try_into()?,
+                        em.extended_metadata
+                            .ok_or_else(|| anyhow!("missing extended metadata"))?,
+                    ))
+                })
+                .collect::<Result<_, anyhow::Error>>()?,
+            creation_transaction_ids_by_nullifier: msg
+                .creation_transaction_ids_by_nullifier
+                .into_iter()
+                .map(|ct| {
+                    Ok((
+                        ct.nullifier
+                            .ok_or_else(|| anyhow!("missing nullifier in creation transaction ID"))?
+                            .try_into()?,
+                        ct.transaction_id
+                            .ok_or_else(|| {
+                                anyhow!("missing transaction ID in creation transaction ID")
+                            })?
+                            .try_into()?,
+                    ))
+                })
+                .collect::<Result<_, anyhow::Error>>()?,
+            nullification_transaction_ids_by_commitment: msg
+                .nullification_transaction_ids_by_commitment
+                .into_iter()
+                .map(|nt| {
+                    Ok((
+                        nt.commitment
+                            .ok_or_else(|| {
+                                anyhow!("missing commitment in nullification transaction ID")
+                            })?
+                            .try_into()?,
+                        nt.transaction_id
+                            .ok_or_else(|| {
+                                anyhow!("missing transaction ID in nullification transaction ID")
+                            })?
+                            .try_into()?,
+                    ))
+                })
+                .collect::<Result<_, anyhow::Error>>()?,
+            batch_swap_output_data: msg
+                .batch_swap_output_data
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
         })
     }
 }

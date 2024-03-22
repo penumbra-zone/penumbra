@@ -1,4 +1,5 @@
 pub mod state_key;
+pub use view::{StateReadExt, StateWriteExt};
 
 mod view;
 
@@ -6,24 +7,28 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_component::Component;
+use cnidarium::StateWrite;
+use cnidarium_component::Component;
+use penumbra_asset::STAKING_TOKEN_DENOM;
 use penumbra_num::Amount;
-use penumbra_storage::StateWrite;
 use tendermint::v0_37::abci;
 use tracing::instrument;
-pub use view::{StateReadExt, StateWriteExt};
+
+use crate::genesis;
 
 pub struct Distributions {}
 
 #[async_trait]
 impl Component for Distributions {
-    type AppState = ();
+    type AppState = genesis::Content;
 
-    #[instrument(name = "distributions", skip(_state, app_state))]
-    async fn init_chain<S: StateWrite>(mut _state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "distributions", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* Checkpoint -- no-op */ }
-            Some(_) => { /* no-op, future check of genesis chain parameters? */ }
+            Some(genesis) => {
+                state.put_distributions_params(genesis.distributions_params.clone());
+            }
         };
     }
 
@@ -54,17 +59,20 @@ impl Component for Distributions {
 trait DistributionManager: StateWriteExt {
     /// Compute the total new issuance of staking tokens for this epoch.
     async fn compute_new_issuance(&self) -> Result<Amount> {
-        use penumbra_chain::component::StateReadExt as _;
+        use penumbra_sct::component::clock::EpochRead;
+
         let current_block_height = self.get_block_height().await?;
-        let current_epoch = self.get_epoch_for_height(current_block_height).await?;
+        let current_epoch = self.get_current_epoch().await?;
         let num_blocks = current_block_height
             .checked_sub(current_epoch.start_height)
-            .expect("epoch start height is less than or equal to current block height");
+            .unwrap_or_else(|| panic!("epoch start height is less than or equal to current block height (epoch_start={}, current_height={}", current_epoch.start_height, current_block_height));
 
+        // TODO(erwan): Will make the distribution chain param an `Amount`
+        // in a subsequent PR. Want to avoid conflicts with other in-flight changes.
         let staking_issuance_per_block = self
             .get_distributions_params()
             .await?
-            .staking_issuance_per_block;
+            .staking_issuance_per_block as u128;
 
         tracing::debug!(
             number_of_blocks_in_epoch = num_blocks,
@@ -73,9 +81,23 @@ trait DistributionManager: StateWriteExt {
         );
 
         let new_issuance_for_epoch = staking_issuance_per_block
-            .checked_mul(num_blocks)
+            .checked_mul(num_blocks as u128) /* Safe to cast a `u64` to `u128` */
             .expect("infaillible unless issuance is pathological");
 
+        tracing::debug!(
+            ?new_issuance_for_epoch,
+            "computed new issuance for epoch (pre-scaled)"
+        );
+
+        let new_issuance_for_epoch = STAKING_TOKEN_DENOM
+            .default_unit()
+            .value(new_issuance_for_epoch.into())
+            .amount;
+
+        tracing::debug!(
+            ?new_issuance_for_epoch,
+            "computed new issuance for epoch (scaled)"
+        );
         Ok(Amount::from(new_issuance_for_epoch))
     }
 

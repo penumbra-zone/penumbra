@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::ProposalState", into = "pb::ProposalState")]
 pub enum State {
     Voting,
@@ -131,7 +131,7 @@ impl TryFrom<pb::ProposalState> for State {
 // This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
 // doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
 // empty string.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy)]
 #[serde(
     try_from = "pb::ProposalOutcome",
     into = "pb::ProposalOutcome",
@@ -189,7 +189,7 @@ impl<W> Outcome<W> {
 // This is parameterized by `W`, the withdrawal reason, so that we can use `()` where a reason
 // doesn't need to be specified. When this is the case, the serialized format in protobufs uses an
 // empty string.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum Withdrawn<W> {
     No,
     WithReason { reason: W },

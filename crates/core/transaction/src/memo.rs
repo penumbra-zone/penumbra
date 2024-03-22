@@ -8,25 +8,70 @@ use anyhow::anyhow;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
 use penumbra_keys::{
+    address::ADDRESS_LEN_BYTES,
     keys::OutgoingViewingKey,
     symmetric::{OvkWrappedKey, PayloadKey, PayloadKind, WrappedMemoKey},
     Address,
 };
-use penumbra_proto::core::transaction::v1alpha1 as pbt;
+use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_shielded_pool::{note, Note};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 pub const MEMO_CIPHERTEXT_LEN_BYTES: usize = 528;
 
 // This is the `MEMO_CIPHERTEXT_LEN_BYTES` - MAC size (16 bytes).
 pub const MEMO_LEN_BYTES: usize = 512;
 
+// This is the largest text length we can support
+const MAX_TEXT_LEN: usize = MEMO_LEN_BYTES - ADDRESS_LEN_BYTES;
+
+/// A method which reads out bytes in a lossy way, and trims out null bytes
+fn raw_bytes_to_text(data: &[u8]) -> String {
+    String::from_utf8_lossy(data)
+        .trim_end_matches(0u8 as char)
+        .to_string()
+}
+
 #[derive(Clone, Debug)]
 pub struct MemoCiphertext(pub [u8; MEMO_CIPHERTEXT_LEN_BYTES]);
 
+impl EffectingData for MemoCiphertext {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct MemoPlaintext {
-    pub return_address: Address,
-    pub text: String,
+    return_address: Address,
+    text: String,
+}
+
+impl MemoPlaintext {
+    /// Create a new MemoPlaintext, checking that the text isn't long enough.
+    ///
+    /// The text being too long is the only reason this function will fail.
+    pub fn new(return_address: Address, text: String) -> anyhow::Result<Self> {
+        if text.len() > MAX_TEXT_LEN {
+            anyhow::bail!(
+                "memo text length must be <= {}, found {}",
+                MAX_TEXT_LEN,
+                text.len()
+            );
+        }
+        Ok(Self {
+            return_address,
+            text,
+        })
+    }
+
+    pub fn return_address(&self) -> Address {
+        self.return_address
+    }
+
+    pub fn text(&self) -> &str {
+        self.text.as_str()
+    }
 }
 
 impl From<&MemoPlaintext> for Vec<u8> {
@@ -47,14 +92,9 @@ impl TryFrom<Vec<u8>> for MemoPlaintext {
         }
         let return_address_bytes = &bytes[..80];
         let return_address: Address = return_address_bytes.try_into()?;
-        let text = String::from_utf8_lossy(&bytes[80..])
-            .trim_end_matches(0u8 as char)
-            .to_string();
+        let text = raw_bytes_to_text(&bytes[80..]);
 
-        Ok(MemoPlaintext {
-            return_address,
-            text,
-        })
+        MemoPlaintext::new(return_address, text)
     }
 }
 
@@ -63,9 +103,9 @@ impl MemoPlaintext {
         self.into()
     }
 
-    pub fn blank_memo(address: Address) -> MemoPlaintext {
+    pub fn blank_memo(return_address: Address) -> MemoPlaintext {
         MemoPlaintext {
-            return_address: address,
+            return_address,
             text: String::new(),
         }
     }
@@ -101,14 +141,9 @@ impl MemoCiphertext {
 
         let return_address_bytes = &plaintext_bytes[..80];
         let return_address: Address = return_address_bytes.try_into()?;
-        let text = String::from_utf8_lossy(&plaintext_bytes[80..])
-            .trim_end_matches(0u8 as char)
-            .to_string();
+        let text = raw_bytes_to_text(&plaintext_bytes[80..]);
 
-        Ok(MemoPlaintext {
-            return_address: return_address,
-            text,
-        })
+        MemoPlaintext::new(return_address, text)
     }
 
     /// Decrypt a [`MemoCiphertext`] to generate a fixed-length slice of bytes.
@@ -153,14 +188,9 @@ impl MemoCiphertext {
 
         let return_address_bytes = &plaintext_bytes[..80];
         let return_address: Address = return_address_bytes.try_into()?;
-        let text = String::from_utf8_lossy(&plaintext_bytes[80..])
-            .trim_end_matches(0u8 as char)
-            .to_string();
+        let text = raw_bytes_to_text(&plaintext_bytes[80..]);
 
-        Ok(MemoPlaintext {
-            return_address: return_address,
-            text,
-        })
+        MemoPlaintext::new(return_address, text)
     }
 }
 
@@ -203,6 +233,10 @@ impl From<MemoCiphertext> for pbt::MemoCiphertext {
     }
 }
 
+impl DomainType for MemoCiphertext {
+    type Proto = pbt::MemoCiphertext;
+}
+
 impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
     type Error = anyhow::Error;
 
@@ -211,6 +245,12 @@ impl TryFrom<pbt::MemoPlaintext> for MemoPlaintext {
             .return_address
             .ok_or_else(|| anyhow::anyhow!("message missing return address"))?
             .try_into()?;
+        if (msg.text).len() > MEMO_LEN_BYTES - ADDRESS_LEN_BYTES {
+            anyhow::bail!(
+                "provided memo text exceeds {} bytes",
+                MEMO_LEN_BYTES - ADDRESS_LEN_BYTES
+            );
+        }
         Ok(Self {
             return_address: sender,
             text: msg.text,
@@ -270,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn test_memo_encryption_and_sender_decryption() {
+    fn test_memo_encryption_and_sender_decryption() -> anyhow::Result<()> {
         let mut rng = OsRng;
 
         let seed_phrase = SeedPhrase::generate(rng);
@@ -291,10 +331,7 @@ mod tests {
 
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
-        let memo = MemoPlaintext {
-            return_address: dest,
-            text: String::from("Hello, friend"),
-        };
+        let memo = MemoPlaintext::new(dest, "Hello, friend".into())?;
         let memo_key = PayloadKey::random_key(&mut OsRng);
         let ciphertext =
             MemoCiphertext::encrypt(memo_key.clone(), &memo).expect("can encrypt memo");
@@ -324,6 +361,8 @@ mod tests {
         .expect("can decrypt memo");
 
         assert_eq!(plaintext, memo);
+
+        Ok(())
     }
 
     proptest! {
@@ -340,9 +379,15 @@ mod tests {
             let memo_key = PayloadKey::random_key(&mut rng);
             let memo_address = Address::dummy(&mut rng);
             let memo_text = s;
-            let memo = MemoPlaintext {
-                return_address: memo_address,
-                text: memo_text,
+            let memo = {
+                let text_len = memo_text.len();
+                let memo = MemoPlaintext::new(memo_address, memo_text);
+                if text_len > MAX_TEXT_LEN {
+                    assert!(memo.is_err());
+                    return Ok(());
+                }
+                assert!(memo.is_ok());
+                memo.unwrap()
             };
             let ciphertext_result = MemoCiphertext::encrypt(memo_key.clone(), &memo);
             if memo.to_vec().len() > MEMO_LEN_BYTES {

@@ -1,5 +1,4 @@
 use crate::{
-    box_grpc_svc,
     config::{CustodyConfig, PcliConfig},
     terminal::ActualTerminal,
     App, Command,
@@ -9,17 +8,15 @@ use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
 use penumbra_custody::soft_kms::SoftKms;
+use penumbra_proto::box_grpc_svc;
 use penumbra_proto::{
-    custody::v1alpha1::{
-        custody_protocol_service_client::CustodyProtocolServiceClient,
-        custody_protocol_service_server::CustodyProtocolServiceServer,
+    custody::v1::{
+        custody_service_client::CustodyServiceClient, custody_service_server::CustodyServiceServer,
     },
-    view::v1alpha1::{
-        view_protocol_service_client::ViewProtocolServiceClient,
-        view_protocol_service_server::ViewProtocolServiceServer,
-    },
+    view::v1::{view_service_client::ViewServiceClient, view_service_server::ViewServiceServer},
 };
-use penumbra_view::ViewService;
+use penumbra_view::ViewServer;
+use std::io::IsTerminal as _;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -35,6 +32,7 @@ pub struct Opt {
 impl Opt {
     pub fn init_tracing(&mut self) {
         tracing_subscriber::fmt()
+            .with_ansi(std::io::stdout().is_terminal())
             .with_env_filter(
                 EnvFilter::from_default_env()
                     // Without explicitly disabling the `r1cs` target, the ZK proof implementations
@@ -62,21 +60,21 @@ impl Opt {
             CustodyConfig::ViewOnly => {
                 tracing::info!("using view-only custody service");
                 let null_kms = penumbra_custody::null_kms::NullKms::default();
-                let custody_svc = CustodyProtocolServiceServer::new(null_kms);
-                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+                let custody_svc = CustodyServiceServer::new(null_kms);
+                CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
             }
             CustodyConfig::SoftKms(config) => {
                 tracing::info!("using software KMS custody service");
                 let soft_kms = SoftKms::new(config.clone());
-                let custody_svc = CustodyProtocolServiceServer::new(soft_kms);
-                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+                let custody_svc = CustodyServiceServer::new(soft_kms);
+                CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
             }
             CustodyConfig::Threshold(config) => {
                 tracing::info!("using manual threshold custody service");
                 let threshold_kms =
                     penumbra_custody::threshold::Threshold::new(config.clone(), ActualTerminal);
-                let custody_svc = CustodyProtocolServiceServer::new(threshold_kms);
-                CustodyProtocolServiceClient::new(box_grpc_svc::local(custody_svc))
+                let custody_svc = CustodyServiceServer::new(threshold_kms);
+                CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
             }
         };
 
@@ -89,16 +87,14 @@ impl Opt {
                 tracing::info!(%view_url, "using remote view service");
 
                 let ep = tonic::transport::Endpoint::new(view_url.to_string())?;
-                Some(ViewProtocolServiceClient::new(
-                    box_grpc_svc::connect(ep).await?,
-                ))
+                Some(ViewServiceClient::new(box_grpc_svc::connect(ep).await?))
             }
             (false, None) => {
                 // Use an in-memory view service.
                 let path = self.home.join(crate::VIEW_FILE_NAME);
                 tracing::info!(%path, "using local view service");
 
-                let svc = ViewService::load_or_initialize(
+                let svc = ViewServer::load_or_initialize(
                     Some(path),
                     &config.full_viewing_key,
                     config.grpc_url.clone(),
@@ -106,8 +102,8 @@ impl Opt {
                 .await?;
 
                 // Now build the view and custody clients, doing gRPC with ourselves
-                let svc = ViewProtocolServiceServer::new(svc);
-                Some(ViewProtocolServiceClient::new(box_grpc_svc::local(svc)))
+                let svc = ViewServiceServer::new(svc);
+                Some(ViewServiceClient::new(box_grpc_svc::local(svc)))
             }
         };
 

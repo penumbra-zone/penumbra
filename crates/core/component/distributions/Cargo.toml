@@ -1,32 +1,29 @@
 [package]
 name = "penumbra-distributions"
-version = "0.63.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = {workspace = true}
+edition = {workspace = true}
 
 [features]
-component = ["penumbra-component", "penumbra-storage", "penumbra-proto/penumbra-storage", "penumbra-chain/component", "penumbra-shielded-pool/component"]
+component = [
+    "cnidarium-component",
+    "cnidarium",
+    "penumbra-proto/cnidarium",
+    "penumbra-sct/component",
+]
 default = ["component"]
 docsrs = []
 
 [dependencies]
-
-# Workspace dependencies
-penumbra-asset = { path = "../../asset" }
-penumbra-component = { path = "../component", optional = true }
-penumbra-chain = { path = "../chain", default-features = false }
-penumbra-num = { path = "../../../core/num", default-features = false }
-penumbra-proto = { path = "../../../proto", default-features = false }
-penumbra-shielded-pool = { path = "../shielded-pool", default-features = false }
-penumbra-storage = { path = "../../../storage", optional = true }
-
-# Crates.io deps
-async-trait = "0.1.52"
-anyhow = "1"
-tracing = "0.1"
-tendermint = "0.34.0"
-
-serde = { version = "1", features = ["derive"] }
+anyhow = {workspace = true}
+async-trait = {workspace = true}
+cnidarium = {workspace = true, optional = true, default-features = true}
+cnidarium-component = {workspace = true, optional = true, default-features = true}
+penumbra-asset = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, default-features = false}
+penumbra-sct = {workspace = true, default-features = false}
+serde = {workspace = true, features = ["derive"]}
+tendermint = {workspace = true}
+tracing = {workspace = true}
 
 [dev-dependencies]

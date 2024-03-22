@@ -22,13 +22,15 @@ use penumbra_keys::FullViewingKey;
 use penumbra_proof_params::{ProvingKeyExt, VerifyingKeyExt};
 use penumbra_proof_setup::all::combine;
 use penumbra_proof_setup::all::transition;
-use penumbra_proto::tools::summoning::v1alpha1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
-use penumbra_proto::tools::summoning::v1alpha1::CeremonyCrs;
+use penumbra_proto::tools::summoning::v1::ceremony_coordinator_service_server::CeremonyCoordinatorServiceServer;
+use penumbra_proto::tools::summoning::v1::CeremonyCrs;
 use penumbra_proto::Message;
 use std::fs;
 use std::fs::File;
+use std::io;
 use std::io::BufReader;
 use std::io::BufWriter;
+use std::io::IsTerminal as _;
 use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
@@ -301,7 +303,7 @@ impl Opt {
                     "spend",
                     "output",
                     "delegator_vote",
-                    "undelegateclaim",
+                    "convert",
                     "swap",
                     "swapclaim",
                     "nullifier_derivation",
@@ -358,7 +360,7 @@ async fn main() -> Result<()> {
     let console_layer = ConsoleLayer::builder().with_default_env().spawn();
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(atty::is(atty::Stream::Stdout))
+        .with_ansi(io::stdout().is_terminal())
         .with_target(true);
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env()

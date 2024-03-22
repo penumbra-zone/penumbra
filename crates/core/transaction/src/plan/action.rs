@@ -1,17 +1,16 @@
 use crate::Action;
-use crate::EffectingData;
 use crate::WitnessData;
 use anyhow::{anyhow, Context, Result};
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::Balance;
-use penumbra_chain::EffectHash;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use penumbra_dex::{
     lp::{
         action::{PositionClose, PositionOpen},
-        plan::{PositionRewardClaimPlan, PositionWithdrawPlan},
+        plan::PositionWithdrawPlan,
     },
     swap::SwapPlan,
     swap_claim::SwapClaimPlan,
@@ -23,7 +22,7 @@ use penumbra_governance::{
 
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{symmetric::PayloadKey, FullViewingKey};
-use penumbra_proto::{core::transaction::v1alpha1 as pb_t, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb_t, DomainType};
 use penumbra_shielded_pool::{Ics20Withdrawal, OutputPlan, SpendPlan};
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaimPlan};
 use serde::{Deserialize, Serialize};
@@ -70,15 +69,12 @@ pub enum ActionPlan {
     // PositionWithdrawPlan requires the balance of the funds to be withdrawn, so
     // a plan must be used.
     PositionWithdraw(PositionWithdrawPlan),
-    // Reward Claim requires the balance of the funds to be claimed, so a plan
-    // must be used.
-    PositionRewardClaim(PositionRewardClaimPlan),
 
-    DaoSpend(DaoSpend),
-    DaoOutput(DaoOutput),
-    DaoDeposit(DaoDeposit),
+    CommunityPoolSpend(CommunityPoolSpend),
+    CommunityPoolOutput(CommunityPoolOutput),
+    CommunityPoolDeposit(CommunityPoolDeposit),
 
-    Withdrawal(Ics20Withdrawal),
+    Ics20Withdrawal(Ics20Withdrawal),
 }
 
 impl ActionPlan {
@@ -153,14 +149,11 @@ impl ActionPlan {
             PositionOpen(plan) => Action::PositionOpen(plan.clone()),
             PositionClose(plan) => Action::PositionClose(plan.clone()),
             PositionWithdraw(plan) => Action::PositionWithdraw(plan.position_withdraw()),
-            PositionRewardClaim(_plan) => unimplemented!(
-                "this api is wrong and needs to be fixed, but we don't do reward claims anyways"
-            ),
-            DaoSpend(plan) => Action::DaoSpend(plan.clone()),
-            DaoOutput(plan) => Action::DaoOutput(plan.clone()),
-            DaoDeposit(plan) => Action::DaoDeposit(plan.clone()),
+            CommunityPoolSpend(plan) => Action::CommunityPoolSpend(plan.clone()),
+            CommunityPoolOutput(plan) => Action::CommunityPoolOutput(plan.clone()),
+            CommunityPoolDeposit(plan) => Action::CommunityPoolDeposit(plan.clone()),
             // Fixme: action name
-            Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
+            Ics20Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
         })
     }
 
@@ -207,14 +200,13 @@ impl ActionPlan {
             ProposalWithdraw(proposal_withdraw) => proposal_withdraw.balance(),
             ProposalDepositClaim(proposal_deposit_claim) => proposal_deposit_claim.balance(),
             DelegatorVote(delegator_vote) => delegator_vote.balance(),
-            DaoSpend(dao_spend) => dao_spend.balance(),
-            DaoOutput(dao_output) => dao_output.balance(),
-            DaoDeposit(dao_deposit) => dao_deposit.balance(),
+            CommunityPoolSpend(community_pool_spend) => community_pool_spend.balance(),
+            CommunityPoolOutput(community_pool_output) => community_pool_output.balance(),
+            CommunityPoolDeposit(community_pool_deposit) => community_pool_deposit.balance(),
             PositionOpen(position_open) => position_open.balance(),
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
-            PositionRewardClaim(position_reward_claim) => position_reward_claim.balance(),
-            Withdrawal(withdrawal) => withdrawal.balance(),
+            Ics20Withdrawal(withdrawal) => withdrawal.balance(),
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
@@ -241,11 +233,10 @@ impl ActionPlan {
             PositionOpen(_) => Fr::zero(),
             PositionClose(_) => Fr::zero(),
             PositionWithdraw(_) => Fr::zero(),
-            PositionRewardClaim(_) => Fr::zero(),
-            DaoSpend(_) => Fr::zero(),
-            DaoOutput(_) => Fr::zero(),
-            DaoDeposit(_) => Fr::zero(),
-            Withdrawal(_) => Fr::zero(),
+            CommunityPoolSpend(_) => Fr::zero(),
+            CommunityPoolOutput(_) => Fr::zero(),
+            CommunityPoolDeposit(_) => Fr::zero(),
+            Ics20Withdrawal(_) => Fr::zero(),
         }
     }
 
@@ -271,11 +262,10 @@ impl ActionPlan {
             PositionOpen(plan) => plan.effect_hash(),
             PositionClose(plan) => plan.effect_hash(),
             PositionWithdraw(plan) => plan.position_withdraw().effect_hash(),
-            PositionRewardClaim(_plan) => todo!("position reward claim plan is not implemented"),
-            DaoSpend(plan) => plan.effect_hash(),
-            DaoOutput(plan) => plan.effect_hash(),
-            DaoDeposit(plan) => plan.effect_hash(),
-            Withdrawal(plan) => plan.effect_hash(),
+            CommunityPoolSpend(plan) => plan.effect_hash(),
+            CommunityPoolOutput(plan) => plan.effect_hash(),
+            CommunityPoolDeposit(plan) => plan.effect_hash(),
+            Ics20Withdrawal(plan) => plan.effect_hash(),
         }
     }
 }
@@ -366,15 +356,9 @@ impl From<PositionWithdrawPlan> for ActionPlan {
     }
 }
 
-impl From<PositionRewardClaimPlan> for ActionPlan {
-    fn from(inner: PositionRewardClaimPlan) -> ActionPlan {
-        ActionPlan::PositionRewardClaim(inner)
-    }
-}
-
 impl From<Ics20Withdrawal> for ActionPlan {
     fn from(inner: Ics20Withdrawal) -> ActionPlan {
-        ActionPlan::Withdrawal(inner)
+        ActionPlan::Ics20Withdrawal(inner)
     }
 }
 
@@ -437,25 +421,24 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             },
             ActionPlan::PositionWithdraw(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::PositionWithdraw(Into::<
-                    penumbra_proto::core::component::dex::v1alpha1::PositionWithdrawPlan,
+                    penumbra_proto::core::component::dex::v1::PositionWithdrawPlan,
                 >::into(
                     inner
                 ))),
             },
-            ActionPlan::PositionRewardClaim(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::PositionRewardClaim(inner.into())),
+            ActionPlan::CommunityPoolDeposit(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolDeposit(
+                    inner.into(),
+                )),
             },
-            ActionPlan::DaoDeposit(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoDeposit(inner.into())),
+            ActionPlan::CommunityPoolSpend(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolSpend(inner.into())),
             },
-            ActionPlan::DaoSpend(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoSpend(inner.into())),
+            ActionPlan::CommunityPoolOutput(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::CommunityPoolOutput(inner.into())),
             },
-            ActionPlan::DaoOutput(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::DaoOutput(inner.into())),
-            },
-            ActionPlan::Withdrawal(inner) => pb_t::ActionPlan {
-                action: Some(pb_t::action_plan::Action::Withdrawal(inner.into())),
+            ActionPlan::Ics20Withdrawal(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::Ics20Withdrawal(inner.into())),
             },
         }
     }
@@ -518,20 +501,20 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             pb_t::action_plan::Action::PositionWithdraw(inner) => {
                 Ok(ActionPlan::PositionWithdraw(inner.try_into()?))
             }
-            pb_t::action_plan::Action::PositionRewardClaim(inner) => {
-                Ok(ActionPlan::PositionRewardClaim(inner.try_into()?))
+            pb_t::action_plan::Action::PositionRewardClaim(_) => {
+                Err(anyhow!("PositionRewardClaim is deprecated and unsupported"))
             }
-            pb_t::action_plan::Action::DaoSpend(inner) => {
-                Ok(ActionPlan::DaoSpend(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolSpend(inner) => {
+                Ok(ActionPlan::CommunityPoolSpend(inner.try_into()?))
             }
-            pb_t::action_plan::Action::DaoDeposit(inner) => {
-                Ok(ActionPlan::DaoDeposit(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolDeposit(inner) => {
+                Ok(ActionPlan::CommunityPoolDeposit(inner.try_into()?))
             }
-            pb_t::action_plan::Action::DaoOutput(inner) => {
-                Ok(ActionPlan::DaoOutput(inner.try_into()?))
+            pb_t::action_plan::Action::CommunityPoolOutput(inner) => {
+                Ok(ActionPlan::CommunityPoolOutput(inner.try_into()?))
             }
-            pb_t::action_plan::Action::Withdrawal(inner) => {
-                Ok(ActionPlan::Withdrawal(inner.try_into()?))
+            pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
+                Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
             }
         }
     }

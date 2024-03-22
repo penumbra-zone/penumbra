@@ -14,7 +14,7 @@ in mind, here are some quick links:
 - [I want to submit a new proposal.](#submitting-a-proposal)
 - [I submitted a proposal and I want to withdraw it before voting concludes.](#withdrawing-a-proposal)
 - [Voting has concluded on a proposal I submitted and I want to claim my deposit.](#claiming-a-proposal-deposit)
-- [I want to contribute funds to the DAO.](#contributing-to-the-dao)
+- [I want to contribute funds to the Community Pool.](#contributing-to-the-community-pool)
 
 ## Getting Proposal Information
 
@@ -24,13 +24,13 @@ proposal` subcommand.
 To list all the active proposals by their ID, use:
 
 ```bash
-cargo run --release --bin pcli query governance list-proposals
+pcli query governance list-proposals
 ```
 
 Other proposal query commands all follow the form:
 
 ```bash
-cargo run --release --bin pcli query governance proposal [PROPOSAL_ID] [QUERY]
+pcli query governance proposal [PROPOSAL_ID] [QUERY]
 ```
 
 These are the queries currently defined:
@@ -56,7 +56,7 @@ can vote on it using the `tx vote` subcommand of `pcli`. For example, if you wan
 proposal 1, you would do:
 
 ```bash
-cargo run --release --bin pcli tx vote yes --on 1
+pcli tx vote yes --on 1
 ```
 
 When you vote as a delegator (but _not_ when you vote as a validator), you will receive
@@ -67,12 +67,16 @@ received when voting in real life at your polling place.
 ### Voting As A Validator
 
 If you are a validator who was active when the proposal started, you can vote on it using the
-`validator vote` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
+`validator vote cast` subcommand of `pcli`. For example, if you wanted to vote "yes" on proposal 1, you
 would do:
 
 ```bash
-cargo run --release --bin pcli validator vote yes --on 1
+pcli validator vote cast yes --on 1
 ```
+
+If your validator uses an airgap custody setup, you can separately sign and cast your vote using the
+`pcli validator vote sign` command to output your signature, and the `--signature` option on `pcli
+validator vote cast` to attach it and broadcast it.
 
 ### Eligibility And Voting Power
 
@@ -98,9 +102,9 @@ slashed (but regardless of whether it passes or fails), the deposit will then be
 proposer at the end of voting.
 
 From the proposer's point of view, the lifecycle of a proposal begins when it is
-_submitted_ and ends when it the deposit is _claimed_. During the voting period, the proposer may
+_submitted_ and ends when the deposit is _claimed_. During the voting period, the proposer may
 also optionally _withdraw_ the proposal, which prevents it from passing, but does not prevent it
-from being slashed. This is usually used when a proposal has been superceded by a revised
+from being slashed. This is usually used when a proposal has been superseded by a revised
 alternative.
 
 <picture>
@@ -114,7 +118,7 @@ boxes are the state of the proposal on chain, and colored circles are outcomes o
 ### Kinds Of Proposal
 
 There are 4 kinds of governance proposal on Penumbra: **signaling**, **emergency**, **parameter
-change**, and **DAO spend**.
+change**, and **community pool spend**.
 
 #### Signaling Proposals
 
@@ -147,15 +151,15 @@ nothing happens. This is to prevent two simultaneous parameter change proposals 
 each others' changes or merging with one another into an undesired state. Almost always, the set of
 old parameters should be the current parameters at the time the proposal is submitted.
 
-#### DAO Spend Proposals
+#### Community Pool Spend Proposals
 
-DAO spend proposals submit a _transaction plan_ which may spend funds from the DAO if passed.
+Community Pool spend proposals submit a _transaction plan_ which may spend funds from the Community Pool if passed.
 
-DAO spend transactions have exclusive capability to use two special actions which are not allowed in
-directly submitted user transactions: `DaoSpend` and `DaoOutput`. These actions, respectively, spend
-funds from the DAO, and mint funds _transparently_ to an output address (unlike regular output
-actions, which are shielded). DAO spend transactions are unable to use regular shielded outputs,
-spend funds from any source other than the DAO itself, perform swaps, or submit, withdraw, or claim
+Community Pool spend transactions have exclusive capability to use two special actions which are not allowed in
+directly submitted user transactions: `CommunityPoolSpend` and `CommunityPoolOutput`. These actions, respectively, spend
+funds from the Community Pool, and mint funds _transparently_ to an output address (unlike regular output
+actions, which are shielded). Community Pool spend transactions are unable to use regular shielded outputs,
+spend funds from any source other than the Community Pool itself, perform swaps, or submit, withdraw, or claim
 governance proposals.
 
 ### Submitting A Proposal
@@ -164,7 +168,7 @@ To submit a proposal, first generate a proposal template for the kind of proposa
 submit. For example, suppose we want to create a signaling proposal:
 
 ```bash
-cargo run --release --bin pcli tx proposal template signaling --file proposal.toml
+pcli tx proposal template signaling --file proposal.toml
 ```
 
 This outputs a TOML template for the proposal to the file `proposal.toml`, where you can edit the
@@ -179,7 +183,7 @@ specify the proposal deposit in this action; it is determined automatically base
 parameters.
 
 ```bash
-cargo run --release --bin pcli tx proposal submit --file proposal.toml
+pcli tx proposal submit --file proposal.toml
 ```
 
 The proposal deposit will be immediately escrowed and the proposal voting period will start in the
@@ -188,42 +192,48 @@ for the proposal deposit after voting concludes, provided the proposal is not sl
 denomination `proposal_N_deposit`, where `N` is the ID of your proposal. Note that _whoever holds
 this NFT has exclusive control of the proposal_: they can withdraw it or claim the deposit.
 
-#### Making A DAO Spend Transaction Plan
+#### Making A Community Pool Spend Transaction Plan
 
-In order to submit a DAO spend proposal, it is necessary to create a transaction plan. At present,
+In order to submit a Community Pool spend proposal, it is necessary to create a transaction plan. At present,
 the only way to specify this is to provide a rather human-unfriendly JSON-formatted transaction
 plan, because there is no stable human-readable representation for a transaction plan at present.
 This will change in the future as better tooling is developed.
 
-For now, here is a template for a transaction plan that withdraws 100 penumbra from the DAO and
+For now, here is a template for a transaction plan that withdraws 100 penumbra from the Community Pool and
 sends it to a specified address (in this case, the address of the author of this document):
 
 ```json
 {
-    "fee": { "amount": { "lo": 0, "hi": 0 } },
-    "actions": [
-        { "daoSpend": { "value": {
-            "amount": { "lo": 100000000, "hi": 0 },
-            "assetId": { "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA=" }
-        } } },
-        { "daoOutput": {
-            "value": {
-                "amount": { "lo": 100000000, "hi": 0 },
-                "assetId": { "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA=" }
-            },
-            "address": {
-                "inner": "vzZ60xfMPPwewTiSb08jk5OdUjc0BhQ7IXLgHAayJoi5mvmlnTpqFuaPU2hCBhwaEwO2c03tBbN/GVh0+CajAjYBmBq3yHAbzNJCnZS8jUs="
-            }
-        } }
-    ]
+  "fee": { "amount": { "lo": 0, "hi": 0 } },
+  "actions": [
+    {
+      "communityPoolSpend": {
+        "value": {
+          "amount": { "lo": 100000000, "hi": 0 },
+          "assetId": { "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA=" }
+        }
+      }
+    },
+    {
+      "communityPoolOutput": {
+        "value": {
+          "amount": { "lo": 100000000, "hi": 0 },
+          "assetId": { "inner": "KeqcLzNx9qSH5+lcJHBB9KNW+YPrBk5dKzvPMiypahA=" }
+        },
+        "address": {
+          "inner": "vzZ60xfMPPwewTiSb08jk5OdUjc0BhQ7IXLgHAayJoi5mvmlnTpqFuaPU2hCBhwaEwO2c03tBbN/GVh0+CajAjYBmBq3yHAbzNJCnZS8jUs="
+        }
+      }
+    }
+  ]
 }
 ```
 
 Note that the asset ID and address are specified not in the usual bech32 formats you are used to
 seeing, but in base64. To get your address in this format, use `pcli view address 0 --base64`.
 
-To template a DAO spend proposal using a JSON transaction plan, use the `pcli tx proposal template
-dao-spend --transaction-plan <FILENAME>.json`, which will take the transaction plan and include it
+To template a Community Pool spend proposal using a JSON transaction plan, use the `pcli tx proposal template
+community-pool-spend --transaction-plan <FILENAME>.json`, which will take the transaction plan and include it
 in the generated proposal template. If no plan is specified, the transaction plan will be the empty
 transaction which does nothing when executed.
 
@@ -234,8 +244,7 @@ community consensus), you can do so before voting concludes. Note that this does
 to losing your deposit by slashing, as withdrawn proposals can still be voted on and slashed.
 
 ```bash
-cargo run --release --bin pcli \
-    tx proposal withdraw 0 \
+pcli tx proposal withdraw 0 \
     --reason "some human-readable reason for withdrawal"
 ```
 
@@ -252,7 +261,7 @@ concludes, you can claim your proposal deposit using the `tx proposal deposit-cl
 say:
 
 ```bash
-cargo run --release --bin pcli tx proposal deposit-claim 1
+pcli tx proposal deposit-claim 1
 ```
 
 This will _consume_ your proposal deposit NFT (either the original or the one you received after
@@ -262,34 +271,34 @@ proposal was not slashed (that is, it passed _or_ failed), this action will also
 original proposal deposit. Note that you _can_ claim a slashed proposal: you will receive the
 slashed proposal result NFT, but you will not receive the original proposal deposit.
 
-## Contributing To The DAO
+## Contributing To The Community Pool
 
-Anyone can contribute any amount of any denomination to the Penumbra DAO. To do this, use the
-command `pcli tx dao-deposit`, like so:
+Anyone can contribute any amount of any denomination to the Penumbra Community Pool. To do this, use the
+command `pcli tx community-pool-deposit`, like so:
 
 ```bash
-cargo run --release --bin pcli tx dao-deposit 100penumbra
+pcli tx community-pool-deposit 100penumbra
 ```
 
-Funds contributed to the DAO cannot be withdrawn except by a successful DAO spend governance
+Funds contributed to the Community Pool cannot be withdrawn except by a successful Community Pool spend governance
 proposal.
 
-To query the current DAO balance, use `pcli query dao balance` with the **base denomination** of an
+To query the current Community Pool balance, use `pcli query community-pool balance` with the **base denomination** of an
 asset or its asset ID (display denominations are not currently accepted). For example:
 
 ```bash
-cargo run --release --bin pcli query dao balance upenumbra
+pcli query Community Pool balance upenumbra
 ```
 
-DAO spend proposals are only accepted for voting if they would not overdraw the current funds in the
-DAO at the time the proposal is submitted, so it's worth checking this information before submitting
+Community Pool spend proposals are only accepted for voting if they would not overdraw the current funds in the
+Community Pool at the time the proposal is submitted, so it's worth checking this information before submitting
 such a proposal.
 
-### Sending Validator Funding Streams To The DAO
+### Sending Validator Funding Streams To The Community Pool
 
-A validator may non-custodially send funds to the DAO, similarly to any other funding stream. To do
+A validator may non-custodially send funds to the Community Pool, similarly to any other funding stream. To do
 this, add a `[[funding_stream]]` section to your validator definition TOML file that declares the
-DAO as a recipient for a funding stream. For example, your definition might look like this:
+Community Pool as a recipient for a funding stream. For example, your definition might look like this:
 
 ```toml
 sequence_number = 0
@@ -309,8 +318,8 @@ value = "tDk3/k8zjEyDQjQC1jUyv8nJ1cC1B/MgrDzeWvBTGDM="
 recipient = "penumbrav2t1hum845ches70c8kp8zfx7nerjwfe653hxsrpgwepwtspcp4jy6ytnxhe5kwn56sku684x6zzqcwp5ycrkee5mmg9kdl3jkr5lqn2xq3kqxvp4d7gwqdue5jznk2ter2t66mk4n"
 rate_bps = 100
 
-# Send another 1% commission to the DAO:
+# Send another 1% commission to the Community Pool:
 [[funding_stream]]
-recipient = "DAO"
+recipient = "CommunityPool"
 rate_bps = 100
 ```

@@ -24,8 +24,8 @@ use regex::Regex;
 use serde_json::Value;
 use tempfile::{tempdir, NamedTempFile, TempDir};
 
-use penumbra_chain::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
-use penumbra_proto::core::transaction::v1alpha1::TransactionView as ProtoTransactionView;
+use penumbra_keys::test_keys::{ADDRESS_0_STR, ADDRESS_1_STR, SEED_PHRASE};
+use penumbra_proto::core::transaction::v1::TransactionView as ProtoTransactionView;
 use penumbra_transaction::view::TransactionView;
 
 // The number "1020" is chosen so that this is bigger than u64::MAX
@@ -63,7 +63,7 @@ fn load_wallet_into_tmpdir() -> TempDir {
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
     setup_cmd
         .assert()
-        .stdout(predicate::str::contains("Writing generated configs"));
+        .stdout(predicate::str::contains("Writing generated config"));
 
     tmpdir
 }
@@ -138,10 +138,13 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // Look up the transaction id from the command output so we can view it,
     // to exercise the `pcli view tx` code.
     let send_stdout = send_cmd.unwrap().stdout;
-    let tx_regex = Regex::new(r"[0-9a-f]{64}").unwrap();
+    let tx_regex = Regex::new(r"transaction confirmed and detected: ([0-9a-f]{64})").unwrap();
     let s = std::str::from_utf8(&send_stdout).unwrap();
     let captures = tx_regex.captures(s);
-    let tx_id = &captures.expect("can find transaction id within 'pcli send tx' output")[0];
+    let tx_id = &captures
+        .and_then(|x| x.get(1))
+        .expect("can find transaction id within 'pcli send tx' output")
+        .as_str();
     let mut view_cmd = Command::cargo_bin("pcli").unwrap();
     view_cmd
         .args([
@@ -228,6 +231,8 @@ fn transaction_sweep() {
 #[ignore]
 #[test]
 fn delegate_and_undelegate() {
+    tracing_subscriber::fmt::try_init().ok();
+    tracing::info!("delegate_and_undelegate");
     let tmpdir = load_wallet_into_tmpdir();
 
     // Get a validator from the testnet.
@@ -239,6 +244,7 @@ fn delegate_and_undelegate() {
 
     let mut num_attempts = 0;
     loop {
+        tracing::info!(attempt_number = num_attempts, "attempting delegation");
         // Delegate a tiny bit of penumbra to the validator.
         let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
         delegate_cmd
@@ -253,11 +259,14 @@ fn delegate_and_undelegate() {
             ])
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let delegation_result = delegate_cmd.assert().try_success();
+        tracing::info!(?delegation_result, "delegation result");
 
         // If the undelegation command succeeded, we can exit this loop.
         if delegation_result.is_ok() {
+            tracing::info!("delegation succeeded");
             break;
         } else {
+            tracing::info!("delegation failed");
             num_attempts += 1;
             if num_attempts >= max_attempts {
                 panic!("Exceeded max attempts for fallible command");
@@ -265,20 +274,39 @@ fn delegate_and_undelegate() {
         }
     }
 
+    tracing::info!("check that we have some of the delegation token");
     // Check we have some of the delegation token for that validator now.
     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
     balance_cmd
         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+
     balance_cmd
         .assert()
         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+
+    let balance_output = balance_cmd.output().unwrap().stdout;
+    let balance_output_string = String::from_utf8_lossy(&balance_output);
+
+    tracing::debug!(?balance_output_string, "balance output string");
+
+    // We successfully delegated. But since the validator exchange rates are dynamic, we
+    // need to pull the amount of delegation tokens we obtained so that we can later
+    // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
+    // To do this, we use a regex to extract the amount of delegation tokens we obtained:
+    let delegation_token_pattern = Regex::new(r"(\d+\.?\d+[a-z]?delegation_[a-zA-Z0-9]*)").unwrap();
+    let (delegation_token_str, [_match]) = delegation_token_pattern
+        .captures(&balance_output_string)
+        .expect("can find delegation token in balance output")
+        .extract();
+
+    tracing::info!("check passed, now undelegate");
 
     // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
     // while we prepare the delegation. See issues #1522, #2047.
     let mut num_attempts = 0;
     loop {
-        let amount_to_undelegate = format!("0.99delegation_{}", validator.as_str());
+        tracing::info!(attempt_number = num_attempts, "attempting undelegation");
         let mut undelegate_cmd = Command::cargo_bin("pcli").unwrap();
         undelegate_cmd
             .args([
@@ -286,24 +314,29 @@ fn delegate_and_undelegate() {
                 tmpdir.path().to_str().unwrap(),
                 "tx",
                 "undelegate",
-                amount_to_undelegate.as_str(),
+                delegation_token_str,
             ])
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let undelegation_result = undelegate_cmd.assert().try_success();
 
+        tracing::debug!("undelegation done");
         // If the undelegation command succeeded, we can exit this loop.
         if undelegation_result.is_ok() {
             break;
         } else {
             num_attempts += 1;
+            tracing::info!(num_attempts, max_attempts, "undelegation failed");
             if num_attempts >= max_attempts {
                 panic!("Exceeded max attempts for fallible command");
             }
         }
     }
 
+    tracing::info!("undelegation succeeded, wait an epoch before claiming.");
+
     // Wait for the epoch duration.
     thread::sleep(*UNBONDING_DURATION);
+    tracing::info!("epoch passed, claiming now");
     let mut undelegate_claim_cmd = Command::cargo_bin("pcli").unwrap();
     undelegate_claim_cmd
         .args([
@@ -313,7 +346,9 @@ fn delegate_and_undelegate() {
             "undelegate-claim",
         ])
         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+    tracing::info!(?undelegate_claim_cmd, "claiming");
     undelegate_claim_cmd.assert().success();
+    tracing::info!("success!");
     sync(&tmpdir);
 }
 

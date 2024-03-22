@@ -16,7 +16,7 @@ selection for an instantiation of [Poseidon], a SNARK-friendly sponge
 construction, over the BLS12-377 scalar field;
 
 - The [Fuzzy Message Detection](./crypto/fmd.md) section describes a
-construction that allows users to outsource a probabalistic detection
+construction that allows users to outsource a probabilistic detection
 capability, allowing a third party to scan and filter the chain on their behalf,
 without revealing precisely which transactions are theirs.
 

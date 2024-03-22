@@ -1,0 +1,335 @@
+{{ $fn_name := printf "%s" .Release.Name }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fn_name }}
+  labels:
+    {{- include "penumbra-node.labels" . | nindent 4 }}
+    "app.kubernetes.io/component": fullnode
+    {{- if .Values.part_of }}
+    "app.kubernetes.io/part-of": {{ .Values.part_of }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.nodes | len | int }}
+  volumeClaimTemplates:
+    - metadata:
+        name: penumbra-config
+        labels:
+          {{- include "penumbra-node.labels" . | nindent 10 }}
+          "app.kubernetes.io/component": fullnode
+          {{- if .Values.part_of }}
+          "app.kubernetes.io/part-of": {{ .Values.part_of }}
+          {{- end }}
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+    {{- if eq .Values.cometbft.config.indexer "psql" }}
+    - metadata:
+        name: db
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+    {{- end }}
+
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      # has to match .spec.template.metadata.labels
+      {{- include "penumbra-node.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "penumbra-node.selectorLabels" . | nindent 8 }}
+    spec:
+      # Force the pods to different k8s nodes, so that egress ip is unique per CometBFT node.
+      # Effectively limits the number of Penumbra nodes to the number of k8s nodes in the cluster.
+      # Setting `allow_duplicate_ip=true` in CometBFT config removes this constraint.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                {{- if .Values.part_of }}
+                  - key: "app.kubernetes.io/part-of"
+                    operator: In
+                    values:
+                      - {{ .Values.part_of }}
+                {{- end }}
+                  - key: "app.kubernetes.io/component"
+                    operator: In
+                    values:
+                      - fullnode
+                      - genesis-validator
+              topologyKey: kubernetes.io/hostname
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: penumbra-init
+          configMap:
+            name: {{ include "penumbra-node.fullname" . }}-pd-init
+            items:
+              - key: "pd-init"
+                path: "pd-init"
+              - key: "nodes.json"
+                path: "nodes.json"
+      {{- if eq .Values.cometbft.config.indexer "psql" }}
+        - name: postgres-schema
+          configMap:
+            name: {{ include "penumbra-node.fullname" . }}-postgres-schema
+            items:
+              - key: "postgres-cometbft-schema.sql"
+                path: "postgres-cometbft-schema.sql"
+      {{ end }}
+      {{- if .Values.postgres.certificateSecretName }}
+        - name: db-certificates
+          secret:
+            secretName: {{ .Values.postgres.certificateSecretName }}
+            defaultMode: 0600
+            items:
+              - key: "tls.crt"
+                path: "server.crt"
+              - key: "tls.key"
+                path: "server.key"
+      {{ end }}
+      initContainers:
+        - name: pd-init
+          securityContext:
+            # Run as root during init, so we can chown to penumbra & cometbft uids.
+            # The application itself will run as a normal user.
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+          env:
+            - name: PENUMBRA_BOOTSTRAP_URL
+              value: "{{ .Values.penumbra_bootstrap_node_cometbft_rpc_url }}"
+            - name: COMETBFT_CONFIG_P2P_MAX_NUM_INBOUND_PEERS
+              value: "{{ .Values.cometbft.config.p2p.max_num_inbound_peers }}"
+            - name: COMETBFT_CONFIG_P2P_MAX_NUM_OUTBOUND_PEERS
+              value: "{{ .Values.cometbft.config.p2p.max_num_outbound_peers }}"
+            - name: PENUMBRA_COMETBFT_INDEXER
+              value: "{{ .Values.cometbft.config.indexer }}"
+            {{- if .Values.postgres.credentialsSecretName }}
+            - name: COMETBFT_POSTGRES_CONNECTION_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: connection_url
+            {{- else }}
+            - name: COMETBFT_POSTGRES_CONNECTION_URL
+              value: "{{ .Values.cometbft.config.postgres_connection_url }}"
+            {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - /opt/penumbra/pd-init
+
+          volumeMounts:
+            - name: penumbra-init
+              mountPath: /opt/penumbra
+            - name: penumbra-config
+              mountPath: /penumbra-config
+
+      {{- if .Values.postgres.certificateSecretName }}
+        - name: db-init
+          securityContext:
+            # Run as root during init, so we can chown to postgres uid
+            # The application itself will run as a normal user.
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+          image: "docker.io/debian:stable"
+          imagePullPolicy: IfNotPresent
+          # The TLS files are mounted in via Secret, which means they're read-only.
+          # Postgres requires 999 and no-group access on those files, so we'll copy them out
+          # to a writable directory and chmod them there.
+          command:
+            - sh
+            - -cex
+            - |
+              cert_dir="/var/lib/postgresql/certs"
+              mkdir -p "$cert_dir"
+              chmod "0750" "$cert_dir"
+              cp -v /opt/postgres-certificates/server.crt /opt/postgres-certificates/server.key "$cert_dir"
+              chown -R 999:999 "$cert_dir"
+          volumeMounts:
+            - name: db
+              mountPath: /var/lib/postgresql
+            - name: db-certificates
+              mountPath: /opt/postgres-certificates
+      {{- end }}
+
+      containers:
+        - name: pd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+          {{- if .Values.maintenanceMode }}
+            - sleep
+            - infinity
+          {{- else }}
+            - /usr/bin/pd
+            - start
+            - --grpc-bind
+            - 0.0.0.0:8080
+            - --metrics-bind
+            - 0.0.0.0:9000
+            - --home
+            - /penumbra-config/testnet_data/node0/pd
+            - --enable-expensive-rpc
+          {{- end }}
+          ports:
+            - name: pd-grpc
+              containerPort: 8080
+              protocol: TCP
+            - name: pd-metrics
+              containerPort: 9000
+              protocol: TCP
+            - name: pd-abci
+              containerPort: 26658
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: penumbra-config
+              mountPath: /penumbra-config
+          securityContext:
+            runAsUser: {{ .Values.maintenanceMode | ternary 0 .Values.securityContext.runAsUser }}
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
+          readinessProbe:
+            tcpSocket:
+              port: pd-grpc
+            timeoutSeconds: 10
+            initialDelaySeconds: 10
+          {{- end }}
+
+        - name: cometbft
+          securityContext:
+            {{- toYaml .Values.cometbft.securityContext | nindent 12 }}
+          image: "{{ .Values.cometbft.image.repository }}:{{ .Values.cometbft.image.tag }}"
+          imagePullPolicy: {{ .Values.cometbft.image.pullPolicy }}
+          command:
+          {{- if .Values.maintenanceMode }}
+            - sleep
+            - infinity
+          {{- else }}
+            - cometbft
+            - start
+            - --proxy_app=tcp://127.0.0.1:26658
+          {{- end }}
+          ports:
+            - name: tm-p2p
+              containerPort: 26656
+              protocol: TCP
+            - name: tm-rpc
+              containerPort: 26657
+              protocol: TCP
+          {{- if .Values.maintenanceMode }}
+          {{- else }}
+          readinessProbe:
+            tcpSocket:
+              port: tm-rpc
+            timeoutSeconds: 10
+            initialDelaySeconds: 10
+          {{- end }}
+          resources:
+            {{- toYaml .Values.cometbft.resources | nindent 12 }}
+          volumeMounts:
+            - name: penumbra-config
+              mountPath: /cometbft
+              subPath: testnet_data/node0/cometbft
+      {{- if eq .Values.cometbft.config.indexer "psql" }}
+        - name: postgres
+          securityContext:
+            {{- toYaml .Values.postgres.securityContext | nindent 12 }}
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          {{- if .Values.maintenanceMode }}
+          command:
+            - sleep
+            - infinity
+          {{- end }}
+          {{- if .Values.postgres.certificateSecretName }}
+          args:
+          - -c
+          - ssl=on
+          - -c
+          - ssl_cert_file=/var/lib/postgresql/certs/server.crt
+          - -c
+          - ssl_key_file=/var/lib/postgresql/certs/server.key
+          {{- end }}
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+          {{- if .Values.postgres.credentialsSecretName }}
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: database
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.credentialsSecretName }}
+                  key: password
+          {{- else }}
+            - name: POSTGRES_DB
+              value: penumbra
+            - name: POSTGRES_USER
+              value: penumbra
+            - name: POSTGRES_PASSWORD
+              value: penumbra
+          {{- end }}
+            - name: ORDINAL_NUMBER
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['apps.kubernetes.io/pod-index']
+
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            timeoutSeconds: 10
+            initialDelaySeconds: 10
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: postgres-schema
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: db
+              mountPath: /var/lib/postgresql
+      {{ end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

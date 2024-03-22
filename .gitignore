@@ -41,6 +41,10 @@ tools/parameter-setup/Cargo.lock
 # to current host env.
 deployments/relayer/configs/penumbra-local.json
 
+# Logs, and other files from smoke tests
+deployments/logs/
+crates/bin/pcli/proposal.toml
+
 # Memory profiler, via bytehound or otherwise
 *.dat
 

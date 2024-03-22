@@ -18,7 +18,7 @@ use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::instrument;
 use url::Url;
 
-use penumbra_asset::{asset, Value};
+use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_dex::{
     lp::{
         position::{self, Position},
@@ -29,49 +29,57 @@ use penumbra_dex::{
 };
 use penumbra_fee::Fee;
 use penumbra_keys::{
-    keys::{AddressIndex, FullViewingKey, WalletId},
-    Address,
+    keys::WalletId,
+    keys::{AddressIndex, FullViewingKey},
+    Address, AddressView,
 };
 use penumbra_num::Amount;
-use penumbra_proto::view::v1alpha1::{WalletIdRequest, WalletIdResponse};
 use penumbra_proto::{
-    core::keys::v1alpha1 as pbc,
-    util::tendermint_proxy::v1alpha1::{
+    util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest,
     },
-    view::v1alpha1::{
+    view::v1::{
         self as pb,
-        view_protocol_service_client::ViewProtocolServiceClient,
-        view_protocol_service_server::{ViewProtocolService, ViewProtocolServiceServer},
-        AppParametersResponse, FmdParametersResponse, GasPricesResponse, NoteByCommitmentResponse,
-        StatusResponse, SwapByCommitmentResponse, TransactionPlannerResponse, WitnessResponse,
+        broadcast_transaction_response::{BroadcastSuccess, Confirmed, Status as BroadcastStatus},
+        view_service_client::ViewServiceClient,
+        view_service_server::{ViewService, ViewServiceServer},
+        AppParametersResponse, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
+        BroadcastTransactionResponse, FmdParametersResponse, GasPricesResponse,
+        NoteByCommitmentResponse, StatusResponse, SwapByCommitmentResponse,
+        TransactionPlannerResponse, WalletIdRequest, WalletIdResponse, WitnessResponse,
     },
     DomainType,
 };
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    plan::TransactionPlan, AuthorizationData, Transaction, TransactionPerspective, WitnessData,
+    AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
-use crate::{Planner, Storage, Worker};
+use crate::{worker::Worker, Planner, Storage};
+
+/// A [`futures::Stream`] of broadcast transaction responses.
+///
+/// See [`ViewService::broadcast_transaction()`].
+type BroadcastTransactionStream = Pin<
+    Box<dyn futures::Stream<Item = Result<pb::BroadcastTransactionResponse, tonic::Status>> + Send>,
+>;
 
 /// A service that synchronizes private chain state and responds to queries
 /// about it.
 ///
-/// The [`ViewService`] implements the Tonic-derived [`ViewProtocol`] trait,
+/// The [`ViewServer`] implements the Tonic-derived [`ViewService`] trait,
 /// so it can be used as a gRPC server, or called directly.  It spawns a task
 /// internally that performs synchronization and scanning.  The
-/// [`ViewService`] can be cloned; each clone will read from the same shared
+/// [`ViewServer`] can be cloned; each clone will read from the same shared
 /// state, but there will only be a single scanning task.
 #[derive(Clone)]
-pub struct ViewService {
+pub struct ViewServer {
     storage: Storage,
     // A shared error slot for errors bubbled up by the worker. This is a regular Mutex
     // rather than a Tokio Mutex because it should be uncontended.
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
-    wallet_id: WalletId,
     // A copy of the SCT used by the worker task.
     state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
     // The Url for the pd gRPC endpoint on remote node.
@@ -80,7 +88,7 @@ pub struct ViewService {
     sync_height_rx: watch::Receiver<u64>,
 }
 
-impl ViewService {
+impl ViewServer {
     /// Convenience method that calls [`Storage::load_or_initialize`] and then [`Self::new`].
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
@@ -105,30 +113,13 @@ impl ViewService {
 
         tokio::spawn(worker.run());
 
-        let fvk = storage.full_viewing_key().await?;
-        let wallet_id = fvk.wallet_id();
-
         Ok(Self {
             storage,
-            wallet_id,
             error_slot,
             sync_height_rx,
             state_commitment_tree: sct,
             node,
         })
-    }
-
-    /// Checks that the wallet ID, if present, matches the one for this service.
-    async fn check_wallet_id(&self, fvk: Option<&pbc::WalletId>) -> Result<(), tonic::Status> {
-        if let Some(fvk) = fvk {
-            if fvk != &self.wallet_id.into() {
-                return Err(tonic::Status::new(
-                    tonic::Code::InvalidArgument,
-                    "Invalid account ID",
-                ));
-            }
-        }
-        Ok(())
     }
 
     async fn check_worker(&self) -> Result<(), tonic::Status> {
@@ -169,71 +160,115 @@ impl ViewService {
     }
 
     #[instrument(skip(self, transaction), fields(id = %transaction.id()))]
-    async fn broadcast_transaction(
+    fn broadcast_transaction(
         &self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> anyhow::Result<penumbra_transaction::Id> {
-        use penumbra_app::ActionHandler;
+    ) -> BroadcastTransactionStream {
+        use penumbra_app::AppActionHandler;
 
-        // 1. Pre-check the transaction for (stateless) validity.
-        transaction
-            .check_stateless(())
-            .await
-            .context("transaction pre-submission checks failed")?;
+        let self2 = self.clone();
+        try_stream! {
+                // 1. Pre-check the transaction for (stateless) validity.
+                transaction
+                    .check_stateless(())
+                    .await
+                    .map_err(|e| {
+                        tonic::Status::unavailable(format!(
+                            "transaction pre-submission checks failed: {:#?}",
+                            e
+                        ))
+                    })?;
 
-        // 2. Broadcast the transaction to the network.
-        // Note that "synchronous" here means "wait for the tx to be accepted by
-        // the fullnode", not "wait for the tx to be included on chain.
-        let mut fullnode_client = self.tendermint_proxy_client().await?;
-        let node_rsp = fullnode_client
-            .broadcast_tx_sync(BroadcastTxSyncRequest {
-                params: transaction.encode_to_vec(),
-                req_id: OsRng.gen(),
-            })
-            .await?
-            .into_inner();
-        tracing::info!(?node_rsp);
-        if node_rsp.code != 0 {
-            anyhow::bail!(
-                "Error submitting transaction: code {}, log: {}",
-                node_rsp.code,
-                node_rsp.log,
-            );
-        }
+                // 2. Broadcast the transaction to the network.
+                // Note that "synchronous" here means "wait for the tx to be accepted by
+                // the fullnode", not "wait for the tx to be included on chain.
+                let mut fullnode_client = self2.tendermint_proxy_client().await
+                            .map_err(|e| {
+                                tonic::Status::unavailable(format!(
+                                    "couldn't connect to fullnode: {:#?}",
+                                    e
+                                ))
+                            })?
+                        ;
+                let node_rsp = fullnode_client
+                    .broadcast_tx_sync(BroadcastTxSyncRequest {
+                        params: transaction.encode_to_vec(),
+                        req_id: OsRng.gen(),
+                    })
+                    .await
+                    .map_err(|e| {
+                        tonic::Status::unavailable(format!(
+                            "error broadcasting tx: {:#?}",
+                            e
+                        ))
+                    })?
+                    .into_inner();
+                tracing::info!(?node_rsp);
+                match node_rsp.code {
+                    0 => Ok(()),
+                    _ => Err(tonic::Status::new(
+                        tonic::Code::Internal,
+                        format!(
+                            "Error submitting transaction: code {}, log: {}",
+                            node_rsp.code,
+                            node_rsp.log,
+                        ),
+                    )),
+                }?;
 
-        // 3. Optionally wait for the transaction to be detected by the view service.
-        let nullifier = if await_detection {
-            // This needs to be only *spend* nullifiers because the nullifier detection
-            // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749
-            //
-            // in the meantime, inline the definition from `Transaction`
-            transaction
-                .actions()
-                .filter_map(|action| match action {
-                    penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
-                    /*
-                    penumbra_transaction::Action::SwapClaim(swap_claim) => {
-                        Some(swap_claim.body.nullifier)
-                    }
-                     */
-                    _ => None,
-                })
-                .next()
-        } else {
-            None
-        };
+                // The transaction was submitted so we provide a status update
+                yield BroadcastTransactionResponse{ status: Some(BroadcastStatus::BroadcastSuccess(BroadcastSuccess{id:Some(transaction.id().into())}))};
 
-        if let Some(nullifier) = nullifier {
-            tracing::info!(?nullifier, "waiting for detection of nullifier");
-            let detection = self.storage.nullifier_status(nullifier, true);
-            tokio::time::timeout(std::time::Duration::from_secs(20), detection)
-                .await
-                .context("timeout waiting to detect nullifier of submitted transaction")?
-                .context("error while waiting for detection of submitted transaction")?;
-        }
+                // 3. Optionally wait for the transaction to be detected by the view service.
+                let nullifier = if await_detection {
+                    // This needs to be only *spend* nullifiers because the nullifier detection
+                    // is broken for swaps, https://github.com/penumbra-zone/penumbra/issues/1749
+                    //
+                    // in the meantime, inline the definition from `Transaction`
+                    transaction
+                        .actions()
+                        .filter_map(|action| match action {
+                            penumbra_transaction::Action::Spend(spend) => Some(spend.body.nullifier),
+                            /*
+                            penumbra_transaction::Action::SwapClaim(swap_claim) => {
+                                Some(swap_claim.body.nullifier)
+                            }
+                             */
+                            _ => None,
+                        })
+                        .next()
+                } else {
+                    None
+                };
 
-        Ok(transaction.id())
+                if let Some(nullifier) = nullifier {
+                    tracing::info!(?nullifier, "waiting for detection of nullifier");
+                    let detection = self2.storage.nullifier_status(nullifier, true);
+                    tokio::time::timeout(std::time::Duration::from_secs(20), detection)
+                        .await
+                        .map_err(|_| {
+                            tonic::Status::unavailable(
+                                "timeout waiting to detect nullifier of submitted transaction"
+                            )
+                        })?
+                        .map_err(|_| {
+                            tonic::Status::unavailable(
+                                "error while waiting for detection of submitted transaction"
+                            )
+                        })?;
+                }
+
+                let detection_height = self2.storage
+                    .transaction_by_hash(&transaction.id().0)
+                    .await
+                    .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
+                    .map(|(height, _tx)| height)
+                    // If we didn't find it for some reason, return 0 for unknown.
+                    // TODO: how does this change if we detach extended transaction fetch from scanning?
+                    .unwrap_or(0);
+                yield BroadcastTransactionResponse{ status: Some(BroadcastStatus::Confirmed(Confirmed{id:Some(transaction.id().into()), detection_height}))};
+            }.boxed()
     }
 
     async fn tendermint_proxy_client(
@@ -308,7 +343,7 @@ impl ViewService {
 }
 
 #[async_trait]
-impl ViewProtocolService for ViewService {
+impl ViewService for ViewServer {
     type NotesStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::NotesResponse, tonic::Status>> + Send>>;
     type NotesForVotingStream = Pin<
@@ -330,11 +365,26 @@ impl ViewProtocolService for ViewService {
     type UnclaimedSwapsStream = Pin<
         Box<dyn futures::Stream<Item = Result<pb::UnclaimedSwapsResponse, tonic::Status>> + Send>,
     >;
+    type BroadcastTransactionStream = BroadcastTransactionStream;
+    type WitnessAndBuildStream = Pin<
+        Box<dyn futures::Stream<Item = Result<pb::WitnessAndBuildResponse, tonic::Status>> + Send>,
+    >;
+    type AuthorizeAndBuildStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::AuthorizeAndBuildResponse, tonic::Status>> + Send,
+        >,
+    >;
+    type DelegationsByAddressIndexStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<pb::DelegationsByAddressIndexResponse, tonic::Status>>
+                + Send,
+        >,
+    >;
 
     async fn broadcast_transaction(
         &self,
         request: tonic::Request<pb::BroadcastTransactionRequest>,
-    ) -> Result<tonic::Response<pb::BroadcastTransactionResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::BroadcastTransactionStream>, tonic::Status> {
         let pb::BroadcastTransactionRequest {
             transaction,
             await_detection,
@@ -346,31 +396,9 @@ impl ViewProtocolService for ViewService {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        let id = self
-            .broadcast_transaction(transaction, await_detection)
-            .await
-            .map_err(|e| {
-                tonic::Status::internal(format!("could not broadcast transaction: {:#}", e))
-            })?;
+        let stream = self.broadcast_transaction(transaction, await_detection);
 
-        let detection_height = if await_detection {
-            // We already awaited detection, so we expect to know about the transaction:
-            self.storage
-                .transaction_by_hash(&id.0)
-                .await
-                .map_err(|e| tonic::Status::internal(format!("error querying storage: {:#}", e)))?
-                .map(|(height, _tx)| height)
-                // If we didn't find it for some reason, return 0 for unknown.
-                // TODO: how does this change if we detach extended transaction fetch from scanning?
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        Ok(tonic::Response::new(pb::BroadcastTransactionResponse {
-            id: Some(id.into()),
-            detection_height,
-        }))
+        Ok(tonic::Response::new(stream))
     }
 
     async fn transaction_planner(
@@ -384,19 +412,17 @@ impl ViewProtocolService for ViewService {
                 tonic::Status::internal(format!("could not get app params: {:#}", e))
             })?;
 
+        let gas_prices =
+            self.storage.gas_prices().await.map_err(|e| {
+                tonic::Status::internal(format!("could not get gas prices: {:#}", e))
+            })?;
+
+        // TODO: need to support passing the fee _in_ to this API via the TransactionPlannerRequest
+        // meaning the requester should fetch the gas prices and estimate cost/allow the user to modify
+        // fee paid
         let mut planner = Planner::new(OsRng);
-        planner
-            .fee(
-                match prq.fee {
-                    Some(x) => x,
-                    None => Fee::default().into(),
-                }
-                .try_into()
-                .map_err(|e| {
-                    tonic::Status::invalid_argument(format!("Could not parse fee: {e:#}"))
-                })?,
-            )
-            .expiry_height(prq.expiry_height);
+        planner.set_gas_prices(gas_prices);
+        planner.expiry_height(prq.expiry_height);
 
         for output in prq.outputs {
             let address: Address = output
@@ -483,11 +509,30 @@ impl ViewProtocolService for ViewService {
                 swap_plaintext: swap_record.swap,
                 position: swap_record.position,
                 output_data: swap_record.output_data,
-                epoch_duration: app_params.chain_params.epoch_duration,
+                epoch_duration: app_params.sct_params.epoch_duration,
                 proof_blinding_r: Fq::rand(&mut OsRng),
                 proof_blinding_s: Fq::rand(&mut OsRng),
             });
         }
+
+        let current_epoch = if prq.undelegations.is_empty() && prq.delegations.is_empty() {
+            None
+        } else {
+            Some(
+                prq.epoch
+                    .ok_or_else(|| {
+                        tonic::Status::invalid_argument(
+                            "Missing current epoch in TransactionPlannerRequest",
+                        )
+                    })?
+                    .try_into()
+                    .map_err(|e| {
+                        tonic::Status::invalid_argument(format!(
+                            "Could not parse current epoch: {e:#}"
+                        ))
+                    })?,
+            )
+        };
 
         for delegation in prq.delegations {
             let amount: Amount = delegation
@@ -498,8 +543,6 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse amount: {e:#}"))
                 })?;
 
-            let amount_u128: u128 = amount.into();
-
             let rate_data: RateData = delegation
                 .rate_data
                 .ok_or_else(|| tonic::Status::invalid_argument("Missing rate data"))?
@@ -508,7 +551,11 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.delegate(amount_u128, rate_data);
+            planner.delegate(
+                current_epoch.expect("checked that current epoch is present"),
+                amount,
+                rate_data,
+            );
         }
 
         for undelegation in prq.undelegations {
@@ -528,7 +575,11 @@ impl ViewProtocolService for ViewService {
                     tonic::Status::invalid_argument(format!("Could not parse rate data: {e:#}"))
                 })?;
 
-            planner.undelegate(value.amount, rate_data);
+            planner.undelegate(
+                current_epoch.expect("checked that current epoch is present"),
+                value.amount,
+                rate_data,
+            );
         }
 
         for position_open in prq.position_opens {
@@ -601,11 +652,7 @@ impl ViewProtocolService for ViewService {
             );
         }
 
-        let fvk = self.storage.full_viewing_key().await.map_err(|e| {
-            tonic::Status::failed_precondition(format!("Error retrieving full viewing key: {e:#}"))
-        })?;
-        let mut client_of_self =
-            ViewProtocolServiceClient::new(ViewProtocolServiceServer::new(self.clone()));
+        let mut client_of_self = ViewServiceClient::new(ViewServiceServer::new(self.clone()));
 
         let source = prq
             .source
@@ -615,7 +662,7 @@ impl ViewProtocolService for ViewService {
             .unwrap_or(0u32);
 
         let plan = planner
-            .plan(&mut client_of_self, fvk.wallet_id(), source.into())
+            .plan(&mut client_of_self, source.into())
             .await
             .context("could not plan requested transaction")
             .map_err(|e| tonic::Status::invalid_argument(format!("{e:#}")))?;
@@ -718,13 +765,13 @@ impl ViewProtocolService for ViewService {
                             "missing transaction ID in TransactionInfoByHashRequest",
                         )
                     })?
-                    .hash,
+                    .inner,
             )
             .await
             .map_err(|_| {
                 tonic::Status::failed_precondition(format!(
                     "Error retrieving transaction by hash {}",
-                    hex::encode(request.id.expect("transaction id is present").hash)
+                    hex::encode(request.id.expect("transaction id is present").inner)
                 ))
             })?;
 
@@ -814,7 +861,7 @@ impl ViewProtocolService for ViewService {
                     let memo = tx.decrypt_memo(&fvk).map_err(|_| {
                         tonic::Status::internal("Error decrypting memo for OutputView")
                     })?;
-                    address_views.insert(memo.return_address, fvk.view_address(address));
+                    address_views.insert(memo.return_address(), fvk.view_address(address));
                 }
                 ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
                     let address = swap_plaintext.claim_address;
@@ -877,8 +924,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::SwapByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::SwapByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let request = request.into_inner();
 
@@ -904,6 +949,7 @@ impl ViewProtocolService for ViewService {
         }))
     }
 
+    #[allow(deprecated)]
     #[instrument(skip(self, request))]
     async fn balances(
         &self,
@@ -935,15 +981,56 @@ impl ViewProtocolService for ViewService {
 
         tracing::debug!(?account_filter, ?asset_id_filter, ?result);
 
+        let self2 = self.clone();
         let stream = try_stream! {
+            // retrieve balance and address views
             for element in result {
-                yield pb::BalancesResponse {
-                    account: account_filter.clone().map(Into::into),
-                    balance: Some(Value {
-                        asset_id: element.0.into(),
-                        amount: element.1.into(),
-                    }.into()),
+                let metadata: Metadata = self2
+                    .asset_metadata_by_id(Request::new(pb::AssetMetadataByIdRequest {
+                        asset_id: Some(element.id.into()),
+                    }))
+                    .await?
+                    .into_inner()
+                    .denom_metadata
+                    .context("denom metadata not found")?
+                    .try_into()?;
 
+                 let value = Value {
+                    asset_id: element.id,
+                    amount: element.amount.into(),
+                };
+
+                let value_view = value.view_with_denom(metadata)?;
+
+                let address: Address = self2
+                  .address_by_index(Request::new(pb::AddressByIndexRequest {
+                       address_index: account_filter.map(Into::into),
+                   }))
+                   .await?
+                    .into_inner()
+                    .address
+                    .context("address not found")?
+                    .try_into()?;
+
+                 let wallet_id: WalletId = self2
+                            .wallet_id(Request::new(pb::WalletIdRequest {}))
+                            .await?
+                            .into_inner()
+                            .wallet_id
+                            .context("wallet id not found")?
+                            .try_into()?;
+
+                let address_view = AddressView::Decoded {
+                    address,
+                    index: element.address_index,
+                    wallet_id,
+                };
+
+                yield pb::BalancesResponse {
+                    account_address: Some(address_view.into()),
+                    balance_view: Some(value_view.into()),
+                    balance: None,
+                    account: None,
                 }
             }
         };
@@ -962,8 +1049,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NoteByCommitmentRequest>,
     ) -> Result<tonic::Response<pb::NoteByCommitmentResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let request = request.into_inner();
 
@@ -994,8 +1079,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NullifierStatusRequest>,
     ) -> Result<tonic::Response<pb::NullifierStatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let request = request.into_inner();
 
@@ -1016,11 +1099,9 @@ impl ViewProtocolService for ViewService {
 
     async fn status(
         &self,
-        request: tonic::Request<pb::StatusRequest>,
+        _: tonic::Request<pb::StatusRequest>,
     ) -> Result<tonic::Response<pb::StatusResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         Ok(tonic::Response::new(self.status().await.map_err(|e| {
             tonic::Status::internal(format!("error: {e}"))
@@ -1029,11 +1110,9 @@ impl ViewProtocolService for ViewService {
 
     async fn status_stream(
         &self,
-        request: tonic::Request<pb::StatusStreamRequest>,
+        _: tonic::Request<pb::StatusStreamRequest>,
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let (latest_known_block_height, _) =
             self.latest_known_block_height().await.map_err(|e| {
@@ -1066,8 +1145,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesRequest>,
     ) -> Result<tonic::Response<Self::NotesStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let request = request.into_inner();
 
@@ -1119,8 +1196,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::NotesForVotingRequest>,
     ) -> Result<tonic::Response<Self::NotesForVotingStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let address_index = request
             .get_ref()
@@ -1276,8 +1351,6 @@ impl ViewProtocolService for ViewService {
         request: tonic::Request<pb::WitnessRequest>,
     ) -> Result<tonic::Response<WitnessResponse>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         // Acquire a read lock for the SCT that will live for the entire request,
         // so that all auth paths are relative to the same SCT root.
@@ -1287,18 +1360,31 @@ impl ViewProtocolService for ViewService {
         let anchor = sct.root();
 
         // Obtain an auth path for each requested note commitment
-        let requested_note_commitments = request
-            .get_ref()
-            .note_commitments
-            .iter()
-            .map(|nc| StateCommitment::try_from(nc.clone()))
-            .collect::<Result<Vec<StateCommitment>, _>>()
-            .map_err(|_| {
-                tonic::Status::new(
-                    tonic::Code::InvalidArgument,
-                    "Unable to deserialize note commitment",
-                )
-            })?;
+        let tx_plan: TransactionPlan =
+            request
+                .get_ref()
+                .to_owned()
+                .transaction_plan
+                .map_or(TransactionPlan::default(), |x| {
+                    x.try_into()
+                        .expect("TransactionPlan should exist in request")
+                });
+
+        let requested_note_commitments: Vec<StateCommitment> = tx_plan
+            .spend_plans()
+            .filter(|plan| plan.note.amount() != 0u64.into())
+            .map(|spend| spend.note.commit().into())
+            .chain(
+                tx_plan
+                    .swap_claim_plans()
+                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
+            )
+            .chain(
+                tx_plan
+                    .delegator_vote_plans()
+                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
+            )
+            .collect();
 
         tracing::debug!(?requested_note_commitments);
 
@@ -1324,16 +1410,6 @@ impl ViewProtocolService for ViewService {
 
         tracing::debug!(?witness_data);
 
-        let tx_plan: TransactionPlan =
-            request
-                .get_ref()
-                .to_owned()
-                .transaction_plan
-                .map_or(TransactionPlan::default(), |x| {
-                    x.try_into()
-                        .expect("TransactionPlan should exist in request")
-                });
-
         // Now we need to augment the witness data with dummy proofs such that
         // note commitments corresponding to dummy spends also have proofs.
         for nc in tx_plan
@@ -1353,7 +1429,7 @@ impl ViewProtocolService for ViewService {
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::WitnessAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::WitnessAndBuildStream>, tonic::Status> {
         let pb::WitnessAndBuildRequest {
             transaction_plan,
             authorization_data,
@@ -1365,24 +1441,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction plan"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        // Get the witness data from the view service only for non-zero amounts of value,
-        // since dummy spends will have a zero amount.
-        let note_commitments = transaction_plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() != 0u64.into())
-            .map(|spend| spend.note.commit().into())
-            .chain(
-                transaction_plan
-                    .swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
-            )
-            .chain(
-                transaction_plan
-                    .delegator_vote_plans()
-                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
-            )
-            .collect();
-
         let authorization_data: AuthorizationData = authorization_data
             .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
             .try_into()
@@ -1390,8 +1448,6 @@ impl ViewProtocolService for ViewService {
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
         let witness_request = pb::WitnessRequest {
-            wallet_id: Some(self.wallet_id.into()),
-            note_commitments,
             transaction_plan: Some(transaction_plan.clone().into()),
         };
 
@@ -1412,14 +1468,28 @@ impl ViewProtocolService for ViewService {
 
         let transaction = Some(
             transaction_plan
+                // TODO: calling `.build` should provide some mechanism to get progress
+                // updates
                 .build(&fvk, &witness_data, &authorization_data)
                 .map_err(|_| tonic::Status::failed_precondition("Error building transaction"))?
                 .into(),
         );
 
-        Ok(tonic::Response::new(pb::WitnessAndBuildResponse {
-            transaction,
-        }))
+        let stream = try_stream! {
+            yield pb::WitnessAndBuildResponse {
+                status: Some(pb::witness_and_build_response::Status::Complete(
+                    pb::witness_and_build_response::Complete { transaction },
+                )),
+            }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error witnessing transaction: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn app_parameters(
@@ -1525,17 +1595,15 @@ impl ViewProtocolService for ViewService {
     async fn authorize_and_build(
         &self,
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
-    ) -> Result<tonic::Response<pb::AuthorizeAndBuildResponse>, tonic::Status> {
+    ) -> Result<tonic::Response<Self::AuthorizeAndBuildStream>, tonic::Status> {
         unimplemented!("authorize_and_build")
     }
 
     async fn unclaimed_swaps(
         &self,
-        request: tonic::Request<pb::UnclaimedSwapsRequest>,
+        _: tonic::Request<pb::UnclaimedSwapsRequest>,
     ) -> Result<tonic::Response<Self::UnclaimedSwapsStream>, tonic::Status> {
         self.check_worker().await?;
-        self.check_wallet_id(request.get_ref().wallet_id.as_ref())
-            .await?;
 
         let swaps = self.storage.unclaimed_swaps().await.map_err(|e| {
             tonic::Status::unavailable(format!("error fetching unclaimed swaps: {e}"))
@@ -1569,5 +1637,34 @@ impl ViewProtocolService for ViewService {
         Ok(Response::new(WalletIdResponse {
             wallet_id: Some(fvk.wallet_id().into()),
         }))
+    }
+
+    async fn asset_metadata_by_id(
+        &self,
+        request: Request<AssetMetadataByIdRequest>,
+    ) -> Result<Response<AssetMetadataByIdResponse>, Status> {
+        let asset_id = request
+            .into_inner()
+            .asset_id
+            .ok_or_else(|| Status::invalid_argument("missing asset id"))?
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e:#}")))?;
+
+        let metadata = self
+            .storage
+            .asset_by_id(&asset_id)
+            .await
+            .map_err(|e| Status::internal(format!("Error retrieving asset by id: {e:#}")))?;
+
+        Ok(Response::new(AssetMetadataByIdResponse {
+            denom_metadata: metadata.map(Into::into),
+        }))
+    }
+
+    async fn delegations_by_address_index(
+        &self,
+        _request: tonic::Request<pb::DelegationsByAddressIndexRequest>,
+    ) -> Result<tonic::Response<Self::DelegationsByAddressIndexStream>, tonic::Status> {
+        unimplemented!("delegations_by_address_index")
     }
 }

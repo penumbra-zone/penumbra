@@ -160,7 +160,7 @@ ciphertext ($c_i$). To aggregate a given $v_e, v_e'$, simply add each limb:
 
 $$v_{agg} = v_e + v_e' = [c_0+c_0', c_1+c_1', c_2+c_2', c_3+c_3'] = \cdots = v_q + v_q' = v + v'$$
 
-This holds due to the homomorphic property of ElGamal cipertexts.
+This holds due to the homomorphic property of ElGamal ciphertexts.
 
 The block producer aggregates every $v_{ei}$, producing a public transcript of
 the aggregation. The transcript can then be publicly validated by any validator
@@ -250,7 +250,7 @@ where $\lambda_{i}$ is the lagrange coefficient (for x=0) at $i$, defined by
 
 $$\lambda_{0,i} = \prod_{n \in S, n \neq i} \frac{n}{n - i}$$
 
-where $S$ is the set of all participant indicies.
+where $S$ is the set of all participant indices.
 
 Then, compute the resulting decryption by taking
 

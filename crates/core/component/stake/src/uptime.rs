@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Records information on a validator's uptime.
@@ -76,6 +76,11 @@ impl Uptime {
     /// Counts the number of missed blocks over the window.
     pub fn num_missed_blocks(&self) -> usize {
         self.signatures.iter_zeros().len()
+    }
+
+    /// Returns the block height up to which this tracker has recorded.
+    pub fn as_of_height(&self) -> u64 {
+        self.as_of_block_height
     }
 }
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-use crate::asset::{denom_metadata, DenomMetadata, Unit};
+use crate::asset::{denom_metadata, Metadata, Unit};
 
 use super::denom_metadata::Inner;
 
@@ -49,7 +49,7 @@ impl Registry {
     ///
     /// If the denomination is unknown, returns `Some` with the parsed base
     /// denomination and default display denomination (base = display).
-    pub fn parse_denom(&self, raw_denom: &str) -> Option<DenomMetadata> {
+    pub fn parse_denom(&self, raw_denom: &str) -> Option<Metadata> {
         // We hope that our regexes are disjoint (TODO: add code to test this)
         // so that there will only ever be one match from the RegexSet.
 
@@ -64,7 +64,7 @@ impl Registry {
                 .map(|m| m.as_str())
                 .unwrap_or("");
 
-            Some(DenomMetadata {
+            Some(Metadata {
                 inner: Arc::new(self.constructors[base_index](data)),
             })
         } else if self.display_set.matches(raw_denom).iter().next().is_some() {
@@ -72,7 +72,7 @@ impl Registry {
             None
         } else {
             // 3. Fallthrough: create default base denom
-            Some(DenomMetadata {
+            Some(Metadata {
                 inner: Arc::new(Inner::new(raw_denom.to_string(), Vec::new())),
             })
         }
@@ -356,10 +356,10 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             // Note: this regex must be in sync with UnbondingToken::try_from
             // and VALIDATOR_IDENTITY_BECH32_PREFIX in the penumbra-stake crate
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+            "^uunbonding_(?P<data>start_at_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
             &[
-                "^unbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
-                "^munbonding_(?P<data>epoch_(?P<start>[0-9]+)_until_(?P<end>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+                "^unbonding_(?P<data>start_at_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
+                "^munbonding_(?P<data>start_at_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$",
             ],
             (|data: &str| {
                 assert!(!data.is_empty());
@@ -382,7 +382,7 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
             // Note: this regex must be in sync with LpNft::try_from
             // and the bech32 prefix for LP IDs defined in the proto crate.
             // TODO: this doesn't restrict the length of the bech32 encoding
-            "^lpnft_(?P<data>[a-z]+_plpid1[a-zA-HJ-NP-Z0-9]+)$",
+            "^lpnft_(?P<data>[a-z_0-9]+_plpid1[a-zA-HJ-NP-Z0-9]+)$",
             &[ /* no display units - nft, unit 1 */ ],
             (|data: &str| {
                 assert!(!data.is_empty());

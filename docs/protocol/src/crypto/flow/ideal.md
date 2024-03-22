@@ -51,7 +51,7 @@ the specific instantiation.
 
 ###### `FlowEnc/Encrypt`
 
-This an algorithm run by users. On input an encryption key $D$ and the opening
+This is an algorithm run by users. On input an encryption key $D$ and the opening
 $(v, \widetilde{v})$
 to a Pedersen commitment $C$, this algorithm outputs a
 ciphertext $E = \operatorname{Enc}(v)$ and a proof $\pi_{\operatorname{Enc}}$ which establishes that
@@ -81,7 +81,7 @@ In the case of same-block decryption,
 this assumption requires some care to integrate with the process for coming to
 consensus on the block containing transactions to batch and decrypt, but this is
 out-of-scope for flow encryption itself.  See [Flow Encryption and
-Consensus](../../protocol/flow-consensus.md) for details on this aspect in
+Consensus](../flow-encryption/flow-consensus.md) for details on this aspect in
 Penumbra specifically.
 
 ###### `FlowEnc/PreDecrypt`
@@ -133,7 +133,7 @@ that in the case where decryptors are validators, they can jointly learn the
 batched flow at the same time as they finalize a block and commit its state
 changes.  This property is important to avoid requiring a pipelined execution
 model.  For more details, see [Flow Encryption and
-Consensus](../../protocol/flow-consensus.md).
+Consensus](../flow-encryption/flow-consensus.md).
 
 Note that we do not require that any *specific* subset of decryption shares is
 used to get the (unique) decryption result in `FlowEnc/Decrypt`.  This permits a
@@ -149,7 +149,7 @@ participants (decryptors) must be able to verify that counterparty participants
 (other decryptors) are contributing to the DKG honestly, without the use of a
 trusted dealer. This can be achieved using something similar to [Feldman's
 Verifiable Secret Sharing][feldman] protocol, where each participant shares a
-commitment to their share which is visable to all other participants. In
+commitment to their share which is visible to all other participants. In
 addition, our DKG must be able to tolerate *rogue-key attacks*: that is, it
 must tolerate the instance where a validator maliciously chooses their share
 based on the value of the other validator's shares in order to cancel out other

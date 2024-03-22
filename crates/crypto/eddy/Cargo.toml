@@ -1,26 +1,24 @@
 [package]
 name = "penumbra-eddy"
-version = "0.63.1"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-parking_lot = "0.12"
-decaf377 = "0.5"
-anyhow = "1"
-futures = "0.3"
-merlin = "3"
-rand_core = "0.6"
-rand = "0.8.5"
-proptest = "1"
-ark-ff = { version = "0.4", default_features = false }
-ark-std = {version = "0.4", default-features = false}
-thiserror = "1"
-
-[dev-dependencies]
-tokio = { version = "1.21.1", features = ["full"]}
+version = {workspace = true}
+edition = {workspace = true}
 
 [features]
 default = ["std"]
 std = ["ark-ff/std", "ark-std/std"]
+
+[dependencies]
+anyhow = {workspace = true}
+ark-ff = {workspace = true, default-features = false}
+ark-std = {workspace = true, default-features = false}
+decaf377 = {workspace = true}
+futures = {workspace = true}
+merlin = "3"
+parking_lot = {workspace = true}
+proptest = {workspace = true}
+rand = {workspace = true}
+rand_core = {workspace = true}
+thiserror = {workspace = true}
+
+[dev-dependencies]
+tokio = {workspace = true, features = ["full"]}

@@ -3,13 +3,13 @@
 Transactions describe an atomic collection of changes to the ledger state.  Each
 transaction consists of a sequence of *descriptions* for various actions[^1].
 Each description adds or subtracts (typed) value from the transaction's value
-balance, which must net to zero.  Penumbra adapts the *Spend* and *Output* actions from Sapling, and adds many new descriptions to support additional functionality:
+balance, which must net to zero.
 
 Penumbra adapts Sapling's *Spend*, which
 spends a note and adds to the transaction's value balance, and
 *Output*, which creates a new note and subtracts from the
-transaction's value balance, and adds many new descriptions to support
-additional functionality:
+transaction's value balance. Penumbra also adds many new descriptions
+to support additional functionality:
 
 #### Transfers
 
@@ -35,10 +35,6 @@ pool](../stake/undelegation.md), consuming delegation tokens from the
 transaction's value balance and producing new notes recording the appropriate
 amount of unbonded stake;
 
-- **Commission** descriptions are used by validators to [sweep commission on
-staking rewards](../stake/validator-rewards.md) into shielded notes,
-adding unbonded stake to the transaction's value balance;
-
 #### Governance
 
 - **CreateProposal** descriptions are used to [propose measures for on-chain
@@ -57,23 +53,23 @@ description leaves the value balance unchanged.
 #### Trading
 
 - **Swap** descriptions perform the first phase of
-[ZSwap](../zswap.md), consuming tokens of one type from a
+a swap, consuming tokens of one type from a
 transaction's value balance, burning them, and producing a swap commitment for
 use in the second stage;
 
-- **Sweep** descriptions perform the second phase of
-[ZSwap](../zswap.md), allowing a user who burned tokens of one
+- **SwapClaim** descriptions perform the second phase of
+a swap, allowing a user who burned tokens of one
 type to mint tokens of the other type at the chain-specified clearing price, and
 adding the new tokens to a transaction's value balance;
 
 #### Market-making
 
-- **OpenPosition** descriptions open [concentrated liquidity
-positions](../zswap.md#concentrated-liquidity), consuming value of the traded types from the
+- **OpenPosition** descriptions open concentrated liquidity
+positions, consuming value of the traded types from the
 transaction's value balance and adding the specified position to the AMM state;
 
-- **ClosePosition** descriptions close [concentrated liquidity
-positions](../zswap.md#concentrated-liquidity), removing the specified position to the AMM
+- **ClosePosition** descriptions close concentrated liquidity
+positions, removing the specified position to the AMM
 state and adding the value of the position, plus any accumulated fees or
 liquidity rewards, to the transaction's value balance.
 

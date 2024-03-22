@@ -1,7 +1,8 @@
 use anyhow::Result;
+
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
 use penumbra_keys::FullViewingKey;
-use penumbra_transaction::{plan::TransactionPlan, AuthorizationData, Transaction};
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 
 pub async fn build_transaction<V, C>(
@@ -26,13 +27,12 @@ where
         .try_into()?;
 
     // Send a witness request to the view service to get witness data
-    let witness_data = view.witness(fvk.wallet_id(), &plan).await?;
+    let witness_data = view.witness(&plan).await?;
 
     // ... and then build the transaction:
     #[cfg(not(feature = "parallel"))]
     {
-        let unauth_tx = plan.build(fvk, witness_data)?;
-        let tx = unauth_tx.authorize(&mut rng, &auth_data)?;
+        let tx = plan.build(fvk, &witness_data, &auth_data)?;
         return Ok(tx);
     }
 

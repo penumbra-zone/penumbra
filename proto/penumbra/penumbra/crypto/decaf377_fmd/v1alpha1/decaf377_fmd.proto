@@ -1,7 +1,0 @@
-syntax = "proto3";
-package penumbra.crypto.decaf377_fmd.v1alpha1;
-
-// A clue for use with Fuzzy Message Detection.
-message Clue {
-  bytes inner = 1;
-}

@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
+use penumbra_stake::GovernanceKey;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use url::Url;
@@ -24,6 +25,8 @@ pub struct PcliConfig {
     pub full_viewing_key: FullViewingKey,
     /// The custody backend to use.
     pub custody: CustodyConfig,
+    /// The governance custody backend to use.
+    pub governance_custody: Option<GovernanceCustodyConfig>,
 }
 
 impl PcliConfig {
@@ -40,6 +43,17 @@ impl PcliConfig {
         std::fs::write(path, contents)?;
         Ok(())
     }
+
+    pub fn governance_key(&self) -> GovernanceKey {
+        let fvk = match &self.governance_custody {
+            Some(GovernanceCustodyConfig::SoftKms(SoftKmsConfig { spend_key, .. })) => {
+                spend_key.full_viewing_key()
+            }
+            Some(GovernanceCustodyConfig::Threshold(threshold_config)) => threshold_config.fvk(),
+            None => &self.full_viewing_key,
+        };
+        GovernanceKey(fvk.spend_verification_key().clone())
+    }
 }
 
 /// The custody backend to use.
@@ -49,6 +63,17 @@ impl PcliConfig {
 pub enum CustodyConfig {
     /// A view-only client that can't sign transactions.
     ViewOnly,
+    /// A software key management service.
+    SoftKms(SoftKmsConfig),
+    /// A manual threshold custody service.
+    Threshold(ThresholdConfig),
+}
+
+/// The governance custody backend to use.
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[serde(tag = "backend")]
+#[allow(clippy::large_enum_variant)]
+pub enum GovernanceCustodyConfig {
     /// A software key management service.
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
@@ -82,10 +107,11 @@ mod tests {
             grpc_url: Url::parse("https://grpc.testnet.penumbra.zone").unwrap(),
             disable_warning: false,
             view_url: None,
-            full_viewing_key: penumbra_chain::test_keys::FULL_VIEWING_KEY.clone(),
+            full_viewing_key: penumbra_keys::test_keys::FULL_VIEWING_KEY.clone(),
             custody: CustodyConfig::SoftKms(SoftKmsConfig::from(
-                penumbra_chain::test_keys::SPEND_KEY.clone(),
+                penumbra_keys::test_keys::SPEND_KEY.clone(),
             )),
+            governance_custody: None,
         };
 
         let mut config2 = config.clone();

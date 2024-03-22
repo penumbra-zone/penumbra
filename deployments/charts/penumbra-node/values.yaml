@@ -38,7 +38,7 @@ cometbft:
     repository: cometbft/cometbft
     pullPolicy: IfNotPresent
     # https://github.com/cometbft/cometbft#supported-versions
-    tag: "v0.37.2"
+    tag: "v0.37.5"
   # Override sections of the CometBFT config. Applies to all nodes.
   config:
     p2p:
@@ -47,6 +47,7 @@ cometbft:
     # Set the indexer strategy. Can be "kv" or "psql".
     indexer: kv
     # URL for connecting to the postgresql database. Only used if `indexer=psql`.
+    # N.B. If `postgres.credentialsSecretName` is set, the value from that Secret will be used instead.
     postgres_connection_url: "postgresql://penumbra:penumbra@localhost:5432/penumbra?sslmode=disable"
 
 # settings for optional postgres sidecar, used for indexing cometbft events
@@ -55,6 +56,18 @@ postgres:
     repository: docker.io/library/postgres
     pullPolicy: IfNotPresent
     tag: "latest"
+  # In order to support TLS for an external db connection, consider reusing a `kubernetes.io/tls`
+  # Secret here, which will be mounted read-only and used for SSL. Requires an externally-provisioned LB.
+  certificateSecretName: ""
+  # Load database auth info from a Secret resource, created out of band. Must have keys:
+  #
+  #   - database
+  #   - username
+  #   - password
+  #   - connection_url
+  #
+  # where `connection_url` is formatted like the example in `cometbft.config.postgres_connection_url`.
+  credentialsSecretName: ""
 
 # Configure nodes. By default, only one is created.
 # Extend this list to add more. Valid node attributes are:
@@ -86,7 +99,14 @@ ingressRoute:
   secretName: ""
   # Traefik middleware CRDs, to be applied to pd's gRPC service.
   # These config objects must already exist in the API, i.e. create them out of band.
-  middlewares: []
+  middlewares:
+    - name: ratelimit-pd
+
+# Whether to place the application in "maintenance mode", effectively stopping pd and cometbft,
+# allowing an administrator to inspect and munge local state, e.g. to perform a chain upgrade.
+# Makes two changes: 1) sets the `command` for the containers to `sleep infinity`; and 2) sets
+# the uid for the pd container to 0/root
+maintenanceMode: false
 
 imagePullSecrets: []
 nameOverride: ""
@@ -106,32 +126,16 @@ podAnnotations: {}
 podSecurityContext: {}
   # fsGroup: 2000
 
-securityContext: {}
+securityContext:
+  # The Penumbra container sets 1000 as default UID. We'll use that by default.
+  # See also `maintenanceMode=true`, which overrides this to 0.
+  runAsUser: 1000
+
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-  # runAsUser: 1000
-
-# N.B. Ingress is not used. In order to have HTTPS support
-# for pd's gRPC support, you'll need to configure support for h2c.
-# Or, you can add an LB service for pd and enable the auto https setting.
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 resources: {}
   # limits:

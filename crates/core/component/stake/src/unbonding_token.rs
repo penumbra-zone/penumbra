@@ -13,28 +13,28 @@ use crate::IdentityKey;
 /// which unbonding began.
 pub struct UnbondingToken {
     validator_identity: IdentityKey,
-    start_epoch_index: u64,
-    base_denom: asset::DenomMetadata,
+    unbonding_start_height: u64,
+    base_denom: asset::Metadata,
 }
 
 impl UnbondingToken {
-    pub fn new(validator_identity: IdentityKey, start_epoch_index: u64) -> Self {
+    pub fn new(validator_identity: IdentityKey, unbonding_start_height: u64) -> Self {
         // This format string needs to be in sync with the asset registry
         let base_denom = asset::REGISTRY
             .parse_denom(&format!(
                 // "uu" is not a typo, these are micro-unbonding tokens
-                "uunbonding_epoch_{start_epoch_index}_{validator_identity}"
+                "uunbonding_start_at_{unbonding_start_height}_{validator_identity}"
             ))
             .expect("base denom format is valid");
         UnbondingToken {
             validator_identity,
             base_denom,
-            start_epoch_index,
+            unbonding_start_height,
         }
     }
 
     /// Get the base denomination for this delegation token.
-    pub fn denom(&self) -> asset::DenomMetadata {
+    pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 
@@ -53,22 +53,22 @@ impl UnbondingToken {
         self.validator_identity.clone()
     }
 
-    pub fn start_epoch_index(&self) -> u64 {
-        self.start_epoch_index
+    pub fn unbonding_start_height(&self) -> u64 {
+        self.unbonding_start_height
     }
 }
 
-impl TryFrom<asset::DenomMetadata> for UnbondingToken {
+impl TryFrom<asset::Metadata> for UnbondingToken {
     type Error = anyhow::Error;
 
-    fn try_from(base_denom: asset::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(base_denom: asset::Metadata) -> Result<Self, Self::Error> {
         let base_string = base_denom.to_string();
 
         // Note: this regex must be in sync with both asset::REGISTRY
         // and VALIDATOR_IDENTITY_BECH32_PREFIX
         // The data capture group is used by asset::REGISTRY
         let captures =
-            Regex::new("^uunbonding_(?P<data>epoch_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
+            Regex::new("^uunbonding_(?P<data>start_at_(?P<start>[0-9]+)_(?P<validator>penumbravalid1[a-zA-HJ-NP-Z0-9]+))$")
                 .expect("regex is valid")
                 .captures(base_string.as_ref())
                 .ok_or_else(|| {
@@ -84,7 +84,7 @@ impl TryFrom<asset::DenomMetadata> for UnbondingToken {
             .as_str()
             .parse()?;
 
-        let start_epoch_index = captures
+        let unbonding_start_height = captures
             .name("start")
             .expect("start is a named capture")
             .as_str()
@@ -93,7 +93,7 @@ impl TryFrom<asset::DenomMetadata> for UnbondingToken {
         Ok(Self {
             base_denom,
             validator_identity,
-            start_epoch_index,
+            unbonding_start_height,
         })
     }
 }

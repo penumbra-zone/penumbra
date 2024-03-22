@@ -1,8 +1,8 @@
 use anyhow::Result;
 
+use cnidarium::{StateDelta, StateRead};
 use penumbra_asset::asset;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_storage::{StateDelta, StateRead};
 use std::cmp::Ordering;
 use tracing::Instrument;
 
@@ -44,10 +44,6 @@ impl<S: StateRead + 'static> Path<S> {
             state,
             span,
         }
-    }
-
-    pub fn state(&self) -> &StateDelta<S> {
-        &self.state
     }
 
     // We can't clone, because StateDelta only has an explicit fork() on purpose

@@ -1,8 +1,8 @@
 nodes:
   - external_address: 35.202.100.199:26656
-    moniker: phobos-seed
+    moniker: ceres-seed
     seed_mode: true
   - external_address: 34.16.34.194:26656
-    moniker: deimos
+    moniker: vesta
   - external_address: 34.173.166.32:26656
-    moniker: naiad
+    moniker: pallas

@@ -1,27 +1,26 @@
-use penumbra_chain::params::ChainParameters;
-use penumbra_compact_block::StatePayload;
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
-use penumbra_dex::{
-    BatchSwapOutputData, PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw, Swap,
-    SwapClaim,
-};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
+use penumbra_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
 use penumbra_fee::Gas;
 use penumbra_ibc::IbcRelay;
-use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{Ics20Withdrawal, Output, Spend};
 use penumbra_stake::{
     validator::Definition as ValidatorDefinition, Delegate, Undelegate, UndelegateClaim,
 };
 
 use penumbra_governance::{
-    DelegatorVote, ProposalDepositClaim, ProposalKind, ProposalSubmit, ProposalWithdraw,
-    ValidatorVote,
+    DelegatorVote, ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote,
 };
 
 use crate::{
     plan::{ActionPlan, TransactionPlan},
     Action, Transaction,
 };
+
+const NULLIFIER_SIZE: u64 = 2 + 32;
+const NOTEPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 32 + 2 + 132;
+const SWAPPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 272;
+// This is an approximation, the actual size is variable
+const BSOD_SIZE: u64 = 16 + 16 + 0 + 4 + 64 + 4;
 
 /// Allows [`Action`]s and [`Transaction`]s to statically indicate their relative resource consumption.
 /// Since the gas cost needs to be multiplied by a price, the values returned
@@ -30,7 +29,7 @@ pub trait GasCost {
     fn gas_cost(&self) -> Gas;
 }
 
-fn spend_gas_cost() -> Gas {
+pub fn spend_gas_cost() -> Gas {
     Gas {
         // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
         // will use the encoded size of the complete transaction to calculate the block space.
@@ -38,7 +37,7 @@ fn spend_gas_cost() -> Gas {
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a Spend this is the byte size of a `Nullifier`.
-        compact_block_space: std::mem::size_of::<Nullifier>() as u64,
+        compact_block_space: NULLIFIER_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -46,15 +45,14 @@ fn spend_gas_cost() -> Gas {
     }
 }
 
-fn output_gas_cost() -> Gas {
+pub fn output_gas_cost() -> Gas {
     Gas {
         // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
         // will use the encoded size of the complete transaction to calculate the block space.
         block_space: 0,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
-        // For an Output this is the byte size of a [`StatePayload`].
-        compact_block_space: std::mem::size_of::<StatePayload>() as u64,
+        compact_block_space: NOTEPAYLOAD_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -105,7 +103,7 @@ fn undelegate_claim_gas_cost() -> Gas {
         // to the compact block.
         // For an UndelegateClaim, nothing is added to the compact block directly. The associated [`Action::Output`]
         // actions will add their costs, but there's nothing to add here.
-        compact_block_space: std::mem::size_of::<Nullifier>() as u64,
+        compact_block_space: 0,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -140,8 +138,8 @@ fn swap_gas_cost() -> Gas {
         // Swaps batched so technically the cost of the `BatchSwapOutputData` is shared across
         // multiple swaps, but if only one swap for a trading pair is performed in a block, that
         // swap will add a `BatchSwapOutputData` all on its own.
-        compact_block_space: (std::mem::size_of::<StatePayload>()
-            + std::mem::size_of::<BatchSwapOutputData>()) as u64,
+        // Note: the BSOD has variable size, we pick an approximation.
+        compact_block_space: SWAPPAYLOAD_SIZE + BSOD_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -198,22 +196,6 @@ fn position_withdraw_gas_cost() -> Gas {
     }
 }
 
-fn position_reward_claim_gas_cost() -> Gas {
-    Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
-        // The compact block space cost is based on the byte size of the data the [`Action`] adds
-        // to the compact block.
-        // For a PositionRewardClaim the compact block is not modified.
-        compact_block_space: 0u64,
-        // Does not include a zk-SNARK proof, so there's no verification cost.
-        verification: 0,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
-        execution: 10,
-    }
-}
-
 impl GasCost for Transaction {
     fn gas_cost(&self) -> Gas {
         self.actions().map(GasCost::gas_cost).sum()
@@ -257,11 +239,10 @@ impl GasCost for ActionPlan {
             ActionPlan::PositionOpen(po) => po.gas_cost(),
             ActionPlan::PositionClose(pc) => pc.gas_cost(),
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
-            ActionPlan::PositionRewardClaim(_) => position_reward_claim_gas_cost(),
-            ActionPlan::DaoSpend(ds) => ds.gas_cost(),
-            ActionPlan::DaoOutput(d) => d.gas_cost(),
-            ActionPlan::DaoDeposit(dd) => dd.gas_cost(),
-            ActionPlan::Withdrawal(w) => w.gas_cost(),
+            ActionPlan::CommunityPoolSpend(ds) => ds.gas_cost(),
+            ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
+            ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
+            ActionPlan::Ics20Withdrawal(w) => w.gas_cost(),
         }
     }
 }
@@ -284,11 +265,10 @@ impl GasCost for Action {
             Action::PositionOpen(p) => p.gas_cost(),
             Action::PositionClose(p) => p.gas_cost(),
             Action::PositionWithdraw(p) => p.gas_cost(),
-            Action::PositionRewardClaim(p) => p.gas_cost(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.gas_cost(),
-            Action::DaoDeposit(deposit) => deposit.gas_cost(),
-            Action::DaoSpend(spend) => spend.gas_cost(),
-            Action::DaoOutput(output) => output.gas_cost(),
+            Action::CommunityPoolDeposit(deposit) => deposit.gas_cost(),
+            Action::CommunityPoolSpend(spend) => spend.gas_cost(),
+            Action::CommunityPoolOutput(output) => output.gas_cost(),
             Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
         }
@@ -343,13 +323,10 @@ impl GasCost for ProposalSubmit {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
             // will use the encoded size of the complete transaction to calculate the block space.
             block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a ProposalSubmit the compact block is only modified if the proposal type is a `ParameterChange`.
-            compact_block_space: match self.proposal.kind() {
-                ProposalKind::ParameterChange => std::mem::size_of::<ChainParameters>() as u64,
-                _ => 0u64,
-            },
+            // In the case of a proposal submission, the compact block cost is zero.
+            // The compact block is only modified it the proposal is ratified.
+            // And when that's the case, the cost is mutualized.
+            compact_block_space: 0,
             // There are some checks performed to validate the proposed state changes, so we include a constant verification cost,
             // smaller than a zk-SNARK verification cost.
             verification: 100,
@@ -461,12 +438,6 @@ impl GasCost for PositionWithdraw {
     }
 }
 
-impl GasCost for PositionRewardClaim {
-    fn gas_cost(&self) -> Gas {
-        position_reward_claim_gas_cost()
-    }
-}
-
 impl GasCost for Ics20Withdrawal {
     fn gas_cost(&self) -> Gas {
         Gas {
@@ -485,7 +456,7 @@ impl GasCost for Ics20Withdrawal {
     }
 }
 
-impl GasCost for DaoDeposit {
+impl GasCost for CommunityPoolDeposit {
     fn gas_cost(&self) -> Gas {
         Gas {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
@@ -493,7 +464,7 @@ impl GasCost for DaoDeposit {
             block_space: 0,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
-            // For a DaoDeposit the compact block is not modified.
+            // For a CommunityPoolDeposit the compact block is not modified.
             compact_block_space: 0u64,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
@@ -503,7 +474,7 @@ impl GasCost for DaoDeposit {
     }
 }
 
-impl GasCost for DaoSpend {
+impl GasCost for CommunityPoolSpend {
     fn gas_cost(&self) -> Gas {
         Gas {
             // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
@@ -511,7 +482,7 @@ impl GasCost for DaoSpend {
             block_space: 0,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
-            // For a DaoSpend the compact block is not modified.
+            // For a CommunityPoolSpend the compact block is not modified.
             compact_block_space: 0u64,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
@@ -521,20 +492,14 @@ impl GasCost for DaoSpend {
     }
 }
 
-impl GasCost for DaoOutput {
+impl GasCost for CommunityPoolOutput {
     fn gas_cost(&self) -> Gas {
+        // We hardcode the gas costs of a `CommunityPoolOutput` to 0, since it's a protocol action.
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
             block_space: 0,
-            // The compact block space cost is based on the byte size of the data the [`Action`] adds
-            // to the compact block.
-            // For a DaoOutput this is the byte size of a [`StatePayload`].
-            compact_block_space: std::mem::size_of::<StatePayload>() as u64,
-            // Does not include a zk-SNARK proof, so there's no verification cost.
+            compact_block_space: 0,
             verification: 0,
-            // Execution cost is currently hardcoded at 10 for all Action variants.
-            execution: 10,
+            execution: 0,
         }
     }
 }
@@ -550,7 +515,7 @@ impl GasCost for IbcRelay {
             // For a IbcAction this is the byte size of a [`StatePayload`].
             compact_block_space: match self {
                 // RecvPacket will mint a note if successful.
-                IbcRelay::RecvPacket(_) => std::mem::size_of::<StatePayload>() as u64,
+                IbcRelay::RecvPacket(_) => NOTEPAYLOAD_SIZE,
                 _ => 0u64,
             },
             // Includes a proof in the execution for RecvPacket (TODO: check the other variants).

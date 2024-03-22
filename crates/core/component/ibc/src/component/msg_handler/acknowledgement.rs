@@ -1,18 +1,18 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::core::{
     channel::channel::Order as ChannelOrder, channel::channel::State as ChannelState,
     channel::events, channel::msgs::MsgAcknowledgement, channel::PortId,
     connection::State as ConnectionState,
 };
-use penumbra_storage::StateWrite;
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::{commit_packet, PacketProofVerifier},
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -23,7 +23,11 @@ impl MsgHandler for MsgAcknowledgement {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -60,7 +64,7 @@ impl MsgHandler for MsgAcknowledgement {
         }
 
         state
-            .verify_packet_ack_proof(&connection, self)
+            .verify_packet_ack_proof::<HI>(&connection, self)
             .await
             .with_context(|| "packet ack proof verification failed")?;
 
@@ -75,7 +79,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            H::acknowledge_packet_check(&mut state, self).await?;
+            AH::acknowledge_packet_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -115,7 +119,7 @@ impl MsgHandler for MsgAcknowledgement {
 
         let transfer = PortId::transfer();
         if self.packet.port_on_b == transfer {
-            H::acknowledge_packet_execute(state, self).await;
+            AH::acknowledge_packet_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

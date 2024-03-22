@@ -40,18 +40,18 @@
           <table class="table-auto w-full border-separate">
             <tbody>
               <tr class="font-bold">
-                <th class="">Slot</th>
-                <th class="">Who</th>
-                <th class="">What</th>
-                <th class="">When</th>
+                <th class="text-center">Slot</th>
+                <th class="text-center">When</th>
+                <th class="text-center">What</th>
+                <th class="text-center">Who</th>
               </tr>
 
               {% for contribution in contributions_by_slot_hash_time_shortaddr.iter() %}
               <tr class="font-mono text-xs">
-                <td class="px-4 whitespace-nowrap">{{ contribution.0 }}</td>
-                <td class="px-4 whitespace-nowrap">{{ contribution.3 }}</td>
-                <td class="px-4 whitespace-nowrap">{{ contribution.1 }}</td>
-                <td class="px-4 whitespace-nowrap">{{ contribution.2 }}</td>
+                <td class="px-4 whitespace-nowrap text-center">{{ contribution.0 }}</td>
+                <td class="px-4 whitespace-nowrap text-center">{{ contribution.2 }}</td>
+                <td class="px-4 whitespace-nowrap text-center">{{ contribution.1 }}</td>
+                <td class="px-4 whitespace-nowrap text-center">{{ contribution.3 }}</td>
               </tr>
               {% endfor %}
             </tbody>

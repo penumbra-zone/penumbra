@@ -1,7 +1,9 @@
+use crate::prefix::MerklePrefixExt;
+use crate::IBC_COMMITMENT_PREFIX;
 use async_trait::async_trait;
 use ibc_proto::ibc::core::channel::v1::query_server::Query as ConsensusQuery;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
+    Channel, PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
     QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
     QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
     QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
@@ -13,34 +15,75 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketReceiptRequest, QueryPacketReceiptResponse, QueryUnreceivedAcksRequest,
     QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest, QueryUnreceivedPacketsResponse,
 };
-
-use ibc_proto::ibc::core::client::v1::Height;
+use ibc_proto::ibc::core::client::v1::{Height, IdentifiedClientState};
+use ibc_types::path::{
+    AckPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
+    ReceiptPath, SeqRecvPath, SeqSendPath,
+};
+use ibc_types::DomainType;
 
 use ibc_types::core::channel::{ChannelId, IdentifiedChannelEnd, PortId};
 
 use ibc_types::core::connection::ConnectionId;
+use prost::Message;
 
 use std::str::FromStr;
 
-use crate::component::ChannelStateReadExt;
+use crate::component::{ChannelStateReadExt, ConnectionStateReadExt, HostInterface};
 
 use super::IbcQuery;
 
 #[async_trait]
-impl ConsensusQuery for IbcQuery {
+impl<HI: HostInterface + Send + Sync + 'static> ConsensusQuery for IbcQuery<HI> {
     /// Channel queries an IBC Channel.
     async fn channel(
         &self,
-        _request: tonic::Request<QueryChannelRequest>,
+        request: tonic::Request<QueryChannelRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (channel, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ChannelEndPath::new(&port_id, &channel_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map(|res| {
+                let channel = res
+                    .0
+                    .map(|chan_bytes| Channel::decode(chan_bytes.as_ref()))
+                    .transpose();
+
+                (channel, res.1)
+            })
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel: {e}")))?;
+
+        let channel =
+            channel.map_err(|e| tonic::Status::aborted(format!("couldn't decode channel: {e}")))?;
+
+        let res = QueryChannelResponse {
+            channel,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        };
+
+        Ok(tonic::Response::new(res))
     }
     /// Channels queries all the IBC channels of a chain.
     async fn channels(
         &self,
         _request: tonic::Request<QueryChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -87,7 +130,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryConnectionChannelsRequest>,
     ) -> std::result::Result<tonic::Response<QueryConnectionChannelsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -138,25 +181,209 @@ impl ConsensusQuery for IbcQuery {
     /// with the provided channel identifiers.
     async fn channel_client_state(
         &self,
-        _request: tonic::Request<QueryChannelClientStateRequest>,
+        request: tonic::Request<QueryChannelClientStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelClientStateResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+
+        // 1. get the channel
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let channel = snapshot
+            .get_channel(&channel_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?
+            .ok_or("unable to get channel")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        // 2. get the connection for the channel
+        let connection_id = channel
+            .connection_hops
+            .first()
+            .ok_or("channel has no connection hops")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get connection for channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?.ok_or("unable to get connection").map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?;
+
+        // 3. get the client state for the connection
+        let (client_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(ClientStatePath::new(&connection.client_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let client_state_any = client_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        let identified_client_state = IdentifiedClientState {
+            client_id: connection.client_id.clone().to_string(),
+            client_state: client_state_any,
+        };
+
+        Ok(tonic::Response::new(QueryChannelClientStateResponse {
+            identified_client_state: Some(identified_client_state),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// ChannelConsensusState queries for the consensus state for the channel
     /// associated with the provided channel identifiers.
     async fn channel_consensus_state(
         &self,
-        _request: tonic::Request<QueryChannelConsensusStateRequest>,
+        request: tonic::Request<QueryChannelConsensusStateRequest>,
     ) -> std::result::Result<tonic::Response<QueryChannelConsensusStateResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+        let consensus_state_height = ibc_types::core::client::Height {
+            revision_number: request.get_ref().revision_number,
+            revision_height: request.get_ref().revision_height,
+        };
+
+        // 1. get the channel
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let channel = snapshot
+            .get_channel(&channel_id, &port_id)
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?
+            .ok_or("unable to get channel")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        // 2. get the connection for the channel
+        let connection_id = channel
+            .connection_hops
+            .first()
+            .ok_or("channel has no connection hops")
+            .map_err(|e| {
+                tonic::Status::aborted(format!(
+                    "couldn't get connection for channel {channel_id} for port {port_id}: {e}"
+                ))
+            })?;
+
+        let connection = snapshot.get_connection(&connection_id).await.map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?.ok_or("unable to get connection").map_err(|e| {
+            tonic::Status::aborted(format!(
+                "couldn't get connection {connection_id} for channel {channel_id} for port {port_id}: {e}"
+            ))
+        })?;
+
+        // 3. get the consensus state for the connection
+        let (consensus_state, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        ClientConsensusStatePath::new(
+                            &connection.client_id,
+                            &consensus_state_height,
+                        )
+                        .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get client state: {e}")))?;
+
+        let consensus_state_any = consensus_state
+            .map(|cs_bytes| ibc_proto::google::protobuf::Any::decode(cs_bytes.as_ref()))
+            .transpose()
+            .map_err(|e| tonic::Status::aborted(format!("couldn't decode client state: {e}")))?;
+
+        Ok(tonic::Response::new(QueryChannelConsensusStateResponse {
+            consensus_state: consensus_state_any,
+            client_id: connection.client_id.clone().to_string(),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
         &self,
-        _request: tonic::Request<QueryPacketCommitmentRequest>,
+        request: tonic::Request<QueryPacketCommitmentRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+
+        let port_id = PortId::from_str(&request.get_ref().port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+        let channel_id = ChannelId::from_str(&request.get_ref().channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+
+        let (commitment, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        CommitmentPath::new(
+                            &port_id,
+                            &channel_id,
+                            request.get_ref().sequence.into(),
+                        )
+                        .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get packet commitment: {e}")))?;
+
+        let commitment =
+            commitment.ok_or_else(|| tonic::Status::aborted("commitment not found"))?;
+
+        Ok(tonic::Response::new(QueryPacketCommitmentResponse {
+            commitment,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketCommitments returns all the packet commitments hashes associated
     /// with a channel.
@@ -164,7 +391,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryPacketCommitmentsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketCommitmentsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = snapshot.version();
         let request = request.get_ref();
 
@@ -224,17 +451,75 @@ impl ConsensusQuery for IbcQuery {
     /// queried chain
     async fn packet_receipt(
         &self,
-        _request: tonic::Request<QueryPacketReceiptRequest>,
+        request: tonic::Request<QueryPacketReceiptRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketReceiptResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+
+        let port_id = PortId::from_str(&request.get_ref().port_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+        let channel_id = ChannelId::from_str(&request.get_ref().channel_id)
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+
+        let (receipt, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        ReceiptPath::new(&port_id, &channel_id, request.get_ref().sequence.into())
+                            .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get packet commitment: {e}")))?;
+
+        Ok(tonic::Response::new(QueryPacketReceiptResponse {
+            received: receipt.is_some(),
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
         &self,
-        _request: tonic::Request<QueryPacketAcknowledgementRequest>,
+        request: tonic::Request<QueryPacketAcknowledgementRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (acknowledgement, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(
+                        AckPath::new(&port_id, &channel_id, request.get_ref().sequence.into())
+                            .to_string(),
+                    )
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| {
+                tonic::Status::aborted(format!("couldn't get packet acknowledgement: {e}"))
+            })?;
+
+        let acknowledgement =
+            acknowledgement.ok_or_else(|| tonic::Status::aborted("acknowledgement not found"))?;
+
+        Ok(tonic::Response::new(QueryPacketAcknowledgementResponse {
+            acknowledgement,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
     /// PacketAcknowledgements returns all the packet acknowledgements associated
     /// with a channel.
@@ -243,7 +528,7 @@ impl ConsensusQuery for IbcQuery {
         request: tonic::Request<QueryPacketAcknowledgementsRequest>,
     ) -> std::result::Result<tonic::Response<QueryPacketAcknowledgementsResponse>, tonic::Status>
     {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -302,7 +587,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryUnreceivedPacketsRequest>,
     ) -> std::result::Result<tonic::Response<QueryUnreceivedPacketsResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = snapshot.version();
         let request = request.get_ref();
 
@@ -351,7 +636,7 @@ impl ConsensusQuery for IbcQuery {
         &self,
         request: tonic::Request<QueryUnreceivedAcksRequest>,
     ) -> std::result::Result<tonic::Response<QueryUnreceivedAcksResponse>, tonic::Status> {
-        let snapshot = self.0.latest_snapshot();
+        let snapshot = self.storage.latest_snapshot();
         let height = Height {
             revision_number: 0,
             revision_height: snapshot.version(),
@@ -397,16 +682,72 @@ impl ConsensusQuery for IbcQuery {
     /// NextSequenceReceive returns the next receive sequence for a given channel.
     async fn next_sequence_receive(
         &self,
-        _request: tonic::Request<QueryNextSequenceReceiveRequest>,
+        request: tonic::Request<QueryNextSequenceReceiveRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceReceiveResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (next_recv_sequence, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqRecvPath::new(&port_id, &channel_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel: {e}")))?;
+
+        let next_recv_sequence = next_recv_sequence
+            .map(|seq_bytes| u64::from_be_bytes(seq_bytes.try_into().expect("invalid sequence")))
+            .ok_or_else(|| tonic::Status::aborted("next receive sequence not found"))?;
+
+        Ok(tonic::Response::new(QueryNextSequenceReceiveResponse {
+            next_sequence_receive: next_recv_sequence,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
 
     /// NextSequenceSend returns the next send sequence for a given channel.
     async fn next_sequence_send(
         &self,
-        _request: tonic::Request<QueryNextSequenceSendRequest>,
+        request: tonic::Request<QueryNextSequenceSendRequest>,
     ) -> std::result::Result<tonic::Response<QueryNextSequenceSendResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+
+        let channel_id = ChannelId::from_str(request.get_ref().channel_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid channel id: {e}")))?;
+        let port_id = PortId::from_str(request.get_ref().port_id.as_str())
+            .map_err(|e| tonic::Status::aborted(format!("invalid port id: {e}")))?;
+
+        let (next_send_sequence, proof) = snapshot
+            .get_with_proof(
+                IBC_COMMITMENT_PREFIX
+                    .apply_string(SeqSendPath::new(&port_id, &channel_id).to_string())
+                    .as_bytes()
+                    .to_vec(),
+            )
+            .await
+            .map_err(|e| tonic::Status::aborted(format!("couldn't get channel: {e}")))?;
+
+        let next_send_sequence = next_send_sequence
+            .map(|seq_bytes| u64::from_be_bytes(seq_bytes.try_into().expect("invalid sequence")))
+            .ok_or_else(|| tonic::Status::aborted("next receive sequence not found"))?;
+
+        Ok(tonic::Response::new(QueryNextSequenceSendResponse {
+            next_sequence_send: next_send_sequence,
+            proof: proof.encode_to_vec(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: snapshot.version(),
+            }),
+        }))
     }
 }

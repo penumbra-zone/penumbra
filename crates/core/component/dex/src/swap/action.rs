@@ -4,9 +4,9 @@ use decaf377::Fr;
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{
-    core::component::dex::v1alpha1 as pbc, penumbra::core::component::dex::v1alpha1 as pb,
-    DomainType,
+    core::component::dex::v1 as pbc, penumbra::core::component::dex::v1 as pb, DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::TradingPair;
@@ -36,6 +36,14 @@ impl Swap {
         let commitment_input_2 = input_2.commit(Fr::zero());
 
         commitment_input_1 + commitment_input_2 + self.body.fee_commitment
+    }
+}
+
+impl EffectingData for Swap {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the swap, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
     }
 }
 
@@ -79,6 +87,12 @@ pub struct Body {
     pub delta_2_i: Amount,
     pub fee_commitment: balance::Commitment,
     pub payload: SwapPayload,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
 }
 
 impl DomainType for Body {

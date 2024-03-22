@@ -11,8 +11,8 @@ use crate::component::{
     MsgHandler,
 };
 
+use cnidarium::StateWrite;
 use ibc_types::core::connection::State as ConnectionState;
-use penumbra_storage::StateWrite;
 
 #[async_trait]
 impl MsgHandler for MsgConnectionOpenInit {
@@ -22,7 +22,7 @@ impl MsgHandler for MsgConnectionOpenInit {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
 
         // check that the client with the specified ID exists

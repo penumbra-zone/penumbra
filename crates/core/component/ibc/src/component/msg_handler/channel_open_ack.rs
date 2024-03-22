@@ -1,18 +1,18 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::{
     channel::channel::State as ChannelState, channel::events, channel::msgs::MsgChannelOpenAck,
     channel::ChannelEnd, channel::Counterparty, channel::PortId, connection::ConnectionEnd,
     connection::State as ConnectionState,
 };
-use penumbra_storage::{StateRead, StateWrite};
 
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
     connection::StateReadExt as _,
     proof_verification::ChannelProofVerifier,
-    MsgHandler,
+    HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -23,7 +23,11 @@ impl MsgHandler for MsgChannelOpenAck {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -69,7 +73,7 @@ impl MsgHandler for MsgChannelOpenAck {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            H::chan_open_ack_check(&mut state, self).await?;
+            AH::chan_open_ack_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -96,7 +100,7 @@ impl MsgHandler for MsgChannelOpenAck {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            H::chan_open_ack_execute(state, self).await;
+            AH::chan_open_ack_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

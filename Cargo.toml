@@ -3,70 +3,71 @@
 # Set virtual workspace's resolver to v1, to support the "rust-docs" script.
 resolver = "1"
 
-exclude = [
-    "tools/proto-compiler",
-    "tools/parameter-setup",
-]
+exclude = ["tools/proto-compiler", "tools/parameter-setup"]
 
 # Also remember to add to deployments/scripts/rust-docs
 members = [
-  "crates/proto",
-  "crates/storage",
+  "crates/bench",
+  "crates/bin/pcli",
+  "crates/bin/pclientd",
+  "crates/bin/pd",
+  "crates/cnidarium",
+  "crates/cnidarium-component",
+  "crates/core/app",
+  "crates/core/asset",
+  "crates/core/component/community-pool",
+  "crates/core/component/compact-block",
+  "crates/core/component/dex",
+  "crates/core/component/distributions",
+  "crates/core/component/fee",
+  "crates/core/component/funding",
+  "crates/core/component/funding",
+  "crates/core/component/governance",
+  "crates/core/component/ibc",
+  "crates/core/component/sct",
+  "crates/core/component/shielded-pool",
+  "crates/core/component/stake",
+  "crates/core/genesis",
+  "crates/core/keys",
+  "crates/core/num",
+  "crates/core/transaction",
+  "crates/core/txhash",
   "crates/crypto/decaf377-fmd",
   "crates/crypto/decaf377-frost",
   "crates/crypto/decaf377-ka",
   "crates/crypto/eddy",
-  "crates/crypto/tct",
   "crates/crypto/proof-params",
   "crates/crypto/proof-setup",
-  "crates/core/num",
-  "crates/core/keys",
-  "crates/core/asset",
-  "crates/core/component/component",
-  "crates/core/component/chain",
-  "crates/core/component/shielded-pool",
-  "crates/core/component/governance",
-  "crates/core/component/ibc",
-  "crates/core/component/dao",
-  "crates/core/component/dex",
-  "crates/core/component/sct",
-  "crates/core/component/fee",
-  "crates/core/component/compact-block",
-  "crates/core/component/distributions",
-  "crates/core/component/stake",
-  "crates/core/transaction",
-  "crates/core/app",
+  "crates/crypto/tct",
   "crates/custody",
-  "crates/wallet",
-  "crates/view",
-  "crates/util/tendermint-proxy",
-  "crates/util/tower-trace",
-  "crates/bin/pd",
-  "crates/bin/pclientd",
-  "crates/bin/pcli",
-  "crates/wasm",
-  "crates/narsil/narsil",
-  "crates/test/tct-property-test",
   "crates/misc/measure",
   "crates/misc/tct-visualize",
-  "crates/bench",
+  "crates/proto",
+  "crates/test/mock-client",
+  "crates/test/mock-consensus",
+  "crates/test/tct-property-test",
+  "crates/util/auto-https",
+  "crates/util/tendermint-proxy",
+  "crates/util/tower-trace",
+  "crates/view",
+  "crates/wallet",
   "tools/summonerd",
 ]
-
-# Optimize for small binaries in just the wasm crate.
-[profile.release.package.penumbra-wasm]
-opt-level = "s"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.4.2"
+cargo-dist-version = "0.5.0"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
 rust-toolchain-version = "1.73"
 # CI backends to support
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin"]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+]
 # The installers to generate for each app
 installers = []
 # Publish jobs to run in CI
@@ -85,7 +86,7 @@ shared-version = true
 # Format spec for the auto-generated git tag, based on new version for release.
 tag-name = "v{{version}}"
 # The message is required for an annotated tag to be created.
-tag-message = "Penumbra version {{version}}"
+tag-message                = "Penumbra version {{version}}"
 pre-release-commit-message = "chore: release version {{version}}"
 # Don't push to crates.io; we're still using git branches for velocity.
 publish = false
@@ -93,3 +94,135 @@ publish = false
 tag = true
 # Don't push, since we're still evaluating the new release workflow.
 push = false
+
+[workspace.package]
+authors    = ["Penumbra Labs <team@penumbra.zone>"]
+edition    = "2021"
+version    = "0.69.0"
+repository = "https://github.com/penumbra-zone/penumbra"
+homepage   = "https://penumbra.zone"
+license    = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+anyhow                           = { version = "1.0.75" }
+ark-ec                           = { default-features = false, version = "0.4.2" }
+ark-ff                           = { default-features = false, version = "0.4.2" }
+ark-groth16                      = { default-features = false, version = "0.4.0" }
+ark-r1cs-std                     = { default-features = false, version = "0.4.0" }
+ark-relations                    = { version = "0.4" }
+ark-serialize                    = { version = "0.4.2" }
+ark-snark                        = { version = "0.4.0" }
+ark-std                          = { default-features = false, version = "0.4" }
+assert_cmd                       = { version = "2.0" }
+async-stream                     = { version = "0.3.5" }
+async-trait                      = { version = "0.1.52" }
+axum                             = { version = "0.6" }
+axum-server                      = { version = "0.4.7" }
+base64                           = { version = "0.21.2" }
+bech32                           = { version = "0.8.1" }
+bincode                          = { version = "1.3.3" }
+bitvec                           = { version = "1" }
+blake2b_simd                     = { version = "1" }
+bytes                            = { version = "1.2" }
+camino                           = { version = "1" }
+chacha20poly1305                 = { version = "0.9.0" }
+chrono                           = { default-features = false, version = "0.4" }
+clap                             = { version = "3.2" }
+cnidarium                        = { default-features = false, path = "crates/cnidarium" }
+cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
+console-subscriber               = { version = "0.2" }
+criterion                        = { version = "0.4" }
+decaf377                         = { default-features = false, version = "0.5" }
+decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
+decaf377-ka                      = { path = "crates/crypto/decaf377-ka" }
+decaf377-rdsa                    = { version = "0.9" }
+derivative                       = { version = "2.2" }
+directories                      = { version = "4.0.1" }
+ed25519-consensus                = { version = "2.1" }
+ethnum                           = { version = "1.3" }
+futures                          = { version = "0.3.28" }
+hex                              = { version = "0.4.3" }
+http                             = { version = "0.2.9" }
+http-body                        = { version = "0.4.5" }
+ibc-proto                        = { default-features = false, version = "0.41.0" }
+ibc-types                        = { default-features = false, version = "0.12.0" }
+ibig                             = { version = "0.3" }
+ics23                            = { version = "0.11.0" }
+im                               = { version = "^15.1.0" }
+indicatif                        = { version = "0.16" }
+jmt                              = { version = "0.9" }
+metrics                          = { version = "0.22" }
+metrics-tracing-context          = { version = "0.15" }
+num-bigint                       = { version = "0.4" }
+num-traits                       = { default-features = false, version = "0.2.15" }
+once_cell                        = { version = "1.8" }
+parking_lot                      = { version = "0.12.1" }
+pbjson                           = { version = "0.6" }
+pbjson-types                     = { version = "0.6.0" }
+penumbra-app                     = { path = "crates/core/app" }
+penumbra-asset                   = { default-features = false, path = "crates/core/asset" }
+penumbra-community-pool          = { default-features = false, path = "crates/core/component/community-pool" }
+penumbra-compact-block           = { default-features = false, path = "crates/core/component/compact-block" }
+penumbra-custody                 = { path = "crates/custody" }
+penumbra-dex                     = { default-features = false, path = "crates/core/component/dex" }
+penumbra-distributions           = { default-features = false, path = "crates/core/component/distributions" }
+penumbra-fee                     = { default-features = false, path = "crates/core/component/fee" }
+penumbra-funding                 = { default-features = false, path = "crates/core/component/funding" }
+penumbra-governance              = { default-features = false, path = "crates/core/component/governance" }
+penumbra-genesis                 = { path = "crates/core/genesis" }
+penumbra-ibc                     = { default-features = false, path = "crates/core/component/ibc" }
+penumbra-keys                    = { default-features = false, path = "crates/core/keys" }
+penumbra-mock-client             = { path = "crates/test/mock-client" }
+penumbra-mock-consensus          = { path = "crates/test/mock-consensus" }
+penumbra-num                     = { default-features = false, path = "crates/core/num" }
+penumbra-proof-params            = { default-features = false, path = "crates/crypto/proof-params" }
+penumbra-proof-setup             = { path = "crates/crypto/proof-setup" }
+penumbra-proto                   = { default-features = false, path = "crates/proto" }
+penumbra-sct                     = { default-features = false, path = "crates/core/component/sct" }
+penumbra-shielded-pool           = { default-features = false, path = "crates/core/component/shielded-pool" }
+penumbra-stake                   = { default-features = false, path = "crates/core/component/stake" }
+penumbra-tct                     = { default-features = false, path = "crates/crypto/tct" }
+penumbra-transaction             = { default-features = false, path = "crates/core/transaction" }
+penumbra-txhash                  = { default-features = false, path = "crates/core/txhash" }
+penumbra-view                    = { path = "crates/view" }
+penumbra-extension               = { path = "crates/penumbra-extension", default-features = false }
+pin-project                      = { version = "1.0.12" }
+pin-project-lite                 = { version = "0.2.9" }
+poseidon377                      = { version = "0.6" }
+proptest                         = { version = "1" }
+proptest-derive                  = { version = "0.3" }
+prost                            = { version = "0.12.3" }
+prost-types                      = { version = "0.12" }
+r2d2                             = { version = "0.8" }
+r2d2_sqlite                      = { version = "0.22" }
+rand                             = { version = "0.8.5" }
+rand_chacha                      = { version = "0.3.1" }
+rand_core                        = { version = "0.6.4" }
+regex                            = { version = "1.8.1" }
+rocksdb                          = { version = "0.21.0" }
+serde                            = { version = "1.0.186" }
+serde_json                       = { version = "1.0.96" }
+serde_unit_struct                = { version = "0.1" }
+serde_with                       = { version = "3.5.1" }
+sha2                             = { version = "0.10" }
+tap                              = "1.0.1"
+tempfile                         = { version = "3.3.0" }
+tendermint                       = { default-features = false, version = "0.34.0" }
+tendermint-config                = { version = "0.34.0" }
+tendermint-light-client-verifier = { version = "0.34.0" }
+tendermint-proto                 = { version = "0.34.0" }
+tendermint-rpc                   = { version = "0.34.0" }
+thiserror                        = { version = "1.0" }
+tokio                            = { version = "1.3" }
+tokio-stream                     = { version = "0.1.8" }
+tokio-util                       = { version = "0.7" }
+toml                             = { version = "0.7" }
+tonic                            = { version = "0.10" }
+tonic-reflection                 = { version = "0.10.0" }
+tonic-web                        = { version = "0.10.0" }
+tower                            = { version = "0.4.0" }
+tower-http                       = { version = "0.4" }
+tower-service                    = { version = "0.3.2" }
+tracing                          = { version = "0.1" }
+tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
+url                              = { version = "2.2" }

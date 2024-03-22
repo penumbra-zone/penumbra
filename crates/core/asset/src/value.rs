@@ -12,11 +12,15 @@ use std::{
 
 use anyhow::Context;
 use penumbra_num::{Amount, AmountVar};
-use penumbra_proto::{penumbra::core::asset::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::asset::v1 as pb, DomainType};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::asset::{AssetIdVar, Cache, DenomMetadata, Id, REGISTRY};
+use crate::EquivalentValue;
+use crate::{
+    asset::{AssetIdVar, Cache, Id, Metadata, REGISTRY},
+    EstimatedPrice,
+};
 
 #[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq)]
 #[serde(try_from = "pb::Value", into = "pb::Value")]
@@ -27,22 +31,16 @@ pub struct Value {
 }
 
 /// Represents a value of a known or unknown denomination.
-///
-/// Note: unlike some other View types, we don't just store the underlying
-/// `Value` message together with an additional `Denom`.  Instead, we record
-/// either an `Amount` and `Denom` (only) or an `Amount` and `AssetId`.  This is
-/// because we don't want to allow a situation where the supplied `Denom` doesn't
-/// match the `AssetId`, and a consumer of the API that doesn't check is tricked.
-/// This way, the `Denom` will always match, because the consumer is forced to
-/// recompute it themselves if they want it.
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(try_from = "pb::ValueView", into = "pb::ValueView")]
 pub enum ValueView {
-    KnownDenom {
+    KnownAssetId {
         amount: Amount,
-        denom: DenomMetadata,
+        metadata: Metadata,
+        equivalent_values: Vec<EquivalentValue>,
+        extended_metadata: Option<pbjson_types::Any>,
     },
-    UnknownDenom {
+    UnknownAssetId {
         amount: Amount,
         asset_id: Id,
     },
@@ -58,15 +56,67 @@ impl ValueView {
     pub fn asset_id(&self) -> Id {
         self.value().asset_id
     }
+
+    /// Use the provided [`EstimatedPrice`]s and asset metadata [`Cache`] to add
+    /// equivalent values to this [`ValueView`].
+    pub fn with_prices(mut self, prices: &[EstimatedPrice], known_metadata: &Cache) -> Self {
+        if let ValueView::KnownAssetId {
+            ref mut equivalent_values,
+            metadata,
+            amount,
+            ..
+        } = &mut self
+        {
+            // Set the equivalent values.
+            *equivalent_values = prices
+                .iter()
+                .filter_map(|price| {
+                    if metadata.id() == price.priced_asset
+                        && known_metadata.contains_key(&price.numeraire)
+                    {
+                        let equivalent_amount_f =
+                            (amount.value() as f64) * price.numeraire_per_unit;
+                        Some(EquivalentValue {
+                            equivalent_amount: Amount::from(equivalent_amount_f as u128),
+                            numeraire: known_metadata
+                                .get(&price.numeraire)
+                                .expect("we checked containment above")
+                                .clone(),
+                            as_of_height: price.as_of_height,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+        }
+
+        self
+    }
+
+    /// Use the provided extended metadata to add extended metadata to this [`ValueView`].
+    pub fn with_extended_metadata(mut self, extended: Option<pbjson_types::Any>) -> Self {
+        if let ValueView::KnownAssetId {
+            ref mut extended_metadata,
+            ..
+        } = &mut self
+        {
+            *extended_metadata = extended;
+        }
+
+        self
+    }
 }
 
 impl Value {
     /// Convert this `Value` into a `ValueView` with the given `Denom`.
-    pub fn view_with_denom(&self, denom: DenomMetadata) -> anyhow::Result<ValueView> {
+    pub fn view_with_denom(&self, denom: Metadata) -> anyhow::Result<ValueView> {
         if self.asset_id == denom.id() {
-            Ok(ValueView::KnownDenom {
+            Ok(ValueView::KnownAssetId {
                 amount: self.amount,
-                denom,
+                metadata: denom,
+                equivalent_values: Vec::new(),
+                extended_metadata: None,
             })
         } else {
             Err(anyhow::anyhow!(
@@ -80,11 +130,13 @@ impl Value {
     /// Convert this `Value` into a `ValueView` using the given `Cache`
     pub fn view_with_cache(&self, cache: &Cache) -> ValueView {
         match cache.get(&self.asset_id) {
-            Some(denom) => ValueView::KnownDenom {
+            Some(denom) => ValueView::KnownAssetId {
                 amount: self.amount,
-                denom: denom.clone(),
+                metadata: denom.clone(),
+                equivalent_values: Vec::new(),
+                extended_metadata: None,
             },
-            None => ValueView::UnknownDenom {
+            None => ValueView::UnknownAssetId {
                 amount: self.amount,
                 asset_id: self.asset_id,
             },
@@ -95,11 +147,15 @@ impl Value {
 impl From<ValueView> for Value {
     fn from(value: ValueView) -> Self {
         match value {
-            ValueView::KnownDenom { amount, denom } => Value {
+            ValueView::KnownAssetId {
+                amount,
+                metadata: denom,
+                ..
+            } => Value {
                 amount,
                 asset_id: Id::from(denom),
             },
-            ValueView::UnknownDenom { amount, asset_id } => Value { amount, asset_id },
+            ValueView::UnknownAssetId { amount, asset_id } => Value { amount, asset_id },
         }
     }
 }
@@ -142,17 +198,24 @@ impl TryFrom<pb::Value> for Value {
 impl From<ValueView> for pb::ValueView {
     fn from(v: ValueView) -> Self {
         match v {
-            ValueView::KnownDenom { amount, denom } => pb::ValueView {
-                value_view: Some(pb::value_view::ValueView::KnownDenom(
-                    pb::value_view::KnownDenom {
+            ValueView::KnownAssetId {
+                amount,
+                metadata,
+                equivalent_values,
+                extended_metadata,
+            } => pb::ValueView {
+                value_view: Some(pb::value_view::ValueView::KnownAssetId(
+                    pb::value_view::KnownAssetId {
                         amount: Some(amount.into()),
-                        denom: Some(denom.into()),
+                        metadata: Some(metadata.into()),
+                        equivalent_values: equivalent_values.into_iter().map(Into::into).collect(),
+                        extended_metadata,
                     },
                 )),
             },
-            ValueView::UnknownDenom { amount, asset_id } => pb::ValueView {
-                value_view: Some(pb::value_view::ValueView::UnknownDenom(
-                    pb::value_view::UnknownDenom {
+            ValueView::UnknownAssetId { amount, asset_id } => pb::ValueView {
+                value_view: Some(pb::value_view::ValueView::UnknownAssetId(
+                    pb::value_view::UnknownAssetId {
                         amount: Some(amount.into()),
                         asset_id: Some(asset_id.into()),
                     },
@@ -169,17 +232,23 @@ impl TryFrom<pb::ValueView> for ValueView {
             .value_view
             .ok_or_else(|| anyhow::anyhow!("missing value_view field"))?
         {
-            pb::value_view::ValueView::KnownDenom(v) => Ok(ValueView::KnownDenom {
+            pb::value_view::ValueView::KnownAssetId(v) => Ok(ValueView::KnownAssetId {
                 amount: v
                     .amount
                     .ok_or_else(|| anyhow::anyhow!("missing amount field"))?
                     .try_into()?,
-                denom: v
-                    .denom
+                metadata: v
+                    .metadata
                     .ok_or_else(|| anyhow::anyhow!("missing denom field"))?
                     .try_into()?,
+                equivalent_values: v
+                    .equivalent_values
+                    .into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<_, _>>()?,
+                extended_metadata: v.extended_metadata,
             }),
-            pb::value_view::ValueView::UnknownDenom(v) => Ok(ValueView::UnknownDenom {
+            pb::value_view::ValueView::UnknownAssetId(v) => Ok(ValueView::UnknownAssetId {
                 amount: v
                     .amount
                     .ok_or_else(|| anyhow::anyhow!("missing amount field"))?

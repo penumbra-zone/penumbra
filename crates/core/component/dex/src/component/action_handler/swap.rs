@@ -1,15 +1,15 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_component::ActionHandler;
+use cnidarium::StateWrite;
+use cnidarium_component::ActionHandler;
 use penumbra_proof_params::SWAP_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto;
+use penumbra_sct::component::source::SourceContext;
 
 use crate::{
     component::{metrics, StateReadExt, StateWriteExt, SwapManager},
     event,
-    swap::Swap,
+    swap::{proof::SwapProofPublic, Swap},
 };
 
 #[async_trait]
@@ -23,19 +23,17 @@ impl ActionHandler for Swap {
 
         self.proof.verify(
             &SWAP_PROOF_VERIFICATION_KEY,
-            self.balance_commitment_inner(),
-            self.body.payload.commitment,
-            self.body.fee_commitment,
+            SwapProofPublic {
+                balance_commitment: self.balance_commitment_inner(),
+                swap_commitment: self.body.payload.commitment,
+                fee_commitment: self.body.fee_commitment,
+            },
         )?;
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let swap_start = std::time::Instant::now();
         let swap = self;
 
@@ -52,16 +50,14 @@ impl ActionHandler for Swap {
         state.put_swap_flow(&swap.body.trading_pair, swap_flow);
 
         // Record the swap commitment in the state.
-        let source = state.object_get("source").unwrap_or_default();
+        let source = state.get_current_source().expect("source is set");
         state
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
 
-        metrics::histogram!(
-            crate::component::metrics::DEX_SWAP_DURATION,
-            swap_start.elapsed()
-        );
-        state.record(event::swap(self));
+        metrics::histogram!(crate::component::metrics::DEX_SWAP_DURATION)
+            .record(swap_start.elapsed());
+        state.record_proto(event::swap(self));
 
         Ok(())
     }

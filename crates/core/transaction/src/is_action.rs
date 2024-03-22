@@ -1,10 +1,10 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
-        action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+        action::{PositionClose, PositionOpen, PositionWithdraw},
         position, LpNft,
     },
     swap::{Swap, SwapCiphertext, SwapView},
@@ -215,34 +215,34 @@ impl IsAction for Ics20Withdrawal {
     }
 }
 
-impl IsAction for DaoDeposit {
+impl IsAction for CommunityPoolDeposit {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoDeposit(self.clone())
+        ActionView::CommunityPoolDeposit(self.clone())
     }
 }
 
-impl IsAction for DaoOutput {
+impl IsAction for CommunityPoolOutput {
     fn balance_commitment(&self) -> balance::Commitment {
-        // Outputs from the DAO require value
+        // Outputs from the Community Pool require value
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoOutput(self.clone())
+        ActionView::CommunityPoolOutput(self.clone())
     }
 }
 
-impl IsAction for DaoSpend {
+impl IsAction for CommunityPoolSpend {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::DaoSpend(self.clone())
+        ActionView::CommunityPoolSpend(self.clone())
     }
 }
 
@@ -268,40 +268,43 @@ impl IsAction for PositionClose {
 
 impl IsAction for PositionWithdraw {
     fn balance_commitment(&self) -> balance::Commitment {
-        let closed_position_nft = Value {
-            amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
+        let prev_state_nft = if self.sequence == 0 {
+            Value {
+                amount: 1u64.into(),
+                asset_id: LpNft::new(self.position_id, position::State::Closed).asset_id(),
+            }
+        } else {
+            Value {
+                amount: 1u64.into(),
+                asset_id: LpNft::new(
+                    self.position_id,
+                    position::State::Withdrawn {
+                        sequence: self.sequence - 1,
+                    },
+                )
+                .asset_id(),
+            }
         }
         .commit(Fr::zero());
-        let withdrawn_position_nft = Value {
+
+        let next_state_nft = Value {
             amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
+            asset_id: LpNft::new(
+                self.position_id,
+                position::State::Withdrawn {
+                    sequence: self.sequence,
+                },
+            )
+            .asset_id(),
         }
         .commit(Fr::zero());
 
         // The action consumes a closed position and produces the position's reserves and a withdrawn position NFT.
-        self.reserves_commitment - closed_position_nft + withdrawn_position_nft
+        self.reserves_commitment - prev_state_nft + next_state_nft
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         ActionView::PositionWithdraw(self.to_owned())
-    }
-}
-
-impl IsAction for PositionRewardClaim {
-    fn balance_commitment(&self) -> balance::Commitment {
-        let withdrawn_position_nft = Value {
-            amount: 1u64.into(),
-            asset_id: LpNft::new(self.position_id, position::State::Withdrawn).asset_id(),
-        }
-        .commit(Fr::zero());
-
-        // The action consumes a closed position and produces the position's reserves.
-        self.rewards_commitment - withdrawn_position_nft
-    }
-
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::PositionRewardClaim(self.to_owned())
     }
 }
 
@@ -326,10 +329,44 @@ impl IsAction for Swap {
         });
 
         ActionView::Swap(match plaintext {
-            Some(swap_plaintext) => SwapView::Visible {
-                swap: self.to_owned(),
-                swap_plaintext,
-            },
+            Some(swap_plaintext) => {
+                // If we can find a matching BSOD in the TxP, use it to compute the output notes
+                // for the swap.
+                let bsod = txp
+                    .batch_swap_output_data
+                    .iter()
+                    // This finds the first matching one; there should only be one
+                    // per trading pair per block and we trust the TxP provider not to lie about it.
+                    .find(|bsod| bsod.trading_pair == swap_plaintext.trading_pair);
+
+                let (output_1, output_2) = match bsod.map(|bsod| swap_plaintext.output_notes(bsod))
+                {
+                    Some((output_1, output_2)) => {
+                        (Some(txp.view_note(output_1)), Some(txp.view_note(output_2)))
+                    }
+                    None => (None, None),
+                };
+
+                SwapView::Visible {
+                    swap: self.to_owned(),
+                    swap_plaintext: swap_plaintext.clone(),
+                    output_1,
+                    output_2,
+                    claim_tx: txp
+                        .nullification_transaction_ids_by_commitment
+                        .get(&commitment)
+                        .cloned(),
+                    batch_swap_output_data: bsod.cloned(),
+                    asset_1_metadata: txp
+                        .denoms
+                        .get(&swap_plaintext.trading_pair.asset_1())
+                        .cloned(),
+                    asset_2_metadata: txp
+                        .denoms
+                        .get(&swap_plaintext.trading_pair.asset_2())
+                        .cloned(),
+                }
+            }
             None => SwapView::Opaque {
                 swap: self.to_owned(),
             },
@@ -353,6 +390,10 @@ impl IsAction for SwapClaim {
                     swap_claim: self.to_owned(),
                     output_1: txp.view_note(output_1.to_owned()),
                     output_2: txp.view_note(output_2.to_owned()),
+                    swap_tx: txp
+                        .creation_transaction_ids_by_nullifier
+                        .get(&self.body.nullifier)
+                        .cloned(),
                 };
                 ActionView::SwapClaim(swap_claim_view)
             }

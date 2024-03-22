@@ -1,8 +1,9 @@
 use anyhow::anyhow;
+use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
 use penumbra_asset::balance;
-use penumbra_proto::{core::transaction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::transaction::v1 as pb, DomainType};
 
 use crate::{ActionView, IsAction, TransactionPerspective};
 use serde::{Deserialize, Serialize};
@@ -27,7 +28,6 @@ pub enum Action {
     PositionOpen(penumbra_dex::lp::action::PositionOpen),
     PositionClose(penumbra_dex::lp::action::PositionClose),
     PositionWithdraw(penumbra_dex::lp::action::PositionWithdraw),
-    PositionRewardClaim(penumbra_dex::lp::action::PositionRewardClaim),
 
     Delegate(penumbra_stake::Delegate),
     Undelegate(penumbra_stake::Undelegate),
@@ -35,9 +35,37 @@ pub enum Action {
 
     Ics20Withdrawal(penumbra_shielded_pool::Ics20Withdrawal),
 
-    DaoSpend(penumbra_dao::DaoSpend),
-    DaoOutput(penumbra_dao::DaoOutput),
-    DaoDeposit(penumbra_dao::DaoDeposit),
+    CommunityPoolSpend(penumbra_community_pool::CommunityPoolSpend),
+    CommunityPoolOutput(penumbra_community_pool::CommunityPoolOutput),
+    CommunityPoolDeposit(penumbra_community_pool::CommunityPoolDeposit),
+}
+
+impl EffectingData for Action {
+    fn effect_hash(&self) -> EffectHash {
+        match self {
+            Action::Output(output) => output.effect_hash(),
+            Action::Spend(spend) => spend.effect_hash(),
+            Action::Delegate(delegate) => delegate.effect_hash(),
+            Action::Undelegate(undelegate) => undelegate.effect_hash(),
+            Action::UndelegateClaim(claim) => claim.effect_hash(),
+            Action::ProposalSubmit(submit) => submit.effect_hash(),
+            Action::ProposalWithdraw(withdraw) => withdraw.effect_hash(),
+            Action::ProposalDepositClaim(claim) => claim.effect_hash(),
+            Action::DelegatorVote(vote) => vote.effect_hash(),
+            Action::ValidatorVote(vote) => vote.effect_hash(),
+            Action::SwapClaim(swap_claim) => swap_claim.effect_hash(),
+            Action::Swap(swap) => swap.effect_hash(),
+            Action::ValidatorDefinition(defn) => defn.effect_hash(),
+            Action::IbcRelay(payload) => payload.effect_hash(),
+            Action::PositionOpen(p) => p.effect_hash(),
+            Action::PositionClose(p) => p.effect_hash(),
+            Action::PositionWithdraw(p) => p.effect_hash(),
+            Action::Ics20Withdrawal(w) => w.effect_hash(),
+            Action::CommunityPoolSpend(d) => d.effect_hash(),
+            Action::CommunityPoolOutput(d) => d.effect_hash(),
+            Action::CommunityPoolDeposit(d) => d.effect_hash(),
+        }
+    }
 }
 
 impl Action {
@@ -73,16 +101,13 @@ impl Action {
             Action::PositionWithdraw(_) => {
                 tracing::info_span!("PositionWithdraw", ?idx)
             }
-            Action::PositionRewardClaim(_) => {
-                tracing::info_span!("PositionRewardClaim", ?idx)
-            }
             Action::Delegate(_) => tracing::info_span!("Delegate", ?idx),
             Action::Undelegate(_) => tracing::info_span!("Undelegate", ?idx),
             Action::UndelegateClaim(_) => tracing::info_span!("UndelegateClaim", ?idx),
             Action::Ics20Withdrawal(_) => tracing::info_span!("Ics20Withdrawal", ?idx),
-            Action::DaoDeposit(_) => tracing::info_span!("DaoDeposit", ?idx),
-            Action::DaoSpend(_) => tracing::info_span!("DaoSpend", ?idx),
-            Action::DaoOutput(_) => tracing::info_span!("DaoOutput", ?idx),
+            Action::CommunityPoolDeposit(_) => tracing::info_span!("CommunityPoolDeposit", ?idx),
+            Action::CommunityPoolSpend(_) => tracing::info_span!("CommunityPoolSpend", ?idx),
+            Action::CommunityPoolOutput(_) => tracing::info_span!("CommunityPoolOutput", ?idx),
         }
     }
 
@@ -133,11 +158,10 @@ impl IsAction for Action {
             Action::PositionOpen(p) => p.balance_commitment(),
             Action::PositionClose(p) => p.balance_commitment(),
             Action::PositionWithdraw(p) => p.balance_commitment(),
-            Action::PositionRewardClaim(p) => p.balance_commitment(),
             Action::Ics20Withdrawal(withdrawal) => withdrawal.balance_commitment(),
-            Action::DaoDeposit(deposit) => deposit.balance_commitment(),
-            Action::DaoSpend(spend) => spend.balance_commitment(),
-            Action::DaoOutput(output) => output.balance_commitment(),
+            Action::CommunityPoolDeposit(deposit) => deposit.balance_commitment(),
+            Action::CommunityPoolSpend(spend) => spend.balance_commitment(),
+            Action::CommunityPoolOutput(output) => output.balance_commitment(),
             // These actions just post Protobuf data to the chain, and leave the
             // value balance unchanged.
             Action::IbcRelay(x) => x.balance_commitment(),
@@ -162,11 +186,10 @@ impl IsAction for Action {
             Action::PositionOpen(x) => x.view_from_perspective(txp),
             Action::PositionClose(x) => x.view_from_perspective(txp),
             Action::PositionWithdraw(x) => x.view_from_perspective(txp),
-            Action::PositionRewardClaim(x) => x.view_from_perspective(txp),
             Action::Ics20Withdrawal(x) => x.view_from_perspective(txp),
-            Action::DaoSpend(x) => x.view_from_perspective(txp),
-            Action::DaoOutput(x) => x.view_from_perspective(txp),
-            Action::DaoDeposit(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolSpend(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolOutput(x) => x.view_from_perspective(txp),
+            Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
@@ -232,20 +255,17 @@ impl From<Action> for pb::Action {
             Action::PositionWithdraw(inner) => pb::Action {
                 action: Some(pb::action::Action::PositionWithdraw(inner.into())),
             },
-            Action::PositionRewardClaim(inner) => pb::Action {
-                action: Some(pb::action::Action::PositionRewardClaim(inner.into())),
-            },
             Action::Ics20Withdrawal(withdrawal) => pb::Action {
                 action: Some(pb::action::Action::Ics20Withdrawal(withdrawal.into())),
             },
-            Action::DaoSpend(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoSpend(inner.into())),
+            Action::CommunityPoolSpend(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolSpend(inner.into())),
             },
-            Action::DaoOutput(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoOutput(inner.into())),
+            Action::CommunityPoolOutput(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolOutput(inner.into())),
             },
-            Action::DaoDeposit(inner) => pb::Action {
-                action: Some(pb::action::Action::DaoDeposit(inner.into())),
+            Action::CommunityPoolDeposit(inner) => pb::Action {
+                action: Some(pb::action::Action::CommunityPoolDeposit(inner.into())),
             },
         }
     }
@@ -297,15 +317,21 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::PositionWithdraw(inner) => {
                 Ok(Action::PositionWithdraw(inner.try_into()?))
             }
-            pb::action::Action::PositionRewardClaim(inner) => {
-                Ok(Action::PositionRewardClaim(inner.try_into()?))
+            pb::action::Action::PositionRewardClaim(_) => {
+                Err(anyhow!("PositionRewardClaim is deprecated and unsupported"))
             }
             pb::action::Action::Ics20Withdrawal(inner) => {
                 Ok(Action::Ics20Withdrawal(inner.try_into()?))
             }
-            pb::action::Action::DaoSpend(inner) => Ok(Action::DaoSpend(inner.try_into()?)),
-            pb::action::Action::DaoOutput(inner) => Ok(Action::DaoOutput(inner.try_into()?)),
-            pb::action::Action::DaoDeposit(inner) => Ok(Action::DaoDeposit(inner.try_into()?)),
+            pb::action::Action::CommunityPoolSpend(inner) => {
+                Ok(Action::CommunityPoolSpend(inner.try_into()?))
+            }
+            pb::action::Action::CommunityPoolOutput(inner) => {
+                Ok(Action::CommunityPoolOutput(inner.try_into()?))
+            }
+            pb::action::Action::CommunityPoolDeposit(inner) => {
+                Ok(Action::CommunityPoolDeposit(inner.try_into()?))
+            }
         }
     }
 }

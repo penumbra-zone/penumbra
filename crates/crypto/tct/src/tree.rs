@@ -4,7 +4,7 @@ use std::{
 };
 
 use decaf377::{FieldExt, Fq};
-use penumbra_proto::{penumbra::crypto::tct::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::crypto::tct::v1 as pb, DomainType};
 
 use crate::error::*;
 use crate::prelude::{Witness as _, *};
@@ -352,7 +352,7 @@ impl Tree {
         &mut self,
         block: impl Into<block::Finalized>,
     ) -> Result<block::Root, InsertBlockError> {
-        // We split apart the inside so that we get the right instrumention when this is called as
+        // We split apart the inside so that we get the right instrumentation when this is called as
         // an inner function in `end_block`
         let block_root = self.insert_block_uninstrumented(block).map_err(|error| {
             error!(%error);

@@ -36,13 +36,13 @@ jobs:
         uses: actions/checkout@v4
 
       - id: gcloudauth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
           service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
       - name: get gke credentials
-        uses: google-github-actions/get-gke-credentials@v0
+        uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: testnet
           project_id: penumbra-sl-testnet
@@ -64,18 +64,6 @@ jobs:
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-testnet
 
-      - name: bounce osiris
-        shell: bash
-        run: |-
-          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
-          # Set the exact version for the current testnet for Osiris, so deps match.
-          kubectl set image deployments \
-              -l "app.kubernetes.io/instance=osiris-testnet" \
-              "osiris=ghcr.io/penumbra-zone/osiris:penumbra-${PENUMBRA_VERSION}"
-          # Wait for rollout to complete. Will block until pods are marked Ready.
-          kubectl rollout status deployment \
-              -l "app.kubernetes.io/instance=osiris-testnet"
-
       - name: bounce galileo
         shell: bash
         run: |-
@@ -87,3 +75,35 @@ jobs:
           # Wait for rollout to complete. Will block until pods are marked Ready.
           kubectl rollout status deployment \
               -l "app.kubernetes.io/instance=galileo"
+
+  # Deploys a standalone instance of pd,
+  # specifically to exercise the auto-https direct-serve logic.
+  standalone:
+    name: deploy standalone pd node, preview
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    needs:
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure ssh identity
+        run: |-
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_PRIVKEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_HOSTKEYS" > ~/.ssh/known_hosts
+        env:
+          SSH_PRIVKEY: ${{ secrets.CI_RUNNER_SSH_PRIVKEY }}
+          SSH_HOSTKEYS: ${{ secrets.CI_RUNNER_SSH_HOSTKEYS }}
+
+      - name: deploy
+        shell: bash
+        run: |-
+          export PENUMBRA_VERSION='${{ github.event.inputs.image_tag || github.ref_name }}'
+          export PENUMBRA_ENVIRONMENT="penumbra-testnet"
+          ./deployments/scripts/redeploy-ci-fullnode-via-runner

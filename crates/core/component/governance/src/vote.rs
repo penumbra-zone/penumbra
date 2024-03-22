@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use penumbra_proto::{penumbra::core::component::governance::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// A vote on a proposal.
@@ -28,7 +28,7 @@ impl FromStr for Vote {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> anyhow::Result<Vote> {
-        match s.replace(['-', '_', ' '], "").to_lowercase().as_str() {
+        match s {
             "yes" | "y" => Ok(Vote::Yes),
             "no" | "n" => Ok(Vote::No),
             "abstain" | "a" => Ok(Vote::Abstain),

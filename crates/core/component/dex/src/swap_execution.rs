@@ -1,7 +1,7 @@
 use anyhow::Result;
 use penumbra_asset::Value;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /// Contains the summary data of a trade, for client consumption.
@@ -15,17 +15,17 @@ pub struct SwapExecution {
 
 impl SwapExecution {
     /// Returns the price of the latest execution trace.
-    pub fn max_price(&self) -> Result<Option<U128x128>> {
+    pub fn max_price(&self) -> Option<U128x128> {
         let Some((input, output)) = self.traces.last().and_then(|trace| {
             let input = trace.first()?;
             let output = trace.last()?;
             Some((input, output))
         }) else {
-            return Ok(None);
+            return None;
         };
 
-        let price = U128x128::ratio(input.amount, output.amount)?;
-        Ok(Some(price))
+        let price = U128x128::ratio(input.amount, output.amount).ok()?;
+        Some(price)
     }
 }
 

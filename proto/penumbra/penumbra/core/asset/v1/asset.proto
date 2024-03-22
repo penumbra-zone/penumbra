@@ -1,0 +1,164 @@
+syntax = "proto3";
+package penumbra.core.asset.v1;
+
+import "google/protobuf/any.proto";
+import "penumbra/core/num/v1/num.proto";
+
+message BalanceCommitment {
+  bytes inner = 1;
+}
+
+// A Penumbra asset ID.
+message AssetId {
+  // The bytes of the asset ID.
+  bytes inner = 1;
+
+  // Alternatively, a Bech32m-encoded string representation of the `inner`
+  // bytes.
+  //
+  // NOTE: implementations are not required to support parsing this field.
+  // Implementations should prefer to encode the `inner` bytes in all messages they
+  // produce. Implementations must not accept messages with both `inner` and
+  // `alt_bech32m` set.  This field exists for convenience of RPC users.
+  string alt_bech32m = 2;
+
+  // Alternatively, a base denomination string which should be hashed to obtain the asset ID.
+  //
+  // NOTE: implementations are not required to support parsing this field.
+  // Implementations should prefer to encode the bytes in all messages they
+  // produce. Implementations must not accept messages with both `inner` and
+  // `alt_base_denom` set.  This field exists for convenience of RPC users.
+  string alt_base_denom = 3;
+}
+
+message Denom {
+  string denom = 1;
+}
+
+// Describes metadata about a given asset.
+message Metadata {
+  string description = 1;
+  // denom_units represents the list of DenomUnit's for a given coin
+  repeated DenomUnit denom_units = 2;
+  // base represents the base denom (should be the DenomUnit with exponent = 0).
+  string base = 3;
+  // display indicates the suggested denom that should be
+  // displayed in clients.
+  string display = 4;
+  // name defines the name of the token (eg: Cosmos Atom)
+  string name = 5;
+  // symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
+  // be the same as the display.
+  string symbol = 6;
+
+  // These are used by the CSDK but we do not use them, and in our opinion
+  // they should be deprecated there too.
+  reserved 7;
+  reserved "uri", "URI";
+  reserved 8;
+  reserved "uri_hash", "URIHash";
+
+  // the asset ID on Penumbra for this denomination.
+  AssetId penumbra_asset_id = 1984;
+
+  repeated AssetImage images = 1985;
+}
+
+// DenomUnit represents a struct that describes a given denomination unit of the basic token.
+message DenomUnit {
+  // denom represents the string name of the given denom unit (e.g uatom).
+  string denom = 1;
+  // exponent represents power of 10 exponent that one must
+  // raise the base_denom to in order to equal the given DenomUnit's denom
+  // 1 denom = 10^exponent base_denom
+  // (e.g. with a base_denom of uatom, one can create a DenomUnit of 'atom' with
+  // exponent = 6, thus: 1 atom = 10^6 uatom).
+  uint32 exponent = 2;
+  // aliases is a list of string aliases for the given denom
+  repeated string aliases = 3;
+}
+
+message Value {
+  core.num.v1.Amount amount = 1;
+  AssetId asset_id = 2;
+}
+
+// Represents a value of a known or unknown denomination.
+message ValueView {
+  // A value whose asset ID is known and has metadata.
+  message KnownAssetId {
+    // The amount of the value.
+    core.num.v1.Amount amount = 1;
+
+    // The asset metadata describing the asset of the value.
+    Metadata metadata = 2;
+
+    // Optionally, a list of equivalent values in other numeraires.
+    repeated EquivalentValue equivalent_values = 3;
+
+    // Optionally, extended, dynamically-typed metadata about the object this
+    // token represents.
+    //
+    // This is left flexible to allow future extensions. For instance, a view
+    // server could augment an LPNFT with a message describing the current state
+    // of the position and its reserves, allowing a frontend to render LPNFTs
+    // with their position information (trading pair, etc). However, because
+    // this is in an extension, a frontend that does not have special handling
+    // logic would fall back on the ordinary asset metadata.
+    google.protobuf.Any extended_metadata = 4;
+  }
+  // A value whose asset ID is unknown, with no metadata.
+  message UnknownAssetId {
+    core.num.v1.Amount amount = 1;
+    AssetId asset_id = 2;
+  }
+  oneof value_view {
+    KnownAssetId known_asset_id = 1;
+    UnknownAssetId unknown_asset_id = 2;
+  }
+}
+
+// An image related to an asset.
+message AssetImage {
+  // The URI of the image in PNG format.
+  string png = 1;
+  // The URI of the image in SVG format.
+  string svg = 2;
+
+  message Theme {
+    // Should be in hex format, `^#[0-9a-fA-F]{6}$`.
+    string primary_color_hex = 1;
+    bool circle = 2;
+    bool dark_mode = 3;
+  }
+  Theme theme = 3;
+}
+
+// The estimated price of one asset in terms of a numeraire.
+//
+// This is used for generating "equivalent values" in ValueViews.
+message EstimatedPrice {
+  asset.v1.AssetId priced_asset = 1;
+  asset.v1.AssetId numeraire = 2;
+  // Multiply units of the priced asset by this value to get the value in the numeraire.
+  //
+  // This is a floating-point number since the price is approximate.
+  double numeraire_per_unit = 3;
+  // If set, gives some idea of when the price was estimated.
+  uint64 as_of_height = 4;
+}
+
+// An "equivalent" value to a given value, in terms of a numeraire.
+//
+// For instance, this can provide a USD-equivalent value relative to a
+// stablecoin, or an amount of the staking token, etc.  A view server can
+// optionally include this information to assist a frontend in displaying
+// information about the value in a user-friendly way.
+message EquivalentValue {
+  // The equivalent amount of the parent Value in terms of the numeraire.
+  core.num.v1.Amount equivalent_amount = 1;
+  // Metadata describing the numeraire.
+  Metadata numeraire = 2;
+  // If set, gives some idea of when the price/equivalence was estimated.
+  uint64 as_of_height = 3;
+}

@@ -1,18 +1,17 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use ark_ff::Zero;
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use decaf377::Fr;
-use penumbra_chain::TransactionContext;
 use penumbra_proof_params::DELEGATOR_VOTE_PROOF_VERIFICATION_KEY;
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_proto::StateWriteProto as _;
+use penumbra_txhash::TransactionContext;
 
 use crate::{
-    DelegatorVote, DelegatorVoteBody,
+    event, DelegatorVote, DelegatorVoteBody, DelegatorVoteProofPublic,
     {component::StateWriteExt, StateReadExt},
 };
-use penumbra_component::ActionHandler;
+use cnidarium_component::ActionHandler;
 
 #[async_trait]
 impl ActionHandler for DelegatorVote {
@@ -40,26 +39,26 @@ impl ActionHandler for DelegatorVote {
             .context("delegator vote auth signature failed to verify")?;
 
         // 2. Verify the proof against the provided anchor and start position:
+        let public = DelegatorVoteProofPublic {
+            anchor: context.anchor,
+            balance_commitment: value.commit(Fr::zero()),
+            nullifier: *nullifier,
+            rk: *rk,
+            start_position: *start_position,
+        };
         proof
-            .verify(
-                &DELEGATOR_VOTE_PROOF_VERIFICATION_KEY,
-                context.anchor,
-                value.commit(Fr::zero()),
-                *nullifier,
-                *rk,
-                *start_position,
-            )
+            .verify(&DELEGATOR_VOTE_PROOF_VERIFICATION_KEY, public)
             .context("a delegator vote proof did not verify")?;
 
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let DelegatorVote {
             body:
                 DelegatorVoteBody {
                     proposal,
-                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    vote,
                     start_position,
                     value,
                     unbonded_amount,
@@ -84,24 +83,6 @@ impl ActionHandler for DelegatorVote {
             .check_unbonded_amount_correct_exchange_for_proposal(*proposal, value, unbonded_amount)
             .await?;
 
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let DelegatorVote {
-            body:
-                DelegatorVoteBody {
-                    proposal,
-                    vote,
-                    nullifier,
-                    unbonded_amount,
-                    value,
-                    start_position: _, // Not needed to execute: used to check validity of vote
-                    rk: _,             // Not needed to execute: used to check auth sig
-                },
-            ..
-        } = self;
-
         state
             .mark_nullifier_voted_on_proposal(*proposal, nullifier)
             .await;
@@ -109,6 +90,8 @@ impl ActionHandler for DelegatorVote {
         state
             .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)
             .await?;
+
+        state.record_proto(event::delegator_vote(self));
 
         Ok(())
     }

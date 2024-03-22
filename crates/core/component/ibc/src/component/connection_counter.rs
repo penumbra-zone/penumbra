@@ -1,6 +1,6 @@
 use ibc_types::core::connection::Version;
 use once_cell::sync::Lazy;
-use penumbra_proto::{penumbra::core::component::ibc::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::ibc::v1 as pb, DomainType};
 
 #[derive(Debug, Clone)]
 pub struct ConnectionCounter(pub u64);

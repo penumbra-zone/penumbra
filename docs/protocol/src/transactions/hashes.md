@@ -1,0 +1,1 @@
+# Authorization and Effect Hashes

@@ -1,13 +1,12 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use penumbra_chain::{params::FmdParameters, NoteSource};
 use penumbra_compact_block::{CompactBlock, StatePayload};
 use penumbra_dex::swap::{SwapPayload, SwapPlaintext};
 use penumbra_fee::GasPrices;
 use penumbra_keys::FullViewingKey;
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, NotePayload};
-use penumbra_tct as tct;
+use penumbra_shielded_pool::{fmd, Note, NotePayload};
+use penumbra_tct::{self as tct, StateCommitment};
 use tracing::Instrument;
 
 use crate::{SpendableNoteRecord, Storage, SwapRecord};
@@ -15,33 +14,13 @@ use crate::{SpendableNoteRecord, Storage, SwapRecord};
 /// Contains the results of scanning a single block.
 #[derive(Debug, Clone)]
 pub struct FilteredBlock {
-    pub new_notes: Vec<SpendableNoteRecord>,
-    pub new_swaps: Vec<SwapRecord>,
+    pub new_notes: BTreeMap<StateCommitment, SpendableNoteRecord>,
+    pub new_swaps: BTreeMap<StateCommitment, SwapRecord>,
     pub spent_nullifiers: Vec<Nullifier>,
     pub height: u64,
-    pub fmd_parameters: Option<FmdParameters>,
+    pub fmd_parameters: Option<fmd::Parameters>,
     pub app_parameters_updated: bool,
     pub gas_prices: Option<GasPrices>,
-}
-
-impl FilteredBlock {
-    pub fn inbound_transaction_ids(&self) -> BTreeSet<[u8; 32]> {
-        let mut ids = BTreeSet::new();
-        let sources: Vec<NoteSource> = self
-            .new_notes
-            .clone()
-            .iter()
-            .map(|n| n.source)
-            .chain(self.new_swaps.iter().map(|n| n.source))
-            .collect();
-
-        for source in sources {
-            if let NoteSource::Transaction { id } = source {
-                ids.insert(id);
-            }
-        }
-        ids
-    }
 }
 
 #[tracing::instrument(skip_all, fields(height = %height))]
@@ -101,7 +80,7 @@ pub async fn scan_block(
             StatePayload::Swap { swap, .. } => {
                 swap_decryptions.push(trial_decrypt_swap((**swap).clone()));
             }
-            StatePayload::RolledUp(commitment) => unknown_commitments.push(*commitment),
+            StatePayload::RolledUp { commitment, .. } => unknown_commitments.push(*commitment),
         }
     }
     // Having started trial decryption in the background, ask the Storage for scanning advice:
@@ -125,9 +104,9 @@ pub async fn scan_block(
     }
 
     // Newly detected spendable notes.
-    let mut new_notes = Vec::new();
+    let mut new_notes = BTreeMap::new();
     // Newly detected claimable swaps.
-    let mut new_swaps = Vec::new();
+    let mut new_swaps = BTreeMap::new();
 
     if note_advice.is_empty() && swap_advice.is_empty() {
         // If there are no notes we care about in this block, just insert the block root into the
@@ -153,21 +132,25 @@ pub async fn scan_block(
                         .insert(tct::Witness::Keep, *payload.commitment())
                         .expect("inserting a commitment must succeed");
 
-                    let source = payload.source().cloned().unwrap_or_default();
+                    let source = payload.source().clone();
                     let nullifier =
                         Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
                     let address_index = fvk.incoming().index_for_diversifier(note.diversifier());
 
-                    new_notes.push(SpendableNoteRecord {
-                        note_commitment: *payload.commitment(),
-                        height_spent: None,
-                        height_created: height,
-                        note: note.clone(),
-                        address_index,
-                        nullifier,
-                        position,
-                        source,
-                    });
+                    new_notes.insert(
+                        *payload.commitment(),
+                        SpendableNoteRecord {
+                            note_commitment: *payload.commitment(),
+                            height_spent: None,
+                            height_created: height,
+                            note: note.clone(),
+                            address_index,
+                            nullifier,
+                            position,
+                            source,
+                            return_address: None,
+                        },
+                    );
                 }
                 (None, Some(swap)) => {
                     // Keep track of this commitment for later witnessing
@@ -192,19 +175,22 @@ pub async fn scan_block(
                     storage.give_advice(output_1).await?;
                     storage.give_advice(output_2).await?;
 
-                    let source = payload.source().cloned().unwrap_or_default();
+                    let source = payload.source().clone();
                     let nullifier =
                         Nullifier::derive(fvk.nullifier_key(), position, payload.commitment());
 
-                    new_swaps.push(SwapRecord {
-                        swap_commitment: *payload.commitment(),
-                        swap: swap.clone(),
-                        position,
-                        nullifier,
-                        source,
-                        output_data,
-                        height_claimed: None,
-                    });
+                    new_swaps.insert(
+                        *payload.commitment(),
+                        SwapRecord {
+                            swap_commitment: *payload.commitment(),
+                            swap: swap.clone(),
+                            position,
+                            nullifier,
+                            source,
+                            output_data,
+                            height_claimed: None,
+                        },
+                    );
                 }
                 (None, None) => {
                     // Don't remember this commitment; it wasn't ours

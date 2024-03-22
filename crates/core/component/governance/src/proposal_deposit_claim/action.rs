@@ -1,18 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 use penumbra_asset::{
-    asset::{self, DenomMetadata},
+    asset::{self, Metadata},
     Balance, Value, STAKING_TOKEN_ASSET_ID,
 };
 use penumbra_num::Amount;
-use penumbra_proto::penumbra::core::component::governance::v1alpha1 as pb;
+use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 
 use crate::proposal_state::{Outcome, Withdrawn};
 
 use crate::ProposalNft;
 
 /// A claim for the initial submission deposit for a proposal.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(
     try_from = "pb::ProposalDepositClaim",
     into = "pb::ProposalDepositClaim"
@@ -24,6 +25,16 @@ pub struct ProposalDepositClaim {
     pub deposit_amount: Amount,
     /// The outcome of the proposal.
     pub outcome: Outcome<()>,
+}
+
+impl EffectingData for ProposalDepositClaim {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
+impl DomainType for ProposalDepositClaim {
+    type Proto = pb::ProposalDepositClaim;
 }
 
 impl From<ProposalDepositClaim> for pb::ProposalDepositClaim {
@@ -62,41 +73,39 @@ impl ProposalDepositClaim {
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
-        let (voting_or_withdrawn_proposal_denom, claimed_proposal_denom): (
-            DenomMetadata,
-            DenomMetadata,
-        ) = match self.outcome {
-            // Outcomes without withdrawal consume `deposit`:
-            Outcome::Passed => (
-                ProposalNft::deposit(self.proposal).denom(),
-                ProposalNft::passed(self.proposal).denom(),
-            ),
-            Outcome::Failed {
-                withdrawn: Withdrawn::No,
-            } => (
-                ProposalNft::deposit(self.proposal).denom(),
-                ProposalNft::failed(self.proposal).denom(),
-            ),
-            Outcome::Slashed {
-                withdrawn: Withdrawn::No,
-            } => (
-                ProposalNft::deposit(self.proposal).denom(),
-                ProposalNft::slashed(self.proposal).denom(),
-            ),
-            // Outcomes after withdrawal consume `unbonding_deposit`:
-            Outcome::Failed {
-                withdrawn: Withdrawn::WithReason { .. },
-            } => (
-                ProposalNft::unbonding_deposit(self.proposal).denom(),
-                ProposalNft::failed(self.proposal).denom(),
-            ),
-            Outcome::Slashed {
-                withdrawn: Withdrawn::WithReason { .. },
-            } => (
-                ProposalNft::unbonding_deposit(self.proposal).denom(),
-                ProposalNft::slashed(self.proposal).denom(),
-            ),
-        };
+        let (voting_or_withdrawn_proposal_denom, claimed_proposal_denom): (Metadata, Metadata) =
+            match self.outcome {
+                // Outcomes without withdrawal consume `deposit`:
+                Outcome::Passed => (
+                    ProposalNft::deposit(self.proposal).denom(),
+                    ProposalNft::passed(self.proposal).denom(),
+                ),
+                Outcome::Failed {
+                    withdrawn: Withdrawn::No,
+                } => (
+                    ProposalNft::deposit(self.proposal).denom(),
+                    ProposalNft::failed(self.proposal).denom(),
+                ),
+                Outcome::Slashed {
+                    withdrawn: Withdrawn::No,
+                } => (
+                    ProposalNft::deposit(self.proposal).denom(),
+                    ProposalNft::slashed(self.proposal).denom(),
+                ),
+                // Outcomes after withdrawal consume `unbonding_deposit`:
+                Outcome::Failed {
+                    withdrawn: Withdrawn::WithReason { .. },
+                } => (
+                    ProposalNft::unbonding_deposit(self.proposal).denom(),
+                    ProposalNft::failed(self.proposal).denom(),
+                ),
+                Outcome::Slashed {
+                    withdrawn: Withdrawn::WithReason { .. },
+                } => (
+                    ProposalNft::unbonding_deposit(self.proposal).denom(),
+                    ProposalNft::slashed(self.proposal).denom(),
+                ),
+            };
 
         // NFT to be consumed
         let voting_or_withdrawn_proposal_nft = Value {

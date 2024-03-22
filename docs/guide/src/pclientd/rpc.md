@@ -10,7 +10,7 @@ link is preconfigured to make requests against a local `pclientd` instance with
 the default `bind_addr`, but can be aimed at any endpoint.
 
 [GRPCUI]: https://github.com/fullstorydev/grpcui
-[buf-studio]: https://buf.build/studio/penumbra-zone/penumbra/penumbra.core.app.v1alpha1.QueryService/AppParameters?selectedProtocol=grpc-web&target=http%3A%2F%2Flocalhost%3A8081
+[buf-studio]: https://buf.build/studio/penumbra-zone/penumbra/penumbra.core.app.v1.QueryService/AppParameters?selectedProtocol=grpc-web&target=http%3A%2F%2Flocalhost%3A8081
 
 ## Accessing public chain state
 
@@ -21,21 +21,21 @@ Documentation on these RPCs is available on Buf.build; follow the links in Buf S
 
 ## Accessing private chain state
 
-Access to a user's private state is provided by the [`ViewService` RPC](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService).
+Access to a user's private state is provided by the [`ViewService` RPC](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService).
 
 In addition to ordinary queries, like
-[`Balances`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.Balances),
+[`Balances`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.Balances),
 which gets a user's balances by account, the RPC also contains utility methods
 that allow computations involving cryptography.  For instance, the
-[`AddressByIndex`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.AddressByIndex)
+[`AddressByIndex`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.AddressByIndex)
 request computes a public address from an account index, and the
-[`IndexByAddress`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1alpha1#penumbra.view.v1alpha1.ViewProtocolService.IndexByAddress)
+[`IndexByAddress`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.view.v1#penumbra.view.v1.ViewService.IndexByAddress)
 request decrypts an address to its private index.
 
 Finally, the view service can plan and build transactions, as described in [the next section](./build_transaction.md).
 
 ## Requesting transaction authorization
 
-If `pclientd` was configured in custody mode, it exposes a [`CustodyService`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.custody.v1alpha1#penumbra.custody.v1alpha1.CustodyProtocolService).
+If `pclientd` was configured in custody mode, it exposes a [`CustodyService`](https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.custody.v1#penumbra.custody.v1.CustodyService).
 
 This allows authorization of a `TransactionPlan`, as described in [the next section](./build_transaction.md).

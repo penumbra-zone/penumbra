@@ -3,41 +3,23 @@ use ark_relations::r1cs::{
     ConstraintSynthesizer, ConstraintSystem, OptimizationGoal, SynthesisMode,
 };
 use decaf377::{Fq, Fr};
-use penumbra_asset::{asset, balance, Balance, Value};
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_dex::{
-    swap::proof::{SwapCircuit, SwapProof},
-    swap::SwapPlaintext,
+    swap::proof::{SwapCircuit, SwapProof, SwapProofPublic},
+    swap::{proof::SwapProofPrivate, SwapPlaintext},
     TradingPair,
 };
 use penumbra_fee::Fee;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use penumbra_num::Amount;
-use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
-use penumbra_tct as tct;
+use penumbra_proof_params::{DummyWitness, SWAP_PROOF_PROVING_KEY};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
-fn prove(
-    r: Fq,
-    s: Fq,
-    swap_plaintext: SwapPlaintext,
-    fee_blinding: Fr,
-    balance_commitment: balance::Commitment,
-    swap_commitment: tct::StateCommitment,
-    fee_commitment: balance::Commitment,
-) {
-    let _proof = SwapProof::prove(
-        r,
-        s,
-        &SWAP_PROOF_PROVING_KEY,
-        swap_plaintext,
-        fee_blinding,
-        balance_commitment,
-        swap_commitment,
-        fee_commitment,
-    )
-    .expect("can generate proof");
+fn prove(r: Fq, s: Fq, public: SwapProofPublic, private: SwapProofPrivate) {
+    let _proof = SwapProof::prove(r, s, &SWAP_PROOF_PROVING_KEY, public, private)
+        .expect("can generate proof");
 }
 
 fn swap_proving_time(c: &mut Criterion) {
@@ -63,7 +45,8 @@ fn swap_proving_time(c: &mut Criterion) {
         fee,
         claim_address,
     );
-    let fee_commitment = swap_plaintext.claim_fee.commit(Fr::from(0u64));
+    let fee_blinding = Fr::from(0u64);
+    let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
     let swap_commitment = swap_plaintext.swap_commitment();
 
     let value_1 = Value {
@@ -84,31 +67,25 @@ fn swap_proving_time(c: &mut Criterion) {
     balance -= value_fee;
     let balance_commitment = balance.commit(Fr::from(0u64));
 
+    let public = SwapProofPublic {
+        balance_commitment,
+        swap_commitment,
+        fee_commitment,
+    };
+    let private = SwapProofPrivate {
+        fee_blinding,
+        swap_plaintext,
+    };
+
     let r = Fq::rand(&mut OsRng);
     let s = Fq::rand(&mut OsRng);
 
     c.bench_function("swap proving", |b| {
-        b.iter(|| {
-            prove(
-                r,
-                s,
-                swap_plaintext.clone(),
-                Fr::from(0u64),
-                balance_commitment,
-                swap_commitment,
-                fee_commitment,
-            )
-        })
+        b.iter(|| prove(r, s, public.clone(), private.clone()))
     });
 
     // Also print out the number of constraints.
-    let circuit = SwapCircuit::new(
-        swap_plaintext,
-        Fr::from(0u64),
-        balance_commitment,
-        swap_commitment,
-        fee_commitment,
-    );
+    let circuit = SwapCircuit::with_dummy_witness();
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);

@@ -1,12 +1,13 @@
 use std::pin::Pin;
 
 use anyhow::bail;
+use cnidarium::Storage;
 use futures::{StreamExt, TryFutureExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt as _;
-use penumbra_proto::core::component::compact_block::v1alpha1::{
+use penumbra_proto::core::component::compact_block::v1::{
     query_service_server::QueryService, CompactBlockRangeRequest, CompactBlockRangeResponse,
+    CompactBlockRequest, CompactBlockResponse,
 };
-use penumbra_storage::Storage;
+use penumbra_sct::component::clock::EpochRead;
 use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::{instrument, Instrument};
@@ -30,6 +31,24 @@ impl QueryService for Server {
         Box<dyn futures::Stream<Item = Result<CompactBlockRangeResponse, tonic::Status>> + Send>,
     >;
 
+    async fn compact_block(
+        &self,
+        request: tonic::Request<CompactBlockRequest>,
+    ) -> Result<tonic::Response<CompactBlockResponse>, Status> {
+        let snapshot = self.storage.latest_snapshot();
+
+        let height = request.get_ref().height;
+        let compact_block = snapshot
+            .compact_block(height)
+            .await
+            .map_err(|e| tonic::Status::internal(format!("error fetching block: {e:#}")))?
+            .ok_or_else(|| tonic::Status::not_found(format!("compact block {height} not found")))?;
+
+        Ok(tonic::Response::new(CompactBlockResponse {
+            compact_block: Some(compact_block.into()),
+        }))
+    }
+
     #[instrument(
         skip(self, request),
         fields(
@@ -43,14 +62,15 @@ impl QueryService for Server {
         request: tonic::Request<CompactBlockRangeRequest>,
     ) -> Result<tonic::Response<Self::CompactBlockRangeStream>, Status> {
         let snapshot = self.storage.latest_snapshot();
-        snapshot
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during compact_block_range request: {e}"
-                ))
-            })?;
+        // TODO(erwan): re-enable chain id checks
+        // snapshot
+        //     .check_chain_id(&request.get_ref().chain_id)
+        //     .await
+        //     .map_err(|e| {
+        //         tonic::Status::unknown(format!(
+        //             "failed to validate chain id during compact_block_range request: {e}"
+        //         ))
+        //     })?;
 
         let CompactBlockRangeRequest {
             start_height,
@@ -114,7 +134,7 @@ impl QueryService for Server {
                     // buffered streams staying full for too long. However, in at least a few
                     // "regular usage" instances we observed client streams stopping too eagerly.
                     // In #2932, it was established that the timeout had to be at least 10s to
-                    // accomodate those usecases.
+                    // accommodate those usecases.
                     //
                     // Although we cannot exclude that clients actually did not poll the stream for
                     // more than `9s`, this seems unlikely. We are removing the timeout mechanism
@@ -122,8 +142,8 @@ impl QueryService for Server {
                     // Future iterations of this work should start by moving block serialization
                     // outside of the `send_op` future, and investigate if long blocking sends can
                     // happen for benign reasons (i.e not caused by the client).
-                    tx_blocks.send(Ok(compact_block.into())).await?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    tx_blocks.send(Ok(compact_block)).await?;
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
 
                 // If the client didn't request a keep-alive, we're done.
@@ -152,10 +172,10 @@ impl QueryService for Server {
                         .expect("no error fetching block")
                         .expect("compact block for in-range height must be present");
                     tx_blocks
-                        .send(Ok(block.into()))
+                        .send(Ok(block))
                         .await
                         .map_err(|_| tonic::Status::cancelled("client closed connection"))?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
 
                 // Ensure that we don't hold a reference to the snapshot indefinitely
@@ -181,10 +201,10 @@ impl QueryService for Server {
                         .map_err(|e| tonic::Status::internal(e.to_string()))?
                         .expect("compact block for in-range height must be present");
                     tx_blocks
-                        .send(Ok(block.into()))
+                        .send(Ok(block))
                         .await
                         .map_err(|_| tonic::Status::cancelled("channel closed"))?;
-                    metrics::increment_counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL,);
+                    metrics::counter!(metrics::COMPACT_BLOCK_RANGE_SERVED_TOTAL).increment(1);
                 }
             }
             .map_err(|e| async move {
@@ -220,13 +240,13 @@ struct CompactBlockConnectionCounter {}
 
 impl CompactBlockConnectionCounter {
     pub fn new() -> Self {
-        metrics::increment_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
+        metrics::gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS).increment(1.0);
         CompactBlockConnectionCounter {}
     }
 }
 
 impl Drop for CompactBlockConnectionCounter {
     fn drop(&mut self) {
-        metrics::decrement_gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS, 1.0);
+        metrics::gauge!(metrics::COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS).decrement(1.0);
     }
 }

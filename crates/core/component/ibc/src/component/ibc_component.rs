@@ -1,34 +1,39 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::{
     core::client::Height, lightclients::tendermint::ConsensusState as TendermintConsensusState,
 };
-use penumbra_chain::component::StateReadExt as _;
-use penumbra_component::Component;
-use penumbra_storage::StateWrite;
 use tendermint::abci;
 use tracing::instrument;
 
-use crate::component::{client::StateWriteExt as _, client_counter::ClientCounter};
+use crate::{
+    component::{client::StateWriteExt as _, client_counter::ClientCounter},
+    genesis, StateWriteExt as _,
+};
 
-pub struct IBCComponent {}
+use super::HostInterface;
 
-#[async_trait]
-impl Component for IBCComponent {
-    type AppState = ();
+pub struct Ibc {}
 
+// Note: [`Ibc`] does not implement the [`cnidarium_component::Component`] trait
+// this is because we want to have a bound on [`HostInterface`] in the `begin_block`
+// processing.
+impl Ibc {
     #[instrument(name = "ibc", skip(state, app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&()>) {
+    pub async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&genesis::Content>) {
         match app_state {
-            Some(_) => state.put_client_counter(ClientCounter(0)),
+            Some(genesis) => {
+                state.put_ibc_params(genesis.ibc_params.clone());
+                state.put_client_counter(ClientCounter(0))
+            }
             None => { /* perform upgrade specific check */ }
         }
     }
 
     #[instrument(name = "ibc", skip(state, begin_block))]
-    async fn begin_block<S: StateWrite + 'static>(
+    pub async fn begin_block<HI: HostInterface, S: StateWrite + 'static>(
         state: &mut Arc<S>,
         begin_block: &abci::request::BeginBlock,
     ) {
@@ -49,8 +54,7 @@ impl Component for IBCComponent {
         // Currently, we don't use a revision number, because we don't have
         // any further namespacing of blocks than the block height.
         let height = Height::new(
-            state
-                .get_revision_number()
+            HI::get_revision_number(&state)
                 .await
                 .expect("must be able to get revision number in begin block"),
             begin_block.header.height.into(),
@@ -61,14 +65,14 @@ impl Component for IBCComponent {
     }
 
     #[instrument(name = "ibc", skip(_state, _end_block))]
-    async fn end_block<S: StateWrite + 'static>(
+    pub async fn end_block<S: StateWrite + 'static>(
         mut _state: &mut Arc<S>,
         _end_block: &abci::request::EndBlock,
     ) {
     }
 
     #[instrument(name = "ibc", skip(_state))]
-    async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
+    pub async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {
         Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use penumbra_proto::{penumbra::core::keys::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::keys::v1 as pb, DomainType};
 
 use crate::keys::{AddressIndex, WalletId};
 
@@ -17,7 +17,7 @@ pub enum AddressView {
     Opaque {
         address: Address,
     },
-    Visible {
+    Decoded {
         address: Address,
         index: AddressIndex,
         wallet_id: WalletId,
@@ -28,7 +28,7 @@ impl AddressView {
     pub fn address(&self) -> Address {
         match self {
             AddressView::Opaque { address } => *address,
-            AddressView::Visible { address, .. } => *address,
+            AddressView::Decoded { address, .. } => *address,
         }
     }
 }
@@ -47,13 +47,13 @@ impl From<AddressView> for pb::AddressView {
                     },
                 )),
             },
-            AddressView::Visible {
+            AddressView::Decoded {
                 address,
                 index,
                 wallet_id,
             } => Self {
-                address_view: Some(pb::address_view::AddressView::Visible(
-                    pb::address_view::Visible {
+                address_view: Some(pb::address_view::AddressView::Decoded(
+                    pb::address_view::Decoded {
                         address: Some(address.into()),
                         index: Some(index.into()),
                         wallet_id: Some(wallet_id.into()),
@@ -75,7 +75,7 @@ impl TryFrom<pb::AddressView> for AddressView {
                     .try_into()?;
                 Ok(AddressView::Opaque { address })
             }
-            Some(pb::address_view::AddressView::Visible(visible)) => {
+            Some(pb::address_view::AddressView::Decoded(visible)) => {
                 let address = visible
                     .address
                     .ok_or_else(|| anyhow::anyhow!("AddressView::Visible missing address field"))?
@@ -88,7 +88,7 @@ impl TryFrom<pb::AddressView> for AddressView {
                     .wallet_id
                     .ok_or_else(|| anyhow::anyhow!("AddressView::Visible missing wallet_id field"))?
                     .try_into()?;
-                Ok(AddressView::Visible {
+                Ok(AddressView::Decoded {
                     address,
                     index,
                     wallet_id,
@@ -122,7 +122,7 @@ mod tests {
 
         assert_eq!(
             fvk1.view_address(addr1_0),
-            AddressView::Visible {
+            AddressView::Decoded {
                 address: addr1_0,
                 index: 0.into(),
                 wallet_id: fvk1.wallet_id(),
@@ -134,7 +134,7 @@ mod tests {
         );
         assert_eq!(
             fvk1.view_address(addr1_1),
-            AddressView::Visible {
+            AddressView::Decoded {
                 address: addr1_1,
                 index: 1.into(),
                 wallet_id: fvk1.wallet_id(),
@@ -150,7 +150,7 @@ mod tests {
         );
         assert_eq!(
             fvk2.view_address(addr2_0),
-            AddressView::Visible {
+            AddressView::Decoded {
                 address: addr2_0,
                 index: 0.into(),
                 wallet_id: fvk2.wallet_id(),
@@ -162,7 +162,7 @@ mod tests {
         );
         assert_eq!(
             fvk2.view_address(addr2_1),
-            AddressView::Visible {
+            AddressView::Decoded {
                 address: addr2_1,
                 index: 1.into(),
                 wallet_id: fvk2.wallet_id(),

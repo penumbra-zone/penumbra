@@ -12,7 +12,7 @@ use penumbra_keys::{
     symmetric::{OutgoingCipherKey, OvkWrappedKey, PayloadKey, PayloadKind},
     Address, AddressView,
 };
-use penumbra_proto::penumbra::core::component::shielded_pool::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::shielded_pool::v1 as pb;
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror;
@@ -48,7 +48,7 @@ pub struct Note {
     transmission_key_s: Fq,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(into = "pb::NoteView", try_from = "pb::NoteView")]
 pub struct NoteView {
     pub value: ValueView,
@@ -122,9 +122,9 @@ impl Note {
         Note::from_parts(
             allocation.address,
             Value {
-                amount: allocation.amount,
+                amount: allocation.raw_amount,
                 asset_id: asset::REGISTRY
-                    .parse_denom(&allocation.denom)
+                    .parse_denom(&allocation.raw_denom)
                     .ok_or_else(|| anyhow::anyhow!("invalid denomination"))?
                     .id(),
             },

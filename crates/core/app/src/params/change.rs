@@ -1,12 +1,17 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use penumbra_chain::params::{ChainParameters, Ratio};
-use penumbra_dao::params::DaoParameters;
+use penumbra_community_pool::params::CommunityPoolParameters;
+use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
-use penumbra_governance::{params::GovernanceParameters, proposal::ChangedAppParameters};
+use penumbra_funding::params::FundingParameters;
+use penumbra_governance::{
+    params::GovernanceParameters, proposal::ChangedAppParameters, tally::Ratio,
+};
 use penumbra_ibc::params::IBCParameters;
+use penumbra_sct::params::SctParameters;
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 use super::AppParameters;
@@ -18,30 +23,23 @@ use super::AppParameters;
 impl AppParameters {
     pub fn check_valid_update(&self, new: &AppParameters) -> Result<()> {
         new.check_valid()?;
-        // TODO: move the checks below into their respective components
+        // TODO: move the checks below into their respective components.
+        // Tracked by #3593
 
         let AppParameters {
-            chain_params:
-                ChainParameters {
-                    chain_id,
-                    epoch_duration,
+            chain_id,
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
                 },
-            stake_params:
-                StakeParameters {
-                    unbonding_epochs: _,
-                    active_validator_limit,
-                    base_reward_rate: _,
-                    slashing_penalty_misbehavior: _,
-                    slashing_penalty_downtime: _,
-                    signed_blocks_window_len,
-                    missed_blocks_maximum: _,
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
                 },
-            ibc_params:
-                IBCParameters {
-                    ibc_enabled: _,
-                    inbound_ics20_transfers_enabled: _,
-                    outbound_ics20_transfers_enabled: _,
-                },
+            fee_params: FeeParameters {
+                fixed_gas_prices: _,
+            },
+            funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks: _,
@@ -50,23 +48,43 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
-            fee_params: FeeParameters {},
-            distributions_params:
-                DistributionsParameters {
-                    staking_issuance_per_block: _,
+            ibc_params:
+                IBCParameters {
+                    ibc_enabled: _,
+                    inbound_ics20_transfers_enabled: _,
+                    outbound_ics20_transfers_enabled: _,
                 },
-            dao_params:
-                DaoParameters {
-                    dao_spend_proposals_enabled: _,
-                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+            sct_params: SctParameters { epoch_duration },
+            shielded_pool_params:
+                ShieldedPoolParameters {
+                    fixed_fmd_params: _,
+                },
+            stake_params:
+                StakeParameters {
+                    active_validator_limit,
+                    base_reward_rate: _,
+                    slashing_penalty_misbehavior: _,
+                    slashing_penalty_downtime: _,
+                    signed_blocks_window_len,
+                    missed_blocks_maximum: _,
+                    min_validator_stake: _,
+                    unbonding_delay: _,
+                },
+            dex_params:
+                DexParameters {
+                    is_enabled: _,
+                    fixed_candidates: _,
+                    max_hops: _,
+                },
+            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         // Ensure that certain parameters are not changed by the update:
-        check_invariant([(chain_id, &new.chain_params.chain_id, "chain ID")])?;
+        check_invariant([(chain_id, &new.chain_id, "chain ID")])?;
         check_invariant([
             (
                 epoch_duration,
-                &new.chain_params.epoch_duration,
+                &new.sct_params.epoch_duration,
                 "epoch duration",
             ),
             (
@@ -103,27 +121,19 @@ impl AppParameters {
 
     pub fn check_valid(&self) -> Result<()> {
         let AppParameters {
-            chain_params:
-                ChainParameters {
-                    chain_id,
-                    epoch_duration,
+            chain_id,
+            community_pool_params:
+                CommunityPoolParameters {
+                    community_pool_spend_proposals_enabled: _,
                 },
-            stake_params:
-                StakeParameters {
-                    unbonding_epochs,
-                    active_validator_limit,
-                    base_reward_rate,
-                    slashing_penalty_misbehavior,
-                    slashing_penalty_downtime,
-                    signed_blocks_window_len,
-                    missed_blocks_maximum,
+            distributions_params:
+                DistributionsParameters {
+                    staking_issuance_per_block: _,
                 },
-            ibc_params:
-                IBCParameters {
-                    ibc_enabled,
-                    inbound_ics20_transfers_enabled,
-                    outbound_ics20_transfers_enabled,
-                },
+            fee_params: FeeParameters {
+                fixed_gas_prices: _,
+            },
+            funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
                     proposal_voting_blocks,
@@ -132,15 +142,35 @@ impl AppParameters {
                     proposal_pass_threshold,
                     proposal_slash_threshold,
                 },
-            fee_params: FeeParameters {},
-            distributions_params:
-                DistributionsParameters {
-                    staking_issuance_per_block: _,
+            ibc_params:
+                IBCParameters {
+                    ibc_enabled,
+                    inbound_ics20_transfers_enabled,
+                    outbound_ics20_transfers_enabled,
                 },
-            dao_params:
-                DaoParameters {
-                    dao_spend_proposals_enabled: _,
-                }, // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
+            sct_params: SctParameters { epoch_duration },
+            shielded_pool_params:
+                ShieldedPoolParameters {
+                    fixed_fmd_params: _,
+                },
+            stake_params:
+                StakeParameters {
+                    active_validator_limit,
+                    base_reward_rate,
+                    slashing_penalty_misbehavior,
+                    slashing_penalty_downtime,
+                    signed_blocks_window_len,
+                    missed_blocks_maximum,
+                    min_validator_stake,
+                    unbonding_delay,
+                },
+            dex_params:
+                DexParameters {
+                    is_enabled: _,
+                    fixed_candidates: _,
+                    max_hops: _,
+                },
+            // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
 
         check_all([
@@ -150,8 +180,8 @@ impl AppParameters {
                 "epoch duration must be at least one block",
             ),
             (
-                *unbonding_epochs >= 1,
-                "unbonding must take at least one epoch",
+                *unbonding_delay >= epoch_duration * 2 + 1,
+                "unbonding must take at least two epochs",
             ),
             (
                 *active_validator_limit > 3,
@@ -210,19 +240,26 @@ impl AppParameters {
                 *proposal_slash_threshold > Ratio::new(1, 2),
                 "proposal slash threshold must be greater than 1/2",
             ),
+            (
+                *min_validator_stake >= 1_000_000u128.into(),
+                "the minimum validator stake must be at least 1penumbra",
+            ),
         ])
     }
 
     /// Converts an `AppParameters` instance to a complete `ChangedAppParameters`.
     pub fn as_changed_params(&self) -> ChangedAppParameters {
         ChangedAppParameters {
-            chain_params: Some(self.chain_params.clone()),
-            dao_params: Some(self.dao_params.clone()),
+            community_pool_params: Some(self.community_pool_params.clone()),
             distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
+            funding_params: Some(self.funding_params.clone()),
             governance_params: Some(self.governance_params.clone()),
             ibc_params: Some(self.ibc_params.clone()),
+            shielded_pool_params: Some(self.shielded_pool_params.clone()),
+            sct_params: Some(self.sct_params.clone()),
             stake_params: Some(self.stake_params.clone()),
+            dex_params: Some(self.dex_params.clone()),
         }
     }
 
@@ -236,26 +273,30 @@ impl AppParameters {
         old: Option<&AppParameters>,
     ) -> Result<AppParameters> {
         if old.is_none()
-            && (new.chain_params.is_none()
-                || new.stake_params.is_none()
-                || new.ibc_params.is_none()
-                || new.governance_params.is_none()
+            && (new.community_pool_params.is_none()
+                || new.distributions_params.is_none()
                 || new.fee_params.is_none()
-                || new.dao_params.is_none()
-                || new.distributions_params.is_none())
+                || new.funding_params.is_none()
+                || new.governance_params.is_none()
+                || new.ibc_params.is_none()
+                || new.sct_params.is_none()
+                || new.shielded_pool_params.is_none()
+                || new.stake_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
         }
 
         Ok(AppParameters {
-            chain_params: new.chain_params.clone().unwrap_or_else(|| {
+            // TODO(erwan): we are momentarily not supporting chain_id changes
+            // until the IBC host chain changes land.
+            // See: https://github.com/penumbra-zone/penumbra/issues/3617#issuecomment-1917708221
+            chain_id: old
+                .expect("old should be set if new has any None values")
+                .chain_id
+                .clone(),
+            community_pool_params: new.community_pool_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
-                    .chain_params
-                    .clone()
-            }),
-            dao_params: new.dao_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .dao_params
+                    .community_pool_params
                     .clone()
             }),
             distributions_params: new.distributions_params.clone().unwrap_or_else(|| {
@@ -268,6 +309,11 @@ impl AppParameters {
                     .fee_params
                     .clone()
             }),
+            funding_params: new.funding_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .funding_params
+                    .clone()
+            }),
             governance_params: new.governance_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .governance_params
@@ -278,9 +324,24 @@ impl AppParameters {
                     .ibc_params
                     .clone()
             }),
+            sct_params: new.sct_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .sct_params
+                    .clone()
+            }),
+            shielded_pool_params: new.shielded_pool_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .shielded_pool_params
+                    .clone()
+            }),
             stake_params: new.stake_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .stake_params
+                    .clone()
+            }),
+            dex_params: new.dex_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .dex_params
                     .clone()
             }),
         })

@@ -1,14 +1,14 @@
 use ibc_types::core::channel::{ChannelId, PortId};
 use penumbra_asset::asset;
 
-/// IBC token respresents a token that was created through IBC.
+/// IBC token represents a token that was created through IBC.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IbcToken {
     channel_id: ChannelId,
     port_id: PortId,
     original_denom: String,
 
-    base_denom: asset::DenomMetadata,
+    base_denom: asset::Metadata,
 }
 
 impl IbcToken {
@@ -29,7 +29,7 @@ impl IbcToken {
     }
 
     /// Get the base denomination for this IBC token.
-    pub fn denom(&self) -> asset::DenomMetadata {
+    pub fn denom(&self) -> asset::Metadata {
         self.base_denom.clone()
     }
 

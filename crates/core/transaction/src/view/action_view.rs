@@ -1,12 +1,12 @@
-use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
+use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
-    lp::action::{PositionClose, PositionOpen, PositionRewardClaim, PositionWithdraw},
+    lp::action::{PositionClose, PositionOpen, PositionWithdraw},
     swap::SwapView,
     swap_claim::SwapClaimView,
 };
 use penumbra_governance::{ProposalDepositClaim, ProposalSubmit, ProposalWithdraw, ValidatorVote};
 use penumbra_ibc::IbcRelay;
-use penumbra_proto::{core::transaction::v1alpha1 as pbt, DomainType};
+use penumbra_proto::{core::transaction::v1 as pbt, DomainType};
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::{Delegate, Undelegate, UndelegateClaim};
 use serde::{Deserialize, Serialize};
@@ -37,14 +37,13 @@ pub enum ActionView {
     PositionOpen(PositionOpen),
     PositionClose(PositionClose),
     PositionWithdraw(PositionWithdraw),
-    PositionRewardClaim(PositionRewardClaim),
     Delegate(Delegate),
     Undelegate(Undelegate),
     UndelegateClaim(UndelegateClaim),
     Ics20Withdrawal(Ics20Withdrawal),
-    DaoDeposit(DaoDeposit),
-    DaoSpend(DaoSpend),
-    DaoOutput(DaoOutput),
+    CommunityPoolDeposit(CommunityPoolDeposit),
+    CommunityPoolSpend(CommunityPoolSpend),
+    CommunityPoolOutput(CommunityPoolOutput),
 }
 
 impl DomainType for ActionView {
@@ -78,11 +77,15 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::PositionOpen(x) => ActionView::PositionOpen(x.try_into()?),
                 AV::PositionClose(x) => ActionView::PositionClose(x.try_into()?),
                 AV::PositionWithdraw(x) => ActionView::PositionWithdraw(x.try_into()?),
-                AV::PositionRewardClaim(x) => ActionView::PositionRewardClaim(x.try_into()?),
+                AV::PositionRewardClaim(_) => {
+                    return Err(anyhow::anyhow!(
+                        "PositionRewardClaim is deprecated and unsupported"
+                    ))
+                }
                 AV::Ics20Withdrawal(x) => ActionView::Ics20Withdrawal(x.try_into()?),
-                AV::DaoDeposit(x) => ActionView::DaoDeposit(x.try_into()?),
-                AV::DaoSpend(x) => ActionView::DaoSpend(x.try_into()?),
-                AV::DaoOutput(x) => ActionView::DaoOutput(x.try_into()?),
+                AV::CommunityPoolDeposit(x) => ActionView::CommunityPoolDeposit(x.try_into()?),
+                AV::CommunityPoolSpend(x) => ActionView::CommunityPoolSpend(x.try_into()?),
+                AV::CommunityPoolOutput(x) => ActionView::CommunityPoolOutput(x.try_into()?),
             },
         )
     }
@@ -110,11 +113,10 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::PositionOpen(x) => AV::PositionOpen(x.into()),
                 ActionView::PositionClose(x) => AV::PositionClose(x.into()),
                 ActionView::PositionWithdraw(x) => AV::PositionWithdraw(x.into()),
-                ActionView::PositionRewardClaim(x) => AV::PositionRewardClaim(x.into()),
                 ActionView::Ics20Withdrawal(x) => AV::Ics20Withdrawal(x.into()),
-                ActionView::DaoDeposit(x) => AV::DaoDeposit(x.into()),
-                ActionView::DaoSpend(x) => AV::DaoSpend(x.into()),
-                ActionView::DaoOutput(x) => AV::DaoOutput(x.into()),
+                ActionView::CommunityPoolDeposit(x) => AV::CommunityPoolDeposit(x.into()),
+                ActionView::CommunityPoolSpend(x) => AV::CommunityPoolSpend(x.into()),
+                ActionView::CommunityPoolOutput(x) => AV::CommunityPoolOutput(x.into()),
             }),
         }
     }
@@ -140,11 +142,10 @@ impl From<ActionView> for Action {
             ActionView::PositionOpen(x) => Action::PositionOpen(x),
             ActionView::PositionClose(x) => Action::PositionClose(x),
             ActionView::PositionWithdraw(x) => Action::PositionWithdraw(x),
-            ActionView::PositionRewardClaim(x) => Action::PositionRewardClaim(x),
             ActionView::Ics20Withdrawal(x) => Action::Ics20Withdrawal(x),
-            ActionView::DaoDeposit(x) => Action::DaoDeposit(x),
-            ActionView::DaoSpend(x) => Action::DaoSpend(x),
-            ActionView::DaoOutput(x) => Action::DaoOutput(x),
+            ActionView::CommunityPoolDeposit(x) => Action::CommunityPoolDeposit(x),
+            ActionView::CommunityPoolSpend(x) => Action::CommunityPoolSpend(x),
+            ActionView::CommunityPoolOutput(x) => Action::CommunityPoolOutput(x),
         }
     }
 }

@@ -44,13 +44,13 @@ jobs:
         uses: actions/checkout@v4
 
       - id: gcloudauth
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/1006847873719/locations/global/workloadIdentityPools/gh-runner-pool/providers/my-provider'
           service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
       - name: get gke credentials
-        uses: google-github-actions/get-gke-credentials@v0
+        uses: google-github-actions/get-gke-credentials@v1
         with:
           cluster_name: testnet
           project_id: penumbra-sl-testnet
@@ -69,16 +69,48 @@ jobs:
           export HELM_RELEASE='penumbra-preview'
           ./ci.sh
 
+      - name: bounce metrics
+        run: kubectl rollout restart deployment penumbra-preview-metrics
+
       - name: bounce grpcui
         run: kubectl rollout restart deployment grpcui-preview
 
-      - name: bounce osiris
-        run: kubectl rollout restart deployment osiris-preview
+  # Deploys a standalone instance of pd,
+  # specifically to exercise the auto-https direct-serve logic.
+  standalone:
+    name: deploy standalone pd node, preview
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    needs:
+      - deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
 
-      # We only run one (1) relayer instance, and re-deploy it as part of the preview update.
-      # The other end of the configured path is the long-running testnet.
-      # We ignore errors on the bounce, because we may have removed the deployment out of band:
-      # we're still working on reliable packet relaying between test chains.
-      - name: bounce relayer
+      - name: configure ssh identity
         run: |-
-          kubectl rollout restart deployment relayer-preview || true
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$SSH_PRIVKEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$SSH_HOSTKEYS" > ~/.ssh/known_hosts
+        env:
+          # In order to generate the hostkey material:
+          #
+          #   echo > hostkeys.txt
+          #   ssh-keyscan -H solo-pd.testnet-preview.plinfra.net | tee -a hostkeys.txt
+          #   ssh-keyscan -H solo-pd.testnet.plinfra.net | tee -a hostkeys.txt
+          #
+          # Then paste the contents of that file into `secrets.CI_RUNNER_SSH_HOSTKEYS`,
+          # so it's consumable via this step.
+          SSH_PRIVKEY: ${{ secrets.CI_RUNNER_SSH_PRIVKEY }}
+          SSH_HOSTKEYS: ${{ secrets.CI_RUNNER_SSH_HOSTKEYS }}
+
+      - name: deploy
+        shell: bash
+        run: |-
+          export PENUMBRA_VERSION="main"
+          export PENUMBRA_ENVIRONMENT="penumbra-preview"
+          ./deployments/scripts/redeploy-ci-fullnode-via-runner

@@ -1,11 +1,8 @@
 use decaf377::{FieldExt, Fq};
 use penumbra_asset::{Balance, Value};
-use penumbra_keys::{
-    keys::{IncomingViewingKey, NullifierKey},
-    FullViewingKey,
-};
+use penumbra_keys::{keys::IncomingViewingKey, FullViewingKey};
 use penumbra_proof_params::SWAPCLAIM_PROOF_PROVING_KEY;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 
@@ -14,7 +11,11 @@ use tct::Position;
 
 use crate::{swap::SwapPlaintext, BatchSwapOutputData};
 
-use super::{action as swap_claim, proof::SwapClaimProof, SwapClaim};
+use super::{
+    action as swap_claim,
+    proof::{SwapClaimProof, SwapClaimProofPrivate, SwapClaimProofPublic},
+    SwapClaim,
+};
 
 /// A planned [`SwapClaim`](SwapClaim).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -40,7 +41,7 @@ impl SwapClaimPlan {
     ) -> SwapClaim {
         SwapClaim {
             body: self.swap_claim_body(fvk),
-            proof: self.swap_claim_proof(state_commitment_proof, fvk.nullifier_key()),
+            proof: self.swap_claim_proof(state_commitment_proof, fvk),
             epoch_duration: self.epoch_duration,
         }
     }
@@ -50,7 +51,7 @@ impl SwapClaimPlan {
     pub fn swap_claim_proof(
         &self,
         state_commitment_proof: &tct::Proof,
-        nk: &NullifierKey,
+        fvk: &FullViewingKey,
     ) -> SwapClaimProof {
         let (lambda_1, lambda_2) = self
             .output_data
@@ -62,24 +63,33 @@ impl SwapClaimPlan {
         let note_commitment_1 = output_1_note.commit();
         let note_commitment_2 = output_2_note.commit();
 
-        let nullifier =
-            Nullifier::derive(nk, self.position, &self.swap_plaintext.swap_commitment());
+        let nullifier = Nullifier::derive(
+            fvk.nullifier_key(),
+            self.position,
+            &self.swap_plaintext.swap_commitment(),
+        );
         SwapClaimProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &SWAPCLAIM_PROOF_PROVING_KEY,
-            self.swap_plaintext.clone(),
-            state_commitment_proof.clone(),
-            *nk,
-            state_commitment_proof.root(),
-            nullifier,
-            lambda_1,
-            lambda_2,
-            note_blinding_1,
-            note_blinding_2,
-            note_commitment_1,
-            note_commitment_2,
-            self.output_data,
+            SwapClaimProofPublic {
+                anchor: state_commitment_proof.root(),
+                nullifier,
+                claim_fee: self.swap_plaintext.claim_fee.clone(),
+                output_data: self.output_data,
+                note_commitment_1,
+                note_commitment_2,
+            },
+            SwapClaimProofPrivate {
+                swap_plaintext: self.swap_plaintext.clone(),
+                state_commitment_proof: state_commitment_proof.clone(),
+                nk: *fvk.nullifier_key(),
+                ak: *fvk.spend_verification_key(),
+                lambda_1,
+                lambda_2,
+                note_blinding_1,
+                note_blinding_2,
+            },
         )
         .expect("can generate ZKSwapClaimProof")
     }

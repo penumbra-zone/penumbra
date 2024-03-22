@@ -115,6 +115,41 @@ impl PartialEq for Config {
 impl Eq for Config {}
 
 impl Config {
+    /// Create a config from the parts that get spit out by the DKG protocol.
+    pub(crate) fn from_parts(
+        key_package: frost::keys::KeyPackage,
+        public_key_package: frost::keys::PublicKeyPackage,
+        signing_key: SigningKey,
+        verification_keys: Vec<VerificationKey>,
+        nullifier_key: Fq,
+    ) -> Self {
+        let fvk = FullViewingKey::from_components(
+            public_key_package
+                .group_public()
+                .serialize()
+                .as_slice()
+                .try_into()
+                .expect("conversion of a group element to a VerifyingKey should not fail"),
+            NullifierKey(nullifier_key),
+        );
+        let spend_key_share = key_package.secret_share().to_owned();
+        let verifying_shares = verification_keys
+            .into_iter()
+            .map(|vk| {
+                let id = frost::Identifier::derive(vk.as_bytes().as_slice())
+                    .expect("deriving identifiers should not fail");
+                (vk, public_key_package.signer_pubkeys()[&id])
+            })
+            .collect();
+        Self {
+            threshold: *key_package.min_signers(),
+            fvk,
+            spend_key_share,
+            signing_key,
+            verifying_shares,
+        }
+    }
+
     pub fn deal(mut rng: &mut impl CryptoRngCore, t: u16, n: u16) -> Result<Vec<Self>> {
         let signing_keys = (0..n)
             .map(|_| {

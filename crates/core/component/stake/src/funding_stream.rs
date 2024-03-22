@@ -1,9 +1,8 @@
+use crate::BPS_SQUARED_SCALING_FACTOR;
 use penumbra_keys::Address;
-use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::stake::v1alpha1 as pb, DomainType};
+use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_proto::{penumbra::core::component::stake::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
-
-use crate::rate::BaseRateData;
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
@@ -11,14 +10,14 @@ use crate::rate::BaseRateData;
 #[serde(try_from = "pb::FundingStream", into = "pb::FundingStream")]
 pub enum FundingStream {
     ToAddress {
-        /// The destinatination address for the funding stream..
+        /// The destination address for the funding stream..
         address: Address,
 
         /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
         /// validator's total staking reward that goes to this funding stream.
         rate_bps: u16,
     },
-    ToDao {
+    ToCommunityPool {
         /// The portion (in terms of [basis points](https://en.wikipedia.org/wiki/Basis_point)) of the
         /// validator's total staking reward that goes to this funding stream.
         rate_bps: u16,
@@ -29,43 +28,79 @@ pub enum FundingStream {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Recipient {
     Address(Address),
-    Dao,
+    CommunityPool,
 }
 
 impl FundingStream {
     pub fn rate_bps(&self) -> u16 {
         match self {
             FundingStream::ToAddress { rate_bps, .. } => *rate_bps,
-            FundingStream::ToDao { rate_bps } => *rate_bps,
+            FundingStream::ToCommunityPool { rate_bps } => *rate_bps,
         }
     }
 
     pub fn recipient(&self) -> Recipient {
         match self {
             FundingStream::ToAddress { address, .. } => Recipient::Address(*address),
-            FundingStream::ToDao { .. } => Recipient::Dao,
+            FundingStream::ToCommunityPool { .. } => Recipient::CommunityPool,
         }
     }
 }
 
 impl FundingStream {
-    /// Computes the amount of reward at the epoch specified by base_rate_data
+    /// Computes the amount of reward at the epoch boundary.
+    /// The input rates are assumed to be in basis points squared, this means that
+    /// to get the actual rate, you need to rescale by [`BPS_SQUARED_SCALING_FACTOR`].
     pub fn reward_amount(
         &self,
-        prev_base_rate: &BaseRateData,
-        next_base_rate: &BaseRateData,
+        base_reward_rate: Amount,
+        validator_exchange_rate: Amount,
         total_delegation_tokens: Amount,
-    ) -> u64 {
-        if prev_base_rate.epoch_index != next_base_rate.epoch_index - 1 {
-            panic!("wrong base rate data for previous epoch")
-        }
-        // take yv*cve*re*psi(e-1)
-        let mut r =
-            (total_delegation_tokens.value() * (self.rate_bps() as u128 * 1_0000)) / 1_0000_0000;
-        r = (r * next_base_rate.base_reward_rate as u128) / 1_0000_0000;
-        r = (r * prev_base_rate.base_exchange_rate as u128) / 1_0000_0000;
+    ) -> Amount {
+        // Setup:
+        let total_delegation_tokens = U128x128::from(total_delegation_tokens);
+        let prev_validator_exchange_rate_bps_sq = U128x128::from(validator_exchange_rate);
+        let prev_base_reward_rate_bps_sq = U128x128::from(base_reward_rate);
+        let commission_rate_bps = U128x128::from(self.rate_bps());
+        let max_bps = U128x128::from(10_000u128);
 
-        r as u64
+        // First, we remove the scaling factors:
+        let commission_rate = (commission_rate_bps / max_bps).expect("nonzero divisor");
+        let prev_validator_exchange_rate = (prev_validator_exchange_rate_bps_sq
+            / *BPS_SQUARED_SCALING_FACTOR)
+            .expect("nonzero divisor");
+        let prev_base_reward_rate =
+            (prev_base_reward_rate_bps_sq / *BPS_SQUARED_SCALING_FACTOR).expect("nonzero divisor");
+
+        // The reward amount at epoch e, for validator v, is R_{v,e}.
+        // It is computed as:
+        //   R_{v,e} = y_v * c_{v,e} * r_e * psi_v(e)
+        //   where:
+        //          y_v = total delegation tokens for validator v
+        //          c_{v,e} = commission rate for validator v, at epoch e
+        //          r_e = base reward rate for epoch e
+        //          psi_v(e) = the validator exchange rate for epoch e
+        //
+        // The commission rate is the sum of all the funding streams rate, and is capped at 100%.
+        // In this method, we use a partial commission rate specific to `this` funding stream.
+
+        // Then, we compute the cumulative depreciation for this pool:
+        let staking_tokens = (total_delegation_tokens * prev_validator_exchange_rate)
+            .expect("exchange rate is close to 1");
+
+        // Now, we can compute the total reward amount for this pool:
+        let total_reward_amount =
+            (staking_tokens * prev_base_reward_rate).expect("does not overflow");
+
+        /* ********** Compute the reward amount for this funding stream ************* */
+        let stream_reward_amount =
+            (total_reward_amount * commission_rate).expect("commission rate is between 0 and 1");
+        /* ************************************************************************** */
+
+        stream_reward_amount
+            .round_down()
+            .try_into()
+            .expect("does not overflow")
     }
 }
 
@@ -83,11 +118,13 @@ impl From<FundingStream> for pb::FundingStream {
                         rate_bps: rate_bps.into(),
                     }),
                 ),
-                FundingStream::ToDao { rate_bps } => Some(pb::funding_stream::Recipient::ToDao(
-                    pb::funding_stream::ToDao {
-                        rate_bps: rate_bps.into(),
-                    },
-                )),
+                FundingStream::ToCommunityPool { rate_bps } => {
+                    Some(pb::funding_stream::Recipient::ToCommunityPool(
+                        pb::funding_stream::ToCommunityPool {
+                            rate_bps: rate_bps.into(),
+                        },
+                    ))
+                }
             },
         }
     }
@@ -115,15 +152,15 @@ impl TryFrom<pb::FundingStream> for FundingStream {
                 }
                 Ok(FundingStream::ToAddress { address, rate_bps })
             }
-            pb::funding_stream::Recipient::ToDao(to_dao) => {
-                let rate_bps = to_dao
+            pb::funding_stream::Recipient::ToCommunityPool(to_community_pool) => {
+                let rate_bps = to_community_pool
                     .rate_bps
                     .try_into()
                     .map_err(|e| anyhow::anyhow!("invalid funding stream rate: {}", e))?;
                 if rate_bps > 10_000 {
                     anyhow::bail!("funding stream rate exceeds 100% (10,000bps)");
                 }
-                Ok(FundingStream::ToDao { rate_bps })
+                Ok(FundingStream::ToCommunityPool { rate_bps })
             }
         }
     }
@@ -135,6 +172,8 @@ impl TryFrom<pb::FundingStream> for FundingStream {
 /// [`FundingStream`]s, and cannot exceed 10000bps (100%). This property is guaranteed by the
 /// `TryFrom<Vec<FundingStream>` implementation for [`FundingStreams`], which checks the sum, and is
 /// the only way to build a non-empty [`FundingStreams`].
+///
+/// Similarly, it's not possible to build a [`FundingStreams`] with more than 8 funding streams.
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct FundingStreams {
     funding_streams: Vec<FundingStream>,
@@ -150,12 +189,20 @@ impl FundingStreams {
     pub fn iter(&self) -> impl Iterator<Item = &FundingStream> {
         self.funding_streams.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.funding_streams.len()
+    }
 }
 
 impl TryFrom<Vec<FundingStream>> for FundingStreams {
     type Error = anyhow::Error;
 
     fn try_from(funding_streams: Vec<FundingStream>) -> Result<Self, Self::Error> {
+        if funding_streams.len() > 8 {
+            anyhow::bail!("validators can declare at most 8 funding streams");
+        }
+
         if funding_streams.iter().map(|fs| fs.rate_bps()).sum::<u16>() > 10_000 {
             anyhow::bail!("sum of funding rates exceeds 100% (10,000bps)");
         }
@@ -190,6 +237,6 @@ impl<'a> IntoIterator for &'a FundingStreams {
     type IntoIter = std::slice::Iter<'a, FundingStream>;
 
     fn into_iter(self) -> Self::IntoIter {
-        (&self.funding_streams).into_iter()
+        (self.funding_streams).iter()
     }
 }

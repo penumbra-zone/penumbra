@@ -117,7 +117,7 @@ on the delay between the start of a new epoch and the completion of the DKG as
 
 This could potentially be pipelined by including each participant's commitments for the next epoch (the commitments $a_{ij}*G$ from FROST) in the block data at one of the last blocks of the previous epoch. *Round 2* of FROST could occur during the vote extensions phase of the epoch transition block.
 
-***NOTE***: FROST requries private communication channels for round 2, thus we
+***NOTE***: FROST requires private communication channels for round 2, thus we
 must assign validators encryption keys, perform key agreement, and encrypt
 round 2 communications before placing them in the vote extension. This can be
 accomplished using ECDH with `decaf377`, and an AEAD cipher (though

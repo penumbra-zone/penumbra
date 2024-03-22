@@ -2,7 +2,7 @@ use ark_ff::{BigInteger, PrimeField, ToConstraintField};
 use ark_r1cs_std::{prelude::*, uint64::UInt64};
 use ark_relations::r1cs::{ConstraintSystemRef, SynthesisError};
 use decaf377::{Fq, Fr};
-use penumbra_proto::{penumbra::core::num::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::num::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, iter::Sum, num::NonZeroU128, ops};
 
@@ -54,6 +54,12 @@ impl Amount {
     pub fn checked_sub(&self, rhs: &Self) -> Option<Self> {
         self.inner
             .checked_sub(rhs.inner)
+            .map(|inner| Self { inner })
+    }
+
+    pub fn checked_add(&self, rhs: &Self) -> Option<Self> {
+        self.inner
+            .checked_add(rhs.inner)
             .map(|inner| Self { inner })
     }
 
@@ -138,7 +144,7 @@ impl AmountVar {
         let quo_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(quo)))?;
         let rem_var = AmountVar::new_witness(self.cs(), || Ok(Fq::from(rem)))?;
 
-        // Constrain either quo_var or divisior_var to be 64 bits to guard against overflow
+        // Constrain either quo_var or divisor_var to be 64 bits to guard against overflow
         let q_is_64_bits = is_bit_constrained(self.cs(), quo_var.amount.clone(), 64)?;
         let d_is_64_bits = is_bit_constrained(self.cs(), divisor_var.amount.clone(), 64)?;
         let q_or_d_is_64_bits = q_is_64_bits.or(&d_is_64_bits)?;
@@ -334,6 +340,22 @@ impl From<u32> for Amount {
     }
 }
 
+impl From<u16> for Amount {
+    fn from(amount: u16) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
+impl From<u8> for Amount {
+    fn from(amount: u8) -> Amount {
+        Amount {
+            inner: amount as u128,
+        }
+    }
+}
+
 impl From<Amount> for f64 {
     fn from(amount: Amount) -> f64 {
         amount.inner as f64
@@ -503,7 +525,7 @@ impl Sum for Amount {
 #[cfg(test)]
 mod test {
     use crate::Amount;
-    use penumbra_proto::penumbra::core::num::v1alpha1 as pb;
+    use penumbra_proto::penumbra::core::num::v1 as pb;
     use rand::RngCore;
     use rand_core::OsRng;
 

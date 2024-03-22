@@ -17,14 +17,12 @@ pub use metrics::*;
 ///
 /// The source code contains the metrics descriptions.
 pub fn register_metrics() {
-    register_gauge!(COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS);
     describe_gauge!(
         COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS,
         Unit::Count,
         "The number of active connections streaming compact blocks"
     );
 
-    register_counter!(COMPACT_BLOCK_RANGE_SERVED_TOTAL);
     describe_counter!(
         COMPACT_BLOCK_RANGE_SERVED_TOTAL,
         Unit::Count,
@@ -32,11 +30,8 @@ pub fn register_metrics() {
     );
 }
 
-// Sample code for reference -- delete when adding the first metric
-// pub const MEMPOOL_CHECKTX_TOTAL: &str = "penumbra_pd_mempool_checktx_total";
-
 pub const COMPACT_BLOCK_RANGE_ACTIVE_CONNECTIONS: &str =
-    "penumbra_component_compact_block_compact_block_range_active_connections";
+    "cnidarium_component_compact_block_compact_block_range_active_connections";
 
 pub const COMPACT_BLOCK_RANGE_SERVED_TOTAL: &str =
-    "penumbra_component_compact_block_compact_block_range_served_total";
+    "cnidarium_component_compact_block_compact_block_range_served_total";

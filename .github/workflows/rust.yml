@@ -4,7 +4,7 @@ on: pull_request
 jobs:
   test:
     name: Test Suite
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,7 +16,7 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: Run cargo check, failing on warnings
-        run: cargo check --release
+        run: cargo check --release --all-targets
         env:
           # The `-D warnings` option causes an error on warnings;
           # we must duplicate the rustflags from `.cargo/config.toml`.
@@ -30,6 +30,7 @@ jobs:
           if [[ -n "$s" ]]; then
               echo "ERROR: found modified files that should be committed:"
               echo "$s"
+              git diff | head -n 128
               exit 1
           else
               echo "OK: no uncommitted changes detected"
@@ -41,7 +42,7 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
       - name: Install rust toolchain
@@ -51,60 +52,3 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
-
-  docs:
-    # We use a custom script to generate the index page for https://rustdoc.penumbra.zone,
-    # and refactors to rust deps can break that generation. Let's ensure this script exits 0
-    # on PRs, but we'll still only deploy after merge into main.
-    name: Check that rustdocs build OK
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Install rust toolchain
-        # The script for rustdoc build requires nightly toolchain.
-        uses: dtolnay/rust-toolchain@nightly
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Build rustdocs
-        run: ./deployments/scripts/rust-docs
-
-  wasm:
-    name: Build WASM
-    runs-on: buildjet-16vcpu-ubuntu-2004
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Load rust cache
-        uses: astriaorg/buildjet-rust-cache@v2.5.1
-
-      - name: build wasm32 target
-        run: cargo build --release --target wasm32-unknown-unknown
-        # TODO: consider failing on warnings here. A few dead-code
-        # warnings, leaving as-is because wasm is undergoing rapid dev
-        # in support of web extension.
-        working-directory: crates/wasm
-
-      # Download prebuilt binary for wasm-pack; faster than `cargo install`.
-      - uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: 'latest'
-
-      # `wasm-pack build` will automatically compile to target wasm32-unknown-unknown,
-      # but we run it as a separate task to isolate potential failures in the build pipeline.
-      - name: run wasm-pack build
-        run: wasm-pack build
-        working-directory: crates/wasm
-
-      # Always show the results of `cargo tree`, even if the tests failed, since that
-      # output will be immediately useful in debugging.
-      - name: display mio deps
-        run: cargo tree --invert mio --edges features
-        if: always()

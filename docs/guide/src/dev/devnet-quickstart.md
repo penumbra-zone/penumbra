@@ -3,7 +3,7 @@
 This page describes a quickstart method for running `pd`+`cometbft` to test
 changes during development.
 
-To start, you'll need to [install CometBFT `v0.37`](../pd/build.md#installing-cometbft).
+To start, you'll need to install a [specific version of CometBFT](../pd/install.md#installing-cometbft).
 
 ## Generating configs
 
@@ -44,23 +44,24 @@ in another terminal window.
 
 ## Running `pcli`
 
-To interact with the chain, first do
+To interact with the chain, configure a wallet pointing at the localhost node:
 
 ```shell
-cargo run --release --bin pcli -- view reset
+cargo run --release --bin pcli -- --home ~/.local/share/pcli-localhost view reset
+cargo run --release --bin pcli -- init --grpc-url http://localhost:8080 soft-kms generate
+# or, to reuse an existing seed phrase:
+cargo run --release --bin pcli -- init --grpc-url http://localhost:8080 soft-kms import-phrase
 ```
 
-and then pass the `-n` flag to any commands you run to point `pcli` at your local node, e.g.,
+and then pass the `--home` flag to any commands you run to point `pcli` at your local node, e.g.,
 
 ```shell
-cargo run --bin pcli -- -n http://127.0.0.1:8080 view balance
+cargo run --release --bin pcli -- --home ~/.local/share/pcli-localhost view balance
 ```
 
-By default, `pd testnet generate` uses the latest snapshot of the Discord's
-faucet channel, so if you posted your address there more than a week or two ago,
-you should already have an allocation in your local devnet.
-
-If not, reset the state as below, and edit the `genesis.json` to add your address.
+By default, `pd testnet generate` uses the testnet allocations from the `testnets/` directory in the git repo.
+If you have an address included in those files, then use `pcli init soft-kms import-phrase`. Otherwise,
+edit the `genesis.json` to add your address.
 
 ## Resetting and restarting
 
@@ -73,7 +74,7 @@ cargo run --release --bin pd -- testnet unsafe-reset-all
 You'll probably also want to reset your wallet state:
 
 ```shell
-cargo run --release --bin pcli -- view reset
+cargo run --release --bin pcli -- --home ~/.local/share/pcli-localhost view reset
 ```
 
 At this point you're ready to generate new configs, and restart both `pd` and

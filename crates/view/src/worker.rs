@@ -1,6 +1,7 @@
 use std::{
     collections::BTreeSet,
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use anyhow::Context;
@@ -9,24 +10,23 @@ use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
 use penumbra_proto::{
     self as proto,
-    core::component::{
-        compact_block::v1alpha1::{
-            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-            CompactBlockRangeRequest,
-        },
-        shielded_pool::v1alpha1::{
-            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-            DenomMetadataByIdRequest,
+    core::{
+        app::v1::query_service_client::QueryServiceClient as AppQueryServiceClient,
+        component::{
+            compact_block::v1::{
+                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+                CompactBlockRangeRequest,
+            },
+            shielded_pool::v1::{
+                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+                AssetMetadataByIdRequest,
+            },
         },
     },
-    util::tendermint_proxy::v1alpha1::{
-        tendermint_proxy_service_client::TendermintProxyServiceClient, GetBlockByHeightRequest,
-    },
-    DomainType,
 };
-use penumbra_sct::Nullifier;
+use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use sha2::Digest;
+use proto::core::app::v1::TransactionsByHeightRequest;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use url::Url;
@@ -102,18 +102,29 @@ impl Worker {
 
     pub async fn fetch_transactions(
         &self,
-        filtered_block: &FilteredBlock,
+        filtered_block: &mut FilteredBlock,
     ) -> anyhow::Result<Vec<Transaction>> {
-        let inbound_transaction_ids = filtered_block.inbound_transaction_ids();
         let spent_nullifiers = filtered_block
             .spent_nullifiers
             .iter()
             .cloned()
             .collect::<BTreeSet<Nullifier>>();
 
+        let has_tx_sources = filtered_block
+            .new_notes
+            .values()
+            .map(|record| &record.source)
+            .chain(
+                filtered_block
+                    .new_swaps
+                    .values()
+                    .map(|record| &record.source),
+            )
+            .any(|source| matches!(source, CommitmentSource::Transaction { .. }));
+
         // Only make a block request if we detected transactions in the FilteredBlock.
         // TODO: in the future, we could perform chaff downloads.
-        if spent_nullifiers.is_empty() && inbound_transaction_ids.is_empty() {
+        if spent_nullifiers.is_empty() && !has_tx_sources {
             return Ok(Vec::new());
         }
 
@@ -122,28 +133,48 @@ impl Worker {
             "fetching full transaction data"
         );
 
-        let block = fetch_block(self.channel.clone(), filtered_block.height as i64).await?;
+        let all_transactions =
+            fetch_transactions(self.channel.clone(), filtered_block.height).await?;
 
         let mut transactions = Vec::new();
 
-        for tx_bytes in block.data.as_ref().expect("block data").txs.iter() {
-            let tx_id: [u8; 32] = sha2::Sha256::digest(tx_bytes.as_slice())
-                .as_slice()
-                .try_into()?;
+        for tx in all_transactions {
+            let tx_id = tx.id().0;
 
-            let transaction = Transaction::decode(tx_bytes.as_slice())?;
+            let mut relevant = false;
 
-            // Check if the transaction is a known inbound transaction or spends one of our nullifiers.
-            if inbound_transaction_ids.contains(&tx_id)
-                || transaction
-                    .spent_nullifiers()
-                    .any(|nf| spent_nullifiers.contains(&nf))
+            if tx
+                .spent_nullifiers()
+                .any(|nf| spent_nullifiers.contains(&nf))
             {
-                transactions.push(transaction)
+                // The transaction is relevant, it spends one of our nullifiers.
+                relevant = true;
+            }
+
+            // Rehydrate commitment sources.
+            for commitment in tx.state_commitments() {
+                filtered_block
+                    .new_notes
+                    .entry(commitment)
+                    .and_modify(|record| {
+                        relevant = true;
+                        record.source = CommitmentSource::Transaction { id: Some(tx_id) };
+                    });
+                filtered_block
+                    .new_swaps
+                    .entry(commitment)
+                    .and_modify(|record| {
+                        relevant = true;
+                        record.source = CommitmentSource::Transaction { id: Some(tx_id) };
+                    });
+            }
+
+            if relevant {
+                transactions.push(tx);
             }
         }
+
         tracing::debug!(
-            transactions_in_block = block.data.expect("block data").txs.len(),
             matched = transactions.len(),
             "filtered relevant transactions"
         );
@@ -155,8 +186,6 @@ impl Worker {
         // Do a single sync run, up to whatever the latest block height is
         tracing::info!("starting client sync");
 
-        let chain_id = self.storage.app_params().await?.chain_params.chain_id;
-
         let start_height = self
             .storage
             .last_sync_height()
@@ -167,7 +196,6 @@ impl Worker {
         let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
-                chain_id: chain_id.clone(),
                 start_height,
                 end_height: 0,
                 // Instruct the server to keep feeding us blocks as they're created.
@@ -214,11 +242,11 @@ impl Worker {
                 self.sync_height_tx.send(height)?;
             } else {
                 // Otherwise, scan the block and commit its changes:
-                let filtered_block =
+                let mut filtered_block =
                     scan_block(&self.fvk, &mut sct_guard, block, &self.storage).await?;
 
                 // Download any transactions we detected.
-                let transactions = self.fetch_transactions(&filtered_block).await?;
+                let transactions = self.fetch_transactions(&mut filtered_block).await?;
 
                 // LPNFT asset IDs won't be known to the chain, so we need to pre-populate them in the local
                 // registry based on transaction contents.
@@ -240,12 +268,10 @@ impl Worker {
                                 let denom = lp_nft.denom();
                                 self.storage.record_asset(denom).await?;
 
-                                let lp_nft = LpNft::new(position_id, position::State::Withdrawn);
-                                let _id = lp_nft.asset_id();
-                                let denom = lp_nft.denom();
-                                self.storage.record_asset(denom).await?;
-
-                                let lp_nft = LpNft::new(position_id, position::State::Claimed);
+                                let lp_nft = LpNft::new(
+                                    position_id,
+                                    position::State::Withdrawn { sequence: 0 },
+                                );
                                 let _id = lp_nft.asset_id();
                                 let denom = lp_nft.denom();
                                 self.storage.record_asset(denom).await?;
@@ -266,18 +292,16 @@ impl Worker {
                             penumbra_transaction::Action::PositionWithdraw(position_withdraw) => {
                                 let position_id = position_withdraw.position_id;
 
-                                // Update the position record
-                                self.storage
-                                    .update_position(position_id, position::State::Withdrawn)
-                                    .await?;
-                            }
-                            penumbra_transaction::Action::PositionRewardClaim(position_claim) => {
-                                let position_id = position_claim.position_id;
+                                // Record the LPNFT for the current sequence number.
+                                let state = position::State::Withdrawn {
+                                    sequence: position_withdraw.sequence,
+                                };
+                                let lp_nft = LpNft::new(position_id, state);
+                                let denom = lp_nft.denom();
+                                self.storage.record_asset(denom).await?;
 
                                 // Update the position record
-                                self.storage
-                                    .update_position(position_id, position::State::Claimed)
-                                    .await?;
+                                self.storage.update_position(position_id, state).await?;
                             }
                             _ => (),
                         };
@@ -285,7 +309,7 @@ impl Worker {
                 }
 
                 // Record any new assets we detected.
-                for note_record in &filtered_block.new_notes {
+                for note_record in filtered_block.new_notes.values() {
                     // If the asset is already known, skip it.
 
                     if self
@@ -300,9 +324,8 @@ impl Worker {
 
                         let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
                         if let Some(denom_metadata) = client
-                            .denom_metadata_by_id(DenomMetadataByIdRequest {
+                            .asset_metadata_by_id(AssetMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
-                                chain_id: chain_id.clone(),
                             })
                             .await?
                             .into_inner()
@@ -353,36 +376,53 @@ impl Worker {
     }
 
     pub async fn run(mut self) -> anyhow::Result<()> {
-        self.run_inner().await.map_err(|e| {
-            tracing::info!(?e, "view worker error");
-            self.error_slot
-                .lock()
-                .expect("no race conditions on worker error slot lock")
-                .replace(e);
-            anyhow::anyhow!("view worker error")
-        })
-    }
-
-    async fn run_inner(&mut self) -> anyhow::Result<()> {
-        // For now, this can be outside of the loop, because assets are only
-        // created at genesis. In the future, we'll want to have a way for
-        // clients to learn about assets as they're created.
-        self.sync().await?;
-        Ok(())
+        loop {
+            // Do a single sync run, recording any errors.
+            if let Err(e) = self.sync().await {
+                tracing::error!(?e, "view worker error");
+                self.error_slot
+                    .lock()
+                    .expect("mutex is not poisoned")
+                    .replace(e);
+            }
+            // Sleep 10s (maybe later use exponential backoff?)
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            // Clear the error slot before retrying.
+            *self.error_slot.lock().expect("mutex is not poisoned") = None;
+        }
     }
 }
 
-async fn fetch_block(
+// Fetches all transactions in the block.
+async fn fetch_transactions(
     channel: Channel,
-    height: i64,
-) -> anyhow::Result<proto::tendermint::types::Block> {
-    let mut client = TendermintProxyServiceClient::new(channel);
-    Ok(client
-        .get_block_by_height(GetBlockByHeightRequest { height })
-        .await?
+    block_height: u64,
+) -> anyhow::Result<Vec<Transaction>> {
+    let mut client = AppQueryServiceClient::new(channel);
+    let request = TransactionsByHeightRequest {
+        block_height,
+        ..Default::default()
+    };
+    // HACK: this is not a robust long-term solution but may help
+    // avoid "split-brain" block fetch issues, where a client learns
+    // of a new block, then immediately tries to fetch it, but that
+    // fetch is load-balanced over a different node that hasn't yet
+    // learned about that block.
+    let response = match client.transactions_by_height(request.clone()).await {
+        Ok(rsp) => rsp,
+        Err(e) => {
+            tracing::warn!(?e, "failed to fetch block, waiting and retrying once");
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            client.transactions_by_height(request).await?
+        }
+    };
+    let transactions = response
         .into_inner()
-        .block
-        .expect("block not found"))
+        .transactions
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<anyhow::Result<Vec<_>>>()?;
+    Ok(transactions)
 }
 
 #[cfg(feature = "sct-divergence-check")]
@@ -391,14 +431,15 @@ async fn sct_divergence_check(
     height: u64,
     actual_root: penumbra_tct::Root,
 ) -> anyhow::Result<()> {
-    use penumbra_proto::core::app::v1alpha1::query_service_client::QueryServiceClient;
+    use penumbra_proto::{cnidarium::v1::query_service_client::QueryServiceClient, DomainType};
     use penumbra_sct::state_key as sct_state_key;
 
     let mut client = QueryServiceClient::new(channel);
+    tracing::info!(?height, "fetching anchor @ height");
 
     let value = client
-        .key_value(penumbra_proto::core::app::v1alpha1::KeyValueRequest {
-            key: sct_state_key::anchor_by_height(height),
+        .key_value(penumbra_proto::cnidarium::v1::KeyValueRequest {
+            key: sct_state_key::tree::anchor_by_height(height),
             ..Default::default()
         })
         .await?

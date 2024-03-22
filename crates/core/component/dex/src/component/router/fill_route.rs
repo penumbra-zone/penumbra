@@ -5,17 +5,19 @@ use std::{
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateDelta, StateRead, StateWrite};
 use futures::{Stream, StreamExt};
 use penumbra_asset::{asset, Value};
 use penumbra_num::{
     fixpoint::{Error, U128x128},
     Amount,
 };
-use penumbra_storage::{StateDelta, StateRead, StateWrite};
+use penumbra_proto::StateWriteProto as _;
 use tracing::instrument;
 
 use crate::{
     component::{metrics, PositionManager, PositionRead},
+    event,
     lp::{
         position::{self, Position},
         Reserves,
@@ -30,7 +32,7 @@ pub enum FillError {
     /// of the trading pair.
     #[error("input id {0:?} does not belong on pair: {1:?}")]
     AssetIdMismatch(asset::Id, TradingPair),
-    /// Overflow occured when executing against the position corresponding
+    /// Overflow occurred when executing against the position corresponding
     /// to the wrapped asset id.
     #[error("overflow when executing against position {0:?}")]
     ExecutionOverflow(position::Id),
@@ -253,10 +255,19 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     tracing::debug!(?swap_execution, "returning swap execution of filled route");
 
     // Apply the state transaction now that we've reached the end without errors.
-    this.apply();
+    //
+    // We have to manually extract events and push them down to the state to avoid losing them.
+    // TODO: in a commit not intended to be cherry-picked, we should fix this hazardous API:
+    // - rename `StateDelta::apply` to `StateDelta::apply_extracting_events`
+    // - add `StateDelta::apply_with_events` that pushes the events down.
+    // - go through all uses of `apply_extracting_events` and determine what behavior is correct
+    let (mut state, events) = this.apply();
+    for event in events {
+        state.record(event);
+    }
 
     let fill_elapsed = fill_start.elapsed();
-    metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION, fill_elapsed);
+    metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
     // cleanup / finalization
     Ok(swap_execution)
 }
@@ -402,6 +413,10 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     async fn save(&mut self) -> Result<()> {
         for position in &self.positions {
             self.state.put_position(position.clone()).await?;
+
+            // Create an ABCI event signaling that the position was executed against
+            self.state
+                .record_proto(event::position_execution(position.clone()));
         }
         Ok(())
     }

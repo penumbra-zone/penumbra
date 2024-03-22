@@ -2,19 +2,20 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
-use penumbra_storage::StateWrite;
 use tracing::instrument;
 
 use crate::{
+    circuit_breaker::ValueCircuitBreaker,
     component::{
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
         PositionManager, StateWriteExt,
     },
     lp::position::MAX_RESERVE_AMOUNT,
-    BatchSwapOutputData, SwapExecution, TradingPair,
+    state_key, BatchSwapOutputData, ExecutionCircuitBreaker, SwapExecution, TradingPair,
 };
 
 use super::fill_route::FillError;
@@ -47,6 +48,21 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
 
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        // Fetch the ValueCircuitBreaker prior to calling `route_and_fill`, so
+        // we know the total aggregate amount of each asset prior to executing and
+        // can ensure the total outflows don't exceed the total balances.
+        let value_circuit_breaker: ValueCircuitBreaker = match self
+            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
+            .await
+            .expect("able to retrieve value circuit breaker from nonverifiable storage")
+        {
+            Some(bytes) => serde_json::from_slice(&bytes).expect(
+                "able to deserialize stored value circuit breaker from nonverifiable storage",
+            ),
+            None => ValueCircuitBreaker::default(),
+        };
+
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             Some(
                 self.route_and_fill(
@@ -54,6 +70,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                     trading_pair.asset_2(),
                     delta_1,
                     params.clone(),
+                    execution_circuit_breaker.clone(),
                 )
                 .await?,
             )
@@ -69,6 +86,7 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                     trading_pair.asset_1(),
                     delta_2,
                     params.clone(),
+                    execution_circuit_breaker,
                 )
                 .await?,
             )
@@ -103,6 +121,19 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             unfilled_2,
         };
 
+        // Check that the output data doesn't exceed the ValueCircuitBreaker's quantities
+        // (i.e. we didn't outflow more value than existed within liquidity positions).
+        let available_asset_1 = value_circuit_breaker.available(trading_pair.asset_1());
+        let available_asset_2 = value_circuit_breaker.available(trading_pair.asset_2());
+        assert!(
+            output_data.lambda_1 <= available_asset_1.amount,
+            "asset 1 outflow exceeds available balance"
+        );
+        assert!(
+            output_data.lambda_2 <= available_asset_2.amount,
+            "asset 2 outflow exceeds available balance"
+        );
+
         // Fetch the swap execution object that should have been modified during the routing and filling.
         tracing::debug!(
             ?output_data,
@@ -122,13 +153,14 @@ impl<T: PositionManager> HandleBatchSwaps for T {}
 /// Lower-level trait that ties together the routing and filling logic.
 #[async_trait]
 pub trait RouteAndFill: StateWrite + Sized {
-    #[instrument(skip(self, asset_1, asset_2, input, params))]
+    #[instrument(skip(self, asset_1, asset_2, input, params, execution_circuit_breaker))]
     async fn route_and_fill(
         self: &mut Arc<Self>,
         asset_1: asset::Id,
         asset_2: asset::Id,
         input: Amount,
         params: RoutingParams,
+        mut execution_circuit_breaker: ExecutionCircuitBreaker,
     ) -> Result<SwapExecution>
     where
         Self: 'static,
@@ -149,8 +181,15 @@ pub trait RouteAndFill: StateWrite + Sized {
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
         // 3. We have reached the `RoutingParams` specified price limit
+        // 4. The execution circuit breaker has been triggered based on the number of path searches and executions
 
         loop {
+            // Check if we have exceeded the execution circuit breaker limits.
+            if execution_circuit_breaker.exceeded_limits() {
+                tracing::debug!("execution circuit breaker triggered, exiting route_and_fill");
+                break;
+            }
+
             // Find the best route between the two assets in the trading pair.
             let (path, spill_price) = self
                 .path_search(asset_1, asset_2, params.clone())
@@ -166,6 +205,9 @@ pub trait RouteAndFill: StateWrite + Sized {
                 tracing::debug!("empty path found, exiting route_and_fill");
                 break;
             }
+
+            // Increment the execution circuit breaker path search counter.
+            execution_circuit_breaker.current_path_searches += 1;
 
             let delta_1 = Value {
                 amount: total_unfilled_1.min(max_delta_1),
@@ -223,13 +265,16 @@ pub trait RouteAndFill: StateWrite + Sized {
                 )
             };
 
+            // Increment the execution circuit breaker execution counter.
+            execution_circuit_breaker.current_executions += 1;
+
             if total_unfilled_1.value() == 0 {
                 tracing::debug!("filled all input, exiting route_and_fill");
                 break;
             }
 
             // Ensure that we've actually executed, or else bail out.
-            let Some(accurate_max_price) = execution.max_price()? else {
+            let Some(accurate_max_price) = execution.max_price() else {
                 tracing::debug!("no traces in execution, exiting route_and_fill");
                 break;
             };

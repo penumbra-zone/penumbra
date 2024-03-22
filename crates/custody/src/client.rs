@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures::FutureExt;
-use penumbra_proto::custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient;
-use penumbra_proto::custody::v1alpha1::AuthorizeResponse;
+use penumbra_proto::custody::v1::custody_service_client::CustodyServiceClient;
+use penumbra_proto::custody::v1::AuthorizeResponse;
 use std::{future::Future, pin::Pin};
 
 use tonic::codegen::Bytes;
@@ -22,10 +22,10 @@ use crate::AuthorizeRequest;
 /// understand the transaction and determine whether or not it should be
 /// authorized.
 ///
-/// This trait is a wrapper around the proto-generated [`CustodyProtocolServiceClient`] that serves two goals:
+/// This trait is a wrapper around the proto-generated [`CustodyServiceClient`] that serves two goals:
 ///
 /// 1. It works on domain types rather than proto-generated types, avoiding conversions;
-/// 2. It's easier to write as a trait bound than the `CustodyProtocolServiceClient`,
+/// 2. It's easier to write as a trait bound than the `CustodyServiceClient`,
 ///   which requires complex bounds on its inner type to enforce that it is a
 ///   tower `Service`
 pub trait CustodyClient {
@@ -36,7 +36,7 @@ pub trait CustodyClient {
     ) -> Pin<Box<dyn Future<Output = Result<AuthorizeResponse>> + Send + 'static>>;
 }
 
-impl<T> CustodyClient for CustodyProtocolServiceClient<T>
+impl<T> CustodyClient for CustodyServiceClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody> + Send + Clone + 'static,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,

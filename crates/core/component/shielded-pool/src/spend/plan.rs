@@ -2,15 +2,15 @@ use ark_ff::UniformRand;
 use decaf377::{FieldExt, Fq, Fr};
 use decaf377_rdsa::{Signature, SpendAuth};
 use penumbra_asset::{Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_keys::{Address, FullViewingKey};
-use penumbra_proto::{core::component::shielded_pool::v1alpha1 as pb, DomainType};
+use penumbra_keys::{keys::AddressIndex, FullViewingKey};
+use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use penumbra_sct::Nullifier;
 use penumbra_tct as tct;
 use rand_core::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 use super::{Body, Spend, SpendProof};
-use crate::{Note, Rseed};
+use crate::{Note, Rseed, SpendProofPrivate, SpendProofPublic};
 
 /// A planned [`Spend`](Spend).
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -42,8 +42,9 @@ impl SpendPlan {
     }
 
     /// Create a dummy [`SpendPlan`].
-    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R) -> SpendPlan {
-        let dummy_address = Address::dummy(rng);
+    pub fn dummy<R: CryptoRng + RngCore>(rng: &mut R, fvk: &FullViewingKey) -> SpendPlan {
+        // A valid address we can spend; since the note is hidden, we can just pick the default.
+        let dummy_address = fvk.payment_address(AddressIndex::default()).0;
         let rseed = Rseed::generate(rng);
         let dummy_note = Note::from_parts(
             dummy_address,
@@ -100,20 +101,26 @@ impl SpendPlan {
         state_commitment_proof: tct::Proof,
         anchor: tct::Root,
     ) -> SpendProof {
+        let public = SpendProofPublic {
+            anchor,
+            balance_commitment: self.balance().commit(self.value_blinding),
+            nullifier: self.nullifier(fvk),
+            rk: self.rk(fvk),
+        };
+        let private = SpendProofPrivate {
+            state_commitment_proof,
+            note: self.note.clone(),
+            v_blinding: self.value_blinding,
+            spend_auth_randomizer: self.randomizer,
+            ak: *fvk.spend_verification_key(),
+            nk: *fvk.nullifier_key(),
+        };
         SpendProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &penumbra_proof_params::SPEND_PROOF_PROVING_KEY,
-            state_commitment_proof.clone(),
-            self.note.clone(),
-            self.value_blinding,
-            self.randomizer,
-            *fvk.spend_verification_key(),
-            *fvk.nullifier_key(),
-            anchor,
-            self.balance().commit(self.value_blinding),
-            self.nullifier(fvk),
-            self.rk(fvk),
+            public,
+            private,
         )
         .expect("can generate ZKSpendProof")
     }

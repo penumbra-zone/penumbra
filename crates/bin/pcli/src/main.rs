@@ -1,30 +1,30 @@
 #![deny(clippy::unwrap_used)]
 #![allow(clippy::clone_on_copy)]
+
 use std::fs;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use config::PcliConfig;
 use futures::StreamExt;
+
+use command::*;
+use config::PcliConfig;
+use opt::Opt;
+use penumbra_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_proto::{
-    custody::v1alpha1::custody_protocol_service_client::CustodyProtocolServiceClient,
-    view::v1alpha1::view_protocol_service_client::ViewProtocolServiceClient,
+    custody::v1::custody_service_client::CustodyServiceClient,
+    view::v1::view_service_client::ViewServiceClient,
 };
 use penumbra_view::ViewClient;
 
-mod box_grpc_svc;
 mod command;
 mod config;
 mod dex_utils;
 mod network;
 mod opt;
 mod terminal;
+mod transaction_view_ext;
 mod warning;
-
-use opt::Opt;
-
-use box_grpc_svc::BoxGrpcService;
-use command::*;
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 const VIEW_FILE_NAME: &str = "pcli-view.sqlite";
@@ -34,8 +34,8 @@ pub struct App {
     /// view will be `None` when a command indicates that it can be run offline via
     /// `.offline()` and Some(_) otherwise. Assuming `.offline()` has been implemenented
     /// correctly, this can be unwrapped safely.
-    pub view: Option<ViewProtocolServiceClient<BoxGrpcService>>,
-    pub custody: CustodyProtocolServiceClient<BoxGrpcService>,
+    pub view: Option<ViewServiceClient<BoxGrpcService>>,
+    pub custody: CustodyServiceClient<BoxGrpcService>,
     pub config: PcliConfig,
 }
 
@@ -45,11 +45,9 @@ impl App {
     }
 
     async fn sync(&mut self) -> Result<()> {
-        let mut status_stream = ViewClient::status_stream(
-            self.view.as_mut().expect("view service initialized"),
-            self.config.full_viewing_key.wallet_id(),
-        )
-        .await?;
+        let mut status_stream =
+            ViewClient::status_stream(self.view.as_mut().expect("view service initialized"))
+                .await?;
 
         // Pull out the first message from the stream, which has the current state, and use
         // it to set up a progress bar.
@@ -105,7 +103,7 @@ async fn main() -> Result<()> {
     // create the client state, so handle it specially here so that we can have
     // common code for the other subcommands.
     if let Command::Init(init_cmd) = &opt.cmd {
-        init_cmd.exec(opt.home.as_path())?;
+        init_cmd.exec(opt.home.as_path()).await?;
         return Ok(());
     }
 

@@ -1,11 +1,12 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::channel::msgs::MsgChannelOpenInit;
 use ibc_types::core::channel::{
     channel::State, events, ChannelEnd, ChannelId, Counterparty, PortId,
 };
-use penumbra_storage::{StateRead, StateWrite};
 
+use crate::component::HostInterface;
 use crate::component::{
     app_handler::{AppHandlerCheck, AppHandlerExecute},
     channel::{StateReadExt as _, StateWriteExt as _},
@@ -21,7 +22,11 @@ impl MsgHandler for MsgChannelOpenInit {
         Ok(())
     }
 
-    async fn try_execute<S: StateWrite, H: AppHandlerCheck + AppHandlerExecute>(
+    async fn try_execute<
+        S: StateWrite,
+        AH: AppHandlerCheck + AppHandlerExecute,
+        HI: HostInterface,
+    >(
         &self,
         mut state: S,
     ) -> Result<()> {
@@ -38,7 +43,7 @@ impl MsgHandler for MsgChannelOpenInit {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            H::chan_open_init_check(&mut state, self).await?;
+            AH::chan_open_init_check(&mut state, self).await?;
         } else {
             anyhow::bail!("invalid port id");
         }
@@ -72,7 +77,7 @@ impl MsgHandler for MsgChannelOpenInit {
 
         let transfer = PortId::transfer();
         if self.port_id_on_a == transfer {
-            H::chan_open_init_execute(state, self).await;
+            AH::chan_open_init_execute(state, self).await;
         } else {
             anyhow::bail!("invalid port id");
         }

@@ -1,6 +1,6 @@
 use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
-use penumbra_proto::{penumbra::core::component::dex::v1alpha1 as pb, DomainType};
+use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 
 use crate::TradingPair;
 
@@ -55,6 +55,20 @@ impl Reserves {
             r1: self.r2,
             r2: self.r1,
         }
+    }
+
+    /// Return zero reserves.
+    pub fn zero() -> Self {
+        Self {
+            r1: Amount::zero(),
+            r2: Amount::zero(),
+        }
+    }
+}
+
+impl Default for Reserves {
+    fn default() -> Self {
+        Self::zero()
     }
 }
 

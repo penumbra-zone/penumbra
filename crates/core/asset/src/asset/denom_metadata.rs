@@ -9,9 +9,7 @@ use anyhow::{ensure, Context};
 use ark_ff::fields::PrimeField;
 use decaf377::Fq;
 use penumbra_num::Amount;
-use penumbra_proto::{
-    penumbra::core::asset::v1alpha1 as pb, view::v1alpha1::AssetsResponse, DomainType,
-};
+use penumbra_proto::{penumbra::core::asset::v1 as pb, view::v1::AssetsResponse, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -20,13 +18,14 @@ use crate::{
 };
 
 use super::Denom;
+
 /// An asset denomination's metadata.
 ///
 /// Each denomination has a unique [`Id`] and base unit, and may also
 /// have other display units.
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(try_from = "pb::DenomMetadata", into = "pb::DenomMetadata")]
-pub struct DenomMetadata {
+#[serde(try_from = "pb::Metadata", into = "pb::Metadata")]
+pub struct Metadata {
     pub(super) inner: Arc<Inner>,
 }
 
@@ -36,6 +35,10 @@ pub(super) struct Inner {
     id: Id,
     base_denom: String,
     description: String,
+    // For now, don't bother with a domain type here,
+    // since we don't render images from Rust code.
+    images: Vec<pb::AssetImage>,
+
     /// Sorted by priority order.
     pub(super) units: Vec<BareDenomUnit>,
     //display: String,
@@ -43,34 +46,31 @@ pub(super) struct Inner {
     display_index: usize,
     name: String,
     symbol: String,
-    uri: String,
-    uri_hash: String,
 }
 
-impl DomainType for DenomMetadata {
-    type Proto = pb::DenomMetadata;
+impl DomainType for Metadata {
+    type Proto = pb::Metadata;
 }
 
-impl From<&Inner> for pb::DenomMetadata {
+impl From<&Inner> for pb::Metadata {
     fn from(inner: &Inner) -> Self {
-        pb::DenomMetadata {
+        pb::Metadata {
             description: inner.description.clone(),
             base: inner.base_denom.clone(),
             display: inner.units[inner.display_index].denom.clone(),
             name: inner.name.clone(),
             symbol: inner.symbol.clone(),
-            uri: inner.uri.clone(),
-            uri_hash: inner.uri_hash.clone(),
             penumbra_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
+            images: inner.images.clone(),
         }
     }
 }
 
-impl TryFrom<pb::DenomMetadata> for Inner {
+impl TryFrom<pb::Metadata> for Inner {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::Metadata) -> Result<Self, Self::Error> {
         let base_denom = value.base;
         ensure!(
             !base_denom.is_empty(),
@@ -127,30 +127,29 @@ impl TryFrom<pb::DenomMetadata> for Inner {
             description: value.description,
             name: value.name,
             symbol: value.symbol,
-            uri: value.uri,
-            uri_hash: value.uri_hash,
+            images: value.images,
         })
     }
 }
 
-impl From<DenomMetadata> for pb::DenomMetadata {
-    fn from(dn: DenomMetadata) -> Self {
+impl From<Metadata> for pb::Metadata {
+    fn from(dn: Metadata) -> Self {
         dn.inner.as_ref().into()
     }
 }
 
-impl TryFrom<pb::DenomMetadata> for DenomMetadata {
+impl TryFrom<pb::Metadata> for Metadata {
     type Error = anyhow::Error;
 
-    fn try_from(value: pb::DenomMetadata) -> Result<Self, Self::Error> {
+    fn try_from(value: pb::Metadata) -> Result<Self, Self::Error> {
         let inner = Inner::try_from(value)?;
-        Ok(DenomMetadata {
+        Ok(Metadata {
             inner: Arc::new(inner),
         })
     }
 }
 
-impl TryFrom<&str> for DenomMetadata {
+impl TryFrom<&str> for Metadata {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -160,7 +159,7 @@ impl TryFrom<&str> for DenomMetadata {
     }
 }
 
-impl TryFrom<AssetsResponse> for DenomMetadata {
+impl TryFrom<AssetsResponse> for Metadata {
     type Error = anyhow::Error;
 
     fn try_from(response: AssetsResponse) -> Result<Self, Self::Error> {
@@ -249,13 +248,12 @@ impl Inner {
             description: String::new(),
             name: String::new(),
             symbol: String::new(),
-            uri: String::new(),
-            uri_hash: String::new(),
+            images: Vec::new(),
         }
     }
 }
 
-impl DenomMetadata {
+impl Metadata {
     /// Return the [`Id`] associated with this denomination.
     pub fn id(&self) -> Id {
         self.inner.id
@@ -331,7 +329,7 @@ impl DenomMetadata {
         self.inner.base_denom.starts_with(prefix)
     }
 
-    pub fn default_for(denom: &Denom) -> Option<DenomMetadata> {
+    pub fn default_for(denom: &Denom) -> Option<Metadata> {
         REGISTRY.parse_denom(&denom.denom)
     }
 
@@ -354,53 +352,53 @@ impl DenomMetadata {
     }
 }
 
-impl From<DenomMetadata> for Id {
-    fn from(base: DenomMetadata) -> Id {
+impl From<Metadata> for Id {
+    fn from(base: Metadata) -> Id {
         base.id()
     }
 }
 
-impl Hash for DenomMetadata {
+impl Hash for Metadata {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.inner.base_denom.hash(state);
     }
 }
 
-impl PartialEq for DenomMetadata {
+impl PartialEq for Metadata {
     fn eq(&self, other: &Self) -> bool {
         self.inner.base_denom.eq(&other.inner.base_denom)
     }
 }
 
-impl Eq for DenomMetadata {}
+impl Eq for Metadata {}
 
-impl PartialOrd for DenomMetadata {
+impl PartialOrd for Metadata {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for DenomMetadata {
+impl Ord for Metadata {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.inner.base_denom.cmp(&other.inner.base_denom)
     }
 }
 
-impl Debug for DenomMetadata {
+impl Debug for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
-impl Display for DenomMetadata {
+impl Display for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.base_denom.as_str())
     }
 }
 
 impl Unit {
-    pub fn base(&self) -> DenomMetadata {
-        DenomMetadata {
+    pub fn base(&self) -> Metadata {
+        Metadata {
             inner: self.inner.clone(),
         }
     }
@@ -517,5 +515,54 @@ impl Debug for Unit {
 impl Display for Unit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.inner.units[self.unit_index].denom.as_str())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn can_parse_metadata_from_chain_registry() {
+        const SOME_COSMOS_JSON: &str = r#"
+        {
+            "description": "The native staking token of dYdX Protocol.",
+            "denom_units": [
+              {
+                "denom": "adydx",
+                "exponent": 0
+              },
+              {
+                "denom": "dydx",
+                "exponent": 18
+              }
+            ],
+            "base": "adydx",
+            "name": "dYdX",
+            "display": "dydx",
+            "symbol": "DYDX",
+            "logo_URIs": {
+              "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.png",
+              "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.svg"
+            },
+            "coingecko_id": "dydx",
+            "images": [
+              {
+                "png": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.png",
+                "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx.svg"
+              },
+              {
+                "svg": "https://raw.githubusercontent.com/cosmos/chain-registry/master/dydx/images/dydx-circle.svg",
+                "theme": {
+                  "circle": true
+                }
+              }
+            ]
+          }
+        "#;
+
+        let _metadata: super::Metadata = serde_json::from_str(SOME_COSMOS_JSON).unwrap();
+
+        // uncomment to see what our subset looks like
+        //let json2 = serde_json::to_string_pretty(&_metadata).unwrap();
+        //println!("{}", json2);
     }
 }

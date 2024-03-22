@@ -17,6 +17,21 @@
     <div class="relative bg-charcoal rounded-lg shadow-sm">
       <div class="relative z-10 p-4 text-lg">
         <div class="mb-4">
+          <a href="/phase/1" class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent mb-4">Welcome!</a>
+        </div>
+        <div>
+          <p>
+            This is Penumbra's public summoning ceremony, where we gather contributions from the community
+            in order to create the proving keys we'll be using at mainnet. For more information,
+            see <a class="underline" href="https://penumbra.zone/blog/summoning-ceremony-launch">our announcement blog post</a>.
+          </p>
+        </div>
+      </div>
+      <div class="absolute inset-0 z-0 rounded-lg bg-card-radial opacity-20"></div>
+    </div>
+    <div class="relative bg-charcoal rounded-lg shadow-sm">
+      <div class="relative z-10 p-4 text-lg">
+        <div class="mb-4">
           <a href="/phase/1" class="font-bold text-3xl bg-text-linear bg-clip-text text-transparent mb-4">Phase 1
             Status →</a>
         </div>
@@ -72,6 +87,12 @@
           Ceremony contributions require using the command line.
           Follow the <a href="https://guide.penumbra.zone/main/pcli.html" class="underline">Penumbra Guide</a>
           to set up <span class="font-mono">pcli</span> and create a wallet.
+          <br>
+          If you already have <span class="font-mono">pcli</span> installed, make sure you're using
+          <span class="font-bold">v0.64.0</span>:
+        <pre
+          class="text-sm my-8 p-2 bg-charcoal rounded-lg"><span class="no-select">$ </span>pcli --version
+<span class="no-select">pcli v0.64.0</span></pre>
         </p>
         <h3 class="font-bold text-xl pt-4 bg-text-linear bg-clip-text text-transparent">Receiving Faucet Funds</h3>
         <p>
@@ -83,7 +104,7 @@
           To do this, you need to first get your address from <span class="font-mono">pcli</span>:
         </p>
         <pre
-          class="text-sm my-8 p-2 bg-charcoal rounded-lg">cargo run --quiet --release --bin pcli -- view address</pre>
+          class="text-sm my-8 p-2 bg-charcoal rounded-lg">pcli view address</pre>
         <p>
           Then, you can go to the <span class="font-bold">#testnet-faucet</span> channel in the Discord, and paste that
           address to receive funds.
@@ -97,7 +118,7 @@
           To join the queue, use <span class="font-mono">pcli ceremony contribute</span> to place a bid:
         </p>
         <pre
-          class="text-sm my-8 p-4 bg-charcoal rounded-lg overflow-x-auto">cargo run --quiet --release --bin pcli -- ceremony contribute --phase {{ phase_number }} --bid {{ min_bid }} --coordinator-address {{ address }}</pre>
+          class="text-sm my-8 p-4 bg-charcoal rounded-lg overflow-x-auto">pcli ceremony contribute --phase {{ phase_number }} --bid {{ min_bid }}</pre>
         <p>
           The minimum bid for this ceremony is {{ min_bid }}.
         </p>

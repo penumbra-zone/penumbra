@@ -1,0 +1,37 @@
+#!/bin/bash
+# CI script to manage a standalone fullnode, created in order to exercise
+# direct serving of pd. This script is intended to be run from CI,
+# communicating with a remote node over SSH and munging its state.
+set -euo pipefail
+set -x
+
+# Unpack args. Different CI workflows can override these settings,
+# to determine whether we're targeting testnet or preview.
+PENUMBRA_VERSION="${PENUMBRA_VERSION:-main}"
+PENUMBRA_ENVIRONMENT="${PENUMBRA_ENVIRONMENT:-penumbra-preview}"
+
+if [[ -z "$PENUMBRA_VERSION" || -z "$PENUMBRA_ENVIRONMENT" ]] ; then
+    >&2 echo "ERROR: required env vars not set: PENUMBRA_VERSION, PENUMBRA_ENVIRONMENT"
+    exit 1
+fi
+
+if [[ "$PENUMBRA_ENVIRONMENT" = "penumbra-preview" ]] ; then
+    ci_ssh_host="solo-pd.testnet-preview.plinfra.net"
+elif [[ "$PENUMBRA_ENVIRONMENT" = "penumbra-testnet" ]] ; then
+    ci_ssh_host="solo-pd.testnet.plinfra.net"
+else
+    >&2 echo "ERROR: unsupported PENUMBRA_ENVIRONMENT: '$PENUMBRA_ENVIRONMENT'"
+    exit 2
+fi
+
+# Communicate with target host over SSH, run the script.
+# The remote box has been provisioned with:
+#
+#   1) an ssh keypair assigned to admin user `ci`
+#   2) a normal user account `penumbra` for running services
+#   3) systemd service files for pd & cometbft
+#
+# As for the script that's being execute on the target, we'll copy that up from local context.
+scp ./deployments/scripts/redeploy-ci-fullnode-via-remote "ci@${ci_ssh_host}:"
+ssh -l ci "$ci_ssh_host" sudo mv redeploy-ci-fullnode-via-remote /usr/local/bin/redeploy-ci-fullnode-via-remote
+ssh -l ci "$ci_ssh_host" sudo /usr/local/bin/redeploy-ci-fullnode-via-remote "$PENUMBRA_VERSION" "$PENUMBRA_ENVIRONMENT"

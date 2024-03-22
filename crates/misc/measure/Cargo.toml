@@ -1,31 +1,26 @@
 [package]
 name = "penumbra-measure"
-version = "0.63.1"
-edition = "2021"
+version = {workspace = true}
+edition = {workspace = true}
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-penumbra-proto = { path = "../../proto", features = ["rpc"] }
-penumbra-chain = { path = "../../core/component/chain" }
-penumbra-app = { path = "../../core/app" }
-penumbra-compact-block = { path = "../../core/component/compact-block", default-features = false }
-
-tokio = { version = "1.21.1", features = ["full"] }
-tonic = "0.10"
-anyhow = "1"
-clap = { version = "3", features = ["derive", "env"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-url = "2.2"
-indicatif = "0.16"
-reqwest = { version = "0.11", features = ["json"] }
-serde_json = "1"
-bytesize = "1.2"
+[package.metadata.dist]
+dist = false
 
 [[bin]]
 name = "measure"
 path = "src/main.rs"
 
-[package.metadata.dist]
-dist = false
+[dependencies]
+anyhow = {workspace = true}
+bytesize = "1.2"
+clap = {workspace = true, features = ["derive", "env"]}
+indicatif = {workspace = true}
+penumbra-app = {workspace = true}
+penumbra-compact-block = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+serde_json = {workspace = true}
+tokio = {workspace = true, features = ["full"]}
+tonic = {workspace = true}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter"]}
+url = {workspace = true}

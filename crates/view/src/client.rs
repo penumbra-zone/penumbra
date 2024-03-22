@@ -2,40 +2,44 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use tonic::{codegen::Bytes, Streaming};
+use tracing::instrument;
+
 use penumbra_app::params::AppParameters;
-use penumbra_asset::asset::{self, DenomMetadata, Id};
-use penumbra_chain::params::FmdParameters;
+use penumbra_asset::{
+    asset::{self, Id, Metadata},
+    ValueView,
+};
 use penumbra_dex::{
     lp::position::{self},
     TradingPair,
 };
 use penumbra_fee::GasPrices;
-use penumbra_keys::{
-    keys::{AddressIndex, WalletId},
-    Address,
-};
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::view::v1alpha1::{
-    self as pb, view_protocol_service_client::ViewProtocolServiceClient, WitnessRequest,
+use penumbra_proto::view::v1::{
+    self as pb, view_service_client::ViewServiceClient, BalancesResponse,
+    BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::note;
+use penumbra_shielded_pool::{fmd, note};
 use penumbra_stake::IdentityKey;
-
-use penumbra_transaction::AuthorizationData;
-use penumbra_transaction::{plan::TransactionPlan, Transaction, WitnessData};
-
-use tonic::codegen::Bytes;
-use tracing::instrument;
+use penumbra_transaction::{
+    txhash::TransactionId, AuthorizationData, Transaction, TransactionPlan, WitnessData,
+};
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
+
+pub(crate) type BroadcastStatusStream = Pin<
+    Box<dyn Future<Output = Result<Streaming<BroadcastTransactionResponse>, anyhow::Error>> + Send>,
+>;
 
 /// The view protocol is used by a view client, who wants to do some
 /// transaction-related actions, to request data from a view service, which is
 /// responsible for synchronizing and scanning the public chain state with one
 /// or more full viewing keys.
 ///
-/// This trait is a wrapper around the proto-generated [`ViewProtocolServiceClient`]
+/// This trait is a wrapper around the proto-generated [`ViewServiceClient`]
 /// that serves two goals:
 ///
 /// 1. It can use domain types rather than proto-generated types, avoiding conversions;
@@ -47,13 +51,11 @@ pub trait ViewClient {
     /// Get the current status of chain sync.
     fn status(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<Box<dyn Future<Output = Result<pb::StatusResponse>> + Send + 'static>>;
 
     /// Stream status updates on chain sync until it completes.
     fn status_stream(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<
         Box<
             dyn Future<
@@ -76,7 +78,7 @@ pub trait ViewClient {
     /// Get a copy of the FMD parameters.
     fn fmd_parameters(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<FmdParameters>> + Send + 'static>>;
+    ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>>;
 
     /// Queries for notes.
     fn notes(
@@ -102,21 +104,18 @@ pub trait ViewClient {
     /// Queries for a specific note by commitment, returning immediately if it is not found.
     fn note_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>>;
 
     /// Queries for a specific swap by commitment, returning immediately if it is not found.
     fn swap_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         swap_commitment: penumbra_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>>;
 
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     fn nullifier_status(
         &mut self,
-        wallet_id: WalletId,
         nullifier: Nullifier,
     ) -> Pin<Box<dyn Future<Output = Result<bool>> + Send + 'static>>;
 
@@ -124,7 +123,6 @@ pub trait ViewClient {
     /// present, but waiting otherwise.
     fn await_nullifier(
         &mut self,
-        wallet_id: WalletId,
         nullifier: Nullifier,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'static>>;
 
@@ -133,7 +131,6 @@ pub trait ViewClient {
     /// This is useful for waiting for a note to be detected by the view service.
     fn await_note_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>>;
 
@@ -145,7 +142,6 @@ pub trait ViewClient {
     /// service could have advanced the state commitment tree state between queries).
     fn witness(
         &mut self,
-        wallet_id: WalletId,
         plan: &TransactionPlan,
     ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>>;
 
@@ -169,7 +165,7 @@ pub trait ViewClient {
     /// Generates a full perspective for a selected transaction using a full viewing key
     fn transaction_info_by_hash(
         &mut self,
-        id: penumbra_transaction::Id,
+        id: TransactionId,
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>>;
 
     /// Queries for transactions in a range of block heights
@@ -183,13 +179,12 @@ pub trait ViewClient {
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>;
+    ) -> BroadcastStatusStream;
 
     /// Return unspent notes, grouped by address index and then by asset id.
-    #[instrument(skip(self, wallet_id))]
+    #[instrument(skip(self))]
     fn unspent_notes_by_address_and_asset(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<
         Box<
             dyn Future<
@@ -201,7 +196,6 @@ pub trait ViewClient {
         >,
     > {
         let notes = self.notes(pb::NotesRequest {
-            wallet_id: Some(wallet_id.into()),
             include_spent: false,
             ..Default::default()
         });
@@ -227,10 +221,9 @@ pub trait ViewClient {
     }
 
     /// Return unspent notes, grouped by account ID (combining ephemeral addresses for the account) and then by asset id.
-    #[instrument(skip(self, wallet_id))]
+    #[instrument(skip(self))]
     fn unspent_notes_by_account_and_asset(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<
         Box<
             dyn Future<
@@ -240,7 +233,6 @@ pub trait ViewClient {
         >,
     > {
         let notes = self.notes(pb::NotesRequest {
-            wallet_id: Some(wallet_id.into()),
             include_spent: false,
             ..Default::default()
         });
@@ -266,10 +258,9 @@ pub trait ViewClient {
     }
 
     /// Return unspent notes, grouped by denom and then by address index.
-    #[instrument(skip(self, wallet_id))]
+    #[instrument(skip(self))]
     fn unspent_notes_by_asset_and_address(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<
         Box<
             dyn Future<
@@ -281,7 +272,6 @@ pub trait ViewClient {
         >,
     > {
         let notes = self.notes(pb::NotesRequest {
-            wallet_id: Some(wallet_id.into()),
             include_spent: false,
             ..Default::default()
         });
@@ -324,7 +314,7 @@ pub trait ViewClient {
 // amount of problems, because non-`Send` futures don't compose well, but as long
 // as we're calling the method within an async block on a local mutable variable,
 // it should be fine.
-impl<T> ViewClient for ViewProtocolServiceClient<T>
+impl<T> ViewClient for ViewServiceClient<T>
 where
     T: tonic::client::GrpcService<tonic::body::BoxBody> + Clone + Send + 'static,
     T::ResponseBody: tonic::codegen::Body<Data = Bytes> + Send + 'static,
@@ -334,13 +324,10 @@ where
 {
     fn status(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<Box<dyn Future<Output = Result<pb::StatusResponse>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let status = self2.status(tonic::Request::new(pb::StatusRequest {
-                wallet_id: Some(wallet_id.into()),
-            }));
+            let status = self2.status(tonic::Request::new(pb::StatusRequest {}));
             let status = status.await?.into_inner();
             Ok(status)
         }
@@ -349,7 +336,6 @@ where
 
     fn status_stream(
         &mut self,
-        wallet_id: WalletId,
     ) -> Pin<
         Box<
             dyn Future<
@@ -362,9 +348,7 @@ where
     > {
         let mut self2 = self.clone();
         async move {
-            let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {
-                wallet_id: Some(wallet_id.into()),
-            }));
+            let stream = self2.status_stream(tonic::Request::new(pb::StatusStreamRequest {}));
             let stream = stream.await?.into_inner();
 
             Ok(stream
@@ -382,7 +366,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::app_parameters(
+            let rsp = ViewServiceClient::app_parameters(
                 &mut self2,
                 tonic::Request::new(pb::AppParametersRequest {}),
             );
@@ -396,7 +380,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::gas_prices(
+            let rsp = ViewServiceClient::gas_prices(
                 &mut self2,
                 tonic::Request::new(pb::GasPricesRequest {}),
             );
@@ -411,10 +395,10 @@ where
 
     fn fmd_parameters(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<FmdParameters>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Future<Output = Result<fmd::Parameters>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let parameters = ViewProtocolServiceClient::fmd_parameters(
+            let parameters = ViewServiceClient::fmd_parameters(
                 &mut self2,
                 tonic::Request::new(pb::FmdParametersRequest {}),
             );
@@ -486,15 +470,13 @@ where
 
     fn note_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let note_commitment_response = ViewProtocolServiceClient::note_by_commitment(
+            let note_commitment_response = ViewServiceClient::note_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::NoteByCommitmentRequest {
-                    wallet_id: Some(wallet_id.into()),
                     note_commitment: Some(note_commitment.into()),
                     await_detection: false,
                 }),
@@ -516,7 +498,7 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Vec<(Id, Amount)>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let req = ViewProtocolServiceClient::balances(
+            let req = ViewServiceClient::balances(
                 &mut self2,
                 tonic::Request::new(pb::BalancesRequest {
                     account_filter: Some(address_index.into()),
@@ -524,26 +506,19 @@ where
                 }),
             );
 
-            let balances: Vec<_> = req.await?.into_inner().try_collect().await?;
+            let balances: Vec<BalancesResponse> = req.await?.into_inner().try_collect().await?;
 
             balances
                 .into_iter()
                 .map(|rsp| {
-                    let balance = rsp
-                        .balance
-                        .ok_or_else(|| anyhow::anyhow!("empty balance type"))?;
+                    let pb_value_view = rsp
+                        .balance_view
+                        .ok_or_else(|| anyhow::anyhow!("empty balance view"))?;
 
-                    let asset = balance
-                        .asset_id
-                        .ok_or_else(|| anyhow::anyhow!("empty asset type"))?
-                        .try_into()?;
-
-                    let amount = balance
-                        .amount
-                        .ok_or_else(|| anyhow::anyhow!("empty amount type"))?
-                        .try_into()?;
-
-                    Ok((asset, amount))
+                    let value_view: ValueView = pb_value_view.try_into()?;
+                    let id = value_view.asset_id();
+                    let amount = value_view.value().amount;
+                    Ok((id, amount))
                 })
                 .collect()
         }
@@ -552,15 +527,13 @@ where
 
     fn swap_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         swap_commitment: penumbra_tct::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SwapRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let swap_commitment_response = ViewProtocolServiceClient::swap_by_commitment(
+            let swap_commitment_response = ViewServiceClient::swap_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::SwapByCommitmentRequest {
-                    wallet_id: Some(wallet_id.into()),
                     swap_commitment: Some(swap_commitment.into()),
                     await_detection: false,
                 }),
@@ -580,15 +553,13 @@ where
     /// This is useful for waiting for a note to be detected by the view service.
     fn await_note_by_commitment(
         &mut self,
-        wallet_id: WalletId,
         note_commitment: note::StateCommitment,
     ) -> Pin<Box<dyn Future<Output = Result<SpendableNoteRecord>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let spendable_note = ViewProtocolServiceClient::note_by_commitment(
+            let spendable_note = ViewServiceClient::note_by_commitment(
                 &mut self2,
                 tonic::Request::new(pb::NoteByCommitmentRequest {
-                    wallet_id: Some(wallet_id.into()),
                     note_commitment: Some(note_commitment.into()),
                     await_detection: true,
                 }),
@@ -605,15 +576,13 @@ where
     /// Queries for a specific nullifier's status, returning immediately if it is not found.
     fn nullifier_status(
         &mut self,
-        wallet_id: WalletId,
         nullifier: Nullifier,
     ) -> Pin<Box<dyn Future<Output = Result<bool>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::nullifier_status(
+            let rsp = ViewServiceClient::nullifier_status(
                 &mut self2,
                 tonic::Request::new(pb::NullifierStatusRequest {
-                    wallet_id: Some(wallet_id.into()),
                     nullifier: Some(nullifier.into()),
                     await_detection: false,
                 }),
@@ -627,15 +596,13 @@ where
     /// present, but waiting otherwise.
     fn await_nullifier(
         &mut self,
-        wallet_id: WalletId,
         nullifier: Nullifier,
     ) -> Pin<Box<dyn Future<Output = Result<()>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::nullifier_status(
+            let rsp = ViewServiceClient::nullifier_status(
                 &mut self2,
                 tonic::Request::new(pb::NullifierStatusRequest {
-                    wallet_id: Some(wallet_id.into()),
                     nullifier: Some(nullifier.into()),
                     await_detection: true,
                 }),
@@ -648,31 +615,9 @@ where
 
     fn witness(
         &mut self,
-        wallet_id: WalletId,
         plan: &TransactionPlan,
     ) -> Pin<Box<dyn Future<Output = Result<WitnessData>> + Send + 'static>> {
-        // TODO: delete this code and move it into the view service.
-        // The caller shouldn't have to massage the transaction plan to make the request.
-
-        // Get the witness data from the view service only for non-zero amounts of value,
-        // since dummy spends will have a zero amount.
-        let note_commitments = plan
-            .spend_plans()
-            .filter(|plan| plan.note.amount() != 0u64.into())
-            .map(|spend| spend.note.commit().into())
-            .chain(
-                plan.swap_claim_plans()
-                    .map(|swap_claim| swap_claim.swap_plaintext.swap_commitment().into()),
-            )
-            .chain(
-                plan.delegator_vote_plans()
-                    .map(|vote_plan| vote_plan.staked_note.commit().into()),
-            )
-            .collect();
-
         let request = WitnessRequest {
-            wallet_id: Some(wallet_id.into()),
-            note_commitments,
             transaction_plan: Some(plan.clone().into()),
         };
 
@@ -697,7 +642,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::assets(
+            let rsp = ViewServiceClient::assets(
                 &mut self2,
                 tonic::Request::new(pb::AssetsRequest {
                     ..Default::default()
@@ -708,8 +653,8 @@ where
 
             let assets = pb_assets
                 .into_iter()
-                .map(DenomMetadata::try_from)
-                .collect::<anyhow::Result<Vec<DenomMetadata>>>()?;
+                .map(Metadata::try_from)
+                .collect::<anyhow::Result<Vec<Metadata>>>()?;
 
             Ok(assets.into_iter().collect())
         }
@@ -727,7 +672,7 @@ where
         async move {
             // We have to manually invoke the method on the type, because it has the
             // same name as the one we're implementing.
-            let rsp = ViewProtocolServiceClient::owned_position_ids(
+            let rsp = ViewServiceClient::owned_position_ids(
                 &mut self2,
                 tonic::Request::new(pb::OwnedPositionIdsRequest {
                     trading_pair: trading_pair.map(TryInto::try_into).transpose()?,
@@ -753,11 +698,11 @@ where
 
     fn transaction_info_by_hash(
         &mut self,
-        id: penumbra_transaction::Id,
+        id: TransactionId,
     ) -> Pin<Box<dyn Future<Output = Result<TransactionInfo>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::transaction_info_by_hash(
+            let rsp = ViewServiceClient::transaction_info_by_hash(
                 &mut self2,
                 tonic::Request::new(pb::TransactionInfoByHashRequest {
                     id: Some(id.into()),
@@ -861,11 +806,10 @@ where
         &mut self,
         transaction: Transaction,
         await_detection: bool,
-    ) -> Pin<Box<dyn Future<Output = Result<(penumbra_transaction::Id, u64)>> + Send + 'static>>
-    {
+    ) -> BroadcastStatusStream {
         let mut self2 = self.clone();
         async move {
-            let rsp = ViewProtocolServiceClient::broadcast_transaction(
+            let rsp = ViewServiceClient::broadcast_transaction(
                 &mut self2,
                 tonic::Request::new(pb::BroadcastTransactionRequest {
                     transaction: Some(transaction.into()),
@@ -875,12 +819,7 @@ where
             .await?
             .into_inner();
 
-            let id = rsp
-                .id
-                .ok_or_else(|| anyhow::anyhow!("response id is empty"))?
-                .try_into()?;
-
-            Ok((id, rsp.detection_height))
+            Ok(rsp)
         }
         .boxed()
     }
@@ -893,7 +832,6 @@ where
         async move {
             let address = self2.address_by_index(tonic::Request::new(pb::AddressByIndexRequest {
                 address_index: Some(address_index.into()),
-                ..Default::default()
             }));
             let address = address
                 .await?
@@ -917,18 +855,37 @@ where
         };
         let mut self2 = self.clone();
         async move {
-            let rsp = self2.witness_and_build(tonic::Request::new(request));
-
-            let tx = rsp
+            let mut rsp = self2
+                .witness_and_build(tonic::Request::new(request))
                 .await?
-                .into_inner()
-                .transaction
-                .ok_or_else(|| anyhow::anyhow!("empty WitnessAndBuildResponse message"))?
-                .try_into()?;
+                .into_inner();
 
-            Ok(tx)
+            while let Some(rsp) = rsp.try_next().await? {
+                match rsp.status {
+                    Some(status) => match status {
+                        pb::witness_and_build_response::Status::BuildProgress(_) => {
+                            // TODO: should update progress here
+                        }
+                        pb::witness_and_build_response::Status::Complete(c) => {
+                            return c.transaction
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("WitnessAndBuildResponse complete status message missing transaction")
+                                })?
+                                .try_into();
+                        }
+                    },
+                    None => {
+                        // No status is unexpected behavior
+                        return Err(anyhow::anyhow!(
+                            "empty WitnessAndBuildResponse message"
+                        ));
+                    }
+                }
+            }
+
+            Err(anyhow::anyhow!("should have received complete status or error"))
         }
-        .boxed()
+            .boxed()
     }
 
     fn unclaimed_swaps(
@@ -936,11 +893,9 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>> {
         let mut self2 = self.clone();
         async move {
-            let swaps_response = ViewProtocolServiceClient::unclaimed_swaps(
+            let swaps_response = ViewServiceClient::unclaimed_swaps(
                 &mut self2,
-                tonic::Request::new(pb::UnclaimedSwapsRequest {
-                    ..Default::default()
-                }),
+                tonic::Request::new(pb::UnclaimedSwapsRequest {}),
             );
             let pb_swaps: Vec<_> = swaps_response.await?.into_inner().try_collect().await?;
 

@@ -1,15 +1,15 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use cnidarium::StateWrite;
 use ibc_types::{
     core::client::{events::CreateClient, msgs::MsgCreateClient, ClientId},
     lightclients::tendermint::client_type,
 };
-use penumbra_storage::StateWrite;
 
 use crate::component::{
-    client::{StateReadExt as _, StateWriteExt as _},
-    client_counter::{ics02_validation, ClientCounter},
-    MsgHandler,
+    client::{ConsensusStateWriteExt as _, StateReadExt as _, StateWriteExt as _},
+    client_counter::ClientCounter,
+    ics02_validation, HostInterface, MsgHandler,
 };
 
 #[async_trait]
@@ -28,7 +28,7 @@ impl MsgHandler for MsgCreateClient {
     // - client type
     // - consensus state
     // - processed time and height
-    async fn try_execute<S: StateWrite, H>(&self, mut state: S) -> Result<()> {
+    async fn try_execute<S: StateWrite, AH, HI: HostInterface>(&self, mut state: S) -> Result<()> {
         tracing::debug!(msg = ?self);
         let client_state =
             ics02_validation::get_tendermint_client_state(self.client_state.clone())?;
@@ -47,7 +47,7 @@ impl MsgHandler for MsgCreateClient {
 
         // store the genesis consensus state
         state
-            .put_verified_consensus_state(
+            .put_verified_consensus_state::<HI>(
                 client_state.latest_height(),
                 client_id.clone(),
                 consensus_state,

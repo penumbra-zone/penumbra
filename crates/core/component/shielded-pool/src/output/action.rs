@@ -4,9 +4,10 @@ use anyhow::{Context, Error};
 use penumbra_asset::balance;
 use penumbra_keys::symmetric::{OvkWrappedKey, WrappedMemoKey};
 use penumbra_proto::{
-    core::component::shielded_pool::v1alpha1 as pb,
-    penumbra::core::component::shielded_pool::v1alpha1 as pbc, DomainType,
+    core::component::shielded_pool::v1 as pb, penumbra::core::component::shielded_pool::v1 as pbc,
+    DomainType,
 };
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 use crate::{NotePayload, OutputProof};
@@ -24,6 +25,20 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub ovk_wrapped_key: OvkWrappedKey,
     pub wrapped_memo_key: WrappedMemoKey,
+}
+
+impl EffectingData for Body {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
+
+impl EffectingData for Output {
+    fn effect_hash(&self) -> EffectHash {
+        // The effecting data is in the body of the output, so we can
+        // just use hash the proto-encoding of the body.
+        self.body.effect_hash()
+    }
 }
 
 impl DomainType for Output {

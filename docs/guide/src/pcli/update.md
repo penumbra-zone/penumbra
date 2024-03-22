@@ -1,19 +1,13 @@
 ## Updating `pcli`
 
-Make sure you've followed the [installation steps](https://guide.penumbra.zone/main/pcli/install.html#cloning-the-repository). Then, to update to the latest testnet [release](https://github.com/penumbra-zone/penumbra/releases):
+Follow the [installation steps](install.md) to install the 
+most recent version of `pcli`, which is `{{ #include ../penumbra_version.md }}`.
+
+After installing the updated version, reset the view data used by `pcli`:
 
 ```
-cd penumbra && git fetch && git checkout v0.63.1
+pcli view reset
 ```
 
-Once again, build `pcli` with cargo:
-
-```
-cargo build --release --bin pcli
-```
-
-No wallet needs to be [generated](https://guide.penumbra.zone/main/pcli/wallet.html#generating-a-wallet). Instead, keep one's existing wallet and reset view data.
-
-```
-cargo run --quiet --release --bin pcli view reset
-```
+No wallet needs to be [generated](wallet.md#generating-a-wallet). The existing wallet
+will be used automatically.

@@ -11,7 +11,7 @@ jobs:
   build:
     name: Render and deploy protocol and API docs
     timeout-minutes: 30
-    runs-on: buildjet-16vcpu-ubuntu-2004
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v4
@@ -26,20 +26,25 @@ jobs:
         id: get_version
       - name: Print version component of deployment path
         run: echo ${{ steps.get_version.outputs.version }}
-      - name: Install mdbook
-        run: cargo install mdbook mdbook-katex mdbook-mermaid
+
+      # Ostensibly building from source, but the cache-loading above
+      # ensures we don't need to rebuild frequently.
+      - name: Install mdbook dependencies
+        run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
       - name: Build software guide
         run: cd docs/guide && mdbook build
+
       - name: Move software guide to subdirectory
         run: |
           cd docs/guide
-          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
+
       - name: Deploy software guide to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
@@ -49,15 +54,17 @@ jobs:
 
       - name: Build protocol spec
         run: cd docs/protocol && mdbook build
+
       - name: Move protocol spec to subdirectory
         run: |
           cd docs/protocol
-          if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
+          rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
           tree firebase-tmp
+
       - name: Deploy protocol spec to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:
@@ -75,8 +82,9 @@ jobs:
           mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
           # Copy in the static index file
           cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
+
       - name: Deploy API docs to firebase
-        uses: w9jds/firebase-action@v2.0.0
+        uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy
         env:

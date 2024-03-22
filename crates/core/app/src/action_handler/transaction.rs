@@ -2,36 +2,31 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use penumbra_chain::NoteSource;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::{StateRead, StateWrite};
+use penumbra_sct::{component::source::SourceContext, CommitmentSource};
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
-use super::ActionHandler;
+use super::AppActionHandler;
 
 mod stateful;
 mod stateless;
 
 use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
 use stateless::{
-    check_memo_exists_if_outputs_absent_if_not, no_duplicate_spends, no_duplicate_votes,
-    num_clues_equal_to_num_outputs, valid_binding_signature,
+    check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
+    valid_binding_signature,
 };
 
 #[async_trait]
-impl ActionHandler for Transaction {
+impl AppActionHandler for Transaction {
     type CheckStatelessContext = ();
 
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
     #[instrument(skip(self, _context))]
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // TODO: add a check that ephemeral_key is not identity to prevent scanning dos attack ?
-
-        // TODO: unify code organization
         valid_binding_signature(self)?;
-        no_duplicate_spends(self)?;
-        no_duplicate_votes(self)?;
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
 
@@ -58,21 +53,27 @@ impl ActionHandler for Transaction {
 
     // We only instrument the top-level `check_stateful`, so we get one span for each transaction.
     #[instrument(skip(self, state))]
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+        let mut action_checks = JoinSet::new();
+
+        // TODO: these could be pushed into the action checks and run concurrently if needed
+
+        // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
+        // SAFETY: FMD parameters cannot change during transaction execution.
         fmd_parameters_valid(state.clone(), self).await?;
+        // SAFETY: gas prices cannot change during transaction execution.
         fee_greater_than_base_fee(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to
         // use the yoke crate, but cloning is almost certainly not a big deal
         // for now.
-        let mut action_checks = JoinSet::new();
         for (i, action) in self.actions().cloned().enumerate() {
             let state2 = state.clone();
             let span = action.create_span(i);
             action_checks
-                .spawn(async move { action.check_stateful(state2).await }.instrument(span));
+                .spawn(async move { action.check_historical(state2).await }.instrument(span));
         }
         // Now check if any component action failed verification.
         while let Some(check) = action_checks.join_next().await {
@@ -84,19 +85,24 @@ impl ActionHandler for Transaction {
 
     // We only instrument the top-level `execute`, so we get one span for each transaction.
     #[instrument(skip(self, state))]
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // While we have access to the full Transaction, hash it to
         // obtain a NoteSource we can cache for various actions.
-        let source = NoteSource::Transaction { id: self.id().0 };
-        state.object_put("source", source);
+        let source = CommitmentSource::Transaction {
+            id: Some(self.id().0),
+        };
+        state.put_current_source(Some(source));
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);
-            action.execute(&mut state).instrument(span).await?;
+            action
+                .check_and_execute(&mut state)
+                .instrument(span)
+                .await?;
         }
 
         // Delete the note source, in case someone else tries to read it.
-        state.object_delete("source");
+        state.put_current_source(None);
 
         Ok(())
     }
@@ -106,17 +112,17 @@ impl ActionHandler for Transaction {
 mod tests {
     use anyhow::Result;
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
-    use penumbra_chain::test_keys;
     use penumbra_fee::Fee;
+    use penumbra_keys::test_keys;
     use penumbra_shielded_pool::{Note, OutputPlan, SpendPlan};
     use penumbra_tct as tct;
     use penumbra_transaction::{
-        plan::{CluePlan, TransactionPlan},
-        WitnessData,
+        plan::{CluePlan, DetectionDataPlan, TransactionPlan},
+        TransactionParameters, WitnessData,
     };
     use rand_core::OsRng;
 
-    use crate::ActionHandler;
+    use crate::AppActionHandler;
 
     #[tokio::test]
     async fn check_stateless_succeeds_on_valid_spend() -> Result<()> {
@@ -149,22 +155,26 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
-            memo_plan: None,
+            detection_data: Some(DetectionDataPlan {
+                clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
+            }),
+            memo: None,
         };
 
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan
@@ -211,21 +221,23 @@ mod tests {
         // Add a single spend and output to the transaction plan such that the
         // transaction balances.
         let plan = TransactionPlan {
-            expiry_height: 0,
-            fee: Fee::default(),
-            chain_id: "".into(),
+            transaction_parameters: TransactionParameters {
+                expiry_height: 0,
+                fee: Fee::default(),
+                chain_id: "".into(),
+            },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
             ],
-            clue_plans: vec![],
-            memo_plan: None,
+            detection_data: None,
+            memo: None,
         };
 
         // Build the transaction.
         let fvk = &test_keys::FULL_VIEWING_KEY;
         let sk = &test_keys::SPEND_KEY;
-        let auth_data = plan.authorize(OsRng, sk);
+        let auth_data = plan.authorize(OsRng, sk)?;
         let witness_data = WitnessData {
             anchor: sct.root(),
             state_commitment_proofs: plan

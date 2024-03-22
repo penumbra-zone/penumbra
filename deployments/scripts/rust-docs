@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Rebuild Rust crate documentation
 set -euo pipefail
 
@@ -18,28 +18,27 @@ export RUSTDOCFLAGS="--enable-index-page -Zunstable-options --cfg docsrs"
 # indexes is overwritten on each cargo doc invocation.
 
 cargo +nightly doc --no-deps \
-  -p tendermint \
-  -p tendermint-config \
-  -p ibc-types \
-  -p tower-abci \
-  -p jmt \
   -p ark-ff \
   -p ark-serialize \
-  -p poseidon377 \
-  -p poseidon-paramgen \
-  -p poseidon-permutation \
-  -p decaf377@0.5.0 \
-  -p decaf377-rdsa \
+  -p cnidarium \
+  -p cnidarium-component \
   -p decaf377-fmd \
   -p decaf377-ka \
+  -p decaf377-rdsa \
+  -p decaf377@0.5.0 \
+  -p ibc-types \
+  -p jmt \
+  -p pcli \
+  -p pclientd \
+  -p pd \
   -p penumbra-app \
   -p penumbra-asset \
-  -p penumbra-chain \
-  -p penumbra-component \
+  -p penumbra-community-pool \
   -p penumbra-custody \
-  -p penumbra-dao \
   -p penumbra-dex \
   -p penumbra-distributions \
+  -p penumbra-fee \
+  -p penumbra-genesis \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \
@@ -50,16 +49,18 @@ cargo +nightly doc --no-deps \
   -p penumbra-proto \
   -p penumbra-sct \
   -p penumbra-shielded-pool \
-  -p penumbra-storage \
+  -p penumbra-stake \
   -p penumbra-tct \
   -p penumbra-transaction \
+  -p penumbra-txhash \
   -p penumbra-view \
   -p penumbra-wallet \
-  -p penumbra-wasm \
-  -p pd \
-  -p pclientd \
-  -p pcli \
-  -p narsil
+  -p poseidon-paramgen \
+  -p poseidon-permutation \
+  -p poseidon377 \
+  -p tendermint \
+  -p tendermint-config \
+  -p tower-abci \
 
 >&2 echo "Copying newly built index file to version-controlled path:"
 cp -v target/doc/index.html docs/rustdoc/index.html

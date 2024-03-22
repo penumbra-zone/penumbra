@@ -1,139 +1,122 @@
-use std::pin::Pin;
+mod query;
 
-use futures::{StreamExt, TryStreamExt};
-use penumbra_chain::component::StateReadExt as _;
-use penumbra_proto::core::app::v1alpha1::{
-    key_value_response::Value, query_service_server::QueryService, AppParametersRequest,
-    AppParametersResponse, KeyValueRequest, KeyValueResponse, PrefixValueRequest,
-    PrefixValueResponse,
-};
-use penumbra_storage::{StateRead, Storage};
-use tonic::Status;
-use tracing::instrument;
-
-use crate::app::StateReadExt as _;
-
-// TODO: Hide this and only expose a Router?
-pub struct Server {
-    storage: Storage,
-}
-
-impl Server {
-    pub fn new(storage: Storage) -> Self {
-        Self { storage }
-    }
-}
-
-#[tonic::async_trait]
-impl QueryService for Server {
-    #[instrument(skip(self, request))]
-    async fn app_parameters(
-        &self,
-        request: tonic::Request<AppParametersRequest>,
-    ) -> Result<tonic::Response<AppParametersResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        // We map the error here to avoid including `tonic` as a dependency
-        // in the `chain` crate, to support its compilation to wasm.
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| {
-                tonic::Status::unknown(format!(
-                    "failed to validate chain id during app parameters lookup: {e}"
-                ))
-            })?;
-
-        let app_parameters = state.get_app_params().await.map_err(|e| {
-            tonic::Status::unavailable(format!("error getting app parameters: {e}"))
-        })?;
-
-        Ok(tonic::Response::new(AppParametersResponse {
-            app_parameters: Some(app_parameters.into()),
-        }))
-    }
-
-    #[instrument(skip(self, request))]
-    async fn key_value(
-        &self,
-        request: tonic::Request<KeyValueRequest>,
-    ) -> Result<tonic::Response<KeyValueResponse>, Status> {
-        let state = self.storage.latest_snapshot();
-        // We map the error here to avoid including `tonic` as a dependency
-        // in the `chain` crate, to support its compilation to wasm.
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-
-        let request = request.into_inner();
-        tracing::debug!(?request);
-
-        if request.key.is_empty() {
-            return Err(Status::invalid_argument("key is empty"));
-        }
-
-        // TODO(erwan): we are unconditionally generating the proof here; we shouldn't do that if the
-        // request doesn't ask for it
-        let (some_value, proof) = state
-            .get_with_proof(request.key.into_bytes())
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        Ok(tonic::Response::new(KeyValueResponse {
-            value: some_value.map(|value| Value { value }),
-            proof: if request.proof {
-                Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
-                    proofs: proof
-                        .proofs
-                        .into_iter()
-                        .map(|p| {
-                            let mut encoded = Vec::new();
-                            prost::Message::encode(&p, &mut encoded).expect("able to encode proof");
-                            prost::Message::decode(&*encoded).expect("able to decode proof")
-                        })
-                        .collect(),
-                })
-            } else {
-                None
+// TODO: Once we migrate to Tonic 0.10.0, we'll be able to use the `Routes` structure to have each
+// component define a method that returns a `Routes` with all of its query services bundled inside.
+//
+// This means we won't have to import all this shit and recite every single service -- we can e.g.,
+// have the app crate assemble all of its components' query services into a single `Routes` and
+// then just add that to the gRPC server.
+use {
+    self::query::AppQueryServer,
+    crate::PenumbraHost,
+    anyhow::Context,
+    cnidarium::rpc::{
+        proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
+        Server as StorageServer,
+    },
+    ibc_proto::ibc::core::{
+        channel::v1::query_server::QueryServer as ChannelQueryServer,
+        client::v1::query_server::QueryServer as ClientQueryServer,
+        connection::v1::query_server::QueryServer as ConnectionQueryServer,
+    },
+    penumbra_compact_block::component::rpc::Server as CompactBlockServer,
+    penumbra_dex::component::rpc::Server as DexServer,
+    penumbra_fee::component::rpc::Server as FeeServer,
+    penumbra_governance::component::rpc::Server as GovernanceServer,
+    penumbra_proto::{
+        core::{
+            app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
+            component::{
+                compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
+                dex::v1::{
+                    query_service_server::QueryServiceServer as DexQueryServiceServer,
+                    simulation_service_server::SimulationServiceServer,
+                },
+                fee::v1::query_service_server::QueryServiceServer as FeeQueryServiceServer,
+                governance::v1::query_service_server::QueryServiceServer as GovernanceQueryServiceServer,
+                sct::v1::query_service_server::QueryServiceServer as SctQueryServiceServer,
+                shielded_pool::v1::query_service_server::QueryServiceServer as ShieldedPoolQueryServiceServer,
+                stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
             },
-        }))
+        },
+        util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer,
+    },
+    penumbra_sct::component::rpc::Server as SctServer,
+    penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
+    penumbra_stake::component::rpc::Server as StakeServer,
+    penumbra_tendermint_proxy::TendermintProxy,
+    penumbra_tower_trace::remote_addr,
+    tonic_web::enable as we,
+};
+
+pub fn router(
+    storage: &cnidarium::Storage,
+    cometbft_addr: url::Url,
+    enable_expensive_rpc: bool,
+) -> anyhow::Result<tonic::transport::server::Router> {
+    let tm_proxy = TendermintProxy::new(cometbft_addr);
+    let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
+    let mut grpc_server = tonic::transport::server::Server::builder()
+        .trace_fn(|req| match remote_addr(req) {
+            Some(remote_addr) => {
+                tracing::error_span!("grpc", ?remote_addr)
+            }
+            None => tracing::error_span!("grpc"),
+        })
+        // Allow HTTP/1, which will be used by grpc-web connections.
+        // This is particularly important when running locally, as gRPC
+        // typically uses HTTP/2, which requires HTTPS. Accepting HTTP/2
+        // allows local applications such as web browsers to talk to pd.
+        .accept_http1(true)
+        // As part of #2932, we are disabling all timeouts until we circle back to our
+        // performance story.
+        // Sets a timeout for all gRPC requests, but note that in the case of streaming
+        // requests, the timeout is only applied to the initial request. This means that
+        // this does not prevent long lived streams, for example to allow clients to obtain
+        // new blocks.
+        // .timeout(std::time::Duration::from_secs(7))
+        // Wrap each of the gRPC services in a tonic-web proxy:
+        .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(AppQueryServiceServer::new(AppQueryServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(CompactBlockQueryServiceServer::new(
+            CompactBlockServer::new(storage.clone()),
+        )))
+        .add_service(we(DexQueryServiceServer::new(DexServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(FeeQueryServiceServer::new(FeeServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(GovernanceQueryServiceServer::new(
+            GovernanceServer::new(storage.clone()),
+        )))
+        .add_service(we(SctQueryServiceServer::new(SctServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(ShieldedPoolQueryServiceServer::new(
+            ShieldedPoolServer::new(storage.clone()),
+        )))
+        .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
+            storage.clone(),
+        ))))
+        .add_service(we(ClientQueryServer::new(ibc.clone())))
+        .add_service(we(ChannelQueryServer::new(ibc.clone())))
+        .add_service(we(ConnectionQueryServer::new(ibc.clone())))
+        .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
+        .add_service(we(tonic_reflection::server::Builder::configure()
+            .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
+            .build()
+            .with_context(|| "could not configure grpc reflection service")?));
+
+    if enable_expensive_rpc {
+        grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(DexServer::new(
+            storage.clone(),
+        ))));
     }
 
-    type PrefixValueStream =
-        Pin<Box<dyn futures::Stream<Item = Result<PrefixValueResponse, tonic::Status>> + Send>>;
-
-    #[instrument(skip(self, request))]
-    async fn prefix_value(
-        &self,
-        request: tonic::Request<PrefixValueRequest>,
-    ) -> Result<tonic::Response<Self::PrefixValueStream>, Status> {
-        let state = self.storage.latest_snapshot();
-        state
-            .check_chain_id(&request.get_ref().chain_id)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("chain_id not OK: {e}")))?;
-        let request = request.into_inner();
-        tracing::debug!(?request);
-
-        if request.prefix.is_empty() {
-            return Err(Status::invalid_argument("prefix is empty"));
-        }
-
-        Ok(tonic::Response::new(
-            state
-                .prefix_raw(&request.prefix)
-                .map_ok(|i: (String, Vec<u8>)| {
-                    let (key, value) = i;
-                    PrefixValueResponse { key, value }
-                })
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!(
-                        "error getting prefix value from storage: {e}"
-                    ))
-                })
-                // TODO: how do we instrument a Stream
-                //.instrument(Span::current())
-                .boxed(),
-        ))
-    }
+    Ok(grpc_server)
 }

@@ -1,11 +1,10 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_proto::DomainType;
-use penumbra_storage::{StateRead, StateWrite};
+use cnidarium::StateWrite;
+use penumbra_proto::{DomainType, StateWriteProto as _};
 
 use crate::component::StateWriteExt;
+use crate::event;
 use crate::{action_handler::ActionHandler, StateReadExt};
 use crate::{
     proposal_state::Outcome,
@@ -37,17 +36,17 @@ impl ActionHandler for ValidatorVote {
         Ok(())
     }
 
-    async fn check_stateful<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let ValidatorVote {
+            auth_sig: _,
             body:
                 ValidatorVoteBody {
                     proposal,
-                    vote: _, // All votes are valid, so we don't need to do anything with this
+                    vote,
                     identity_key,
                     governance_key,
-                    reason: _, // Checked the length in the stateless verification
+                    reason,
                 },
-            auth_sig: _, // We already checked this in stateless verification
         } = self;
 
         state.check_proposal_votable(*proposal).await?;
@@ -61,39 +60,34 @@ impl ActionHandler for ValidatorVote {
             .check_governance_key_matches_validator(identity_key, governance_key)
             .await?;
 
-        Ok(())
-    }
-
-    async fn execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
-        let ValidatorVote {
-            auth_sig: _,
-            body:
-                ValidatorVoteBody {
-                    proposal,
-                    vote,
-                    identity_key,
-                    governance_key: _, // This is only used for checks so that stateless verification can be done on the signature
-                    reason,
-                },
-        } = self;
-
-        tracing::debug!(proposal = %proposal, "cast validator vote");
-        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
-
-        // If a proposal is an emergency proposal, every validator vote triggers a check to see if
-        // we should immediately enact the proposal (if it's reached a 2/3 majority).
         let proposal_state = state
             .proposal_state(*proposal)
             .await?
             .expect("proposal missing state");
+
+        // TODO(erwan): Keeping this guard here, because there was previously a
+        // comment stressing that we want to avoid enacting withdrawn proposals.
+        // However, note that this is already checked in the stateful check and
+        // we execute against the same snapshotted state, so this seem redundant.
+        // I will remove it once in the PR review once this is confirmed.
+        if proposal_state.is_withdrawn() {
+            tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cannot cast a vote for a withdrawn proposal");
+            return Ok(());
+        }
+
+        tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cast validator vote");
+        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
+
+        // Emergency proposals are passed immediately after receiving +2/3 of
+        // validator votes. These include the eponymous `Emergency` proposal but
+        // also `IbcFreeze` and `IbcUnfreeze`.
         let proposal_payload = state
             .proposal_payload(*proposal)
             .await?
             .expect("proposal missing payload");
-        // IMPORTANT: We don't want to enact an emergency proposal if it's been withdrawn, because
-        // withdrawal should prevent any proposal, even an emergency proposal, from being enacted.
-        if !proposal_state.is_withdrawn() && proposal_payload.is_emergency() {
-            tracing::debug!(proposal = %proposal, "proposal is emergency, checking for emergency pass condition");
+
+        if proposal_payload.is_emergency() || proposal_payload.is_ibc_freeze() {
+            tracing::debug!(proposal = %proposal, "detected an emergency-tier proposal, checking pass conditions");
             let tally = state.current_tally(*proposal).await?;
             let total_voting_power = state
                 .total_voting_power_at_proposal_start(*proposal)
@@ -106,7 +100,7 @@ impl ActionHandler for ValidatorVote {
                 match state.enact_proposal(*proposal, &proposal_payload).await? {
                     Ok(_) => tracing::debug!(proposal = %proposal, "emergency proposal enacted"),
                     Err(error) => {
-                        tracing::warn!(proposal = %proposal, %error, "error enacting emergency proposal")
+                        tracing::error!(proposal = %proposal, %error, "error enacting emergency proposal")
                     }
                 }
                 // Update the proposal state to reflect the outcome (it will always be passed,
@@ -119,6 +113,8 @@ impl ActionHandler for ValidatorVote {
                 );
             }
         }
+
+        state.record_proto(event::validator_vote(self));
 
         Ok(())
     }

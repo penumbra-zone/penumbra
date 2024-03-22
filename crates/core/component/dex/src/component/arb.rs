@@ -2,12 +2,13 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateDelta, StateWrite};
 use penumbra_asset::{asset, Value};
-use penumbra_chain::component::StateReadExt;
-use penumbra_storage::{StateDelta, StateWrite};
+use penumbra_proto::StateWriteProto as _;
+use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
-use crate::SwapExecution;
+use crate::{event, ExecutionCircuitBreaker, SwapExecution};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
@@ -18,16 +19,16 @@ use super::{
 pub trait Arbitrage: StateWrite + Sized {
     /// Attempts to extract as much as possible of the `arb_token` from the available
     /// liquidity positions, and returns the amount of `arb_token` extracted.
-    #[instrument(skip(self, arb_token, fixed_candidates))]
+    #[instrument(skip(self, arb_token, routing_params))]
     async fn arbitrage(
         self: &mut Arc<Self>,
         arb_token: asset::Id,
-        fixed_candidates: Vec<asset::Id>,
+        routing_params: RoutingParams,
     ) -> Result<Value>
     where
         Self: 'static,
     {
-        tracing::debug!(?arb_token, ?fixed_candidates, "beginning arb search");
+        tracing::debug!(?arb_token, ?routing_params, "beginning arb search");
         let arb_start = std::time::Instant::now();
 
         // Work in a new `StateDelta`, so we can transactionally apply any state
@@ -35,23 +36,21 @@ pub trait Arbitrage: StateWrite + Sized {
         // discover at the end that the arb wasn't profitable).
         let mut this = Arc::new(StateDelta::new(self.clone()));
 
-        // TODO: Build an extended candidate set with:
-        // - both ends of all trading pairs for which there were swaps in the block
-        // - both ends of all trading pairs for which positions were opened
-        let params = RoutingParams {
-            max_hops: 5,
-            price_limit: Some(1u64.into()),
-            fixed_candidates: Arc::new(fixed_candidates),
-        };
-
         // Create a flash-loan 2^64 of the arb token to ourselves.
         let flash_loan = Value {
             asset_id: arb_token,
             amount: u64::MAX.into(),
         };
 
+        let execution_circuit_breaker = ExecutionCircuitBreaker::default();
         let swap_execution = this
-            .route_and_fill(arb_token, arb_token, flash_loan.amount, params)
+            .route_and_fill(
+                arb_token,
+                arb_token,
+                flash_loan.amount,
+                routing_params,
+                execution_circuit_breaker,
+            )
             .await?;
         let filled_input = swap_execution.input.amount;
         let output = swap_execution.output.amount;
@@ -108,24 +107,22 @@ pub trait Arbitrage: StateWrite + Sized {
 
         // Finally, record the arb execution in the state:
         let height = self_mut.get_block_height().await?;
-        self_mut.set_arb_execution(
-            height,
-            SwapExecution {
-                traces: swap_execution.traces,
-                input: Value {
-                    asset_id: arb_token,
-                    amount: filled_input,
-                },
-                output: Value {
-                    amount: arb_profit,
-                    asset_id: arb_token,
-                },
+        let se = SwapExecution {
+            traces: swap_execution.traces,
+            input: Value {
+                asset_id: arb_token,
+                amount: filled_input,
             },
-        );
-        metrics::histogram!(
-            crate::component::metrics::DEX_ARB_DURATION,
-            arb_start.elapsed()
-        );
+            output: Value {
+                amount: arb_profit,
+                asset_id: arb_token,
+            },
+        };
+        self_mut.set_arb_execution(height, se.clone());
+        // Emit an ABCI event detailing the arb execution.
+        self_mut.record_proto(event::arb_execution(height, se));
+        metrics::histogram!(crate::component::metrics::DEX_ARB_DURATION)
+            .record(arb_start.elapsed());
         return Ok(Value {
             amount: arb_profit,
             asset_id: arb_token,

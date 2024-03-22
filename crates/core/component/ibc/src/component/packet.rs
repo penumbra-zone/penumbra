@@ -1,10 +1,11 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateRead, StateWrite};
 use ibc_types::core::{
     channel::{channel::State as ChannelState, events, ChannelId, Packet, PortId},
     client::Height,
 };
-use penumbra_storage::{StateRead, StateWrite};
+use penumbra_sct::component::clock::EpochRead;
 
 use crate::component::{
     channel::{StateReadExt as _, StateWriteExt as _},
@@ -129,9 +130,20 @@ pub trait SendPacketRead: StateRead {
             anyhow::bail!("client {} is frozen", &connection.client_id);
         }
 
+        let latest_consensus_state = self
+            .get_verified_consensus_state(&client_state.latest_height(), &connection.client_id)
+            .await?;
+
+        let current_block_time = self.get_block_timestamp().await?;
+        let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp)?;
+
+        if client_state.expired(time_elapsed) {
+            anyhow::bail!("client {} is expired", &connection.client_id);
+        }
+
         let latest_height = client_state.latest_height();
 
-        // check that time timeout height hasn't already pased in the local client tracking the
+        // check that time timeout height hasn't already passed in the local client tracking the
         // receiving chain
         if packet.timeout_height <= latest_height {
             anyhow::bail!(

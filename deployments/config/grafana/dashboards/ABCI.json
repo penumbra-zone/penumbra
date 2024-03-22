@@ -167,7 +167,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(rate(tendermint_abci_connection_method_timing_seconds_count[5m])) by (method)",
+          "expr": "sum(rate(cometbft_abci_connection_method_timing_seconds_count[5m])) by (method)",
           "refId": "A"
         }
       ],
@@ -255,7 +255,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(tendermint_abci_connection_method_timing_seconds_bucket{method=\"begin_block\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(cometbft_abci_connection_method_timing_seconds_bucket{method=\"begin_block\"}[5m])))",
           "range": true,
           "refId": "A"
         },
@@ -264,7 +264,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "histogram_quantile(0.5, sum by(le) (rate(tendermint_abci_connection_method_timing_seconds_bucket{method=\"begin_block\"}[5m])))",
+          "expr": "histogram_quantile(0.5, sum by(le) (rate(cometbft_abci_connection_method_timing_seconds_bucket{method=\"begin_block\"}[5m])))",
           "hide": false,
           "refId": "B"
         }
@@ -353,7 +353,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(tendermint_abci_connection_method_timing_seconds_bucket{method=\"deliver_tx\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(cometbft_abci_connection_method_timing_seconds_bucket{method=\"deliver_tx\"}[5m])))",
           "range": true,
           "refId": "A"
         }
@@ -442,7 +442,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(tendermint_abci_connection_method_timing_seconds_bucket{method=\"end_block\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(cometbft_abci_connection_method_timing_seconds_bucket{method=\"end_block\"}[5m])))",
           "range": true,
           "refId": "A"
         }
@@ -531,7 +531,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(tendermint_abci_connection_method_timing_seconds_bucket{method=\"commit\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(cometbft_abci_connection_method_timing_seconds_bucket{method=\"commit\"}[5m])))",
           "range": true,
           "refId": "A"
         }

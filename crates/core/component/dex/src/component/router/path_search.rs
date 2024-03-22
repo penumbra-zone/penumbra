@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use cnidarium::{StateDelta, StateRead};
 use futures::StreamExt;
 use penumbra_asset::asset;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_storage::{StateDelta, StateRead};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -54,10 +54,8 @@ pub trait PathSearch: StateRead + Clone + 'static {
         let nodes = path.nodes;
         let spill_price = spill.map(|p| p.price);
         tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
-        metrics::histogram!(
-            crate::component::metrics::DEX_PATH_SEARCH_DURATION,
-            path_start.elapsed()
-        );
+        metrics::histogram!(crate::component::metrics::DEX_PATH_SEARCH_DURATION)
+            .record(path_start.elapsed());
 
         match price_limit {
             // Note: previously, this branch was a load-bearing termination condition, primarily
@@ -113,7 +111,6 @@ async fn relax_path<S: StateRead + 'static>(
     });
 
     let mut js = JoinSet::new();
-    // while let Some(new_end) = candidates {
 
     while let Some(new_end) = candidates.inner_mut().next().await {
         let new_path = path.fork();

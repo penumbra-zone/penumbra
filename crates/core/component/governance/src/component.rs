@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
+use crate::{event, genesis};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use penumbra_storage::StateWrite;
+use cnidarium::StateWrite;
+use penumbra_proto::StateWriteProto as _;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use penumbra_component::Component;
+use cnidarium_component::Component;
 
 use crate::{
     proposal_state::{
@@ -22,19 +24,25 @@ pub mod rpc;
 pub use view::StateReadExt;
 pub use view::StateWriteExt;
 
-use penumbra_chain::component::StateReadExt as _;
+use penumbra_sct::component::clock::EpochRead;
 
 pub struct Governance {}
 
 #[async_trait]
 impl Component for Governance {
-    type AppState = ();
+    type AppState = genesis::Content;
 
-    #[instrument(name = "governance", skip(state, _app_state))]
-    async fn init_chain<S: StateWrite>(mut state: S, _app_state: Option<&()>) {
-        // Clients need to be able to read the next proposal number, even when no proposals have
-        // been submitted yet
-        state.init_proposal_counter();
+    #[instrument(name = "governance", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
+        match app_state {
+            Some(genesis) => {
+                state.put_governance_params(genesis.governance_params.clone());
+                // Clients need to be able to read the next proposal number, even when no proposals have
+                // been submitted yet
+                state.init_proposal_counter();
+            }
+            None => {}
+        }
     }
 
     #[instrument(name = "governance", skip(_state, _begin_block))]
@@ -128,12 +136,39 @@ pub async fn enact_all_passed_proposals<S: StateWrite>(mut state: S) -> Result<(
                                 tracing::warn!(proposal = %proposal_id, %error, "proposal passed but failed to enact");
                             }
                         };
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::enact_proposal(&proposal));
                     }
                     tally::Outcome::Fail => {
                         tracing::info!(proposal = %proposal_id, "proposal failed");
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::proposal_failed(&proposal));
                     }
                     tally::Outcome::Slash => {
                         tracing::info!(proposal = %proposal_id, "proposal slashed");
+
+                        let proposal =
+                            state
+                                .proposal_definition(proposal_id)
+                                .await?
+                                .ok_or_else(|| {
+                                    anyhow::anyhow!("proposal {} does not exist", proposal_id)
+                                })?;
+                        state.record_proto(event::proposal_slashed(&proposal));
                     }
                 }
 

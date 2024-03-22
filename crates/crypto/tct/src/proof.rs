@@ -122,7 +122,7 @@ impl Proof {
     }
 }
 
-use penumbra_proto::penumbra::crypto::tct::v1alpha1 as pb;
+use penumbra_proto::penumbra::crypto::tct::v1 as pb;
 use rand::Rng;
 
 impl From<Proof> for pb::StateCommitmentProof {

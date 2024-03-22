@@ -6,47 +6,20 @@ use ark_relations::r1cs::{
 };
 use decaf377::{Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
-use penumbra_asset::{balance, Value};
-use penumbra_keys::keys::{Bip44Path, NullifierKey, SeedPhrase, SpendKey};
-use penumbra_proof_params::SPEND_PROOF_PROVING_KEY;
+use penumbra_asset::Value;
+use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+use penumbra_proof_params::{DummyWitness, SPEND_PROOF_PROVING_KEY};
 use penumbra_sct::Nullifier;
-use penumbra_shielded_pool::{Note, SpendCircuit, SpendProof};
+use penumbra_shielded_pool::{Note, SpendCircuit, SpendProof, SpendProofPrivate, SpendProofPublic};
 use penumbra_tct as tct;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use rand_core::OsRng;
 
 #[allow(clippy::too_many_arguments)]
-fn prove(
-    r: Fq,
-    s: Fq,
-    state_commitment_proof: tct::Proof,
-    note: Note,
-    v_blinding: Fr,
-    spend_auth_randomizer: Fr,
-    ak: VerificationKey<SpendAuth>,
-    nk: NullifierKey,
-    anchor: tct::Root,
-    balance_commitment: balance::Commitment,
-    nullifier: Nullifier,
-    rk: VerificationKey<SpendAuth>,
-) {
-    let _proof = SpendProof::prove(
-        r,
-        s,
-        &SPEND_PROOF_PROVING_KEY,
-        state_commitment_proof,
-        note,
-        v_blinding,
-        spend_auth_randomizer,
-        ak,
-        nk,
-        anchor,
-        balance_commitment,
-        nullifier,
-        rk,
-    )
-    .expect("can create proof");
+fn prove(r: Fq, s: Fq, public: SpendProofPublic, private: SpendProofPrivate) {
+    let _proof = SpendProof::prove(r, s, &SPEND_PROOF_PROVING_KEY, public, private)
+        .expect("can create proof");
 }
 
 fn spend_proving_time(c: &mut Criterion) {
@@ -76,39 +49,27 @@ fn spend_proving_time(c: &mut Criterion) {
 
     let r = Fq::rand(&mut OsRng);
     let s = Fq::rand(&mut OsRng);
-
-    c.bench_function("spend proving", |b| {
-        b.iter(|| {
-            prove(
-                r,
-                s,
-                state_commitment_proof.clone(),
-                note.clone(),
-                v_blinding,
-                spend_auth_randomizer,
-                ak,
-                nk,
-                anchor,
-                balance_commitment,
-                nf,
-                rk,
-            )
-        })
-    });
-
-    // Also print out the number of constraints.
-    let circuit = SpendCircuit::new(
+    let public = SpendProofPublic {
+        anchor,
+        balance_commitment,
+        nullifier: nf,
+        rk,
+    };
+    let private = SpendProofPrivate {
         state_commitment_proof,
         note,
         v_blinding,
         spend_auth_randomizer,
         ak,
         nk,
-        anchor,
-        balance_commitment,
-        nf,
-        rk,
-    );
+    };
+
+    c.bench_function("spend proving", |b| {
+        b.iter(|| prove(r, s, public.clone(), private.clone()))
+    });
+
+    // Also print out the number of constraints.
+    let circuit = SpendCircuit::with_dummy_witness();
 
     let cs = ConstraintSystem::new_ref();
     cs.set_optimization_goal(OptimizationGoal::Constraints);
