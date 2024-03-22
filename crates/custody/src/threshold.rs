@@ -7,7 +7,7 @@ use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
 use penumbra_transaction::AuthorizationData;
 
-use crate::AuthorizeRequest;
+use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
 pub use self::config::Config;
 pub use self::sign::SigningRequest;
@@ -190,15 +190,9 @@ impl<T> Threshold<T> {
 
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
-    async fn authorize(&self, request: AuthorizeRequest) -> Result<AuthorizationData> {
-        let plan = request.plan;
-
+    async fn authorize(&self, request: SigningRequest) -> Result<AuthorizationData> {
         // Round 1
-        let (round1_message, state1) = sign::coordinator_round1(
-            &mut OsRng,
-            &self.config,
-            SigningRequest::TransactionPlan(plan),
-        )?;
+        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal
             .explain("Send this message to the other signers:")
             .await?;
@@ -274,13 +268,18 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
         &self,
         request: Request<pb::AuthorizeRequest>,
     ) -> Result<Response<pb::AuthorizeResponse>, Status> {
-        let request = request
+        let request: AuthorizeRequest = request
             .into_inner()
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("{e}")))?;
-        let data = self.authorize(request).await.map_err(|e| {
-            Status::internal(format!("Failed to process authorization request: {e}"))
-        })?;
+        let data = self
+            .authorize(SigningRequest::TransactionPlan(request.plan))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process transaction authorization request: {e}"
+                ))
+            })?;
         Ok(Response::new(pb::AuthorizeResponse {
             data: Some(data.into()),
         }))
@@ -288,16 +287,46 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 
     async fn authorize_validator_definition(
         &self,
-        _request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+        request: Request<pb::AuthorizeValidatorDefinitionRequest>,
     ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
-        Err(Status::unimplemented("authorize_validator_definition"))
+        let request: AuthorizeValidatorDefinitionRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorDefinition(
+                request.validator_definition,
+            ))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator definition authorization request: {e}"
+                ))
+            })?;
+        Ok(Response::new(pb::AuthorizeValidatorDefinitionResponse {
+            data: Some(data.into()),
+        }))
     }
 
     async fn authorize_validator_vote(
         &self,
-        _request: Request<pb::AuthorizeValidatorVoteRequest>,
+        request: Request<pb::AuthorizeValidatorVoteRequest>,
     ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
-        Err(Status::unimplemented("authorize_validator_vote"))
+        let request: AuthorizeValidatorVoteRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorVote(request.validator_vote))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator vote authorization request: {e}"
+                ))
+            })?;
+        Ok(Response::new(pb::AuthorizeValidatorVoteResponse {
+            data: Some(data.into()),
+        }))
     }
 
     async fn export_full_viewing_key(
