@@ -11,6 +11,7 @@ metadata:
     "app.kubernetes.io/part-of": {{ .Values.part_of }}
     {{- end }}
 spec:
+  podManagementPolicy: Parallel
   replicas: {{ .Values.nodes | len | int }}
   volumeClaimTemplates:
     - metadata:
@@ -48,6 +49,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
+        {{- include "penumbra-node.labels" . | nindent 8 }}
         {{- include "penumbra-node.selectorLabels" . | nindent 8 }}
     spec:
       # Force the pods to different k8s nodes, so that egress ip is unique per CometBFT node.
