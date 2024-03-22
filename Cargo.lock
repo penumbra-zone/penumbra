@@ -1409,6 +1409,7 @@ dependencies = [
  "parking_lot",
  "pbjson",
  "pin-project",
+ "proptest",
  "prost",
  "regex",
  "rocksdb",
@@ -1417,6 +1418,7 @@ dependencies = [
  "smallvec",
  "tempfile",
  "tendermint",
+ "test-strategy",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -7538,6 +7540,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
+name = "structmeta"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78ad9e09554f0456d67a69c1584c9798ba733a5b50349a6c0d0948710523922d"
+dependencies = [
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "structmeta-derive",
+ "syn 2.0.51",
+]
+
+[[package]]
+name = "structmeta-derive"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a60bcaff7397072dca0017d1db428e30d5002e00b6847703e2e42005c95fbe00"
+dependencies = [
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "syn 2.0.51",
+]
+
+[[package]]
 name = "strum"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7839,6 +7864,18 @@ name = "termtree"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
+
+[[package]]
+name = "test-strategy"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8361c808554228ad09bfed70f5c823caf8a3450b6881cc3a38eb57e8c08c1d9"
+dependencies = [
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "structmeta",
+ "syn 2.0.51",
+]
 
 [[package]]
 name = "textwrap"

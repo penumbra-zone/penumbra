@@ -27,7 +27,7 @@ use tokio;
  * Testing menu:
  * - test_simple_migration: the most basic migration scenario where we write to the main store.
  * - test_substore_migration: a migration scenario where we write to the main store and substores.
- * - prop_migration: property-based testing of the migration operation.
+ * - prop_test_substore_migration: property-based testing of the migration operation.
  *
  * Each test has the following pattern:
  * Operation:
@@ -631,4 +631,526 @@ async fn test_substore_migration() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+mod proptests {
+    use proptest::{
+        arbitrary::any,
+        prelude::prop,
+        prop_assert, prop_assert_eq, prop_oneof,
+        strategy::{BoxedStrategy, Just, Strategy},
+        test_runner::FileFailurePersistence,
+    };
+    use sha2::Sha256;
+    use std::{
+        collections::BTreeMap,
+        fmt::{Debug, Display, Formatter},
+    };
+    use test_strategy::proptest;
+
+    use cnidarium::{EscapedByteSlice, StateDelta, StateWrite as _, Storage};
+    use ibc_types::core::commitment::{MerklePath, MerkleRoot};
+
+    use crate::{FULL_PROOF_SPECS, MAIN_STORE_PROOF_SPEC};
+
+    struct ReferenceStore {
+        final_kv: BTreeMap<StorageKey, Option<Vec<u8>>>,
+    }
+
+    impl ReferenceStore {
+        fn new() -> Self {
+            Self {
+                final_kv: BTreeMap::new(),
+            }
+        }
+
+        fn execute(&mut self, op: Operation) {
+            match op {
+                Operation::Insert(key, value) => {
+                    if key.path() == "" {
+                        panic!("empty key");
+                    }
+                    self.final_kv.insert(key, Some(value));
+                }
+                Operation::Delete(key) => {
+                    self.final_kv.insert(key, None);
+                }
+            }
+        }
+    }
+
+    fn prefix_list() -> Vec<String> {
+        vec![
+            "".to_string(),
+            "dex".to_string(),
+            "ibc".to_string(),
+            "misc".to_string(),
+            "staking".to_string(),
+        ]
+    }
+
+    fn substore_list() -> Vec<String> {
+        vec![
+            "dex".to_string(),
+            "ibc".to_string(),
+            "misc".to_string(),
+            "staking".to_string(),
+        ]
+    }
+
+    fn char_except_slash() -> impl Strategy<Value = char> {
+        any::<char>().prop_filter("Exclude '/'", |c| *c != '/')
+    }
+
+    fn valid_key_strategy() -> impl Strategy<Value = String> {
+        (
+            char_except_slash(),
+            proptest::collection::vec(any::<char>(), 0..=999),
+        )
+            .prop_map(|(first_char, mut vec)| {
+                vec.insert(0, first_char); // Insert the first char at the beginning
+                vec.into_iter().collect()
+            })
+    }
+
+    fn storage_key_strategy() -> BoxedStrategy<StorageKey> {
+        let prefixes = prefix_list();
+        let substore_strategies: Vec<BoxedStrategy<_>> =
+            prefixes.into_iter().map(|s| Just(s).boxed()).collect();
+
+        // Use one_of to dynamically create a strategy from a slice of strategies
+        let substore_strategy = prop::strategy::Union::new_weighted(
+            substore_strategies.into_iter().map(|s| (1, s)).collect(),
+        );
+
+        let key_strategy = valid_key_strategy();
+
+        (substore_strategy, key_strategy)
+            .prop_map(|(substore, key)| StorageKey::new(substore, key))
+            .boxed()
+    }
+
+    fn value_strategy() -> impl Strategy<Value = Vec<u8>> {
+        prop::collection::vec(any::<u8>(), 1..1024)
+    }
+
+    fn operation_strategy() -> impl Strategy<Value = Operation> {
+        let insert_strategy = (storage_key_strategy(), value_strategy())
+            .prop_map(|(key, value)| Operation::Insert(key, value));
+
+        let delete_strategy = storage_key_strategy().prop_map(Operation::Delete);
+
+        prop_oneof![insert_strategy, delete_strategy,]
+    }
+
+    fn insert_strategy() -> impl Strategy<Value = Operation> {
+        let insert_strategy = (storage_key_strategy(), value_strategy())
+            .prop_map(|(key, value)| Operation::Insert(key, value));
+
+        prop_oneof![insert_strategy]
+    }
+
+    fn insert_ops_strategy() -> impl Strategy<Value = Vec<Operation>> {
+        prop::collection::vec(insert_strategy(), 0..10000)
+    }
+
+    fn operations_strategy() -> impl Strategy<Value = Vec<Operation>> {
+        prop::collection::vec(operation_strategy(), 0..10000)
+    }
+
+    #[proptest(async = "tokio", cases = 10, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
+    async fn test_migration_substores(
+        #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
+        #[strategy(operations_strategy())] migration_transcript: Vec<Operation>,
+        #[strategy(operations_strategy())] postmigration_transcript: Vec<Operation>,
+        #[strategy(insert_ops_strategy())] nonexistence_keys: Vec<Operation>,
+    ) {
+        let _ = tracing_subscriber::fmt::try_init();
+        let tmpdir = tempfile::tempdir().expect("Failed to create a temp dir");
+        let db_path = tmpdir.into_path();
+        let substore_prefixes = substore_list();
+
+        let premigration_len = premigration_transcript.len();
+        let migration_len = migration_transcript.len();
+        let postmigration_len = postmigration_transcript.len();
+        let nonexistence_len = nonexistence_keys.len();
+        let total_ops = premigration_len + migration_len + postmigration_len + nonexistence_len;
+
+        tracing::info!(
+            premigration_len,
+            migration_len,
+            postmigration_len,
+            nonexistence_len,
+            total_ops,
+            "starting test"
+        );
+
+        let storage = Storage::load(db_path.clone(), substore_prefixes.clone())
+            .await
+            .expect("Failed to load storage");
+        // The reference store is an in-memory store that tracks the latest value for each key
+        // To do this, the store execute each operation in the transcript and tracks the final value.
+        // It serves as a source of truth to compare the storage against.
+        let mut reference_store = ReferenceStore::new();
+
+        // Premigration: write and delete keys
+        let mut premigration_delta = StateDelta::new(storage.latest_snapshot());
+
+        for op in premigration_transcript {
+            reference_store.execute(op.clone());
+            let storage_key = op.key();
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                ?op,
+                "premigration"
+            );
+
+            match op {
+                Operation::Insert(_key, value) => {
+                    premigration_delta.put_raw(key_path, value);
+                }
+                Operation::Delete(_key) => {
+                    premigration_delta.delete(key_path);
+                }
+            }
+        }
+
+        let premigration_root_hash = storage
+            .commit(premigration_delta)
+            .await
+            .expect("can commit premigration");
+        tracing::info!(key = ?EscapedByteSlice(&premigration_root_hash.0), premigration_len, "premigration operations have been committed");
+
+        for (storage_key, reference_value) in reference_store.final_kv.iter() {
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                "premigration: checking proofs"
+            );
+            let result_proof = storage
+                .latest_snapshot()
+                .get_with_proof(storage_key.encode_path())
+                .await
+                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
+
+            prop_assert!(result_proof.is_ok(), "can get with proof");
+
+            let (retrieved_value, proof) = result_proof.expect("can get with proof");
+            prop_assert_eq!(&retrieved_value, reference_value);
+
+            let merkle_path = storage_key.merkle_path();
+            let merkle_root = MerkleRoot {
+                hash: premigration_root_hash.clone().0.to_vec(),
+            };
+            let specs = storage_key.proof_spec();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                num_proofs = proof.proofs.len(),
+                spec_len = specs.len(),
+                ?key_hash,
+                abridged_key = storage_key.abridged_key(),
+                is_existence = reference_value.is_some(),
+                "premigration proof verification"
+            );
+
+            let proof_verifies = if let Some(value) = retrieved_value.clone() {
+                proof
+                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
+                    .map_err(|e| tracing::error!(?e, "premigration existence proof failed"))
+            } else {
+                proof
+                    .verify_non_membership(&specs, merkle_root, merkle_path)
+                    .map_err(|e| tracing::error!(?e, "premigration nonexistence proof failed"))
+            };
+
+            prop_assert!(proof_verifies.is_ok());
+        }
+
+        // Migration: write and delete keys
+        let mut migration_delta = StateDelta::new(storage.latest_snapshot());
+
+        for op in migration_transcript {
+            reference_store.execute(op.clone());
+            let key = op.key();
+            let key_path = key.path();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            tracing::debug!(prefix = %key.prefix(), key = key.abridged_key(), ?key_hash, ?op, "migration");
+
+            match op {
+                Operation::Insert(_key, value) => {
+                    migration_delta.put_raw(key_path, value.clone());
+                }
+                Operation::Delete(_key) => {
+                    migration_delta.delete(key_path);
+                }
+            }
+        }
+
+        let migration_root_hash = storage
+            .commit(migration_delta)
+            .await
+            .expect("can commit migration");
+        tracing::info!(key = ?EscapedByteSlice(&migration_root_hash.0), migration_len, "migration operations have been committed");
+
+        for (storage_key, reference_value) in reference_store.final_kv.iter() {
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                "migration: checking proofs"
+            );
+
+            let result_proof = storage
+                .latest_snapshot()
+                .get_with_proof(storage_key.encode_path())
+                .await
+                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
+
+            prop_assert!(result_proof.is_ok(), "can get with proof");
+
+            let (retrieved_value, proof) = result_proof.expect("can get with proof");
+            prop_assert_eq!(&retrieved_value, reference_value);
+
+            let merkle_path = storage_key.merkle_path();
+            let merkle_root = MerkleRoot {
+                hash: migration_root_hash.0.to_vec(),
+            };
+            let specs = storage_key.proof_spec();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            prop_assert_eq!(&retrieved_value, reference_value);
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                num_proofs = proof.proofs.len(),
+                spec_len = specs.len(),
+                ?key_hash,
+                abridged_key = storage_key.abridged_key(),
+                "migration proof verification"
+            );
+
+            let proof_verifies = if let Some(value) = retrieved_value.clone() {
+                proof
+                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
+                    .map_err(|e| tracing::error!(?e, "migration: existence proof failed"))
+            } else {
+                proof
+                    .verify_non_membership(&specs, merkle_root, merkle_path)
+                    .map_err(|e| tracing::error!(?e, "migration: nonexistence proof failed"))
+            };
+
+            prop_assert!(proof_verifies.is_ok());
+        }
+
+        // We toss the storage instance and reload it.
+        storage.release().await;
+        let storage = Storage::load(db_path.clone(), substore_prefixes.clone())
+            .await
+            .expect("can reload storage");
+
+        // Post-migration: write new keys!
+        let mut postmigration_delta = StateDelta::new(storage.latest_snapshot());
+
+        for op in postmigration_transcript {
+            reference_store.execute(op.clone());
+            let storage_key = op.key();
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                ?op,
+                "postmigration"
+            );
+
+            match op {
+                Operation::Insert(_key, value) => {
+                    postmigration_delta.put_raw(key_path, value);
+                }
+                Operation::Delete(_key) => {
+                    postmigration_delta.delete(key_path);
+                }
+            }
+        }
+
+        let postmigration_root_hash = storage
+            .commit(postmigration_delta)
+            .await
+            .expect("can commit postmigration");
+        tracing::info!(key = ?EscapedByteSlice(&postmigration_root_hash.0), num_ops = postmigration_len, "postmigration operations have been committed");
+
+        for (storage_key, reference_value) in reference_store.final_kv.iter() {
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = &storage_key.abridged_key(),
+                ?key_hash,
+                "postmigration: checking proofs"
+            );
+
+            let result_proof = storage
+                .latest_snapshot()
+                .get_with_proof(storage_key.encode_path())
+                .await
+                .map_err(|e| tracing::error!(?e, "postmigration: get_with_proof failed"));
+
+            prop_assert!(result_proof.is_ok(), "can get with proof");
+
+            let (retrieved_value, proof) = result_proof.expect("can get with proof");
+            prop_assert_eq!(&retrieved_value, reference_value);
+
+            let merkle_path = storage_key.merkle_path();
+            let merkle_root = MerkleRoot {
+                hash: postmigration_root_hash.0.to_vec(),
+            };
+            let specs = storage_key.proof_spec();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                num_proofs = proof.proofs.len(),
+                spec_len = specs.len(),
+                ?key_hash,
+                abridged_key = &storage_key.abridged_key(),
+                "postmigration proof verification"
+            );
+
+            let proof_verifies = if let Some(value) = retrieved_value.clone() {
+                let v1 = value.clone();
+                let v2 = reference_value.clone().unwrap();
+                assert_eq!(v1, v2, "Values not equal");
+                proof
+                    .verify_membership(&specs, merkle_root, merkle_path, value, 0)
+                    .map_err(|e| tracing::error!(?e, "postmigration: existence proof failed"))
+            } else {
+                proof
+                    .verify_non_membership(&specs, merkle_root, merkle_path)
+                    .map_err(|e| tracing::error!(?e, "postmigration: nonexistence proof failed"))
+            };
+
+            prop_assert!(proof_verifies.is_ok());
+        }
+    }
+
+    #[derive(Clone)]
+    enum Operation {
+        Insert(StorageKey, Vec<u8>),
+        Delete(StorageKey),
+    }
+
+    impl Operation {
+        fn key(&self) -> &StorageKey {
+            match self {
+                Operation::Insert(key, _) => key,
+                Operation::Delete(key) => key,
+            }
+        }
+    }
+
+    impl Debug for Operation {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Operation::Insert(_, _) => write!(f, "Insert(..)"),
+                Operation::Delete(_) => write!(f, "Delete(..)"),
+            }
+        }
+    }
+
+    #[derive(PartialEq, Eq, Clone, PartialOrd, Ord)]
+    struct StorageKey {
+        prefix: String,
+        key: String,
+        full_path: String,
+    }
+
+    impl Display for StorageKey {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.path())
+        }
+    }
+
+    impl Debug for StorageKey {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.full_path)
+        }
+    }
+
+    impl StorageKey {
+        fn new(prefix: String, key: String) -> Self {
+            let full_path = if prefix.is_empty() {
+                key.clone()
+            } else {
+                format!("{}/{}", prefix, key)
+            };
+
+            Self {
+                prefix,
+                key,
+                full_path,
+            }
+        }
+
+        fn abridged_key(&self) -> String {
+            self.key.chars().take(5).collect()
+        }
+
+        fn hash(&self) -> jmt::KeyHash {
+            jmt::KeyHash::with::<Sha256>(&self.full_path)
+        }
+
+        fn encode_path(&self) -> Vec<u8> {
+            self.path().as_bytes().to_vec()
+        }
+
+        fn prefix(&self) -> &String {
+            &self.prefix
+        }
+
+        fn is_main_store(&self) -> bool {
+            self.prefix == ""
+        }
+
+        fn path(&self) -> String {
+            self.full_path.clone()
+        }
+
+        fn merkle_path(&self) -> MerklePath {
+            if self.is_main_store() {
+                return MerklePath {
+                    key_path: vec![self.key.clone()],
+                };
+            } else {
+                MerklePath {
+                    key_path: vec![self.prefix.clone(), self.key.clone()],
+                }
+            }
+        }
+
+        fn proof_spec(&self) -> Vec<ics23::ProofSpec> {
+            if self.is_main_store() {
+                MAIN_STORE_PROOF_SPEC.clone()
+            } else {
+                FULL_PROOF_SPECS.clone()
+            }
+        }
+    }
 }

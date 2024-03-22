@@ -90,10 +90,13 @@ impl MultistoreConfig {
     /// # Examples
     /// `prefix_a/key` -> `key` in `substore_a`
     /// `prefix_a` -> `prefix_a` in `main_store`
-    /// `preifx_a/` -> `prefix_a/` in `main_store`
+    /// `prefix_a/` -> `prefix_a/` in `main_store`
     /// `nonexistent_prefix` -> `nonexistent_prefix` in `main_store`
     pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
         let config = self.find_substore(key);
+
+        // If the key is a total match for the prefix, we return the original key
+        // routed to the main store. This is where subtree root hashes are stored.
         if key == config.prefix.as_bytes() {
             return (key, self.main_store.clone());
         }
