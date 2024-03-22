@@ -218,6 +218,9 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // Debit the DEX for the swap outflows.
         // Note that since we credited the DEX for _all_ inflows, we need to debit the
         // unfilled amounts as well as the filled amounts.
+        //
+        // In the case of a value inflation bug, the debit call will return an underflow
+        // error, which will halt the chain.
         self.vcb_debit(Value {
             amount: output_data.unfilled_1 + output_data.lambda_1,
             asset_id: output_data.trading_pair.asset_1,

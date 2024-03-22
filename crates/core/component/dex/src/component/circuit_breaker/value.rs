@@ -5,7 +5,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tonic::async_trait;
 
-use crate::state_key;
+use crate::{event, state_key};
 
 /// Tracks the aggregate value of deposits in the DEX.
 #[async_trait]
@@ -20,6 +20,8 @@ pub trait ValueCircuitBreaker: StateWrite {
             .checked_add(&value.amount)
             .ok_or_else(|| anyhow!("overflowed balance while crediting value circuit breaker"))?;
         self.put(state_key::value_balance(&value.asset_id), new_balance);
+
+        self.record_proto(event::vcb_credit(value.asset_id, balance, new_balance));
         Ok(())
     }
 
@@ -33,13 +35,13 @@ pub trait ValueCircuitBreaker: StateWrite {
             .checked_sub(&value.amount)
             .ok_or_else(|| anyhow!("underflowed balance while debiting value circuit breaker"))?;
         self.put(state_key::value_balance(&value.asset_id), new_balance);
+
+        self.record_proto(event::vcb_debit(value.asset_id, balance, new_balance));
         Ok(())
     }
 }
 
 impl<T: StateWrite + ?Sized> ValueCircuitBreaker for T {}
-
-/*
 
 #[cfg(test)]
 mod tests {
@@ -48,16 +50,22 @@ mod tests {
     use crate::component::position_manager::Inner as _;
     use crate::component::router::HandleBatchSwaps as _;
     use crate::component::{StateReadExt as _, StateWriteExt as _};
+    use crate::lp::plan::PositionWithdrawPlan;
     use crate::{
         component::{router::limit_buy, tests::TempStorageExt, PositionManager as _},
         state_key, DirectedUnitPair,
     };
+    use crate::{BatchSwapOutputData, PositionOpen, PositionWithdraw};
     use cnidarium::{
         ArcStateDeltaExt as _, StateDelta, StateRead as _, StateWrite as _, TempStorage,
     };
+    use cnidarium_component::ActionHandler as _;
     use penumbra_asset::{asset, Value};
     use penumbra_num::Amount;
     use penumbra_proto::StateWriteProto as _;
+    use penumbra_sct::component::clock::EpochManager as _;
+    use penumbra_sct::component::source::SourceContext as _;
+    use penumbra_sct::epoch::Epoch;
     use rand_core::OsRng;
 
     use crate::{
@@ -67,74 +75,40 @@ mod tests {
 
     use super::*;
 
-    // Ideally the update_position_aggregate_value in the PositionManager would be used
-    // but this is simpler for a quick unit test.
-
-    #[test]
-    fn value_circuit_breaker() {
-        let mut value_circuit_breaker = ValueCircuitBreaker::default();
+    #[tokio::test]
+    async fn value_circuit_breaker() -> anyhow::Result<()> {
+        let _ = tracing_subscriber::fmt::try_init();
+        let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
 
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+        let test_usd = asset::Cache::with_known_assets()
+            .get_unit("test_usd")
+            .unwrap();
 
-        let pair = DirectedTradingPair::new(gm.id(), gn.id());
-        let reserves_1 = Reserves {
-            r1: 0u64.into(),
-            r2: 120_000u64.into(),
-        };
+        // A credit followed by a debit of the same amount should succeed.
+        // Credit 100 gm.
+        state_tx.vcb_credit(gm.value(100u64.into())).await?;
+        // Credit 100 gn.
+        state_tx.vcb_credit(gn.value(100u64.into())).await?;
 
-        // A position with 120_000 gn and 0 gm.
-        let position_1 = Position::new(
-            OsRng,
-            pair,
-            9u32,
-            1_200_000u64.into(),
-            1_000_000u64.into(),
-            reserves_1,
-        );
+        // Debit 100 gm.
+        state_tx.vcb_debit(gm.value(100u64.into())).await?;
+        // Debit 100 gn.
+        state_tx.vcb_debit(gn.value(100u64.into())).await?;
 
-        // Track the position in the circuit breaker.
-        let pair = position_1.phi.pair;
-        let new_a = position_1
-            .reserves_for(pair.asset_1)
-            .expect("specified position should match provided trading pair");
-        let new_b = position_1
-            .reserves_for(pair.asset_2)
-            .expect("specified position should match provided trading pair");
+        // Debiting an additional gm should fail.
+        assert!(state_tx.vcb_debit(gm.value(1u64.into())).await.is_err());
 
-        let new_a = Balance::from(Value {
-            asset_id: pair.asset_1,
-            amount: new_a,
-        });
-        let new_b = Balance::from(Value {
-            asset_id: pair.asset_2,
-            amount: new_b,
-        });
-        value_circuit_breaker.tally(new_a);
-        value_circuit_breaker.tally(new_b.clone());
+        // Debiting an asset that hasn't been credited should also fail.
+        assert!(state_tx
+            .vcb_debit(test_usd.value(1u64.into()))
+            .await
+            .is_err());
 
-        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
-        assert!(value_circuit_breaker.available(pair.asset_2).amount == 120_000u64.into());
-
-        // The circuit breaker should not trip.
-        assert!(value_circuit_breaker.check().is_ok());
-
-        // If the same amount of gn is taken out of the position, the circuit breaker should not trip.
-        value_circuit_breaker.tally(-new_b);
-        assert!(value_circuit_breaker.check().is_ok());
-
-        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
-        assert!(value_circuit_breaker.available(pair.asset_2).amount == 0u64.into());
-
-        // But if there's ever a negative amount of gn in the position, the circuit breaker should trip.
-        let one_b = Balance::from(Value {
-            asset_id: pair.asset_2,
-            amount: Amount::from(1u64),
-        });
-        value_circuit_breaker.tally(-one_b);
-        assert!(value_circuit_breaker.check().is_err());
-        assert!(value_circuit_breaker.available(pair.asset_1).amount == 0u64.into());
-        assert!(value_circuit_breaker.available(pair.asset_2).amount == 0u64.into());
+        Ok(())
     }
 
     #[tokio::test]
@@ -144,6 +118,20 @@ mod tests {
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
         let mut state_tx = state.try_begin_transaction().unwrap();
 
+        let height = 1;
+
+        // 1. Simulate BeginBlock
+
+        state_tx.put_epoch_by_height(
+            height,
+            Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
+        state_tx.put_block_height(height);
+        state_tx.apply();
+
         let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
         let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
 
@@ -152,50 +140,72 @@ mod tests {
         let one = 1u64.into();
         let price1 = one;
         // Create a position buying 1 gm with 1 gn (i.e. reserves will be 1gn).
-        let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-        state_tx.put_position(buy_1.clone()).await.unwrap();
+        let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
 
-        // Update the position to buy 1 gm with 2 gn (i.e. reserves will be 2gn).
-        buy_1.reserves.r2 = 2u64.into();
-        state_tx.put_position(buy_1.clone()).await.unwrap();
-
-        // Pretend the position has been filled against and flipped, so there's no
-        // gn in the position and there is 2 gm.
-        buy_1.reserves.r1 = 2u64.into();
-        buy_1.reserves.r2 = 0u64.into();
-
-        // This should not error, the circuit breaker should not trip.
-        state_tx.put_position(buy_1.clone()).await.unwrap();
-
-        // Pretend the position was overfilled.
-        let mut value_circuit_breaker: ValueCircuitBreaker = match state_tx
-            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
-            .await
-            .expect("able to retrieve value circuit breaker from nonverifiable storage")
-        {
-            Some(bytes) => serde_json::from_slice(&bytes).expect(
-                "able to deserialize stored value circuit breaker from nonverifiable storage",
-            ),
-            None => panic!("should have a circuit breaker present"),
+        // Create the PositionOpen action
+        let pos_open = PositionOpen {
+            position: buy_1.clone(),
         };
 
-        // Wipe out the value in the circuit breaker, so that any outflows should trip it.
-        value_circuit_breaker.balance = Balance::default();
-        state_tx.nonverifiable_put_raw(
-            state_key::aggregate_value().as_bytes().to_vec(),
-            serde_json::to_vec(&value_circuit_breaker)
-                .expect("able to serialize value circuit breaker for nonverifiable storage"),
-        );
+        // Execute the PositionOpen action.
+        pos_open.check_stateless(()).await?;
+        pos_open.check_historical(state.clone()).await?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        state_tx.put_mock_source(1u8);
+        pos_open.check_and_execute(&mut state_tx).await?;
+        state_tx.apply();
 
-        // This should error, since there is no balance available to close out the position.
-        buy_1.state = crate::lp::position::State::Closed;
-        assert!(state_tx.put_position(buy_1).await.is_err());
+        // Set the output data for the block to 1 gn and 0 gm.
+        // This should not error, the circuit breaker should not trip.
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        state_tx
+            .set_output_data(
+                BatchSwapOutputData {
+                    delta_1: 0u64.into(),
+                    delta_2: 1u64.into(),
+                    lambda_1: 0u64.into(),
+                    lambda_2: 0u64.into(),
+                    unfilled_1: 0u64.into(),
+                    unfilled_2: 0u64.into(),
+                    height: 1,
+                    trading_pair: pair_1.into_directed_trading_pair().into(),
+                    epoch_starting_height: 0,
+                },
+                None,
+                None,
+            )
+            .await?;
+
+        // Pretend the position was overfilled.
+
+        // Wipe out the gm value in the circuit breaker, so that any outflows should trip it.
+        state_tx.put(state_key::value_balance(&gm.id()), Amount::from(0u64));
+
+        // Create the PositionWithdraw action
+        let pos_withdraw_plan = PositionWithdrawPlan {
+            position_id: buy_1.id(),
+            reserves: buy_1.reserves,
+            sequence: 1,
+            pair: pair_1.into_directed_trading_pair().into(),
+            rewards: vec![],
+        };
+
+        let pos_withdraw = pos_withdraw_plan.position_withdraw();
+
+        // Execute the PositionWithdraw action.
+        pos_withdraw.check_stateless(()).await?;
+        pos_withdraw.check_historical(state.clone()).await?;
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        state_tx.put_mock_source(1u8);
+        // This should error, since there is no balance available to withdraw the position.
+        assert!(pos_withdraw.check_and_execute(&mut state_tx).await.is_err());
+        state_tx.apply();
 
         Ok(())
     }
 
     #[tokio::test]
-    #[should_panic(expected = "balance for asset")]
+    #[should_panic(expected = "underflowed balance while debiting value circuit breaker")]
     async fn batch_swap_circuit_breaker() {
         let _ = tracing_subscriber::fmt::try_init();
         let storage = TempStorage::new()
@@ -241,15 +251,17 @@ mod tests {
         swap_flow.1 += 0u32.into();
 
         // Set the batch swap flow for the trading pair.
-        state_tx.put_swap_flow(&trading_pair, swap_flow.clone());
+        state_tx
+            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .await
+            .unwrap();
         state_tx.apply();
 
-        // This call should panic due to the outflow of gn not being covered by the circuit breaker.
         let routing_params = state.routing_params().await.unwrap();
+        // This call should panic due to the outflow of gn not being covered by the circuit breaker.
         state
             .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
             .await
             .expect("unable to process batch swaps");
     }
 }
-*/

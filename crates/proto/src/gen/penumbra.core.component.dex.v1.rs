@@ -1444,6 +1444,48 @@ impl ::prost::Name for EventArbExecution {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+/// Indicates that value was added to the DEX.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerCredit {
+    /// The asset ID being deposited into the DEX.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the DEX.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the DEX.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerCredit {
+    const NAME: &'static str = "EventValueCircuitBreakerCredit";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+/// Indicates that value is leaving the DEX.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerDebit {
+    /// The asset ID being deposited into the DEX.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the DEX.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the DEX.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerDebit {
+    const NAME: &'static str = "EventValueCircuitBreakerDebit";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DexParameters {
