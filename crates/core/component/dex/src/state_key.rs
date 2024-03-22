@@ -4,11 +4,11 @@ use crate::{lp::position, DirectedTradingPair, TradingPair};
 
 pub mod config {
     pub fn dex_params() -> &'static str {
-        "sct/config/dex_params"
+        "dex/config/dex_params"
     }
 
     pub fn dex_params_updated() -> &'static str {
-        "sct/config/dex_params_updated"
+        "dex/config/dex_params_updated"
     }
 }
 
