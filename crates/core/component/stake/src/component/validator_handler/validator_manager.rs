@@ -1,22 +1,19 @@
 use {
-    super::{validator_store::ValidatorPoolTracker, ValidatorDataRead, ValidatorDataWrite},
     crate::{
         component::{
             metrics,
             stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
+            validator_handler::{
+                validator_store::ValidatorPoolTracker, ValidatorDataRead, ValidatorDataWrite,
+            },
             StateReadExt as _, StateWriteExt as _,
         },
         rate::{BaseRateData, RateData},
         state_key,
         validator::{self, BondingState::*, State, State::*, Validator},
         DelegationToken, IdentityKey, Penalty, Uptime,
-
-    component::{
-        metrics,
-        stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
-        validator_handler::ValidatorDataWrite,
     },
-    anyhow::Result,
+    anyhow::{ensure, Result},
     async_trait::async_trait,
     cnidarium::StateWrite,
     futures::StreamExt as _,
@@ -24,6 +21,7 @@ use {
     penumbra_num::Amount,
     penumbra_proto::StateWriteProto,
     penumbra_sct::component::clock::{EpochManager, EpochRead},
+    penumbra_sct::component::StateReadExt as _,
     penumbra_shielded_pool::component::AssetRegistry,
     sha2::{Digest as _, Sha256},
     std::collections::BTreeMap,
