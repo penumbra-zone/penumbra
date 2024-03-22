@@ -124,6 +124,31 @@ message TransactionPerspective {
   }
   // Any relevant extended metadata, indexed by asset id.
   repeated ExtendedMetadataById extended_metadata = 30;
+
+  // Associates a nullifier with the transaction ID that created the nullified state commitment.
+  //
+  // Note: this is _not_ the transaction ID that revealed the nullifier.
+  //
+  // Allows walking backwards from a spend to the transaction that created the note.
+  message CreationTransactionIdByNullifier {
+    component.sct.v1.Nullifier nullifier = 1;
+    txhash.v1.TransactionId transaction_id = 2;
+  }
+  repeated CreationTransactionIdByNullifier creation_transaction_ids_by_nullifier = 40;
+
+  // Associates a commitment with the transaction ID that eventually nullified it.
+  //
+  // Allows walking forwards from an output to the transaction that spent the note.
+  message NullificationTransactionIdByCommitment {
+    crypto.tct.v1.StateCommitment commitment = 1;
+    txhash.v1.TransactionId transaction_id = 2;
+  }
+  repeated NullificationTransactionIdByCommitment nullification_transaction_ids_by_commitment = 50;
+
+  // Any relevant BatchSwapOutputData to the transaction.
+  //
+  // This can be used to fill in information about swap outputs.
+  repeated component.dex.v1.BatchSwapOutputData batch_swap_output_data = 60;
 }
 
 message PayloadKeyWithCommitment {

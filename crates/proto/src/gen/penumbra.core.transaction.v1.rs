@@ -207,6 +207,21 @@ pub struct TransactionPerspective {
     pub extended_metadata: ::prost::alloc::vec::Vec<
         transaction_perspective::ExtendedMetadataById,
     >,
+    #[prost(message, repeated, tag = "40")]
+    pub creation_transaction_ids_by_nullifier: ::prost::alloc::vec::Vec<
+        transaction_perspective::CreationTransactionIdByNullifier,
+    >,
+    #[prost(message, repeated, tag = "50")]
+    pub nullification_transaction_ids_by_commitment: ::prost::alloc::vec::Vec<
+        transaction_perspective::NullificationTransactionIdByCommitment,
+    >,
+    /// Any relevant BatchSwapOutputData to the transaction.
+    ///
+    /// This can be used to fill in information about swap outputs.
+    #[prost(message, repeated, tag = "60")]
+    pub batch_swap_output_data: ::prost::alloc::vec::Vec<
+        super::super::component::dex::v1::BatchSwapOutputData,
+    >,
 }
 /// Nested message and enum types in `TransactionPerspective`.
 pub mod transaction_perspective {
@@ -220,6 +235,56 @@ pub mod transaction_perspective {
     }
     impl ::prost::Name for ExtendedMetadataById {
         const NAME: &'static str = "ExtendedMetadataById";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionPerspective.{}", Self::NAME
+            )
+        }
+    }
+    /// Associates a nullifier with the transaction ID that created the nullified state commitment.
+    ///
+    /// Note: this is *not* the transaction ID that revealed the nullifier.
+    ///
+    /// Allows walking backwards from a spend to the transaction that created the note.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct CreationTransactionIdByNullifier {
+        #[prost(message, optional, tag = "1")]
+        pub nullifier: ::core::option::Option<
+            super::super::super::component::sct::v1::Nullifier,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for CreationTransactionIdByNullifier {
+        const NAME: &'static str = "CreationTransactionIdByNullifier";
+        const PACKAGE: &'static str = "penumbra.core.transaction.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.transaction.v1.TransactionPerspective.{}", Self::NAME
+            )
+        }
+    }
+    /// Associates a commitment with the transaction ID that eventually nullified it.
+    ///
+    /// Allows walking forwards from an output to the transaction that spent the note.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct NullificationTransactionIdByCommitment {
+        #[prost(message, optional, tag = "1")]
+        pub commitment: ::core::option::Option<
+            super::super::super::super::crypto::tct::v1::StateCommitment,
+        >,
+        #[prost(message, optional, tag = "2")]
+        pub transaction_id: ::core::option::Option<
+            super::super::super::txhash::v1::TransactionId,
+        >,
+    }
+    impl ::prost::Name for NullificationTransactionIdByCommitment {
+        const NAME: &'static str = "NullificationTransactionIdByCommitment";
         const PACKAGE: &'static str = "penumbra.core.transaction.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(

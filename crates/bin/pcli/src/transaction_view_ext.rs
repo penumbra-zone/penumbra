@@ -221,10 +221,7 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::Swap(swap) => {
                     // Typical swaps are one asset for another, but we can't know that for sure.
                     match swap {
-                        SwapView::Visible {
-                            swap: _,
-                            swap_plaintext,
-                        } => {
+                        SwapView::Visible { swap_plaintext, .. } => {
                             let (from_asset, from_value, to_asset) = match (
                                 swap_plaintext.delta_1_i.value(),
                                 swap_plaintext.delta_2_i.value(),
@@ -273,6 +270,7 @@ impl TransactionViewExt for TransactionView {
                             swap_claim,
                             output_1,
                             output_2,
+                            swap_tx: _,
                         } => {
                             // View service can't see SwapClaims: https://github.com/penumbra-zone/penumbra/issues/2547
                             dbg!(swap_claim);
