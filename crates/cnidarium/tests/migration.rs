@@ -775,7 +775,7 @@ mod proptests {
 
             tracing::debug!(
                 prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
+                key = storage_key.truncated_key(),
                 ?key_hash,
                 ?op,
                 ?phase,
@@ -804,7 +804,7 @@ mod proptests {
 
             tracing::debug!(
                 prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
+                key = storage_key.truncated_key(),
                 ?key_hash,
                 ?phase,
                 "checking proofs"
@@ -831,7 +831,7 @@ mod proptests {
                 num_proofs = proof.proofs.len(),
                 spec_len = specs.len(),
                 ?key_hash,
-                abridged_key = storage_key.abridged_key(),
+                truncated_key = storage_key.truncated_key(),
                 is_existence = reference_value.is_some(),
                 "proof verification"
             );
@@ -1044,7 +1044,7 @@ mod proptests {
 
             tracing::debug!(
                 prefix = storage_key.prefix(),
-                key = &storage_key.abridged_key(),
+                key = &storage_key.truncated_key(),
                 ?key_hash,
                 ?op,
                 "nex: checking proofs"
@@ -1073,7 +1073,7 @@ mod proptests {
                 num_proofs = proof.proofs.len(),
                 spec_len = specs.len(),
                 ?key_hash,
-                abridged_key = &storage_key.abridged_key(),
+                truncated_key = &storage_key.truncated_key(),
                 "nex: proof verification"
             );
 
@@ -1143,7 +1143,7 @@ mod proptests {
             }
         }
 
-        fn abridged_key(&self) -> String {
+        fn truncated_key(&self) -> String {
             self.key.chars().take(5).collect()
         }
 
