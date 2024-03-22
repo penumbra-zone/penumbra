@@ -438,7 +438,7 @@ mod tests {
     use crate::{
         memo::MemoPlaintext,
         plan::{CluePlan, DetectionDataPlan, MemoPlan, TransactionPlan},
-        TransactionParameters, WitnessData,
+        ActionPlan, TransactionParameters, WitnessData,
     };
 
     /// This isn't an exhaustive test, but we don't currently have a
@@ -505,7 +505,7 @@ mod tests {
         let mut rng = OsRng;
 
         let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
-        let plan = TransactionPlan {
+        let mut plan: TransactionPlan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
@@ -532,6 +532,10 @@ mod tests {
             }),
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
+
+        // Implement canonical ordering to the action plans to reduce client distinguishability.
+        plan.actions
+            .sort_by_key(|action: &ActionPlan| action.variant_index());
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
