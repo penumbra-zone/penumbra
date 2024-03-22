@@ -633,7 +633,7 @@ async fn test_substore_migration() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "migration-proptests")]
+// #[cfg(feature = "migration-proptests")]
 mod proptests {
     use proptest::{
         arbitrary::any,
@@ -649,7 +649,7 @@ mod proptests {
     };
     use test_strategy::proptest;
 
-    use cnidarium::{StateDelta, StateWrite as _, Storage};
+    use cnidarium::{StateDelta, StateRead, StateWrite as _, Storage};
     use ibc_types::core::commitment::{MerklePath, MerkleRoot};
 
     use crate::{FULL_PROOF_SPECS, MAIN_STORE_PROOF_SPEC};
@@ -760,6 +760,37 @@ mod proptests {
         prop::collection::vec(operation_strategy(), 0..10000)
     }
 
+    fn execute_transcript<S: StateRead>(
+        phase: &str,
+        reference_store: &mut ReferenceStore,
+        delta: &mut StateDelta<S>,
+        transcript: Vec<Operation>,
+    ) {
+        for op in transcript {
+            reference_store.execute(op.clone());
+            let storage_key = op.key();
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = storage_key.abridged_key(),
+                ?key_hash,
+                ?op,
+                ?phase,
+            );
+
+            match op {
+                Operation::Insert(_key, value) => {
+                    delta.put_raw(key_path, value);
+                }
+                Operation::Delete(_key) => {
+                    delta.delete(key_path);
+                }
+            }
+        }
+    }
+
     #[proptest(async = "tokio", cases = 100, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
     async fn test_migration_substores(
         #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
@@ -798,29 +829,12 @@ mod proptests {
         // Premigration: write and delete keys
         let mut premigration_delta = StateDelta::new(storage.latest_snapshot());
 
-        for op in premigration_transcript {
-            reference_store.execute(op.clone());
-            let storage_key = op.key();
-            let key_hash = storage_key.hash();
-            let key_path = storage_key.path();
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
-                ?key_hash,
-                ?op,
-                "premigration"
-            );
-
-            match op {
-                Operation::Insert(_key, value) => {
-                    premigration_delta.put_raw(key_path, value);
-                }
-                Operation::Delete(_key) => {
-                    premigration_delta.delete(key_path);
-                }
-            }
-        }
+        execute_transcript(
+            "premigration",
+            &mut reference_store,
+            &mut premigration_delta,
+            premigration_transcript,
+        );
 
         let premigration_root_hash = storage
             .commit(premigration_delta)
@@ -888,24 +902,12 @@ mod proptests {
 
         // Migration: write and delete keys
         let mut migration_delta = StateDelta::new(storage.latest_snapshot());
-
-        for op in migration_transcript {
-            reference_store.execute(op.clone());
-            let key = op.key();
-            let key_path = key.path();
-            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
-
-            tracing::debug!(prefix = %key.prefix(), key = key.abridged_key(), ?key_hash, ?op, "migration");
-
-            match op {
-                Operation::Insert(_key, value) => {
-                    migration_delta.put_raw(key_path, value.clone());
-                }
-                Operation::Delete(_key) => {
-                    migration_delta.delete(key_path);
-                }
-            }
-        }
+        execute_transcript(
+            "migration",
+            &mut reference_store,
+            &mut migration_delta,
+            migration_transcript,
+        );
 
         let migration_root_hash = storage
             .commit_in_place(migration_delta)
@@ -991,30 +993,12 @@ mod proptests {
 
         // Post-migration: write new keys!
         let mut postmigration_delta = StateDelta::new(storage.latest_snapshot());
-
-        for op in postmigration_transcript {
-            reference_store.execute(op.clone());
-            let storage_key = op.key();
-            let key_hash = storage_key.hash();
-            let key_path = storage_key.path();
-
-            tracing::debug!(
-                prefix = storage_key.prefix(),
-                key = storage_key.abridged_key(),
-                ?key_hash,
-                ?op,
-                "postmigration"
-            );
-
-            match op {
-                Operation::Insert(_key, value) => {
-                    postmigration_delta.put_raw(key_path, value);
-                }
-                Operation::Delete(_key) => {
-                    postmigration_delta.delete(key_path);
-                }
-            }
-        }
+        execute_transcript(
+            "postmigration",
+            &mut reference_store,
+            &mut postmigration_delta,
+            postmigration_transcript,
+        );
 
         let postmigration_root_hash = storage
             .commit(postmigration_delta)
