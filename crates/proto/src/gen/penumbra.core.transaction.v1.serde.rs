@@ -1185,6 +1185,12 @@ impl serde::Serialize for AuthorizationData {
         if !self.delegator_vote_auths.is_empty() {
             len += 1;
         }
+        if self.validator_definition_auth.is_some() {
+            len += 1;
+        }
+        if self.validator_vote_auth.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.transaction.v1.AuthorizationData", len)?;
         if let Some(v) = self.effect_hash.as_ref() {
             struct_ser.serialize_field("effectHash", v)?;
@@ -1194,6 +1200,12 @@ impl serde::Serialize for AuthorizationData {
         }
         if !self.delegator_vote_auths.is_empty() {
             struct_ser.serialize_field("delegatorVoteAuths", &self.delegator_vote_auths)?;
+        }
+        if let Some(v) = self.validator_definition_auth.as_ref() {
+            struct_ser.serialize_field("validatorDefinitionAuth", v)?;
+        }
+        if let Some(v) = self.validator_vote_auth.as_ref() {
+            struct_ser.serialize_field("validatorVoteAuth", v)?;
         }
         struct_ser.end()
     }
@@ -1211,6 +1223,10 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
             "spendAuths",
             "delegator_vote_auths",
             "delegatorVoteAuths",
+            "validator_definition_auth",
+            "validatorDefinitionAuth",
+            "validator_vote_auth",
+            "validatorVoteAuth",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1218,6 +1234,8 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
             EffectHash,
             SpendAuths,
             DelegatorVoteAuths,
+            ValidatorDefinitionAuth,
+            ValidatorVoteAuth,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1243,6 +1261,8 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                             "effectHash" | "effect_hash" => Ok(GeneratedField::EffectHash),
                             "spendAuths" | "spend_auths" => Ok(GeneratedField::SpendAuths),
                             "delegatorVoteAuths" | "delegator_vote_auths" => Ok(GeneratedField::DelegatorVoteAuths),
+                            "validatorDefinitionAuth" | "validator_definition_auth" => Ok(GeneratedField::ValidatorDefinitionAuth),
+                            "validatorVoteAuth" | "validator_vote_auth" => Ok(GeneratedField::ValidatorVoteAuth),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1265,6 +1285,8 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                 let mut effect_hash__ = None;
                 let mut spend_auths__ = None;
                 let mut delegator_vote_auths__ = None;
+                let mut validator_definition_auth__ = None;
+                let mut validator_vote_auth__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::EffectHash => {
@@ -1285,6 +1307,18 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                             }
                             delegator_vote_auths__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::ValidatorDefinitionAuth => {
+                            if validator_definition_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorDefinitionAuth"));
+                            }
+                            validator_definition_auth__ = map_.next_value()?;
+                        }
+                        GeneratedField::ValidatorVoteAuth => {
+                            if validator_vote_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorVoteAuth"));
+                            }
+                            validator_vote_auth__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1294,6 +1328,8 @@ impl<'de> serde::Deserialize<'de> for AuthorizationData {
                     effect_hash: effect_hash__,
                     spend_auths: spend_auths__.unwrap_or_default(),
                     delegator_vote_auths: delegator_vote_auths__.unwrap_or_default(),
+                    validator_definition_auth: validator_definition_auth__,
+                    validator_vote_auth: validator_vote_auth__,
                 })
             }
         }

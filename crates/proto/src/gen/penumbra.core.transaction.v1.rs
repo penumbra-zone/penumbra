@@ -489,6 +489,20 @@ pub struct AuthorizationData {
     pub delegator_vote_auths: ::prost::alloc::vec::Vec<
         super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
     >,
+    /// The required validator definition authorization, if this is an authorization of a validator
+    /// definition. In this case, no effect hash, spend auths, delegator vote auths, or validator vote
+    /// auth are possible.
+    #[prost(message, optional, tag = "4")]
+    pub validator_definition_auth: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
+    /// The required validator vote authorization, if this is an authorization of a validator vote. In
+    /// this case, no effect hash, spend auths, delegator vote auths, or validator definition auth  are
+    /// possible.
+    #[prost(message, optional, tag = "5")]
+    pub validator_vote_auth: ::core::option::Option<
+        super::super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
 }
 impl ::prost::Name for AuthorizationData {
     const NAME: &'static str = "AuthorizationData";

@@ -235,6 +235,14 @@ message AuthorizationData {
   // The required delegator vote authorizations, returned in the same order as the
   // DelegatorVote actions in the original request.
   repeated crypto.decaf377_rdsa.v1.SpendAuthSignature delegator_vote_auths = 3;
+  // The required validator definition authorization, if this is an authorization of a validator
+  // definition. In this case, no effect hash, spend auths, delegator vote auths, or validator vote
+  // auth are possible.
+  crypto.decaf377_rdsa.v1.SpendAuthSignature validator_definition_auth = 4;
+  // The required validator vote authorization, if this is an authorization of a validator vote. In
+  // this case, no effect hash, spend auths, delegator vote auths, or validator definition auth  are
+  // possible.
+  crypto.decaf377_rdsa.v1.SpendAuthSignature validator_vote_auth = 5;
 }
 
 // The data required for proving when building a transaction from a plan.
