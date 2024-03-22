@@ -338,8 +338,14 @@ pub struct CoordinatorState1 {
 pub struct CoordinatorState2 {
     request: SigningRequest,
     my_round2_reply: FollowerRound2,
-    effect_hash: EffectHash,
+    to_be_signed: ToBeSigned,
     signing_packages: Vec<frost::SigningPackage>,
+}
+
+enum ToBeSigned {
+    EffectHash(EffectHash),
+    ValidatorDefinitionBytes(Vec<u8>),
+    ValidatorVoteBytes(Vec<u8>),
 }
 
 pub struct FollowerState {
@@ -404,7 +410,7 @@ pub fn coordinator_round2(
     let state = CoordinatorState2 {
         request: state.request,
         my_round2_reply,
-        effect_hash,
+        to_be_signed: ToBeSigned::EffectHash(effect_hash),
         signing_packages,
     };
     Ok((reply, state))
@@ -432,8 +438,12 @@ pub fn coordinator_round3(
         }
     }
 
+    // TODO: generalize this to handle the other kinds of signing requests
     let SigningRequest::TransactionPlan(plan) = state.request else {
         todo!("effect hash for non-transaction requests");
+    };
+    let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
+        todo!("missing effect hash for transaction request");
     };
 
     let mut spend_auths = plan
@@ -454,7 +464,7 @@ pub fn coordinator_round3(
     let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
     Ok(AuthorizationData::Transaction(
         TransactionAuthorizationData {
-            effect_hash: Some(state.effect_hash),
+            effect_hash: Some(effect_hash),
             spend_auths,
             delegator_vote_auths,
         },

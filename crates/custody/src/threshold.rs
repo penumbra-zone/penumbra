@@ -40,9 +40,10 @@ where
 /// interface, but it can also be plugged in with more general backends.
 #[async_trait]
 pub trait Terminal {
-    /// Have a user confirm that they want to sign this transaction.
+    /// Have a user confirm that they want to sign this transaction or other data (e.g. validator
+    /// definition, validator vote).
     ///
-    /// In an actual terminal, this should display the transaction in a human readable
+    /// In an actual terminal, this should display the data to be signed in a human readable
     /// form, and then get feedback from the user.
     async fn confirm_request(&self, request: &SigningRequest) -> Result<bool>;
 
@@ -587,21 +588,24 @@ mod test {
                 pre_authorizations: Vec::new(),
             })
             .await?;
+        let tx_authorization_data = match authorization_data {
+            AuthorizationData::Transaction(tx) => tx,
+            _ => panic!("expected transaction authorization data"),
+        };
         assert_eq!(
             plan.effect_hash(&fvk)?,
-            authorization_data
+            tx_authorization_data
                 .effect_hash
                 .expect("effect hash not present")
         );
         // The transaction plan only has spends
         for (randomizer, sig) in plan
             .spend_plans()
-            .into_iter()
             .map(|x| x.randomizer)
-            .zip(authorization_data.spend_auths)
+            .zip(tx_authorization_data.spend_auths)
         {
             fvk.spend_verification_key().randomize(&randomizer).verify(
-                authorization_data
+                tx_authorization_data
                     .effect_hash
                     .expect("effect hash not present")
                     .as_bytes(),
