@@ -49,6 +49,7 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    /// Sort the actions by type, using the protobuf field number in the [`Action`]. 
     pub fn sort_actions(mut actions: Vec<Action>) -> Vec<Action> {
         actions.sort_by_key(|action: &Action| action.variant_index());
         actions
