@@ -1,7 +1,14 @@
 use {
     super::{ValidatorDataRead, ValidatorDataWrite, ValidatorManager},
     crate::{
-        component::{metrics, stake::ConsensusIndexRead, StateReadExt as _},
+        component::{
+            metrics,
+            stake::{
+                address::{validator_address, Address},
+                ConsensusIndexRead,
+            },
+            StateReadExt as _,
+        },
         validator, IdentityKey, Uptime,
     },
     anyhow::Result,
@@ -9,7 +16,6 @@ use {
     cnidarium::StateWrite,
     futures::StreamExt as _,
     penumbra_sct::component::clock::EpochRead,
-    sha2::{Digest as _, Sha256},
     std::collections::BTreeMap,
     tendermint::abci::types::CommitInfo,
     tokio::task::{AbortHandle, JoinSet},
@@ -43,7 +49,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
             .votes
             .iter()
             .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
-            .collect::<BTreeMap<[u8; 20], bool>>();
+            .collect::<BTreeMap<Address, bool>>();
 
         // Since we don't have a lookup from "addresses" to identity keys,
         // iterate over our app's validators, and match them up with the vote data.
@@ -59,10 +65,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // independent, this doesn't introduce any nondeterminism into the complete state change.
         while let Some(data) = lookups.join_next().await.transpose()? {
             if let Some((identity_key, consensus_key, mut uptime)) = data? {
-                // for some reason last_commit_info has truncated sha256 hashes
-                let addr: [u8; 20] =
-                    Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20].try_into()?;
-
+                let addr = validator_address(&consensus_key);
                 let voted = did_address_vote
                     .get(&addr)
                     .cloned()
