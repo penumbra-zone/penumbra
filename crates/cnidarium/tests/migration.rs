@@ -709,7 +709,7 @@ mod proptests {
             proptest::collection::vec(any::<char>(), 0..=999),
         )
             .prop_map(|(first_char, mut vec)| {
-                vec.insert(0, first_char); // Insert the first char at the beginning
+                vec.insert(0, first_char);
                 vec.into_iter().collect()
             })
     }
@@ -719,7 +719,6 @@ mod proptests {
         let substore_strategies: Vec<BoxedStrategy<_>> =
             prefixes.into_iter().map(|s| Just(s).boxed()).collect();
 
-        // Use one_of to dynamically create a strategy from a slice of strategies
         let substore_strategy = prop::strategy::Union::new_weighted(
             substore_strategies.into_iter().map(|s| (1, s)).collect(),
         );
@@ -732,7 +731,9 @@ mod proptests {
     }
 
     fn value_strategy() -> impl Strategy<Value = Vec<u8>> {
-        prop::collection::vec(any::<u8>(), 1..1024)
+        // Generate a random byte array of length 1..10
+        // The values don't actually matter for the tests.
+        prop::collection::vec(any::<u8>(), 1..10)
     }
 
     fn operation_strategy() -> impl Strategy<Value = Operation> {
@@ -759,7 +760,7 @@ mod proptests {
         prop::collection::vec(operation_strategy(), 0..10000)
     }
 
-    #[proptest(async = "tokio", cases = 10, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
+    #[proptest(async = "tokio", cases = 100, failure_persistence = Some(Box::new(FileFailurePersistence::WithSource("regressions"))))]
     async fn test_migration_substores(
         #[strategy(operations_strategy())] premigration_transcript: Vec<Operation>,
         #[strategy(operations_strategy())] migration_transcript: Vec<Operation>,
@@ -826,7 +827,7 @@ mod proptests {
             .await
             .expect("can commit premigration");
         let premigration_version = storage.latest_version();
-        prop_assert_eq!(premigration_version, 1, "premigration version should be 1");
+        prop_assert_eq!(premigration_version, 0, "premigration version should be 0");
 
         tracing::info!(
             ?premigration_root_hash,
@@ -911,7 +912,7 @@ mod proptests {
             .await
             .expect("can commit migration");
         let migration_version = storage.latest_version();
-        prop_assert_eq!(migration_version, 1, "migration version should be 1");
+        prop_assert_eq!(migration_version, 0, "migration version should be 0");
         prop_assert_ne!(
             migration_root_hash,
             premigration_root_hash,
@@ -1028,7 +1029,7 @@ mod proptests {
         let postmigration_version = storage.latest_version();
         prop_assert_eq!(
             postmigration_version,
-            2,
+            1,
             "postmigration version should be 1"
         );
         prop_assert_ne!(
@@ -1158,8 +1159,8 @@ mod proptests {
     impl Debug for Operation {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             match self {
-                Operation::Insert(_, _) => write!(f, "Insert(..)"),
-                Operation::Delete(_) => write!(f, "Delete(..)"),
+                Operation::Insert(_, _) => write!(f, "Insert"),
+                Operation::Delete(_) => write!(f, "Delete"),
             }
         }
     }
