@@ -4,6 +4,8 @@ package penumbra.custody.v1;
 
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/component/governance/v1/governance.proto";
 
 // The custody protocol is used by a wallet client to request authorization for
 // a transaction they've constructed.
@@ -19,6 +21,12 @@ import "penumbra/core/transaction/v1/transaction.proto";
 service CustodyService {
   // Requests authorization of the transaction with the given description.
   rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+
+  // Requests authorization of the given validator definition update.
+  rpc AuthorizeValidatorDefinition(AuthorizeValidatorDefinitionRequest) returns (AuthorizeValidatorDefinitionResponse);
+
+  // Requests authorization of the given validator vote.
+  rpc AuthorizeValidatorVote(AuthorizeValidatorVoteRequest) returns (AuthorizeValidatorVoteResponse);
 
   // Requests the full viewing key from the custodian.
   //
@@ -49,6 +57,40 @@ message AuthorizeRequest {
 }
 
 message AuthorizeResponse {
+  core.transaction.v1.AuthorizationData data = 1;
+}
+
+message AuthorizeValidatorDefinitionRequest {
+  // The validator definition to authorize.
+  core.component.stake.v1.Validator validator_definition = 1;
+
+  // Optionally, pre-authorization data, if required by the custodian.
+  //
+  // Pre-authorization data is backend-specific, and backends are free to ignore it.
+  //
+  // Multiple `PreAuthorization` packets can be included in a single request,
+  // to support multi-party pre-authorizations.
+  repeated PreAuthorization pre_authorizations = 3;
+}
+
+message AuthorizeValidatorDefinitionResponse {
+  core.transaction.v1.AuthorizationData data = 1;
+}
+
+message AuthorizeValidatorVoteRequest {
+  // The validator vote to authorize.
+  core.component.governance.v1.ValidatorVoteBody validator_vote = 1;
+
+  // Optionally, pre-authorization data, if required by the custodian.
+  //
+  // Pre-authorization data is backend-specific, and backends are free to ignore it.
+  //
+  // Multiple `PreAuthorization` packets can be included in a single request,
+  // to support multi-party pre-authorizations.
+  repeated PreAuthorization pre_authorizations = 3;
+}
+
+message AuthorizeValidatorVoteResponse {
   core.transaction.v1.AuthorizationData data = 1;
 }
 
