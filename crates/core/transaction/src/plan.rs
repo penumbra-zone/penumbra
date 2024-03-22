@@ -1,6 +1,7 @@
 //! Declarative transaction plans, used for transaction authorization and
 //! creation.
 
+use crate::action::Action;
 use anyhow::Result;
 use penumbra_dao::{DaoDeposit, DaoOutput, DaoSpend};
 use penumbra_dex::{
@@ -46,6 +47,11 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    pub fn sort_actions(mut actions: Vec<Action>) -> Vec<Action> {
+        actions.sort_by_key(|action: &Action| action.variant_index());
+        actions
+    }
+
     pub fn spend_plans(&self) -> impl Iterator<Item = &SpendPlan> {
         self.actions.iter().filter_map(|action| {
             if let ActionPlan::Spend(s) = action {

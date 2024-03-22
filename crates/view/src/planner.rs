@@ -634,8 +634,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
-        // Order the action plans to reduce client distinguishability.
-        self.plan.actions.sort_by_key(|action: &ActionPlan| action.variant_index());
+        // Implement canonical ordering to the action plans to reduce client distinguishability.
+        self.plan
+            .actions
+            .sort_by_key(|action: &ActionPlan| action.variant_index());
 
         // Clear the planner and pull out the plan to return
         self.balance = Balance::zero();

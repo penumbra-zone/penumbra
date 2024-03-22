@@ -42,8 +42,8 @@ impl TransactionPlan {
             Some(DetectionData { fmd_clues })
         };
 
-        // Order the actions to reduce client distinguishability.
-        actions.sort_by_key(|action: &Action| action.variant_index());
+        // Implement canonical ordering to the actions to reduce client distinguishability.
+        actions = TransactionPlan::sort_actions(actions);
 
         let transaction_body = TransactionBody {
             actions,
