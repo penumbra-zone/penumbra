@@ -9,6 +9,7 @@ use {
             },
             StateReadExt as _,
         },
+        params::StakeParameters,
         validator, IdentityKey, Uptime,
     },
     anyhow::Result,
@@ -64,33 +65,9 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // Note that this will process validator uptime changes in a random order, but because they are all
         // independent, this doesn't introduce any nondeterminism into the complete state change.
         while let Some(data) = lookups.join_next().await.transpose()? {
-            if let Some((identity_key, consensus_key, mut uptime)) = data? {
-                let addr = validator_address(&consensus_key);
-                let voted = did_address_vote
-                    .get(&addr)
-                    .cloned()
-                    // If the height is `1`, then the `LastCommitInfo` refers to the genesis block,
-                    // which has no signers -- so we'll mark all validators as having signed.
-                    // https://github.com/penumbra-zone/penumbra/issues/1050
-                    .unwrap_or(height == 1);
-
-                tracing::debug!(
-                    ?voted,
-                    num_missed_blocks = ?uptime.num_missed_blocks(),
-                    ?identity_key,
-                    ?params.missed_blocks_maximum,
-                    "recorded vote info"
-                );
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(uptime.num_missed_blocks() as f64);
-
-                uptime.mark_height_as_signed(height, voted)?;
-                if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
-                    self.set_validator_state(&identity_key, validator::State::Jailed)
-                        .await?;
-                } else {
-                    self.set_validator_uptime(&identity_key, uptime);
-                }
+            if let Some(validator_info) = data? {
+                self.process_vote(validator_info, &did_address_vote, &params, height)
+                    .await?;
             }
         }
 
@@ -153,6 +130,43 @@ pub trait ValidatorUptimeTracker: StateWrite {
             }
             .instrument(span),
         )
+    }
+
+    async fn process_vote(
+        &mut self,
+        (identity_key, consensus_key, mut uptime): ValidatorInformation,
+        did_address_vote: &BTreeMap<Address, bool>,
+        params: &StakeParameters,
+        height: u64,
+    ) -> anyhow::Result<()> {
+        let addr = validator_address(&consensus_key);
+        let voted = did_address_vote
+            .get(&addr)
+            .cloned()
+            // If the height is `1`, then the `LastCommitInfo` refers to the genesis block,
+            // which has no signers -- so we'll mark all validators as having signed.
+            // https://github.com/penumbra-zone/penumbra/issues/1050
+            .unwrap_or(height == 1);
+
+        tracing::debug!(
+            ?voted,
+            num_missed_blocks = ?uptime.num_missed_blocks(),
+            ?identity_key,
+            ?params.missed_blocks_maximum,
+            "recorded vote info"
+        );
+        metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
+            .increment(uptime.num_missed_blocks() as f64);
+
+        uptime.mark_height_as_signed(height, voted)?;
+        if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
+            self.set_validator_state(&identity_key, validator::State::Jailed)
+                .await?;
+        } else {
+            self.set_validator_uptime(&identity_key, uptime);
+        }
+
+        Ok(())
     }
 }
 
