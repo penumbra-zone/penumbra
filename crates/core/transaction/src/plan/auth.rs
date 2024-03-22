@@ -3,7 +3,7 @@ use rand::{CryptoRng, RngCore};
 
 use penumbra_keys::keys::SpendKey;
 
-use crate::{AuthorizationData, TransactionPlan};
+use crate::{TransactionAuthorizationData, TransactionPlan};
 
 impl TransactionPlan {
     /// Authorize this [`TransactionPlan`] with the provided [`SpendKey`].
@@ -13,7 +13,7 @@ impl TransactionPlan {
         &self,
         mut rng: R,
         sk: &SpendKey,
-    ) -> Result<AuthorizationData> {
+    ) -> Result<TransactionAuthorizationData> {
         let effect_hash = self.effect_hash(sk.full_viewing_key())?;
         let mut spend_auths = Vec::new();
         let mut delegator_vote_auths = Vec::new();
@@ -30,7 +30,7 @@ impl TransactionPlan {
             let auth_sig = rsk.sign(&mut rng, effect_hash.as_ref());
             delegator_vote_auths.push(auth_sig);
         }
-        Ok(AuthorizationData {
+        Ok(TransactionAuthorizationData {
             effect_hash: Some(effect_hash),
             spend_auths,
             delegator_vote_auths,

@@ -7,7 +7,9 @@ use penumbra_txhash::AuthorizingData;
 
 use super::TransactionPlan;
 use crate::ActionPlan;
-use crate::{action::Action, AuthorizationData, Transaction, TransactionBody, WitnessData};
+use crate::{
+    action::Action, Transaction, TransactionAuthorizationData, TransactionBody, WitnessData,
+};
 
 impl TransactionPlan {
     /// Builds a [`TransactionPlan`] by slotting in the
@@ -46,7 +48,7 @@ impl TransactionPlan {
     /// and assemble the transaction.
     pub fn apply_auth_data(
         &self,
-        auth_data: &AuthorizationData,
+        auth_data: &TransactionAuthorizationData,
         mut transaction: Transaction,
     ) -> Result<Transaction> {
         // Do some basic input sanity-checking.
@@ -117,7 +119,7 @@ impl TransactionPlan {
         self,
         full_viewing_key: &FullViewingKey,
         witness_data: &WitnessData,
-        auth_data: &AuthorizationData,
+        auth_data: &TransactionAuthorizationData,
     ) -> Result<Transaction> {
         // TODO: stream progress updates
         // 1. Build each action.
@@ -153,7 +155,7 @@ impl TransactionPlan {
         self,
         full_viewing_key: &FullViewingKey,
         witness_data: &WitnessData,
-        auth_data: &AuthorizationData,
+        auth_data: &TransactionAuthorizationData,
     ) -> Result<Transaction> {
         // Clone the witness data into an Arc so it can be shared between tasks.
         let witness_data = std::sync::Arc::new(witness_data.clone());

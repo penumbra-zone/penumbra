@@ -24,7 +24,9 @@ use penumbra_proto::{DomainType, StateWriteProto as _};
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::AssetRegistry;
-use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
+use penumbra_transaction::{
+    Transaction, TransactionAuthorizationData, TransactionPlan, WitnessData,
+};
 
 use crate::action_handler::AppActionHandler;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;
@@ -370,7 +372,7 @@ async fn build_community_pool_transaction(
             anchor: penumbra_tct::Tree::new().root(),
             state_commitment_proofs: Default::default(),
         },
-        &AuthorizationData {
+        &TransactionAuthorizationData {
             effect_hash: Some(effect_hash),
             spend_auths: Default::default(),
             delegator_vote_auths: Default::default(),

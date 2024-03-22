@@ -5,12 +5,12 @@ use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::{AuthorizationData, TransactionPlan};
+use penumbra_transaction::{AuthorizationData, TransactionAuthorizationData};
 
 use crate::AuthorizeRequest;
 
 pub use self::config::Config;
-use self::sign::SigningRequest;
+pub use self::sign::SigningRequest;
 
 mod config;
 mod dkg;
@@ -81,7 +81,7 @@ pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
         from_json(&string)?
     };
     if !terminal
-        .confirm_request(&round1_message.signing_request())
+        .confirm_request(round1_message.signing_request())
         .await?
     {
         return Ok(());
@@ -316,6 +316,8 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
+    use penumbra_transaction::TransactionPlan;
+
     use tokio::sync;
 
     use super::*;
@@ -327,7 +329,7 @@ mod test {
 
     #[async_trait]
     impl Terminal for FollowerTerminal {
-        async fn confirm_request(&self, request: &SigningRequest) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 

@@ -54,7 +54,7 @@ use penumbra_proto::{
 use penumbra_stake::rate::RateData;
 use penumbra_tct::{Proof, StateCommitment};
 use penumbra_transaction::{
-    AuthorizationData, Transaction, TransactionPerspective, TransactionPlan, WitnessData,
+    Transaction, TransactionAuthorizationData, TransactionPerspective, TransactionPlan, WitnessData,
 };
 
 use crate::{worker::Worker, Planner, Storage};
@@ -1441,7 +1441,7 @@ impl ViewService for ViewServer {
             .map_err(|e: anyhow::Error| e.context("could not decode transaction plan"))
             .map_err(|e| tonic::Status::invalid_argument(format!("{:#}", e)))?;
 
-        let authorization_data: AuthorizationData = authorization_data
+        let authorization_data: TransactionAuthorizationData = authorization_data
             .ok_or_else(|| tonic::Status::invalid_argument("missing authorization data"))?
             .try_into()
             .map_err(|e: anyhow::Error| e.context("could not decode authorization data"))

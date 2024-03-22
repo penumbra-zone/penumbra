@@ -32,7 +32,7 @@ pub mod plan;
 pub mod view;
 
 pub use action::Action;
-pub use auth_data::AuthorizationData;
+pub use auth_data::{AuthorizationData, TransactionAuthorizationData};
 pub use detection_data::DetectionData;
 pub use error::Error;
 pub use is_action::IsAction;

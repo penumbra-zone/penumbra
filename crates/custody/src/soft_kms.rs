@@ -2,7 +2,7 @@
 //! presents as an asynchronous signer.
 
 use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
-use penumbra_transaction::AuthorizationData;
+use penumbra_transaction::TransactionAuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
 
@@ -26,7 +26,7 @@ impl SoftKms {
 
     /// Attempt to authorize the requested [`TransactionPlan`](penumbra_transaction::TransactionPlan).
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
-    pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
+    pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<TransactionAuthorizationData> {
         tracing::debug!(?request.plan);
 
         for policy in &self.config.auth_policy {

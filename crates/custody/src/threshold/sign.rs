@@ -12,7 +12,7 @@ use frost::round1::SigningCommitments;
 use penumbra_governance::ValidatorVoteBody;
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
 use penumbra_stake::validator::Validator;
-use penumbra_transaction::{AuthorizationData, TransactionPlan};
+use penumbra_transaction::{AuthorizationData, TransactionAuthorizationData, TransactionPlan};
 use penumbra_txhash::EffectHash;
 
 use super::config::Config;
@@ -452,11 +452,13 @@ pub fn coordinator_round3(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
-    Ok(AuthorizationData {
-        effect_hash: Some(state.effect_hash),
-        spend_auths,
-        delegator_vote_auths,
-    })
+    Ok(AuthorizationData::Transaction(
+        TransactionAuthorizationData {
+            effect_hash: Some(state.effect_hash),
+            spend_auths,
+            delegator_vote_auths,
+        },
+    ))
 }
 
 pub fn follower_round1(
