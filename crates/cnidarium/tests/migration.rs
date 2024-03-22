@@ -638,7 +638,7 @@ mod proptests {
     use proptest::{
         arbitrary::any,
         prelude::prop,
-        prop_assert, prop_assert_eq, prop_oneof,
+        prop_assert, prop_assert_eq, prop_assert_ne, prop_oneof,
         strategy::{BoxedStrategy, Just, Strategy},
         test_runner::FileFailurePersistence,
     };
@@ -649,7 +649,7 @@ mod proptests {
     };
     use test_strategy::proptest;
 
-    use cnidarium::{EscapedByteSlice, StateDelta, StateWrite as _, Storage};
+    use cnidarium::{StateDelta, StateWrite as _, Storage};
     use ibc_types::core::commitment::{MerklePath, MerkleRoot};
 
     use crate::{FULL_PROOF_SPECS, MAIN_STORE_PROOF_SPEC};
@@ -825,7 +825,14 @@ mod proptests {
             .commit(premigration_delta)
             .await
             .expect("can commit premigration");
-        tracing::info!(key = ?EscapedByteSlice(&premigration_root_hash.0), premigration_len, "premigration operations have been committed");
+        let premigration_version = storage.latest_version();
+        prop_assert_eq!(premigration_version, 1, "premigration version should be 1");
+
+        tracing::info!(
+            ?premigration_root_hash,
+            premigration_len,
+            "premigration operations have been committed"
+        );
 
         for (storage_key, reference_value) in reference_store.final_kv.iter() {
             let key_hash = storage_key.hash();
@@ -900,10 +907,27 @@ mod proptests {
         }
 
         let migration_root_hash = storage
-            .commit(migration_delta)
+            .commit_in_place(migration_delta)
             .await
             .expect("can commit migration");
-        tracing::info!(key = ?EscapedByteSlice(&migration_root_hash.0), migration_len, "migration operations have been committed");
+        let migration_version = storage.latest_version();
+        prop_assert_eq!(migration_version, 1, "migration version should be 1");
+        prop_assert_ne!(
+            migration_root_hash,
+            premigration_root_hash,
+            "migration root hash should be different than the premigration root hash"
+        );
+
+        storage.release().await;
+        let storage = Storage::load(db_path.clone(), substore_prefixes.clone())
+            .await
+            .expect("can reload storage");
+
+        tracing::info!(
+            ?migration_root_hash,
+            migration_len,
+            "migration operations have been committed"
+        );
 
         for (storage_key, reference_value) in reference_store.final_kv.iter() {
             let key_hash = storage_key.hash();
@@ -995,7 +1019,23 @@ mod proptests {
             .commit(postmigration_delta)
             .await
             .expect("can commit postmigration");
-        tracing::info!(key = ?EscapedByteSlice(&postmigration_root_hash.0), num_ops = postmigration_len, "postmigration operations have been committed");
+        tracing::info!(
+            ?postmigration_root_hash,
+            num_ops = postmigration_len,
+            "postmigration operations have been committed"
+        );
+
+        let postmigration_version = storage.latest_version();
+        prop_assert_eq!(
+            postmigration_version,
+            2,
+            "postmigration version should be 1"
+        );
+        prop_assert_ne!(
+            migration_root_hash,
+            postmigration_root_hash,
+            "postmigration root hash should be different than the migration root hash"
+        );
 
         for (storage_key, reference_value) in reference_store.final_kv.iter() {
             let key_hash = storage_key.hash();
@@ -1047,6 +1087,54 @@ mod proptests {
                     .verify_non_membership(&specs, merkle_root, merkle_path)
                     .map_err(|e| tracing::error!(?e, "postmigration: nonexistence proof failed"))
             };
+
+            prop_assert!(proof_verifies.is_ok());
+        }
+
+        // Check random keys that should not exist
+        for op in nonexistence_keys {
+            let storage_key = op.key();
+            let key_hash = storage_key.hash();
+            let key_path = storage_key.path();
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                key = &storage_key.abridged_key(),
+                ?key_hash,
+                ?op,
+                "nex: checking proofs"
+            );
+
+            let result_proof = storage
+                .latest_snapshot()
+                .get_with_proof(storage_key.encode_path())
+                .await
+                .map_err(|e| tracing::error!(?e, "nex: get_with_proof failed"));
+
+            prop_assert!(result_proof.is_ok(), "can get with proof");
+
+            let (retrieved_value, proof) = result_proof.expect("can get with proof");
+            prop_assert!(retrieved_value.is_none(), "key should not exist");
+
+            let merkle_path = storage_key.merkle_path();
+            let merkle_root = MerkleRoot {
+                hash: postmigration_root_hash.0.to_vec(),
+            };
+            let specs = storage_key.proof_spec();
+            let key_hash = jmt::KeyHash::with::<Sha256>(&key_path);
+
+            tracing::debug!(
+                prefix = storage_key.prefix(),
+                num_proofs = proof.proofs.len(),
+                spec_len = specs.len(),
+                ?key_hash,
+                abridged_key = &storage_key.abridged_key(),
+                "nex: proof verification"
+            );
+
+            let proof_verifies = proof
+                .verify_non_membership(&specs, merkle_root, merkle_path)
+                .map_err(|e| tracing::error!(?e, "nonexistence: nonexistence proof failed"));
 
             prop_assert!(proof_verifies.is_ok());
         }
