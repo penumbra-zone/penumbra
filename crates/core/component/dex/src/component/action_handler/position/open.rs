@@ -5,7 +5,7 @@ use cnidarium_component::ActionHandler;
 use penumbra_proto::StateWriteProto as _;
 
 use crate::{
-    component::{PositionManager, PositionRead},
+    component::{PositionManager, PositionRead, ValueCircuitBreaker},
     event,
     lp::{action::PositionOpen, position},
 };
@@ -33,6 +33,13 @@ impl ActionHandler for PositionOpen {
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         // Validate that the position ID doesn't collide
         state.check_position_id_unused(&self.position.id()).await?;
+
+        // Credit the DEX for the inflows from this position.
+        // TODO: in a future PR, split current PositionManager to PositionManagerInner
+        // and fold this into a position open method
+        state.vcb_credit(self.position.reserves_1()).await?;
+        state.vcb_credit(self.position.reserves_2()).await?;
+
         state.put_position(self.position.clone()).await?;
         state.record_proto(event::position_open(self));
         Ok(())

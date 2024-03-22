@@ -18,7 +18,7 @@ use crate::{
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},
-    Arbitrage, PositionManager,
+    Arbitrage, PositionManager, ValueCircuitBreaker,
 };
 
 pub struct Dex {}
@@ -209,12 +209,26 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.object_put(state_key::config::dex_params_updated(), ())
     }
 
-    fn set_output_data(
+    async fn set_output_data(
         &mut self,
         output_data: BatchSwapOutputData,
         swap_execution_1_for_2: Option<SwapExecution>,
         swap_execution_2_for_1: Option<SwapExecution>,
-    ) {
+    ) -> Result<()> {
+        // Debit the DEX for the swap outflows.
+        // Note that since we credited the DEX for _all_ inflows, we need to debit the
+        // unfilled amounts as well as the filled amounts.
+        self.vcb_debit(Value {
+            amount: output_data.unfilled_1 + output_data.lambda_1,
+            asset_id: output_data.trading_pair.asset_1,
+        })
+        .await?;
+        self.vcb_debit(Value {
+            amount: output_data.unfilled_2 + output_data.lambda_2,
+            asset_id: output_data.trading_pair.asset_2,
+        })
+        .await?;
+
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
@@ -247,17 +261,40 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             swap_execution_1_for_2,
             swap_execution_2_for_1,
         ));
+
+        Ok(())
     }
 
     fn set_arb_execution(&mut self, height: u64, execution: SwapExecution) {
         self.put(state_key::arb_execution(height), execution);
     }
 
-    fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
+    async fn put_swap_flow(
+        &mut self,
+        trading_pair: &TradingPair,
+        swap_flow: SwapFlow,
+    ) -> Result<()> {
+        // Credit the DEX for the swap inflows.
+        //
+        // Note that we credit the DEX for _all_ inflows, since we don't know
+        // how much will eventually be filled.
+        self.vcb_credit(Value {
+            amount: swap_flow.0,
+            asset_id: trading_pair.asset_1,
+        })
+        .await?;
+        self.vcb_credit(Value {
+            amount: swap_flow.1,
+            asset_id: trading_pair.asset_2,
+        })
+        .await?;
+
         // TODO: replace with IM struct later
         let mut swap_flows = self.swap_flows();
         swap_flows.insert(*trading_pair, swap_flow);
-        self.object_put(state_key::swap_flows(), swap_flows)
+        self.object_put(state_key::swap_flows(), swap_flows);
+
+        Ok(())
     }
 }
 

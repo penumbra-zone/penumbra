@@ -7,7 +7,7 @@ use decaf377::Fr;
 use penumbra_proto::StateWriteProto;
 
 use crate::{
-    component::{PositionManager, PositionRead},
+    component::{PositionManager, PositionRead, ValueCircuitBreaker},
     event,
     lp::{action::PositionWithdraw, position, Reserves},
 };
@@ -89,6 +89,12 @@ impl ActionHandler for PositionWithdraw {
         // Record an event prior to updating the position state, so we have access to
         // the current reserves.
         state.record_proto(event::position_withdraw(self, &metadata));
+
+        // Debit the DEX for the outflows from this position.
+        // TODO: in a future PR, split current PositionManager to PositionManagerInner
+        // and fold this into a position open method
+        state.vcb_debit(metadata.reserves_1()).await?;
+        state.vcb_debit(metadata.reserves_2()).await?;
 
         // Finally, update the position. This has two steps:
         // - update the state with the correct sequence number;

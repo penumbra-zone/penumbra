@@ -1,5 +1,7 @@
 use std::string::String;
 
+use penumbra_asset::asset;
+
 use crate::{lp::position, DirectedTradingPair, TradingPair};
 
 pub mod config {
@@ -10,6 +12,10 @@ pub mod config {
     pub fn dex_params_updated() -> &'static str {
         "dex/config/dex_params_updated"
     }
+}
+
+pub fn value_balance(asset_id: &asset::Id) -> String {
+    format!("dex/value_balance/{asset_id}")
 }
 
 pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {

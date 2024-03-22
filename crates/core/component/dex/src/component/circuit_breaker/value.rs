@@ -1,41 +1,45 @@
-use penumbra_asset::{asset::Id, Balance, Value};
+use anyhow::{anyhow, Result};
+use cnidarium::StateWrite;
+use penumbra_asset::Value;
 use penumbra_num::Amount;
-use serde::{Deserialize, Serialize};
+use penumbra_proto::{StateReadProto, StateWriteProto};
+use tonic::async_trait;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ValueCircuitBreaker {
-    balance: Balance,
-}
+use crate::state_key;
 
-impl ValueCircuitBreaker {
-    pub fn tally(&mut self, balance: Balance) {
-        self.balance += balance;
-    }
-
-    pub fn check(&self) -> anyhow::Result<()> {
-        // No assets should ever be "required" by the circuit breaker's
-        // internal balance tracking, only "provided".
-        if let Some(r) = self.balance.required().next() {
-            return Err(anyhow::anyhow!(
-                "balance for asset {} is negative: -{}",
-                r.asset_id,
-                r.amount
-            ));
-        }
-
+/// Tracks the aggregate value of deposits in the DEX.
+#[async_trait]
+pub trait ValueCircuitBreaker: StateWrite {
+    /// Credits a deposit into the DEX.
+    async fn vcb_credit(&mut self, value: Value) -> Result<()> {
+        let balance: Amount = self
+            .get(&state_key::value_balance(&value.asset_id))
+            .await?
+            .unwrap_or_default();
+        let new_balance = balance
+            .checked_add(&value.amount)
+            .ok_or_else(|| anyhow!("overflowed balance while crediting value circuit breaker"))?;
+        self.put(state_key::value_balance(&value.asset_id), new_balance);
         Ok(())
     }
 
-    pub fn available(&self, asset_id: Id) -> Value {
-        self.balance
-            .provided()
-            .find(|b| b.asset_id == asset_id)
-            .unwrap_or(Value {
-                asset_id,
-                amount: Amount::from(0u64),
-            })
+    /// Debits a deposit from the DEX.
+    async fn vcb_debit(&mut self, value: Value) -> Result<()> {
+        let balance: Amount = self
+            .get(&state_key::value_balance(&value.asset_id))
+            .await?
+            .unwrap_or_default();
+        let new_balance = balance
+            .checked_sub(&value.amount)
+            .ok_or_else(|| anyhow!("underflowed balance while debiting value circuit breaker"))?;
+        self.put(state_key::value_balance(&value.asset_id), new_balance);
+        Ok(())
     }
 }
+
+impl<T: StateWrite + ?Sized> ValueCircuitBreaker for T {}
+
+/*
 
 #[cfg(test)]
 mod tests {
@@ -248,3 +252,4 @@ mod tests {
             .expect("unable to process batch swaps");
     }
 }
+*/

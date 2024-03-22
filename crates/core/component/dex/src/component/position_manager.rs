@@ -12,7 +12,6 @@ use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::circuit_breaker::ValueCircuitBreaker;
 use crate::lp::position::State;
 use crate::{
     lp::position::{self, Position},
@@ -568,32 +567,6 @@ pub(crate) trait Inner: StateWrite {
             ?net_change_for_a,
             ?net_change_for_b,
             "updating position assets' aggregate balances"
-        );
-
-        let mut value_circuit_breaker: ValueCircuitBreaker = match self
-            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
-            .await
-            .expect("able to retrieve value circuit breaker from nonverifiable storage")
-        {
-            Some(bytes) => serde_json::from_slice(&bytes).expect(
-                "able to deserialize stored value circuit breaker from nonverifiable storage",
-            ),
-            None => ValueCircuitBreaker::default(),
-        };
-
-        // Add the change to the value circuit breaker for assets A and B.
-        value_circuit_breaker.tally(net_change_for_a);
-        value_circuit_breaker.tally(net_change_for_b);
-
-        // Confirm that the value circuit breaker is still within the limits.
-        // This call will panic if the value circuit breaker detects inflation.
-        value_circuit_breaker.check()?;
-
-        // Store the value circuit breaker back to nonconsensus storage with the updated tallies.
-        self.nonverifiable_put_raw(
-            state_key::aggregate_value().as_bytes().to_vec(),
-            serde_json::to_vec(&value_circuit_breaker)
-                .expect("able to serialize value circuit breaker for nonverifiable storage"),
         );
 
         Ok(())
