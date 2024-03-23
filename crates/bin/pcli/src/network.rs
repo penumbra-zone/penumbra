@@ -102,7 +102,10 @@ impl App {
             validator_vote: Some(validator_vote.into()),
             pre_authorizations: vec![],
         };
-        self.custody
+        // Use the separate governance custody service, if one is configured, to sign the validator
+        // vote. This allows the governance custody service to have a different key than the main
+        // custody, which is useful for validators who want to have a separate key for voting.
+        self.governance_custody // VERY IMPORTANT: use governance custody here!
             .authorize_validator_vote(request)
             .await?
             .into_inner()
