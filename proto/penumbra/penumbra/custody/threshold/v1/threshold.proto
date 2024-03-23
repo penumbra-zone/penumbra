@@ -21,15 +21,14 @@ message Signature {
 
 // The message the coordinator sends in round 1 of the signing protocol.
 message CoordinatorRound1 {
-  // The plan that the coordinator would like the followers to sign (mutually exclusive with
-  // `validator_definition` and `validator_vote`).
-  core.transaction.v1.TransactionPlan plan = 1;
-  // The validator definition the coordinator would like the followers to sign (mutually exclusive
-  // with `plan` and `validator_vote`).
-  core.component.stake.v1.Validator validator_definition = 2;
-  // The validator vote the coordinator would like the followers to sign (mutually exclusive with
-  // `plan` and `validator_definition`).
-  core.component.governance.v1.ValidatorVoteBody validator_vote = 3;
+  oneof request {
+    // The plan that the coordinator would like the followers to sign.
+    core.transaction.v1.TransactionPlan plan = 1;
+    // The validator definition the coordinator would like the followers to sign.
+    core.component.stake.v1.Validator validator_definition = 2;
+    // The validator vote the coordinator would like the followers to sign.
+    core.component.governance.v1.ValidatorVoteBody validator_vote = 3;
+  }
 }
 
 // The message the coordinator sends in round 2 of the signing protocol.

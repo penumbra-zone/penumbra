@@ -6,24 +6,22 @@ impl serde::Serialize for CoordinatorRound1 {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.plan.is_some() {
-            len += 1;
-        }
-        if self.validator_definition.is_some() {
-            len += 1;
-        }
-        if self.validator_vote.is_some() {
+        if self.request.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.threshold.v1.CoordinatorRound1", len)?;
-        if let Some(v) = self.plan.as_ref() {
-            struct_ser.serialize_field("plan", v)?;
-        }
-        if let Some(v) = self.validator_definition.as_ref() {
-            struct_ser.serialize_field("validatorDefinition", v)?;
-        }
-        if let Some(v) = self.validator_vote.as_ref() {
-            struct_ser.serialize_field("validatorVote", v)?;
+        if let Some(v) = self.request.as_ref() {
+            match v {
+                coordinator_round1::Request::Plan(v) => {
+                    struct_ser.serialize_field("plan", v)?;
+                }
+                coordinator_round1::Request::ValidatorDefinition(v) => {
+                    struct_ser.serialize_field("validatorDefinition", v)?;
+                }
+                coordinator_round1::Request::ValidatorVote(v) => {
+                    struct_ser.serialize_field("validatorVote", v)?;
+                }
+            }
         }
         struct_ser.end()
     }
@@ -91,28 +89,29 @@ impl<'de> serde::Deserialize<'de> for CoordinatorRound1 {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut plan__ = None;
-                let mut validator_definition__ = None;
-                let mut validator_vote__ = None;
+                let mut request__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Plan => {
-                            if plan__.is_some() {
+                            if request__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("plan"));
                             }
-                            plan__ = map_.next_value()?;
+                            request__ = map_.next_value::<::std::option::Option<_>>()?.map(coordinator_round1::Request::Plan)
+;
                         }
                         GeneratedField::ValidatorDefinition => {
-                            if validator_definition__.is_some() {
+                            if request__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("validatorDefinition"));
                             }
-                            validator_definition__ = map_.next_value()?;
+                            request__ = map_.next_value::<::std::option::Option<_>>()?.map(coordinator_round1::Request::ValidatorDefinition)
+;
                         }
                         GeneratedField::ValidatorVote => {
-                            if validator_vote__.is_some() {
+                            if request__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("validatorVote"));
                             }
-                            validator_vote__ = map_.next_value()?;
+                            request__ = map_.next_value::<::std::option::Option<_>>()?.map(coordinator_round1::Request::ValidatorVote)
+;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -120,9 +119,7 @@ impl<'de> serde::Deserialize<'de> for CoordinatorRound1 {
                     }
                 }
                 Ok(CoordinatorRound1 {
-                    plan: plan__,
-                    validator_definition: validator_definition__,
-                    validator_vote: validator_vote__,
+                    request: request__,
                 })
             }
         }

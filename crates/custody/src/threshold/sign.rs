@@ -67,16 +67,17 @@ impl From<CoordinatorRound1> for pb::CoordinatorRound1 {
     fn from(value: CoordinatorRound1) -> Self {
         match value.request {
             SigningRequest::TransactionPlan(plan) => Self {
-                plan: Some(plan.into()),
-                ..Default::default()
+                request: Some(pb::coordinator_round1::Request::Plan(plan.into())),
             },
             SigningRequest::ValidatorDefinition(validator) => Self {
-                validator_definition: Some(validator.into()),
-                ..Default::default()
+                request: Some(pb::coordinator_round1::Request::ValidatorDefinition(
+                    ProtoValidator::from(validator).into(),
+                )),
             },
             SigningRequest::ValidatorVote(vote) => Self {
-                validator_vote: Some(vote.into()),
-                ..Default::default()
+                request: Some(pb::coordinator_round1::Request::ValidatorVote(
+                    ProtoValidatorVoteBody::from(vote).into(),
+                )),
             },
         }
     }
@@ -86,19 +87,19 @@ impl TryFrom<pb::CoordinatorRound1> for CoordinatorRound1 {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::CoordinatorRound1) -> Result<Self, Self::Error> {
-        match (value.plan, value.validator_definition, value.validator_vote) {
-            (Some(plan), None, None) => Ok(Self {
+        match value
+            .request
+            .ok_or_else(|| anyhow::anyhow!("missing request"))?
+        {
+            pb::coordinator_round1::Request::Plan(plan) => Ok(Self {
                 request: SigningRequest::TransactionPlan(plan.try_into()?),
             }),
-            (None, Some(validator), None) => Ok(Self {
-                request: SigningRequest::ValidatorDefinition(validator.try_into()?),
+            pb::coordinator_round1::Request::ValidatorDefinition(def) => Ok(Self {
+                request: SigningRequest::ValidatorDefinition(def.try_into()?),
             }),
-            (None, None, Some(vote)) => Ok(Self {
+            pb::coordinator_round1::Request::ValidatorVote(vote) => Ok(Self {
                 request: SigningRequest::ValidatorVote(vote.try_into()?),
             }),
-            _ => anyhow::bail!(
-                "exactly one of plan, validator_definition, or validator_vote must be set"
-            ),
         }
     }
 }
