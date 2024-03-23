@@ -641,13 +641,10 @@ mod test {
         let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
         let fvk = coordinator_config.fvk().clone();
         let authorization_data = Threshold::new(coordinator_config, coordinator_terminal)
-            .authorize(AuthorizeRequest {
-                plan: plan.clone(),
-                pre_authorizations: Vec::new(),
-            })
+            .authorize(SigningRequest::TransactionPlan(plan.clone()))
             .await?;
         let tx_authorization_data = match authorization_data {
-            AuthorizationData::Transaction(tx) => tx,
+            SigningResponse::Transaction(tx) => tx,
             _ => panic!("expected transaction authorization data"),
         };
         assert_eq!(
