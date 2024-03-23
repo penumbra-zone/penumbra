@@ -68,7 +68,11 @@ pub trait Terminal {
 ///
 /// All this function does is produce side effects on the terminal, potentially returning
 /// early if the user on the other end did not want to sign the transaction.
-pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
+pub async fn follow(
+    config: Option<&Config>,
+    governance_config: Option<&Config>,
+    terminal: &impl Terminal,
+) -> Result<()> {
     // Round 1
     terminal
         .explain("Paste the coordinator's first message:")
@@ -79,6 +83,18 @@ pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
             .await?
             .ok_or(anyhow!("expected message from coordinator"))?;
         from_json(&string)?
+    };
+    // Pick the right config based on the message
+    let config = match round1_message.signing_request() {
+        SigningRequest::TransactionPlan(_) => config.ok_or(anyhow!(
+            "cannot threshold sign transaction using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorDefinition(_) => config.ok_or(anyhow!(
+            "cannot threshold sign validator definition using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorVote(_) => governance_config.ok_or(anyhow!(
+            "cannot threshold sign validator vote using a non-threshold validator governance custody backend"
+        ))?,
     };
     if !terminal
         .confirm_request(round1_message.signing_request())
@@ -636,7 +652,7 @@ mod test {
             .into_iter()
             .zip(follower_terminals.into_iter())
         {
-            tokio::spawn(async move { follow(&config, &terminal).await });
+            tokio::spawn(async move { follow(Some(&config), Some(&config), &terminal).await });
         }
         let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
         let fvk = coordinator_config.fvk().clone();
