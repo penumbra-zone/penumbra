@@ -360,7 +360,8 @@ impl SubstoreStorage {
         self,
         cache: Cache,
         mut write_batch: rocksdb::WriteBatch,
-        new_version: jmt::Version,
+        write_version: jmt::Version,
+        perform_migration: bool,
     ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
 
@@ -369,8 +370,6 @@ impl SubstoreStorage {
                 .spawn_blocking(move || {
                     span.in_scope(|| {
                         let jmt = jmt::Sha256Jmt::new(&self.substore_snapshot);
-
-                        // TODO(erwan): this could be folded with sharding the changesets.
                         let unwritten_changes: Vec<_> = cache
                             .unwritten_changes
                             .into_iter()
@@ -394,10 +393,15 @@ impl SubstoreStorage {
                             };
                         }
 
-                        let (root_hash, batch) = jmt.put_value_set(
-                            unwritten_changes.into_iter().map(|(keyhash, _key, some_value)| (keyhash, some_value)),
-                            new_version,
-                        )?;
+                        // We only track the keyhash and possible values; at the time of writing,
+                        // `rustfmt` panics on inlining the closure, so we use a helper function to skip the key.
+                        let skip_key = |(keyhash, _key, some_value)| (keyhash, some_value);
+
+                        let (root_hash, batch) = if perform_migration {
+                            jmt.append_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        } else {
+                            jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
+                        };
 
                         self.write_node_batch(&batch.node_batch)?;
                         tracing::trace!(?root_hash, "wrote node batch to backing store");
@@ -426,8 +430,6 @@ impl TreeWriter for SubstoreStorage {
     /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
     /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
     fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
-        use borsh::BorshSerialize;
-
         let node_batch = node_batch.clone();
         let cf_jmt = self
             .substore_snapshot
@@ -437,8 +439,8 @@ impl TreeWriter for SubstoreStorage {
         for (node_key, node) in node_batch.nodes() {
             let db_node_key = DbNodeKey::from(node_key.clone());
             let db_node_key_bytes = db_node_key.encode()?;
-            let value_bytes = &node.try_to_vec()?;
-            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
+            let value_bytes = borsh::to_vec(node)?;
+            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
             self.substore_snapshot
                 .db
                 .put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
@@ -451,8 +453,8 @@ impl TreeWriter for SubstoreStorage {
         for ((version, key_hash), some_value) in node_batch.values() {
             let versioned_key = VersionedKeyHash::new(*version, *key_hash);
             let key_bytes = &versioned_key.encode();
-            let value_bytes = &some_value.try_to_vec()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
+            let value_bytes = borsh::to_vec(some_value)?;
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
 
             self.substore_snapshot
                 .db
@@ -479,7 +481,7 @@ impl DbNodeKey {
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
+        let rest = borsh::to_vec(&self.0)?;
         bytes.extend_from_slice(&rest);
         Ok(bytes)
     }

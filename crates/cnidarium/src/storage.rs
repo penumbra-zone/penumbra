@@ -323,24 +323,27 @@ impl Storage {
         // its own changes to the batch, and we will commit it at the end.
         let mut write_batch = rocksdb::WriteBatch::default();
 
-        // Note(erwan): Here, we iterate over each substore, and spawn a task to
-        //  commit it. Since we know that the substore keyspace is disjoint, we
-        //  could consider rewriting this loop into a [`tokio::task::JoinSet`],
-        //  however consider that `rocksdb::WriteBatch` is _not_ thread-safe.
+        //  Note(erwan): Here, we spawn a commit task for each substore.
+        //  The substore keyspaces are disjoint, so conceptually it is
+        //  fine to rewrite it using a [`tokio::task::JoinSet`].
+        //  The reason this isn't done is because `rocksdb::WriteBatch`
+        //  is _not_ thread-safe.
         //
         //  This means that to spin-up N tasks, we would need to use a
         //  single batch wrapped in a mutex, or use N batches, and find
-        //  a way to commit to them atomically. Since that is not supported
-        //  by RocksDB, we would have to iterate over each entry in each
-        //  batch, and merge them together.
+        //  a way to commit to them atomically. This isn't supported by
+        //  RocksDB which leaves one option: to iterate over each entry
+        //  in each batch, and merge them together. At this point, this
+        //  is probably not worth it.
         //
         //  Another option is to trade atomicity for parallelism by producing
         //  N batches, and committing them in distinct atomic writes. This is
-        //  dangerous because it could leave the node in an inconsistent state.
+        //  potentially faster, but it is also more dangerous, because if one
+        //  of the writes fails, we are left with a partially committed state.
         //
-        //  Instead of doing that, we lean on the fact that the number of substores
-        //  is small, and that the synchronization overhead of a joinset would exceed
-        //  its benefits.
+        //  The current implementation leans on the fact that the number of
+        //  substores is small, and that the synchronization overhead of a joinset
+        //  would exceed its benefits. This works well for now.
         for config in self.0.multistore_config.iter() {
             tracing::debug!(substore_prefix = ?config.prefix, "processing substore");
             // If the substore is empty, we need to fetch its initialized version from the cache.
@@ -376,7 +379,7 @@ impl Storage {
 
             // Commit the substore and collect the root hash
             let (root_hash, substore_batch) = substore_storage
-                .commit(changeset, write_batch, version)
+                .commit(changeset, write_batch, version, perform_migration)
                 .await?;
             write_batch = substore_batch;
 
@@ -417,7 +420,7 @@ impl Storage {
         };
 
         let (global_root_hash, write_batch) = main_store_storage
-            .commit(main_store_changes, write_batch, version)
+            .commit(main_store_changes, write_batch, version, perform_migration)
             .await?;
         tracing::debug!(
             ?global_root_hash,
