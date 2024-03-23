@@ -430,8 +430,6 @@ impl TreeWriter for SubstoreStorage {
     /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
     /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
     fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
-        use borsh::BorshSerialize;
-
         let node_batch = node_batch.clone();
         let cf_jmt = self
             .substore_snapshot
@@ -441,8 +439,8 @@ impl TreeWriter for SubstoreStorage {
         for (node_key, node) in node_batch.nodes() {
             let db_node_key = DbNodeKey::from(node_key.clone());
             let db_node_key_bytes = db_node_key.encode()?;
-            let value_bytes = &node.try_to_vec()?;
-            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(value_bytes));
+            let value_bytes = borsh::to_vec(node)?;
+            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
             self.substore_snapshot
                 .db
                 .put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
@@ -455,8 +453,8 @@ impl TreeWriter for SubstoreStorage {
         for ((version, key_hash), some_value) in node_batch.values() {
             let versioned_key = VersionedKeyHash::new(*version, *key_hash);
             let key_bytes = &versioned_key.encode();
-            let value_bytes = &some_value.try_to_vec()?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(value_bytes));
+            let value_bytes = borsh::to_vec(some_value)?;
+            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
 
             self.substore_snapshot
                 .db
@@ -483,7 +481,7 @@ impl DbNodeKey {
     pub fn encode(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
         bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::BorshSerialize::try_to_vec(&self.0)?;
+        let rest = borsh::to_vec(&self.0)?;
         bytes.extend_from_slice(&rest);
         Ok(bytes)
     }

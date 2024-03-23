@@ -12,7 +12,7 @@ rpc = ["dep:tonic", "dep:prost", "dep:serde", "dep:pbjson", "dep:ibc-proto"]
 [dependencies]
 anyhow = {workspace = true}
 async-trait = {workspace = true}
-borsh = "0.10.3"
+borsh = { version = "1.3.0" , features = ["derive", "de_strict_order"]}
 futures = {workspace = true}
 hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false, features = ["serde"], optional = true}
