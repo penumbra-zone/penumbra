@@ -328,12 +328,12 @@ impl serde::Serialize for AuthorizeValidatorDefinitionResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.data.is_some() {
+        if self.validator_definition_auth.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorDefinitionResponse", len)?;
-        if let Some(v) = self.data.as_ref() {
-            struct_ser.serialize_field("data", v)?;
+        if let Some(v) = self.validator_definition_auth.as_ref() {
+            struct_ser.serialize_field("validatorDefinitionAuth", v)?;
         }
         struct_ser.end()
     }
@@ -345,12 +345,13 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "data",
+            "validator_definition_auth",
+            "validatorDefinitionAuth",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Data,
+            ValidatorDefinitionAuth,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -373,7 +374,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "data" => Ok(GeneratedField::Data),
+                            "validatorDefinitionAuth" | "validator_definition_auth" => Ok(GeneratedField::ValidatorDefinitionAuth),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -393,14 +394,14 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut data__ = None;
+                let mut validator_definition_auth__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Data => {
-                            if data__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("data"));
+                        GeneratedField::ValidatorDefinitionAuth => {
+                            if validator_definition_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorDefinitionAuth"));
                             }
-                            data__ = map_.next_value()?;
+                            validator_definition_auth__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -408,7 +409,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionResponse {
                     }
                 }
                 Ok(AuthorizeValidatorDefinitionResponse {
-                    data: data__,
+                    validator_definition_auth: validator_definition_auth__,
                 })
             }
         }
@@ -537,12 +538,12 @@ impl serde::Serialize for AuthorizeValidatorVoteResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.data.is_some() {
+        if self.validator_vote_auth.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorVoteResponse", len)?;
-        if let Some(v) = self.data.as_ref() {
-            struct_ser.serialize_field("data", v)?;
+        if let Some(v) = self.validator_vote_auth.as_ref() {
+            struct_ser.serialize_field("validatorVoteAuth", v)?;
         }
         struct_ser.end()
     }
@@ -554,12 +555,13 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteResponse {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "data",
+            "validator_vote_auth",
+            "validatorVoteAuth",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            Data,
+            ValidatorVoteAuth,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -582,7 +584,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteResponse {
                         E: serde::de::Error,
                     {
                         match value {
-                            "data" => Ok(GeneratedField::Data),
+                            "validatorVoteAuth" | "validator_vote_auth" => Ok(GeneratedField::ValidatorVoteAuth),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -602,14 +604,14 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteResponse {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut data__ = None;
+                let mut validator_vote_auth__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::Data => {
-                            if data__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("data"));
+                        GeneratedField::ValidatorVoteAuth => {
+                            if validator_vote_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorVoteAuth"));
                             }
-                            data__ = map_.next_value()?;
+                            validator_vote_auth__ = map_.next_value()?;
                         }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
@@ -617,7 +619,7 @@ impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteResponse {
                     }
                 }
                 Ok(AuthorizeValidatorVoteResponse {
-                    data: data__,
+                    validator_vote_auth: validator_vote_auth__,
                 })
             }
         }

@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use penumbra_custody::{AuthorizeRequest, CustodyClient};
 use penumbra_keys::FullViewingKey;
-use penumbra_transaction::{Transaction, TransactionAuthorizationData, TransactionPlan};
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 
 pub async fn build_transaction<V, C>(
@@ -16,7 +16,7 @@ where
     C: CustodyClient,
 {
     // Get the authorization data from the custody service...
-    let auth_data: TransactionAuthorizationData = custody
+    let auth_data: AuthorizationData = custody
         .authorize(AuthorizeRequest {
             plan: plan.clone(),
             pre_authorizations: Vec::new(),

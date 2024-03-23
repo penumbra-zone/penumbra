@@ -6,6 +6,7 @@ import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/core/component/stake/v1/stake.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
+import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 
 // The custody protocol is used by a wallet client to request authorization for
 // a transaction they've constructed.
@@ -74,7 +75,8 @@ message AuthorizeValidatorDefinitionRequest {
 }
 
 message AuthorizeValidatorDefinitionResponse {
-  core.transaction.v1.AuthorizationData data = 1;
+  // The authorization signature for the validator definition.
+  crypto.decaf377_rdsa.v1.SpendAuthSignature validator_definition_auth = 1;
 }
 
 message AuthorizeValidatorVoteRequest {
@@ -91,7 +93,8 @@ message AuthorizeValidatorVoteRequest {
 }
 
 message AuthorizeValidatorVoteResponse {
-  core.transaction.v1.AuthorizationData data = 1;
+  // The authorization signature for the validator vote.
+  crypto.decaf377_rdsa.v1.SpendAuthSignature validator_vote_auth = 1;
 }
 
 // A pre-authorization packet.  This allows a custodian to delegate (partial)

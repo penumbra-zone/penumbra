@@ -25,7 +25,7 @@ use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
 use penumbra_stake::IdentityKey;
 use penumbra_transaction::{
-    txhash::TransactionId, Transaction, TransactionAuthorizationData, TransactionPlan, WitnessData,
+    txhash::TransactionId, AuthorizationData, Transaction, TransactionPlan, WitnessData,
 };
 
 use crate::{SpendableNoteRecord, StatusStreamResponse, SwapRecord, TransactionInfo};
@@ -149,7 +149,7 @@ pub trait ViewClient {
     fn witness_and_build(
         &mut self,
         plan: TransactionPlan,
-        auth_data: TransactionAuthorizationData,
+        auth_data: AuthorizationData,
     ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>>;
 
     /// Queries for all known assets.
@@ -847,7 +847,7 @@ where
     fn witness_and_build(
         &mut self,
         transaction_plan: TransactionPlan,
-        authorization_data: TransactionAuthorizationData,
+        authorization_data: AuthorizationData,
     ) -> Pin<Box<dyn Future<Output = Result<Transaction>> + Send + 'static>> {
         let request = pb::WitnessAndBuildRequest {
             transaction_plan: Some(transaction_plan.into()),

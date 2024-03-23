@@ -64,9 +64,10 @@ impl ::prost::Name for AuthorizeValidatorDefinitionRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeValidatorDefinitionResponse {
+    /// The authorization signature for the validator definition.
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<
-        super::super::core::transaction::v1::AuthorizationData,
+    pub validator_definition_auth: ::core::option::Option<
+        super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
     >,
 }
 impl ::prost::Name for AuthorizeValidatorDefinitionResponse {
@@ -103,9 +104,10 @@ impl ::prost::Name for AuthorizeValidatorVoteRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeValidatorVoteResponse {
+    /// The authorization signature for the validator vote.
     #[prost(message, optional, tag = "1")]
-    pub data: ::core::option::Option<
-        super::super::core::transaction::v1::AuthorizationData,
+    pub validator_vote_auth: ::core::option::Option<
+        super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
     >,
 }
 impl ::prost::Name for AuthorizeValidatorVoteResponse {

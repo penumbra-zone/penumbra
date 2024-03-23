@@ -5,12 +5,11 @@ use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::AuthorizationData;
 
 use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
 pub use self::config::Config;
-pub use self::sign::SigningRequest;
+pub use self::sign::{SigningRequest, SigningResponse};
 
 mod config;
 mod dkg;
@@ -190,7 +189,7 @@ impl<T> Threshold<T> {
 
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
-    async fn authorize(&self, request: SigningRequest) -> Result<AuthorizationData> {
+    async fn authorize(&self, request: SigningRequest) -> Result<SigningResponse> {
         // Round 1
         let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal
@@ -280,6 +279,12 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
                     "Failed to process transaction authorization request: {e}"
                 ))
             })?;
+        let SigningResponse::Transaction(data) = data else {
+            return Err(Status::internal(
+                "expected transaction authorization but custody service returned another kind of authorization data"
+                    .to_string()
+            ));
+        };
         Ok(Response::new(pb::AuthorizeResponse {
             data: Some(data.into()),
         }))
@@ -303,8 +308,13 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
                     "Failed to process validator definition authorization request: {e}"
                 ))
             })?;
+        let SigningResponse::ValidatorDefinition(validator_definition_auth) = data else {
+            return Err(Status::internal(
+                "expected validator definition authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
         Ok(Response::new(pb::AuthorizeValidatorDefinitionResponse {
-            data: Some(data.into()),
+            validator_definition_auth: Some(validator_definition_auth.into()),
         }))
     }
 
@@ -324,8 +334,13 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
                     "Failed to process validator vote authorization request: {e}"
                 ))
             })?;
+        let SigningResponse::ValidatorVote(validator_vote_auth) = data else {
+            return Err(Status::internal(
+                "expected validator vote authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
         Ok(Response::new(pb::AuthorizeValidatorVoteResponse {
-            data: Some(data.into()),
+            validator_vote_auth: Some(validator_vote_auth.into()),
         }))
     }
 

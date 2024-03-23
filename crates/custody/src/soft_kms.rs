@@ -10,7 +10,7 @@ use penumbra_proto::{
     custody::v1::{self as pb, AuthorizeResponse},
     Message as _,
 };
-use penumbra_transaction::{AuthorizationData, TransactionAuthorizationData};
+use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
 
@@ -37,7 +37,7 @@ impl SoftKms {
 
     /// Attempt to authorize the requested [`TransactionPlan`](penumbra_transaction::TransactionPlan).
     #[tracing::instrument(skip(self, request), name = "softhsm_sign")]
-    pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<TransactionAuthorizationData> {
+    pub fn sign(&self, request: &AuthorizeRequest) -> anyhow::Result<AuthorizationData> {
         tracing::debug!(?request.plan);
 
         for policy in &self.config.auth_policy {
@@ -123,12 +123,12 @@ impl pb::custody_service_server::CustodyService for SoftKms {
             .try_into()
             .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
 
-        let signature = self
+        let validator_definition_auth = self
             .sign_validator_definition(&request)
             .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
 
         let authorization_response = pb::AuthorizeValidatorDefinitionResponse {
-            data: Some(AuthorizationData::ValidatorDefinition(signature).into()),
+            validator_definition_auth: Some(validator_definition_auth.into()),
         };
 
         Ok(Response::new(authorization_response))
@@ -143,12 +143,12 @@ impl pb::custody_service_server::CustodyService for SoftKms {
             .try_into()
             .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
 
-        let signature = self
+        let validator_vote_auth = self
             .sign_validator_vote(&request)
             .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
 
         let authorization_response = pb::AuthorizeValidatorVoteResponse {
-            data: Some(AuthorizationData::ValidatorVote(signature).into()),
+            validator_vote_auth: Some(validator_vote_auth.into()),
         };
 
         Ok(Response::new(authorization_response))

@@ -16,7 +16,7 @@ use penumbra_proto::core::component::{
 };
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
 use penumbra_stake::validator::Validator;
-use penumbra_transaction::{AuthorizationData, TransactionAuthorizationData, TransactionPlan};
+use penumbra_transaction::{AuthorizationData, TransactionPlan};
 use penumbra_txhash::EffectHash;
 
 use super::config::Config;
@@ -34,6 +34,24 @@ pub enum SigningRequest {
     TransactionPlan(TransactionPlan),
     ValidatorDefinition(Validator),
     ValidatorVote(ValidatorVoteBody),
+}
+
+/// Authorization data returned in response to some signing request, which may be a request to
+/// authorize a transaction, a validator definition, or a validator vote.
+#[derive(Clone, Debug)]
+pub enum SigningResponse {
+    /// Authorization data for a transaction.
+    Transaction(AuthorizationData),
+    /// Authorization signature for a validator definition.
+    ValidatorDefinition(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+    /// Authorization signature for a validator vote.
+    ValidatorVote(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+}
+
+impl From<AuthorizationData> for SigningResponse {
+    fn from(msg: AuthorizationData) -> Self {
+        Self::Transaction(msg)
+    }
 }
 
 impl CoordinatorRound1 {
@@ -447,7 +465,7 @@ pub fn coordinator_round3(
     config: &Config,
     state: CoordinatorState2,
     follower_messages: &[FollowerRound2],
-) -> Result<AuthorizationData> {
+) -> Result<SigningResponse> {
     let mut share_maps: Vec<HashMap<frost::Identifier, frost::round2::SignatureShare>> =
         vec![HashMap::new(); required_signatures(&state.request)];
     for message in follower_messages
@@ -483,26 +501,22 @@ pub fn coordinator_round3(
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
-            Ok(AuthorizationData::Transaction(
-                TransactionAuthorizationData {
-                    effect_hash: {
-                        let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
-                            unreachable!(
-                                "transaction plan request has non-effect-hash to be signed"
-                            );
-                        };
-                        Some(effect_hash)
-                    },
-                    spend_auths,
-                    delegator_vote_auths,
+            Ok(SigningResponse::Transaction(AuthorizationData {
+                effect_hash: {
+                    let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
+                        unreachable!("transaction plan request has non-effect-hash to be signed");
+                    };
+                    Some(effect_hash)
                 },
-            ))
+                spend_auths,
+                delegator_vote_auths,
+            }))
         }
         SigningRequest::ValidatorDefinition(_) => {
             let validator_definition_auth = share_maps
                 .get(0)
                 .ok_or_else(|| anyhow!("missing signature for validator definition"))?;
-            Ok(AuthorizationData::ValidatorDefinition(frost::aggregate(
+            Ok(SigningResponse::ValidatorDefinition(frost::aggregate(
                 &state
                     .signing_packages
                     .get(0)
@@ -515,7 +529,7 @@ pub fn coordinator_round3(
             let validator_vote_auth = share_maps
                 .get(0)
                 .ok_or_else(|| anyhow!("missing signature for validator vote"))?;
-            Ok(AuthorizationData::ValidatorVote(frost::aggregate(
+            Ok(SigningResponse::ValidatorVote(frost::aggregate(
                 &state
                     .signing_packages
                     .get(0)

@@ -6,9 +6,7 @@ use penumbra_keys::{keys::SpendKey, FullViewingKey};
 use penumbra_sct::component::{clock::EpochRead, tree::SctRead};
 use penumbra_shielded_pool::{note, Note};
 use penumbra_tct as tct;
-use penumbra_transaction::{
-    Transaction, TransactionAuthorizationData, TransactionPlan, WitnessData,
-};
+use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 use rand_core::OsRng;
 use std::collections::BTreeMap;
 
@@ -191,10 +189,7 @@ impl MockClient {
         })
     }
 
-    pub fn authorize_plan(
-        &self,
-        plan: &TransactionPlan,
-    ) -> Result<TransactionAuthorizationData, Error> {
+    pub fn authorize_plan(&self, plan: &TransactionPlan) -> Result<AuthorizationData, Error> {
         plan.authorize(OsRng, &self.sk)
     }
 
