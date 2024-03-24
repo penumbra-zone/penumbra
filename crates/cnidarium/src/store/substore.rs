@@ -1,4 +1,5 @@
 use std::{
+    cell::RefCell,
     fmt::{Display, Formatter},
     sync::Arc,
 };
@@ -353,11 +354,23 @@ impl HasPreimage for SubstoreSnapshot {
 
 pub struct SubstoreStorage {
     pub(crate) substore_snapshot: SubstoreSnapshot,
+    /// Internal: we accumulate writes into a [`rocksdb::WriteBatch`] and
+    /// return it to the caller so that they can commit it at their discretion.
+    /// We use this specific field as a workaround to avoid exposing RocksDB
+    /// types in the public API of the [`jmt::TreeWriter`] trait.
+    write_batch: Option<RefCell<rocksdb::WriteBatch>>,
 }
 
 impl SubstoreStorage {
+    pub fn from_snapshot(substore_snapshot: SubstoreSnapshot) -> Self {
+        Self {
+            substore_snapshot,
+            write_batch: None,
+        }
+    }
+
     pub async fn commit(
-        self,
+        mut self,
         cache: Cache,
         mut write_batch: rocksdb::WriteBatch,
         write_version: jmt::Version,
@@ -403,8 +416,19 @@ impl SubstoreStorage {
                             jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
                         };
 
+                        // Our high-level goal is to accumulate the node changes in the write batch.
+                        // We want to do this by implementing the `TreeWriter` trait, but without leaking
+                        // RocksDB-specific types in the public API of the JMT.
+                        //
+                        // To do this, we wrap the write batch in a `RefCell` and set it internally.
+                        self.write_batch = Some(std::cell::RefCell::new(write_batch));
+                        // The `write_node_batch` implementation will accumulate the changes in the write batch.
                         self.write_node_batch(&batch.node_batch)?;
-                        tracing::trace!(?root_hash, "wrote node batch to backing store");
+                        // Now, we can pull the write batch out of the `RefCell` and pretend this never happened.
+                        let mut write_batch = self.write_batch.take().expect("write batch must be set by caller").into_inner();
+
+                        tracing::trace!(?root_hash, "accumulated node changes in the write batch");
+
 
                         for (k, v) in cache.nonverifiable_changes.into_iter() {
                             let cf_nonverifiable = self.substore_snapshot.config.cf_nonverifiable(&self.substore_snapshot.db);
@@ -418,6 +442,7 @@ impl SubstoreStorage {
                                 }
                             };
                         }
+
                         Ok((root_hash, write_batch))
                     })
                 })?
@@ -426,11 +451,26 @@ impl SubstoreStorage {
 }
 
 impl TreeWriter for SubstoreStorage {
-    /// Writes a [`NodeBatch`] into storage which includes the JMT
-    /// nodes (`DbNodeKey` -> `Node`) and the JMT values,
-    /// (`VersionedKeyHash` -> `Option<Vec<u8>>`).
+    /// Write a collection of nodes ([`NodeBatch`]) into an internal write batch.
+    /// The write batch will be committed to the backing store at the application's discretion.
+    ///
+    /// Schema:
+    /// - JMT nodes are stored in the `cf_jmt` column family: `DbNodeKey` -> `Node`.
+    /// - JMT values are stored in the `cf_jmt_values` column family: `VersionedKeyHash` -> `Option<Vec<u8>>`.
+    ///
+    /// # Errors
+    /// This method errors if the write batch is not set by the caller,
+    /// or, because of a serialization error.
+    ///
+    /// # Panics
+    /// This method panics if multiple mutable borrows are attempted on the write batch.
     fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
-        let node_batch = node_batch.clone();
+        let Some(write_batch) = self.write_batch.as_ref() else {
+            anyhow::bail!("write batch must be set by caller");
+        };
+
+        let mut write_batch = write_batch.borrow_mut();
+
         let cf_jmt = self
             .substore_snapshot
             .config
@@ -441,10 +481,9 @@ impl TreeWriter for SubstoreStorage {
             let db_node_key_bytes = db_node_key.encode()?;
             let value_bytes = borsh::to_vec(node)?;
             tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
-            self.substore_snapshot
-                .db
-                .put_cf(cf_jmt, db_node_key_bytes, value_bytes)?;
+            write_batch.put_cf(cf_jmt, db_node_key_bytes, value_bytes);
         }
+
         let cf_jmt_values = self
             .substore_snapshot
             .config
@@ -455,10 +494,7 @@ impl TreeWriter for SubstoreStorage {
             let key_bytes = &versioned_key.encode();
             let value_bytes = borsh::to_vec(some_value)?;
             tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
-
-            self.substore_snapshot
-                .db
-                .put_cf(cf_jmt_values, key_bytes, value_bytes)?;
+            write_batch.put_cf(cf_jmt_values, key_bytes, value_bytes);
         }
 
         Ok(())

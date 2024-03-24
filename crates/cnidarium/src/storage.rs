@@ -40,7 +40,6 @@ struct Inner {
     changes_rx: watch::Receiver<(jmt::Version, Arc<Cache>)>,
     snapshots: RwLock<SnapshotCache>,
     multistore_config: MultistoreConfig,
-    #[allow(dead_code)]
     /// A handle to the dispatcher task.
     /// This is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
@@ -375,7 +374,7 @@ impl Storage {
                 db: db.clone(),
             };
 
-            let substore_storage = SubstoreStorage { substore_snapshot };
+            let substore_storage = SubstoreStorage::from_snapshot(substore_snapshot);
 
             // Commit the substore and collect the root hash
             let (root_hash, substore_batch) = substore_storage
@@ -415,9 +414,7 @@ impl Storage {
             db: self.0.db.clone(),
         };
 
-        let main_store_storage = SubstoreStorage {
-            substore_snapshot: main_store_snapshot,
-        };
+        let main_store_storage = SubstoreStorage::from_snapshot(main_store_snapshot);
 
         let (global_root_hash, write_batch) = main_store_storage
             .commit(main_store_changes, write_batch, version, perform_migration)
