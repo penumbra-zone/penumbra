@@ -356,10 +356,6 @@ pub struct SubstoreStorage {
 }
 
 impl SubstoreStorage {
-    pub fn from_snapshot(substore_snapshot: SubstoreSnapshot) -> Self {
-        Self { substore_snapshot }
-    }
-
     pub async fn commit(
         self,
         cache: Cache,
