@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     fmt::{Display, Formatter},
     sync::Arc,
 };
@@ -354,23 +353,15 @@ impl HasPreimage for SubstoreSnapshot {
 
 pub struct SubstoreStorage {
     pub(crate) substore_snapshot: SubstoreSnapshot,
-    /// Internal: we accumulate writes into a [`rocksdb::WriteBatch`] and
-    /// return it to the caller so that they can commit it at their discretion.
-    /// We use this specific field as a workaround to avoid exposing RocksDB
-    /// types in the public API of the [`jmt::TreeWriter`] trait.
-    write_batch: Option<RefCell<rocksdb::WriteBatch>>,
 }
 
 impl SubstoreStorage {
     pub fn from_snapshot(substore_snapshot: SubstoreSnapshot) -> Self {
-        Self {
-            substore_snapshot,
-            write_batch: None,
-        }
+        Self { substore_snapshot }
     }
 
     pub async fn commit(
-        mut self,
+        self,
         cache: Cache,
         mut write_batch: rocksdb::WriteBatch,
         write_version: jmt::Version,
@@ -388,8 +379,11 @@ impl SubstoreStorage {
                             .into_iter()
                             .map(|(key, some_value)| (KeyHash::with::<sha2::Sha256>(&key), key, some_value))
                             .collect();
+
                         let cf_jmt_keys = self.substore_snapshot.config.cf_jmt_keys(&self.substore_snapshot.db);
                         let cf_jmt_keys_by_keyhash = self.substore_snapshot.config.cf_jmt_keys_by_keyhash(&self.substore_snapshot.db);
+                        let cf_jmt = self.substore_snapshot.config.cf_jmt(&self.substore_snapshot.db);
+                        let cf_jmt_values = self.substore_snapshot.config.cf_jmt_values(&self.substore_snapshot.db);
 
                         /* Keyhash and pre-image indices */
                         for (keyhash, key_preimage, value) in unwritten_changes.iter() {
@@ -416,16 +410,21 @@ impl SubstoreStorage {
                             jmt.put_value_set(unwritten_changes.into_iter().map(skip_key), write_version)?
                         };
 
-                        // Our high-level goal is to accumulate the node changes in the write batch.
-                        // We want to do this by implementing the `TreeWriter` trait, but without leaking
-                        // RocksDB-specific types in the public API of the JMT.
-                        //
-                        // To do this, we wrap the write batch in a `RefCell` and set it internally.
-                        self.write_batch = Some(std::cell::RefCell::new(write_batch));
-                        // The `write_node_batch` implementation will accumulate the changes in the write batch.
-                        self.write_node_batch(&batch.node_batch)?;
-                        // Now, we can pull the write batch out of the `RefCell` and pretend this never happened.
-                        let mut write_batch = self.write_batch.take().expect("write batch must be set by caller").into_inner();
+                        /* JMT nodes and values */
+                        for (node_key, node) in batch.node_batch.nodes() {
+                            let db_node_key_bytes= DbNodeKey::encode_from_node_key(node_key)?;
+                            let value_bytes = borsh::to_vec(node)?;
+                            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
+                            write_batch.put_cf(cf_jmt, db_node_key_bytes, value_bytes);
+                        }
+
+
+                        for ((version, key_hash), some_value) in batch.node_batch.values() {
+                            let key_bytes = VersionedKeyHash::encode_from_keyhash(key_hash, version);
+                            let value_bytes = borsh::to_vec(some_value)?;
+                            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
+                            write_batch.put_cf(cf_jmt_values, key_bytes, value_bytes);
+                        }
 
                         tracing::trace!(?root_hash, "accumulated node changes in the write batch");
 
@@ -451,59 +450,22 @@ impl SubstoreStorage {
 }
 
 impl TreeWriter for SubstoreStorage {
-    /// Write a collection of nodes ([`NodeBatch`]) into an internal write batch.
-    /// The write batch will be committed to the backing store at the application's discretion.
-    ///
-    /// Schema:
-    /// - JMT nodes are stored in the `cf_jmt` column family: `DbNodeKey` -> `Node`.
-    /// - JMT values are stored in the `cf_jmt_values` column family: `VersionedKeyHash` -> `Option<Vec<u8>>`.
-    ///
-    /// # Errors
-    /// This method errors if the write batch is not set by the caller,
-    /// or, because of a serialization error.
-    ///
-    /// # Panics
-    /// This method panics if multiple mutable borrows are attempted on the write batch.
-    fn write_node_batch(&self, node_batch: &jmt::storage::NodeBatch) -> Result<()> {
-        let Some(write_batch) = self.write_batch.as_ref() else {
-            anyhow::bail!("write batch must be set by caller");
-        };
-
-        let mut write_batch = write_batch.borrow_mut();
-
-        let cf_jmt = self
-            .substore_snapshot
-            .config
-            .cf_jmt(&self.substore_snapshot.db);
-
-        for (node_key, node) in node_batch.nodes() {
-            let db_node_key = DbNodeKey::from(node_key.clone());
-            let db_node_key_bytes = db_node_key.encode()?;
-            let value_bytes = borsh::to_vec(node)?;
-            tracing::trace!(?db_node_key_bytes, value_bytes = ?hex::encode(&value_bytes));
-            write_batch.put_cf(cf_jmt, db_node_key_bytes, value_bytes);
-        }
-
-        let cf_jmt_values = self
-            .substore_snapshot
-            .config
-            .cf_jmt_values(&self.substore_snapshot.db);
-
-        for ((version, key_hash), some_value) in node_batch.values() {
-            let versioned_key = VersionedKeyHash::new(*version, *key_hash);
-            let key_bytes = &versioned_key.encode();
-            let value_bytes = borsh::to_vec(some_value)?;
-            tracing::trace!(?key_bytes, value_bytes = ?hex::encode(&value_bytes));
-            write_batch.put_cf(cf_jmt_values, key_bytes, value_bytes);
-        }
-
-        Ok(())
+    fn write_node_batch(&self, _node_batch: &jmt::storage::NodeBatch) -> Result<()> {
+        // The "write"-part of the `TreeReader + TreeWriter` jmt architecture does not work
+        // well with a deferred write strategy.
+        // What we would like to do is to accumulate the changes in a write batch, and then commit
+        // them all at once. This isn't possible to do easily because the `TreeWriter` trait
+        // rightfully does not expose RocksDB-specific types in its API.
+        //
+        // The alternative is to use interior mutability but the semantics become
+        // so implementation specific that we lose the benefits of the trait abstraction.
+        unimplemented!("We inline the tree writing logic in the `commit` method")
     }
 }
 
 /// An ordered node key is a node key that is encoded in a way that
 /// preserves the order of the node keys in the database.
-pub struct DbNodeKey(NodeKey);
+pub struct DbNodeKey(pub NodeKey);
 
 impl DbNodeKey {
     pub fn from(node_key: NodeKey) -> Self {
@@ -515,9 +477,13 @@ impl DbNodeKey {
     }
 
     pub fn encode(&self) -> Result<Vec<u8>> {
+        Self::encode_from_node_key(&self.0)
+    }
+
+    pub fn encode_from_node_key(node_key: &NodeKey) -> Result<Vec<u8>> {
         let mut bytes = Vec::new();
-        bytes.extend_from_slice(&self.0.version().to_be_bytes()); // encode version as big-endian
-        let rest = borsh::to_vec(&self.0)?;
+        bytes.extend_from_slice(&node_key.version().to_be_bytes()); // encode version as big-endian
+        let rest = borsh::to_vec(node_key)?;
         bytes.extend_from_slice(&rest);
         Ok(bytes)
     }
@@ -542,13 +508,13 @@ pub struct VersionedKeyHash {
 }
 
 impl VersionedKeyHash {
-    pub fn new(version: jmt::Version, key_hash: KeyHash) -> Self {
-        Self { version, key_hash }
+    pub fn encode(&self) -> Vec<u8> {
+        VersionedKeyHash::encode_from_keyhash(&self.key_hash, &self.version)
     }
 
-    pub fn encode(&self) -> Vec<u8> {
-        let mut buf: Vec<u8> = self.key_hash.0.to_vec();
-        buf.extend_from_slice(&self.version.to_be_bytes());
+    pub fn encode_from_keyhash(key_hash: &KeyHash, version: &jmt::Version) -> Vec<u8> {
+        let mut buf: Vec<u8> = key_hash.0.to_vec();
+        buf.extend_from_slice(&version.to_be_bytes());
         buf
     }
 
