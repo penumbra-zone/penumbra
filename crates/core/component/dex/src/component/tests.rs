@@ -10,6 +10,7 @@ use rand_core::OsRng;
 
 //use crate::TempStorageExt;
 
+use crate::component::ValueCircuitBreaker as _;
 use crate::lp::action::PositionOpen;
 use crate::DexParameters;
 use crate::{
@@ -560,6 +561,21 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
+    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
+    // the position manager.
+    let infinite_gn = Value {
+        asset_id: gn.id(),
+        amount: Amount::from(100000u128) * gn.unit_amount(),
+    };
+
+    let infinite_penumbra = Value {
+        asset_id: penumbra.id(),
+        amount: Amount::from(100000u128) * penumbra.unit_amount(),
+    };
+
+    state_tx.vcb_credit(infinite_gn).await?;
+    state_tx.vcb_credit(infinite_penumbra).await?;
+
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
     state_tx.put_position(buy_1).await.unwrap();
@@ -626,6 +642,30 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let pusd = asset::Cache::with_known_assets()
         .get_unit("test_usd")
         .unwrap();
+
+    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
+    // the position manager.
+    let infinite_gn = Value {
+        asset_id: gn.id(),
+        amount: Amount::from(100000u128) * gn.unit_amount(),
+    };
+    let infinite_gm = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(100000u128) * gm.unit_amount(),
+    };
+    let infinite_penumbra = Value {
+        asset_id: penumbra.id(),
+        amount: Amount::from(100000u128) * penumbra.unit_amount(),
+    };
+    let infinite_pusd = Value {
+        asset_id: pusd.id(),
+        amount: Amount::from(100000u128) * pusd.unit_amount(),
+    };
+
+    state_tx.vcb_credit(infinite_gn).await?;
+    state_tx.vcb_credit(infinite_gm).await?;
+    state_tx.vcb_credit(infinite_penumbra).await?;
+    state_tx.vcb_credit(infinite_pusd).await?;
 
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());

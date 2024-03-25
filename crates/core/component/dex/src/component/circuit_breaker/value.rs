@@ -55,23 +55,15 @@ mod tests {
         component::{router::limit_buy, tests::TempStorageExt, PositionManager as _},
         state_key, DirectedUnitPair,
     };
-    use crate::{BatchSwapOutputData, PositionOpen, PositionWithdraw};
-    use cnidarium::{
-        ArcStateDeltaExt as _, StateDelta, StateRead as _, StateWrite as _, TempStorage,
-    };
+    use crate::{BatchSwapOutputData, PositionOpen};
+    use cnidarium::{ArcStateDeltaExt as _, StateDelta, TempStorage};
     use cnidarium_component::ActionHandler as _;
-    use penumbra_asset::{asset, Value};
+    use penumbra_asset::asset;
     use penumbra_num::Amount;
     use penumbra_proto::StateWriteProto as _;
     use penumbra_sct::component::clock::EpochManager as _;
     use penumbra_sct::component::source::SourceContext as _;
     use penumbra_sct::epoch::Epoch;
-    use rand_core::OsRng;
-
-    use crate::{
-        lp::{position::Position, Reserves},
-        DirectedTradingPair,
-    };
 
     use super::*;
 
