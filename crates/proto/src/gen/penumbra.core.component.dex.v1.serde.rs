@@ -2414,6 +2414,270 @@ impl<'de> serde::Deserialize<'de> for EventSwapClaim {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventSwapClaim", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventValueCircuitBreakerCredit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.previous_balance.is_some() {
+            len += 1;
+        }
+        if self.new_balance.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit", len)?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.previous_balance.as_ref() {
+            struct_ser.serialize_field("previousBalance", v)?;
+        }
+        if let Some(v) = self.new_balance.as_ref() {
+            struct_ser.serialize_field("newBalance", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValueCircuitBreakerCredit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "asset_id",
+            "assetId",
+            "previous_balance",
+            "previousBalance",
+            "new_balance",
+            "newBalance",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            PreviousBalance,
+            NewBalance,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "previousBalance" | "previous_balance" => Ok(GeneratedField::PreviousBalance),
+                            "newBalance" | "new_balance" => Ok(GeneratedField::NewBalance),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValueCircuitBreakerCredit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValueCircuitBreakerCredit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut previous_balance__ = None;
+                let mut new_balance__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreviousBalance => {
+                            if previous_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("previousBalance"));
+                            }
+                            previous_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::NewBalance => {
+                            if new_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newBalance"));
+                            }
+                            new_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValueCircuitBreakerCredit {
+                    asset_id: asset_id__,
+                    previous_balance: previous_balance__,
+                    new_balance: new_balance__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValueCircuitBreakerDebit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.previous_balance.is_some() {
+            len += 1;
+        }
+        if self.new_balance.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit", len)?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.previous_balance.as_ref() {
+            struct_ser.serialize_field("previousBalance", v)?;
+        }
+        if let Some(v) = self.new_balance.as_ref() {
+            struct_ser.serialize_field("newBalance", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValueCircuitBreakerDebit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "asset_id",
+            "assetId",
+            "previous_balance",
+            "previousBalance",
+            "new_balance",
+            "newBalance",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            PreviousBalance,
+            NewBalance,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "previousBalance" | "previous_balance" => Ok(GeneratedField::PreviousBalance),
+                            "newBalance" | "new_balance" => Ok(GeneratedField::NewBalance),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValueCircuitBreakerDebit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValueCircuitBreakerDebit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut previous_balance__ = None;
+                let mut new_balance__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreviousBalance => {
+                            if previous_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("previousBalance"));
+                            }
+                            previous_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::NewBalance => {
+                            if new_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newBalance"));
+                            }
+                            new_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValueCircuitBreakerDebit {
+                    asset_id: asset_id__,
+                    previous_balance: previous_balance__,
+                    new_balance: new_balance__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for GenesisContent {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

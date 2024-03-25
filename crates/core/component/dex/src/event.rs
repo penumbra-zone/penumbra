@@ -8,6 +8,8 @@ use crate::{
     BatchSwapOutputData, SwapExecution,
 };
 
+use penumbra_asset::asset;
+use penumbra_num::Amount;
 use penumbra_proto::penumbra::core::component::dex::v1 as pb;
 
 pub fn swap(swap: &Swap) -> pb::EventSwap {
@@ -89,5 +91,29 @@ pub fn arb_execution(height: u64, swap_execution: SwapExecution) -> pb::EventArb
     pb::EventArbExecution {
         height,
         swap_execution: Some(swap_execution.into()),
+    }
+}
+
+pub fn vcb_credit(
+    asset_id: asset::Id,
+    previous_balance: Amount,
+    new_balance: Amount,
+) -> pb::EventValueCircuitBreakerCredit {
+    pb::EventValueCircuitBreakerCredit {
+        asset_id: Some(asset_id.into()),
+        previous_balance: Some(previous_balance.into()),
+        new_balance: Some(new_balance.into()),
+    }
+}
+
+pub fn vcb_debit(
+    asset_id: asset::Id,
+    previous_balance: Amount,
+    new_balance: Amount,
+) -> pb::EventValueCircuitBreakerDebit {
+    pb::EventValueCircuitBreakerDebit {
+        asset_id: Some(asset_id.into()),
+        previous_balance: Some(previous_balance.into()),
+        new_balance: Some(new_balance.into()),
     }
 }

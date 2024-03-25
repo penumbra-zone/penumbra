@@ -8,6 +8,7 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use std::sync::Arc;
 
+use crate::component::ValueCircuitBreaker;
 use crate::lp::SellOrder;
 use crate::DexParameters;
 use crate::{
@@ -988,6 +989,19 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
     state_tx.put_position(buy_1).await.unwrap();
+    // TODO: later, this should be folded into an open_position method
+    state_tx
+        .vcb_credit(Value {
+            asset_id: gn.id(),
+            amount: Amount::from(1u64) * gn.unit_amount(),
+        })
+        .await?;
+    state_tx
+        .vcb_credit(Value {
+            asset_id: penumbra.id(),
+            amount: Amount::from(1u64) * penumbra.unit_amount(),
+        })
+        .await?;
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
@@ -1015,7 +1029,9 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone());
+        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .await
+        .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
         .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
@@ -1060,6 +1076,27 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     let pair_gm_gn = DirectedUnitPair::new(gm.clone(), gn.clone());
     let pair_gn_gm = DirectedUnitPair::new(gn.clone(), gm.clone());
     let pair_gm_penumbra = DirectedUnitPair::new(gm.clone(), penumbra.clone());
+
+    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
+    // the position manager.
+    let infinite_gm = Value {
+        asset_id: gm.id(),
+        amount: Amount::from(100000u128) * gm.unit_amount(),
+    };
+
+    let infinite_gn = Value {
+        asset_id: gn.id(),
+        amount: Amount::from(100000u128) * gn.unit_amount(),
+    };
+
+    let infinite_penumbra = Value {
+        asset_id: penumbra.id(),
+        amount: Amount::from(100000u128) * penumbra.unit_amount(),
+    };
+
+    state_tx.vcb_credit(infinite_gm).await?;
+    state_tx.vcb_credit(infinite_gn).await?;
+    state_tx.vcb_credit(infinite_penumbra).await?;
 
     // Create a 2:1 penumbra:gm position (i.e. buy 20 gm at 2 penumbra each).
     let buy_1 = limit_buy_pq(
@@ -1154,7 +1191,9 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     // Set the batch swap flow for the trading pair.
     Arc::get_mut(&mut state)
         .unwrap()
-        .put_swap_flow(&trading_pair, swap_flow.clone());
+        .put_swap_flow(&trading_pair, swap_flow.clone())
+        .await
+        .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
         .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)

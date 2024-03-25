@@ -669,6 +669,26 @@ message EventArbExecution {
   SwapExecution swap_execution = 2;
 }
 
+// Indicates that value was added to the DEX.
+message EventValueCircuitBreakerCredit {
+  // The asset ID being deposited into the DEX.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the DEX.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the DEX.
+  num.v1.Amount new_balance = 3;
+}
+
+// Indicates that value is leaving the DEX.
+message EventValueCircuitBreakerDebit {
+  // The asset ID being deposited into the DEX.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the DEX.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the DEX.
+  num.v1.Amount new_balance = 3;
+}
+
 message DexParameters {
   // Whether or not the DEX is enabled.
   bool is_enabled = 1;

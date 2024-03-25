@@ -47,7 +47,9 @@ impl ActionHandler for Swap {
         swap_flow.1 += swap.body.delta_2_i;
 
         // Set the batch swap flow for the trading pair.
-        state.put_swap_flow(&swap.body.trading_pair, swap_flow);
+        state
+            .put_swap_flow(&swap.body.trading_pair, swap_flow)
+            .await?;
 
         // Record the swap commitment in the state.
         let source = state.get_current_source().expect("source is set");

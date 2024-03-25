@@ -23,7 +23,7 @@ use penumbra_proto::{
     DomainType, StateReadProto,
 };
 
-use crate::ExecutionCircuitBreaker;
+use super::ExecutionCircuitBreaker;
 use crate::{
     lp::position::{self, Position},
     state_key, DirectedTradingPair, SwapExecution, TradingPair,

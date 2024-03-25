@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use penumbra_asset::asset;
+use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{
     penumbra::core::component::dex::v1 as pb, serializers::bech32str, DomainType,
@@ -154,6 +154,22 @@ impl Position {
             Some(self.reserves.r2)
         } else {
             None
+        }
+    }
+
+    /// Returns the amount of reserves for asset 1.
+    pub fn reserves_1(&self) -> Value {
+        Value {
+            amount: self.reserves.r1,
+            asset_id: self.phi.pair.asset_1(),
+        }
+    }
+
+    /// Returns the amount of reserves for asset 2.
+    pub fn reserves_2(&self) -> Value {
+        Value {
+            amount: self.reserves.r2,
+            asset_id: self.phi.pair.asset_2(),
         }
     }
 }
