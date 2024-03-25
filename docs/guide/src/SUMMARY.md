@@ -12,6 +12,7 @@
   - [Installing `pd`](./pd/install.md)
   - [Joining a testnet](./pd/join-testnet.md)
   - [Becoming a validator](./pd/validator.md)
+  - [Performing a chain upgrade](./pd/chain-upgrade.md)
   - [Debugging](./pd/debugging.md)
 - [Local RPC with `pclientd`](./pclientd.md)
   - [Configuring `pclientd`](./pclientd/configure.md)
