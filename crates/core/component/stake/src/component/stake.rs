@@ -1,3 +1,5 @@
+pub mod address;
+
 use crate::params::StakeParameters;
 use crate::rate::BaseRateData;
 use crate::validator::{self, Validator};
@@ -14,7 +16,6 @@ use futures::{StreamExt, TryStreamExt};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead;
-use sha2::{Digest, Sha256};
 use std::pin::Pin;
 use std::str::FromStr;
 use std::{collections::BTreeMap, sync::Arc};
@@ -25,7 +26,9 @@ use tendermint::{block, PublicKey};
 use tracing::{error, instrument, trace};
 
 use crate::component::epoch_handler::EpochHandler;
-use crate::component::validator_handler::{ValidatorDataRead, ValidatorManager};
+use crate::component::validator_handler::{
+    ValidatorDataRead, ValidatorManager, ValidatorUptimeTracker,
+};
 
 pub struct Staking {}
 
@@ -323,20 +326,7 @@ pub trait StateWriteExt: StateWrite {
         identity_key: &IdentityKey,
         consensus_key: &PublicKey,
     ) {
-        /// Translates from consensus keys to the truncated sha256 hashes in last_commit_info
-        /// This should really be a refined type upstream, but we can't currently upstream
-        /// to tendermint-rs, for process reasons, and shouldn't do our own tendermint data
-        /// modeling, so this is an interim hack.
-        fn validator_address(ck: &PublicKey) -> [u8; 20] {
-            let ck_bytes = ck.to_bytes();
-            let addr: [u8; 20] = Sha256::digest(ck_bytes).as_slice()[0..20]
-                .try_into()
-                .expect("Sha256 digest should be 20-bytes long");
-
-            addr
-        }
-
-        let address = validator_address(consensus_key);
+        let address = self::address::validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
             state_key::validators::lookup_by::cometbft_address(&address),
