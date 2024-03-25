@@ -7,13 +7,16 @@ use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_asset::asset;
+use penumbra_asset::{asset, Balance};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
+use crate::event;
 use crate::lp::position::State;
+use crate::lp::Reserves;
 use crate::{
+    component::ValueCircuitBreaker,
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
 };
@@ -175,7 +178,124 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.object_delete(state_key::pending_position_closures());
     }
 
+    /// Opens a new position, updating all necessary indexes and checking for
+    /// its nonexistence prior to being opened.
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn open_position(&mut self, position: position::Position) -> Result<()> {
+        // Double-check that the position is in the `Opened` state
+        if position.state != position::State::Opened {
+            anyhow::bail!("attempted to open a position with a state besides `Opened`");
+        }
+
+        // Validate that the position ID doesn't collide
+        self.check_position_id_unused(&position.id()).await?;
+
+        // Credit the DEX for the inflows from this position.
+        self.vcb_credit(position.reserves_1()).await?;
+        self.vcb_credit(position.reserves_2()).await?;
+
+        // Finally, record the new position state.
+        self.record_proto(event::position_open(&position));
+        self.put_position(position).await?;
+
+        Ok(())
+    }
+
+    /// Record execution against an opened position.
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn position_execution(&mut self, post_execution_state: position::Position) -> Result<()> {
+        self.record_proto(event::position_execution(&post_execution_state));
+        self.put_position(post_execution_state).await?;
+        Ok(())
+    }
+
+    /// Withdraw from a closed position, incrementing its sequence number.
+    ///
+    /// Updates the position's reserves and rewards to zero and returns the withdrawn balance.
+    #[tracing::instrument(level = "debug", skip(self))]
+    async fn withdraw_position(
+        &mut self,
+        position_id: position::Id,
+        sequence: u64,
+    ) -> Result<Balance> {
+        let mut metadata = self
+            .position_by_id(&position_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", position_id))?;
+
+        // Next, check that the withdrawal is consistent with the position state.
+        // This should be redundant with the value balance mechanism (clients should
+        // only be able to get the required input LPNFTs if the state transitions are
+        // consistent), but we check it here for defense in depth.
+        //
+        // This is just a check that sequence == current_sequence + 1, with extra logic
+        // so that we treat "closed" as "sequence -1".
+        if sequence == 0 {
+            if metadata.state != position::State::Closed {
+                anyhow::bail!(
+                    "attempted to withdraw position {} with state {}, expected Closed",
+                    position_id,
+                    metadata.state
+                );
+            }
+        } else {
+            if let position::State::Withdrawn {
+                sequence: current_sequence,
+            } = metadata.state
+            {
+                if current_sequence + 1 != sequence {
+                    anyhow::bail!(
+                        "attempted to withdraw position {} with sequence {}, expected {}",
+                        position_id,
+                        sequence,
+                        current_sequence + 1
+                    );
+                }
+            } else {
+                anyhow::bail!(
+                    "attempted to withdraw position {} with state {}, expected Withdrawn",
+                    position_id,
+                    metadata.state
+                );
+            }
+        }
+
+        // Record an event prior to updating the position state, so we have access to
+        // the current reserves.
+        self.record_proto(event::position_withdraw(position_id, &metadata));
+
+        // Grab a copy of the final reserves of the position to return to the caller.
+        let reserves = metadata.reserves.balance(&metadata.phi.pair);
+
+        // Debit the DEX for the outflows from this position.
+        // TODO: in a future PR, split current PositionManager to PositionManagerInner
+        // and fold this into a position open method
+        self.vcb_debit(metadata.reserves_1()).await?;
+        self.vcb_debit(metadata.reserves_2()).await?;
+
+        // Finally, update the position. This has two steps:
+        // - update the state with the correct sequence number;
+        // - zero out the reserves, to prevent double-withdrawals.
+        metadata.state = position::State::Withdrawn {
+            // We just checked that the supplied sequence number is incremented by 1 from prev.
+            sequence,
+        };
+        metadata.reserves = Reserves::zero();
+
+        self.put_position(metadata).await?;
+
+        Ok(reserves)
+    }
+}
+
+impl<T: StateWrite + ?Sized> PositionManager for T {}
+
+#[async_trait]
+pub(crate) trait Inner: StateWrite {
     /// Writes a position to the state, updating all necessary indexes.
+    ///
+    /// This should be the SOLE ENTRYPOINT for writing positions to the state.
+    /// All other position changes exposed by the `PositionManager` should run through here.
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
     async fn put_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
@@ -202,12 +322,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.put(state_key::position_by_id(&id), position);
         Ok(())
     }
-}
 
-impl<T: StateWrite + ?Sized> PositionManager for T {}
-
-#[async_trait]
-pub(crate) trait Inner: StateWrite {
     fn index_position_by_price(&mut self, position: &position::Position) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         let id = position.id();

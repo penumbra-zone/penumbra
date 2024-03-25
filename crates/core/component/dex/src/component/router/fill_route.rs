@@ -412,11 +412,11 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
     async fn save(&mut self) -> Result<()> {
         for position in &self.positions {
-            self.state.put_position(position.clone()).await?;
+            self.state.position_execution(position.clone()).await?;
 
             // Create an ABCI event signaling that the position was executed against
             self.state
-                .record_proto(event::position_execution(position.clone()));
+                .record_proto(event::position_execution(&position));
         }
         Ok(())
     }
@@ -492,7 +492,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // frontier.  The other positions will be written out either when
         // they're fully consumed, or when we finish filling.
         self.state
-            .put_position(self.positions[index].clone())
+            .position_execution(self.positions[index].clone())
             .await
             .expect("writing to storage should not fail");
 
