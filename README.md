@@ -23,9 +23,13 @@ To join the test network as a full node, follow setup instructions for Penumbra 
 
 ## Current work and roadmap
 
-For a high-level view of current work-in-progress and future items, check out our [project board][Board].
+For a high-level view of current work-in-progress and future items, check out our:
 
-[Board]: https://github.com/orgs/penumbra-zone/projects/17
+- [Tracking issues][Tracking]
+- [Backlog][Backlog]
+
+[Tracking]: https://github.com/orgs/penumbra-zone/projects/23/views/4
+[Backlog]: https://github.com/orgs/penumbra-zone/projects/23/views/1
 [Discord]: https://discord.gg/hKvkrqa3zC
 [Penumbra]: https://penumbra.zone
 [protocol]: https://protocol.penumbra.zone
