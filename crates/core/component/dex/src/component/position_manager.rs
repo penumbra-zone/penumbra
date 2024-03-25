@@ -83,6 +83,53 @@ pub trait PositionRead: StateRead {
         self.object_get(state_key::pending_position_closures())
             .unwrap_or_default()
     }
+
+    /// Returns the list of candidate assets to route through for a trade from `from`.
+    /// Combines a list of fixed candidates with a list of liquidity-based candidates.
+    /// This ensures that the fixed candidates are always considered, minimizing
+    /// the risk of attacks on routing.
+    fn candidate_set(
+        &self,
+        from: asset::Id,
+        fixed_candidates: Arc<Vec<asset::Id>>,
+    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send>> {
+        // Clone the fixed candidates Arc so it can be moved into the stream filter's future.
+        let fc = fixed_candidates.clone();
+        let mut dynamic_candidates = self
+            .ordered_routable_assets(&from)
+            .filter(move |c| {
+                future::ready(!fc.contains(c.as_ref().expect("failed to fetch candidate")))
+            })
+            .take(DYNAMIC_ASSET_LIMIT);
+        try_stream! {
+            // First stream the fixed candidates, so those can be processed while the dynamic candidates are fetched.
+            for candidate in fixed_candidates.iter() {
+                yield candidate.clone();
+            }
+
+            // Yield the liquidity-based candidates. Note that this _may_ include some assets already included in the fixed set.
+            while let Some(candidate) = dynamic_candidates
+                .next().await {
+                    yield candidate.expect("failed to fetch candidate");
+            }
+        }
+        .boxed()
+    }
+
+    /// Returns a stream of [`asset::Id`] routable from a given asset, ordered by liquidity.
+    fn ordered_routable_assets(
+        &self,
+        from: &asset::Id,
+    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
+        let prefix = state_key::internal::routable_assets::prefix(from);
+        tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
+        self.nonverifiable_prefix_raw(&prefix)
+            .map(|entry| match entry {
+                Ok((_, v)) => Ok(asset::Id::decode(&*v)?),
+                Err(e) => Err(e),
+            })
+            .boxed()
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
@@ -194,53 +241,6 @@ pub trait PositionManager: StateWrite + PositionRead {
             }
             _ => position,
         }
-    }
-
-    /// Returns the list of candidate assets to route through for a trade from `from`.
-    /// Combines a list of fixed candidates with a list of liquidity-based candidates.
-    /// This ensures that the fixed candidates are always considered, minimizing
-    /// the risk of attacks on routing.
-    fn candidate_set(
-        &self,
-        from: asset::Id,
-        fixed_candidates: Arc<Vec<asset::Id>>,
-    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send>> {
-        // Clone the fixed candidates Arc so it can be moved into the stream filter's future.
-        let fc = fixed_candidates.clone();
-        let mut dynamic_candidates = self
-            .ordered_routable_assets(&from)
-            .filter(move |c| {
-                future::ready(!fc.contains(c.as_ref().expect("failed to fetch candidate")))
-            })
-            .take(DYNAMIC_ASSET_LIMIT);
-        try_stream! {
-            // First stream the fixed candidates, so those can be processed while the dynamic candidates are fetched.
-            for candidate in fixed_candidates.iter() {
-                yield candidate.clone();
-            }
-
-            // Yield the liquidity-based candidates. Note that this _may_ include some assets already included in the fixed set.
-            while let Some(candidate) = dynamic_candidates
-                .next().await {
-                    yield candidate.expect("failed to fetch candidate");
-            }
-        }
-        .boxed()
-    }
-
-    /// Returns a stream of [`asset::Id`] routable from a given asset, ordered by liquidity.
-    fn ordered_routable_assets(
-        &self,
-        from: &asset::Id,
-    ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::routable_assets::prefix(from);
-        tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
-        self.nonverifiable_prefix_raw(&prefix)
-            .map(|entry| match entry {
-                Ok((_, v)) => Ok(asset::Id::decode(&*v)?),
-                Err(e) => Err(e),
-            })
-            .boxed()
     }
 }
 
