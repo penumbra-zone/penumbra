@@ -4803,6 +4803,7 @@ name = "penumbra-bench"
 version = "0.79.0-alpha.1"
 dependencies = [
  "anyhow",
+ "ark-bls12-377",
  "ark-ec",
  "ark-ff",
  "ark-groth16",
