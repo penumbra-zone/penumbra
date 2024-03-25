@@ -210,7 +210,7 @@ pub enum TestnetCommand {
         /// Optional URL of archived node state in .tar.gz format. The archive will be
         /// downloaded and extracted locally, allowing the node to join a network at a block height
         /// higher than 0.
-        #[clap(long)]
+        #[clap(long, env = "PENUMBRA_PD_ARCHIVE_URL")]
         archive_url: Option<Url>,
 
         /// Human-readable name to identify node on network

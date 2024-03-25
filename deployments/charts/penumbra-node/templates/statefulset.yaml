@@ -125,6 +125,10 @@ spec:
               value: "{{ .Values.cometbft.config.p2p.max_num_outbound_peers }}"
             - name: PENUMBRA_COMETBFT_INDEXER
               value: "{{ .Values.cometbft.config.indexer }}"
+            {{- if .Values.penumbra_bootstrap_archive_url }}
+            - name: PENUMBRA_PD_ARCHIVE_URL
+              value: "{{ .Values.penumbra_bootstrap_archive_url }}"
+            {{- end }}
             {{- if .Values.postgres.credentialsSecretName }}
             - name: COMETBFT_POSTGRES_CONNECTION_URL
               valueFrom:
