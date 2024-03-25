@@ -11,7 +11,7 @@ use {
         component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,
     },
     tap::Tap,
-    tracing::{error_span, info, Instrument},
+    tracing::{error_span, info, trace, Instrument},
 };
 
 #[tokio::test]
@@ -60,10 +60,15 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
 
     // Jump ahead a few blocks.
     let height = 4;
-    node.fast_forward(height)
-        .instrument(error_span!("fast forwarding test node {height} blocks"))
-        .await
-        .context("fast forwarding {height} blocks")?;
+    for i in 1..=height {
+        node.block()
+            .with_signatures(Default::default())
+            .execute()
+            .tap(|_| trace!(%i, "executing block with no signatures"))
+            .instrument(error_span!("executing block with no signatures", %i))
+            .await
+            .context("executing block with no signatures")?;
+    }
 
     // Check the validator's uptime once more. We should have uptime data up to the fourth block,
     // and the validator should have missed all of the blocks between genesis and now.
