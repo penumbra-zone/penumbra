@@ -81,7 +81,7 @@ impl Ics20Withdrawal {
         // skew, enforce that timeout time is rounded to the nearest minute
         if self.timeout_time % 60_000_000_000 != 0 {
             anyhow::bail!(
-                "withdrawal timeout timestamp {} is not rounded to one second",
+                "withdrawal timeout timestamp {} is not rounded to one minute",
                 self.timeout_time
             );
         }
