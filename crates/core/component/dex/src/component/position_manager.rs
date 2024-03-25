@@ -191,11 +191,6 @@ pub trait PositionManager: StateWrite + PositionRead {
         // reserves or the position state might have invalidated them.
         self.deindex_position_by_price(&position);
 
-        // currently, we are disabling limit orders due to the complexity involved in managing
-        // limit orders in the dex state machine (see
-        // https://github.com/penumbra-zone/penumbra/issues/3850#issuecomment-1977300433)
-        // let position = self.handle_limit_order(&prev, position);
-
         // Only index the position's liquidity if it is active.
         if position.state == position::State::Opened {
             self.index_position_by_price(&position);
@@ -206,41 +201,6 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         self.put(state_key::position_by_id(&id), position);
         Ok(())
-    }
-
-    /// Handle a limit order, inspecting it previous state to determine if it
-    /// has been filled, and if so, marking it as closed. If the position is
-    /// not a limit order, or has not been filled, it is returned unchanged.
-    fn handle_limit_order(
-        &self,
-        prev_position: &Option<position::Position>,
-        position: Position,
-    ) -> Position {
-        let id = position.id();
-        match prev_position {
-            Some(_) if position.close_on_fill => {
-                // It's technically possible for a limit order to be partially filled,
-                // and unfilled on the other side. In this case, we would close it prematurely.
-                // However, because of the arbitrage dynamics we expect that in practice an order
-                // gets completely filled or not at all.
-                if position.reserves.r1 == Amount::zero() || position.reserves.r2 == Amount::zero()
-                {
-                    tracing::debug!(?id, "limit order filled, setting state to closed");
-                    Position {
-                        state: position::State::Closed,
-                        ..position
-                    }
-                } else {
-                    tracing::debug!(?id, "limit order partially filled, keeping open");
-                    position
-                }
-            }
-            None if position.close_on_fill => {
-                tracing::debug!(?id, "detected a newly opened limit order");
-                position
-            }
-            _ => position,
-        }
     }
 }
 

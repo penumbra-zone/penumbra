@@ -52,7 +52,7 @@ mod tests {
     use crate::component::{StateReadExt as _, StateWriteExt as _};
     use crate::lp::plan::PositionWithdrawPlan;
     use crate::{
-        component::{router::limit_buy, tests::TempStorageExt, PositionManager as _},
+        component::{router::limit_buy, tests::TempStorageExt},
         state_key, DirectedUnitPair,
     };
     use crate::{BatchSwapOutputData, PositionOpen};
@@ -224,7 +224,7 @@ mod tests {
 
         let id = buy_1.id();
 
-        let position = state_tx.handle_limit_order(&None, buy_1);
+        let position = buy_1;
         state_tx.index_position_by_price(&position);
         state_tx
             .update_available_liquidity(&position, &None)
