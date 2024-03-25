@@ -4,6 +4,7 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::{bail, ensure, Result};
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+use tendermint::consensus::State;
 use tokio::sync::watch;
 use tracing::Span;
 
@@ -271,44 +272,15 @@ impl Storage {
         self.0.snapshots.read().get(version)
     }
 
-    /// Commits the provided [`StateDelta`] to persistent storage as the latest
-    /// version of the chain state.
-    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
-        // Extract the snapshot and the changes from the state delta
-        let (snapshot, changes) = delta.flatten();
-        let prev_snapshot_version = snapshot.version();
-
-        // We use wrapping_add here so that we can write `new_version = 0` by
-        // overflowing `PRE_GENESIS_VERSION`.
-        let prev_storage_version = self.latest_version();
-        let next_storage_version = prev_storage_version.wrapping_add(1);
-        tracing::debug!(prev_storage_version, next_storage_version);
-
-        ensure!(
-            prev_storage_version == prev_snapshot_version,
-            "trying to commit a delta forked from version {}, but the latest version is {}",
-            prev_snapshot_version,
-            prev_storage_version
-        );
-
-        self.commit_inner(snapshot, changes, next_storage_version, false)
-            .await
+    pub async fn prepare_commit(&self, delta: StateDelta<S>) -> Result<StagedWriteBatch> {
+        self.prepare_commit_inner(delta, false).await
     }
 
-    /// Commits the supplied [`Cache`] to persistent storage.
-    ///
-    /// # Migrations
-    /// In the case of chain state migrations we need to commit the new state
-    /// without incrementing the version. If `perform_migration` is `true` the
-    /// snapshot will _not_ be written to the snapshot cache, and no subscribers
-    /// will be notified. Substore versions will not be updated.
-    async fn commit_inner(
+    pub async fn prepare_commit_inner(
         &self,
-        snapshot: Snapshot,
-        cache: Cache,
-        version: jmt::Version,
+        delta: StateDelta<Snapshot>,
         perform_migration: bool,
-    ) -> Result<crate::RootHash> {
+    ) -> Result<StagedWriteBatch> {
         tracing::debug!(new_jmt_version = ?version, "committing state delta");
         // Save a copy of the changes to send to subscribers later.
         let changes = Arc::new(cache.clone_changes());
@@ -432,6 +404,71 @@ impl Storage {
             "added main store to write batch"
         );
 
+        let staged_write_batch = StagedWriteBatch {};
+
+        Ok(staged_write_batch)
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        // Extract the snapshot and the changes from the state delta
+        let (snapshot, changes) = delta.flatten();
+        let prev_snapshot_version = snapshot.version();
+
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let prev_storage_version = self.latest_version();
+        let next_storage_version = prev_storage_version.wrapping_add(1);
+        tracing::debug!(prev_storage_version, next_storage_version);
+
+        ensure!(
+            prev_storage_version == prev_snapshot_version,
+            "trying to commit a delta forked from version {}, but the latest version is {}",
+            prev_snapshot_version,
+            prev_storage_version
+        );
+
+        let batch = slef.prepare_commit(delta).await?;
+        self.commit_batch(batch).await
+
+        //  self.commit_inner(snapshot, changes, next_storage_version, false)
+        //      .await
+    }
+
+    pub async fn commit_batch(&self, batch: StagedWriteBatch) -> Result<crate::RootHash> {
+        let StagedWriteBatch {
+            write_batch,
+            global_root_hash,
+            version,
+            substore_roots,
+            multistore_versions,
+            perform_migration,
+        } = batch;
+
+        self.commit_inner(
+            write_batch,
+            global_root_hash,
+            version,
+            substore_roots,
+            multistore_versions,
+            perform_migration,
+        )
+        .await
+    }
+
+    /// Commits the supplied [`Cache`] to persistent storage.
+    ///
+    /// # Migrations
+    /// In the case of chain state migrations we need to commit the new state
+    /// without incrementing the version. If `perform_migration` is `true` the
+    /// snapshot will _not_ be written to the snapshot cache, and no subscribers
+    /// will be notified. Substore versions will not be updated.
+    async fn commit_inner(
+        &self,
+        write_batch: StagedWriteBatch,
+        perform_migration: bool,
+    ) -> Result<crate::RootHash> {
         db.write(write_batch).expect("can write to db");
         tracing::debug!(
             ?global_root_hash,
@@ -481,6 +518,27 @@ impl Storage {
         Ok(global_root_hash)
     }
 
+    /*
+
+    prepare_commit:
+        > rename span, so that in tokio-console this doesn't show up as two methods (optional)
+        prepare_commit_inner: delta, perform_migration: bool
+            Note: `commit_inner` method up to the `db.write` call
+
+    -> commit:
+        prepare commit + commit_batch
+
+    -> commit in place:
+        prepare_commit_inner (delta, false) + commit_batch
+
+    -> commit_batch:
+        1. Checking that the main store version tracks
+        2. Check that the substore versions tracks (using the multistore cache potentially?): im::Vec?
+        3. `commit_inner` from `db.write` til }
+
+
+     */
+
     #[cfg(feature = "migration")]
     /// Commit the provided [`StateDelta`] to persistent storage without increasing the version
     /// of the chain state, and skips the snapshot cache update.
@@ -489,6 +547,54 @@ impl Storage {
         let old_version = self.latest_version();
         self.commit_inner(snapshot, changes, old_version, true)
             .await
+    }
+
+    /// Commits the provided [`StateDelta`] to persistent storage as the latest
+    /// version of the chain state.
+    pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
+        // Extract the snapshot and the changes from the state delta
+        let (snapshot, changes) = delta.flatten();
+        let prev_snapshot_version = snapshot.version();
+
+        // We use wrapping_add here so that we can write `new_version = 0` by
+        // overflowing `PRE_GENESIS_VERSION`.
+        let prev_storage_version = self.latest_version();
+        let next_storage_version = prev_storage_version.wrapping_add(1);
+        tracing::debug!(prev_storage_version, next_storage_version);
+
+        ensure!(
+            prev_storage_version == prev_snapshot_version,
+            "trying to commit a delta forked from version {}, but the latest version is {}",
+            prev_snapshot_version,
+            prev_storage_version
+        );
+
+        let batch = slef.prepare_commit(delta).await?;
+        self.commit_batch(batch).await
+
+        //  self.commit_inner(snapshot, changes, next_storage_version, false)
+        //      .await
+    }
+
+    pub async fn commit_batch(&self, batch: StagedWriteBatch) -> Result<crate::RootHash> {
+        let StagedWriteBatch {
+            write_batch,
+            global_root_hash,
+            version,
+            substore_roots,
+            multistore_versions,
+            perform_migration,
+        } = batch;
+
+        self.commit_inner(
+            write_batch,
+            global_root_hash,
+            version,
+            substore_roots,
+            multistore_versions,
+            perform_migration,
+        )
+        .await
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.
