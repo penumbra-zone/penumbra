@@ -287,8 +287,8 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
         );
         assert_eq!(
             existing.num_missed_blocks(),
-            (EPOCH_DURATION - 1) as usize,
-            "genesis validator has missed all blocks in the previous epoch"
+            0,
+            "genesis validator has signed all blocks in the previous epoch"
         );
     }
 
