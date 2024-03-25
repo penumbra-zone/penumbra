@@ -9,7 +9,7 @@ use penumbra_num::fixpoint::U128x128;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
-use crate::component::PositionManager;
+use crate::component::PositionRead as _;
 
 use super::{Path, PathCache, PathEntry, RoutingParams, SharedPathCache};
 
