@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 // use tokio_stream::wrappers::WatchStream;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
 use tokio::sync::watch;
@@ -40,7 +40,6 @@ struct Inner {
     changes_rx: watch::Receiver<(jmt::Version, Arc<Cache>)>,
     snapshots: RwLock<SnapshotCache>,
     multistore_config: MultistoreConfig,
-    #[allow(dead_code)]
     /// A handle to the dispatcher task.
     /// This is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
@@ -277,17 +276,22 @@ impl Storage {
     pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
         // Extract the snapshot and the changes from the state delta
         let (snapshot, changes) = delta.flatten();
+        let prev_snapshot_version = snapshot.version();
 
         // We use wrapping_add here so that we can write `new_version = 0` by
         // overflowing `PRE_GENESIS_VERSION`.
-        let old_version = self.latest_version();
-        let new_version = old_version.wrapping_add(1);
-        tracing::debug!(old_version, new_version);
-        if old_version != snapshot.version() {
-            anyhow::bail!("version mismatch in commit: expected state forked from version {} but found state forked from version {}", old_version, snapshot.version());
-        }
+        let prev_storage_version = self.latest_version();
+        let next_storage_version = prev_storage_version.wrapping_add(1);
+        tracing::debug!(prev_storage_version, next_storage_version);
 
-        self.commit_inner(snapshot, changes, new_version, false)
+        ensure!(
+            prev_storage_version == prev_snapshot_version,
+            "trying to commit a delta forked from version {}, but the latest version is {}",
+            prev_snapshot_version,
+            prev_storage_version
+        );
+
+        self.commit_inner(snapshot, changes, next_storage_version, false)
             .await
     }
 
@@ -377,7 +381,7 @@ impl Storage {
 
             let substore_storage = SubstoreStorage { substore_snapshot };
 
-            // Commit the substore and collect the root hash
+            // Commit the substore and collect its root hash
             let (root_hash, substore_batch) = substore_storage
                 .commit(changeset, write_batch, version, perform_migration)
                 .await?;
@@ -392,7 +396,7 @@ impl Storage {
             substore_roots.push((config.clone(), root_hash, version));
         }
 
-        /* commit roots to main store */
+        // Add substore roots to the main store changeset
         let main_store_config = self.0.multistore_config.main_store.clone();
         let mut main_store_changes = changes_by_substore
             .remove(&main_store_config)
@@ -407,7 +411,7 @@ impl Storage {
                 .insert(config.prefix.to_string(), Some(root_hash.0.to_vec()));
         }
 
-        /* commit main substore */
+        // Commit the main store and collect the global root hash
         let main_store_snapshot = SubstoreSnapshot {
             config: main_store_config.clone(),
             rocksdb_snapshot: snapshot.0.snapshot.clone(),
@@ -427,9 +431,15 @@ impl Storage {
             ?version,
             "added main store to write batch"
         );
-        db.write(write_batch).expect("can write to db");
 
-        /* update multistore versions */
+        db.write(write_batch).expect("can write to db");
+        tracing::debug!(
+            ?global_root_hash,
+            ?version,
+            "committed main store and substores to db"
+        );
+
+        // Update the tracked versions for each substore.
         for (config, root_hash, new_version) in substore_roots {
             tracing::debug!(
                 ?root_hash,
@@ -443,38 +453,37 @@ impl Storage {
         tracing::debug!(?global_root_hash, ?version, "updating main store version");
         multistore_versions.set_version(main_store_config, version);
 
-        /* hydrate the snapshot cache */
-        if perform_migration {
+        // If we're not performing a migration, we should update the snapshot cache
+        if !perform_migration {
+            tracing::debug!("updating snapshot cache");
+
+            let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
+            // Obtain a write lock to the snapshot cache, and push the latest snapshot
+            // available. The lock guard is implicitly dropped immediately.
+            self.0
+                .snapshots
+                .write()
+                .try_push(latest_snapshot.clone())
+                .expect("should process snapshots with consecutive jmt versions");
+
+            tracing::debug!(?version, "dispatching snapshot");
+
+            // Send fails if the channel is closed (i.e., if there are no receivers);
+            // in this case, we should ignore the error, we have no one to notify.
+            let _ = self
+                .0
+                .dispatcher_tx
+                .send((latest_snapshot, (version, changes)));
+        } else {
             tracing::debug!("skipping snapshot cache update");
-            return Ok(global_root_hash);
         }
-
-        tracing::debug!("updating snapshot cache");
-
-        let latest_snapshot = Snapshot::new(db.clone(), version, multistore_versions);
-        // Obtain a write lock to the snapshot cache, and push the latest snapshot
-        // available. The lock guard is implicitly dropped immediately.
-        self.0
-            .snapshots
-            .write()
-            .try_push(latest_snapshot.clone())
-            .expect("should process snapshots with consecutive jmt versions");
-
-        tracing::debug!(?version, "dispatching snapshot");
-
-        // Send fails if the channel is closed (i.e., if there are no receivers);
-        // in this case, we should ignore the error, we have no one to notify.
-        let _ = self
-            .0
-            .dispatcher_tx
-            .send((latest_snapshot, (version, changes)));
 
         Ok(global_root_hash)
     }
 
     #[cfg(feature = "migration")]
-    /// Commits the provided [`StateDelta`] to persistent storage without increasing the version
-    /// of the chain state.
+    /// Commit the provided [`StateDelta`] to persistent storage without increasing the version
+    /// of the chain state, and skips the snapshot cache update.
     pub async fn commit_in_place(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
         let (snapshot, changes) = delta.flatten();
         let old_version = self.latest_version();
