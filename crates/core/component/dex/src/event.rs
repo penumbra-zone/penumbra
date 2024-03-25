@@ -1,6 +1,6 @@
 use crate::{
     lp::{
-        action::{PositionClose, PositionOpen, PositionWithdraw},
+        action::PositionClose,
         position::{self, Position},
     },
     swap::Swap,
@@ -30,13 +30,13 @@ pub fn swap_claim(swap_claim: &SwapClaim) -> pb::EventSwapClaim {
     }
 }
 
-pub fn position_open(position_open: &PositionOpen) -> pb::EventPositionOpen {
+pub fn position_open(position: &Position) -> pb::EventPositionOpen {
     pb::EventPositionOpen {
-        position_id: Some(position_open.position.id().into()),
-        trading_pair: Some(position_open.position.phi.pair.into()),
-        reserves_1: Some(position_open.position.reserves.r1.into()),
-        reserves_2: Some(position_open.position.reserves.r2.into()),
-        trading_fee: position_open.position.phi.component.fee,
+        position_id: Some(position.id().into()),
+        trading_pair: Some(position.phi.pair.into()),
+        reserves_1: Some(position.reserves.r1.into()),
+        reserves_2: Some(position.reserves.r2.into()),
+        trading_fee: position.phi.component.fee,
     }
 }
 
@@ -49,7 +49,7 @@ pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
 }
 
 pub fn position_withdraw(
-    position_withdraw: &PositionWithdraw,
+    position_id: position::Id,
     final_position_state: &Position,
 ) -> pb::EventPositionWithdraw {
     let sequence = if let position::State::Withdrawn { sequence, .. } = final_position_state.state {
@@ -58,7 +58,7 @@ pub fn position_withdraw(
         0
     };
     pb::EventPositionWithdraw {
-        position_id: Some(position_withdraw.position_id.into()),
+        position_id: Some(position_id.into()),
         trading_pair: Some(final_position_state.phi.pair.into()),
         reserves_1: Some(final_position_state.reserves.r1.into()),
         reserves_2: Some(final_position_state.reserves.r2.into()),
@@ -66,7 +66,7 @@ pub fn position_withdraw(
     }
 }
 
-pub fn position_execution(post_execution_state: Position) -> pb::EventPositionExecution {
+pub fn position_execution(post_execution_state: &Position) -> pb::EventPositionExecution {
     pb::EventPositionExecution {
         position_id: Some(post_execution_state.id().into()),
         trading_pair: Some(post_execution_state.phi.pair.into()),

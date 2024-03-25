@@ -8,9 +8,6 @@ use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use rand_core::OsRng;
 
-//use crate::TempStorageExt;
-
-use crate::component::ValueCircuitBreaker as _;
 use crate::lp::action::PositionOpen;
 use crate::DexParameters;
 use crate::{
@@ -22,10 +19,6 @@ use crate::{
     lp::{position::Position, Reserves},
     BatchSwapOutputData, DirectedTradingPair, DirectedUnitPair,
 };
-
-// TODO: what's the right way to mock genesis? if component A needs component B,
-// do we need a way to mock B's genesis in A's tests? or should we only do unit
-// tests for A, integration tests for A+B?
 
 #[async_trait]
 pub trait TempStorageExt: Sized {
@@ -83,7 +76,7 @@ async fn single_limit_order() -> anyhow::Result<()> {
     );
 
     let position_1_id = position_1.id();
-    state_tx.put_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_1.clone()).await.unwrap();
 
     let mut state_test_1 = state_tx.fork();
 
@@ -333,9 +326,9 @@ async fn multiple_limit_orders() -> anyhow::Result<()> {
     let position_3_id = position_3.id();
 
     // The insertion order shouldn't matter.
-    state_tx.put_position(position_2.clone()).await.unwrap();
-    state_tx.put_position(position_1.clone()).await.unwrap();
-    state_tx.put_position(position_3.clone()).await.unwrap();
+    state_tx.open_position(position_2.clone()).await.unwrap();
+    state_tx.open_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_3.clone()).await.unwrap();
 
     let mut full_orderbook_state = state_tx;
 
@@ -501,7 +494,7 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
             r2: Amount::from(1u64) * price1 * gn.clone().unit_amount(),
         },
     );
-    state_tx.put_position(buy_1.clone()).await.unwrap();
+    state_tx.open_position(buy_1.clone()).await.unwrap();
     state_tx.apply();
 
     let stream = state.all_positions();
@@ -526,7 +519,7 @@ async fn position_create_and_retrieve() -> anyhow::Result<()> {
             r2: Amount::from(1u64) * price2 * gn.clone().unit_amount(),
         },
     );
-    state_tx.put_position(buy_2.clone()).await.unwrap();
+    state_tx.open_position(buy_2.clone()).await.unwrap();
     state_tx.apply();
 
     let stream = state.all_positions();
@@ -561,24 +554,9 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
-    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
-    // the position manager.
-    let infinite_gn = Value {
-        asset_id: gn.id(),
-        amount: Amount::from(100000u128) * gn.unit_amount(),
-    };
-
-    let infinite_penumbra = Value {
-        asset_id: penumbra.id(),
-        amount: Amount::from(100000u128) * penumbra.unit_amount(),
-    };
-
-    state_tx.vcb_credit(infinite_gn).await?;
-    state_tx.vcb_credit(infinite_penumbra).await?;
-
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
     let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
     state_tx.apply();
 
     // Now we should be able to fill a 1:1 gn:penumbra swap.
@@ -643,30 +621,6 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .get_unit("test_usd")
         .unwrap();
 
-    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
-    // the position manager.
-    let infinite_gn = Value {
-        asset_id: gn.id(),
-        amount: Amount::from(100000u128) * gn.unit_amount(),
-    };
-    let infinite_gm = Value {
-        asset_id: gm.id(),
-        amount: Amount::from(100000u128) * gm.unit_amount(),
-    };
-    let infinite_penumbra = Value {
-        asset_id: penumbra.id(),
-        amount: Amount::from(100000u128) * penumbra.unit_amount(),
-    };
-    let infinite_pusd = Value {
-        asset_id: pusd.id(),
-        amount: Amount::from(100000u128) * pusd.unit_amount(),
-    };
-
-    state_tx.vcb_credit(infinite_gn).await?;
-    state_tx.vcb_credit(infinite_gm).await?;
-    state_tx.vcb_credit(infinite_penumbra).await?;
-    state_tx.vcb_credit(infinite_pusd).await?;
-
     tracing::info!(gm_id = ?gm.id());
     tracing::info!(gn_id = ?gn.id());
     tracing::info!(pusd_id = ?pusd.id());
@@ -676,7 +630,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     // Sell 25 gn at 1 gm each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(limit_sell(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             25u64.into(),
             1u64.into(),
@@ -685,7 +639,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 1 pusd at 20 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(limit_buy(
             DirectedUnitPair::new(pusd.clone(), gm.clone()),
             1u64.into(),
             20u64.into(),
@@ -694,7 +648,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 5 penumbra at 1 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(limit_buy(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             5u64.into(),
             1u64.into(),
@@ -703,7 +657,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Sell 1pusd at 5 penumbra each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(limit_sell(
             DirectedUnitPair::new(pusd.clone(), penumbra.clone()),
             1u64.into(),
             5u64.into(),
@@ -804,7 +758,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     // Sell 10 gn at 1 penumbra each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(limit_sell(
             DirectedUnitPair::new(gn.clone(), penumbra.clone()),
             10u64.into(),
             1u64.into(),
@@ -813,7 +767,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Buy 100 gn at 2 gm each.
     state_tx
-        .put_position(limit_buy(
+        .open_position(limit_buy(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             100u64.into(),
             2u64.into(),
@@ -822,7 +776,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Sell 100 penumbra at 1 gm each.
     state_tx
-        .put_position(limit_sell(
+        .open_position(limit_sell(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             100u64.into(),
             1u64.into(),
@@ -915,9 +869,9 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let mut sell_1 = limit_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
     sell_1.nonce = [0; 32];
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(sell_1).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(sell_1).await.unwrap();
 
     state_tx.apply();
 
