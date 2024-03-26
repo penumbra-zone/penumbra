@@ -27,8 +27,8 @@ use {
 /// A bundle of information about a validator used to track its uptime.
 type ValidatorInformation = (IdentityKey, tendermint::PublicKey, Uptime);
 
-/// A collection of tasks retrieving [`ValidatorInformation`].
-type Lookups = JoinSet<anyhow::Result<Option<ValidatorInformation>>>;
+/// The output of a [`ValidatorUptimeTracker::spawn_validator_lookup_fut()`] task.
+type LookupResult = anyhow::Result<Option<ValidatorInformation>>;
 
 /// Tracks validator uptimes.
 ///
@@ -71,7 +71,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // Since we don't have a lookup from "addresses" to identity keys,
         // iterate over our app's validators, and match them up with the vote data.
         // We can fetch all the data required for processing each validator concurrently:
-        let mut lookups = Lookups::new();
+        let mut lookups = JoinSet::new();
         let mut validator_identity_stream = self.consensus_set_stream()?;
         while let Some(identity_key) = validator_identity_stream.next().await.transpose()? {
             self.spawn_validator_lookup_fut(identity_key, &mut lookups);
@@ -82,7 +82,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // independent, this doesn't introduce any nondeterminism into the complete state change.
         while let Some(data) = lookups.join_next().await.transpose()? {
             if let Some(validator_info) = data? {
-                self.process_vote(validator_info, &did_address_vote, &params, height)
+                self.process_validator_uptime(validator_info, &did_address_vote, &params, height)
                     .await?;
             }
         }
@@ -103,7 +103,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
     fn spawn_validator_lookup_fut(
         &self,
         identity_key: crate::IdentityKey,
-        lookups: &mut Lookups,
+        lookups: &mut JoinSet<LookupResult>,
     ) -> AbortHandle {
         // Define, but do not yet `.await` upon, a collection of futures fetching information
         // about a validator.
@@ -148,7 +148,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         )
     }
 
-    async fn process_vote(
+    async fn process_validator_uptime(
         &mut self,
         (identity_key, consensus_key, mut uptime): ValidatorInformation,
         did_address_vote: &BTreeMap<Address, bool>,
