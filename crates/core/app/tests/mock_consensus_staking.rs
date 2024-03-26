@@ -121,11 +121,9 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     let new_validator_consensus = new_validator_consensus_sk.verification_key();
 
     // Insert the validator's consensus keypair into the keyring so it can be used to sign blocks.
-    /*
     node.keyring_mut()
         // Keyring should just be a BTreeMap rather than creating a new API
-        .insert(validator_consensus.clone(), validator_consensus_sk);
-     */
+        .insert(new_validator_consensus, new_validator_consensus_sk);
 
     // Now define the validator's configuration data.
     let new_validator = Validator {
