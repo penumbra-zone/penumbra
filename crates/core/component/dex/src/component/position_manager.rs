@@ -152,7 +152,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         tracing::debug!(?id, "position found, close it");
         position.state = position::State::Closed;
-        self.put_position(position).await?;
+        self.update_position(position).await?;
         Ok(())
     }
 
@@ -196,7 +196,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
-        self.put_position(position).await?;
+        self.update_position(position).await?;
 
         Ok(())
     }
@@ -205,7 +205,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     #[tracing::instrument(level = "debug", skip_all)]
     async fn position_execution(&mut self, post_execution_state: position::Position) -> Result<()> {
         self.record_proto(event::position_execution(&post_execution_state));
-        self.put_position(post_execution_state).await?;
+        self.update_position(post_execution_state).await?;
         Ok(())
     }
 
@@ -282,7 +282,7 @@ pub trait PositionManager: StateWrite + PositionRead {
         };
         metadata.reserves = Reserves::zero();
 
-        self.put_position(metadata).await?;
+        self.update_position(metadata).await?;
 
         Ok(reserves)
     }
@@ -297,7 +297,7 @@ pub(crate) trait Inner: StateWrite {
     /// This should be the SOLE ENTRYPOINT for writing positions to the state.
     /// All other position changes exposed by the `PositionManager` should run through here.
     #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
-    async fn put_position(&mut self, position: position::Position) -> Result<()> {
+    async fn update_position(&mut self, position: position::Position) -> Result<()> {
         let id = position.id();
         tracing::debug!(?position, "fetch position's previous state from storage");
         // We pull the position from the state unconditionally, since we will
