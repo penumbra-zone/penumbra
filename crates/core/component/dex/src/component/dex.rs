@@ -153,7 +153,7 @@ pub trait StateReadExt: StateRead {
         height: u64,
         trading_pair: DirectedTradingPair,
     ) -> Result<Option<SwapExecution>> {
-        self.get(&state_key::swap_execution(height, trading_pair))
+        self.nonverifiable_get(state_key::swap_execution(height, trading_pair).as_bytes())
             .await
     }
 
@@ -241,19 +241,11 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // Store the swap executions for both directions in the state as well.
         if let Some(swap_execution) = swap_execution_1_for_2.clone() {
             let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
-            self.nonverifiable_put(
-                state_key::swap_execution(height, tp_1_for_2)
-                    .as_bytes()
-                    .to_vec(),
-                swap_execution,
-            );
+            self.put_swap_execution_at_height(height, tp_1_for_2, swap_execution);
         }
         if let Some(swap_execution) = swap_execution_2_for_1.clone() {
             let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
-            self.put(
-                state_key::swap_execution(height, tp_2_for_1),
-                swap_execution,
-            );
+            self.put_swap_execution_at_height(height, tp_2_for_1, swap_execution);
         }
 
         // ... and also add it to the set in the compact block to be pushed out to clients.
@@ -301,6 +293,16 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.object_put(state_key::swap_flows(), swap_flows);
 
         Ok(())
+    }
+
+    fn put_swap_execution_at_height(
+        &mut self,
+        height: u64,
+        pair: DirectedTradingPair,
+        swap_execution: SwapExecution,
+    ) {
+        let path = state_key::swap_execution(height, pair);
+        self.nonverifiable_put(path.as_bytes().to_vec(), swap_execution);
     }
 }
 
