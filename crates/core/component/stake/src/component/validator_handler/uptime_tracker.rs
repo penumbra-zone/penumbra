@@ -82,7 +82,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         // independent, this doesn't introduce any nondeterminism into the complete state change.
         while let Some(data) = lookups.join_next().await.transpose()? {
             if let Some(validator_info) = data? {
-                self.process_vote(validator_info, &did_address_vote, &params, height)
+                self.process_validator_uptime(validator_info, &did_address_vote, &params, height)
                     .await?;
             }
         }
@@ -148,7 +148,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
         )
     }
 
-    async fn process_vote(
+    async fn process_validator_uptime(
         &mut self,
         (identity_key, consensus_key, mut uptime): ValidatorInformation,
         did_address_vote: &BTreeMap<Address, bool>,
