@@ -84,7 +84,18 @@ impl AppActionHandler for Action {
                     .check_stateful(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_historical(state).await,
+            Action::Ics20Withdrawal(action) => {
+                // SAFETY: this is safe to check in parallel because IBC enablement cannot
+                // change during transaction execution.
+                if !state
+                    .get_ibc_params()
+                    .await?
+                    .outbound_ics20_transfers_enabled
+                {
+                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
+                }
+                action.check_historical(state).await
+            }
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
@@ -116,19 +127,7 @@ impl AppActionHandler for Action {
                     .execute(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => {
-                // SAFETY: this is safe to check in parallel because IBC enablement cannot
-                // change during transaction execution.
-                if !state
-                    .get_ibc_params()
-                    .await?
-                    .outbound_ics20_transfers_enabled
-                {
-                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
-                }
-
-                action.check_and_execute(state).await
-            }
+            Action::Ics20Withdrawal(action) => action.check_and_execute(state).await,
             Action::CommunityPoolSpend(action) => action.check_and_execute(state).await,
             Action::CommunityPoolOutput(action) => action.check_and_execute(state).await,
             Action::CommunityPoolDeposit(action) => action.check_and_execute(state).await,
