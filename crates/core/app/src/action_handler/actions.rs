@@ -92,7 +92,7 @@ impl AppActionHandler for Action {
                     .await?
                     .outbound_ics20_transfers_enabled
                 {
-                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
+                    anyhow::bail!("transaction an ICS20 withdrawal, but outbound ICS20 withdrawals are not enabled");
                 }
                 action.check_historical(state).await
             }
