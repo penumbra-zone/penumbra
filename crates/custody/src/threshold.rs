@@ -215,7 +215,7 @@ impl<T: Terminal> Threshold<T> {
         self.terminal
             .explain(&format!(
                 "Now, gather at least {} replies from the other signers, and paste them below:",
-                self.config.threshold()
+                self.config.threshold() - 1
             ))
             .await?;
         let round1_replies = {
