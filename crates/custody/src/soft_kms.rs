@@ -1,12 +1,23 @@
 //! A basic software key management system that stores keys in memory but
 //! presents as an asynchronous signer.
 
-use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
+use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_proto::{
+    core::component::{
+        governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
+        stake::v1::Validator as ProtoValidator,
+    },
+    custody::v1::{self as pb, AuthorizeResponse},
+    Message as _,
+};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use tonic::{async_trait, Request, Response, Status};
 
-use crate::{policy::Policy, AuthorizeRequest};
+use crate::{
+    policy::Policy, AuthorizeRequest, AuthorizeValidatorDefinitionRequest,
+    AuthorizeValidatorVoteRequest,
+};
 
 mod config;
 
@@ -30,10 +41,54 @@ impl SoftKms {
         tracing::debug!(?request.plan);
 
         for policy in &self.config.auth_policy {
-            policy.check(request)?;
+            policy.check_transaction(request)?;
         }
 
         Ok(request.plan.authorize(OsRng, &self.config.spend_key)?)
+    }
+
+    /// Attempt to authorize the requested validator definition.
+    #[tracing::instrument(skip(self, request), name = "softhsm_sign_validator_definition")]
+    pub fn sign_validator_definition(
+        &self,
+        request: &AuthorizeValidatorDefinitionRequest,
+    ) -> anyhow::Result<Signature<SpendAuth>> {
+        tracing::debug!(?request.validator_definition);
+
+        for policy in &self.config.auth_policy {
+            policy.check_validator_definition(request)?;
+        }
+
+        let protobuf_serialized: ProtoValidator = request.validator_definition.clone().into();
+        let validator_definition_bytes = protobuf_serialized.encode_to_vec();
+
+        Ok(self
+            .config
+            .spend_key
+            .spend_auth_key()
+            .sign(OsRng, &validator_definition_bytes))
+    }
+
+    /// Attempt to authorize the requested validator vote.
+    #[tracing::instrument(skip(self, request), name = "softhsm_sign_validator_vote")]
+    pub fn sign_validator_vote(
+        &self,
+        request: &AuthorizeValidatorVoteRequest,
+    ) -> anyhow::Result<Signature<SpendAuth>> {
+        tracing::debug!(?request.validator_vote);
+
+        for policy in &self.config.auth_policy {
+            policy.check_validator_vote(request)?;
+        }
+
+        let protobuf_serialized: ProtoValidatorVoteBody = request.validator_vote.clone().into();
+        let validator_vote_bytes = protobuf_serialized.encode_to_vec();
+
+        Ok(self
+            .config
+            .spend_key
+            .spend_auth_key()
+            .sign(OsRng, &validator_vote_bytes))
     }
 }
 
@@ -54,6 +109,46 @@ impl pb::custody_service_server::CustodyService for SoftKms {
 
         let authorization_response = AuthorizeResponse {
             data: Some(authorization_data.into()),
+        };
+
+        Ok(Response::new(authorization_response))
+    }
+
+    async fn authorize_validator_definition(
+        &self,
+        request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        let request = request
+            .into_inner()
+            .try_into()
+            .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
+
+        let validator_definition_auth = self
+            .sign_validator_definition(&request)
+            .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
+
+        let authorization_response = pb::AuthorizeValidatorDefinitionResponse {
+            validator_definition_auth: Some(validator_definition_auth.into()),
+        };
+
+        Ok(Response::new(authorization_response))
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        let request = request
+            .into_inner()
+            .try_into()
+            .map_err(|e: anyhow::Error| Status::invalid_argument(e.to_string()))?;
+
+        let validator_vote_auth = self
+            .sign_validator_vote(&request)
+            .map_err(|e| Status::unauthenticated(format!("{e:#}")))?;
+
+        let authorization_response = pb::AuthorizeValidatorVoteResponse {
+            validator_vote_auth: Some(validator_vote_auth.into()),
         };
 
         Ok(Response::new(authorization_response))

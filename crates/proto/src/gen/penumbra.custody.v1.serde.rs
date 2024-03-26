@@ -206,6 +206,426 @@ impl<'de> serde::Deserialize<'de> for AuthorizeResponse {
         deserializer.deserialize_struct("penumbra.custody.v1.AuthorizeResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for AuthorizeValidatorDefinitionRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_definition.is_some() {
+            len += 1;
+        }
+        if !self.pre_authorizations.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorDefinitionRequest", len)?;
+        if let Some(v) = self.validator_definition.as_ref() {
+            struct_ser.serialize_field("validatorDefinition", v)?;
+        }
+        if !self.pre_authorizations.is_empty() {
+            struct_ser.serialize_field("preAuthorizations", &self.pre_authorizations)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_definition",
+            "validatorDefinition",
+            "pre_authorizations",
+            "preAuthorizations",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorDefinition,
+            PreAuthorizations,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
+                            "preAuthorizations" | "pre_authorizations" => Ok(GeneratedField::PreAuthorizations),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuthorizeValidatorDefinitionRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.v1.AuthorizeValidatorDefinitionRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeValidatorDefinitionRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_definition__ = None;
+                let mut pre_authorizations__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorDefinition => {
+                            if validator_definition__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorDefinition"));
+                            }
+                            validator_definition__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreAuthorizations => {
+                            if pre_authorizations__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("preAuthorizations"));
+                            }
+                            pre_authorizations__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuthorizeValidatorDefinitionRequest {
+                    validator_definition: validator_definition__,
+                    pre_authorizations: pre_authorizations__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.v1.AuthorizeValidatorDefinitionRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AuthorizeValidatorDefinitionResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_definition_auth.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorDefinitionResponse", len)?;
+        if let Some(v) = self.validator_definition_auth.as_ref() {
+            struct_ser.serialize_field("validatorDefinitionAuth", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuthorizeValidatorDefinitionResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_definition_auth",
+            "validatorDefinitionAuth",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorDefinitionAuth,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorDefinitionAuth" | "validator_definition_auth" => Ok(GeneratedField::ValidatorDefinitionAuth),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuthorizeValidatorDefinitionResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.v1.AuthorizeValidatorDefinitionResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeValidatorDefinitionResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_definition_auth__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorDefinitionAuth => {
+                            if validator_definition_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorDefinitionAuth"));
+                            }
+                            validator_definition_auth__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuthorizeValidatorDefinitionResponse {
+                    validator_definition_auth: validator_definition_auth__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.v1.AuthorizeValidatorDefinitionResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AuthorizeValidatorVoteRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_vote.is_some() {
+            len += 1;
+        }
+        if !self.pre_authorizations.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorVoteRequest", len)?;
+        if let Some(v) = self.validator_vote.as_ref() {
+            struct_ser.serialize_field("validatorVote", v)?;
+        }
+        if !self.pre_authorizations.is_empty() {
+            struct_ser.serialize_field("preAuthorizations", &self.pre_authorizations)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_vote",
+            "validatorVote",
+            "pre_authorizations",
+            "preAuthorizations",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorVote,
+            PreAuthorizations,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
+                            "preAuthorizations" | "pre_authorizations" => Ok(GeneratedField::PreAuthorizations),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuthorizeValidatorVoteRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.v1.AuthorizeValidatorVoteRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeValidatorVoteRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_vote__ = None;
+                let mut pre_authorizations__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorVote => {
+                            if validator_vote__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorVote"));
+                            }
+                            validator_vote__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreAuthorizations => {
+                            if pre_authorizations__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("preAuthorizations"));
+                            }
+                            pre_authorizations__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuthorizeValidatorVoteRequest {
+                    validator_vote: validator_vote__,
+                    pre_authorizations: pre_authorizations__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.v1.AuthorizeValidatorVoteRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AuthorizeValidatorVoteResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_vote_auth.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.custody.v1.AuthorizeValidatorVoteResponse", len)?;
+        if let Some(v) = self.validator_vote_auth.as_ref() {
+            struct_ser.serialize_field("validatorVoteAuth", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuthorizeValidatorVoteResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_vote_auth",
+            "validatorVoteAuth",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorVoteAuth,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorVoteAuth" | "validator_vote_auth" => Ok(GeneratedField::ValidatorVoteAuth),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuthorizeValidatorVoteResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.custody.v1.AuthorizeValidatorVoteResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuthorizeValidatorVoteResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_vote_auth__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorVoteAuth => {
+                            if validator_vote_auth__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorVoteAuth"));
+                            }
+                            validator_vote_auth__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuthorizeValidatorVoteResponse {
+                    validator_vote_auth: validator_vote_auth__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.custody.v1.AuthorizeValidatorVoteResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for ConfirmAddressRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

@@ -21,6 +21,24 @@ impl pb::custody_service_server::CustodyService for NullKms {
         ))
     }
 
+    async fn authorize_validator_definition(
+        &self,
+        _request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        Err(tonic::Status::failed_precondition(
+            "Got authorization request in view-only mode to null KMS.",
+        ))
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        _request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        Err(tonic::Status::failed_precondition(
+            "Got authorization request in view-only mode to null KMS.",
+        ))
+    }
+
     async fn export_full_viewing_key(
         &self,
         _request: Request<pb::ExportFullViewingKeyRequest>,

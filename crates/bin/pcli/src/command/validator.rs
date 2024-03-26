@@ -14,9 +14,7 @@ use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
 use penumbra_keys::keys::AddressIndex;
-use penumbra_proto::{
-    core::component::stake::v1::Validator as ProtoValidator, DomainType, Message,
-};
+use penumbra_proto::DomainType;
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
@@ -24,10 +22,7 @@ use penumbra_stake::{
 };
 use penumbra_wallet::plan;
 
-use crate::{
-    config::{CustodyConfig, GovernanceCustodyConfig},
-    App,
-};
+use crate::App;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -158,7 +153,6 @@ impl ValidatorCmd {
         }
     }
 
-    // TODO: move use of sk into custody service
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.config.full_viewing_key.clone();
 
@@ -195,18 +189,7 @@ impl ValidatorCmd {
                     .file_name()
                     .with_context(|| format!("invalid path: {file:?}"))?;
 
-                // TODO: use the custody abstraction to sign
-                let protobuf_serialized: ProtoValidator = new_validator.clone().into();
-                let v_bytes = protobuf_serialized.encode_to_vec();
-                let sk = match &app.config.custody {
-                    CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                    _ => {
-                        anyhow::bail!(
-                            "local validator definition signing currently requires SoftKMS backend"
-                        );
-                    }
-                };
-                let signature = sk.spend_auth_key().sign(OsRng, &v_bytes);
+                let signature = app.sign_validator_definition(new_validator.clone()).await?;
 
                 if let Some(output_file) = signature_file {
                     let output_file_path = std::fs::canonicalize(output_file)
@@ -264,18 +247,7 @@ impl ValidatorCmd {
                     )
                     .context("unable to parse decoded signature")?
                 } else {
-                    // TODO: use the custody abstraction to sign
-                    let protobuf_serialized: ProtoValidator = new_validator.clone().into();
-                    let v_bytes = protobuf_serialized.encode_to_vec();
-                    let sk = match &app.config.custody {
-                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                        _ => {
-                            anyhow::bail!(
-                                    "local validator definition signing currently requires SoftKMS backend"
-                                );
-                        }
-                    };
-                    sk.spend_auth_key().sign(OsRng, &v_bytes)
+                    app.sign_validator_definition(new_validator.clone()).await?
                 };
                 let vd = validator::Definition {
                     validator: new_validator,
@@ -322,28 +294,7 @@ impl ValidatorCmd {
                     reason: ValidatorVoteReason(reason.clone()),
                 };
 
-                // TODO: use the custody abstraction to sign
-                let sk = match &app.config.governance_custody {
-                    None => match &app.config.custody {
-                        CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                        _ => {
-                            anyhow::bail!(
-                                "local validator definition signing currently requires SoftKMS backend"
-                            );
-                        }
-                    },
-                    Some(GovernanceCustodyConfig::SoftKms(config)) => config.spend_key.clone(),
-                    Some(_) => {
-                        anyhow::bail!(
-                            "local validator definition signing currently requires SoftKMS backend"
-                        );
-                    }
-                };
-                let governance_auth_key = sk.spend_auth_key();
-
-                // Generate an authorizing signature with the governance key for the vote body
-                let body_bytes = body.encode_to_vec();
-                let signature = governance_auth_key.sign(OsRng, &body_bytes);
+                let signature = app.sign_validator_vote(body).await?;
 
                 if let Some(signature_file) = signature_file {
                     File::create(signature_file)
@@ -407,28 +358,7 @@ impl ValidatorCmd {
                     )
                     .context("unable to parse decoded signature")?
                 } else {
-                    // TODO: use the custody abstraction to sign
-                    let sk = match &app.config.governance_custody {
-                        None => match &app.config.custody {
-                            CustodyConfig::SoftKms(config) => config.spend_key.clone(),
-                            _ => {
-                                anyhow::bail!(
-                                    "local validator definition signing currently requires SoftKMS backend"
-                                );
-                            }
-                        },
-                        Some(GovernanceCustodyConfig::SoftKms(config)) => config.spend_key.clone(),
-                        Some(_) => {
-                            anyhow::bail!(
-                            "local validator definition signing currently requires SoftKMS backend"
-                        );
-                        }
-                    };
-                    let governance_auth_key = sk.spend_auth_key();
-
-                    // Generate an authorizing signature with the governance key for the vote body
-                    let body_bytes = body.encode_to_vec();
-                    governance_auth_key.sign(OsRng, &body_bytes)
+                    app.sign_validator_vote(body.clone()).await?
                 };
 
                 let vote = ValidatorVote { body, auth_sig };
