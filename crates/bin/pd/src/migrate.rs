@@ -41,6 +41,7 @@ impl Migration {
         match self {
             Migration::Noop => (),
             Migration::SimpleMigration => {
+                println!("You are running the `SimpleMigration` strategy");
                 let rocksdb_dir = path_to_export.join("rocksdb");
                 let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
                 let export_state = storage.latest_snapshot();

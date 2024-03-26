@@ -437,27 +437,28 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         RootCommand::Migrate {
-            target_directory,
-            genesis_start,
-            migrate_archive,
+            _target_directory,
+            _genesis_start,
+            _migrate_archive,
         } => {
-            tracing::info!("migrating state in {}", target_directory.display());
-            SimpleMigration
-                .migrate(target_directory.clone(), genesis_start)
-                .await
-                .context("failed to upgrade state")?;
-            // Compress to tarball if requested.
-            if let Some(archive_filepath) = migrate_archive {
-                pd::migrate::archive_directory(
-                    target_directory.clone(),
-                    archive_filepath.clone(),
-                    None,
-                )?;
-                tracing::info!("migration complete: {}", archive_filepath.display());
-            } else {
-                // Provide friendly "OK" message that's still accurate without archiving.
-                tracing::info!("migration complete: {}", target_directory.display());
-            }
+            // tracing::info!("migrating state in {}", target_directory.display());
+            // SimpleMigration
+            //     .migrate(target_directory.clone(), genesis_start)
+            //     .await
+            //     .context("failed to upgrade state")?;
+            // // Compress to tarball if requested.
+            // if let Some(archive_filepath) = migrate_archive {
+            //     pd::migrate::archive_directory(
+            //         target_directory.clone(),
+            //         archive_filepath.clone(),
+            //         None,
+            //     )?;
+            //     tracing::info!("migration complete: {}", archive_filepath.display());
+            // } else {
+            //    // Provide friendly "OK" message that's still accurate without archiving.
+            //     tracing::info!("migration complete: {}", target_directory.display());
+            //}
+            println!("You must upgrade to the latest pd release in order to run a migration");
         }
     }
     Ok(())
