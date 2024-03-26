@@ -203,9 +203,24 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Record execution against an opened position.
     #[tracing::instrument(level = "debug", skip_all)]
-    async fn position_execution(&mut self, post_execution_state: position::Position) -> Result<()> {
-        self.record_proto(event::position_execution(&post_execution_state));
-        self.update_position(post_execution_state).await?;
+    async fn position_execution(&mut self, mut position: Position) -> Result<()> {
+        // Handle "close-on-fill": automatically flip the position state to "closed" if
+        // either of the reserves are zero.
+        if position.close_on_fill {
+            if position.reserves.r1 == 0u64.into() || position.reserves.r2 == 0u64.into() {
+                tracing::debug!(
+                    id = ?position.id(),
+                    r1 = ?position.reserves.r1,
+                    r2 = ?position.reserves.r2,
+                    "marking position as closed due to close-on-fill"
+                );
+                position.state = position::State::Closed;
+            }
+        }
+
+        self.record_proto(event::position_execution(&position));
+        self.update_position(position).await?;
+
         Ok(())
     }
 
