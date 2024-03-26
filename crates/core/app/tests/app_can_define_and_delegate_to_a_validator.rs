@@ -26,7 +26,7 @@ use {
 const EPOCH_DURATION: u64 = 8;
 
 #[tokio::test]
-async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
+async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
@@ -121,11 +121,9 @@ async fn mock_consensus_can_define_and_delegate_to_a_validator() -> anyhow::Resu
     let new_validator_consensus = new_validator_consensus_sk.verification_key();
 
     // Insert the validator's consensus keypair into the keyring so it can be used to sign blocks.
-    /*
     node.keyring_mut()
         // Keyring should just be a BTreeMap rather than creating a new API
-        .insert(validator_consensus.clone(), validator_consensus_sk);
-     */
+        .insert(new_validator_consensus, new_validator_consensus_sk);
 
     // Now define the validator's configuration data.
     let new_validator = Validator {
