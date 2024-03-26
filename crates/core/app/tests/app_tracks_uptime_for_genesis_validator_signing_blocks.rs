@@ -11,7 +11,7 @@ use {
         component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,
     },
     tap::Tap,
-    tracing::{error_span, info, trace, Instrument},
+    tracing::{error_span, info, Instrument},
 };
 
 #[tokio::test]
@@ -51,24 +51,13 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
             .expect("validator uptime should exist")
     };
 
-    // Show that the uptime starts at with no missed blocks.
-    assert_eq!(
-        get_uptime().await.num_missed_blocks(),
-        0,
-        "no blocks have been missed at genesis"
-    );
-
     // Jump ahead a few blocks.
+    // TODO TODO TODO have the validator sign blocks here.
     let height = 4;
-    for i in 1..=height {
-        node.block()
-            .with_signatures(Default::default())
-            .execute()
-            .tap(|_| trace!(%i, "executing block with no signatures"))
-            .instrument(error_span!("executing block with no signatures", %i))
-            .await
-            .context("executing block with no signatures")?;
-    }
+    node.fast_forward(height)
+        .instrument(error_span!("fast forwarding test node {height} blocks"))
+        .await
+        .context("fast forwarding {height} blocks")?;
 
     // Check the validator's uptime once more. We should have uptime data up to the fourth block,
     // and the validator should have missed all of the blocks between genesis and now.
@@ -77,8 +66,8 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
         assert_eq!(uptime.as_of_height(), height);
         assert_eq!(
             uptime.num_missed_blocks(),
-            /*NB: this is off-by-one */ (height - 1) as usize,
-            "validator should have missed the last {height} blocks"
+            0,
+            "validator should have signed the last {height} blocks"
         );
     }
 

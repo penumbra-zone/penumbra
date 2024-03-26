@@ -2,6 +2,9 @@
 //!
 //! Builders are acquired by calling [`TestNode::block()`].
 
+/// Interfaces for generating commit signatures.
+mod signature;
+
 use {
     crate::TestNode,
     tap::Tap,
@@ -28,15 +31,22 @@ pub struct Builder<'e, C> {
 
     /// Evidence of malfeasance.
     evidence: evidence::List,
+
+    /// The list of signatures.
+    signatures: Vec<block::CommitSig>,
 }
+
+// === impl TestNode ===
 
 impl<C> TestNode<C> {
     /// Returns a new [`Builder`].
     pub fn block<'e>(&'e mut self) -> Builder<'e, C> {
+        let signatures = self.generate_signatures().collect();
         Builder {
             test_node: self,
             data: Default::default(),
             evidence: Default::default(),
+            signatures,
         }
     }
 }
@@ -60,8 +70,10 @@ impl<'e, C> Builder<'e, C> {
         Self { evidence, ..self }
     }
 
-    // TODO(kate): add more `with_` setters for fields in the header.
-    // TODO(kate): set some fields using state in the test node.
+    /// Sets the [`CommitSig`][block::CommitSig] commit signatures for this block.
+    pub fn with_signatures(self, signatures: Vec<block::CommitSig>) -> Self {
+        Self { signatures, ..self }
+    }
 }
 
 impl<'e, C> Builder<'e, C>
@@ -84,16 +96,17 @@ where
             header,
             data,
             evidence: _,
-            last_commit: _,
+            last_commit,
             ..
         } = block.tap(|block| {
             tracing::span::Span::current()
                 .record("height", block.header.height.value())
                 .record("time", block.header.time.unix_timestamp());
         });
+        let last_commit_info = Self::last_commit_info(last_commit);
 
         trace!("sending block");
-        test_node.begin_block(header).await?;
+        test_node.begin_block(header, last_commit_info).await?;
         for tx in data {
             let tx = tx.into();
             test_node.deliver_tx(tx).await?;
@@ -117,6 +130,7 @@ where
             data,
             evidence,
             test_node,
+            signatures,
         } = self;
 
         let height = {
@@ -135,7 +149,7 @@ where
                 height,
                 round: Round::default(),
                 block_id,
-                signatures: Vec::default(),
+                signatures,
             })
         } else {
             None // The first block has no previous commit to speak of.

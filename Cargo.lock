@@ -5282,6 +5282,7 @@ dependencies = [
  "bytes",
  "ed25519-consensus",
  "rand_core 0.6.4",
+ "sha2 0.10.8",
  "tap",
  "tendermint",
  "tower",
