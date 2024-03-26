@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use cnidarium::StateRead;
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_sct::component::clock::EpochRead;
@@ -89,18 +89,23 @@ pub async fn fee_greater_than_base_fee<S: StateRead>(
         .expect("gas prices must be present in state");
 
     let transaction_base_price = current_gas_prices.fee(&transaction.gas_cost());
+    let user_supplied_fee = transaction.transaction_body().transaction_parameters.fee;
+    let user_supplied_fee_amount = user_supplied_fee.amount();
+    let user_supplied_fee_asset_id = user_supplied_fee.asset_id();
 
-    if transaction
-        .transaction_body()
-        .transaction_parameters
-        .fee
-        .amount()
-        >= transaction_base_price
-    {
-        Ok(())
-    } else {
-        Err(anyhow::anyhow!(
-            "consensus rule violated: paid transaction fee must be greater than or equal to transaction's base fee"
-        ))
-    }
+    ensure!(
+        user_supplied_fee_amount >= transaction_base_price,
+        "fee must be greater than or equal to the transaction base price (supplied: {}, base: {})",
+        user_supplied_fee_amount,
+        transaction_base_price
+    );
+
+    // We split the check to provide granular error messages.
+    ensure!(
+        user_supplied_fee_asset_id == *penumbra_asset::STAKING_TOKEN_ASSET_ID,
+        "fee must be paid in staking tokens (found: {})",
+        user_supplied_fee_asset_id
+    );
+
+    Ok(())
 }
