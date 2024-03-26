@@ -241,8 +241,10 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // Store the swap executions for both directions in the state as well.
         if let Some(swap_execution) = swap_execution_1_for_2.clone() {
             let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
-            self.put(
-                state_key::swap_execution(height, tp_1_for_2),
+            self.nonverifiable_put(
+                state_key::swap_execution(height, tp_1_for_2)
+                    .as_bytes()
+                    .to_vec(),
                 swap_execution,
             );
         }
