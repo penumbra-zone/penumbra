@@ -84,7 +84,18 @@ impl AppActionHandler for Action {
                     .check_stateful(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => action.check_historical(state).await,
+            Action::Ics20Withdrawal(action) => {
+                // SAFETY: this is safe to check in parallel because IBC enablement cannot
+                // change during transaction execution.
+                if !state
+                    .get_ibc_params()
+                    .await?
+                    .outbound_ics20_transfers_enabled
+                {
+                    anyhow::bail!("transaction an ICS20 withdrawal, but outbound ICS20 withdrawals are not enabled");
+                }
+                action.check_historical(state).await
+            }
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
