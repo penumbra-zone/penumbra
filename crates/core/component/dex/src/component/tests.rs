@@ -9,6 +9,7 @@ use penumbra_num::Amount;
 use rand_core::OsRng;
 
 use crate::lp::action::PositionOpen;
+use crate::lp::{position, SellOrder};
 use crate::DexParameters;
 use crate::{
     component::{
@@ -253,6 +254,59 @@ async fn single_limit_order() -> anyhow::Result<()> {
 
     assert_eq!(position.reserves.r1, 100_084u64.into());
     assert_eq!(position.reserves.r2, Amount::zero());
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Builds a simple order book with a two orders, fills against them both,
+/// and checks that one of the orders is auto-closed.
+async fn check_close_on_fill() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let mut position_1 = SellOrder::parse_str("100gm@1gn")?.into_position(OsRng);
+    position_1.close_on_fill = true;
+    let position_2 = SellOrder::parse_str("100gm@1.1gn")?.into_position(OsRng);
+
+    let position_1_id = position_1.id();
+    let position_2_id = position_2.id();
+
+    state_tx.open_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_2.clone()).await.unwrap();
+
+    // Now we have the following liquidity:
+    //
+    // 100gm@1gn (auto-closing)
+    // 100gm@1.1gn
+    //
+    // We therefore expect that trading 100gn + 110gn will exhaust both positions.
+    // Attempting to trade a bit more than that ensures we completely fill both,
+    // without worrying about rounding.
+    // Because we're just testing the DEX internals, we need to trigger fill_route manually.
+    let input = "220gn".parse::<Value>().unwrap();
+    let route = [gm.id()];
+    let execution = FillRoute::fill_route(&mut state_tx, input, &route, None).await?;
+
+    let unfilled = input.amount.checked_sub(&execution.input.amount).unwrap();
+
+    // Check that we got the execution we expected.
+    assert_eq!(unfilled, "10gn".parse::<Value>().unwrap().amount);
+    assert_eq!(execution.output, "200gm".parse::<Value>().unwrap());
+
+    // Now grab both position states:
+    let position_1_post_exec = state_tx.position_by_id(&position_1_id).await?.unwrap();
+    let position_2_post_exec = state_tx.position_by_id(&position_2_id).await?.unwrap();
+
+    dbg!(&position_1_post_exec);
+    dbg!(&position_2_post_exec);
+
+    // Check that position 1 was auto-closed but position 2 wasn't:
+    assert_eq!(position_1_post_exec.state, position::State::Closed);
+    assert_eq!(position_2_post_exec.state, position::State::Opened);
 
     Ok(())
 }
