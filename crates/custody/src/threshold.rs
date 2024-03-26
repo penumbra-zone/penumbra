@@ -9,6 +9,7 @@ use penumbra_proto::{custody::v1 as pb, DomainType};
 use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
 pub use self::config::Config;
+use self::sign::no_signature_response;
 pub use self::sign::{SigningRequest, SigningResponse};
 
 mod config;
@@ -206,6 +207,11 @@ impl<T> Threshold<T> {
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
     async fn authorize(&self, request: SigningRequest) -> Result<SigningResponse> {
+        // Some requests will have no signatures to gather, so there's no need
+        // to send around empty threshold signature requests.
+        if let Some(out) = no_signature_response(self.config.fvk(), &request)? {
+            return Ok(out);
+        }
         // Round 1
         let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal

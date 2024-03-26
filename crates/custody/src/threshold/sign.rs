@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
+use penumbra_keys::FullViewingKey;
 use rand_core::CryptoRngCore;
 
 use decaf377_frost as frost;
@@ -352,6 +353,23 @@ fn required_signatures(request: &SigningRequest) -> usize {
     }
 }
 
+/// Create a trivial signing response if no signatures are needed.
+pub fn no_signature_response(
+    fvk: &FullViewingKey,
+    request: &SigningRequest,
+) -> Result<Option<SigningResponse>> {
+    match request {
+        SigningRequest::TransactionPlan(plan) if required_signatures(request) <= 0 => {
+            Ok(Some(SigningResponse::Transaction(AuthorizationData {
+                effect_hash: Some(plan.effect_hash(fvk)?),
+                spend_auths: Vec::new(),
+                delegator_vote_auths: Vec::new(),
+            })))
+        }
+        _ => Ok(None),
+    }
+}
+
 pub struct CoordinatorState1 {
     request: SigningRequest,
     my_round1_reply: FollowerRound1,
@@ -372,10 +390,10 @@ enum ToBeSigned {
 }
 
 impl SigningRequest {
-    fn to_be_signed(&self, config: &Config) -> ToBeSigned {
-        match self {
+    fn to_be_signed(&self, config: &Config) -> Result<ToBeSigned> {
+        let out = match self {
             SigningRequest::TransactionPlan(plan) => {
-                ToBeSigned::EffectHash(plan.effect_hash(config.fvk()).unwrap())
+                ToBeSigned::EffectHash(plan.effect_hash(config.fvk())?)
             }
             SigningRequest::ValidatorDefinition(validator) => ToBeSigned::ValidatorDefinitionBytes(
                 ProtoValidator::from(validator.clone()).encode_to_vec(),
@@ -383,7 +401,8 @@ impl SigningRequest {
             SigningRequest::ValidatorVote(vote) => ToBeSigned::ValidatorVoteBytes(
                 ProtoValidatorVoteBody::from(vote.clone()).encode_to_vec(),
             ),
-        }
+        };
+        Ok(out)
     }
 }
 
@@ -444,7 +463,7 @@ pub fn coordinator_round2(
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
 
-    let to_be_signed = state.request.to_be_signed(&config);
+    let to_be_signed = state.request.to_be_signed(&config)?;
 
     let signing_packages = {
         reply
@@ -564,7 +583,7 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let to_be_signed = state.request.to_be_signed(config);
+    let to_be_signed = state.request.to_be_signed(config)?;
     let signing_packages = coordinator
         .all_commitments
         .into_iter()
