@@ -1064,7 +1064,7 @@ impl TxCmd {
                 }
 
                 // round to the nearest 10 minutes
-                timeout_timestamp += timeout_timestamp % 600_000_000_000;
+                timeout_timestamp += 600_000_000_000 - (timeout_timestamp % 600_000_000_000);
 
                 fn parse_denom_and_amount(value_str: &str) -> anyhow::Result<(Amount, Metadata)> {
                     let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
