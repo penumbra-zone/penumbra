@@ -5,9 +5,10 @@
 //! This module declares how local `pd` state should be altered, if at all,
 //! in order to be compatible with the network post-chain-upgrade.
 use anyhow::Context;
+use futures::StreamExt as _;
 use std::path::PathBuf;
 
-use cnidarium::{StateDelta, StateWrite, Storage};
+use cnidarium::{StateDelta, StateRead, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{app::StateReadExt, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
@@ -28,8 +29,8 @@ pub enum Migration {
     /// A simple migration: adds a key to the consensus state.
     /// This is useful for testing upgrade mechanisms, including in production.
     SimpleMigration,
-    /// Migrates from testnet-64 to testnet-65.
-    Testnet65,
+    /// Testnet-70 migration: move swap executions from the jmt to nv-storage.
+    Testnet70,
 }
 
 impl Migration {
@@ -110,7 +111,86 @@ impl Migration {
                 std::fs::write(validator_state_path, fresh_validator_state)
                     .expect("can write validator state");
             }
-            Migration::Testnet65 => { /* currently a no-op. */ }
+            Migration::Testnet70 => {
+                // Our goal is to fetch all swap executions from the jmt and store them in nv-storage.
+                // In particular, we want to make sure that client lookups for (height, trading pair)
+                // resolve to the same value as before.
+
+                // Setup:
+                let rocksdb_dir = path_to_export.join("rocksdb");
+                let storage =
+                    Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
+                let export_state = storage.latest_snapshot();
+                let root_hash = export_state.root_hash().await.expect("can get root hash");
+                let _app_hash_pre_migration: RootHash = root_hash.into();
+                let pre_upgrade_height = export_state
+                    .get_block_height()
+                    .await
+                    .expect("can get block height");
+                let post_upgrade_height = pre_upgrade_height.wrapping_add(1);
+
+                // We initialize a `StateDelta` and start by reaching into the JMT for all entries matching the
+                // swap execution prefix. Then, we write each entry to the nv-storage.
+                let mut delta = StateDelta::new(export_state);
+
+                let prefix_key = "dex/swap_execution/";
+                let mut swap_execution_stream = delta.prefix_raw(prefix_key);
+
+                while let Some(r) = swap_execution_stream.next().await {
+                    let (key, swap_execution) = r?;
+                    tracing::info!("migrating swap execution: {}", key);
+                    delta.nonverifiable_put_raw(key.into_bytes(), swap_execution);
+                }
+
+                let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
+                tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
+
+                // Reload storage so we can make reads against its migrated state:
+                storage.release().await;
+                let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
+                let migrated_state = storage.latest_snapshot();
+
+                // The migration is complete, now we need to generate a genesis file. To do this, we need
+                // to lookup a validator view from the chain, and specify the post-upgrade app hash and
+                // initial height.
+                let chain_id = migrated_state.get_chain_id().await?;
+                let validators = migrated_state.validator_definitions().await?;
+                let app_state = penumbra_genesis::Content {
+                    chain_id,
+                    stake_content: StakeContent {
+                        // TODO(erwan): See https://github.com/penumbra-zone/penumbra/issues/3846
+                        validators: validators.into_iter().map(Into::into).collect(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                };
+                let mut genesis =
+                    TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+                genesis.app_hash = post_upgrade_root_hash
+                    .0
+                    .to_vec()
+                    .try_into()
+                    .expect("infaillible conversion");
+                genesis.initial_height = post_upgrade_height as i64;
+                genesis.genesis_time = genesis_start.unwrap_or_else(|| {
+                    let now = tendermint::time::Time::now();
+                    tracing::info!(%now, "no genesis time provided, detecting a testing setup");
+                    now
+                });
+                let checkpoint = post_upgrade_root_hash.0.to_vec();
+                let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+
+                let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
+                tracing::info!("genesis: {}", genesis_json);
+                let genesis_path = path_to_export.join("genesis.json");
+                std::fs::write(genesis_path, genesis_json).expect("can write genesis");
+
+                let validator_state_path = path_to_export.join("priv_validator_state.json");
+                let fresh_validator_state =
+                    crate::testnet::generate::TestnetValidator::initial_state();
+                std::fs::write(validator_state_path, fresh_validator_state)
+                    .expect("can write validator state");
+            }
         }
         Ok(())
     }
