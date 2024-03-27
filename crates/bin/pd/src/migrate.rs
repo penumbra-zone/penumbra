@@ -12,9 +12,6 @@ use cnidarium::{StateDelta, StateRead, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{app::StateReadExt, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_stake::{
-    component::validator_handler::ValidatorDataRead, genesis::Content as StakeContent,
-};
 
 use crate::testnet::generate::TestnetConfig;
 
@@ -74,14 +71,8 @@ impl Migration {
 
                 /* ---------- generate genesis ------------  */
                 let chain_id = migrated_state.get_chain_id().await?;
-                let validators = migrated_state.validator_definitions().await?;
                 let app_state = penumbra_genesis::Content {
                     chain_id,
-                    stake_content: StakeContent {
-                        // TODO(erwan): See https://github.com/penumbra-zone/penumbra/issues/3846
-                        validators: validators.into_iter().map(Into::into).collect(),
-                        ..Default::default()
-                    },
                     ..Default::default()
                 };
                 let mut genesis =
@@ -117,12 +108,13 @@ impl Migration {
                 // resolve to the same value as before.
 
                 // Setup:
+                let start_time = std::time::SystemTime::now();
                 let rocksdb_dir = path_to_export.join("rocksdb");
                 let storage =
                     Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
                 let export_state = storage.latest_snapshot();
                 let root_hash = export_state.root_hash().await.expect("can get root hash");
-                let _app_hash_pre_migration: RootHash = root_hash.into();
+                let pre_upgrade_root_hash: RootHash = root_hash.into();
                 let pre_upgrade_height = export_state
                     .get_block_height()
                     .await
@@ -142,8 +134,12 @@ impl Migration {
                     delta.nonverifiable_put_raw(key.into_bytes(), swap_execution);
                 }
 
+                delta.put_block_height(0u64);
+
                 let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
                 tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
+
+                let migration_duration = start_time.elapsed().unwrap();
 
                 // Reload storage so we can make reads against its migrated state:
                 storage.release().await;
@@ -154,14 +150,8 @@ impl Migration {
                 // to lookup a validator view from the chain, and specify the post-upgrade app hash and
                 // initial height.
                 let chain_id = migrated_state.get_chain_id().await?;
-                let validators = migrated_state.validator_definitions().await?;
                 let app_state = penumbra_genesis::Content {
                     chain_id,
-                    stake_content: StakeContent {
-                        // TODO(erwan): See https://github.com/penumbra-zone/penumbra/issues/3846
-                        validators: validators.into_iter().map(Into::into).collect(),
-                        ..Default::default()
-                    },
                     ..Default::default()
                 };
                 let mut genesis =
@@ -190,6 +180,15 @@ impl Migration {
                     crate::testnet::generate::TestnetValidator::initial_state();
                 std::fs::write(validator_state_path, fresh_validator_state)
                     .expect("can write validator state");
+
+                tracing::info!(
+                    pre_upgrade_height,
+                    post_upgrade_height,
+                    ?pre_upgrade_root_hash,
+                    ?post_upgrade_root_hash,
+                    duration = migration_duration.as_secs(),
+                    "successful migration!"
+                );
             }
         }
         Ok(())
