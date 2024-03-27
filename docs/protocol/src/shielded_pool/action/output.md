@@ -2,6 +2,15 @@
 
 Each output contains an OutputBody and a zk-SNARK output proof.
 
+## [Output Body](#output-body)
+
+The body of an `Output` has four parts:
+
+1. A `NotePayload`, which consists of the note commitment, the `NoteCiphertext`, and an ephemeral public key used to encrypt the note;
+2. A balance commitment, which commits to the value balance of the output note;
+3. The ovk wrapped key, which enables the _sender_ to later decrypt the `NoteCiphertext` using their `OutgoingViewingKey`;
+4. The wrapped memo key, which enables one who can decrypt the `NoteCiphertext` to additionally decrypt the [`MemoCiphertext`](../../transactions/memo.md) on the tranasction.
+
 ## Invariants
 
 The invariants that the Output upholds are described below.

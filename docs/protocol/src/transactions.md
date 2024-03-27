@@ -6,17 +6,17 @@ or providing additional metadata. All actions in the transaction are executed to
 
 1. A list of actions effecting changes to the chain state;
 2. A set of `TransactionParameters` describing conditions under which the actions may be executed;
-3. A set of `DetectionData` that helps third-party servers detect transactions using [Fuzzy Message Detection](./crypto/fmd.md);
-4. A `MemoCiphertext` with an encrypted memo visible only to the sender and receiver(s) of the transaction.
+3. An optional set of `DetectionData` that helps third-party servers detect transactions using [Fuzzy Message Detection](./crypto/fmd.md);
+4. An optional `MemoCiphertext` with an [encrypted memo](./transactions/memo.md) visible only to the sender and receiver(s) of the transaction.
 
 The [Transaction Signing](./transactions/signing.md) section describes transaction authorization.
 
 ## Actions and Value Balance
 
-The primary content of a transaction is its list of actions. Each action is executed in sequence, and effects changes to the chain state. 
+The primary content of a transaction is its list of actions. Each action is executed in sequence, and effects changes to the chain state.
 
 Crucially, each action makes a shielded contribution to the transaction's value
-balance by means of a _balance commitment_, using the commitment scheme for asset values described in detail in the [Asset Model](./assets.md). 
+balance by means of a _balance commitment_, using the commitment scheme for asset values described in detail in the [Asset Model](./assets.md).
 
 Some actions, like a `Spend`, consume state fragments from the chain and release
 value into the transaction, while others, like `Output`, consume value from the
@@ -33,7 +33,7 @@ prove knowledge of an opening to the commitment, i.e., producing $\widetilde{v}$
 such that $$C = [\widetilde{v}] \widetilde{V} = \operatorname{Commit}(0,
 \widetilde{v}).$$  But this is exactly what it means to create a Schnorr
 signature for the verification key $C$, because a Schnorr signature is a proof
-of knowledge of the signing key in the context of the message. 
+of knowledge of the signing key in the context of the message.
 
 Therefore, we can prove that a value commitment is a commitment to $0$ by
 treating it as a `decaf377-rdsa` verification key and using the corresponding

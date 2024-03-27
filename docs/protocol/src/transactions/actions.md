@@ -27,12 +27,12 @@ contributions together.
 | ------ | ----------- | ------------- | -- |
 | [`shielded_pool.v1.Spend`](../shielded_pool/action/spend.md) | Spends a note previously included on-chain, releasing its value into the transaction | $+$ (value of spent note) | |
 | [`shielded_pool.v1.Output`](../shielded_pool/action/output.md) | Produces a new note controlled by a specified address and adds it to the chain state | $-$ (value of new note) | |
-| [`dex.v1.Swap`](../dex/action/swap.md) | Submits a swap intent to the chain for batch execution | $-$ (prepaid claim fee) | $-$ (swap inputs) 
+| [`dex.v1.Swap`](../dex/action/swap.md) | Submits a swap intent to the chain for batch execution | $-$ (prepaid claim fee) | $-$ (swap inputs)
 | [`dex.v1.SwapClaim`](../dex/action/swap_claim.md) | Claims the outputs of a swap once the clearing price is known, producing new output notes directly | | $+$ (prepaid claim fee) |
 | `stake.v1.ValidatorDefinition` | Uploads a new validator definition to the chain | | |
 | `stake.v1.Delegate` | Delegates stake to a validator, exchanging the staking token for that validator's delegation token | | $-$ (staking token) $+$ (delegation token)
 | `stake.v1.Undelegate` | Undelegates stake from a validator, exchanging delegation tokens for unbonding tokens | | $-$ (delegation token) $+$ (unbonding token) |
-| `stake.v1.UndelegateClaim` | Converts unbonding tokens to staking tokens after unbonding completes, at a 1:1 rate unless there are slashing penalties | $-$ (unbonding token) $+$ (staking token) |
+| [`stake.v1.UndelegateClaim`](../stake/action/undelegate_claim.md) | Converts unbonding tokens to staking tokens after unbonding completes, at a 1:1 rate unless there are slashing penalties | $-$ (unbonding token) $+$ (staking token) |
 | `ibc.v1.IbcRelay` | Relays IBC messages from a counterparty chain | | |
 | `ibc.v1.Ics20Withdrawal` | Initiates an outbound ICS-20 token transfer | | $-$ (transfer amount) |
 | `dex.v1.PositionOpen` | Opens a liquidity position | | $-$ (initial reserves) $+$ (opened LPNFT) |
@@ -42,7 +42,7 @@ contributions together.
 | `governance.v1.ProposalSubmit` | Submits a governance proposal for voting | TODO | TODO |
 | `governance.v1.ProposalWithdraw` | Withdraws a governance proposal from voting | TODO | TODO |
 | `governance.v1.ValidatorVote` | Performs a governance vote as a validator | TODO | TODO |
-| `governance.v1.DelegatorVote` | Performs a governance vote as a delegator | TODO | TODO |
+| [`governance.v1.DelegatorVote`](../governance/action/delegator_vote.md) | Performs a governance vote as a delegator | TODO | TODO |
 | `governance.v1.ProposalDepositClaim` | Claims a proposal deposit once voting has finished | TODO | TODO |
 | `governance.v1.CommunityPoolSpend` | Spends funds from the community pool | | $+$ (spent value) |
 | `governance.v1.CommunityPoolOutput` | Like `Output`, but transparent | | $-$ (value of new note)
