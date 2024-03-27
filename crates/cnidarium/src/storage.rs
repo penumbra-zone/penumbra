@@ -46,6 +46,9 @@ struct Inner {
     db: Arc<DB>,
 }
 
+/// A staged write batch that can be committed to RocksDB.
+///
+/// This allows for write batches to be prepared and committed at a later time.
 pub struct StagedWriteBatch {
     /// The write batch to commit to RocksDB.
     pub(crate) write_batch: rocksdb::WriteBatch,
@@ -63,6 +66,18 @@ pub struct StagedWriteBatch {
     /// A lightweight copy of the changeset, this is useful to provide
     /// a stream of changes to subscribers.
     pub(crate) changes: Arc<Cache>,
+}
+
+impl StagedWriteBatch {
+    /// Returns the new version of the chain state corresponding to this set of changes.
+    pub fn version(&self) -> jmt::Version {
+        self.version
+    }
+
+    /// Returns the root hash of the jmt corresponding to this set of changes.
+    pub fn root_hash(&self) -> &RootHash {
+        &self.root_hash
+    }
 }
 
 impl Storage {
