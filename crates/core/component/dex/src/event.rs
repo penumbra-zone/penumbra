@@ -5,7 +5,7 @@ use crate::{
     },
     swap::Swap,
     swap_claim::SwapClaim,
-    BatchSwapOutputData, SwapExecution,
+    BatchSwapOutputData, DirectedTradingPair, SwapExecution,
 };
 
 use penumbra_asset::asset;
@@ -66,12 +66,19 @@ pub fn position_withdraw(
     }
 }
 
-pub fn position_execution(post_execution_state: &Position) -> pb::EventPositionExecution {
+pub fn position_execution(
+    prev_state: &Position,
+    new_state: &Position,
+    context: DirectedTradingPair,
+) -> pb::EventPositionExecution {
     pb::EventPositionExecution {
-        position_id: Some(post_execution_state.id().into()),
-        trading_pair: Some(post_execution_state.phi.pair.into()),
-        reserves_1: Some(post_execution_state.reserves.r1.into()),
-        reserves_2: Some(post_execution_state.reserves.r2.into()),
+        position_id: Some(new_state.id().into()),
+        trading_pair: Some(new_state.phi.pair.into()),
+        reserves_1: Some(new_state.reserves.r1.into()),
+        reserves_2: Some(new_state.reserves.r2.into()),
+        prev_reserves_1: Some(prev_state.reserves.r1.into()),
+        prev_reserves_2: Some(prev_state.reserves.r2.into()),
+        context: Some(context.into()),
     }
 }
 

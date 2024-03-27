@@ -1645,6 +1645,15 @@ impl serde::Serialize for EventPositionExecution {
         if self.reserves_2.is_some() {
             len += 1;
         }
+        if self.prev_reserves_1.is_some() {
+            len += 1;
+        }
+        if self.prev_reserves_2.is_some() {
+            len += 1;
+        }
+        if self.context.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", len)?;
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
@@ -1657,6 +1666,15 @@ impl serde::Serialize for EventPositionExecution {
         }
         if let Some(v) = self.reserves_2.as_ref() {
             struct_ser.serialize_field("reserves2", v)?;
+        }
+        if let Some(v) = self.prev_reserves_1.as_ref() {
+            struct_ser.serialize_field("prevReserves1", v)?;
+        }
+        if let Some(v) = self.prev_reserves_2.as_ref() {
+            struct_ser.serialize_field("prevReserves2", v)?;
+        }
+        if let Some(v) = self.context.as_ref() {
+            struct_ser.serialize_field("context", v)?;
         }
         struct_ser.end()
     }
@@ -1676,6 +1694,11 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
             "reserves1",
             "reserves_2",
             "reserves2",
+            "prev_reserves_1",
+            "prevReserves1",
+            "prev_reserves_2",
+            "prevReserves2",
+            "context",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1684,6 +1707,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
             TradingPair,
             Reserves1,
             Reserves2,
+            PrevReserves1,
+            PrevReserves2,
+            Context,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1710,6 +1736,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
                             "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
+                            "prevReserves1" | "prev_reserves_1" => Ok(GeneratedField::PrevReserves1),
+                            "prevReserves2" | "prev_reserves_2" => Ok(GeneratedField::PrevReserves2),
+                            "context" => Ok(GeneratedField::Context),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1733,6 +1762,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                 let mut trading_pair__ = None;
                 let mut reserves_1__ = None;
                 let mut reserves_2__ = None;
+                let mut prev_reserves_1__ = None;
+                let mut prev_reserves_2__ = None;
+                let mut context__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
@@ -1759,6 +1791,24 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                             }
                             reserves_2__ = map_.next_value()?;
                         }
+                        GeneratedField::PrevReserves1 => {
+                            if prev_reserves_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("prevReserves1"));
+                            }
+                            prev_reserves_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::PrevReserves2 => {
+                            if prev_reserves_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("prevReserves2"));
+                            }
+                            prev_reserves_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::Context => {
+                            if context__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("context"));
+                            }
+                            context__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1769,6 +1819,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                     trading_pair: trading_pair__,
                     reserves_1: reserves_1__,
                     reserves_2: reserves_2__,
+                    prev_reserves_1: prev_reserves_1__,
+                    prev_reserves_2: prev_reserves_2__,
+                    context: context__,
                 })
             }
         }

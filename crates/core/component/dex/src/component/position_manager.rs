@@ -215,8 +215,18 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Record execution against an opened position.
+    ///
+    /// The `context` parameter records the global context of the path in which
+    /// the position execution happened. This may be completely different than
+    /// the trading pair of the position itself, and is used to link the
+    /// micro-scale execution (processed by this method) with the macro-scale
+    /// context (a swap or arbitrage).
     #[tracing::instrument(level = "debug", skip_all)]
-    async fn position_execution(&mut self, mut new_state: Position) -> Result<()> {
+    async fn position_execution(
+        &mut self,
+        mut new_state: Position,
+        context: DirectedTradingPair,
+    ) -> Result<()> {
         let prev_state = self
             .position_by_id(&new_state.id())
             .await?
@@ -249,8 +259,17 @@ pub trait PositionManager: StateWrite + PositionRead {
             }
         }
 
-        self.record_proto(event::position_execution(&new_state));
-        self.update_position(Some(prev_state), new_state).await?;
+        // Optimization: it's possible that the position's reserves haven't
+        // changed, and that we're about to do a no-op update. This can happen
+        // when saving a frontier, for instance, since the FillRoute code saves
+        // the entire frontier when it finishes.
+        //
+        // If so, skip the write, but more importantly, skip emitting an event,
+        // so tooling doesn't get confused about a no-op execution.
+        if prev_state != new_state {
+            self.record_proto(event::position_execution(&prev_state, &new_state, context));
+            self.update_position(Some(prev_state), new_state).await?;
+        }
 
         Ok(())
     }

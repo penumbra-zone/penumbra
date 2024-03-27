@@ -19,7 +19,7 @@ pub const MAX_FEE_BPS: u32 = 5000;
 
 /// Encapsulates the immutable parts of the position (phi/nonce), along
 /// with the mutable parts (state/reserves).
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
     pub state: State,
