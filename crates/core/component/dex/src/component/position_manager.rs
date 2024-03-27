@@ -147,15 +147,14 @@ pub trait PositionManager: StateWrite + PositionRead {
             .expect("fetching position should not fail")
             .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?;
 
-        if !matches!(
-            prev_state.state,
-            position::State::Opened | position::State::Closed,
-        ) {
-            anyhow::bail!(
-                "attempted to close a position with state {:?}, expected Opened or Closed",
-                prev_state.state
-            );
-        }
+        anyhow::ensure!(
+            matches!(
+                prev_state.state,
+                position::State::Opened | position::State::Closed,
+            ),
+            "attempted to close a position with state {:?}, expected Opened or Closed",
+            prev_state.state
+        );
 
         let new_state = {
             let mut new_state = prev_state.clone();
@@ -232,18 +231,16 @@ pub trait PositionManager: StateWrite + PositionRead {
             .await?
             .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", new_state.id()))?;
 
-        if !matches!(&prev_state.state, position::State::Opened) {
-            anyhow::bail!(
-                "attempted to execute against a position with state {:?}, expected Opened",
-                prev_state.state
-            );
-        }
-        if !matches!(&new_state.state, position::State::Opened) {
-            anyhow::bail!(
-                "supplied post-execution state {:?}, expected Opened",
-                new_state.state
-            );
-        }
+        anyhow::ensure!(
+            matches!(&prev_state.state, position::State::Opened),
+            "attempted to execute against a position with state {:?}, expected Opened",
+            prev_state.state
+        );
+        anyhow::ensure!(
+            matches!(&new_state.state, position::State::Opened),
+            "supplied post-execution state {:?}, expected Opened",
+            prev_state.state
+        );
 
         // Handle "close-on-fill": automatically flip the position state to "closed" if
         // either of the reserves are zero.
