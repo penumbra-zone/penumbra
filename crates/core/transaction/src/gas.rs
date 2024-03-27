@@ -16,6 +16,8 @@ use crate::{
     Action, Transaction,
 };
 
+use penumbra_proto::DomainType;
+
 const NULLIFIER_SIZE: u64 = 2 + 32;
 const NOTEPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 32 + 2 + 132;
 const SWAPPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 272;
@@ -29,11 +31,19 @@ pub trait GasCost {
     fn gas_cost(&self) -> Gas;
 }
 
+// Where block space costs are hard-coded instead of calculated in the following functions, the values are based on the approximate byte size of the
+// encoded action and ignore the protobuf framing overhead, because it makes only a small difference and simplifies accounting.
+
 pub fn spend_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // Of fixed size, so we hardcode the block space cost proportional to the size of the following fields of the protobuf encoding of the type:
+
+        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
+        // penumbra.core.component.sct.v1.Nullifier  = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature = 64 bytes
+        // ZKSpendProof = 192 bytes
+        block_space: 352,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a Spend this is the byte size of a `Nullifier`.
@@ -47,9 +57,13 @@ pub fn spend_gas_cost() -> Gas {
 
 pub fn output_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // Of fixed size, so we hardcode the block space cost proportional to the size of the following fields of the protobuf encoding of the type:
+        // NOTEPAYLOAD_SIZE = 202 bytes
+        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
+        // wrapped_memo_key = 48 bytes
+        // ovk_wrapped_key = 48 bytes
+        // ZKOutputProof = 192 bytes
+        block_space: NOTEPAYLOAD_SIZE + 352,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         compact_block_space: NOTEPAYLOAD_SIZE,
@@ -60,11 +74,10 @@ pub fn output_gas_cost() -> Gas {
     }
 }
 
-fn delegate_gas_cost() -> Gas {
+fn delegate_gas_cost(delegate: &Delegate) -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // The block space measured as the byte length of the encoded action.
+        block_space: delegate.encode_to_vec().len() as u64,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a Delegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
@@ -77,11 +90,10 @@ fn delegate_gas_cost() -> Gas {
     }
 }
 
-fn undelegate_gas_cost() -> Gas {
+fn undelegate_gas_cost(undelegate: &Undelegate) -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // The block space measured as the byte length of the encoded action.
+        block_space: undelegate.encode_to_vec().len() as u64,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For an Undelegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
@@ -96,9 +108,13 @@ fn undelegate_gas_cost() -> Gas {
 
 fn undelegate_claim_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // penumbra.core.keys.v1.IdentityKey = 64 bytes
+        // uint64 = 8 bytes
+        // Penalty penalty = 64 bytes
+        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
+        // uint64  = 8 bytes
+        // proof = 192 bytes
+        block_space: 368,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For an UndelegateClaim, nothing is added to the compact block directly. The associated [`Action::Output`]
@@ -111,11 +127,10 @@ fn undelegate_claim_gas_cost() -> Gas {
     }
 }
 
-fn validator_definition_gas_cost() -> Gas {
+fn validator_definition_gas_cost(validator_definition: &ValidatorDefinition) -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // The block space measured as the byte length of the encoded action.
+        block_space: validator_definition.encode_to_vec().len() as u64,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a ValidatorDefinition the compact block is not modified.
@@ -129,9 +144,14 @@ fn validator_definition_gas_cost() -> Gas {
 
 fn swap_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // ZKSwapProof = 192 bytes
+        // TradingPair = 128 bytes
+        // penumbra.core.num.v1.Amount = 64 bytes
+        // penumbra.core.num.v1.Amount = 64 bytes
+        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
+        // SwapPayload payload = 308 bytes
+        // batch swap output data = 104 bytes
+        block_space: 192 + 128 + 64 + 64 + SWAPPAYLOAD_SIZE + BSOD_SIZE,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a Swap this is the byte size of a [`StatePayload`] and a [`BatchSwapOutputData`].
@@ -149,9 +169,14 @@ fn swap_gas_cost() -> Gas {
 
 pub fn swap_claim_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // 	ZKSwapClaimProof = 192 bytes
+        // 	penumbra.core.component.sct.v1.Nullifier = 32 bytes
+        // 	penumbra.core.component.fee.v1.Fee fee = 128 + 128 + 64 bytes
+        // 	penumbra.crypto.tct.v1.StateCommitment output_1_commitment = 64 bytes
+        // 	penumbra.crypto.tct.v1.StateCommitment output_2_commitment = 64 bytes
+        // 	BatchSwapOutputData output_data = 104 bytes
+        // 	uint64 epoch_duration = 8 bytes
+        block_space: 192 + 32 + 128 + 128 + 64 + 64 + 64 + BSOD_SIZE + 8,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a SwapClaim, nothing is added to the compact block directly. The associated [`Action::Spend`]
@@ -166,9 +191,18 @@ pub fn swap_claim_gas_cost() -> Gas {
 
 fn delegator_vote_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // uint64 = 8 bytes
+        // uint64 = 8 bytes
+        // Vote vote = 8 bytes
+        // penumbra.core.asset.v1.Value = 8 + 8 + 64 + 64 + 64 bytes
+        // penumbra.core.num.v1.Amount unbonded_amount = 64 bytes
+        // penumbra.core.component.sct.v1.Nullifier nullifier = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 64 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature auth_sig = 64 bytes
+        // ZKDelegatorVoteProof proof = 192 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 8 + 8 + 8 + 8 + 8 + 64 + 64 + 64 + 64 + 32 + 64 + 64 + 192,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a DelegatorVote the compact block is not modified.
@@ -182,9 +216,10 @@ fn delegator_vote_gas_cost() -> Gas {
 
 fn position_withdraw_gas_cost() -> Gas {
     Gas {
-        // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-        // will use the encoded size of the complete transaction to calculate the block space.
-        block_space: 0,
+        // position ID = 64 + 64 bytes
+        // balance commitment = 64 bytes
+        // uint64 = 8 bytes
+        block_space: 64 + 64 + 64 + 8,
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a PositionWithdraw the compact block is not modified.
@@ -224,21 +259,22 @@ impl GasCost for ActionPlan {
             // and can call the `GasCost` impl on that.
             ActionPlan::Spend(_) => spend_gas_cost(),
             ActionPlan::Output(_) => output_gas_cost(),
-            ActionPlan::Delegate(d) => d.gas_cost(),
-            ActionPlan::Undelegate(u) => u.gas_cost(),
             ActionPlan::UndelegateClaim(_) => undelegate_claim_gas_cost(),
-            ActionPlan::ValidatorDefinition(vd) => vd.gas_cost(),
             ActionPlan::Swap(_) => swap_gas_cost(),
             ActionPlan::SwapClaim(_) => swap_claim_gas_cost(),
+            ActionPlan::DelegatorVote(_) => delegator_vote_gas_cost(),
+            ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
+
+            ActionPlan::Delegate(d) => d.gas_cost(),
+            ActionPlan::Undelegate(u) => u.gas_cost(),
+            ActionPlan::ValidatorDefinition(vd) => vd.gas_cost(),
             ActionPlan::IbcAction(i) => i.gas_cost(),
             ActionPlan::ProposalSubmit(ps) => ps.gas_cost(),
             ActionPlan::ProposalWithdraw(pw) => pw.gas_cost(),
-            ActionPlan::DelegatorVote(_) => delegator_vote_gas_cost(),
             ActionPlan::ValidatorVote(v) => v.gas_cost(),
             ActionPlan::ProposalDepositClaim(pdc) => pdc.gas_cost(),
             ActionPlan::PositionOpen(po) => po.gas_cost(),
             ActionPlan::PositionClose(pc) => pc.gas_cost(),
-            ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
             ActionPlan::CommunityPoolSpend(ds) => ds.gas_cost(),
             ActionPlan::CommunityPoolOutput(d) => d.gas_cost(),
             ActionPlan::CommunityPoolDeposit(dd) => dd.gas_cost(),
@@ -289,13 +325,13 @@ impl GasCost for Spend {
 
 impl GasCost for Delegate {
     fn gas_cost(&self) -> Gas {
-        delegate_gas_cost()
+        delegate_gas_cost(&self)
     }
 }
 
 impl GasCost for Undelegate {
     fn gas_cost(&self) -> Gas {
-        undelegate_gas_cost()
+        undelegate_gas_cost(&self)
     }
 }
 
@@ -320,9 +356,8 @@ impl GasCost for SwapClaim {
 impl GasCost for ProposalSubmit {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // In the case of a proposal submission, the compact block cost is zero.
             // The compact block is only modified it the proposal is ratified.
             // And when that's the case, the cost is mutualized.
@@ -339,9 +374,8 @@ impl GasCost for ProposalSubmit {
 impl GasCost for ProposalWithdraw {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ProposalWithdraw the compact block is not modified.
@@ -363,9 +397,8 @@ impl GasCost for DelegatorVote {
 impl GasCost for ValidatorVote {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ValidatorVote the compact block is not modified.
@@ -381,9 +414,8 @@ impl GasCost for ValidatorVote {
 impl GasCost for ProposalDepositClaim {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ProposalDepositClaim the compact block is not modified.
@@ -399,9 +431,8 @@ impl GasCost for ProposalDepositClaim {
 impl GasCost for PositionOpen {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionOpen the compact block is not modified.
@@ -417,9 +448,8 @@ impl GasCost for PositionOpen {
 impl GasCost for PositionClose {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionClose the compact block is not modified.
@@ -441,9 +471,8 @@ impl GasCost for PositionWithdraw {
 impl GasCost for Ics20Withdrawal {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a Ics20Withdrawal the compact block is not modified.
@@ -459,9 +488,8 @@ impl GasCost for Ics20Withdrawal {
 impl GasCost for CommunityPoolDeposit {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a CommunityPoolDeposit the compact block is not modified.
@@ -477,9 +505,8 @@ impl GasCost for CommunityPoolDeposit {
 impl GasCost for CommunityPoolSpend {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a CommunityPoolSpend the compact block is not modified.
@@ -507,9 +534,8 @@ impl GasCost for CommunityPoolOutput {
 impl GasCost for IbcRelay {
     fn gas_cost(&self) -> Gas {
         Gas {
-            // Each [`Action`] has a `0` `block_space` cost, since the [`Transaction`] itself
-            // will use the encoded size of the complete transaction to calculate the block space.
-            block_space: 0,
+            // The block space measured as the byte length of the encoded action.
+            block_space: self.encode_to_vec().len() as u64,
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a IbcAction this is the byte size of a [`StatePayload`].
@@ -531,6 +557,6 @@ impl GasCost for IbcRelay {
 
 impl GasCost for ValidatorDefinition {
     fn gas_cost(&self) -> Gas {
-        validator_definition_gas_cost()
+        validator_definition_gas_cost(&self)
     }
 }
