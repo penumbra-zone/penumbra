@@ -18,7 +18,7 @@ use jmt::storage::TreeWriter;
 
 /// Specifies the configuration of a substore, which is a prefixed subset of
 /// the main store with its own merkle tree, nonverifiable data, preimage index, etc.
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
