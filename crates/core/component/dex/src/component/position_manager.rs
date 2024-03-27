@@ -366,29 +366,30 @@ pub(crate) trait Inner: StateWrite {
     ) -> Result<()> {
         tracing::debug!(?prev_state, ?new_state, "updating position state");
 
+        let id = new_state.id();
+
         // Clear any existing indexes of the position, since changes to the
         // reserves or the position state might have invalidated them.
         if let Some(prev_state) = prev_state.as_ref() {
-            self.deindex_position_by_price(&prev_state);
+            self.deindex_position_by_price(&prev_state, &id);
         }
 
         // Only index the position's liquidity if it is active.
         if new_state.state == position::State::Opened {
-            self.index_position_by_price(&new_state);
+            self.index_position_by_price(&new_state, &id);
         }
 
         // Update the available liquidity for this position's trading pair.
+        // TODO: refactor and streamline this method while implementing eviction.
         self.update_available_liquidity(&new_state, &prev_state)
             .await?;
 
-        let id = new_state.id();
         self.put(state_key::position_by_id(&id), new_state);
         Ok(())
     }
 
-    fn index_position_by_price(&mut self, position: &position::Position) {
+    fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
         let (pair, phi) = (position.phi.pair, &position.phi);
-        let id = position.id();
         if position.reserves.r2 != 0u64.into() {
             // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
             let pair12 = DirectedTradingPair {
@@ -418,8 +419,7 @@ pub(crate) trait Inner: StateWrite {
         }
     }
 
-    fn deindex_position_by_price(&mut self, position: &Position) {
-        let id = position.id();
+    fn deindex_position_by_price(&mut self, position: &Position, id: &position::Id) {
         tracing::debug!("deindexing position");
         let pair12 = DirectedTradingPair {
             start: position.phi.pair.asset_1(),
