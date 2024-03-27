@@ -420,7 +420,7 @@ pub struct OutputBody {
     #[prost(bytes = "vec", tag = "3")]
     pub wrapped_memo_key: ::prost::alloc::vec::Vec<u8>,
     /// The key material used for note encryption, wrapped in encryption to the
-    /// sender's outgoing viewing key. 80 bytes.
+    /// sender's outgoing viewing key. 48 bytes.
     #[prost(bytes = "vec", tag = "4")]
     pub ovk_wrapped_key: ::prost::alloc::vec::Vec<u8>,
 }

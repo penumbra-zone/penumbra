@@ -156,7 +156,7 @@ message OutputBody {
   // An encrypted key for decrypting the memo.
   bytes wrapped_memo_key = 3;
   // The key material used for note encryption, wrapped in encryption to the
-  // sender's outgoing viewing key. 80 bytes.
+  // sender's outgoing viewing key. 48 bytes.
   bytes ovk_wrapped_key = 4;
 }
 
