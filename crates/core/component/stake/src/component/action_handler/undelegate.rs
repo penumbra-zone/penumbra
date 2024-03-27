@@ -27,12 +27,19 @@ impl ActionHandler for Undelegate {
         // This let us provide a more helpful error message if an epoch boundary was crossed.
         // And it ensures that the unbonding delay is enforced correctly.
         let current_epoch = state.get_current_epoch().await?;
-        ensure!(
-            u.from_epoch == current_epoch,
-            "undelegation was prepared for epoch {} but the current epoch is {}",
-            u.from_epoch.index,
-            current_epoch.index
-        );
+        let prepared_for_current_epoch = u.from_epoch == current_epoch;
+        if !prepared_for_current_epoch {
+            tracing::error!(
+                from = ?u.from_epoch,
+                current = ?current_epoch,
+                "undelegation was prepared for a different epoch",
+            );
+            anyhow::bail!(
+                "undelegation was prepared for epoch {} but the current epoch is {}",
+                u.from_epoch.index,
+                current_epoch.index
+            );
+        }
 
         // For undelegations, we enforce correct computation (with rounding)
         // of the *unbonded amount based on the delegation amount*, because
