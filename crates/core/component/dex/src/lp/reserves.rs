@@ -12,7 +12,7 @@ use super::position::MAX_RESERVE_AMOUNT;
 /// between assets 1 and 2, without specifying what those assets are, to avoid
 /// duplicating data (each asset ID alone is four times the size of the
 /// reserves).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Reserves {
     pub r1: Amount,
     pub r2: Amount,

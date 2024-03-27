@@ -225,7 +225,7 @@ mod tests {
         let id = buy_1.id();
 
         let position = buy_1;
-        state_tx.index_position_by_price(&position);
+        state_tx.index_position_by_price(&position, &position.id());
         state_tx
             .update_available_liquidity(&position, &None)
             .await

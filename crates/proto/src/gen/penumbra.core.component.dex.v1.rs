@@ -1399,6 +1399,15 @@ pub struct EventPositionExecution {
     /// The reserves of asset 2 of the position after execution.
     #[prost(message, optional, tag = "4")]
     pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 1 of the position before execution.
+    #[prost(message, optional, tag = "5")]
+    pub prev_reserves_1: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 2 of the position before execution.
+    #[prost(message, optional, tag = "6")]
+    pub prev_reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// Context: the end-to-end route that was being traversed during execution.
+    #[prost(message, optional, tag = "7")]
+    pub context: ::core::option::Option<DirectedTradingPair>,
 }
 impl ::prost::Name for EventPositionExecution {
     const NAME: &'static str = "EventPositionExecution";

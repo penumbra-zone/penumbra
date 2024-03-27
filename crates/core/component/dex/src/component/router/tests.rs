@@ -496,6 +496,10 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     state_tx.open_position(buy_1.clone()).await.unwrap();
     state_tx.open_position(buy_2.clone()).await.unwrap();
 
+    // We don't really care about the value, but the API requires
+    // that we make up a context here.
+    let context = pair_1.into_directed_trading_pair();
+
     let mut p_1 = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
         .await
@@ -503,7 +507,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .expect("we just posted two positions");
     assert_eq!(p_1.nonce, buy_1.nonce);
     p_1.reserves = p_1.reserves.flip();
-    state_tx.position_execution(p_1).await.unwrap();
+    state_tx.position_execution(p_1, context).await.unwrap();
 
     let mut p_2 = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
@@ -512,7 +516,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .expect("there is one position remaining");
     assert_eq!(p_2.nonce, buy_2.nonce);
     p_2.reserves = p_2.reserves.flip();
-    state_tx.position_execution(p_2).await.unwrap();
+    state_tx.position_execution(p_2, context).await.unwrap();
 
     assert!(state_tx
         .best_position(&pair_1.into_directed_trading_pair())
