@@ -126,7 +126,8 @@ impl Component for Dex {
         Arc::get_mut(state)
             .expect("state should be uniquely referenced after batch swaps complete")
             .close_queued_positions()
-            .await;
+            .await
+            .expect("closing queued positions should not fail");
     }
 
     #[instrument(name = "dex", skip(_state))]
