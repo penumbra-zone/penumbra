@@ -1,4 +1,4 @@
-use anyhow::{ensure, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_sct::component::clock::EpochRead;
@@ -63,12 +63,18 @@ impl ActionHandler for Undelegate {
             })?;
         let expected_unbonded_amount = rate_data.unbonded_amount(u.delegation_amount);
 
-        ensure!(
-            u.unbonded_amount == expected_unbonded_amount,
-            "undelegation amount {} does not match expected amount {}",
-            u.unbonded_amount,
-            expected_unbonded_amount,
-        );
+        if u.unbonded_amount != expected_unbonded_amount {
+            tracing::error!(
+                actual = %u.unbonded_amount,
+                expected = %expected_unbonded_amount,
+                "undelegation amount does not match expected amount",
+            );
+            anyhow::bail!(
+                "undelegation amount {} does not match expected amount {}",
+                u.unbonded_amount,
+                expected_unbonded_amount,
+            );
+        }
 
         /* ----- execution ------ */
 
