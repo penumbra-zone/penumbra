@@ -260,13 +260,15 @@ message TransactionPlannerRequest {
     // The identity key of the validator to finish undelegating from.
     core.keys.v1.IdentityKey validator_identity = 1;
     // The epoch in which unbonding began, used to verify the penalty.
-    uint64 start_epoch_index = 2;
+    uint64 start_epoch_index = 2 [deprecated = true];
     // The penalty applied to undelegation, in bps^2 (10e-8).
     // In the happy path (no slashing), this is 0.
     core.component.stake.v1.Penalty penalty = 3;
     // The amount of unbonding tokens to claim.
     // This is a bare number because its denom is determined by the preceding data.
     core.num.v1.Amount unbonding_amount = 4;
+    // The height at which unbonding began.
+    uint64 unbonding_start_height = 5;
   }
   message PositionOpen {
     // Contains the data defining the position, sufficient to compute its `PositionId`.

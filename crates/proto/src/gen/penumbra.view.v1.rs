@@ -341,6 +341,7 @@ pub mod transaction_planner_request {
             super::super::super::core::keys::v1::IdentityKey,
         >,
         /// The epoch in which unbonding began, used to verify the penalty.
+        #[deprecated]
         #[prost(uint64, tag = "2")]
         pub start_epoch_index: u64,
         /// The penalty applied to undelegation, in bps^2 (10e-8).
@@ -355,6 +356,9 @@ pub mod transaction_planner_request {
         pub unbonding_amount: ::core::option::Option<
             super::super::super::core::num::v1::Amount,
         >,
+        /// The height at which unbonding began.
+        #[prost(uint64, tag = "5")]
+        pub unbonding_start_height: u64,
     }
     impl ::prost::Name for UndelegateClaim {
         const NAME: &'static str = "UndelegateClaim";

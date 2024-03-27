@@ -7038,6 +7038,9 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         if self.unbonding_amount.is_some() {
             len += 1;
         }
+        if self.unbonding_start_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.UndelegateClaim", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -7051,6 +7054,10 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         }
         if let Some(v) = self.unbonding_amount.as_ref() {
             struct_ser.serialize_field("unbondingAmount", v)?;
+        }
+        if self.unbonding_start_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -7069,6 +7076,8 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
             "penalty",
             "unbonding_amount",
             "unbondingAmount",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -7077,6 +7086,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
             StartEpochIndex,
             Penalty,
             UnbondingAmount,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7103,6 +7113,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "unbondingAmount" | "unbonding_amount" => Ok(GeneratedField::UnbondingAmount),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7126,6 +7137,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                 let mut start_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut unbonding_amount__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -7154,6 +7166,14 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                             }
                             unbonding_amount__ = map_.next_value()?;
                         }
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
+                            }
+                            unbonding_start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7164,6 +7184,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     unbonding_amount: unbonding_amount__,
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }
