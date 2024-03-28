@@ -62,7 +62,7 @@ An example log message emitted by `pd migrate` without providing `--genesis-star
 The value after `now=` is what should be copied. In practice, for testnets, Penumbra Labs will advise on a genesis time
 and provide that value in the documentation. Or should we just pick a genesis start ahead of time, and use that for all?
 -->
-5. Apply the migration: `pd migrate --genesis-start "{{ #include ../upgrade_genesis_time_70_71.md }}" --target-directory ~/.penumbra/testnet_net/node0/pd-exported-state/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../penumbra_version.md }}.tar.gz`.
+5. Apply the migration: `pd migrate --genesis-start "{{ #include ../upgrade_genesis_time_70_71.md }}" --target-directory ~/.penumbra/testnet_data/node0/pd-exported-state/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../penumbra_version.md }}.tar.gz`.
    You must use that precise genesis time, otherwise your node will not be able to reach consensus with the rest of the network.
 6. Move the migrated state into place: `mkdir ~/.penumbra/testnet_data/node0/pd && mv ~/.penumbra/testnet_data/node0/pd-exported-state/rocksdb ~/.penumbra/testnet_data/node0/pd/`
 7. Move the upgrade cometbft state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json
