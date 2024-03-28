@@ -306,7 +306,7 @@ impl Storage {
     }
 
     /// Prepares a commit for the provided [`StateDelta`], returning a [`StagedWriteBatch`].
-    /// The batch can be committed to the database using the [`Storage::commit`] method.
+    /// The batch can be committed to the database using the [`Storage::commit_batch`] method.
     pub async fn prepare_commit(&self, delta: StateDelta<Snapshot>) -> Result<StagedWriteBatch> {
         // Extract the snapshot and the changes from the state delta
         let (snapshot, changes) = delta.flatten();
@@ -529,10 +529,6 @@ impl Storage {
         for (config, new_version) in &multistore_versions.substores {
             if config.prefix.is_empty() {
                 // this is the main store, ignore
-                // TODO: is the main store supposed to be stored in `multistore_versions`?
-                // the previous `commit` implementation did set the main store version
-                // in `multistore_versions`, but that seems unnecessary as the main store
-                // version is already stored in the snapshot.
                 continue;
             }
 
