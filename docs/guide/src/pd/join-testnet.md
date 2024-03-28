@@ -37,10 +37,11 @@ The following section describes how to join a testnet chain *which has never upg
 Once a chain upgrade occurs, a new-joining node must have access to an archive
 of historical, migrated state. When we upgrade the chain, we should update these
 docs to switch to the archive-url version:
+-->
 
 ```shell
 pd testnet join --external-address IP_ADDRESS:26656 --moniker MY_NODE_NAME \
-    --archive-url "https://snapshots.penumbra.zone/testnet/pd-archived-stated-xxxxx.tar.gz
+    --archive-url "https://snapshots.penumbra.zone/testnet/pd-migrated-state-70-71.tar.gz"
 ```
 
 where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,
@@ -48,8 +49,8 @@ and `MY_NODE_NAME` is a moniker identifying your node. Other peers will try to c
 to your node over port `26656/TCP`. Finally, the `--archive-url` flag will fetch
 a tarball of historical blocks, so that your newly joining node can understand transactions
 that occurred prior to the most recent chain upgrade.
--->
 
+<!--
 ```shell
 pd testnet join --external-address IP_ADDRESS:26656 --moniker MY_NODE_NAME
 ```
@@ -57,7 +58,6 @@ pd testnet join --external-address IP_ADDRESS:26656 --moniker MY_NODE_NAME
 where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,
 and `MY_NODE_NAME` is a moniker identifying your node. Other peers will try to connect
 to your node over port `26656/TCP`.
-<!--
 ### End join customization
 -->
 
