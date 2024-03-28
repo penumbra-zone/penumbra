@@ -270,13 +270,13 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     let post_undelegate_snapshot = storage.latest_snapshot();
 
     // Compute the height we expect to see this unbonding period finish.
-    let expected_end_of_unboding_period_height = {
-        // TODO(kate): right now the unbonding delay is calculated by using the start of the epoch
-        // as a beginning. so rather than...
-        // post_undelegated_height + UNBONDING_DELAY
-        // ...we write:
-        pre_undelegated_epoch.start_height + UNBONDING_DELAY
-    };
+    let expected_end_of_unboding_period_height = post_undelegate_snapshot
+        .compute_unbonding_height(
+            &identity_key,
+            post_undelegate_snapshot.get_block_height().await?,
+        )
+        .await?
+        .expect("snapshot should have a block height");
 
     // Show that we immediately receive unbonding tokens after undelegating.
     let undelegate_note: penumbra_shielded_pool::Note = {
