@@ -150,6 +150,11 @@ pub struct RateData {
     pub validator_reward_rate: ::core::option::Option<
         super::super::super::num::v1::Amount,
     >,
+    /// The exchange rate between the validator's delegation tokens and the staking
+    /// (UM) token. This number is represented as basis points *of* basis points --
+    /// that is, it should be divided by 10^8 to get a decimal representing the
+    /// ratio of staking token to delegation token. For example, an exchange rate
+    /// of 150_000_000 means that 1 delegation token is worth 1.5 UM.
     #[prost(message, optional, tag = "5")]
     pub validator_exchange_rate: ::core::option::Option<
         super::super::super::num::v1::Amount,
