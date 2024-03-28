@@ -102,6 +102,14 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .await?
         .tap(|c| info!(client.notes = %c.notes.len(), "mock client synced to test storage"));
 
+    // Proceed into the third epoch, so that the exchange rate isn't 1.
+    {
+        let target = 2;
+        while get_latest_epoch().await.index < target {
+            node.block().execute().await?;
+        }
+    }
+
     // Now, create a transaction that delegates to the validator.
     //
     // Hang onto the staking note nullifier, so we can interrogate whether that note is spent.
