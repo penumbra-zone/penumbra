@@ -150,6 +150,10 @@ pub struct RateData {
     pub validator_reward_rate: ::core::option::Option<
         super::super::super::num::v1::Amount,
     >,
+    /// The validator exchange rate between delegation tokens and staking tokens.
+    /// The rate is expressed in fixed-point representation with a scaling factor
+    /// of 10^8. For example, a decimal rate of `1.234` will be represented as
+    /// `123400000`
     #[prost(message, optional, tag = "5")]
     pub validator_exchange_rate: ::core::option::Option<
         super::super::super::num::v1::Amount,

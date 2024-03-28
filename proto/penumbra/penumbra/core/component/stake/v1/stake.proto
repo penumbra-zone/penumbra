@@ -70,6 +70,10 @@ message RateData {
   keys.v1.IdentityKey identity_key = 1;
   uint64 epoch_index = 2 [deprecated = true];
   num.v1.Amount validator_reward_rate = 4;
+  // The validator exchange rate between delegation tokens and staking tokens.
+  // The rate is expressed in fixed-point representation with a scaling factor
+  // of 10^8. For example, a decimal rate of `1.234` will be represented as
+  // `123400000`
   num.v1.Amount validator_exchange_rate = 5;
 }
 
