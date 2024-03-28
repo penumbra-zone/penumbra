@@ -93,7 +93,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     {
         [v] => v.clone(),
         unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    };
+    }; // ..and note the asset id for delegation tokens tied to this validator.
     let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key).id();
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
@@ -105,7 +105,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Now, create a transaction that delegates to the validator.
     //
     // Hang onto the staking note nullifier, so we can interrogate whether that note is spent.
-    let (plan, staking_note_nullifier) = {
+    let (plan, staking_note, staking_note_nullifier) = {
         use {
             penumbra_shielded_pool::{OutputPlan, SpendPlan},
             penumbra_transaction::{
@@ -152,7 +152,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             },
         };
         plan.populate_detection_data(rand_core::OsRng, 0);
-        (plan, staking_note_nullifier)
+        (plan, note, staking_note_nullifier)
     };
     let tx = client.witness_auth_build(&plan).await?;
 
@@ -174,12 +174,12 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .sync_to_latest(post_delegate_snapshot.clone())
         .await?;
 
-    // Show that the client now has some delegation tokens.
-    assert_eq!(
-        client.notes_by_asset(delegate_token_id).count(),
-        1,
-        "client should now have delegation tokens"
-    );
+    // Show that the client now has a single note for some delegation tokens.
+    let delegate_note: penumbra_shielded_pool::Note = {
+        let mut notes: Vec<_> = client.notes_by_asset(delegate_token_id).cloned().collect();
+        assert_eq!(notes.len(), 1, "client should now have delegation tokens");
+        notes.pop().unwrap()
+    };
 
     // Show that the staking note has a nullifier that has now been spent.
     {
@@ -279,10 +279,14 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     };
 
     // Show that we immediately receive unbonding tokens after undelegating.
-    {
+    let undelegate_note: penumbra_shielded_pool::Note = {
         client.sync_to_latest(post_undelegate_snapshot).await?;
+        let mut undelegate_notes: Vec<_> = client
+            .notes_by_asset(undelegate_token_id)
+            .cloned()
+            .collect();
         assert_eq!(
-            client.notes_by_asset(undelegate_token_id).count(),
+            undelegate_notes.len(),
             1,
             "client should have unbonding tokens immediately after undelegating"
         );
@@ -291,7 +295,8 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             /*0, TODO(kate): we still see delegation tokens after undelegating*/ 1,
             "client should not have delegation tokens immediately after undelegating"
         );
-    }
+        undelegate_notes.pop().unwrap()
+    };
 
     // Jump to the end of the unbonding period.
     {
@@ -345,15 +350,13 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .await?;
     let post_claim_snapshot = storage.latest_snapshot();
 
-    {
+    let staking_note_2 = {
         client.sync_to_latest(post_claim_snapshot.clone()).await?;
-        assert_eq!(
-            client
-                .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
-                .count(),
-            1,
-            "client should still have staking notes"
-        );
+        let mut notes: Vec<_> = client
+            .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
+            .cloned()
+            .collect();
+        assert_eq!(notes.len(), 1, "client should still have staking notes");
         assert_eq!(
             client.notes_by_asset(undelegate_token_id).count(),
             1,
@@ -364,6 +367,29 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             1,
             "client should still have delegation notes"
         );
+        notes.pop().unwrap()
+    };
+
+    {
+        let staking_note_amount = staking_note.amount();
+        let staking_note_2_amount = staking_note_2.amount();
+        let delegate_note_amount = delegate_note.amount();
+        let undelegate_note_amount = undelegate_note.amount();
+
+        dbg!(staking_note_amount);
+        dbg!(staking_note_2_amount);
+        dbg!(delegate_note_amount);
+        dbg!(undelegate_note_amount);
+
+        dbg!(staking_note_amount / delegate_note_amount);
+        dbg!(delegate_note_amount / undelegate_note_amount);
+        dbg!(staking_note_2_amount / staking_note_amount);
+
+        let validator_rate = storage
+            .latest_snapshot()
+            .get_validator_rate(&identity_key)
+            .await?;
+        dbg!(validator_rate);
     }
 
     // The test passed. Free our temporary storage and drop our tracing subscriber.
