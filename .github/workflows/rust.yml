@@ -9,18 +9,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
       - name: Install nextest
         uses: taiki-e/install-action@nextest
+
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
+
       - name: Run cargo check, failing on warnings
         run: cargo check --release --all-targets
         env:
           # The `-D warnings` option causes an error on warnings;
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
+
+      - name: Check wasm compatibility
+        run: ./deployments/scripts/check-wasm-compat.sh
 
       # If a dependency was modified, Cargo.lock may flap if not committed.
       - name: Check for diffs
@@ -35,6 +44,7 @@ jobs:
           else
               echo "OK: no uncommitted changes detected"
           fi
+
       - name: Run tests with nextest
         run: cargo nextest run --release --features migration
         env:
