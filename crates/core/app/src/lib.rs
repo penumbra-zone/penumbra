@@ -19,7 +19,9 @@ pub use crate::{
 
 use once_cell::sync::Lazy;
 
-pub const APP_VERSION: u64 = 1;
+/// Representation of the Penumbra application version. Notably, this is distinct
+/// from the crate version(s). This number should only ever be incremented.
+pub const APP_VERSION: u64 = 2;
 
 pub static SUBSTORE_PREFIXES: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
