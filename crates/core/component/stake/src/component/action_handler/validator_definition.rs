@@ -122,11 +122,11 @@ impl ActionHandler for validator::Definition {
             let validator_key = new_validator.identity_key;
 
             // The validator starts with a reward rate of 0 and an exchange rate
-            // of 1, expressed in bps^2 (i.e. 1_0000_0000 is 1.0).
+            // of 1, expressed in bps^2 (i.e. 100_000_000 is 1.0).
             let initial_rate_data = RateData {
                 identity_key: validator_key,
                 validator_reward_rate: 0u128.into(),
-                validator_exchange_rate: 1_0000_0000u128.into(),
+                validator_exchange_rate: 100_000_000u128.into(),
             };
 
             state

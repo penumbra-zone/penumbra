@@ -33,10 +33,10 @@ impl Penalty {
     }
 
     /// Create a `Penalty` from a basis point squared e.g.
-    /// `Penalty::from_bps(1_0000_0000)` is a 100% penalty.
+    /// `Penalty::from_bps(100_000_000)` is a 100% penalty.
     pub fn from_bps_squared(bps_squared: u64) -> Self {
-        assert!(bps_squared <= 1_0000_0000);
-        Self(U128x128::ratio(bps_squared, 1_0000_0000).expect(&format!(
+        assert!(bps_squared <= 100_000_000);
+        Self(U128x128::ratio(bps_squared, 100_000_000).expect(&format!(
             "{bps_squared} bps^2 should be convertible to a U128x128"
         )))
         .one_minus_this()
