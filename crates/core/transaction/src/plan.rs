@@ -1,6 +1,7 @@
 //! Declarative transaction plans, used for transaction authorization and
 //! creation.
 
+use crate::action::Action;
 use anyhow::Result;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
@@ -48,6 +49,12 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    /// Sort the actions by type, using the protobuf field number in the [`Action`].
+    pub fn sort_actions(mut actions: Vec<Action>) -> Vec<Action> {
+        actions.sort_by_key(|action: &Action| action.variant_index());
+        actions
+    }
+
     /// Computes the [`EffectHash`] for the [`Transaction`] described by this
     /// [`TransactionPlan`].
     ///
@@ -431,7 +438,7 @@ mod tests {
     use crate::{
         memo::MemoPlaintext,
         plan::{CluePlan, DetectionDataPlan, MemoPlan, TransactionPlan},
-        TransactionParameters, WitnessData,
+        ActionPlan, TransactionParameters, WitnessData,
     };
 
     /// This isn't an exhaustive test, but we don't currently have a
@@ -498,7 +505,7 @@ mod tests {
         let mut rng = OsRng;
 
         let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
-        let plan = TransactionPlan {
+        let mut plan: TransactionPlan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
@@ -525,6 +532,10 @@ mod tests {
             }),
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
         };
+
+        // Implement canonical ordering to the action plans to reduce client distinguishability.
+        plan.actions
+            .sort_by_key(|action: &ActionPlan| action.variant_index());
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
