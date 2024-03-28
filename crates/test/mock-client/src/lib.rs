@@ -200,4 +200,13 @@ impl MockClient {
             .build_concurrent(&self.fvk, &witness_data, &auth_data)
             .await
     }
+
+    pub fn notes_by_asset(
+        &self,
+        asset_id: penumbra_asset::asset::Id,
+    ) -> impl Iterator<Item = &Note> + '_ {
+        self.notes
+            .values()
+            .filter(move |n| n.asset_id() == asset_id)
+    }
 }
