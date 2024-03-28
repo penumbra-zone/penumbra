@@ -1,41 +1,46 @@
 #!/usr/bin/env bash
+# CI script for checking that the Penumbra monorepo does not accidentally
+# break compatibility with downstream web APIs, via the WASM crate.
+# Historically, this breakage has taken the form of inadvertently introducing
+# dependencies on std, e.g. via `mio`.
+set -euo pipefail
 
-set -e
+
+# List of packages taken from web repo's wasm Cargo.toml:
+#
+#   ❯ rg ^penumbra packages/wasm/crate/Cargo.toml --no-line-number | cut -f1 -d' '  | sort
+#
+# should be periodically updated in order to keep parity.
 
 packages=(
-  "penumbra-asset"
-  "penumbra-tct"
-  "penumbra-community-pool"
-  "penumbra-compact-block"
-  "penumbra-dex"
-  "penumbra-distributions"
-  "penumbra-fee"
-  "penumbra-funding"
-  "penumbra-governance"
-  "penumbra-ibc"
-  "penumbra-sct"
-  "penumbra-shielded-pool"
-  "penumbra-stake"
-  "penumbra-keys"
-  "penumbra-transaction"
-  "penumbra-txhash"
-  # Note: we can't include those ones because they rely on `getrandom`
-  # but there's a `js` feature...
-  # "penumbra-num"
-  # "penumbra-proto"
-  # "decaf377-fmd"
-  # "decaf377-frost"
-  # "decaf377-ka"
-  # "penumbra-proof-params"
+    penumbra-asset
+    penumbra-compact-block
+    penumbra-dex
+    penumbra-fee
+    penumbra-governance
+    penumbra-ibc
+    penumbra-keys
+    penumbra-sct
+    penumbra-shielded-pool
+    penumbra-stake
+    penumbra-tct
+    penumbra-transaction
+
+    # Some aren't ready with no default features, due to js/getrandom:
+    # penumbra-num
+    # penumbra-proof-params
+    # penumbra-proto
+    # decaf377-fmd
+    # decaf377-frost
+    # decaf377-ka
 )
 
-for package in "${packages[@]}"; do
-  echo "Building package: $package"
-  cargo check --release --target wasm32-unknown-unknown --package "$package" --no-default-features
-  if [ $? -ne 0 ]; then
-    echo "Compile error encountered while building package $package"
-    exit 1
-  fi
-  echo "Package $package built successfully"
-  echo "------------------------"
+# We intentionally loop over the packages one by one to make error-reporting clearer.
+# Ostensibly this would be slow, but in CI with a warm cache it's quick.
+for p in ${packages[@]} ; do
+    echo "Checking package for wasm compat: $p ..."
+    if ! cargo check --quiet --release --target wasm32-unknown-unknown --no-default-features --package "$p" ; then
+        >&2 echo "ERROR: package appears not to be wasm-compatible: '$p'"
+        exit 1
+    fi
 done

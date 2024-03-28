@@ -12,6 +12,8 @@ jobs:
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Install nextest
         uses: taiki-e/install-action@nextest
@@ -25,6 +27,7 @@ jobs:
           # The `-D warnings` option causes an error on warnings;
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
+
       - name: Check wasm compatibility
         run: ./deployments/scripts/check-wasm-compat.sh
 
