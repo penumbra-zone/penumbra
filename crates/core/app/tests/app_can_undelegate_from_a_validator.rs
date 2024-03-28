@@ -1,3 +1,5 @@
+use penumbra_num::fixpoint::U128x128;
+
 mod common;
 
 use {
@@ -113,6 +115,12 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Now, create a transaction that delegates to the validator.
     //
     // Hang onto the staking note nullifier, so we can interrogate whether that note is spent.
+    let delegate_rate = storage
+        .latest_snapshot()
+        .get_validator_rate(&identity_key)
+        .await?
+        .ok_or(anyhow!("validator has a rate"))?
+        .tap(|rate| tracing::info!(?rate, "got validator rate"));
     let (plan, staking_note, staking_note_nullifier) = {
         use {
             penumbra_shielded_pool::{OutputPlan, SpendPlan},
@@ -120,17 +128,11 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
             },
         };
-        let snapshot = storage.latest_snapshot();
         let note = client
             .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
             .cloned()
             .next()
             .expect("should get staking note");
-        let rate = snapshot
-            .get_validator_rate(&identity_key)
-            .await?
-            .ok_or(anyhow!("validator has a rate"))?
-            .tap(|rate| tracing::info!(?rate, "got validator rate"));
         let spend = SpendPlan::new(
             &mut rand_core::OsRng,
             note.clone(),
@@ -139,7 +141,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 .expect("note should be in mock client's tree"),
         );
         let staking_note_nullifier = spend.nullifier(&client.fvk);
-        let delegate = rate.build_delegate(
+        let delegate = delegate_rate.build_delegate(
             storage.latest_snapshot().get_current_epoch().await?,
             note.amount(),
         );
@@ -201,15 +203,21 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         };
     }
 
-    // Fast forward to the final block of the epoch.
+    // Fast forward to the next epoch.
     {
-        let jump_to = 2;
-        while get_latest_height().await < jump_to {
+        let start = get_latest_epoch().await.index;
+        while get_latest_epoch().await.index < start {
             node.block().execute().await?;
         }
     }
 
     // Build a transaction that will now undelegate from the validator.
+    let undelegate_rate = storage
+        .latest_snapshot()
+        .get_validator_rate(&identity_key)
+        .await?
+        .ok_or(anyhow::anyhow!("new validator has a rate"))?
+        .tap(|rate| tracing::info!(?rate, "got new validator rate"));
     let (plan, undelegate_token_id) = {
         use {
             penumbra_shielded_pool::{OutputPlan, SpendPlan},
@@ -220,12 +228,6 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         };
         let snapshot = storage.latest_snapshot();
         client.sync_to_latest(snapshot.clone()).await?;
-        let rate = snapshot
-            .get_validator_rate(&identity_key)
-            .await?
-            .ok_or(anyhow::anyhow!("new validator has a rate"))?
-            .tap(|rate| tracing::info!(?rate, "got new validator rate"));
-
         let undelegation_id = DelegationToken::new(identity_key).id();
         let note = client
             .notes
@@ -241,7 +243,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 .position(note.commit())
                 .expect("note should be in mock client's tree"),
         );
-        let undelegate = rate.build_undelegate(
+        let undelegate = undelegate_rate.build_undelegate(
             storage.latest_snapshot().get_current_epoch().await?,
             note.amount(),
         );
@@ -251,7 +253,6 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             undelegate.unbonded_value(),
             *test_keys::ADDRESS_1,
         );
-
         let mut plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), undelegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
@@ -378,26 +379,49 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         notes.pop().unwrap()
     };
 
+    // Lets make some assertions that the note amounts respect the validator rates.
     {
-        let staking_note_amount = staking_note.amount();
-        let staking_note_2_amount = staking_note_2.amount();
-        let delegate_note_amount = delegate_note.amount();
-        let undelegate_note_amount = undelegate_note.amount();
+        use penumbra_stake::BPS_SQUARED_SCALING_FACTOR;
+        use std::ops::Deref;
+        let staking_note_amount: U128x128 = staking_note.amount().into();
+        let delegate_note_amount: U128x128 = delegate_note.amount().into();
+        let undelegate_note_amount: U128x128 = undelegate_note.amount().into();
 
-        dbg!(staking_note_amount);
-        dbg!(staking_note_2_amount);
-        dbg!(delegate_note_amount);
-        dbg!(undelegate_note_amount);
+        let delegate_exchange_rate: U128x128 = delegate_rate.validator_exchange_rate.into();
+        let undelegate_exchange_rate: U128x128 = undelegate_rate.validator_exchange_rate.into();
+        let scaled_delegate_rate: U128x128 =
+            (delegate_exchange_rate / BPS_SQUARED_SCALING_FACTOR.deref())?;
+        let scaled_undelegate_rate: U128x128 =
+            (undelegate_exchange_rate / BPS_SQUARED_SCALING_FACTOR.deref())?;
 
-        dbg!(staking_note_amount / delegate_note_amount);
-        dbg!(delegate_note_amount / undelegate_note_amount);
-        dbg!(staking_note_2_amount / staking_note_amount);
+        let actual = staking_note_amount.checked_div(&delegate_note_amount)?;
+        assert_eq!(
+            actual,
+            scaled_delegate_rate,
+            "the ratio of delegation tokens to staking tokens should reflect the validator's \
+                    exchange rate at time of delegation; got {actual}, expected {scaled_delegate_rate}",
+        );
 
-        let validator_rate = storage
-            .latest_snapshot()
-            .get_validator_rate(&identity_key)
-            .await?;
-        dbg!(validator_rate);
+        //       dbg!(staking_note_amount);
+        //       dbg!(staking_note_2_amount);
+        //       dbg!(delegate_note_amount);
+        //       dbg!(undelegate_note_amount);
+
+        //       dbg!(staking_note_amount / delegate_note_amount);
+        //       dbg!(delegate_note_amount / undelegate_note_amount);
+        //       dbg!(staking_note_2_amount / staking_note_amount);
+
+        //       dbg!(&delegate_rate);
+        //       dbg!(&undelegate_rate);
+
+        //       use std::ops::Deref;
+        //       let scaled_undelegate_rate = (U128x128::from(undelegate_rate.validator_exchange_rate)
+        //           / penumbra_stake::BPS_SQUARED_SCALING_FACTOR.deref())?;
+        //       dbg!(scaled_delegate_rate);
+        //       dbg!(scaled_undelegate_rate);
+
+        //       let undelegate_note_amount = undelegate_note.amount();
+        //       let staking_note_2_amount = staking_note_2.amount();
     }
 
     // The test passed. Free our temporary storage and drop our tracing subscriber.
