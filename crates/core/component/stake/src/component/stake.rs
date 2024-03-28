@@ -63,7 +63,7 @@ impl Component for Staking {
                 let genesis_base_rate = BaseRateData {
                     epoch_index,
                     base_reward_rate: 0u128.into(),
-                    base_exchange_rate: 100_000_000u128.into(),
+                    base_exchange_rate: 1_0000_0000u128.into(),
                 };
                 state.set_base_rate(genesis_base_rate.clone());
                 trace!(?genesis_base_rate, "set base rate");

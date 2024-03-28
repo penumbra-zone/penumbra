@@ -50,7 +50,7 @@ impl RateData {
                 panic!("commission rate sums to > 100%")
             }
 
-            // Rate data is represented with an implicit scaling factor of 100_000_000.
+            // Rate data is represented with an implicit scaling factor of 1_0000_0000.
             // To make the calculations more readable, we use `U128x128` to represent
             // the intermediate descaled values. As a last step, we scaled them back
             // using [`BPS_SQUARED_SCALING_FACTOR`] and round down to an [`Amount`].
@@ -168,7 +168,7 @@ impl RateData {
 
     pub fn slash(&self, penalty: Penalty) -> Self {
         let mut slashed = self.clone();
-        // This will automatically produce a ratio which is multiplied by 100_000_000, and so
+        // This will automatically produce a ratio which is multiplied by 1_0000_0000, and so
         // rounding down does what we want.
         let penalized_exchange_rate: Amount = penalty
             .apply_to(self.validator_exchange_rate)
@@ -405,12 +405,12 @@ mod tests {
 
         let rate_data = RateData {
             identity_key: ik,
-            validator_reward_rate: 100_000_000u128.into(),
-            validator_exchange_rate: 200_000_000u128.into(),
+            validator_reward_rate: 1_0000_0000u128.into(),
+            validator_exchange_rate: 2_0000_0000u128.into(),
         };
         // 10%
         let penalty = Penalty::from_percent(10);
         let slashed = rate_data.slash(penalty);
-        assert_eq!(slashed.validator_exchange_rate, 180_000_000u128.into());
+        assert_eq!(slashed.validator_exchange_rate, 1_8000_0000u128.into());
     }
 }
