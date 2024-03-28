@@ -1,7 +1,6 @@
 use ark_ff::PrimeField;
 use decaf377::Fr;
 
-#[allow(non_snake_case)]
 pub fn derive_public(
     root_pub: &decaf377::Element,
     root_pub_enc: &decaf377::Encoding,
