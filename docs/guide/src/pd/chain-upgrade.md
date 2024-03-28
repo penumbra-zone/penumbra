@@ -66,7 +66,7 @@ and provide that value in the documentation. Or should we just pick a genesis st
    You must use that precise genesis time, otherwise your node will not be able to reach consensus with the rest of the network.
 6. Move the migrated state into place: `mkdir ~/.penumbra/testnet_data/node0/pd && mv ~/.penumbra/testnet_data/node0/pd-exported-state/rocksdb ~/.penumbra/testnet_data/node0/pd/`
 7. Move the upgrade cometbft state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json
-   && cp ~/.penumbra/testnet_data/pd-exported-state/priv_validator_state.json ~/.penumbra/testnet_data/node0/cometbft/data/priv_validator_state.json`
+   && cp ~/.penumbra/testnet_data/node0/pd-exported-state/priv_validator_state.json ~/.penumbra/testnet_data/node0/cometbft/data/priv_validator_state.json`
 8. Then we clean up the old CometBFT state: `find ~/.penumbra/testnet_data/node0/cometbft/data/ -mindepth 1 -maxdepth 1 -type d -exec rm -r {} +`
 
 Finally, restart the node, e.g. `sudo systemctl restart penumbra cometbft`. Check the logs, and you should see the chain progressing
