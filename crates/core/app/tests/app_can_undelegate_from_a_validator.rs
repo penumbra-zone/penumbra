@@ -359,9 +359,9 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         .await?;
     let post_claim_snapshot = storage.latest_snapshot();
 
-    let staking_note_2 = {
+    {
         client.sync_to_latest(post_claim_snapshot.clone()).await?;
-        let mut notes: Vec<_> = client
+        let notes: Vec<_> = client
             .notes_by_asset(*penumbra_asset::STAKING_TOKEN_ASSET_ID)
             .cloned()
             .collect();
@@ -376,16 +376,15 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             1,
             "client should still have delegation notes"
         );
-        notes.pop().unwrap()
     };
 
     // Lets make some assertions that the note amounts respect the validator rates.
     {
         use penumbra_stake::BPS_SQUARED_SCALING_FACTOR;
         use std::ops::Deref;
+
         let staking_note_amount: U128x128 = staking_note.amount().into();
         let delegate_note_amount: U128x128 = delegate_note.amount().into();
-        let undelegate_note_amount: U128x128 = undelegate_note.amount().into();
 
         let delegate_exchange_rate: U128x128 = delegate_rate.validator_exchange_rate.into();
         let undelegate_exchange_rate: U128x128 = undelegate_rate.validator_exchange_rate.into();
@@ -394,34 +393,24 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         let scaled_undelegate_rate: U128x128 =
             (undelegate_exchange_rate / BPS_SQUARED_SCALING_FACTOR.deref())?;
 
-        let actual = staking_note_amount.checked_div(&delegate_note_amount)?;
+        // Compute the expected amount of delegation tokens we should have received.
+        let expected: penumbra_num::Amount = staking_note_amount
+            .checked_div(&scaled_delegate_rate)?
+            .round_down()
+            .try_into()?;
         assert_eq!(
-            actual,
-            scaled_delegate_rate,
+            delegate_note.amount(),
+            expected,
             "the ratio of delegation tokens to staking tokens should reflect the validator's \
-                    exchange rate at time of delegation; got {actual}, expected {scaled_delegate_rate}",
+             exchange rate at time of delegation",
         );
 
-        //       dbg!(staking_note_amount);
-        //       dbg!(staking_note_2_amount);
-        //       dbg!(delegate_note_amount);
-        //       dbg!(undelegate_note_amount);
-
-        //       dbg!(staking_note_amount / delegate_note_amount);
-        //       dbg!(delegate_note_amount / undelegate_note_amount);
-        //       dbg!(staking_note_2_amount / staking_note_amount);
-
-        //       dbg!(&delegate_rate);
-        //       dbg!(&undelegate_rate);
-
-        //       use std::ops::Deref;
-        //       let scaled_undelegate_rate = (U128x128::from(undelegate_rate.validator_exchange_rate)
-        //           / penumbra_stake::BPS_SQUARED_SCALING_FACTOR.deref())?;
-        //       dbg!(scaled_delegate_rate);
-        //       dbg!(scaled_undelegate_rate);
-
-        //       let undelegate_note_amount = undelegate_note.amount();
-        //       let staking_note_2_amount = staking_note_2.amount();
+        // Compute the expected amount of undelegation tokens we should have received.
+        let expected: penumbra_num::Amount = delegate_note_amount
+            .checked_mul(&scaled_undelegate_rate)?
+            .round_down()
+            .try_into()?;
+        assert_eq!(undelegate_note.amount(), expected, "let's learn something");
     }
 
     // The test passed. Free our temporary storage and drop our tracing subscriber.
