@@ -4,6 +4,10 @@
 [Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to securely transact,
 stake, swap, or marketmake without broadcasting their personal information to the world.
 
+<!--
+No-op edit to test PR template rendering.
+-->
+
 ## Getting involved
 
 The primary communication hub is our [Discord]; click the link to join the
