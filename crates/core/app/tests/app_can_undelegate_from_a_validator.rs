@@ -27,7 +27,7 @@ use {
 /// The length of the [`penumbra_sct`] epoch.
 ///
 /// This test relies on many epochs turning over, so we will work with a shorter epoch duration.
-const EPOCH_DURATION: u64 = 2;
+const EPOCH_DURATION: u64 = 3;
 
 /// The length of the [`penumbra_stake`] unbonding_delay.
 const UNBONDING_DELAY: u64 = 4;
