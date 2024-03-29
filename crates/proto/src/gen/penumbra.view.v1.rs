@@ -1527,8 +1527,14 @@ impl ::prost::Name for UnbondingTokensByAddressIndexRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UnbondingTokensByAddressIndexResponse {
+    /// A `ValueView` representing the amount of the given unbonding token.
     #[prost(message, optional, tag = "1")]
     pub value_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
+    /// Whether the unbonding token is currently claimable. This will only be
+    /// `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+    /// validator has unbonded.
+    #[prost(bool, tag = "2")]
+    pub claimable: bool,
 }
 impl ::prost::Name for UnbondingTokensByAddressIndexResponse {
     const NAME: &'static str = "UnbondingTokensByAddressIndexResponse";

@@ -7468,9 +7468,15 @@ impl serde::Serialize for UnbondingTokensByAddressIndexResponse {
         if self.value_view.is_some() {
             len += 1;
         }
+        if self.claimable {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexResponse", len)?;
         if let Some(v) = self.value_view.as_ref() {
             struct_ser.serialize_field("valueView", v)?;
+        }
+        if self.claimable {
+            struct_ser.serialize_field("claimable", &self.claimable)?;
         }
         struct_ser.end()
     }
@@ -7484,11 +7490,13 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
         const FIELDS: &[&str] = &[
             "value_view",
             "valueView",
+            "claimable",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             ValueView,
+            Claimable,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7512,6 +7520,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
                     {
                         match value {
                             "valueView" | "value_view" => Ok(GeneratedField::ValueView),
+                            "claimable" => Ok(GeneratedField::Claimable),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7532,6 +7541,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut value_view__ = None;
+                let mut claimable__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValueView => {
@@ -7540,6 +7550,12 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
                             }
                             value_view__ = map_.next_value()?;
                         }
+                        GeneratedField::Claimable => {
+                            if claimable__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimable"));
+                            }
+                            claimable__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7547,6 +7563,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
                 }
                 Ok(UnbondingTokensByAddressIndexResponse {
                     value_view: value_view__,
+                    claimable: claimable__.unwrap_or_default(),
                 })
             }
         }
