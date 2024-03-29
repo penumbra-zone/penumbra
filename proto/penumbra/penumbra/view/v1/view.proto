@@ -673,5 +673,11 @@ message UnbondingTokensByAddressIndexRequest {
 // Returns unbonding tokens for the given address index, optionally filtered by
 // whether the tokens are currently claimable.
 message UnbondingTokensByAddressIndexResponse {
+  // A `ValueView` representing the amount of the given unbonding token.
   core.asset.v1.ValueView value_view = 1;
+
+  // Whether the unbonding token is currently claimable. This will only be
+  // `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+  // validator has unbonded.
+  bool claimable = 2;
 }
