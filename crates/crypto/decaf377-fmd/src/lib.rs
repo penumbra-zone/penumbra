@@ -20,4 +20,3 @@ pub use error::Error;
 pub use precision::Precision;
 
 pub(crate) use precision::MAX_PRECISION;
-

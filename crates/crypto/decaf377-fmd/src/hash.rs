@@ -18,7 +18,7 @@ pub fn to_scalar(point: &[u8; 32], n: u8, bits: &[u8]) -> Fr {
     assert_eq!(bits.len(), 3);
 
     let hash = blake2b_simd::Params::default()
-        .personal(b"decaf377-fmd.bit")
+        .personal(b"decaf377-fmd.sca")
         .to_state()
         .update(point)
         .update(&[n])
