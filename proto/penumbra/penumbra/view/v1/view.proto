@@ -136,6 +136,10 @@ service ViewService {
   // that token. Each `ValueView`'s `extended_metadata` field will contain the
   // `ValidatorInfo` of the delegated validator.
   rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
+
+  // Get unbonding tokens for the given address index, optionally filtered by
+  // whether the tokens are currently claimable.
+  rpc UnbondingTokensByAddressIndex(UnbondingTokensByAddressIndexRequest) returns (stream UnbondingTokensByAddressIndexResponse);
 }
 
 message AuthorizeAndBuildRequest {
@@ -642,5 +646,32 @@ message DelegationsByAddressIndexRequest {
 // The `ValueView` includes the `ValidatorInfo` for the delegated validator in
 // cits `extended_metadata` field.
 message DelegationsByAddressIndexResponse {
+  core.asset.v1.ValueView value_view = 1;
+}
+
+// Requests unbonding tokens for a given address index, with optional filtering
+// for whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexRequest {
+  enum Filter {
+    // Return all unbonding tokens, regardless of whether they're claimable
+    // right now.
+    FILTER_UNSPECIFIED = 0;
+
+    // Return all unbonding tokens that are currently claimable. This includes:
+    // - tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+    // - tokens for unbonded validators
+    FILTER_CLAIMABLE = 1;
+
+    // Return all unbonding tokens that are not yet claimable, because they are
+    // still in the `unbonding_delay` (from `StakeParameters`) period.
+    FILTER_NOT_YET_CLAIMABLE = 2;
+  }
+
+  Filter filter = 1;
+}
+
+// Returns unbonding tokens for the given address index, optionally filtered by
+// whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexResponse {
   core.asset.v1.ValueView value_view = 1;
 }
