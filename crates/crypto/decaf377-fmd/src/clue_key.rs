@@ -5,7 +5,7 @@ use bitvec::{array::BitArray, order};
 use decaf377::{FieldExt, Fq, Fr};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{hash, hkd, Clue, Error, MAX_PRECISION};
+use crate::{hash, hkd, Clue, Error, Precision};
 
 /// Bytes representing a clue key corresponding to some
 /// [`DetectionKey`](crate::DetectionKey).
@@ -68,10 +68,6 @@ impl ExpandedClueKey {
 
     /// Checks that the expanded clue key has at least `precision` subkeys
     fn ensure_at_least(&self, precision: usize) -> Result<(), Error> {
-        if precision > MAX_PRECISION {
-            return Err(Error::PrecisionTooLarge(precision));
-        }
-
         let current_precision = self.subkeys.borrow().len();
 
         // The cached expansion is large enough to accommodate the specified precision.
@@ -101,13 +97,10 @@ impl ExpandedClueKey {
     #[allow(non_snake_case)]
     pub fn create_clue_deterministic(
         &self,
-        precision_bits: usize,
+        precision: Precision,
         rseed: [u8; 32],
     ) -> Result<Clue, Error> {
-        if precision_bits >= MAX_PRECISION {
-            return Err(Error::PrecisionTooLarge(precision_bits));
-        }
-
+        let precision_bits = precision.bits() as usize;
         // Ensure that at least `precision_bits` subkeys are available.
         self.ensure_at_least(precision_bits)?;
 
@@ -171,12 +164,12 @@ impl ExpandedClueKey {
     #[allow(non_snake_case)]
     pub fn create_clue<R: RngCore + CryptoRng>(
         &self,
-        precision_bits: usize,
+        precision: Precision,
         mut rng: R,
     ) -> Result<Clue, Error> {
         let mut rseed = [0u8; 32];
         rng.fill_bytes(&mut rseed);
-        self.create_clue_deterministic(precision_bits, rseed)
+        self.create_clue_deterministic(precision, rseed)
     }
 }
 

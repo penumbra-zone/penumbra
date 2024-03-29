@@ -113,7 +113,7 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Default::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;

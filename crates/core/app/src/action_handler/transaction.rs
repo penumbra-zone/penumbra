@@ -172,7 +172,7 @@ mod tests {
                 clue_plans: vec![CluePlan::new(
                     &mut OsRng,
                     test_keys::ADDRESS_1.deref().clone(),
-                    1,
+                    1.try_into().unwrap(),
                 )],
             }),
             memo: None,

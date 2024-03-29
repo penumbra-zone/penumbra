@@ -4675,6 +4675,7 @@ dependencies = [
  "cnidarium",
  "cnidarium-component",
  "decaf377 0.5.0",
+ "decaf377-fmd",
  "decaf377-rdsa",
  "ed25519-consensus",
  "futures",

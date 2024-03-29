@@ -93,8 +93,8 @@ pub async fn fmd_parameters_valid<S: StateRead>(state: S, transaction: &Transact
 #[tracing::instrument(
     skip_all,
     fields(
-        current_fmd.precision_bits = current_fmd_parameters.precision_bits,
-        previous_fmd.precision_bits = previous_fmd_parameters.precision_bits,
+        current_fmd.precision_bits = current_fmd_parameters.precision.bits(),
+        previous_fmd.precision_bits = previous_fmd_parameters.precision.bits(),
         previous_fmd.as_of_block_height = previous_fmd_parameters.as_of_block_height,
         block_height,
     )
@@ -113,9 +113,9 @@ pub fn fmd_precision_within_grace_period(
     {
         // Clue must be using the current `fmd::Parameters`, or be within
         // `FMD_GRACE_PERIOD_BLOCKS` of the previous `fmd::Parameters`.
-        let clue_precision = clue.precision_bits();
-        let using_current_precision = clue_precision == current_fmd_parameters.precision_bits;
-        let using_previous_precision = clue_precision == previous_fmd_parameters.precision_bits;
+        let clue_precision = clue.precision()?;
+        let using_current_precision = clue_precision == current_fmd_parameters.precision;
+        let using_previous_precision = clue_precision == previous_fmd_parameters.precision;
         let within_grace_period =
             block_height < previous_fmd_parameters.as_of_block_height + FMD_GRACE_PERIOD_BLOCKS;
         if using_current_precision || (using_previous_precision && within_grace_period) {

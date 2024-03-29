@@ -1,5 +1,5 @@
 use decaf377_fmd as fmd;
-use fmd::ClueKey;
+use fmd::{ClueKey, Precision};
 use rand_core::OsRng;
 
 #[test]
@@ -10,10 +10,14 @@ fn detection_distribution_matches_expectation() {
     let bobce_dk = fmd::DetectionKey::new(OsRng);
 
     const NUM_CLUES: usize = 1024;
-    const PRECISION_BITS: usize = 4; // p = 1/16
+    const PRECISION_BITS: u8 = 4; // p = 1/16
 
     let clues = (0..NUM_CLUES)
-        .map(|_| alice_clue_key.create_clue(PRECISION_BITS, OsRng).unwrap())
+        .map(|_| {
+            alice_clue_key
+                .create_clue(Precision::new(PRECISION_BITS).unwrap(), OsRng)
+                .unwrap()
+        })
         .collect::<Vec<_>>();
 
     let alice_detections = clues.iter().filter(|clue| alice_dk.examine(clue)).count();
@@ -43,10 +47,5 @@ fn fails_to_expand_clue_key() {
 
 #[test]
 fn fails_to_generate_clue() {
-    let detection_key = fmd::DetectionKey::new(OsRng);
-    let expanded_clue_key = detection_key.clue_key().expand().unwrap();
-
-    expanded_clue_key
-        .create_clue(fmd::MAX_PRECISION + 1, OsRng)
-        .expect_err("fails to generate clue with excessive precision");
+    Precision::new(25).expect_err("fails to generate clue with excessive precision");
 }

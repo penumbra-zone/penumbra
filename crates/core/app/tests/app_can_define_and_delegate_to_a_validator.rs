@@ -2,6 +2,7 @@ use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
+    decaf377_fmd::Precision,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
         genesis::{self, AppState},
@@ -157,7 +158,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -270,7 +271,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -432,7 +433,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;

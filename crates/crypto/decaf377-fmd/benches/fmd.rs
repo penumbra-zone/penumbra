@@ -1,4 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use fmd::Precision;
 use rand_core::OsRng;
 
 use decaf377_fmd as fmd;
@@ -7,7 +8,7 @@ fn detect_clues(dk: &fmd::DetectionKey, clues: &[fmd::Clue]) -> usize {
     clues.iter().filter(|clue| dk.examine(clue)).count()
 }
 
-fn create_clues(ck: &fmd::ExpandedClueKey, precision: usize) -> Vec<fmd::Clue> {
+fn create_clues(ck: &fmd::ExpandedClueKey, precision: Precision) -> Vec<fmd::Clue> {
     (0..1024)
         .map(|_| {
             ck.create_clue(precision, OsRng)
@@ -24,11 +25,11 @@ fn bench(c: &mut Criterion) {
         .expect("clue key bytes must be valid");
 
     let clues = vec![
-        (4, create_clues(&ck, 4)),
-        (5, create_clues(&ck, 5)),
-        (6, create_clues(&ck, 6)),
-        (7, create_clues(&ck, 7)),
-        (8, create_clues(&ck, 8)),
+        (4, create_clues(&ck, 4.try_into().unwrap())),
+        (5, create_clues(&ck, 5.try_into().unwrap())),
+        (6, create_clues(&ck, 6.try_into().unwrap())),
+        (7, create_clues(&ck, 7.try_into().unwrap())),
+        (8, create_clues(&ck, 8.try_into().unwrap())),
     ];
 
     let mut group = c.benchmark_group("fmd-detection");

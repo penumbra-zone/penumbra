@@ -178,7 +178,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             },
         }
     };
-    plan.populate_detection_data(OsRng, 0);
+    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
@@ -247,7 +247,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             },
         }
     };
-    plan.populate_detection_data(OsRng, 0);
+    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
@@ -282,7 +282,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             },
         }
     };
-    plan.populate_detection_data(OsRng, 0);
+    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
