@@ -1454,6 +1454,89 @@ impl ::prost::Name for DelegationsByAddressIndexResponse {
         ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
     }
 }
+/// Requests unbonding tokens for a given address index, with optional filtering
+/// for whether the tokens are currently claimable.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnbondingTokensByAddressIndexRequest {
+    #[prost(
+        enumeration = "unbonding_tokens_by_address_index_request::Filter",
+        tag = "1"
+    )]
+    pub filter: i32,
+}
+/// Nested message and enum types in `UnbondingTokensByAddressIndexRequest`.
+pub mod unbonding_tokens_by_address_index_request {
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Filter {
+        /// Return all unbonding tokens, regardless of whether they're claimable
+        /// right now.
+        Unspecified = 0,
+        /// Return all unbonding tokens that are currently claimable. This includes:
+        ///
+        /// * tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+        /// * tokens for unbonded validators
+        Claimable = 1,
+        /// Return all unbonding tokens that are not yet claimable, because they are
+        /// still in the `unbonding_delay` (from `StakeParameters`) period.
+        NotYetClaimable = 2,
+    }
+    impl Filter {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Filter::Unspecified => "FILTER_UNSPECIFIED",
+                Filter::Claimable => "FILTER_CLAIMABLE",
+                Filter::NotYetClaimable => "FILTER_NOT_YET_CLAIMABLE",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "FILTER_UNSPECIFIED" => Some(Self::Unspecified),
+                "FILTER_CLAIMABLE" => Some(Self::Claimable),
+                "FILTER_NOT_YET_CLAIMABLE" => Some(Self::NotYetClaimable),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for UnbondingTokensByAddressIndexRequest {
+    const NAME: &'static str = "UnbondingTokensByAddressIndexRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+/// Returns unbonding tokens for the given address index, optionally filtered by
+/// whether the tokens are currently claimable.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct UnbondingTokensByAddressIndexResponse {
+    #[prost(message, optional, tag = "1")]
+    pub value_view: ::core::option::Option<super::super::core::asset::v1::ValueView>,
+}
+impl ::prost::Name for UnbondingTokensByAddressIndexResponse {
+    const NAME: &'static str = "UnbondingTokensByAddressIndexResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod view_service_client {
@@ -2329,6 +2412,40 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Get unbonding tokens for the given address index, optionally filtered by
+        /// whether the tokens are currently claimable.
+        pub async fn unbonding_tokens_by_address_index(
+            &mut self,
+            request: impl tonic::IntoRequest<super::UnbondingTokensByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::UnbondingTokensByAddressIndexResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.view.v1.ViewService",
+                        "UnbondingTokensByAddressIndex",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -2657,6 +2774,24 @@ pub mod view_service_server {
             request: tonic::Request<super::DelegationsByAddressIndexRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::DelegationsByAddressIndexStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the UnbondingTokensByAddressIndex method.
+        type UnbondingTokensByAddressIndexStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::UnbondingTokensByAddressIndexResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Get unbonding tokens for the given address index, optionally filtered by
+        /// whether the tokens are currently claimable.
+        async fn unbonding_tokens_by_address_index(
+            &self,
+            request: tonic::Request<super::UnbondingTokensByAddressIndexRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::UnbondingTokensByAddressIndexStream>,
             tonic::Status,
         >;
     }
@@ -4005,6 +4140,60 @@ pub mod view_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = DelegationsByAddressIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/UnbondingTokensByAddressIndex" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnbondingTokensByAddressIndexSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<
+                        super::UnbondingTokensByAddressIndexRequest,
+                    > for UnbondingTokensByAddressIndexSvc<T> {
+                        type Response = super::UnbondingTokensByAddressIndexResponse;
+                        type ResponseStream = T::UnbondingTokensByAddressIndexStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::UnbondingTokensByAddressIndexRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::unbonding_tokens_by_address_index(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UnbondingTokensByAddressIndexSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
