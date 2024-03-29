@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::fmd::should_update_fmd_params;
 use crate::params::ShieldedPoolParameters;
 use crate::{fmd, genesis, state_key};
 use anyhow::anyhow;
@@ -62,11 +63,30 @@ impl Component for ShieldedPool {
     ) {
     }
 
-    #[instrument(name = "shielded_pool", skip(_state, _end_block))]
+    #[instrument(name = "shielded_pool", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
+        let height: u64 = end_block
+            .height
+            .try_into()
+            .expect("height should not be negative");
+        if should_update_fmd_params(height) {
+            let state = Arc::get_mut(state).expect("the state should not be shared");
+            let meta_params = state
+                .get_shielded_pool_params()
+                .await
+                .expect("should be able to read state")
+                .fmd_meta_params;
+            let old = state
+                .get_current_fmd_parameters()
+                .await
+                .expect("should be able to read state");
+            let new = meta_params.updated_fmd_params(&old, height);
+            state.put_previous_fmd_parameters(old);
+            state.put_current_fmd_parameters(new);
+        }
     }
 
     async fn end_epoch<S: StateWrite + 'static>(mut _state: &mut Arc<S>) -> Result<()> {

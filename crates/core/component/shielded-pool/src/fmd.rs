@@ -1,9 +1,23 @@
 use anyhow::anyhow;
 use decaf377_fmd::Precision;
-use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
+use penumbra_proto::{
+    core::component::shielded_pool::v1::{self as pb},
+    DomainType,
+};
 use serde::{Deserialize, Serialize};
 
 pub mod state_key;
+
+/// How long users have to switch to updated parameters.
+pub const FMD_GRACE_PERIOD_BLOCKS: u64 = 1 << 4;
+/// How often we update the params.
+pub const FMD_UPDATE_FREQUENCY_BLOCKS: u64 = 1 << 6;
+/// How many blocks we expect per day, approximately.
+const _BLOCKS_PER_DAY: u64 = 1 << 13;
+
+pub fn should_update_fmd_params(height: u64) -> bool {
+    height % FMD_UPDATE_FREQUENCY_BLOCKS == 0
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FmdParameters", into = "pb::FmdParameters")]
@@ -86,5 +100,16 @@ impl DomainType for MetaParameters {
 impl Default for MetaParameters {
     fn default() -> Self {
         Self::Fixed(Precision::default())
+    }
+}
+
+impl MetaParameters {
+    pub fn updated_fmd_params(&self, _old: &Parameters, height: u64) -> Parameters {
+        match *self {
+            MetaParameters::Fixed(precision) => Parameters {
+                precision,
+                as_of_block_height: height,
+            },
+        }
     }
 }
