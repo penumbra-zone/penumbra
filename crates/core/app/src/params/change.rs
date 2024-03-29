@@ -90,10 +90,7 @@ impl AppParameters {
                     outbound_ics20_transfers_enabled: _,
                 },
             sct_params: SctParameters { epoch_duration },
-            shielded_pool_params:
-                ShieldedPoolParameters {
-                    fixed_fmd_params: _,
-                },
+            shielded_pool_params: ShieldedPoolParameters { fmd_meta_params: _ },
             stake_params:
                 StakeParameters {
                     active_validator_limit,
@@ -188,10 +185,7 @@ impl AppParameters {
                     outbound_ics20_transfers_enabled,
                 },
             sct_params: SctParameters { epoch_duration },
-            shielded_pool_params:
-                ShieldedPoolParameters {
-                    fixed_fmd_params: _,
-                },
+            shielded_pool_params: ShieldedPoolParameters { fmd_meta_params: _ },
             stake_params:
                 StakeParameters {
                     active_validator_limit,

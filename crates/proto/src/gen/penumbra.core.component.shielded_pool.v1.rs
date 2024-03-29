@@ -2,8 +2,11 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ShieldedPoolParameters {
+    #[deprecated]
     #[prost(message, optional, tag = "1")]
     pub fixed_fmd_params: ::core::option::Option<FmdParameters>,
+    #[prost(message, optional, tag = "2")]
+    pub fmd_meta_params: ::core::option::Option<FmdMetaParameters>,
 }
 impl ::prost::Name for ShieldedPoolParameters {
     const NAME: &'static str = "ShieldedPoolParameters";
@@ -50,6 +53,30 @@ pub mod genesis_content {
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdMetaParameters {
+    #[prost(oneof = "fmd_meta_parameters::Algorithm", tags = "1")]
+    pub algorithm: ::core::option::Option<fmd_meta_parameters::Algorithm>,
+}
+/// Nested message and enum types in `FmdMetaParameters`.
+pub mod fmd_meta_parameters {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Algorithm {
+        #[prost(uint32, tag = "1")]
+        FixedPrecisionBits(u32),
+    }
+}
+impl ::prost::Name for FmdMetaParameters {
+    const NAME: &'static str = "FmdMetaParameters";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

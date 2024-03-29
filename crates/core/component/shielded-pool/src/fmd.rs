@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use decaf377_fmd::Precision;
 use penumbra_proto::{core::component::shielded_pool::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
@@ -43,5 +44,47 @@ impl Default for Parameters {
             precision: Precision::default(),
             as_of_block_height: 1,
         }
+    }
+}
+
+/// Meta parameters are an algorithm for dynamically choosing FMD parameters.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
+pub enum MetaParameters {
+    /// Used a fixed precision forever.
+    Fixed(Precision),
+}
+
+impl TryFrom<pb::FmdMetaParameters> for MetaParameters {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::FmdMetaParameters) -> Result<Self, Self::Error> {
+        match value.algorithm.ok_or(anyhow!("missing algorithm"))? {
+            pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(p) => {
+                Ok(MetaParameters::Fixed(Precision::new(p as u8)?))
+            }
+        }
+    }
+}
+
+impl From<MetaParameters> for pb::FmdMetaParameters {
+    fn from(value: MetaParameters) -> Self {
+        match value {
+            MetaParameters::Fixed(p) => pb::FmdMetaParameters {
+                algorithm: Some(pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(
+                    p.bits().into(),
+                )),
+            },
+        }
+    }
+}
+
+impl DomainType for MetaParameters {
+    type Proto = pb::FmdMetaParameters;
+}
+
+impl Default for MetaParameters {
+    fn default() -> Self {
+        Self::Fixed(Precision::default())
     }
 }

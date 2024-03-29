@@ -10,7 +10,8 @@ import "penumbra/crypto/tct/v1/tct.proto";
 
 // Configuration data for the shielded pool component.
 message ShieldedPoolParameters {
-  FmdParameters fixed_fmd_params = 1;
+  FmdParameters fixed_fmd_params = 1 [deprecated = true];
+  FmdMetaParameters fmd_meta_params = 2;
 }
 
 // Genesis data for the shielded pool component.
@@ -24,6 +25,12 @@ message GenesisContent {
 
   // The allocations present at genesis
   repeated Allocation allocations = 3;
+}
+
+message FmdMetaParameters {
+  oneof algorithm {
+    uint32 fixed_precision_bits = 1;
+  }
 }
 
 // Parameters for Fuzzy Message Detection
