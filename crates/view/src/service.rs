@@ -380,6 +380,13 @@ impl ViewService for ViewServer {
                 + Send,
         >,
     >;
+    type UnbondingTokensByAddressIndexStream = Pin<
+        Box<
+            dyn futures::Stream<
+                    Item = Result<pb::UnbondingTokensByAddressIndexResponse, tonic::Status>,
+                > + Send,
+        >,
+    >;
 
     async fn broadcast_transaction(
         &self,
@@ -1666,5 +1673,12 @@ impl ViewService for ViewServer {
         _request: tonic::Request<pb::DelegationsByAddressIndexRequest>,
     ) -> Result<tonic::Response<Self::DelegationsByAddressIndexStream>, tonic::Status> {
         unimplemented!("delegations_by_address_index")
+    }
+
+    async fn unbonding_tokens_by_address_index(
+        &self,
+        _request: tonic::Request<pb::UnbondingTokensByAddressIndexRequest>,
+    ) -> Result<tonic::Response<Self::UnbondingTokensByAddressIndexStream>, tonic::Status> {
+        unimplemented!("unbonding_tokens_by_address_index currently only implemented on web")
     }
 }
