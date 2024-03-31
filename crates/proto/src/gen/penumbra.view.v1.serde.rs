@@ -7297,11 +7297,17 @@ impl serde::Serialize for UnbondingTokensByAddressIndexRequest {
         if self.filter != 0 {
             len += 1;
         }
+        if self.address_index.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexRequest", len)?;
         if self.filter != 0 {
             let v = unbonding_tokens_by_address_index_request::Filter::try_from(self.filter)
                 .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.filter)))?;
             struct_ser.serialize_field("filter", &v)?;
+        }
+        if let Some(v) = self.address_index.as_ref() {
+            struct_ser.serialize_field("addressIndex", v)?;
         }
         struct_ser.end()
     }
@@ -7314,11 +7320,14 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
     {
         const FIELDS: &[&str] = &[
             "filter",
+            "address_index",
+            "addressIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Filter,
+            AddressIndex,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7342,6 +7351,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
                     {
                         match value {
                             "filter" => Ok(GeneratedField::Filter),
+                            "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7362,6 +7372,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut filter__ = None;
+                let mut address_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Filter => {
@@ -7370,6 +7381,12 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
                             }
                             filter__ = Some(map_.next_value::<unbonding_tokens_by_address_index_request::Filter>()? as i32);
                         }
+                        GeneratedField::AddressIndex => {
+                            if address_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("addressIndex"));
+                            }
+                            address_index__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7377,6 +7394,7 @@ impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
                 }
                 Ok(UnbondingTokensByAddressIndexRequest {
                     filter: filter__.unwrap_or_default(),
+                    address_index: address_index__,
                 })
             }
         }

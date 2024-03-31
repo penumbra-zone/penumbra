@@ -1464,6 +1464,11 @@ pub struct UnbondingTokensByAddressIndexRequest {
         tag = "1"
     )]
     pub filter: i32,
+    /// The address index to fetch unbonding tokens for.
+    #[prost(message, optional, tag = "2")]
+    pub address_index: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
 }
 /// Nested message and enum types in `UnbondingTokensByAddressIndexRequest`.
 pub mod unbonding_tokens_by_address_index_request {

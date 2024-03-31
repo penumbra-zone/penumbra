@@ -668,6 +668,9 @@ message UnbondingTokensByAddressIndexRequest {
   }
 
   Filter filter = 1;
+
+  // The address index to fetch unbonding tokens for.
+  core.keys.v1.AddressIndex address_index = 2;
 }
 
 // Returns unbonding tokens for the given address index, optionally filtered by
