@@ -5266,6 +5266,7 @@ version = "0.71.0"
 dependencies = [
  "anyhow",
  "cnidarium",
+ "penumbra-asset",
  "penumbra-compact-block",
  "penumbra-dex",
  "penumbra-keys",
