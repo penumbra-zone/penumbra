@@ -52,7 +52,7 @@ mod tests {
     use crate::component::{StateReadExt as _, StateWriteExt as _};
     use crate::lp::plan::PositionWithdrawPlan;
     use crate::{
-        component::{router::limit_buy, tests::TempStorageExt},
+        component::{router::create_buy, tests::TempStorageExt},
         state_key, DirectedUnitPair,
     };
     use crate::{BatchSwapOutputData, PositionOpen};
@@ -132,7 +132,7 @@ mod tests {
         let one = 1u64.into();
         let price1 = one;
         // Create a position buying 1 gm with 1 gn (i.e. reserves will be 1gn).
-        let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+        let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
 
         // Create the PositionOpen action
         let pos_open = PositionOpen {
@@ -220,7 +220,7 @@ mod tests {
         let one = 1u64.into();
         let price1 = one;
         // Create a position buying 1 gm with 1 gn (i.e. reserves will be 1gn).
-        let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+        let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
 
         let id = buy_1.id();
 
