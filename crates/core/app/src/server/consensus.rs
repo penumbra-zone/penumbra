@@ -117,7 +117,7 @@ impl Consensus {
     /// the database.
     async fn init_chain(&mut self, init_chain: request::InitChain) -> Result<response::InitChain> {
         // Note that errors cannot be handled in InitChain, the application must crash.
-        let app_state: penumbra_genesis::AppState =
+        let app_state: crate::genesis::AppState =
             serde_json::from_slice(&init_chain.app_state_bytes)
                 .expect("can parse app_state in genesis file");
 
@@ -132,13 +132,13 @@ impl Consensus {
         let validators = self.app.tendermint_validator_updates();
 
         let app_hash = match &app_state {
-            penumbra_genesis::AppState::Checkpoint(h) => {
+            crate::genesis::AppState::Checkpoint(h) => {
                 tracing::info!(?h, "genesis state is a checkpoint");
                 // If we're starting from a checkpoint, we just need to forward the app hash
                 // back to CometBFT.
                 self.storage.latest_snapshot().root_hash().await?
             }
-            penumbra_genesis::AppState::Content(_) => {
+            crate::genesis::AppState::Content(_) => {
                 tracing::info!("genesis state is a full configuration");
                 // Check that we haven't got a duplicated InitChain message for some reason:
                 if self.storage.latest_version() != u64::MAX {

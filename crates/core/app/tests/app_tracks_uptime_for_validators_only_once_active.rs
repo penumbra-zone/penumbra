@@ -4,8 +4,7 @@ use {
     self::common::BuilderExt,
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth},
-    penumbra_app::server::consensus::Consensus,
-    penumbra_genesis::AppState,
+    penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -32,7 +31,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_genesis::Content {
+    let app_state = AppState::Content(penumbra_app::genesis::Content {
         sct_content: penumbra_sct::genesis::Content {
             sct_params: penumbra_sct::params::SctParameters {
                 epoch_duration: EPOCH_DURATION,

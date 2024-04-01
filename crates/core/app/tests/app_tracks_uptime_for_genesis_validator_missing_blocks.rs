@@ -4,8 +4,7 @@ use {
     self::common::BuilderExt,
     anyhow::Context,
     cnidarium::TempStorage,
-    penumbra_app::server::consensus::Consensus,
-    penumbra_genesis::AppState,
+    penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_mock_consensus::TestNode,
     penumbra_stake::{
         component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,

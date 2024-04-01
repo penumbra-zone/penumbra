@@ -27,7 +27,6 @@ members = [
   "crates/core/component/sct",
   "crates/core/component/shielded-pool",
   "crates/core/component/stake",
-  "crates/core/genesis",
   "crates/core/keys",
   "crates/core/num",
   "crates/core/transaction",
@@ -169,7 +168,6 @@ penumbra-distributions           = { default-features = false, path = "crates/co
 penumbra-fee                     = { default-features = false, path = "crates/core/component/fee" }
 penumbra-funding                 = { default-features = false, path = "crates/core/component/funding" }
 penumbra-governance              = { default-features = false, path = "crates/core/component/governance" }
-penumbra-genesis                 = { path = "crates/core/genesis" }
 penumbra-ibc                     = { default-features = false, path = "crates/core/component/ibc" }
 penumbra-keys                    = { default-features = false, path = "crates/core/keys" }
 penumbra-mock-client             = { path = "crates/test/mock-client" }
