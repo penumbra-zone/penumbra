@@ -38,7 +38,6 @@ cargo +nightly doc --no-deps \
   -p penumbra-dex \
   -p penumbra-distributions \
   -p penumbra-fee \
-  -p penumbra-genesis \
   -p penumbra-governance \
   -p penumbra-ibc \
   -p penumbra-keys \

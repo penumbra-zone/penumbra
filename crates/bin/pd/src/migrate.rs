@@ -71,7 +71,7 @@ impl Migration {
 
                 /* ---------- generate genesis ------------  */
                 let chain_id = migrated_state.get_chain_id().await?;
-                let app_state = penumbra_genesis::Content {
+                let app_state = penumbra_app::genesis::Content {
                     chain_id,
                     ..Default::default()
                 };
@@ -150,7 +150,7 @@ impl Migration {
                 // to lookup a validator view from the chain, and specify the post-upgrade app hash and
                 // initial height.
                 let chain_id = migrated_state.get_chain_id().await?;
-                let app_state = penumbra_genesis::Content {
+                let app_state = penumbra_app::genesis::Content {
                     chain_id,
                     ..Default::default()
                 };
