@@ -14,7 +14,7 @@ use crate::DexParameters;
 use crate::{
     component::{
         router::FillRoute,
-        router::{limit_buy, limit_sell, HandleBatchSwaps, RoutingParams},
+        router::{create_buy, create_sell, HandleBatchSwaps, RoutingParams},
         Arbitrage, PositionManager, PositionRead, StateReadExt, StateWriteExt,
     },
     lp::{position::Position, Reserves},
@@ -51,7 +51,7 @@ impl TempStorageExt for TempStorage {
 #[tokio::test]
 /// Builds a simple order book with a single limit order, and tests different
 /// market order execution against it.
-async fn single_limit_order() -> anyhow::Result<()> {
+async fn single_close_on_fill() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -314,7 +314,7 @@ async fn check_close_on_fill() -> anyhow::Result<()> {
 #[tokio::test]
 /// Try to execute against multiple positions, mainly testing that the order-book traversal
 /// is done correctly.
-async fn multiple_limit_orders() -> anyhow::Result<()> {
+async fn multiple_close_on_fills() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -609,7 +609,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
     let pair_gn_penumbra = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
-    let buy_1 = limit_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
+    let buy_1 = create_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
     state_tx.open_position(buy_1).await.unwrap();
     state_tx.apply();
 
@@ -684,7 +684,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
 
     // Sell 25 gn at 1 gm each.
     state_tx
-        .open_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             25u64.into(),
             1u64.into(),
@@ -693,7 +693,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 1 pusd at 20 gm each.
     state_tx
-        .open_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(pusd.clone(), gm.clone()),
             1u64.into(),
             20u64.into(),
@@ -702,7 +702,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Buy 5 penumbra at 1 gm each.
     state_tx
-        .open_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             5u64.into(),
             1u64.into(),
@@ -711,7 +711,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     // Sell 1pusd at 5 penumbra each.
     state_tx
-        .open_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(pusd.clone(), penumbra.clone()),
             1u64.into(),
             5u64.into(),
@@ -812,7 +812,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 
     // Sell 10 gn at 1 penumbra each.
     state_tx
-        .open_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(gn.clone(), penumbra.clone()),
             10u64.into(),
             1u64.into(),
@@ -821,7 +821,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Buy 100 gn at 2 gm each.
     state_tx
-        .open_position(limit_buy(
+        .open_position(create_buy(
             DirectedUnitPair::new(gn.clone(), gm.clone()),
             100u64.into(),
             2u64.into(),
@@ -830,7 +830,7 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
         .unwrap();
     // Sell 100 penumbra at 1 gm each.
     state_tx
-        .open_position(limit_sell(
+        .open_position(create_sell(
             DirectedUnitPair::new(penumbra.clone(), gm.clone()),
             100u64.into(),
             1u64.into(),
@@ -914,13 +914,13 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
      *
      */
 
-    let mut buy_1 = limit_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
+    let mut buy_1 = create_buy(penumbra_usd.clone(), 1u64.into(), 110u64.into());
     buy_1.nonce = [1; 32];
 
-    let mut buy_2 = limit_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
+    let mut buy_2 = create_buy(penumbra_usd.clone(), 1u64.into(), 100u64.into());
     buy_2.nonce = [2; 32];
 
-    let mut sell_1 = limit_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
+    let mut sell_1 = create_sell(penumbra_usd.clone(), 10u64.into(), 100u64.into());
     sell_1.nonce = [0; 32];
 
     state_tx.open_position(buy_1).await.unwrap();
