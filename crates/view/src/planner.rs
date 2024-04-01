@@ -654,8 +654,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 fee: self.fee_estimate(&self.gas_prices, &self.fee_tier),
             },
             detection_data: None,
-            memo: self.plan.memo.clone(),
+            memo: None,
         };
+
+        println!("num_ouputs: {:?}", self.plan.num_outputs());
+
+        // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
+        if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
+            self.memo(MemoPlaintext::blank_memo(change_address.clone()))
+                .expect("empty string is a valid memo");
+        } else if self.plan.num_outputs() == 0 && self.plan.memo.is_some() {
+            anyhow::bail!("if no outputs, no memo should be added");
+        }
 
         // Add clue plans for `Output`s.
         self.plan
