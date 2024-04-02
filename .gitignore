@@ -16,6 +16,7 @@ firebase-tmp/
 result
 
 # Direnv files
+.envrc
 .direnv
 
 ## Rust / Cargo
