@@ -46,7 +46,7 @@
           penumbra = (craneLib.buildPackage {
             pname = "penumbra";
             src = cleanSourceWith {
-              src = if penumbraRelease == null then craneLib.src "./." else fetchFromGitHub {
+              src = if penumbraRelease == null then craneLib.path ./. else fetchFromGitHub {
                 owner = "penumbra-zone";
                 repo = "penumbra";
                 rev = "v${penumbraRelease.version}";
