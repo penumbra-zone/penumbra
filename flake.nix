@@ -21,6 +21,18 @@
     flake-utils.lib.eachDefaultSystem
       (system:
         let
+          # Define versions of Penumbra and CometBFT
+          penumbraRelease = null; # Use the local working copy
+          # penumbraRelease = { # Use a specific release
+          #   version = "0.71.0";
+          #   sha256 = "sha256-2mpyBEt44UlXm6hahJG9sHGxj6nzh7z9lnj/vLtAAzs=";
+          # };
+          cometBftRelease = {
+            version = "0.37.5";
+            sha256 = "sha256-wNVHsifieAtZgedavCEJLgG0kRDqUhG4Lk5ciTPoNzI=";
+            vendorHash = "sha256-JPEGMa0HDesEtKFvgLUP2UfTB0DlParepE2p+n06Igc=";
+          };
+
           # Set up for Rust builds
           overlays = [ (import rust-overlay) ];
           pkgs = import nixpkgs { inherit system overlays; };
@@ -34,7 +46,12 @@
           penumbra = (craneLib.buildPackage {
             pname = "penumbra";
             src = cleanSourceWith {
-              src = craneLib.path ./.;
+              src = if penumbraRelease == null then craneLib.src "./." else fetchFromGitHub {
+                owner = "penumbra-zone";
+                repo = "penumbra";
+                rev = "v${penumbraRelease.version}";
+                sha256 = "${penumbraRelease.sha256}";
+              };
               filter = path: type:
                 (builtins.match ".*\.(no_lfs|param||bin)$" path != null) ||
                 (craneLib.filterCargoSources path type);
@@ -53,15 +70,15 @@
           # CometBFT
           cometbft = (buildGoModule rec {
             pname = "cometbft";
-            version = "0.37.5";
+            version = cometBftRelease.version;
             subPackages = [ "cmd/cometbft" ];
             src = fetchFromGitHub {
               owner = "cometbft";
               repo = "cometbft";
-              rev = "v${version}";
-              hash = "sha256-wNVHsifieAtZgedavCEJLgG0kRDqUhG4Lk5ciTPoNzI=";
+              rev = "v${cometBftRelease.version}";
+              hash = cometBftRelease.sha256;
             };
-            vendorHash = "sha256-JPEGMa0HDesEtKFvgLUP2UfTB0DlParepE2p+n06Igc=";
+            vendorHash = cometBftRelease.vendorHash;
             meta = {
               description = "CometBFT (fork of Tendermint Core): A distributed, Byzantine fault-tolerant, deterministic state machine replication engine";
               homepage = "https://github.com/cometbft/cometbft";
