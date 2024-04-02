@@ -462,8 +462,7 @@ pub trait ValidatorManager: StateWrite {
         // Then, we create a mapping from the validator's consensus key to its
         // identity key, so we can look up the validator by its consensus key, and
         // vice-versa.
-        self.register_consensus_key(&validator_identity, &validator.consensus_key)
-            .await;
+        self.register_consensus_key(&validator_identity, &validator.consensus_key);
         // We register the validator's delegation token in the token registry...
         self.register_denom(&DelegationToken::from(&validator_identity).denom())
             .await;
@@ -589,8 +588,7 @@ pub trait ValidatorManager: StateWrite {
 
         // Update the consensus key lookup, in case the validator rotated their
         // consensus key.
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
-            .await;
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key);
 
         self.put(state_key::validators::definitions::by_id(id), validator);
 
@@ -642,7 +640,7 @@ pub trait ValidatorManager: StateWrite {
     /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
-            .get_validator_by_cometbft_address(&evidence.validator.address)
+            .get_validator_definition_by_cometbft_address(&evidence.validator.address)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!(
