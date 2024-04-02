@@ -11,7 +11,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -32,11 +32,11 @@ use penumbra_ibc::IbcRelay;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{fmd, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
-    gas::{self, GasCost},
+    gas::GasCost,
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
     TransactionParameters,
@@ -575,7 +575,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let change_address = view.address_by_index(source).await?;
 
         let mut voting_notes = Vec::new();
-        let (spendable_requests, voting_requests) = self.notes_requests(source);
+        let (_spendable_requests, voting_requests) = self.notes_requests(source);
         let mut notes_by_asset_id = BTreeMap::new();
 
         for request in voting_requests {
