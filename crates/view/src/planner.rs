@@ -547,7 +547,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             unbonded_amount,
         )
         .into();
-        self.action(vote);
+
+        self.push(vote);
         self
     }
 
@@ -686,7 +687,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // result in change sent back to us). This unlinks nullifiers used for voting on
                 // multiple non-overlapping proposals, increasing privacy.
                 if record.height_spent.is_none() {
-                    self.spend(record.note.clone(), record.position);
+                    self.push(
+                        SpendPlan::new(&mut OsRng, record.clone().note, record.clone().position)
+                            .into(),
+                    );
                 }
 
                 self.delegator_vote_precise(
