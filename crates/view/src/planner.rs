@@ -582,21 +582,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .required()
         {
             // Find all the notes of this asset in the source account.
-            for request in &spendable_requests {
-                let records: Vec<SpendableNoteRecord> = view
-                    .notes(NotesRequest {
-                        include_spent: false,
-                        asset_id: Some(required.asset_id.into()),
-                        address_index: Some(request.clone().address_index.into()).unwrap(),
-                        amount_to_spend: None,
-                    })
-                    .await?;
+            let records: Vec<SpendableNoteRecord> = view
+                .notes(NotesRequest {
+                    include_spent: false,
+                    asset_id: Some(required.asset_id.into()),
+                    address_index: Some(source.into()),
+                    amount_to_spend: None,
+                })
+                .await?;
 
-                notes_by_asset_id.insert(
-                    required.asset_id,
-                    Self::prioritize_and_filter_spendable_notes(records),
-                );
-            }
+            notes_by_asset_id.insert(
+                required.asset_id,
+                Self::prioritize_and_filter_spendable_notes(records),
+            );
         }
 
         // Add spends and change outputs as required to balance the transaction, using the spendable
@@ -657,8 +655,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo: None,
         };
 
-        println!("num_ouputs: {:?}", self.plan.num_outputs());
-
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
         if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
             self.memo(MemoPlaintext::blank_memo(change_address.clone()))
@@ -672,7 +668,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
 
         // All actions have now been added, so check to make sure that you don't build and submit an
-        // empty transaction
+        // empty transaction.
         if self.actions.is_empty() {
             anyhow::bail!("planned transaction would be empty, so should not be submitted");
         }
