@@ -30,6 +30,9 @@ use crate::component::validator_handler::{
     ValidatorDataRead, ValidatorManager, ValidatorUptimeTracker,
 };
 
+#[cfg(test)]
+mod tests;
+
 pub struct Staking {}
 
 impl Staking {}
@@ -321,11 +324,16 @@ pub trait StateWriteExt: StateWrite {
         )
     }
 
-    async fn register_consensus_key(
-        &mut self,
-        identity_key: &IdentityKey,
-        consensus_key: &PublicKey,
-    ) {
+    /// Register a [consensus key][`PublicKey`] in the state, via two verifiable indices:
+    /// 1. CometBFT address -> [`PublicKey`]
+    /// 2. [`PublicKey`] -> [`IdentityKey`]
+    ///
+    /// # Important note
+    /// We do not delete obsolete entries on purpose. This is so that
+    /// the staking component can do evidence attribution even if a byzantine validator
+    /// has changed the consensus key that was used at the time of the misbehavior.
+    #[instrument(skip_all)]
+    fn register_consensus_key(&mut self, identity_key: &IdentityKey, consensus_key: &PublicKey) {
         let address = self::address::validator_address(consensus_key);
         tracing::debug!(?identity_key, ?consensus_key, hash = ?hex::encode(address), "registering consensus key");
         self.put(
