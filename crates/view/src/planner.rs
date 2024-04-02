@@ -51,7 +51,6 @@ pub struct Planner<R: RngCore + CryptoRng> {
     balance: Balance,
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
-    ibc_actions: Vec<IbcRelay>,
     gas_prices: GasPrices,
     fee_tier: FeeTier,
     actions: Vec<ActionPlan>,
@@ -84,7 +83,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             balance: Balance::default(),
             vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
-            ibc_actions: Vec::new(),
             gas_prices: GasPrices::zero(),
             fee_tier: FeeTier::default(),
             actions: Vec::new(),
@@ -570,12 +568,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let fmd_params = view.fmd_parameters().await?;
 
         // Caller has already processed all the user-supplied intents into complete action plans.
+        println!("self.plan.actions.clone(): {:?}", self.plan.actions.clone());
+
         self.actions = self.plan.actions.clone();
 
         let change_address = view.address_by_index(source).await?;
 
+        let mut voting_notes = Vec::new();
         let (spendable_requests, voting_requests) = self.notes_requests(source);
         let mut notes_by_asset_id = BTreeMap::new();
+
+        for request in voting_requests {
+            let notes = view.notes_for_voting(request).await?;
+            voting_notes.push(notes);
+        }
 
         for required in self
             .balance_with_fee_estimate(&self.gas_prices, &self.fee_tier)
@@ -638,6 +644,67 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
+        // Add the required votes to the planner
+        for (
+            records,
+            (
+                proposal,
+                VoteIntent {
+                    start_position,
+                    vote,
+                    rate_data,
+                    ..
+                },
+            ),
+        ) in voting_notes
+            .into_iter()
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .zip(mem::take(&mut self.vote_intents).into_iter())
+        {
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
+
+            for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                    continue;
+                };
+                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.spend(record.note.clone(), record.position);
+                }
+
+                self.delegator_vote_precise(
+                    proposal,
+                    start_position,
+                    vote,
+                    record.note,
+                    record.position,
+                    unbonded_amount,
+                );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                anyhow::bail!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                );
+            }
+        }
+
         // Assemble the fully-formed transaction plan.
         self.plan = TransactionPlan {
             actions: self
@@ -666,6 +733,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Add clue plans for `Output`s.
         self.plan
             .populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
+
+        println!(
+            "calculate_balance: {:?}",
+            self.calculate_balance().is_zero()
+        );
+        println!("balance: {:?}", self.balance());
 
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction.
