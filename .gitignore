@@ -12,6 +12,9 @@ book
 # Used for deployments
 firebase-tmp/
 
+# Nix build output goes here
+result/
+
 ## Rust / Cargo
 # will have compiled files and executables
 debug/
