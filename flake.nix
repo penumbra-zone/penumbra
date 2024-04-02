@@ -105,6 +105,10 @@
             inherit LIBCLANG_PATH;
             inputsFrom = [ penumbra ];
             packages = [ cargo-watch ];
+            shellHook = ''
+              export LIBCLANG_PATH=${LIBCLANG_PATH}
+              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
+            '';
           };
         }
       );
