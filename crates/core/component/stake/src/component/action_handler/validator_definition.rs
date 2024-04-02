@@ -88,7 +88,7 @@ impl ActionHandler for validator::Definition {
         // Check if the consensus key is known, and if so, that it is by the
         // validator that declares it in this definition.
         if let Some(ck_owner) = state
-            .get_validator_by_consensus_key(&new_validator.consensus_key)
+            .get_validator_definition_by_consensus_key(&new_validator.consensus_key)
             .await?
         {
             // If we detect that the new definition tries to squat someone else's
