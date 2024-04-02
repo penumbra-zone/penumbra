@@ -17,14 +17,6 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
-    cargo2nix {
-      url = "github:cargo2nix/cargo2nix/release-0.11.0";
-      inputs = {
-          nixpkgs.follows = "nixpkgs";
-          flake-utils.follows = "flake-utils";
-        };
-      }
-    };
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, crane, ... }:
