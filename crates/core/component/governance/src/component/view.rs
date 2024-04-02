@@ -125,7 +125,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     async fn validator_vote(
         &self,
         proposal_id: u64,
-        identity_key: IdentityKey,
+        identity_key: &IdentityKey,
     ) -> Result<Option<Vote>> {
         Ok(self
             .get::<Vote>(&state_key::validator_vote(proposal_id, identity_key))
@@ -193,7 +193,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     async fn rate_data_at_proposal_start(
         &self,
         proposal_id: u64,
-        identity_key: IdentityKey,
+        identity_key: &IdentityKey,
     ) -> Result<Option<RateData>> {
         self.get(&state_key::rate_data_at_proposal_start(
             proposal_id,
@@ -278,7 +278,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
         // Attempt to find the validator identity for the specified denom, failing if it is not a
         // delegation token
-        let validator_identity = DelegationToken::try_from(denom)?.validator();
+        let validator_identity = DelegationToken::try_from(denom)?.validator().to_owned();
 
         Ok(validator_identity)
     }
@@ -295,7 +295,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
 
         // Attempt to look up the snapshotted `RateData` for the validator at the start of the proposal
         let Some(rate_data) = self
-            .rate_data_at_proposal_start(proposal_id, validator_identity)
+            .rate_data_at_proposal_start(proposal_id, &validator_identity)
             .await?
         else {
             anyhow::bail!(
@@ -341,7 +341,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         proposal_id: u64,
         identity_key: &IdentityKey,
     ) -> Result<()> {
-        if let Some(_vote) = self.validator_vote(proposal_id, *identity_key).await? {
+        if let Some(_vote) = self.validator_vote(proposal_id, identity_key).await? {
             anyhow::bail!(
                 "validator {} has already voted on proposal {}",
                 identity_key,
@@ -461,7 +461,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
         if self
             .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
                 proposal_id,
-                *identity_key,
+                identity_key,
             ))
             .await?
             .is_none()
@@ -661,11 +661,11 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         while let Some(per_validator) = js.join_next().await.transpose()? {
             if let Some((identity_key, rate_data, power)) = per_validator? {
                 self.put(
-                    state_key::rate_data_at_proposal_start(proposal_id, identity_key),
+                    state_key::rate_data_at_proposal_start(proposal_id, &identity_key),
                     rate_data,
                 );
                 self.put(
-                    state_key::voting_power_at_proposal_start(proposal_id, identity_key),
+                    state_key::voting_power_at_proposal_start(proposal_id, &identity_key),
                     power,
                 )
             }
@@ -727,7 +727,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
     fn cast_validator_vote(
         &mut self,
         proposal_id: u64,
-        identity_key: IdentityKey,
+        identity_key: &IdentityKey,
         vote: Vote,
         reason: ValidatorVoteReason,
     ) {
@@ -776,7 +776,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
     async fn cast_delegator_vote(
         &mut self,
         proposal_id: u64,
-        identity_key: IdentityKey,
+        identity_key: &IdentityKey,
         vote: Vote,
         nullifier: &Nullifier,
         unbonded_amount: Amount,
@@ -819,7 +819,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                 .ok_or_else(|| {
                     anyhow::anyhow!("unexpected key format for untallied delegator vote")
                 })?
-                .parse()?;
+                .parse::<IdentityKey>()?;
             let proposal_id = reverse_path_elements
                 .next()
                 .ok_or_else(|| {
@@ -831,7 +831,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
             let mut current_tally = self
                 .get::<Tally>(&state_key::tallied_delegator_votes(
                     proposal_id,
-                    identity_key,
+                    &identity_key,
                 ))
                 .await?
                 .unwrap_or_default();
@@ -869,7 +869,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     "tallying delegator votes"
                 );
                 self.put(
-                    state_key::tallied_delegator_votes(proposal_id, identity_key),
+                    state_key::tallied_delegator_votes(proposal_id, &identity_key),
                     tally,
                 );
             }

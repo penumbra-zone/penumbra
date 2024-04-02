@@ -124,7 +124,7 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<ConvertCircuit>(&mut rng);
 
             let sk = rdsa::SigningKey::new_from_field(validator_randomness);
-            let validator_identity = IdentityKey((&sk).into());
+            let validator_identity = IdentityKey::from(sk);
             let unbonding_amount = Amount::from(value1_amount);
 
             let start_epoch_index = 1;

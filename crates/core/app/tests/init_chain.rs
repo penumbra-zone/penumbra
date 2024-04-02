@@ -40,9 +40,8 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
         .await?;
     match validators.as_slice() {
         [v] => {
-            let identity_key = v.identity_key;
             let status = snapshot
-                .get_validator_state(&identity_key)
+                .get_validator_state(&v.identity_key)
                 .await?
                 .ok_or_else(|| anyhow!("could not find validator status"))?;
             assert_eq!(

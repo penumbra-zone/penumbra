@@ -991,7 +991,8 @@ impl Storage {
 
                 let identity_key = DelegationToken::from_str(&denom)
                     .context("invalid delegation token denom")?
-                    .validator();
+                    .validator()
+                    .to_owned();
 
                 results.push((record, identity_key));
             }

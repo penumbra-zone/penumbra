@@ -76,7 +76,7 @@ impl ActionHandler for ValidatorVote {
         }
 
         tracing::debug!(validator_identity = %identity_key, proposal = %proposal, "cast validator vote");
-        state.cast_validator_vote(*proposal, *identity_key, *vote, reason.clone());
+        state.cast_validator_vote(*proposal, identity_key, *vote, reason.clone());
 
         // Emergency proposals are passed immediately after receiving +2/3 of
         // validator votes. These include the eponymous `Emergency` proposal but

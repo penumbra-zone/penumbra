@@ -45,7 +45,7 @@ impl UndelegateClaimPlan {
     /// Construct the [`UndelegateClaimBody`] described by this [`UndelegateClaimPlan`].
     pub fn undelegate_claim_body(&self) -> UndelegateClaimBody {
         UndelegateClaimBody {
-            validator_identity: self.validator_identity,
+            validator_identity: self.validator_identity.clone(),
             unbonding_start_height: self.unbonding_start_height,
             penalty: self.penalty,
             balance_commitment: self.balance().commit(self.balance_blinding),
@@ -72,7 +72,7 @@ impl UndelegateClaimPlan {
     }
 
     pub fn unbonding_token(&self) -> UnbondingToken {
-        UnbondingToken::new(self.validator_identity, self.unbonding_start_height)
+        UnbondingToken::new(self.validator_identity.clone(), self.unbonding_start_height)
     }
 
     pub fn unbonding_id(&self) -> asset::Id {

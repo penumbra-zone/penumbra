@@ -88,7 +88,7 @@ impl ActionHandler for DelegatorVote {
             .await;
         let identity_key = state.validator_by_delegation_asset(value.asset_id).await?;
         state
-            .cast_delegator_vote(*proposal, identity_key, *vote, nullifier, *unbonded_amount)
+            .cast_delegator_vote(*proposal, &identity_key, *vote, nullifier, *unbonded_amount)
             .await?;
 
         state.record_proto(event::delegator_vote(self));

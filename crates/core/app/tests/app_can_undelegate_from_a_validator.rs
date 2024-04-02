@@ -96,7 +96,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         [v] => v.clone(),
         unexpected => panic!("there should be one validator, got: {unexpected:?}"),
     }; // ..and note the asset id for delegation tokens tied to this validator.
-    let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key).id();
+    let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key.clone()).id();
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
     let mut client = MockClient::new(test_keys::SPEND_KEY.clone())
@@ -228,7 +228,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         };
         let snapshot = storage.latest_snapshot();
         client.sync_to_latest(snapshot.clone()).await?;
-        let undelegation_id = DelegationToken::new(identity_key).id();
+        let undelegation_id = DelegationToken::new(identity_key.clone()).id();
         let note = client
             .notes
             .values()

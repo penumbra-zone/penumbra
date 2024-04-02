@@ -76,7 +76,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         unexpected => panic!("there should be one validator, got: {unexpected:?}"),
     };
 
-    let existing_validator_id = existing_validator.identity_key;
+    let existing_validator_id = existing_validator.identity_key.clone();
 
     // Check that we are now in a new epoch.
     {
@@ -105,7 +105,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         use penumbra_stake::component::ConsensusIndexRead;
         let start = snapshot_start.get_consensus_set().await?;
         let end = snapshot_end.get_consensus_set().await?;
-        let expected = [existing_validator_id];
+        let expected = [existing_validator_id.clone()];
         assert_eq!(
             start, expected,
             "validator should start in the consensus set"
@@ -116,7 +116,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // To define a validator, we need to define two keypairs: an identity key
     // for the Penumbra application and a consensus key for cometbft.
     let new_validator_id_sk = SigningKey::<SpendAuth>::new(OsRng);
-    let new_validator_id = IdentityKey(new_validator_id_sk.into());
+    let new_validator_id = IdentityKey::from(new_validator_id_sk);
     let new_validator_consensus_sk = ed25519_consensus::SigningKey::new(OsRng);
     let new_validator_consensus = new_validator_consensus_sk.verification_key();
 
@@ -405,7 +405,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             .ok_or(anyhow!("new validator has a rate"))?
             .tap(|rate| tracing::info!(?rate, "got new validator rate"));
 
-        let undelegation_id = DelegationToken::new(new_validator_id).id();
+        let undelegation_id = DelegationToken::new(new_validator_id.clone()).id();
         let note = client
             .notes
             .values()

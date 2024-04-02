@@ -92,7 +92,7 @@ impl ActionHandler for Delegate {
 
         // (end of former check_historical checks)
 
-        let validator = self.validator_identity;
+        let validator = &self.validator_identity;
         let unbonded_delegation = self.unbonded_amount;
 
         // This action is executed in two phases:

@@ -18,12 +18,6 @@ impl From<IdentityKey> for DelegationToken {
     }
 }
 
-impl From<&IdentityKey> for DelegationToken {
-    fn from(v: &IdentityKey) -> Self {
-        DelegationToken::new(*v)
-    }
-}
-
 impl DelegationToken {
     /// Returns a new [`DelegationToken`] with the provided identity.
     pub fn new(validator_identity: IdentityKey) -> Self {
@@ -52,9 +46,9 @@ impl DelegationToken {
         self.base_denom.id()
     }
 
-    /// Returns the identity key of the validator this delegation token is associated with.
-    pub fn validator(&self) -> IdentityKey {
-        self.validator_identity
+    /// Returns the [`IdentityKey`] of the validator this delegation token is associated with.
+    pub fn validator(&self) -> &IdentityKey {
+        &self.validator_identity
     }
 }
 
@@ -131,7 +125,8 @@ mod tests {
     fn delegation_token_denomination_round_trip() {
         use rand_core::OsRng;
 
-        let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
+        let sk = SigningKey::<SpendAuth>::new(OsRng);
+        let ik = IdentityKey::from(sk);
 
         let token = DelegationToken::new(ik);
 

@@ -457,8 +457,8 @@ impl TestnetValidator {
         let ivk = fvk.incoming();
         let (dest, _dtk_d) = ivk.payment_address(0u32.into());
 
-        let identity_key: IdentityKey = IdentityKey(fvk.spend_verification_key().clone());
-        let delegation_denom = DelegationToken::from(&identity_key).denom();
+        let identity_key: IdentityKey = fvk.spend_verification_key().into();
+        let delegation_denom = DelegationToken::from(identity_key).denom();
         Ok(Allocation {
             address: dest,
             // Add an initial allocation of 25,000 delegation tokens,
@@ -540,7 +540,7 @@ impl TryFrom<&TestnetValidator> for Validator {
             // Currently there's no way to set validator keys beyond
             // manually editing the genesis.json. Otherwise they
             // will be randomly generated keys.
-            identity_key: IdentityKey(tv.keys.validator_id_vk),
+            identity_key: tv.keys.validator_id_vk.into(),
             governance_key: GovernanceKey(tv.keys.validator_id_vk),
             consensus_key: tv.keys.validator_cons_pk,
             name: tv.name.clone(),

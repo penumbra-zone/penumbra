@@ -15,7 +15,7 @@ impl ActionHandler for UndelegateClaim {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
         let unbonding_id = UnbondingToken::new(
-            self.body.validator_identity,
+            self.body.validator_identity.clone(),
             self.body.unbonding_start_height,
         )
         .id();

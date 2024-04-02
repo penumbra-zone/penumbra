@@ -38,7 +38,7 @@ impl ActionHandler for validator::Definition {
         let definition_bytes = self.validator.encode_to_vec();
         self.validator
             .identity_key
-            .0
+            .key()?
             .verify(&definition_bytes, &self.auth_sig)
             .context("validator definition signature failed to verify")?;
 
@@ -119,7 +119,7 @@ impl ActionHandler for validator::Definition {
                     "should be able to update validator during validator definition execution",
                 )?;
         } else {
-            let validator_key = new_validator.identity_key;
+            let validator_key = new_validator.identity_key.clone();
 
             // The validator starts with a reward rate of 0 and an exchange rate
             // of 1, expressed in bps^2 (i.e. 1_0000_0000 is 1.0).

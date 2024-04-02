@@ -465,7 +465,7 @@ pub trait ValidatorManager: StateWrite {
         self.register_consensus_key(&validator_identity, &validator.consensus_key)
             .await;
         // We register the validator's delegation token in the token registry...
-        self.register_denom(&DelegationToken::from(&validator_identity).denom())
+        self.register_denom(&DelegationToken::from(validator_identity.clone()).denom())
             .await;
         // ... and its reward rate data in the JMT.
         self.set_validator_rate_data(&validator_identity, initial_rate_data);

@@ -55,10 +55,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     let mut client = MockClient::new(test_keys::SPEND_KEY.clone());
 
     /// Helper function, retrieve a validator's [`Uptime`].
-    async fn get_uptime(storage: &TempStorage, id: IdentityKey) -> Option<Uptime> {
+    async fn get_uptime(storage: &TempStorage, id: &IdentityKey) -> Option<Uptime> {
         storage
             .latest_snapshot()
-            .get_validator_uptime(&id)
+            .get_validator_uptime(id)
             .await
             .expect("should be able to get a validator uptime")
     }
@@ -83,7 +83,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
             .tap(|_| info!("getting validator definitions"))
             .await?;
         match validators.as_slice() {
-            [Validator { identity_key, .. }] => *identity_key,
+            [Validator { identity_key, .. }] => identity_key.clone(),
             unexpected => panic!("there should be one validator, got: {unexpected:?}"),
         }
     };
@@ -91,7 +91,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     // To define a validator, we need to define two keypairs: an identity key
     // for the Penumbra application and a consensus key for cometbft.
     let new_validator_id_sk = SigningKey::<SpendAuth>::new(OsRng);
-    let new_validator_id = IdentityKey(new_validator_id_sk.into());
+    let new_validator_id: IdentityKey = new_validator_id_sk.into();
     let new_validator_consensus_sk = ed25519_consensus::SigningKey::new(OsRng);
     let new_validator_consensus = new_validator_consensus_sk.verification_key();
 
@@ -111,11 +111,11 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
         description: String::default(),
         funding_streams: FundingStreams::default(),
     };
-    let new_validator_id = new_validator.identity_key;
+    let new_validator_id = new_validator.identity_key.clone();
 
     // Helper functions, retrieve validators' [`Uptime`].
-    let existing_validator_uptime = || get_uptime(&storage, existing_validator_id);
-    let new_validator_uptime = || get_uptime(&storage, new_validator_id);
+    let existing_validator_uptime = || get_uptime(&storage, &existing_validator_id);
+    let new_validator_uptime = || get_uptime(&storage, &new_validator_id);
 
     // Make a transaction that defines the new validator.
     let plan = {
@@ -310,7 +310,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
             .ok_or(anyhow::anyhow!("new validator has a rate"))?
             .tap(|rate| tracing::info!(?rate, "got new validator rate"));
 
-        let undelegation_id = DelegationToken::new(new_validator_id).id();
+        let undelegation_id = DelegationToken::new(new_validator_id.clone()).id();
         let note = client
             .notes
             .values()

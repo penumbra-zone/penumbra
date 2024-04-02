@@ -55,7 +55,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             for d in changes.delegations {
                 let validator_identity = d.validator_identity.clone();
                 let delegation_tally = delegations_by_validator
-                    .entry(validator_identity)
+                    .entry(validator_identity.clone())
                     .or_default()
                     .saturating_add(&d.delegation_amount);
                 delegations_by_validator.insert(validator_identity, delegation_tally);
@@ -63,7 +63,7 @@ pub trait EpochHandler: StateWriteExt + ConsensusIndexRead {
             for u in changes.undelegations {
                 let validator_identity = u.validator_identity.clone();
                 let undelegation_tally = undelegations_by_validator
-                    .entry(validator_identity)
+                    .entry(validator_identity.clone())
                     .or_default()
                     .saturating_add(&u.delegation_amount);
 

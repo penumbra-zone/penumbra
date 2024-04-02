@@ -91,7 +91,7 @@ fn generate_penumbra_validator(
         .incoming()
         .payment_address(0u32.into());
 
-    let ik = penumbra_stake::IdentityKey(validator_id_vk);
+    let ik = penumbra_stake::IdentityKey::from(validator_id_vk);
     let delegation_denom = DelegationToken::from(ik).denom();
 
     let allocation = Allocation {

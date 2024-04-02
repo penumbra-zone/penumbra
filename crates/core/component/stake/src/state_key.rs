@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn penalty_in_epoch_padding() {
         let sk = rdsa::SigningKey::new(OsRng);
-        let ik = IdentityKey((&sk).into());
+        let ik = IdentityKey::from(sk);
 
         assert_eq!(
             penalty::for_id_in_epoch(&ik, 791),
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn penalty_in_epoch_sorting() {
         let sk = rdsa::SigningKey::new(OsRng);
-        let ik = IdentityKey((&sk).into());
+        let ik = IdentityKey::from(sk);
 
         let k791 = penalty::for_id_in_epoch(&ik, 791);
         let k792 = penalty::for_id_in_epoch(&ik, 792);

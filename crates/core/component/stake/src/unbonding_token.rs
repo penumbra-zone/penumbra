@@ -144,7 +144,8 @@ mod tests {
     fn unbonding_token_denomination_round_trip() {
         use rand_core::OsRng;
 
-        let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
+        let sk = SigningKey::<SpendAuth>::new(OsRng);
+        let ik = IdentityKey::from(sk);
         let start = 782;
 
         let token = UnbondingToken::new(ik, start);

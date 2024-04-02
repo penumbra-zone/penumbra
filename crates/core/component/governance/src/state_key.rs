@@ -50,7 +50,7 @@ pub fn voted_nullifier_lookup_for_proposal(proposal_id: u64, nullifier: &Nullifi
     format!("governance/proposal/{proposal_id:020}/voted_nullifiers/{nullifier}")
 }
 
-pub fn rate_data_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
+pub fn rate_data_at_proposal_start(proposal_id: u64, identity_key: &IdentityKey) -> String {
     format!("governance/proposal/{proposal_id:020}/rate_data_at_start/{identity_key}")
 }
 
@@ -59,7 +59,7 @@ pub fn all_rate_data_at_proposal_start(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id:020}/rate_data_at_start/")
 }
 
-pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: IdentityKey) -> String {
+pub fn voting_power_at_proposal_start(proposal_id: u64, identity_key: &IdentityKey) -> String {
     format!("governance/proposal/{proposal_id:020}/voting_power_at_start/{identity_key}")
 }
 
@@ -68,11 +68,11 @@ pub fn all_voting_power_at_proposal_start(proposal_id: u64) -> String {
     format!("governance/proposal/{proposal_id:020}/voting_power_at_start/")
 }
 
-pub fn validator_vote(proposal_id: u64, identity_key: IdentityKey) -> String {
+pub fn validator_vote(proposal_id: u64, identity_key: &IdentityKey) -> String {
     format!("governance/validator_vote/{proposal_id:020}/{identity_key}")
 }
 
-pub fn validator_vote_reason(proposal_id: u64, identity_key: IdentityKey) -> String {
+pub fn validator_vote_reason(proposal_id: u64, identity_key: &IdentityKey) -> String {
     format!("governance/validator_vote_reason/{proposal_id:020}/{identity_key}")
 }
 
@@ -81,7 +81,7 @@ pub fn all_validator_votes_for_proposal(proposal_id: u64) -> String {
     format!("governance/validator_vote/{proposal_id:020}/")
 }
 
-pub fn tallied_delegator_votes(proposal_id: u64, identity_key: IdentityKey) -> String {
+pub fn tallied_delegator_votes(proposal_id: u64, identity_key: &IdentityKey) -> String {
     format!("governance/tallied_delegator_votes/{proposal_id:020}/{identity_key}")
 }
 
@@ -92,7 +92,7 @@ pub fn all_tallied_delegator_votes_for_proposal(proposal_id: u64) -> String {
 
 pub fn untallied_delegator_vote(
     proposal_id: u64,
-    identity_key: IdentityKey,
+    identity_key: &IdentityKey,
     nullifier: &Nullifier,
 ) -> String {
     format!("governance/untallied_delegator_vote/{proposal_id:020}/{identity_key}/{nullifier}")

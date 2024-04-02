@@ -342,7 +342,7 @@ impl QueryService for Server {
             let voting_power = state
                 .get_proto::<u64>(&state_key::voting_power_at_proposal_start(
                     proposal_id,
-                    identity_key,
+                    &identity_key,
                 ))
                 .await
                 .map_err(|e| tonic::Status::internal(format!("error accessing storage: {}", e)))?;
