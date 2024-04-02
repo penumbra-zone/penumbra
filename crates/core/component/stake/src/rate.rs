@@ -400,8 +400,8 @@ mod tests {
 
     #[test]
     fn slash_rate_by_penalty() {
-        let sk = rdsa::SigningKey::new(OsRng);
-        let ik = IdentityKey((&sk).into());
+        let vk = rdsa::VerificationKey::from(rdsa::SigningKey::new(OsRng));
+        let ik = IdentityKey(vk.into());
 
         let rate_data = RateData {
             identity_key: ik,

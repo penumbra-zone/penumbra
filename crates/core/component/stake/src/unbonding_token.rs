@@ -136,7 +136,7 @@ impl std::hash::Hash for UnbondingToken {
 
 #[cfg(test)]
 mod tests {
-    use decaf377_rdsa::{SigningKey, SpendAuth};
+    use decaf377_rdsa::{SigningKey, VerificationKey};
 
     use super::*;
 
@@ -144,7 +144,8 @@ mod tests {
     fn unbonding_token_denomination_round_trip() {
         use rand_core::OsRng;
 
-        let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
+        let vk = VerificationKey::from(SigningKey::new(OsRng));
+        let ik = IdentityKey(vk.into());
         let start = 782;
 
         let token = UnbondingToken::new(ik, start);
