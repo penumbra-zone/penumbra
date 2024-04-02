@@ -92,12 +92,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     fn calculate_balance(&self) -> Balance {
         let mut balance = Balance::zero();
+        println!("self.actions inside calculate_balance: {:?}", self.actions);
         for action in &self.actions {
             balance += action.balance();
         }
+        println!("balance inside calculate balance: {:?}", balance);
+        println!(
+            "self.actions inside calculate_balance: {:?}",
+            self.change_outputs.values()
+        );
         for action in self.change_outputs.values() {
             balance += action.balance();
         }
+        println!("balance inside calculate balance: {:?}", balance);
         balance
     }
 
@@ -722,6 +729,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo: None,
         };
 
+        println!("action plans: {:?}", self.plan.actions);
+
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
         if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
             self.memo(MemoPlaintext::blank_memo(change_address.clone()))
@@ -734,11 +743,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan
             .populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
 
+        // For any remaining provided balance, make a single change note for each
+        for value in self.balance.provided().collect::<Vec<_>>() {
+            println!("??????????????????????");
+            self.output(value, change_address);
+        }
+
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!");
         println!(
             "calculate_balance: {:?}",
             self.calculate_balance().is_zero()
         );
-        println!("balance: {:?}", self.balance());
+        println!("balance inner: {:?}", self.balance);
+        println!("!!!!!!!!!!!!!!!!!!!!!!!!");
 
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction.
