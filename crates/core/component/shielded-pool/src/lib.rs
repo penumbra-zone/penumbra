@@ -26,6 +26,7 @@ pub mod output;
 pub mod spend;
 
 pub use convert::{ConvertCircuit, ConvertProof, ConvertProofPrivate, ConvertProofPublic};
+pub use fmd::ClueManager;
 pub use nullifier_derivation::{
     NullifierDerivationCircuit, NullifierDerivationProof, NullifierDerivationProofPrivate,
     NullifierDerivationProofPublic,

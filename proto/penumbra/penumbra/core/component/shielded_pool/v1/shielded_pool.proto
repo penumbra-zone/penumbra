@@ -5,6 +5,8 @@ import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
 
@@ -102,6 +104,12 @@ message EventSpend {
 // ABCI Event recording an output.
 message EventOutput {
   crypto.tct.v1.StateCommitment note_commitment = 1;
+}
+
+// ABCI Event recording a clue.
+message EventClue {
+  crypto.decaf377_fmd.v1.Clue clue = 1;
+  txhash.v1.TransactionId tx = 2;
 }
 
 // The body of a spend description, containing only the effecting data

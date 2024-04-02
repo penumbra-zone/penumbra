@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::fmd::should_update_fmd_params;
+use crate::fmd::{should_update_fmd_params, ClueManagerInternal as _};
 use crate::params::ShieldedPoolParameters;
 use crate::{fmd, genesis, state_key};
 use anyhow::anyhow;
@@ -83,7 +83,11 @@ impl Component for ShieldedPool {
                 .get_current_fmd_parameters()
                 .await
                 .expect("should be able to read state");
-            let new = meta_params.updated_fmd_params(&old, height);
+            let clue_count_delta = state
+                .flush_clue_count()
+                .await
+                .expect("should be able to read state");
+            let new = meta_params.updated_fmd_params(&old, height, clue_count_delta);
             state.put_previous_fmd_parameters(old);
             state.put_current_fmd_parameters(new);
         }

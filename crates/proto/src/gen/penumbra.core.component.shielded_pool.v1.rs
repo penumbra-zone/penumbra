@@ -291,6 +291,26 @@ impl ::prost::Name for EventOutput {
         )
     }
 }
+/// ABCI Event recording a clue.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventClue {
+    #[prost(message, optional, tag = "1")]
+    pub clue: ::core::option::Option<
+        super::super::super::super::crypto::decaf377_fmd::v1::Clue,
+    >,
+    #[prost(message, optional, tag = "2")]
+    pub tx: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
+}
+impl ::prost::Name for EventClue {
+    const NAME: &'static str = "EventClue";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
 /// The body of a spend description, containing only the effecting data
 /// describing changes to the ledger, and not the authorizing data that allows
 /// those changes to be performed.

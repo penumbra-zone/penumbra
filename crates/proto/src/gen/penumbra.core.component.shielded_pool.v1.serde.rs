@@ -382,6 +382,118 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
         deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventClue {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.clue.is_some() {
+            len += 1;
+        }
+        if self.tx.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventClue", len)?;
+        if let Some(v) = self.clue.as_ref() {
+            struct_ser.serialize_field("clue", v)?;
+        }
+        if let Some(v) = self.tx.as_ref() {
+            struct_ser.serialize_field("tx", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventClue {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "clue",
+            "tx",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Clue,
+            Tx,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "clue" => Ok(GeneratedField::Clue),
+                            "tx" => Ok(GeneratedField::Tx),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventClue;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventClue")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventClue, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut clue__ = None;
+                let mut tx__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Clue => {
+                            if clue__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("clue"));
+                            }
+                            clue__ = map_.next_value()?;
+                        }
+                        GeneratedField::Tx => {
+                            if tx__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("tx"));
+                            }
+                            tx__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventClue {
+                    clue: clue__,
+                    tx: tx__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventClue", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventOutput {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
