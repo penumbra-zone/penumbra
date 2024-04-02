@@ -1,5 +1,5 @@
 use {
-    penumbra_genesis::AppState,
+    penumbra_app::genesis::AppState,
     penumbra_mock_consensus::builder::Builder,
     penumbra_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},

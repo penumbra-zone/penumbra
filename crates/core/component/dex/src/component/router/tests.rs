@@ -8,7 +8,6 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use std::sync::Arc;
 
-use crate::component::ValueCircuitBreaker;
 use crate::lp::SellOrder;
 use crate::DexParameters;
 use crate::{
@@ -326,21 +325,21 @@ async fn create_test_positions_basic<S: StateWrite>(s: &mut S, misprice: bool) {
         },
     );
 
-    s.put_position(position_1).await.unwrap();
-    s.put_position(position_2).await.unwrap();
-    s.put_position(position_3).await.unwrap();
-    s.put_position(position_4).await.unwrap();
-    s.put_position(position_5).await.unwrap();
+    s.open_position(position_1).await.unwrap();
+    s.open_position(position_2).await.unwrap();
+    s.open_position(position_3).await.unwrap();
+    s.open_position(position_4).await.unwrap();
+    s.open_position(position_5).await.unwrap();
     if misprice {
-        s.put_position(position_6).await.unwrap();
+        s.open_position(position_6).await.unwrap();
     }
-    s.put_position(position_7).await.unwrap();
-    s.put_position(position_8).await.unwrap();
+    s.open_position(position_7).await.unwrap();
+    s.open_position(position_8).await.unwrap();
 }
 
 /// Create a `Position` to buy `asset_1` using `asset_2` with explicit p/q.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-fn limit_buy_pq(
+fn create_buy_pq(
     market: DirectedUnitPair,
     quantity: Amount,
     p: Amount,
@@ -362,7 +361,7 @@ fn limit_buy_pq(
 
 /// Create a `Position` to buy `asset_1` using `asset_2`.
 /// e.g. "Buy `quantity` of `asset_1` for `price` units of `asset_2` each.
-pub(crate) fn limit_buy(
+pub(crate) fn create_buy(
     market: DirectedUnitPair,
     quantity: Amount,
     price_in_numeraire: Amount,
@@ -381,7 +380,7 @@ pub(crate) fn limit_buy(
 }
 
 /// Create a `Position` to sell `asset_1` into `asset_2`.
-pub(crate) fn limit_sell(
+pub(crate) fn create_sell(
     market: DirectedUnitPair,
     quantity: Amount,
     price_in_numeraire: Amount,
@@ -436,8 +435,8 @@ async fn position_get_best_price() -> anyhow::Result<()> {
             r2: 0u64.into(),
         },
     );
-    state_tx.put_position(position_1.clone()).await.unwrap();
-    state_tx.put_position(position_2.clone()).await.unwrap();
+    state_tx.open_position(position_1.clone()).await.unwrap();
+    state_tx.open_position(position_2.clone()).await.unwrap();
 
     let positions = state_tx
         .positions_by_price(&pair)
@@ -490,12 +489,16 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let mut buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let mut buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
+    let mut buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let mut buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
     buy_1.nonce = [1u8; 32];
     buy_2.nonce = [2u8; 32];
-    state_tx.put_position(buy_1.clone()).await.unwrap();
-    state_tx.put_position(buy_2.clone()).await.unwrap();
+    state_tx.open_position(buy_1.clone()).await.unwrap();
+    state_tx.open_position(buy_2.clone()).await.unwrap();
+
+    // We don't really care about the value, but the API requires
+    // that we make up a context here.
+    let context = pair_1.into_directed_trading_pair();
 
     let mut p_1 = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
@@ -504,7 +507,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .expect("we just posted two positions");
     assert_eq!(p_1.nonce, buy_1.nonce);
     p_1.reserves = p_1.reserves.flip();
-    state_tx.put_position(p_1).await.unwrap();
+    state_tx.position_execution(p_1, context).await.unwrap();
 
     let mut p_2 = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
@@ -513,7 +516,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
         .expect("there is one position remaining");
     assert_eq!(p_2.nonce, buy_2.nonce);
     p_2.reserves = p_2.reserves.flip();
-    state_tx.put_position(p_2).await.unwrap();
+    state_tx.position_execution(p_2, context).await.unwrap();
 
     assert!(state_tx
         .best_position(&pair_1.into_directed_trading_pair())
@@ -566,23 +569,23 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price1 = one;
     let price2 = 2u64.into();
 
-    let buy_1 = limit_buy(pair_1.clone(), 3u64.into(), price2);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 3u64.into(), price2);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
     /* pair 2 */
     let price2 = Amount::from(2u64);
 
-    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price2);
-    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price1);
-    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price1);
-    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price1);
+    let buy_1 = create_buy(pair_2.clone(), 1u64.into(), price2);
+    let buy_2 = create_buy(pair_2.clone(), 50u64.into(), price1);
+    let buy_3 = create_buy(pair_2.clone(), 50u64.into(), price1);
+    let buy_4 = create_buy(pair_2.clone(), 50u64.into(), price1);
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
-    state_tx.put_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
 
     /* pair 3 */
     let price2000 = 2000u64.into();
@@ -591,17 +594,17 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
     let price3100 = 3100u64.into();
     let price10000 = 10_000u64.into();
 
-    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
-    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
-    let buy_3 = limit_buy(pair_3.clone(), 198u64.into(), price3000);
-    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
-    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
+    let buy_1 = create_buy(pair_3.clone(), 1u64.into(), price2000);
+    let buy_2 = create_buy(pair_3.clone(), 1u64.into(), price2500);
+    let buy_3 = create_buy(pair_3.clone(), 198u64.into(), price3000);
+    let buy_4 = create_buy(pair_3.clone(), 1u64.into(), price3100);
+    let buy_5 = create_buy(pair_3.clone(), 1u64.into(), price10000);
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
-    state_tx.put_position(buy_4).await.unwrap();
-    state_tx.put_position(buy_5).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_5).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -677,21 +680,21 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let price1 = one;
 
-    let buy_1 = limit_buy(pair_1.clone(), 200u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 200u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
 
     /* pair 2 */
     let price2 = Amount::from(2u64);
 
-    let buy_1 = limit_buy(pair_2.clone(), 50u64.into(), price2);
-    let buy_2 = limit_buy(pair_2.clone(), 50u64.into(), price2);
-    let buy_3 = limit_buy(pair_2.clone(), 50u64.into(), price2);
-    let buy_4 = limit_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_1 = create_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_2 = create_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_3 = create_buy(pair_2.clone(), 50u64.into(), price2);
+    let buy_4 = create_buy(pair_2.clone(), 50u64.into(), price2);
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
-    state_tx.put_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
 
     /* pair 3 */
     let price2000 = 2000u64.into();
@@ -700,17 +703,17 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
     let price3100 = 3100u64.into();
     let price10000 = 10_000u64.into();
 
-    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price2000);
-    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price2500);
-    let buy_3 = limit_buy(pair_3.clone(), 198u64.into(), price3000);
-    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price3100);
-    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price10000);
+    let buy_1 = create_buy(pair_3.clone(), 1u64.into(), price2000);
+    let buy_2 = create_buy(pair_3.clone(), 1u64.into(), price2500);
+    let buy_3 = create_buy(pair_3.clone(), 198u64.into(), price3000);
+    let buy_4 = create_buy(pair_3.clone(), 1u64.into(), price3100);
+    let buy_5 = create_buy(pair_3.clone(), 1u64.into(), price10000);
 
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
-    state_tx.put_position(buy_4).await.unwrap();
-    state_tx.put_position(buy_5).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_5).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -780,27 +783,27 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
-    let buy_1 = limit_buy(pair_2.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_2.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_2.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_2.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
     let price1500 = 1500u64.into();
-    let buy_1 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    let buy_2 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    let buy_3 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    let buy_4 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    let buy_5 = limit_buy(pair_3.clone(), 1u64.into(), price1500);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
-    state_tx.put_position(buy_4).await.unwrap();
-    state_tx.put_position(buy_5).await.unwrap();
+    let buy_1 = create_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_2 = create_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_3 = create_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_4 = create_buy(pair_3.clone(), 1u64.into(), price1500);
+    let buy_5 = create_buy(pair_3.clone(), 1u64.into(), price1500);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_5).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -874,28 +877,28 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 2u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 2u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
-    let buy_1 = limit_buy(pair_2.clone(), one, price1);
-    let buy_2 = limit_buy(pair_2.clone(), one, price1);
-    let buy_3 = limit_buy(pair_2.clone(), one, price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
+    let buy_1 = create_buy(pair_2.clone(), one, price1);
+    let buy_2 = create_buy(pair_2.clone(), one, price1);
+    let buy_3 = create_buy(pair_2.clone(), one, price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
 
     let price1500 = Amount::from(1500u64);
     let price1400 = Amount::from(1400u64);
     let price1300 = Amount::from(1300u64);
 
-    let buy_1 = limit_buy(pair_3.clone(), one, price1500);
-    let buy_2 = limit_buy(pair_3.clone(), one, price1400);
-    let buy_3 = limit_buy(pair_3.clone(), one, price1300);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
-    state_tx.put_position(buy_3).await.unwrap();
+    let buy_1 = create_buy(pair_3.clone(), one, price1500);
+    let buy_2 = create_buy(pair_3.clone(), one, price1400);
+    let buy_3 = create_buy(pair_3.clone(), one, price1300);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -952,8 +955,8 @@ async fn simple_route() -> anyhow::Result<()> {
     let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), 1u64.into());
+    state_tx.open_position(buy_1).await.unwrap();
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
@@ -987,21 +990,8 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
     let pair_1 = DirectedUnitPair::new(gn.clone(), penumbra.clone());
 
     // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), 1u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
-    // TODO: later, this should be folded into an open_position method
-    state_tx
-        .vcb_credit(Value {
-            asset_id: gn.id(),
-            amount: Amount::from(1u64) * gn.unit_amount(),
-        })
-        .await?;
-    state_tx
-        .vcb_credit(Value {
-            asset_id: penumbra.id(),
-            amount: Amount::from(1u64) * penumbra.unit_amount(),
-        })
-        .await?;
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), 1u64.into());
+    state_tx.open_position(buy_1).await.unwrap();
     state_tx.apply();
 
     // We should be able to call path_search and route through that position.
@@ -1077,59 +1067,38 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
     let pair_gn_gm = DirectedUnitPair::new(gn.clone(), gm.clone());
     let pair_gm_penumbra = DirectedUnitPair::new(gm.clone(), penumbra.clone());
 
-    // TEMP TODO: disable VCB for this test. Later, remove this code once we restructure
-    // the position manager.
-    let infinite_gm = Value {
-        asset_id: gm.id(),
-        amount: Amount::from(100000u128) * gm.unit_amount(),
-    };
-
-    let infinite_gn = Value {
-        asset_id: gn.id(),
-        amount: Amount::from(100000u128) * gn.unit_amount(),
-    };
-
-    let infinite_penumbra = Value {
-        asset_id: penumbra.id(),
-        amount: Amount::from(100000u128) * penumbra.unit_amount(),
-    };
-
-    state_tx.vcb_credit(infinite_gm).await?;
-    state_tx.vcb_credit(infinite_gn).await?;
-    state_tx.vcb_credit(infinite_penumbra).await?;
-
     // Create a 2:1 penumbra:gm position (i.e. buy 20 gm at 2 penumbra each).
-    let buy_1 = limit_buy_pq(
+    let buy_1 = create_buy_pq(
         pair_gm_penumbra.clone(),
         5u64.into(),
         1u64.into(),
         2u64.into(),
         0u32,
     );
-    state_tx.put_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_1).await.unwrap();
 
     // Create a 2.1:1 penumbra:gm position (i.e. buy 40 gm at 2.1 penumbra each).
-    let buy_2 = limit_buy_pq(
+    let buy_2 = create_buy_pq(
         pair_gm_penumbra.clone(),
         40u64.into(),
         1000000u64.into(),
         2100000u64.into(),
         0u32,
     );
-    state_tx.put_position(buy_2).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
     // Create a 2.2:1 penumbra:gm position (i.e. buy 160 gm at 2.2 penumbra each).
-    let buy_3 = limit_buy_pq(
+    let buy_3 = create_buy_pq(
         pair_gm_penumbra.clone(),
         160u64.into(),
         1000000u64.into(),
         2200000u64.into(),
         0u32,
     );
-    state_tx.put_position(buy_3).await.unwrap();
+    state_tx.open_position(buy_3).await.unwrap();
 
     // Create a 1:1 gm:gn position (i.e. buy 100 gm at 1 gn each).
-    let buy_4 = limit_buy_pq(
+    let buy_4 = create_buy_pq(
         pair_gm_gn.clone(),
         100u64.into(),
         1u64.into(),
@@ -1137,7 +1106,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
         // with 20bps fee
         20u32,
     );
-    state_tx.put_position(buy_4).await.unwrap();
+    state_tx.open_position(buy_4).await.unwrap();
 
     // Create a 1.9:1 penumbra:gn position (i.e. buy 160 gn at 1.9 penumbra each).
     let buy_5 = Position::new(
@@ -1151,10 +1120,10 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
             r2: 80000000u32.into(),
         },
     );
-    state_tx.put_position(buy_5).await.unwrap();
+    state_tx.open_position(buy_5).await.unwrap();
 
     // Create a 1:1 gm:gn position (i.e. buy 100 gn at 1 gm each).
-    let buy_6 = limit_buy_pq(
+    let buy_6 = create_buy_pq(
         pair_gn_gm.clone(),
         100u64.into(),
         1u64.into(),
@@ -1162,7 +1131,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
         // with 20bps fee
         20u32,
     );
-    state_tx.put_position(buy_6).await.unwrap();
+    state_tx.open_position(buy_6).await.unwrap();
 
     state_tx.apply();
 
@@ -1248,10 +1217,10 @@ async fn fill_dust_route() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
     let dust_constraint = Position::new(
         OsRng,
         pair_2.into_directed_trading_pair(),
@@ -1263,7 +1232,7 @@ async fn fill_dust_route() -> anyhow::Result<()> {
             r2: 1u64.into(),
         },
     );
-    state_tx.put_position(dust_constraint).await.unwrap();
+    state_tx.open_position(dust_constraint).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -1313,10 +1282,10 @@ async fn fill_route_dust() {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
     let dust_constraint = Position::new(
         OsRng,
         pair_2.into_directed_trading_pair(),
@@ -1328,7 +1297,7 @@ async fn fill_route_dust() {
             r2: 1u64.into(),
         },
     );
-    state_tx.put_position(dust_constraint).await.unwrap();
+    state_tx.open_position(dust_constraint).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -1378,10 +1347,10 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
     let dust_constraint = Position::new(
         OsRng,
@@ -1407,10 +1376,10 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
         },
     );
 
-    state_tx.put_position(dust_constraint).await.unwrap();
-    state_tx.put_position(normal_order).await.unwrap();
-    let buy_1 = limit_buy(pair_3, 100u64.into(), 1400u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
+    state_tx.open_position(dust_constraint).await.unwrap();
+    state_tx.open_position(normal_order).await.unwrap();
+    let buy_1 = create_buy(pair_3, 100u64.into(), 1400u64.into());
+    state_tx.open_position(buy_1).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -1466,10 +1435,10 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
 
     let one = 1u64.into();
     let price1 = one;
-    let buy_1 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    let buy_2 = limit_buy(pair_1.clone(), 1u64.into(), price1);
-    state_tx.put_position(buy_1).await.unwrap();
-    state_tx.put_position(buy_2).await.unwrap();
+    let buy_1 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    let buy_2 = create_buy(pair_1.clone(), 1u64.into(), price1);
+    state_tx.open_position(buy_1).await.unwrap();
+    state_tx.open_position(buy_2).await.unwrap();
 
     let dust_constraint_p2 = Position::new(
         OsRng,
@@ -1495,8 +1464,8 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
         },
     );
 
-    state_tx.put_position(dust_constraint_p2).await.unwrap();
-    state_tx.put_position(normal_order_p2).await.unwrap();
+    state_tx.open_position(dust_constraint_p2).await.unwrap();
+    state_tx.open_position(normal_order_p2).await.unwrap();
 
     let dust_constraint_p3 = Position::new(
         OsRng,
@@ -1522,11 +1491,11 @@ async fn fill_route_with_stacked_dust_constraint() -> anyhow::Result<()> {
         },
     );
 
-    state_tx.put_position(dust_constraint_p3).await.unwrap();
-    state_tx.put_position(normal_order_p3).await.unwrap();
+    state_tx.open_position(dust_constraint_p3).await.unwrap();
+    state_tx.open_position(normal_order_p3).await.unwrap();
 
-    let buy_1 = limit_buy(pair_4, 100u64.into(), 1400u64.into());
-    state_tx.put_position(buy_1).await.unwrap();
+    let buy_1 = create_buy(pair_4, 100u64.into(), 1400u64.into());
+    state_tx.open_position(buy_1).await.unwrap();
 
     let delta_1 = Value {
         asset_id: gm.id(),
@@ -1633,12 +1602,12 @@ async fn path_search_testnet_53_1_reproduction() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    state.put_position(s_a).await.unwrap();
-    state.put_position(a_t).await.unwrap();
-    state.put_position(s_b).await.unwrap();
-    state.put_position(b_t).await.unwrap();
-    state.put_position(s_c).await.unwrap();
-    state.put_position(c_t).await.unwrap();
+    state.open_position(s_a).await.unwrap();
+    state.open_position(a_t).await.unwrap();
+    state.open_position(s_b).await.unwrap();
+    state.open_position(b_t).await.unwrap();
+    state.open_position(s_c).await.unwrap();
+    state.open_position(c_t).await.unwrap();
 
     let cache = PathCache::begin(penumbra.id(), state.fork());
     let mut cache_guard = cache.lock();
@@ -1801,15 +1770,15 @@ async fn path_search_commutative() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    state.put_position(s_a).await.unwrap();
-    state.put_position(s_c).await.unwrap();
-    state.put_position(a_b).await.unwrap();
-    state.put_position(a_t).await.unwrap();
-    state.put_position(b_t).await.unwrap();
-    state.put_position(b_c).await.unwrap();
-    state.put_position(c_t).await.unwrap();
-    state.put_position(c_d).await.unwrap();
-    state.put_position(d_t).await.unwrap();
+    state.open_position(s_a).await.unwrap();
+    state.open_position(s_c).await.unwrap();
+    state.open_position(a_b).await.unwrap();
+    state.open_position(a_t).await.unwrap();
+    state.open_position(b_t).await.unwrap();
+    state.open_position(b_c).await.unwrap();
+    state.open_position(c_t).await.unwrap();
+    state.open_position(c_d).await.unwrap();
+    state.open_position(d_t).await.unwrap();
 
     let cache = PathCache::begin(btc.id(), state.fork());
     let mut cache_guard = cache.lock();
@@ -1993,10 +1962,10 @@ async fn path_search_unique() -> anyhow::Result<()> {
         .unwrap()
         .into_position(OsRng);
 
-    state.put_position(s_a).await.unwrap();
-    state.put_position(s_b).await.unwrap();
-    state.put_position(a_t).await.unwrap();
-    state.put_position(b_t).await.unwrap();
+    state.open_position(s_a).await.unwrap();
+    state.open_position(s_b).await.unwrap();
+    state.open_position(a_t).await.unwrap();
+    state.open_position(b_t).await.unwrap();
 
     let cache = PathCache::begin(pen.id(), state.fork());
     let mut cache_guard = cache.lock();

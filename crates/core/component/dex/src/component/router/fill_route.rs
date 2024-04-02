@@ -12,12 +12,10 @@ use penumbra_num::{
     fixpoint::{Error, U128x128},
     Amount,
 };
-use penumbra_proto::StateWriteProto as _;
 use tracing::instrument;
 
 use crate::{
     component::{metrics, PositionManager, PositionRead},
-    event,
     lp::{
         position::{self, Position},
         Reserves,
@@ -411,12 +409,14 @@ impl<S: StateRead + StateWrite> Frontier<S> {
     }
 
     async fn save(&mut self) -> Result<()> {
+        let context = DirectedTradingPair {
+            start: self.pairs.first().expect("pairs is nonempty").start,
+            end: self.pairs.last().expect("pairs is nonempty").end,
+        };
         for position in &self.positions {
-            self.state.put_position(position.clone()).await?;
-
-            // Create an ABCI event signaling that the position was executed against
             self.state
-                .record_proto(event::position_execution(position.clone()));
+                .position_execution(position.clone(), context.clone())
+                .await?;
         }
         Ok(())
     }
@@ -491,8 +491,12 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         // discard it, so write its updated reserves before we replace it on the
         // frontier.  The other positions will be written out either when
         // they're fully consumed, or when we finish filling.
+        let context = DirectedTradingPair {
+            start: self.pairs.first().expect("pairs is nonempty").start,
+            end: self.pairs.last().expect("pairs is nonempty").end,
+        };
         self.state
-            .put_position(self.positions[index].clone())
+            .position_execution(self.positions[index].clone(), context)
             .await
             .expect("writing to storage should not fail");
 

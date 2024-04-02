@@ -3,22 +3,47 @@
 use std::collections::HashSet;
 
 use penumbra_keys::Address;
+use penumbra_proto::{
+    core::{
+        component::{
+            governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
+            stake::v1::Validator as ProtoValidator,
+        },
+        transaction::v1::TransactionPlan as ProtoTransactionPlan,
+    },
+    Message as _,
+};
 use penumbra_transaction::plan::ActionPlan;
 use serde::{Deserialize, Serialize};
 
-use crate::{AuthorizeRequest, PreAuthorization};
+use crate::{
+    AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest,
+    PreAuthorization,
+};
 
 /// A trait for checking whether a transaction plan is allowed by a policy.
 pub trait Policy {
     /// Checks whether the proposed transaction plan is allowed by this policy.
-    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()>;
+    fn check_transaction(&self, request: &AuthorizeRequest) -> anyhow::Result<()>;
+
+    /// Checks whether the proposed validator definition is allowed by this policy.
+    fn check_validator_definition(
+        &self,
+        _request: &AuthorizeValidatorDefinitionRequest,
+    ) -> anyhow::Result<()>;
+
+    /// Checks whether the proposed validator vote is allowed by this policy.
+    fn check_validator_vote(&self, _request: &AuthorizeValidatorVoteRequest) -> anyhow::Result<()>;
 }
 
 /// A set of basic spend authorization policies.
 ///
-/// These policies are intended to be simple enough that they can be written by
-/// hand in a config file.  More complex policy logic than than should be
-/// implemented by a custom implementation of the [`Policy`] trait.
+/// These policies are intended to be simple enough that they can be written by hand in a config
+/// file.  More complex policy logic than than should be implemented by a custom implementation of
+/// the [`Policy`] trait.
+///
+/// These policies do not permit validator votes or validator definition updates, so a custom policy
+/// must be used to approve these actions.
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 #[serde(tag = "type")]
 pub enum AuthPolicy {
@@ -56,6 +81,52 @@ pub enum PreAuthorizationPolicy {
         #[serde(with = "ed25519_vec_base64")]
         allowed_signers: Vec<ed25519_consensus::VerificationKey>,
     },
+}
+
+impl PreAuthorizationPolicy {
+    fn check_pre_authorizations(
+        &self,
+        pre_authorizations: &[PreAuthorization],
+        signed_data: impl AsRef<[u8]>,
+    ) -> anyhow::Result<()> {
+        let signed_data = signed_data.as_ref();
+        match self {
+            PreAuthorizationPolicy::Ed25519 {
+                required_signatures,
+                allowed_signers,
+            } => {
+                #[allow(clippy::unnecessary_filter_map)]
+                let ed25519_pre_auths =
+                    pre_authorizations
+                        .iter()
+                        .filter_map(|pre_auth| match pre_auth {
+                            PreAuthorization::Ed25519(pre_auth) => Some(pre_auth),
+                            // _ => None,
+                        });
+
+                let mut allowed_signers = allowed_signers.iter().cloned().collect::<HashSet<_>>();
+                let mut seen_signers = HashSet::new();
+
+                for pre_auth in ed25519_pre_auths {
+                    // Remove the signer from the allowed signers set, so that
+                    // each signer can only submit one pre-authorization.
+                    if let Some(signer) = allowed_signers.take(&pre_auth.vk) {
+                        pre_auth.verify(signed_data)?;
+                        seen_signers.insert(signer);
+                    }
+                }
+
+                if seen_signers.len() < *required_signatures as usize {
+                    anyhow::bail!(
+                        "required {} pre-authorization signatures but only saw {}",
+                        required_signatures,
+                        seen_signers.len(),
+                    );
+                }
+                Ok(())
+            }
+        }
+    }
 }
 
 mod address_as_string {
@@ -130,7 +201,7 @@ mod ed25519_vec_base64 {
 }
 
 impl Policy for AuthPolicy {
-    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
+    fn check_transaction(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
         let plan = &request.plan;
         match self {
             AuthPolicy::DestinationAllowList {
@@ -161,49 +232,44 @@ impl Policy for AuthPolicy {
                 }
                 Ok(())
             }
-            AuthPolicy::PreAuthorization(policy) => policy.check(request),
+            AuthPolicy::PreAuthorization(policy) => policy.check_transaction(request),
         }
+    }
+
+    fn check_validator_definition(
+        &self,
+        _request: &AuthorizeValidatorDefinitionRequest,
+    ) -> anyhow::Result<()> {
+        anyhow::bail!("validator definitions are not allowed by this policy")
+    }
+
+    fn check_validator_vote(&self, _request: &AuthorizeValidatorVoteRequest) -> anyhow::Result<()> {
+        anyhow::bail!("validator votes are not allowed by this policy")
     }
 }
 
 impl Policy for PreAuthorizationPolicy {
-    fn check(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
-        match self {
-            PreAuthorizationPolicy::Ed25519 {
-                required_signatures,
-                allowed_signers,
-            } => {
-                #[allow(clippy::unnecessary_filter_map)]
-                let ed25519_pre_auths =
-                    request
-                        .pre_authorizations
-                        .iter()
-                        .filter_map(|pre_auth| match pre_auth {
-                            PreAuthorization::Ed25519(pre_auth) => Some(pre_auth),
-                            // _ => None,
-                        });
+    fn check_transaction(&self, request: &AuthorizeRequest) -> anyhow::Result<()> {
+        self.check_pre_authorizations(
+            &request.pre_authorizations,
+            ProtoTransactionPlan::from(request.plan.clone()).encode_to_vec(),
+        )
+    }
 
-                let mut allowed_signers = allowed_signers.iter().cloned().collect::<HashSet<_>>();
-                let mut seen_signers = HashSet::new();
+    fn check_validator_definition(
+        &self,
+        request: &AuthorizeValidatorDefinitionRequest,
+    ) -> anyhow::Result<()> {
+        self.check_pre_authorizations(
+            &request.pre_authorizations,
+            ProtoValidator::from(request.validator_definition.clone()).encode_to_vec(),
+        )
+    }
 
-                for pre_auth in ed25519_pre_auths {
-                    // Remove the signer from the allowed signers set, so that
-                    // each signer can only submit one pre-authorization.
-                    if let Some(signer) = allowed_signers.take(&pre_auth.vk) {
-                        pre_auth.verify_plan(&request.plan)?;
-                        seen_signers.insert(signer);
-                    }
-                }
-
-                if seen_signers.len() < *required_signatures as usize {
-                    anyhow::bail!(
-                        "required {} pre-authorization signatures but only saw {}",
-                        required_signatures,
-                        seen_signers.len(),
-                    );
-                }
-                Ok(())
-            }
-        }
+    fn check_validator_vote(&self, request: &AuthorizeValidatorVoteRequest) -> anyhow::Result<()> {
+        self.check_pre_authorizations(
+            &request.pre_authorizations,
+            ProtoValidatorVoteBody::from(request.validator_vote.clone()).encode_to_vec(),
+        )
     }
 }

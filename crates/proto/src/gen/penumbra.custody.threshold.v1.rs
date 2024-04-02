@@ -32,11 +32,28 @@ impl ::prost::Name for Signature {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CoordinatorRound1 {
-    /// The plan that the coordinator would like the followers to sign.
-    #[prost(message, optional, tag = "1")]
-    pub plan: ::core::option::Option<
-        super::super::super::core::transaction::v1::TransactionPlan,
-    >,
+    #[prost(oneof = "coordinator_round1::Request", tags = "1, 2, 3")]
+    pub request: ::core::option::Option<coordinator_round1::Request>,
+}
+/// Nested message and enum types in `CoordinatorRound1`.
+pub mod coordinator_round1 {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Request {
+        /// The plan that the coordinator would like the followers to sign.
+        #[prost(message, tag = "1")]
+        Plan(super::super::super::super::core::transaction::v1::TransactionPlan),
+        /// The validator definition the coordinator would like the followers to sign.
+        #[prost(message, tag = "2")]
+        ValidatorDefinition(
+            super::super::super::super::core::component::stake::v1::Validator,
+        ),
+        /// The validator vote the coordinator would like the followers to sign.
+        #[prost(message, tag = "3")]
+        ValidatorVote(
+            super::super::super::super::core::component::governance::v1::ValidatorVoteBody,
+        ),
+    }
 }
 impl ::prost::Name for CoordinatorRound1 {
     const NAME: &'static str = "CoordinatorRound1";

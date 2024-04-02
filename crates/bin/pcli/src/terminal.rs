@@ -1,6 +1,5 @@
 use anyhow::Result;
-use penumbra_custody::threshold::Terminal;
-use penumbra_transaction::TransactionPlan;
+use penumbra_custody::threshold::{SigningRequest, Terminal};
 use tokio::io::{self, AsyncBufReadExt};
 use tonic::async_trait;
 
@@ -11,9 +10,20 @@ pub struct ActualTerminal;
 
 #[async_trait]
 impl Terminal for ActualTerminal {
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool> {
-        println!("Do you approve this transaction?");
-        println!("{}", serde_json::to_string_pretty(transaction)?);
+    async fn confirm_request(&self, signing_request: &SigningRequest) -> Result<bool> {
+        let (description, json) = match signing_request {
+            SigningRequest::TransactionPlan(plan) => {
+                ("transaction", serde_json::to_string_pretty(plan)?)
+            }
+            SigningRequest::ValidatorDefinition(def) => {
+                ("validator definition", serde_json::to_string_pretty(def)?)
+            }
+            SigningRequest::ValidatorVote(vote) => {
+                ("validator vote", serde_json::to_string_pretty(vote)?)
+            }
+        };
+        println!("Do you approve this {description}?");
+        println!("{json}");
         println!("Press enter to continue");
         self.next_response().await?;
         Ok(true)

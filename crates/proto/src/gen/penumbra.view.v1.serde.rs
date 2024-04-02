@@ -7038,6 +7038,9 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         if self.unbonding_amount.is_some() {
             len += 1;
         }
+        if self.unbonding_start_height != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.UndelegateClaim", len)?;
         if let Some(v) = self.validator_identity.as_ref() {
             struct_ser.serialize_field("validatorIdentity", v)?;
@@ -7051,6 +7054,10 @@ impl serde::Serialize for transaction_planner_request::UndelegateClaim {
         }
         if let Some(v) = self.unbonding_amount.as_ref() {
             struct_ser.serialize_field("unbondingAmount", v)?;
+        }
+        if self.unbonding_start_height != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("unbondingStartHeight", ToString::to_string(&self.unbonding_start_height).as_str())?;
         }
         struct_ser.end()
     }
@@ -7069,6 +7076,8 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
             "penalty",
             "unbonding_amount",
             "unbondingAmount",
+            "unbonding_start_height",
+            "unbondingStartHeight",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -7077,6 +7086,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
             StartEpochIndex,
             Penalty,
             UnbondingAmount,
+            UnbondingStartHeight,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7103,6 +7113,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                             "startEpochIndex" | "start_epoch_index" => Ok(GeneratedField::StartEpochIndex),
                             "penalty" => Ok(GeneratedField::Penalty),
                             "unbondingAmount" | "unbonding_amount" => Ok(GeneratedField::UnbondingAmount),
+                            "unbondingStartHeight" | "unbonding_start_height" => Ok(GeneratedField::UnbondingStartHeight),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7126,6 +7137,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                 let mut start_epoch_index__ = None;
                 let mut penalty__ = None;
                 let mut unbonding_amount__ = None;
+                let mut unbonding_start_height__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ValidatorIdentity => {
@@ -7154,6 +7166,14 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                             }
                             unbonding_amount__ = map_.next_value()?;
                         }
+                        GeneratedField::UnbondingStartHeight => {
+                            if unbonding_start_height__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unbondingStartHeight"));
+                            }
+                            unbonding_start_height__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7164,6 +7184,7 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::UndelegateCla
                     start_epoch_index: start_epoch_index__.unwrap_or_default(),
                     penalty: penalty__,
                     unbonding_amount: unbonding_amount__,
+                    unbonding_start_height: unbonding_start_height__.unwrap_or_default(),
                 })
             }
         }
@@ -7263,6 +7284,308 @@ impl<'de> serde::Deserialize<'de> for TransactionPlannerResponse {
             }
         }
         deserializer.deserialize_struct("penumbra.view.v1.TransactionPlannerResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for UnbondingTokensByAddressIndexRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.filter != 0 {
+            len += 1;
+        }
+        if self.address_index.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexRequest", len)?;
+        if self.filter != 0 {
+            let v = unbonding_tokens_by_address_index_request::Filter::try_from(self.filter)
+                .map_err(|_| serde::ser::Error::custom(format!("Invalid variant {}", self.filter)))?;
+            struct_ser.serialize_field("filter", &v)?;
+        }
+        if let Some(v) = self.address_index.as_ref() {
+            struct_ser.serialize_field("addressIndex", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "filter",
+            "address_index",
+            "addressIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Filter,
+            AddressIndex,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "filter" => Ok(GeneratedField::Filter),
+                            "addressIndex" | "address_index" => Ok(GeneratedField::AddressIndex),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = UnbondingTokensByAddressIndexRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.UnbondingTokensByAddressIndexRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<UnbondingTokensByAddressIndexRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut filter__ = None;
+                let mut address_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Filter => {
+                            if filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("filter"));
+                            }
+                            filter__ = Some(map_.next_value::<unbonding_tokens_by_address_index_request::Filter>()? as i32);
+                        }
+                        GeneratedField::AddressIndex => {
+                            if address_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("addressIndex"));
+                            }
+                            address_index__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(UnbondingTokensByAddressIndexRequest {
+                    filter: filter__.unwrap_or_default(),
+                    address_index: address_index__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for unbonding_tokens_by_address_index_request::Filter {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let variant = match self {
+            Self::Unspecified => "FILTER_UNSPECIFIED",
+            Self::Claimable => "FILTER_CLAIMABLE",
+            Self::NotYetClaimable => "FILTER_NOT_YET_CLAIMABLE",
+        };
+        serializer.serialize_str(variant)
+    }
+}
+impl<'de> serde::Deserialize<'de> for unbonding_tokens_by_address_index_request::Filter {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "FILTER_UNSPECIFIED",
+            "FILTER_CLAIMABLE",
+            "FILTER_NOT_YET_CLAIMABLE",
+        ];
+
+        struct GeneratedVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = unbonding_tokens_by_address_index_request::Filter;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(formatter, "expected one of: {:?}", &FIELDS)
+            }
+
+            fn visit_i64<E>(self, v: i64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Signed(v), &self)
+                    })
+            }
+
+            fn visit_u64<E>(self, v: u64) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                i32::try_from(v)
+                    .ok()
+                    .and_then(|x| x.try_into().ok())
+                    .ok_or_else(|| {
+                        serde::de::Error::invalid_value(serde::de::Unexpected::Unsigned(v), &self)
+                    })
+            }
+
+            fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match value {
+                    "FILTER_UNSPECIFIED" => Ok(unbonding_tokens_by_address_index_request::Filter::Unspecified),
+                    "FILTER_CLAIMABLE" => Ok(unbonding_tokens_by_address_index_request::Filter::Claimable),
+                    "FILTER_NOT_YET_CLAIMABLE" => Ok(unbonding_tokens_by_address_index_request::Filter::NotYetClaimable),
+                    _ => Err(serde::de::Error::unknown_variant(value, FIELDS)),
+                }
+            }
+        }
+        deserializer.deserialize_any(GeneratedVisitor)
+    }
+}
+impl serde::Serialize for UnbondingTokensByAddressIndexResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.value_view.is_some() {
+            len += 1;
+        }
+        if self.claimable {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexResponse", len)?;
+        if let Some(v) = self.value_view.as_ref() {
+            struct_ser.serialize_field("valueView", v)?;
+        }
+        if self.claimable {
+            struct_ser.serialize_field("claimable", &self.claimable)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for UnbondingTokensByAddressIndexResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "value_view",
+            "valueView",
+            "claimable",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValueView,
+            Claimable,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "valueView" | "value_view" => Ok(GeneratedField::ValueView),
+                            "claimable" => Ok(GeneratedField::Claimable),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = UnbondingTokensByAddressIndexResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.UnbondingTokensByAddressIndexResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<UnbondingTokensByAddressIndexResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut value_view__ = None;
+                let mut claimable__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValueView => {
+                            if value_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("valueView"));
+                            }
+                            value_view__ = map_.next_value()?;
+                        }
+                        GeneratedField::Claimable => {
+                            if claimable__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("claimable"));
+                            }
+                            claimable__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(UnbondingTokensByAddressIndexResponse {
+                    value_view: value_view__,
+                    claimable: claimable__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.UnbondingTokensByAddressIndexResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for UnclaimedSwapsRequest {

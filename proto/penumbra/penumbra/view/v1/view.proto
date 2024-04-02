@@ -136,6 +136,10 @@ service ViewService {
   // that token. Each `ValueView`'s `extended_metadata` field will contain the
   // `ValidatorInfo` of the delegated validator.
   rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
+
+  // Get unbonding tokens for the given address index, optionally filtered by
+  // whether the tokens are currently claimable.
+  rpc UnbondingTokensByAddressIndex(UnbondingTokensByAddressIndexRequest) returns (stream UnbondingTokensByAddressIndexResponse);
 }
 
 message AuthorizeAndBuildRequest {
@@ -260,13 +264,15 @@ message TransactionPlannerRequest {
     // The identity key of the validator to finish undelegating from.
     core.keys.v1.IdentityKey validator_identity = 1;
     // The epoch in which unbonding began, used to verify the penalty.
-    uint64 start_epoch_index = 2;
+    uint64 start_epoch_index = 2 [deprecated = true];
     // The penalty applied to undelegation, in bps^2 (10e-8).
     // In the happy path (no slashing), this is 0.
     core.component.stake.v1.Penalty penalty = 3;
     // The amount of unbonding tokens to claim.
     // This is a bare number because its denom is determined by the preceding data.
     core.num.v1.Amount unbonding_amount = 4;
+    // The height at which unbonding began.
+    uint64 unbonding_start_height = 5;
   }
   message PositionOpen {
     // Contains the data defining the position, sufficient to compute its `PositionId`.
@@ -641,4 +647,40 @@ message DelegationsByAddressIndexRequest {
 // cits `extended_metadata` field.
 message DelegationsByAddressIndexResponse {
   core.asset.v1.ValueView value_view = 1;
+}
+
+// Requests unbonding tokens for a given address index, with optional filtering
+// for whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexRequest {
+  enum Filter {
+    // Return all unbonding tokens, regardless of whether they're claimable
+    // right now.
+    FILTER_UNSPECIFIED = 0;
+
+    // Return all unbonding tokens that are currently claimable. This includes:
+    // - tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+    // - tokens for unbonded validators
+    FILTER_CLAIMABLE = 1;
+
+    // Return all unbonding tokens that are not yet claimable, because they are
+    // still in the `unbonding_delay` (from `StakeParameters`) period.
+    FILTER_NOT_YET_CLAIMABLE = 2;
+  }
+
+  Filter filter = 1;
+
+  // The address index to fetch unbonding tokens for.
+  core.keys.v1.AddressIndex address_index = 2;
+}
+
+// Returns unbonding tokens for the given address index, optionally filtered by
+// whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexResponse {
+  // A `ValueView` representing the amount of the given unbonding token.
+  core.asset.v1.ValueView value_view = 1;
+
+  // Whether the unbonding token is currently claimable. This will only be
+  // `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+  // validator has unbonded.
+  bool claimable = 2;
 }

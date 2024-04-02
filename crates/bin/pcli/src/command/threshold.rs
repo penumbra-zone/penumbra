@@ -1,6 +1,10 @@
 use anyhow::Result;
 
-use crate::{terminal::ActualTerminal, App};
+use crate::{
+    config::{CustodyConfig, GovernanceCustodyConfig},
+    terminal::ActualTerminal,
+    App,
+};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ThresholdCmd {
@@ -18,12 +22,18 @@ impl ThresholdCmd {
     #[tracing::instrument(skip(self, app))]
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let config = match &app.config.custody {
-            crate::config::CustodyConfig::Threshold(config) => config,
-            _ => anyhow::bail!("this command can only be used with the threshold custody backend"),
+            CustodyConfig::Threshold(config) => Some(config),
+            _ => None, // If not threshold, we can't sign using threshold config
+        };
+        let governance_config = match &app.config.governance_custody {
+            Some(GovernanceCustodyConfig::Threshold(governance_config)) => Some(governance_config),
+            None => config, // If no governance config, use regular one
+            _ => None,      // If not threshold, we can't sign using governance config
         };
         match self {
             ThresholdCmd::Sign => {
-                penumbra_custody::threshold::follow(config, &ActualTerminal).await
+                penumbra_custody::threshold::follow(config, governance_config, &ActualTerminal)
+                    .await
             }
         }
     }

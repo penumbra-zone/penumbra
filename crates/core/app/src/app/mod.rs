@@ -15,7 +15,6 @@ use penumbra_distributions::component::{Distributions, StateReadExt as _, StateW
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_genesis::AppState;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
@@ -39,6 +38,7 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::AppActionHandler;
+use crate::genesis::AppState;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
@@ -619,7 +619,7 @@ impl App {
 ///
 /// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
 /// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 0;
+const TOTAL_HALT_COUNT: u64 = 1;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {

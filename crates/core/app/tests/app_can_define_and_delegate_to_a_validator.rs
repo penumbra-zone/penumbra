@@ -5,8 +5,7 @@ use {
     anyhow::{anyhow, Context},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth},
-    penumbra_app::server::consensus::Consensus,
-    penumbra_genesis::AppState,
+    penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -32,7 +31,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_genesis::Content {
+    let app_state = AppState::Content(penumbra_app::genesis::Content {
         sct_content: penumbra_sct::genesis::Content {
             sct_params: penumbra_sct::params::SctParameters {
                 epoch_duration: EPOCH_DURATION,
@@ -282,6 +281,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
+    let pre_delegate_snapshot = storage.latest_snapshot();
     node.block()
         .add_tx(tx.encode_to_vec())
         .execute()
@@ -292,7 +292,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Show that the set of validators still looks correct. We should not see any changes yet.
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
-        let snapshot = post_delegate_snapshot;
+        let snapshot = post_delegate_snapshot.clone();
         info!("checking consensus set in block after delegation");
         // The original validator should still be active.
         assert_eq!(
@@ -315,6 +315,30 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         );
     }
 
+    // Confirm that the new validator's voting power has not changed immeditaly.
+    let new_validator_original_power = {
+        use penumbra_sct::component::clock::EpochRead;
+        let pre_delegate_power = pre_delegate_snapshot
+            .get_validator_power(&new_validator_id)
+            .await?
+            .expect("should have voting power before delegating");
+        let post_delegate_power = post_delegate_snapshot
+            .get_validator_power(&new_validator_id)
+            .await?
+            .expect("should have voting power after delegating");
+        debug_assert_eq!(
+            pre_delegate_snapshot.get_current_epoch().await?,
+            post_delegate_snapshot.get_current_epoch().await?,
+            "avoid puzzling errors by confirming that pre- and post-delegation snapshots do not \
+             sit upon an epoch boundary"
+        );
+        assert_eq!(
+            pre_delegate_power, post_delegate_power,
+            "a delegated validator"
+        );
+        pre_delegate_power
+    };
+
     // Fast forward to the next epoch.
     node.fast_forward(EPOCH_DURATION)
         .instrument(error_span!(
@@ -328,7 +352,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
         info!("checking consensus set in epoch after delegation");
-        let snapshot = post_delegate_next_epoch_snapshot;
+        let snapshot = post_delegate_next_epoch_snapshot.clone();
         // The original validator should still be active.
         assert_eq!(
             snapshot.get_validator_state(&existing_validator_id).await?,
@@ -348,6 +372,19 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             "the new validator should now be part of the consensus set"
         );
     }
+
+    // Show that the new validator's voting power has changed, now that we are in a new epoch
+    // after the delegation.
+    let new_validator_epoch_after_delegation_power = post_delegate_next_epoch_snapshot
+        .get_validator_power(&new_validator_id)
+        .await?
+        .expect("should have voting power before delegating")
+        .tap(|&power| {
+            assert!(
+                power > new_validator_original_power,
+                "new validator should now have more voting power after receiving a delegation"
+            )
+        });
 
     // Build a transaction that will now undelegate from the validator.
     let plan = {
@@ -419,7 +456,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     // Show that the consensus set has not changed yet.
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
-        let snapshot = post_undelegate_snapshot;
+        let snapshot = post_undelegate_snapshot.clone();
         info!("checking consensus set in block after undelegation");
         // The original validator should still be active.
         assert_eq!(
@@ -441,6 +478,18 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         );
     }
 
+    // Compute the current voting power, confirm that it has not changed yet.
+    post_undelegate_snapshot
+        .get_validator_power(&new_validator_id)
+        .await?
+        .expect("should have voting power before delegating")
+        .tap(|&power| {
+            assert_eq!(
+                power, new_validator_epoch_after_delegation_power,
+                "validator power should not change immediately after an undelegation"
+            )
+        });
+
     // Fast forward to the next epoch.
     node.fast_forward(EPOCH_DURATION)
         .instrument(error_span!(
@@ -454,7 +503,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     {
         use penumbra_stake::{component::ConsensusIndexRead, validator::State};
         info!("checking consensus set in epoch after undelegation");
-        let snapshot = post_undelegate_next_epoch_snapshot;
+        let snapshot = post_undelegate_next_epoch_snapshot.clone();
         // The original validator should still be active.
         assert_eq!(
             snapshot.get_validator_state(&existing_validator_id).await?,
@@ -474,6 +523,18 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             "the new validator should not be part of the consensus set yet"
         );
     }
+
+    // Show that now, the validator's voting power has returned to its original state.
+    post_undelegate_next_epoch_snapshot
+        .get_validator_power(&new_validator_id)
+        .await?
+        .expect("should have voting power before delegating")
+        .tap(|&power| {
+            assert_eq!(
+                power, new_validator_original_power,
+                "validator power should not change immediately after an undelegation"
+            )
+        });
 
     // The test passed. Free our temporary storage and drop our tracing subscriber.
     Ok(())

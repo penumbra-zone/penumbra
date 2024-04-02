@@ -10,9 +10,9 @@ use {
     cnidarium::TempStorage,
     penumbra_app::{
         app::App,
+        genesis::AppState,
         server::consensus::{Consensus, ConsensusService},
     },
-    penumbra_genesis::AppState,
     penumbra_mock_consensus::TestNode,
     std::ops::Deref,
 };

@@ -280,6 +280,12 @@ impl From<Undelegate> for ActionPlan {
     }
 }
 
+impl From<UndelegateClaimPlan> for ActionPlan {
+    fn from(inner: UndelegateClaimPlan) -> ActionPlan {
+        ActionPlan::UndelegateClaim(inner)
+    }
+}
+
 impl From<penumbra_stake::validator::Definition> for ActionPlan {
     fn from(inner: penumbra_stake::validator::Definition) -> ActionPlan {
         ActionPlan::ValidatorDefinition(inner)

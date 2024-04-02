@@ -73,7 +73,6 @@ penumbra-compact-block           = { workspace = true, default-features = true }
 penumbra-custody                 = { workspace = true }
 penumbra-dex                     = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-fee                     = { workspace = true, default-features = true }
-penumbra-genesis                 = { workspace = true }
 penumbra-governance              = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-ibc                     = { workspace = true, features = ["rpc"], default-features = true }
 penumbra-keys                    = { workspace = true, default-features = true }

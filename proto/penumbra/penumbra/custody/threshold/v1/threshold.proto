@@ -3,6 +3,8 @@ syntax = "proto3";
 package penumbra.custody.threshold.v1;
 
 import "penumbra/core/transaction/v1/transaction.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/component/governance/v1/governance.proto";
 import "penumbra/crypto/decaf377_frost/v1/decaf377_frost.proto";
 
 // A key one can use to verify signatures.
@@ -19,8 +21,14 @@ message Signature {
 
 // The message the coordinator sends in round 1 of the signing protocol.
 message CoordinatorRound1 {
-  // The plan that the coordinator would like the followers to sign.
-  core.transaction.v1.TransactionPlan plan = 1;
+  oneof request {
+    // The plan that the coordinator would like the followers to sign.
+    core.transaction.v1.TransactionPlan plan = 1;
+    // The validator definition the coordinator would like the followers to sign.
+    core.component.stake.v1.Validator validator_definition = 2;
+    // The validator vote the coordinator would like the followers to sign.
+    core.component.governance.v1.ValidatorVoteBody validator_vote = 3;
+  }
 }
 
 // The message the coordinator sends in round 2 of the signing protocol.

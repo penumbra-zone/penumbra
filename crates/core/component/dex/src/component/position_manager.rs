@@ -7,13 +7,16 @@ use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
-use penumbra_asset::asset;
+use penumbra_asset::{asset, Balance};
 use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
+use crate::event;
 use crate::lp::position::State;
+use crate::lp::Reserves;
 use crate::{
+    component::ValueCircuitBreaker,
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
 };
@@ -60,13 +63,6 @@ pub trait PositionRead: StateRead {
         self.get(&state_key::position_by_id(id)).await
     }
 
-    async fn check_position_id_unused(&self, id: &position::Id) -> Result<()> {
-        match self.get_raw(&state_key::position_by_id(id)).await? {
-            Some(_) => Err(anyhow::anyhow!("position id {:?} already used", id)),
-            None => Ok(()),
-        }
-    }
-
     async fn best_position(
         &self,
         pair: &DirectedTradingPair,
@@ -82,118 +78,6 @@ pub trait PositionRead: StateRead {
     fn pending_position_closures(&self) -> im::Vector<position::Id> {
         self.object_get(state_key::pending_position_closures())
             .unwrap_or_default()
-    }
-}
-impl<T: StateRead + ?Sized> PositionRead for T {}
-
-/// Manages liquidity positions within the chain state.
-#[async_trait]
-pub trait PositionManager: StateWrite + PositionRead {
-    /// Close a position by id, removing it from the state.
-    /// # Errors
-    /// Returns an error if the position does not exist.
-    async fn close_position_by_id(&mut self, id: &position::Id) -> Result<()> {
-        tracing::debug!(?id, "closing position, first fetch it");
-        let mut position = self
-            .position_by_id(id)
-            .await
-            .expect("fetching position should not fail")
-            .ok_or_else(|| anyhow::anyhow!("position not found"))?;
-
-        tracing::debug!(?id, "position found, close it");
-        position.state = position::State::Closed;
-        self.put_position(position).await?;
-        Ok(())
-    }
-
-    /// Queues a position to be closed at the end of the block, after batch execution.
-    fn queue_close_position(&mut self, id: position::Id) {
-        let mut to_close = self.pending_position_closures();
-        to_close.push_back(id);
-        self.object_put(state_key::pending_position_closures(), to_close);
-    }
-
-    /// Close all positions that have been queued for closure.
-    async fn close_queued_positions(&mut self) -> () {
-        let to_close = self.pending_position_closures();
-        for id in to_close {
-            match self.close_position_by_id(&id).await {
-                Ok(()) => tracing::debug!(?id, "position closed"),
-                // The position was already closed, which in and of itself is not an error.
-                // It's possible that the position was closed by the engine, for example
-                // because it was a limit-order.
-                Err(e) => tracing::debug!(?id, "failed to close position: {}", e),
-            }
-        }
-        self.object_delete(state_key::pending_position_closures());
-    }
-
-    /// Writes a position to the state, updating all necessary indexes.
-    #[tracing::instrument(level = "debug", skip(self, position), fields(id = ?position.id()))]
-    async fn put_position(&mut self, position: position::Position) -> Result<()> {
-        let id = position.id();
-        tracing::debug!(?position, "fetch position's previous state from storage");
-        // We pull the position from the state unconditionally, since we will
-        // always need to update the position's liquidity index.
-        let prev = self
-            .position_by_id(&id)
-            .await
-            .expect("fetching position should not fail");
-
-        // Clear any existing indexes of the position, since changes to the
-        // reserves or the position state might have invalidated them.
-        self.deindex_position_by_price(&position);
-
-        // currently, we are disabling limit orders due to the complexity involved in managing
-        // limit orders in the dex state machine (see
-        // https://github.com/penumbra-zone/penumbra/issues/3850#issuecomment-1977300433)
-        // let position = self.handle_limit_order(&prev, position);
-
-        // Only index the position's liquidity if it is active.
-        if position.state == position::State::Opened {
-            self.index_position_by_price(&position);
-        }
-
-        // Update the available liquidity for this position's trading pair.
-        self.update_available_liquidity(&position, &prev).await?;
-
-        self.put(state_key::position_by_id(&id), position);
-        Ok(())
-    }
-
-    /// Handle a limit order, inspecting it previous state to determine if it
-    /// has been filled, and if so, marking it as closed. If the position is
-    /// not a limit order, or has not been filled, it is returned unchanged.
-    fn handle_limit_order(
-        &self,
-        prev_position: &Option<position::Position>,
-        position: Position,
-    ) -> Position {
-        let id = position.id();
-        match prev_position {
-            Some(_) if position.close_on_fill => {
-                // It's technically possible for a limit order to be partially filled,
-                // and unfilled on the other side. In this case, we would close it prematurely.
-                // However, because of the arbitrage dynamics we expect that in practice an order
-                // gets completely filled or not at all.
-                if position.reserves.r1 == Amount::zero() || position.reserves.r2 == Amount::zero()
-                {
-                    tracing::debug!(?id, "limit order filled, setting state to closed");
-                    Position {
-                        state: position::State::Closed,
-                        ..position
-                    }
-                } else {
-                    tracing::debug!(?id, "limit order partially filled, keeping open");
-                    position
-                }
-            }
-            None if position.close_on_fill => {
-                tracing::debug!(?id, "detected a newly opened limit order");
-                position
-            }
-            _ => position,
-        }
     }
 
     /// Returns the list of candidate assets to route through for a trade from `from`.
@@ -243,14 +127,269 @@ pub trait PositionManager: StateWrite + PositionRead {
             .boxed()
     }
 }
+impl<T: StateRead + ?Sized> PositionRead for T {}
+
+/// Manages liquidity positions within the chain state.
+#[async_trait]
+pub trait PositionManager: StateWrite + PositionRead {
+    /// Close a position by id, removing it from the state.
+    ///
+    /// If the position is already closed, this is a no-op.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the position does not exist.
+    async fn close_position_by_id(&mut self, id: &position::Id) -> Result<()> {
+        tracing::debug!(?id, "closing position, first fetch it");
+        let prev_state = self
+            .position_by_id(id)
+            .await
+            .expect("fetching position should not fail")
+            .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?;
+
+        anyhow::ensure!(
+            matches!(
+                prev_state.state,
+                position::State::Opened | position::State::Closed,
+            ),
+            "attempted to close a position with state {:?}, expected Opened or Closed",
+            prev_state.state
+        );
+
+        let new_state = {
+            let mut new_state = prev_state.clone();
+            new_state.state = position::State::Closed;
+            new_state
+        };
+
+        self.update_position(Some(prev_state), new_state).await?;
+
+        Ok(())
+    }
+
+    /// Queues a position to be closed at the end of the block, after batch execution.
+    fn queue_close_position(&mut self, id: position::Id) {
+        let mut to_close = self.pending_position_closures();
+        to_close.push_back(id);
+        self.object_put(state_key::pending_position_closures(), to_close);
+    }
+
+    /// Close all positions that have been queued for closure.
+    async fn close_queued_positions(&mut self) -> Result<()> {
+        let to_close = self.pending_position_closures();
+        for id in to_close {
+            self.close_position_by_id(&id).await?;
+        }
+        self.object_delete(state_key::pending_position_closures());
+        Ok(())
+    }
+
+    /// Opens a new position, updating all necessary indexes and checking for
+    /// its nonexistence prior to being opened.
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn open_position(&mut self, position: position::Position) -> Result<()> {
+        // Double-check that the position is in the `Opened` state
+        if position.state != position::State::Opened {
+            anyhow::bail!("attempted to open a position with a state besides `Opened`");
+        }
+
+        // Validate that the position ID doesn't collide
+        if let Some(existing) = self.position_by_id(&position.id()).await? {
+            anyhow::bail!(
+                "attempted to open a position with ID {}, which already exists with state {:?}",
+                position.id(),
+                existing
+            );
+        }
+
+        // Credit the DEX for the inflows from this position.
+        self.vcb_credit(position.reserves_1()).await?;
+        self.vcb_credit(position.reserves_2()).await?;
+
+        // Finally, record the new position state.
+        self.record_proto(event::position_open(&position));
+        self.update_position(None, position).await?;
+
+        Ok(())
+    }
+
+    /// Record execution against an opened position.
+    ///
+    /// The `context` parameter records the global context of the path in which
+    /// the position execution happened. This may be completely different than
+    /// the trading pair of the position itself, and is used to link the
+    /// micro-scale execution (processed by this method) with the macro-scale
+    /// context (a swap or arbitrage).
+    #[tracing::instrument(level = "debug", skip_all)]
+    async fn position_execution(
+        &mut self,
+        mut new_state: Position,
+        context: DirectedTradingPair,
+    ) -> Result<()> {
+        let prev_state = self
+            .position_by_id(&new_state.id())
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", new_state.id()))?;
+
+        anyhow::ensure!(
+            matches!(&prev_state.state, position::State::Opened),
+            "attempted to execute against a position with state {:?}, expected Opened",
+            prev_state.state
+        );
+        anyhow::ensure!(
+            matches!(&new_state.state, position::State::Opened),
+            "supplied post-execution state {:?}, expected Opened",
+            prev_state.state
+        );
+
+        // Handle "close-on-fill": automatically flip the position state to "closed" if
+        // either of the reserves are zero.
+        if new_state.close_on_fill {
+            if new_state.reserves.r1 == 0u64.into() || new_state.reserves.r2 == 0u64.into() {
+                tracing::debug!(
+                    id = ?new_state.id(),
+                    r1 = ?new_state.reserves.r1,
+                    r2 = ?new_state.reserves.r2,
+                    "marking position as closed due to close-on-fill"
+                );
+                new_state.state = position::State::Closed;
+            }
+        }
+
+        // Optimization: it's possible that the position's reserves haven't
+        // changed, and that we're about to do a no-op update. This can happen
+        // when saving a frontier, for instance, since the FillRoute code saves
+        // the entire frontier when it finishes.
+        //
+        // If so, skip the write, but more importantly, skip emitting an event,
+        // so tooling doesn't get confused about a no-op execution.
+        if prev_state != new_state {
+            self.record_proto(event::position_execution(&prev_state, &new_state, context));
+            self.update_position(Some(prev_state), new_state).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Withdraw from a closed position, incrementing its sequence number.
+    ///
+    /// Updates the position's reserves and rewards to zero and returns the withdrawn balance.
+    #[tracing::instrument(level = "debug", skip(self))]
+    async fn withdraw_position(
+        &mut self,
+        position_id: position::Id,
+        sequence: u64,
+    ) -> Result<Balance> {
+        let prev_state = self
+            .position_by_id(&position_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", position_id))?;
+
+        // Next, check that the withdrawal is consistent with the position state.
+        // This should be redundant with the value balance mechanism (clients should
+        // only be able to get the required input LPNFTs if the state transitions are
+        // consistent), but we check it here for defense in depth.
+        //
+        // This is just a check that sequence == current_sequence + 1, with extra logic
+        // so that we treat "closed" as "sequence -1".
+        if sequence == 0 {
+            if prev_state.state != position::State::Closed {
+                anyhow::bail!(
+                    "attempted to withdraw position {} with state {}, expected Closed",
+                    position_id,
+                    prev_state.state
+                );
+            }
+        } else {
+            if let position::State::Withdrawn {
+                sequence: current_sequence,
+            } = prev_state.state
+            {
+                if current_sequence + 1 != sequence {
+                    anyhow::bail!(
+                        "attempted to withdraw position {} with sequence {}, expected {}",
+                        position_id,
+                        sequence,
+                        current_sequence + 1
+                    );
+                }
+            } else {
+                anyhow::bail!(
+                    "attempted to withdraw position {} with state {}, expected Withdrawn",
+                    position_id,
+                    prev_state.state
+                );
+            }
+        }
+
+        // Record an event prior to updating the position state, so we have access to
+        // the current reserves.
+        self.record_proto(event::position_withdraw(position_id, &prev_state));
+
+        // Grab a copy of the final reserves of the position to return to the caller.
+        let reserves = prev_state.reserves.balance(&prev_state.phi.pair);
+
+        // Debit the DEX for the outflows from this position.
+        self.vcb_debit(prev_state.reserves_1()).await?;
+        self.vcb_debit(prev_state.reserves_2()).await?;
+
+        // Finally, update the position. This has two steps:
+        // - update the state with the correct sequence number;
+        // - zero out the reserves, to prevent double-withdrawals.
+        let new_state = {
+            let mut new_state = prev_state.clone();
+            // We just checked that the supplied sequence number is incremented by 1 from prev.
+            new_state.state = position::State::Withdrawn { sequence };
+            new_state.reserves = Reserves::zero();
+            new_state
+        };
+
+        self.update_position(Some(prev_state), new_state).await?;
+
+        Ok(reserves)
+    }
+}
 
 impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
 pub(crate) trait Inner: StateWrite {
-    fn index_position_by_price(&mut self, position: &position::Position) {
+    /// Writes a position to the state, updating all necessary indexes.
+    ///
+    /// This should be the SOLE ENTRYPOINT for writing positions to the state.
+    /// All other position changes exposed by the `PositionManager` should run through here.
+    #[tracing::instrument(level = "debug", skip_all,  fields(id = ?new_state.id()))]
+    async fn update_position(
+        &mut self,
+        prev_state: Option<Position>,
+        new_state: Position,
+    ) -> Result<()> {
+        tracing::debug!(?prev_state, ?new_state, "updating position state");
+
+        let id = new_state.id();
+
+        // Clear any existing indexes of the position, since changes to the
+        // reserves or the position state might have invalidated them.
+        if let Some(prev_state) = prev_state.as_ref() {
+            self.deindex_position_by_price(&prev_state, &id);
+        }
+
+        // Only index the position's liquidity if it is active.
+        if new_state.state == position::State::Opened {
+            self.index_position_by_price(&new_state, &id);
+        }
+
+        // Update the available liquidity for this position's trading pair.
+        // TODO: refactor and streamline this method while implementing eviction.
+        self.update_available_liquidity(&new_state, &prev_state)
+            .await?;
+
+        self.put(state_key::position_by_id(&id), new_state);
+        Ok(())
+    }
+
+    fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
         let (pair, phi) = (position.phi.pair, &position.phi);
-        let id = position.id();
         if position.reserves.r2 != 0u64.into() {
             // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
             let pair12 = DirectedTradingPair {
@@ -280,8 +419,7 @@ pub(crate) trait Inner: StateWrite {
         }
     }
 
-    fn deindex_position_by_price(&mut self, position: &Position) {
-        let id = position.id();
+    fn deindex_position_by_price(&mut self, position: &Position, id: &position::Id) {
         tracing::debug!("deindexing position");
         let pair12 = DirectedTradingPair {
             start: position.phi.pair.asset_1(),
