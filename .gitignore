@@ -13,7 +13,7 @@ book
 firebase-tmp/
 
 # Nix build output goes here
-result/
+result
 
 ## Rust / Cargo
 # will have compiled files and executables
