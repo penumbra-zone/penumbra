@@ -743,12 +743,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan
             .populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
 
-        // For any remaining provided balance, make a single change note for each
-        for value in self.balance.provided().collect::<Vec<_>>() {
-            println!("??????????????????????");
-            self.output(value, change_address);
-        }
-
         println!("!!!!!!!!!!!!!!!!!!!!!!!!");
         println!(
             "calculate_balance: {:?}",
