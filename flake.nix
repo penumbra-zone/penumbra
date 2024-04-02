@@ -33,10 +33,11 @@
             vendorHash = "sha256-JPEGMa0HDesEtKFvgLUP2UfTB0DlParepE2p+n06Igc=";
           };
 
-          # Set up for Rust builds
+          # Set up for Rust builds, pinned to the Rust toolchain version in the Penumbra repository
           overlays = [ (import rust-overlay) ];
           pkgs = import nixpkgs { inherit system overlays; };
-          craneLib = crane.mkLib pkgs;
+          rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
           # Important environment variables so that the build can find the necessary libraries
           PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
@@ -53,7 +54,9 @@
                 sha256 = "${penumbraRelease.sha256}";
               };
               filter = path: type:
+                # Retain proving and verification parameters, and no-lfs marker file ...
                 (builtins.match ".*\.(no_lfs|param||bin)$" path != null) ||
+                # ... as well as all the normal cargo source files:
                 (craneLib.filterCargoSources path type);
             };
             nativeBuildInputs = [ pkg-config ];
@@ -65,7 +68,7 @@
               homepage = "https://penumbra.zone";
               license = [ licenses.mit licenses.asl20 ];
             };
-          }).overrideAttrs (_: { doCheck = false; });
+          }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
 
           # CometBFT
           cometbft = (buildGoModule rec {
@@ -84,7 +87,7 @@
               homepage = "https://github.com/cometbft/cometbft";
               license = licenses.asl20;
             };
-          }).overrideAttrs (_: { doCheck = false; });
+          }).overrideAttrs (_: { doCheck = false; }); # Disable tests to improve build times
         in rec {
           packages = { inherit penumbra cometbft; };
           apps = {
@@ -107,7 +110,7 @@
             packages = [ cargo-watch ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
-              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
+              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
             '';
           };
         }
