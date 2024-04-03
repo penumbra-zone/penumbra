@@ -16,6 +16,10 @@ impl MultistoreConfig {
 
     /// Returns the substore matching the key's prefix, return `None` otherwise.
     pub fn find_substore(&self, key: &[u8]) -> Option<Arc<SubstoreConfig>> {
+        if key.is_empty() {
+            return Some(self.main_store.clone());
+        }
+
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
