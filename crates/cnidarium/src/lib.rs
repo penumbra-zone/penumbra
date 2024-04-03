@@ -70,6 +70,7 @@ mod store;
 mod tests;
 mod utils;
 mod write;
+mod write_batch;
 
 #[cfg(feature = "metrics")]
 pub use crate::metrics::register_metrics;
@@ -81,6 +82,7 @@ pub use read::StateRead;
 pub use snapshot::Snapshot;
 pub use storage::{Storage, TempStorage};
 pub use write::StateWrite;
+pub use write_batch::StagedWriteBatch;
 
 pub mod future;
 

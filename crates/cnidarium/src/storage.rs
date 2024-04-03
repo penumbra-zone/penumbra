@@ -15,7 +15,7 @@ use crate::{
         substore::{SubstoreConfig, SubstoreSnapshot, SubstoreStorage},
     },
 };
-use crate::{snapshot_cache::SnapshotCache, RootHash, StateDelta};
+use crate::{snapshot_cache::SnapshotCache, StagedWriteBatch, StateDelta};
 
 mod temp;
 pub use temp::TempStorage;
@@ -44,40 +44,6 @@ struct Inner {
     /// This is used by `Storage::release` to wait for the task to terminate.
     jh_dispatcher: Option<tokio::task::JoinHandle<()>>,
     db: Arc<DB>,
-}
-
-/// A staged write batch that can be committed to RocksDB.
-///
-/// This allows for write batches to be prepared and committed at a later time.
-pub struct StagedWriteBatch {
-    /// The write batch to commit to RocksDB.
-    pub(crate) write_batch: rocksdb::WriteBatch,
-    /// The new version of the chain state.
-    pub(crate) version: jmt::Version,
-    /// The new versions of each substore.
-    pub(crate) multistore_versions: multistore::MultistoreCache,
-    /// The root hash of the chain state corresponding to this set of changes.
-    pub(crate) root_hash: RootHash,
-    /// The configs, root hashes, and new versions of each substore
-    /// that was updated in this batch.
-    pub(crate) substore_roots: HashMap<Arc<SubstoreConfig>, (RootHash, u64)>,
-    /// Whether or not to perform a migration.
-    pub(crate) perform_migration: bool,
-    /// A lightweight copy of the changeset, this is useful to provide
-    /// a stream of changes to subscribers.
-    pub(crate) changes: Arc<Cache>,
-}
-
-impl StagedWriteBatch {
-    /// Returns the new version of the chain state corresponding to this set of changes.
-    pub fn version(&self) -> jmt::Version {
-        self.version
-    }
-
-    /// Returns the root hash of the jmt corresponding to this set of changes.
-    pub fn root_hash(&self) -> &RootHash {
-        &self.root_hash
-    }
 }
 
 impl Storage {
@@ -486,7 +452,7 @@ impl Storage {
     /// version of the chain state.
     pub async fn commit(&self, delta: StateDelta<Snapshot>) -> Result<crate::RootHash> {
         let batch = self.prepare_commit(delta).await?;
-        self.commit_batch(batch).await
+        self.commit_batch(batch)
     }
 
     /// Commits the supplied [`StagedWriteBatch`] to persistent storage.
@@ -496,7 +462,7 @@ impl Storage {
     /// without incrementing the version. If `perform_migration` is `true` the
     /// snapshot will _not_ be written to the snapshot cache, and no subscribers
     /// will be notified. Substore versions will not be updated.
-    async fn commit_batch(&self, batch: StagedWriteBatch) -> Result<crate::RootHash> {
+    pub fn commit_batch(&self, batch: StagedWriteBatch) -> Result<crate::RootHash> {
         let StagedWriteBatch {
             write_batch,
             version,
@@ -526,36 +492,45 @@ impl Storage {
 
         // also check that each of the substore versions are the correct next version
         let snapshot = self.latest_snapshot();
-        for (config, new_version) in &multistore_versions.substores {
-            if config.prefix.is_empty() {
+
+        // Warning: we MUST check version coherence for **every** substore.
+        // These checks are a second line of defense. They must consider
+        // the case when two deltas effect distinct substores.
+        //
+        // version: (m,   ss_1, ss_2)
+        // D_0:     (_,      1,    0) <- initial state
+        // D_1:     (A,      1,    1) <- multiwrite to ss_1 AND ss_2
+        // D_1*:    (A,      1,    0) <- isolate write to ss_1
+        //
+        // A comprehensive check lets us catch the stale write D_1* even if
+        // locally it does not directly effect the second substore at all.
+        // And even if the main version check passes (spuriously, or because of
+        // a migration).
+        for (substore_config, new_version) in &multistore_versions.substores {
+            if substore_config.prefix.is_empty() {
                 // this is the main store, ignore
                 continue;
             }
 
-            let old_substore_version = config
-                .latest_version_from_snapshot(&db, &snapshot.0.snapshot)?
-                .unwrap_or_else(|| {
-                    tracing::debug!("substore is empty, fetching initialized version from cache");
-                    snapshot
-                        .substore_version(&config)
-                        .expect("prefix should be initialized")
-                });
+            let old_substore_version = snapshot
+                .substore_version(&substore_config)
+                .expect("substores must be initialized at startup");
 
             // if the substore exists in `substore_roots`, there have been updates to the substore.
             // if `perform_migration` is false and there are updates, the next version should be previous + 1.
             // otherwise, the version should remain the same.
-            let expected_new_version = if substore_roots.get(config).is_some() && !perform_migration
-            {
-                old_substore_version.wrapping_add(1)
-            } else {
-                old_substore_version
-            };
+            let expected_substore_version =
+                if substore_roots.get(substore_config).is_some() && !perform_migration {
+                    old_substore_version.wrapping_add(1)
+                } else {
+                    old_substore_version
+                };
 
             ensure!(
-                expected_new_version == *new_version,
+                expected_substore_version == *new_version,
                 "substore new version mismatch for substore with prefix {}: expected {} but got {}",
-                config.prefix,
-                expected_new_version,
+                substore_config.prefix,
+                expected_substore_version,
                 new_version
             );
         }
@@ -606,7 +581,7 @@ impl Storage {
         let batch = self
             .prepare_commit_inner(snapshot, changes, old_version, true)
             .await?;
-        self.commit_batch(batch).await
+        self.commit_batch(batch)
     }
 
     /// Returns the internal handle to RocksDB, this is useful to test adjacent storage crates.
