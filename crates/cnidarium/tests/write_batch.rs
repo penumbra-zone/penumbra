@@ -1,18 +1,13 @@
 use anyhow::Result;
-use cnidarium::StateDelta;
-use cnidarium::StateWrite;
-use cnidarium::Storage;
-// use ibc_types::core::commitment::{MerklePath, MerkleRoot};
-// use jmt::RootHash;
-// use once_cell::sync::Lazy;
+use cnidarium::{StateDelta, StateWrite, Storage};
 use tempfile;
 use tokio;
 
 #[tokio::test]
 /// A simple test that checks that we cannot commit a stale batch to storage.
 /// Strategy:
-/// Create three state deltas, one that writes no keys, and two others that do.
-/// The test persists the first batch, and checks that substore writes don't interfere.
+/// Create three state deltas, one that writes to every substore, and two others
+/// that target specific substores or none at all.
 pub async fn test_write_batch_stale_version_substores() -> Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let tmpdir = tempfile::tempdir()?;
@@ -55,7 +50,12 @@ pub async fn test_write_batch_stale_version_substores() -> Result<()> {
     assert_eq!(state_snapshot.root_hash().await?.0, initial_root_hash.0);
     for prefix in substore_prefixes.iter() {
         // We didn't write to any substores, so their version should be unchanged.
-        assert_eq!(write_batch_1.substore_version(prefix), u64::MAX)
+        assert_eq!(
+            write_batch_1
+                .substore_version(prefix)
+                .expect("substore exists"),
+            u64::MAX
+        )
     }
 
     /* We create a new delta that writes to a single substore. */
@@ -71,11 +71,18 @@ pub async fn test_write_batch_stale_version_substores() -> Result<()> {
     // only the version for the ibc substore is incremented.
     assert_eq!(write_batch_2.version(), initial_version.wrapping_add(1));
     assert_eq!(
-        write_batch_2.substore_version("ibc"),
+        write_batch_2
+            .substore_version("ibc")
+            .expect("substore_exists"),
         initial_version.wrapping_add(1)
     );
     for prefix in substore_prefixes.iter().filter(|p| *p != "ibc") {
-        assert_eq!(write_batch_2.substore_version(prefix), u64::MAX)
+        assert_eq!(
+            write_batch_2
+                .substore_version(prefix)
+                .expect("substore exists"),
+            u64::MAX
+        )
     }
 
     /* We create a new delta that writes to each substore. */
@@ -95,7 +102,9 @@ pub async fn test_write_batch_stale_version_substores() -> Result<()> {
     // In addition to that, we check that we incremented the version of each substore.
     for prefix in substore_prefixes.iter() {
         assert_eq!(
-            write_batch_3.substore_version(prefix),
+            write_batch_3
+                .substore_version(prefix)
+                .expect("substore exists"),
             initial_version.wrapping_add(1)
         )
     }
@@ -103,18 +112,17 @@ pub async fn test_write_batch_stale_version_substores() -> Result<()> {
     /* Persist `write_batch_1` and check that the two other (stale) deltas cannot be applied. */
     let final_root = storage
         .commit_batch(write_batch_1)
-        .await
         .expect("committing batch 3 should work");
     let final_snapshot = storage.latest_snapshot();
     assert_eq!(root_hash_1.0, final_root.0);
     assert_eq!(root_hash_1.0, final_snapshot.root_hash().await?.0);
     assert_eq!(version_1, final_snapshot.version());
     assert!(
-        storage.commit_batch(write_batch_2).await.is_err(),
+        storage.commit_batch(write_batch_2).is_err(),
         "committing batch 2 should fail"
     );
     assert!(
-        storage.commit_batch(write_batch_3).await.is_err(),
+        storage.commit_batch(write_batch_3).is_err(),
         "committing batch 3 should fail"
     );
 
@@ -159,7 +167,9 @@ pub async fn test_two_empty_writes() -> Result<()> {
     assert_ne!(root_hash_1.0, initial_root_hash.0);
     for prefix in substore_prefixes.iter() {
         assert_eq!(
-            write_batch_1.substore_version(prefix),
+            write_batch_1
+                .substore_version(prefix)
+                .expect("substore exists"),
             initial_version.wrapping_add(1)
         )
     }
@@ -178,12 +188,16 @@ pub async fn test_two_empty_writes() -> Result<()> {
     assert_ne!(root_hash_2.0, initial_root_hash.0);
     assert_eq!(write_batch_2.version(), initial_version.wrapping_add(1));
     for prefix in substore_prefixes.iter() {
-        assert_eq!(write_batch_2.substore_version(prefix), initial_version)
+        assert_eq!(
+            write_batch_2
+                .substore_version(prefix)
+                .expect("substore exists"),
+            initial_version
+        )
     }
 
     let block_1_root = storage
         .commit_batch(write_batch_1)
-        .await
         .expect("committing batch 3 should work");
     let block_1_snapshot = storage.latest_snapshot();
     let block_1_version = block_1_snapshot.version();
@@ -191,7 +205,7 @@ pub async fn test_two_empty_writes() -> Result<()> {
     assert_eq!(root_hash_1.0, block_1_snapshot.root_hash().await?.0);
     assert_eq!(version_1, block_1_version);
     assert!(
-        storage.commit_batch(write_batch_2).await.is_err(),
+        storage.commit_batch(write_batch_2).is_err(),
         "committing batch 2 should fail"
     );
 
@@ -205,7 +219,6 @@ pub async fn test_two_empty_writes() -> Result<()> {
     /* Check that we can apply `write_batch_3` */
     let block_2_root = storage
         .commit_batch(write_batch_3)
-        .await
         .expect("committing batch 3 should work");
     let block_2_snapshot = storage.latest_snapshot();
     let block_2_version = block_2_snapshot.version();
@@ -263,7 +276,9 @@ pub async fn test_batch_substore() -> Result<()> {
         assert_ne!(next_root.0, prev_root.0);
         for prefix in substore_prefixes.iter() {
             assert_eq!(
-                write_batch.substore_version(prefix),
+                write_batch
+                    .substore_version(prefix)
+                    .expect("substore exists"),
                 prev_version.wrapping_add(1)
             )
         }
@@ -275,7 +290,6 @@ pub async fn test_batch_substore() -> Result<()> {
 
         let block_root = storage
             .commit_batch(write_batch)
-            .await
             .expect("committing batch 3 should work");
         let block_snapshot = storage.latest_snapshot();
         let block_version = block_snapshot.version();
