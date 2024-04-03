@@ -30,7 +30,8 @@ jobs:
       # Ostensibly building from source, but the cache-loading above
       # ensures we don't need to rebuild frequently.
       - name: Install mdbook dependencies
-        run: cargo install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
+        # Make sure to install with `+nightly`, because that's the toolchain we'll use for building docs.
+        run: cargo +nightly install mdbook mdbook-katex mdbook-mermaid mdbook-linkcheck
 
       - name: Build software guide
         run: cd docs/guide && mdbook build
