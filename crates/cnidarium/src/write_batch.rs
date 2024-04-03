@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use std::collections::HashMap;
 
-use crate::RootHash;
 use crate::{
     cache::Cache,
     store::{multistore, substore::SubstoreConfig},
+    RootHash,
 };
 
 /// A staged write batch that can be committed to RocksDB.
@@ -39,5 +39,19 @@ impl StagedWriteBatch {
     /// Returns the root hash of the jmt corresponding to this set of changes.
     pub fn root_hash(&self) -> &RootHash {
         &self.root_hash
+    }
+
+    /// Returns the version of a substore in this batch, if it exists
+    /// and `None` otherwise.
+    pub fn substore_version(&self, prefix: &str) -> Option<jmt::Version> {
+        let Some(substore_config) = self
+            .multistore_versions
+            .config
+            .find_substore(prefix.as_bytes())
+        else {
+            return None;
+        };
+
+        self.multistore_versions.get_version(&substore_config)
     }
 }
