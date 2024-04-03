@@ -124,14 +124,15 @@ impl Snapshot {
     }
 
     pub fn prefix_version(&self, prefix: &str) -> Result<Option<jmt::Version>> {
-        let config = self
+        let Some(config) = self
             .0
             .multistore_cache
             .config
-            .find_substore(prefix.as_bytes());
-        if prefix != config.prefix {
-            anyhow::bail!("requested substore (prefix={prefix}) does not exist")
-        }
+            .find_substore(prefix.as_bytes())
+        else {
+            anyhow::bail!("rquested a version for a prefix that does not exist (prefix={prefix})")
+        };
+
         Ok(self.substore_version(&config))
     }
 
@@ -145,18 +146,14 @@ impl Snapshot {
         let rocksdb_snapshot = self.0.snapshot.clone();
         let db = self.0.db.clone();
 
-        let config = self
+        let Some(config) = self
             .0
             .multistore_cache
             .config
-            .find_substore(prefix.as_bytes());
-
-        // If a substore is not found, `find_substore` will default to the main store.
-        // However, we do not want to mislead the caller by returning a root hash
-        // that does not correspond to the queried prefix, so we error out instead.
-        if prefix != config.prefix {
-            anyhow::bail!("requested substore (prefix={prefix}) does not exist")
-        }
+            .find_substore(prefix.as_bytes())
+        else {
+            anyhow::bail!("requested a root for a substore that does not exist (prefix={prefix})")
+        };
 
         let version = self
             .substore_version(&config)
