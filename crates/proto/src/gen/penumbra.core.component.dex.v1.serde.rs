@@ -1052,6 +1052,9 @@ impl serde::Serialize for DexParameters {
         if self.max_hops != 0 {
             len += 1;
         }
+        if self.max_positions_per_pair != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.DexParameters", len)?;
         if self.is_enabled {
             struct_ser.serialize_field("isEnabled", &self.is_enabled)?;
@@ -1061,6 +1064,9 @@ impl serde::Serialize for DexParameters {
         }
         if self.max_hops != 0 {
             struct_ser.serialize_field("maxHops", &self.max_hops)?;
+        }
+        if self.max_positions_per_pair != 0 {
+            struct_ser.serialize_field("maxPositionsPerPair", &self.max_positions_per_pair)?;
         }
         struct_ser.end()
     }
@@ -1078,6 +1084,8 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
             "fixedCandidates",
             "max_hops",
             "maxHops",
+            "max_positions_per_pair",
+            "maxPositionsPerPair",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1085,6 +1093,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
             IsEnabled,
             FixedCandidates,
             MaxHops,
+            MaxPositionsPerPair,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1110,6 +1119,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                             "isEnabled" | "is_enabled" => Ok(GeneratedField::IsEnabled),
                             "fixedCandidates" | "fixed_candidates" => Ok(GeneratedField::FixedCandidates),
                             "maxHops" | "max_hops" => Ok(GeneratedField::MaxHops),
+                            "maxPositionsPerPair" | "max_positions_per_pair" => Ok(GeneratedField::MaxPositionsPerPair),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1132,6 +1142,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                 let mut is_enabled__ = None;
                 let mut fixed_candidates__ = None;
                 let mut max_hops__ = None;
+                let mut max_positions_per_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IsEnabled => {
@@ -1154,6 +1165,14 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::MaxPositionsPerPair => {
+                            if max_positions_per_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("maxPositionsPerPair"));
+                            }
+                            max_positions_per_pair__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1163,6 +1182,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                     is_enabled: is_enabled__.unwrap_or_default(),
                     fixed_candidates: fixed_candidates__.unwrap_or_default(),
                     max_hops: max_hops__.unwrap_or_default(),
+                    max_positions_per_pair: max_positions_per_pair__.unwrap_or_default(),
                 })
             }
         }
