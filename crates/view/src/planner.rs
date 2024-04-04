@@ -784,3 +784,97 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         Ok(plan)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_non_zero_fees() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let (sender, _dtk) = fvk.incoming().payment_address(0u32.into());
+
+        let seed_phrase_2 = SeedPhrase::generate(rng);
+        let sk_2 = SpendKey::from_seed_phrase_bip44(seed_phrase_2, &Bip44Path::new(0));
+        let fvk_2 = sk_2.full_viewing_key();
+        let (reciever, _dtk_2) = fvk_2.incoming().payment_address(0u32.into());
+
+        let note0 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 3u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+        let note1 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 5u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+
+        // Create vec of spendable notes
+        let mut spendable_notes: Vec<Note> = Vec::new();
+        spendable_notes.push(note0);
+        spendable_notes.push(note1);
+
+        // Instantiate new planner instance
+        let mut planner = Planner::new(OsRng);
+
+        // Set non-zero gas price.
+        let mut gas_price = GasPrices::default();
+        gas_price.block_space_price = 2u64;
+        let fee_tier = FeeTier::Low;
+
+        planner.set_gas_prices(gas_price).set_fee_tier(fee_tier);
+
+        // Amount to send recievcer from sender.
+        let amount = Value {
+            amount: 5u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        // For sample spend, add output to planner.
+        planner.output(amount, reciever);
+
+        planner.actions = planner.plan.actions.clone();
+
+        let mut fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+        let mut iterations = 0usize;
+        while let Some(_required) = planner.calculate_balance_with_fees(fee).required().next() {
+            // Add the required spends to the planner.
+            planner.push(
+                SpendPlan::new(&mut OsRng, spendable_notes[iterations].clone(), 0u64.into()).into(),
+            );
+
+            // Recompute the change outputs, without accounting for fees.
+            planner.refresh_change(sender);
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+            planner.adjust_change_for_fee(fee);
+
+            // Need to account to balance after applying fees.
+            planner.balance = planner.calculate_balance_with_fees(fee);
+
+            if planner.balance.is_zero() {
+                break;
+            }
+
+            iterations += 1;
+        }
+
+        assert!(planner.balance.is_zero());
+    }
+}
