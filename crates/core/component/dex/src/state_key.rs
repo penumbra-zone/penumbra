@@ -84,6 +84,25 @@ pub(crate) mod internal {
     use super::*;
     use crate::lp::BareTradingFunction;
 
+    pub mod counter {
+        pub mod num_positions {
+            use crate::TradingPair;
+
+            pub fn prefix() -> &'static str {
+                "dex/internal/counter/num_positions/"
+            }
+
+            pub fn key(trading_pair: &TradingPair) -> [u8; 99] {
+                let mut key = [0u8; 99];
+                let prefix_bytes = prefix().as_bytes();
+                let canonical_pair_bytes = trading_pair.to_bytes();
+
+                key[0..35].copy_from_slice(&prefix_bytes);
+                key[35..99].copy_from_slice(&canonical_pair_bytes);
+                key
+            }
+        }
+    }
     /// Find assets with liquidity positions from asset `from`, ordered by price.
     pub mod routable_assets {
         use penumbra_asset::asset;
