@@ -16,6 +16,7 @@ use crate::event;
 use crate::lp::position::State;
 use crate::lp::Reserves;
 use crate::{
+    component::position_counter::PositionCounter,
     component::ValueCircuitBreaker,
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
@@ -156,11 +157,25 @@ pub trait PositionManager: StateWrite + PositionRead {
             prev_state.state
         );
 
+        // Skip state updates if the position is already closed: to keep the position counter
+        // accurate and skip unnecessary I/O.
+        if prev_state.state == position::State::Closed {
+            // A position could be closed multiple times e.g. it is queued for closure by the user
+            // and preemptively closed by the DEX engine during filling.
+            tracing::debug!(
+                ?id,
+                "position is already closed so we can skip state updates"
+            );
+            return Ok(());
+        }
+
         let new_state = {
             let mut new_state = prev_state.clone();
             new_state.state = position::State::Closed;
             new_state
         };
+
+        self.decrement_position_counter(&new_state.phi.pair).await?;
 
         self.update_position(Some(prev_state), new_state).await?;
 
@@ -186,6 +201,17 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Opens a new position, updating all necessary indexes and checking for
     /// its nonexistence prior to being opened.
+    ///
+    /// # Errors
+    /// This method returns an error if the position is malformed
+    /// e.g. it is set to a state other than `Opened`
+    ///  or, it specifies a position identifier already used by another position.
+    ///
+    /// An error can also occur if a DEX engine invariant is breached
+    /// e.g. overflowing the position counter (`u16::MAX`)
+    ///  or, overflowing the value circuit breaker (`u128::MAX`)
+    ///
+    /// In any of those cases, we do not want to allow a new position to be opened.
     #[tracing::instrument(level = "debug", skip_all)]
     async fn open_position(&mut self, position: position::Position) -> Result<()> {
         // Double-check that the position is in the `Opened` state
@@ -201,6 +227,9 @@ pub trait PositionManager: StateWrite + PositionRead {
                 existing
             );
         }
+
+        // Increase the position counter
+        self.increment_position_counter(&position.phi.pair).await?;
 
         // Credit the DEX for the inflows from this position.
         self.vcb_credit(position.reserves_1()).await?;
