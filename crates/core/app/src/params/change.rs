@@ -25,7 +25,6 @@ impl AppParameters {
         new.check_valid()?;
         // TODO: move the checks below into their respective components.
         // Tracked by #3593
-
         let AppParameters {
             chain_id,
             community_pool_params:
@@ -75,6 +74,7 @@ impl AppParameters {
                     is_enabled: _,
                     fixed_candidates: _,
                     max_hops: _,
+                    max_positions_per_pair: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -169,6 +169,7 @@ impl AppParameters {
                     is_enabled: _,
                     fixed_candidates: _,
                     max_hops: _,
+                    max_positions_per_pair: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -244,6 +245,7 @@ impl AppParameters {
                 *min_validator_stake >= 1_000_000u128.into(),
                 "the minimum validator stake must be at least 1penumbra",
             ),
+            // TODO(erwan): add a `max_positions_per_pair` check
         ])
     }
 
