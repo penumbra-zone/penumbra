@@ -40,7 +40,7 @@ bytes = {workspace = true}
 camino = {workspace = true}
 clap = {workspace = true, features = ["derive", "env"]}
 colored = "2.1.0"
-colored_json = "2.1"
+colored_json = "4.1"
 comfy-table = "5"
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
