@@ -10,6 +10,7 @@ pub struct DexParameters {
     pub is_enabled: bool,
     pub fixed_candidates: Vec<asset::Id>,
     pub max_hops: u32,
+    pub max_positions_per_pair: u32,
 }
 
 impl DomainType for DexParameters {
@@ -28,6 +29,7 @@ impl TryFrom<pb::DexParameters> for DexParameters {
                 .map(|id| id.try_into())
                 .collect::<Result<_, _>>()?,
             max_hops: msg.max_hops,
+            max_positions_per_pair: msg.max_positions_per_pair,
         })
     }
 }
@@ -42,6 +44,7 @@ impl From<DexParameters> for pb::DexParameters {
                 .map(Into::into)
                 .collect(),
             max_hops: params.max_hops,
+            max_positions_per_pair: params.max_positions_per_pair,
         }
     }
 }
@@ -63,6 +66,8 @@ impl Default for DexParameters {
                 cache.get_unit("test_btc").unwrap().id(),
             ],
             max_hops: 4,
+            // TODO(erwan): setting this to 10 for testing.
+            max_positions_per_pair: 10,
         }
     }
 }
