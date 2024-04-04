@@ -702,6 +702,10 @@ message DexParameters {
   repeated asset.v1.AssetId fixed_candidates = 2;
   // The number of hops to traverse while routing from A to B.
   uint32 max_hops = 3;
+  // The maximum number of positions per trading pair.
+  // If this number is exceeded, positions with the least
+  // inventory get evicted from the DEX.
+  uint32 max_positions_per_pair = 4;
 }
 
 message GenesisContent {
