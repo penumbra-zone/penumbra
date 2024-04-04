@@ -3,7 +3,7 @@ mod common;
 use {
     self::common::BuilderExt,
     cnidarium::TempStorage,
-    decaf377_rdsa::{SigningKey, SpendAuth},
+    decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
@@ -90,7 +90,7 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     // To define a validator, we need to define two keypairs: an identity key
     // for the Penumbra application and a consensus key for cometbft.
     let new_validator_id_sk = SigningKey::<SpendAuth>::new(OsRng);
-    let new_validator_id = IdentityKey(new_validator_id_sk.into());
+    let new_validator_id = IdentityKey(VerificationKey::from(&new_validator_id_sk).into());
     let new_validator_consensus_sk = ed25519_consensus::SigningKey::new(OsRng);
     let new_validator_consensus = new_validator_consensus_sk.verification_key();
 

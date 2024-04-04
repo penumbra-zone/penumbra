@@ -425,7 +425,7 @@ fn undelegate_claim_parameters_vs_current_undelegate_claim_circuit() {
         let balance_blinding = Fr::from(1u8);
         let value1_amount = 1u64;
         let penalty_amount = 1u64;
-        let validator_identity = IdentityKey((&sk).into());
+        let validator_identity = IdentityKey(VerificationKey::from(&sk).into());
         let unbonding_amount = Amount::from(value1_amount);
 
         let start_height = 1;

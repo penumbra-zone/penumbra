@@ -9,6 +9,7 @@ use crate::{
 use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use decaf377_rdsa::VerificationKey;
 use penumbra_proto::DomainType;
 
 #[async_trait]
@@ -36,10 +37,8 @@ impl ActionHandler for validator::Definition {
 
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
-        self.validator
-            .identity_key
-            .0
-            .verify(&definition_bytes, &self.auth_sig)
+        VerificationKey::try_from(self.validator.identity_key.0)
+            .and_then(|vk| vk.verify(&definition_bytes, &self.auth_sig))
             .context("validator definition signature failed to verify")?;
 
         let total_funding_bps = self

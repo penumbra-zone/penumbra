@@ -1,6 +1,6 @@
 use anyhow::ensure;
 use cnidarium::{StateDelta, TempStorage};
-use decaf377_rdsa::SigningKey;
+use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 use rand_core::OsRng;
 use tendermint::PublicKey;
 
@@ -19,7 +19,8 @@ async fn test_persistent_identity_by_ck() -> anyhow::Result<()> {
     let mut state = StateDelta::new(storage.latest_snapshot());
 
     let rng = OsRng;
-    let persistent_identity = IdentityKey(SigningKey::new(rng).into());
+    let vk = VerificationKey::from(SigningKey::<SpendAuth>::new(OsRng));
+    let persistent_identity = IdentityKey(vk.into());
 
     let old_ck_raw = ed25519_consensus::SigningKey::new(rng)
         .verification_key()
