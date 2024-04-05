@@ -28,17 +28,17 @@ The chain requires that transactions do not create or destroy value.  To
 accomplish conservation of value, the _binding signature_ proves that the
 transaction's value balance, summed up over all actions, is zero.  This
 construction works as follows.  We'd like to be able to prove that a certain
-value commitment $C$ is a commitment to $0$.  One way to do this would be to
+balance commitment $C$ is a commitment to $0$.  One way to do this would be to
 prove knowledge of an opening to the commitment, i.e., producing $\widetilde{v}$
 such that $$C = [\widetilde{v}] \widetilde{V} = \operatorname{Commit}(0,
 \widetilde{v}).$$  But this is exactly what it means to create a Schnorr
 signature for the verification key $C$, because a Schnorr signature is a proof
 of knowledge of the signing key in the context of the message.
 
-Therefore, we can prove that a value commitment is a commitment to $0$ by
+Therefore, we can prove that a balance commitment is a commitment to $0$ by
 treating it as a `decaf377-rdsa` verification key and using the corresponding
 signing key (the blinding factor) to sign a message.  This also gives a way to
-bind value commitments to a particular context (e.g., a transaction), by using a
+bind balance commitments to a particular context (e.g., a transaction), by using a
 hash of the transaction as the message to be signed, ensuring that actions
 cannot be replayed across transactions without knowledge of their contents.
 

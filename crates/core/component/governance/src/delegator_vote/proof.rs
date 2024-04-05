@@ -38,7 +38,7 @@ use tap::Tap;
 pub struct DelegatorVoteProofPublic {
     /// the merkle root of the state commitment tree.
     pub anchor: tct::Root,
-    /// value commitment of the note to be spent.
+    /// balance commitment of the note to be spent.
     pub balance_commitment: balance::Commitment,
     /// nullifier of the note to be spent.
     pub nullifier: Nullifier,
@@ -55,7 +55,7 @@ pub struct DelegatorVoteProofPrivate {
     pub state_commitment_proof: tct::Proof,
     /// The note being spent.
     pub note: Note,
-    /// The blinding factor used for generating the value commitment.
+    /// The blinding factor used for generating the balance commitment.
     pub v_blinding: Fr,
     /// The randomizer used for generating the randomized spend auth key.
     pub spend_auth_randomizer: Fr,
