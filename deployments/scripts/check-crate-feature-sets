@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# CI script to verify that each crate in the monorepo builds independently.
+# This helps us ensure that the feature-gating for e.g. "component" is
+# declared explicitly.
+set -euo pipefail
+
+
+if ! hash cargo-hack >/dev/null 2>&1 ; then
+    >&2 echo "ERROR: cargo-hack not found. Install it with: cargo install cargo-hack"
+    exit 1
+fi
+
+cargo hack check --workspace --all-targets --all-features --release
