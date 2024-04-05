@@ -123,4 +123,4 @@ The zk-SNARK certifies that the total public input balance commitment $cv$ was d
 
 $cv = [-v_1] G_1 + [-v_2] G_2 + cv_f$
 
-where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Value Commitments](../../assets.md), and $cv_f$ is the fee commitment.
+where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $cv_f$ is the fee commitment.
