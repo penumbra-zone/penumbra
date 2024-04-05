@@ -165,4 +165,30 @@ pub(crate) mod internal {
             key.to_vec()
         }
     }
+
+    pub mod eviction_queue {
+        use penumbra_num::Amount;
+
+        use super::*;
+
+        #[allow(unused)] //tmp
+        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 91] {
+            let mut prefix = [0u8; 91];
+            prefix[0..27].copy_from_slice(b"dex/internal/eviction_queue");
+            prefix[27..59].copy_from_slice(&pair.start.to_bytes());
+            prefix[59..91].copy_from_slice(&pair.end.to_bytes());
+            prefix
+        }
+
+        #[allow(unused)] //tmp
+        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 139] {
+            let mut full_key = [0u8; 139];
+            let prefix = by_trading_pair(pair);
+            full_key[0..91].copy_from_slice(&prefix);
+            full_key[91..107].copy_from_slice(&inventory.to_be_bytes());
+            full_key[107..139].copy_from_slice(&id.0);
+
+            full_key
+        }
+    }
 }
