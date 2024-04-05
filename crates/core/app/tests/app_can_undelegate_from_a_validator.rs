@@ -1,5 +1,3 @@
-use penumbra_num::fixpoint::U128x128;
-
 mod common;
 
 use {
@@ -7,10 +5,14 @@ use {
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
+    penumbra_num::fixpoint::U128x128,
     penumbra_proto::DomainType,
     penumbra_sct::component::clock::EpochRead as _,
     penumbra_stake::{
@@ -58,21 +60,11 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     };
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_app::genesis::Content {
-        sct_content: penumbra_sct::genesis::Content {
-            sct_params: penumbra_sct::params::SctParameters {
-                epoch_duration: EPOCH_DURATION,
-            },
-        },
-        stake_content: penumbra_stake::genesis::Content {
-            stake_params: penumbra_stake::params::StakeParameters {
-                unbonding_delay: UNBONDING_DELAY,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+    let app_state = AppState::Content(
+        genesis::Content::default()
+            .with_epoch_duration(EPOCH_DURATION)
+            .with_unbonding_delay(UNBONDING_DELAY),
+    );
 
     // Start the test node.
     let mut node = {
