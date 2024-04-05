@@ -157,11 +157,10 @@ pub trait PositionManager: StateWrite + PositionRead {
             prev_state.state
         );
 
-        // Skip state updates if the position is already closed: to keep the position counter
-        // accurate and skip unnecessary I/O.
+        // Optimization: skip state update if the position is already closed.
+        // This can happen if the position was queued for closure and premptively
+        // closed by the DEX engine during execution (e.g. auto-closing).
         if prev_state.state == position::State::Closed {
-            // A position could be closed multiple times e.g. it is queued for closure by the user
-            // and preemptively closed by the DEX engine during filling.
             tracing::debug!(
                 ?id,
                 "position is already closed so we can skip state updates"
