@@ -175,8 +175,6 @@ pub trait PositionManager: StateWrite + PositionRead {
             new_state
         };
 
-        self.decrement_position_counter(&new_state.phi.pair).await?;
-
         self.update_position(Some(prev_state), new_state).await?;
 
         Ok(())
@@ -393,6 +391,8 @@ pub(crate) trait Inner: StateWrite {
         prev_state: Option<Position>,
         new_state: Position,
     ) -> Result<()> {
+        use position::State::*;
+
         tracing::debug!(?prev_state, ?new_state, "updating position state");
 
         let id = new_state.id();
@@ -404,13 +404,25 @@ pub(crate) trait Inner: StateWrite {
         }
 
         // Only index the position's liquidity if it is active.
-        if new_state.state == position::State::Opened {
+        if new_state.state == Opened {
             self.index_position_by_price(&new_state, &id);
+        }
+
+        if new_state.state == Closed {
+            // Make sure that we don't double decrement the position
+            // counter if a position was queued for closure AND closed
+            // by the DEX engine.
+            let is_already_closed = prev_state
+                .as_ref()
+                .map_or(false, |old_position| old_position.state == Closed);
+            if !is_already_closed {
+                self.decrement_position_counter(&new_state.phi.pair).await?;
+            }
         }
 
         // Update the available liquidity for this position's trading pair.
         // TODO: refactor and streamline this method while implementing eviction.
-        self.update_available_liquidity(&new_state, &prev_state)
+        self.update_available_liquidity(&prev_state, &new_state)
             .await?;
 
         self.put(state_key::position_by_id(&id), new_state);
@@ -609,8 +621,8 @@ pub(crate) trait Inner: StateWrite {
 
     async fn update_available_liquidity(
         &mut self,
-        position: &Position,
         prev_position: &Option<Position>,
+        position: &Position,
     ) -> Result<()> {
         // Since swaps may be performed in either direction, the available liquidity indices
         // need to be calculated and stored for both the A -> B and B -> A directions.
