@@ -27,7 +27,7 @@ pub(crate) trait PositionCounter: StateWrite {
         // This is safe because we only increment the counter via a [`Self::increase_position_counter`].
         let raw_count: [u8; 2] = raw_count
             .try_into()
-            .expect("position counter is at most four bytes");
+            .expect("position counter is at most two bytes");
         u16::from_be_bytes(raw_count)
     }
 
