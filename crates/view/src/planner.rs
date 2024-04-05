@@ -185,23 +185,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     fn prioritize_and_filter_spendable_notes(
         records: Vec<SpendableNoteRecord>,
     ) -> Vec<SpendableNoteRecord> {
+        // Filter out zero valued notes. 
         let mut filtered = records
             .into_iter()
             .filter(|record| record.note.amount() > Amount::zero())
             .collect::<Vec<_>>();
 
-        filtered.sort_by(|a, b| {
-            // Sort by whether the note was sent to an ephemeral address...
-            match (
-                a.address_index.is_ephemeral(),
-                b.address_index.is_ephemeral(),
-            ) {
-                (true, false) => std::cmp::Ordering::Less,
-                (false, true) => std::cmp::Ordering::Greater,
-                // ... then by largest amount.
-                _ => b.note.amount().cmp(&a.note.amount()),
-            }
-        });
+        filtered.sort_by(|a, b| b.note.amount().cmp(&a.note.amount()));
 
         filtered
     }
