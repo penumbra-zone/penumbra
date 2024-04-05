@@ -39,11 +39,11 @@ contributions together.
 | `dex.v1.PositionClose` | Closes a liquidity position | | $-$ (opened LPNFT) $+$ (closed LPNFT) |
 | `dex.v1.PositionWithdraw` | Withdraws reserves or rewards from a liquidity position, with sequence number $n$ | | $-$ (withdrawn seq $n-1$ LPNFT) $+$ (withdrawn seq $n$ LPNFT) $+$ (current position reserves) |
 | `dex.v1.PositionRewardClaim` | Deprecated and unused | | |
-| `governance.v1.ProposalSubmit` | Submits a governance proposal for voting | TODO | TODO |
-| `governance.v1.ProposalWithdraw` | Withdraws a governance proposal from voting | TODO | TODO |
-| `governance.v1.ValidatorVote` | Performs a governance vote as a validator | TODO | TODO |
-| [`governance.v1.DelegatorVote`](../governance/action/delegator_vote.md) | Performs a governance vote as a delegator | TODO | TODO |
-| `governance.v1.ProposalDepositClaim` | Claims a proposal deposit once voting has finished | TODO | TODO |
+| `governance.v1.ProposalSubmit` | Submits a governance proposal for voting | | $-$ (deposit amount) $+$ (voting proposal NFT) |
+| `governance.v1.ProposalWithdraw` | Withdraws a governance proposal from voting | | $-$ (voting proposal NFT) $+$ (withdrawn proposal NFT) |
+| `governance.v1.ValidatorVote` | Performs a governance vote as a validator | | |
+| [`governance.v1.DelegatorVote`](../governance/action/delegator_vote.md) | Performs a governance vote as a delegator | | $+$ (Voting Receipt Token) |
+| `governance.v1.ProposalDepositClaim` | Claims a proposal deposit once voting has finished | | $-$ (voting/withdrawn proposal NFT) $+$ (claimed proposal NFT) $+$ (deposit amount, if not slashed) |
 | `governance.v1.CommunityPoolSpend` | Spends funds from the community pool | | $+$ (spent value) |
 | `governance.v1.CommunityPoolOutput` | Like `Output`, but transparent | | $-$ (value of new note)
 | `governance.v1.CommunityPoolDeposit` | Allows deposits into the community pool | | $-$ (value of deposit) |
