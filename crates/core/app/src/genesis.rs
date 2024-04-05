@@ -164,6 +164,30 @@ impl DomainType for AppState {
     type Proto = pb::GenesisAppState;
 }
 
+impl Content {
+    pub fn with_epoch_duration(self, epoch_duration: u64) -> Self {
+        Self {
+            sct_content: penumbra_sct::genesis::Content {
+                sct_params: penumbra_sct::params::SctParameters { epoch_duration },
+            },
+            ..self
+        }
+    }
+
+    pub fn with_unbonding_delay(self, unbonding_delay: u64) -> Self {
+        Self {
+            stake_content: penumbra_stake::genesis::Content {
+                stake_params: penumbra_stake::params::StakeParameters {
+                    unbonding_delay,
+                    ..self.stake_content.stake_params
+                },
+                ..self.stake_content
+            },
+            ..self
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

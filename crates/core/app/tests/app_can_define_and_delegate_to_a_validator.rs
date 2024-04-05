@@ -5,7 +5,10 @@ use {
     anyhow::{anyhow, Context},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -31,14 +34,8 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_app::genesis::Content {
-        sct_content: penumbra_sct::genesis::Content {
-            sct_params: penumbra_sct::params::SctParameters {
-                epoch_duration: EPOCH_DURATION,
-            },
-        },
-        ..Default::default()
-    });
+    let app_state =
+        AppState::Content(genesis::Content::default().with_epoch_duration(EPOCH_DURATION));
 
     // Start the test node.
     let mut node = {
