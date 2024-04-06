@@ -52,51 +52,49 @@ impl Storage {
         let span = Span::current();
         let db_path = path.clone();
         // initializing main storage instance.
-        let prefixes = tokio::task::Builder::new()
-            .name("config_rocksdb")
-            .spawn_blocking(move || {
-                span.in_scope(|| {
-                    let mut opts = Options::default();
-                    opts.create_if_missing(true);
-                    opts.create_missing_column_families(true);
-                    tracing::info!(?path, "opening rocksdb config column");
+        let prefixes = tokio::task::spawn_blocking(move || {
+            span.in_scope(|| {
+                let mut opts = Options::default();
+                opts.create_if_missing(true);
+                opts.create_missing_column_families(true);
+                tracing::info!(?path, "opening rocksdb config column");
 
-                    // Hack(erwan): RocksDB requires us to specify all the column families
-                    // that we want to use upfront. This is problematic when we are initializing
-                    // a new database, because the call to `DBCommon<T>::list_cf` will fail
-                    // if the database manifest is not found. To work around this, we ignore
-                    // the error and assume that the database is empty.
-                    // Tracked in: https://github.com/rust-rocksdb/rust-rocksdb/issues/608
-                    let mut columns = DB::list_cf(&opts, path.clone()).unwrap_or_default();
-                    if columns.is_empty() {
-                        columns.push("config".to_string());
+                // Hack(erwan): RocksDB requires us to specify all the column families
+                // that we want to use upfront. This is problematic when we are initializing
+                // a new database, because the call to `DBCommon<T>::list_cf` will fail
+                // if the database manifest is not found. To work around this, we ignore
+                // the error and assume that the database is empty.
+                // Tracked in: https://github.com/rust-rocksdb/rust-rocksdb/issues/608
+                let mut columns = DB::list_cf(&opts, path.clone()).unwrap_or_default();
+                if columns.is_empty() {
+                    columns.push("config".to_string());
+                }
+
+                let db = DB::open_cf(&opts, path, columns).expect("can open database");
+                let cf_config = db
+                    .cf_handle("config")
+                    .expect("config column family is created if missing");
+                let config_iter = db.iterator_cf(cf_config, rocksdb::IteratorMode::Start);
+                let mut prefixes = Vec::new();
+                tracing::info!("reading prefixes from config column family");
+                for i in config_iter {
+                    let (key, _) = i.expect("can read from iterator");
+                    prefixes.push(String::from_utf8(key.to_vec()).expect("prefix is utf8"));
+                }
+
+                for prefix in default_prefixes {
+                    if !prefixes.contains(&prefix) {
+                        db.put_cf(cf_config, prefix.as_bytes(), b"")
+                            .expect("can write to db");
+                        prefixes.push(prefix);
                     }
+                }
 
-                    let db = DB::open_cf(&opts, path, columns).expect("can open database");
-                    let cf_config = db
-                        .cf_handle("config")
-                        .expect("config column family is created if missing");
-                    let config_iter = db.iterator_cf(cf_config, rocksdb::IteratorMode::Start);
-                    let mut prefixes = Vec::new();
-                    tracing::info!("reading prefixes from config column family");
-                    for i in config_iter {
-                        let (key, _) = i.expect("can read from iterator");
-                        prefixes.push(String::from_utf8(key.to_vec()).expect("prefix is utf8"));
-                    }
-
-                    for prefix in default_prefixes {
-                        if !prefixes.contains(&prefix) {
-                            db.put_cf(cf_config, prefix.as_bytes(), b"")
-                                .expect("can write to db");
-                            prefixes.push(prefix);
-                        }
-                    }
-
-                    std::mem::drop(db);
-                    prefixes
-                })
-            })?
-            .await?;
+                std::mem::drop(db);
+                prefixes
+            })
+        })
+        .await?;
 
         Storage::init(db_path, prefixes).await
     }
@@ -112,9 +110,8 @@ impl Storage {
     pub async fn init(path: PathBuf, prefixes: Vec<String>) -> Result<Self> {
         let span = Span::current();
 
-        tokio::task::Builder::new()
-            .name("open_rocksdb")
-            .spawn_blocking(move || {
+        tokio::task
+            ::spawn_blocking(move || {
                 span.in_scope(|| {
                     let mut substore_configs = Vec::new();
                     tracing::info!("initializing global store config");
@@ -230,7 +227,7 @@ impl Storage {
                         db: shared_db,
                     })))
                 })
-            })?
+            })
             .await?
     }
 
