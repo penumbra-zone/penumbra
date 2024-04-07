@@ -120,10 +120,9 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            let abci_server = tokio::task::Builder::new()
-                .name("abci_server")
-                .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
-                .expect("failed to spawn abci server");
+            let abci_server = tokio::task::spawn(
+                penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
+            );
 
             let grpc_server =
                 penumbra_app::rpc::router(&storage, cometbft_addr, enable_expensive_rpc)?;
@@ -148,10 +147,7 @@ async fn main() -> anyhow::Result<()> {
             // resolver if auto-https has been enabled.
             macro_rules! spawn_grpc_server {
                 ($server:expr) => {
-                    tokio::task::Builder::new()
-                        .name("grpc_server")
-                        .spawn($server.serve(make_svc))
-                        .expect("failed to spawn grpc server")
+                    tokio::task::spawn($server.serve(make_svc))
                 };
             }
             let grpc_server = axum_server::bind(grpc_bind);
