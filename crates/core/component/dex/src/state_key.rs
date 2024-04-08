@@ -83,15 +83,15 @@ pub(crate) mod engine {
     use super::*;
     use crate::lp::BareTradingFunction;
 
-    pub mod counter {
-        pub mod num_positions {
+    pub(crate) mod counter {
+        pub(crate) mod num_positions {
             use crate::TradingPair;
 
-            pub fn prefix() -> &'static str {
+            pub(crate) fn prefix() -> &'static str {
                 "dex/internal/counter/num_positions/"
             }
 
-            pub fn by_trading_pair(trading_pair: &TradingPair) -> [u8; 99] {
+            pub(crate) fn by_trading_pair(trading_pair: &TradingPair) -> [u8; 99] {
                 let mut key = [0u8; 99];
                 let prefix_bytes = prefix().as_bytes();
                 let canonical_pair_bytes = trading_pair.to_bytes();
