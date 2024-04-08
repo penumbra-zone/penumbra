@@ -104,7 +104,7 @@ pub(crate) mod engine {
     }
 
     /// Find assets with liquidity positions from asset `from`, ordered by price.
-    pub mod routable_assets {
+    pub(crate) mod routable_assets {
         use penumbra_asset::asset;
         use penumbra_num::Amount;
 
@@ -113,7 +113,7 @@ pub(crate) mod engine {
         /// `A || be_bytes(A_from_B) => B` this will be an ordered encoding of every asset `B` directly routable to from `A`.
         /// `a_from_b` represents the amount of `A` that can be bought with `B`.
         /// The prefix query includes only the `A` portion, meaning the keys will be returned in order of liquidity.
-        pub fn prefix(from: &asset::Id) -> [u8; 39] {
+        pub(crate) fn prefix(from: &asset::Id) -> [u8; 39] {
             let mut key = [0u8; 39];
             key[0..7].copy_from_slice(b"dex/ra/");
             key[7..7 + 32].copy_from_slice(&from.to_bytes());
@@ -122,7 +122,7 @@ pub(crate) mod engine {
 
         /// `A || be_bytes(A_from_B) => B` this will be an ordered encoding of every asset `B` directly routable to from `A`.
         /// `a_from_b` represents the amount of `A` that can be bought with `B`.
-        pub fn key(from: &asset::Id, a_from_b: Amount) -> [u8; 55] {
+        pub(crate) fn key(from: &asset::Id, a_from_b: Amount) -> [u8; 55] {
             let mut key = [0u8; 55];
             key[0..7].copy_from_slice(b"dex/ra/");
             key[7..32 + 7].copy_from_slice(&from.to_bytes());
@@ -132,7 +132,7 @@ pub(crate) mod engine {
 
         /// `(A, B) => A_from_B` this will encode the current amount of `A` tradable into `B` for every directly routable trading pair.
         /// This index can be used to determine the key values for the [`super::key`] ordered index to perform updates efficiently.
-        pub fn a_from_b(pair: &DirectedTradingPair) -> [u8; 71] {
+        pub(crate) fn a_from_b(pair: &DirectedTradingPair) -> [u8; 71] {
             let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/ab/");
             key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
@@ -168,12 +168,12 @@ pub(crate) mod engine {
 }
 
 pub(crate) mod eviction_queue {
-    pub mod inventory_index {
+    pub(crate) mod inventory_index {
         use crate::lp::position;
         use crate::DirectedTradingPair;
         use penumbra_num::Amount;
 
-        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
+        pub(crate) fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
             let mut prefix = [0u8; 107];
             prefix[0..43].copy_from_slice(b"dex/internal/eviction_queue/inventory_index");
             prefix[43..75].copy_from_slice(&pair.start.to_bytes());
@@ -181,7 +181,11 @@ pub(crate) mod eviction_queue {
             prefix
         }
 
-        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 155] {
+        pub(crate) fn key(
+            pair: &DirectedTradingPair,
+            inventory: Amount,
+            id: &position::Id,
+        ) -> [u8; 155] {
             let mut full_key = [0u8; 155];
             let prefix = by_trading_pair(pair);
             full_key[0..107].copy_from_slice(&prefix);
