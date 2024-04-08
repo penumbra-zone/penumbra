@@ -165,28 +165,28 @@ pub(crate) mod engine {
             key.to_vec()
         }
     }
+}
 
-    pub mod eviction_queue {
+pub(crate) mod eviction_queue {
+    pub mod inventory_index {
+        use crate::lp::position;
+        use crate::DirectedTradingPair;
         use penumbra_num::Amount;
 
-        use super::*;
-
-        #[allow(unused)] //tmp
-        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 91] {
-            let mut prefix = [0u8; 91];
-            prefix[0..27].copy_from_slice(b"dex/internal/eviction_queue");
-            prefix[27..59].copy_from_slice(&pair.start.to_bytes());
-            prefix[59..91].copy_from_slice(&pair.end.to_bytes());
+        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
+            let mut prefix = [0u8; 107];
+            prefix[0..43].copy_from_slice(b"dex/internal/eviction_queue/inventory_index");
+            prefix[43..75].copy_from_slice(&pair.start.to_bytes());
+            prefix[75..107].copy_from_slice(&pair.end.to_bytes());
             prefix
         }
 
-        #[allow(unused)] //tmp
-        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 139] {
-            let mut full_key = [0u8; 139];
+        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 155] {
+            let mut full_key = [0u8; 155];
             let prefix = by_trading_pair(pair);
-            full_key[0..91].copy_from_slice(&prefix);
-            full_key[91..107].copy_from_slice(&inventory.to_be_bytes());
-            full_key[107..139].copy_from_slice(&id.0);
+            full_key[0..107].copy_from_slice(&prefix);
+            full_key[107..123].copy_from_slice(&inventory.to_be_bytes());
+            full_key[123..155].copy_from_slice(&id.0);
 
             full_key
         }
