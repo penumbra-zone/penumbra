@@ -432,9 +432,7 @@ pub(crate) trait Inner: StateWrite {
         Ok(())
     }
 
-    // TODO(erwan): break this out into a `position_manager::inventory_index` module.
     fn index_position_by_inventory(&mut self, position: &position::Position, id: &position::Id) {
-        tracing::debug!("indexing position by inventory");
         let canonical_pair = position.phi.pair;
         // A position is bound to an unordered trading pair: A <> B.
         // We want to index the position by inventory for each direction:
@@ -442,45 +440,42 @@ pub(crate) trait Inner: StateWrite {
         let pair_ab = DirectedTradingPair::new(canonical_pair.asset_1(), canonical_pair.asset_2());
         let inventory_a = position
             .reserves_for(pair_ab.start)
-            .expect("the directed trading pair is correct");
-        let key_ab = eviction_queue::inventory_index::key(&pair_ab, inventory_a, id).to_vec();
+            .expect("infaillible (remove it?)");
+        let key_ab = state_key::internal::eviction_queue::key(&pair_ab, inventory_a, id).to_vec();
         self.nonverifiable_put_raw(key_ab, vec![]);
 
         // B -> A
         let pair_ba = pair_ab.flip();
-        let inventory_b = position
-            .reserves_for(pair_ba.start)
-            .expect("the directed trading pair is correct");
-        let key_ba = eviction_queue::inventory_index::key(&pair_ba, inventory_b, id).to_vec();
+        let inventory_b = position.reserves_for(pair_ba.start).expect("infaillible");
+        let key_ba = state_key::internal::eviction_queue::key(&pair_ba, inventory_b, id).to_vec();
         self.nonverifiable_put_raw(key_ba, vec![]);
     }
 
+    // TODO(erwan): break this out into a `position_manager::inventory_index` module.
     fn deindex_position_by_inventory(
         &mut self,
         prev_position: &position::Position,
         id: &position::Id,
     ) {
         let canonical_pair = prev_position.phi.pair;
-
-        // To deindex the position, we need to reconstruct the tuple of keys
-        // that correspond to each direction of the trading pair:
-        // A -> B
+        // In order to "find" and delete the indexed entry we need to have access to its reserves
+        // at the time of indexing.
         let pair_ab = DirectedTradingPair::new(canonical_pair.asset_1(), canonical_pair.asset_2());
         let inventory_a = prev_position
             .reserves_for(pair_ab.start)
-            .expect("the directed trading pair is correct");
-        let key_ab = eviction_queue::inventory_index::key(&pair_ab, inventory_a, id).to_vec();
+            .expect("infaillible (remove it?)");
+        let key_ab = state_key::internal::eviction_queue::key(&pair_ab, inventory_a, id).to_vec();
         self.nonverifiable_delete(key_ab);
 
         // B -> A
         let pair_ba = pair_ab.flip();
         let inventory_b = prev_position
             .reserves_for(pair_ba.start)
-            .expect("the directed trading pair is correct");
-        let key_ba = eviction_queue::inventory_index::key(&pair_ba, inventory_b, id).to_vec();
+            .expect("infaillible");
+        let key_ba = state_key::internal::eviction_queue::key(&pair_ba, inventory_b, id).to_vec();
         self.nonverifiable_delete(key_ba);
+        todo!()
     }
-
     fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         if position.reserves.r2 != 0u64.into() {
