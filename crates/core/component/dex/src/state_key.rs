@@ -79,8 +79,7 @@ pub fn aggregate_value() -> &'static str {
     "dex/aggregate_value"
 }
 
-/// Encompasses non-consensus state keys.
-pub(crate) mod internal {
+pub(crate) mod engine {
     use super::*;
     use crate::lp::BareTradingFunction;
 
@@ -103,6 +102,7 @@ pub(crate) mod internal {
             }
         }
     }
+
     /// Find assets with liquidity positions from asset `from`, ordered by price.
     pub mod routable_assets {
         use penumbra_asset::asset;
@@ -141,10 +141,10 @@ pub(crate) mod internal {
         }
     }
 
-    pub mod price_index {
+    pub(crate) mod price_index {
         use super::*;
 
-        pub fn prefix(pair: &DirectedTradingPair) -> [u8; 71] {
+        pub(crate) fn prefix(pair: &DirectedTradingPair) -> [u8; 71] {
             let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/pi/");
             key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
@@ -152,7 +152,7 @@ pub(crate) mod internal {
             key
         }
 
-        pub fn key(
+        pub(crate) fn key(
             pair: &DirectedTradingPair,
             btf: &BareTradingFunction,
             id: &position::Id,
@@ -165,28 +165,28 @@ pub(crate) mod internal {
             key.to_vec()
         }
     }
+}
 
-    pub mod eviction_queue {
+pub(crate) mod eviction_queue {
+    pub mod inventory_index {
+        use crate::lp::position;
+        use crate::DirectedTradingPair;
         use penumbra_num::Amount;
 
-        use super::*;
-
-        #[allow(unused)] //tmp
-        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 91] {
-            let mut prefix = [0u8; 91];
-            prefix[0..27].copy_from_slice(b"dex/internal/eviction_queue");
-            prefix[27..59].copy_from_slice(&pair.start.to_bytes());
-            prefix[59..91].copy_from_slice(&pair.end.to_bytes());
+        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
+            let mut prefix = [0u8; 107];
+            prefix[0..43].copy_from_slice(b"dex/internal/eviction_queue/inventory_index");
+            prefix[43..75].copy_from_slice(&pair.start.to_bytes());
+            prefix[75..107].copy_from_slice(&pair.end.to_bytes());
             prefix
         }
 
-        #[allow(unused)] //tmp
-        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 139] {
-            let mut full_key = [0u8; 139];
+        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 155] {
+            let mut full_key = [0u8; 155];
             let prefix = by_trading_pair(pair);
-            full_key[0..91].copy_from_slice(&prefix);
-            full_key[91..107].copy_from_slice(&inventory.to_be_bytes());
-            full_key[107..139].copy_from_slice(&id.0);
+            full_key[0..107].copy_from_slice(&prefix);
+            full_key[107..123].copy_from_slice(&inventory.to_be_bytes());
+            full_key[123..155].copy_from_slice(&id.0);
 
             full_key
         }
