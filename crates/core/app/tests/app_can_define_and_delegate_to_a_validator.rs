@@ -1,8 +1,6 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
-    anyhow::{anyhow, Context},
+    self::common::{BuilderExt, TestNodeExt},
+    anyhow::anyhow,
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
@@ -21,6 +19,8 @@ use {
     tap::Tap,
     tracing::{error_span, info, Instrument},
 };
+
+mod common;
 
 /// The length of the [`penumbra_sct`] epoch.
 ///
@@ -55,10 +55,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
 
     // Fast forward to the next epoch.
     let snapshot_start = storage.latest_snapshot();
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!("fast forwarding test node to second epoch"))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let snapshot_end = storage.latest_snapshot();
 
     // Retrieve the validator definition from the latest snapshot.
@@ -337,12 +334,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     };
 
     // Fast forward to the next epoch.
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!(
-            "fast forwarding test node to epoch after delegation"
-        ))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let post_delegate_next_epoch_snapshot = storage.latest_snapshot();
 
     // Show that now, after an epoch and with a delegation, the validator is marked active.
@@ -488,12 +480,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         });
 
     // Fast forward to the next epoch.
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!(
-            "fast forwarding test node to epoch after undelegation"
-        ))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let post_undelegate_next_epoch_snapshot = storage.latest_snapshot();
 
     // Show that after undelegating, the validator is no longer marked active.

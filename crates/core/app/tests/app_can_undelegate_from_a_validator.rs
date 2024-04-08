@@ -1,7 +1,5 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, TestNodeExt},
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,
@@ -26,6 +24,8 @@ use {
     tap::Tap,
     tracing::{error_span, info, Instrument},
 };
+
+mod common;
 
 /// The length of the [`penumbra_sct`] epoch.
 ///
@@ -195,12 +195,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     }
 
     // Fast forward to the next epoch.
-    {
-        let start = get_latest_epoch().await.index;
-        while get_latest_epoch().await.index < start {
-            node.block().execute().await?;
-        }
-    }
+    node.fast_forward_to_next_epoch(&storage).await?;
 
     // Build a transaction that will now undelegate from the validator.
     let undelegate_rate = storage
