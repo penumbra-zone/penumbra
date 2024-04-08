@@ -35,6 +35,15 @@ impl ActionHandler for validator::Definition {
             anyhow::bail!("validators can declare at most 8 funding streams")
         }
 
+        // This prevents an attacker who compromises a validator identity signing key from locking
+        // the validator in an enabled state permanently, instead making it so that the original
+        // operator always has the option of disabling the validator permanently, regardless of what
+        // the attacker does. This reduces the incentive to steal compromise validator signing keys,
+        // because it reduces the expected payoff of such a compromise.
+        if self.validator.sequence_number == u32::MAX && self.validator.enabled {
+            anyhow::bail!("validators must be disabled when their lifetime is over")
+        }
+
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
         VerificationKey::try_from(self.validator.identity_key.0)
