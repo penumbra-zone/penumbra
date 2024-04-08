@@ -129,7 +129,6 @@ chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }
 cnidarium                        = { default-features = false, path = "crates/cnidarium" }
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
-console-subscriber               = { version = "0.2" }
 criterion                        = { version = "0.4" }
 decaf377                         = { default-features = false, version = "0.5" }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
