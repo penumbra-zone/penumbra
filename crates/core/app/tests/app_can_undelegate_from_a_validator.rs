@@ -13,10 +13,7 @@ use {
     penumbra_num::fixpoint::U128x128,
     penumbra_proto::DomainType,
     penumbra_sct::component::clock::EpochRead as _,
-    penumbra_stake::{
-        component::validator_handler::ValidatorDataRead as _, validator::Validator,
-        UndelegateClaimPlan,
-    },
+    penumbra_stake::{component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan},
     penumbra_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
@@ -77,16 +74,12 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     }?;
 
     // Retrieve the validator definition from the latest snapshot.
-    let Validator { identity_key, .. } = match storage
+    let [identity_key] = storage
         .latest_snapshot()
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    }; // ..and note the asset id for delegation tokens tied to this validator.
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
     let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key).id();
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.

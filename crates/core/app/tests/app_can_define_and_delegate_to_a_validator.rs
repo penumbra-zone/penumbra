@@ -59,17 +59,12 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let snapshot_end = storage.latest_snapshot();
 
     // Retrieve the validator definition from the latest snapshot.
-    let existing_validator = match snapshot_end
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+    let [existing_validator_id] = storage
+        .latest_snapshot()
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    };
-
-    let existing_validator_id = existing_validator.identity_key;
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
 
     // Check that we are now in a new epoch.
     {
