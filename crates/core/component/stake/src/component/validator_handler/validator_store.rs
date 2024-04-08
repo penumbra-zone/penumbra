@@ -235,6 +235,15 @@ pub trait ValidatorDataRead: StateRead {
             .try_collect()
             .await
     }
+
+    /// Returns a list of **all** known validators identity keys.
+    async fn validator_identity_keys(&self) -> Result<Vec<IdentityKey>> {
+        self.prefix(state_key::validators::definitions::prefix())
+            .map_ok(|(_key, validator)| validator)
+            .map_ok(|validator: Validator| validator.identity_key)
+            .try_collect()
+            .await
+    }
 }
 
 impl<T: StateRead + ?Sized> ValidatorDataRead for T {}

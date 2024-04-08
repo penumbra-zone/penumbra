@@ -17,7 +17,7 @@ use {
     },
     rand_core::OsRng,
     tap::Tap,
-    tracing::{error_span, info, Instrument},
+    tracing::{error_span, Instrument},
 };
 
 mod common;
@@ -70,19 +70,12 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     };
 
     // Get the identity key of the genesis validator, before we go further.
-    // Retrieve the validator definition from the latest snapshot.
-    let existing_validator_id = {
-        use penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead;
-        let validators = &storage
-            .latest_snapshot()
-            .validator_definitions()
-            .tap(|_| info!("getting validator definitions"))
-            .await?;
-        match validators.as_slice() {
-            [Validator { identity_key, .. }] => *identity_key,
-            unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-        }
-    };
+    let [existing_validator_id] = storage
+        .latest_snapshot()
+        .validator_identity_keys()
+        .await?
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
 
     // To define a validator, we need to define two keypairs: an identity key
     // for the Penumbra application and a consensus key for cometbft.
