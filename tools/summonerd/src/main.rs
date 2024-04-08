@@ -14,7 +14,6 @@ use ark_serialize::CanonicalSerialize;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use console_subscriber::ConsoleLayer;
 use coordinator::Coordinator;
 use decaf377::Bls12_377;
 use metrics_tracing_context::MetricsLayer;
@@ -86,9 +85,6 @@ operating the orchestration.
     version,
 )]
 struct Opt {
-    /// Enable Tokio Console support.
-    #[clap(long)]
-    tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: Command,
@@ -356,8 +352,6 @@ async fn main() -> Result<()> {
     // Instantiate tracing layers.
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
     let metrics_layer = MetricsLayer::new();
-    // The ConsoleLayer enables collection of data for `tokio-console`.
-    let console_layer = ConsoleLayer::builder().with_default_env().spawn();
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(io::stdout().is_terminal())
@@ -369,16 +363,12 @@ async fn main() -> Result<()> {
 
     let opt = Opt::parse();
 
-    // Register the tracing subscribers, conditionally enabling tokio console support
+    // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
         .with(metrics_layer);
-    if opt.tokio_console {
-        registry.with(console_layer).init();
-    } else {
-        registry.init();
-    }
+    registry.init();
 
     opt.exec().await
 }
