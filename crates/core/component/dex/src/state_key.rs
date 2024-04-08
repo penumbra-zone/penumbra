@@ -168,12 +168,12 @@ pub(crate) mod engine {
 }
 
 pub(crate) mod eviction_queue {
-    pub mod inventory_index {
+    pub(crate) mod inventory_index {
         use crate::lp::position;
         use crate::DirectedTradingPair;
         use penumbra_num::Amount;
 
-        pub fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
+        pub(crate) fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
             let mut prefix = [0u8; 107];
             prefix[0..43].copy_from_slice(b"dex/internal/eviction_queue/inventory_index");
             prefix[43..75].copy_from_slice(&pair.start.to_bytes());
@@ -181,7 +181,11 @@ pub(crate) mod eviction_queue {
             prefix
         }
 
-        pub fn key(pair: &DirectedTradingPair, inventory: Amount, id: &position::Id) -> [u8; 155] {
+        pub(crate) fn key(
+            pair: &DirectedTradingPair,
+            inventory: Amount,
+            id: &position::Id,
+        ) -> [u8; 155] {
             let mut full_key = [0u8; 155];
             let prefix = by_trading_pair(pair);
             full_key[0..107].copy_from_slice(&prefix);
