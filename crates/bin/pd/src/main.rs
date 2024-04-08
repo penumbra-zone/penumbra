@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    // Register the tracing subscribers, conditionally enabling tokio console support
+    // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)

@@ -9,9 +9,6 @@ use {
 #[derive(Debug, Parser)]
 #[clap(name = "pd", about = "The Penumbra daemon.", version)]
 pub struct Opt {
-    /// Enable Tokio Console support.
-    #[clap(long)]
-    pub tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: RootCommand,
