@@ -13,7 +13,6 @@ use crate::{
 impl ActionHandler for PositionOpen {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        // TODO(chris, erwan, henry): brainstorm safety on `TradingFunction`.
         // Check:
         //  + reserves are at most 80 bits wide,
         //  + the trading function coefficients are at most 80 bits wide.

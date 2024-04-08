@@ -16,6 +16,7 @@ use crate::event;
 use crate::lp::position::State;
 use crate::lp::Reserves;
 use crate::{
+    component::position_counter::PositionCounter,
     component::ValueCircuitBreaker,
     lp::position::{self, Position},
     state_key, DirectedTradingPair,
@@ -156,6 +157,17 @@ pub trait PositionManager: StateWrite + PositionRead {
             prev_state.state
         );
 
+        // Optimization: skip state update if the position is already closed.
+        // This can happen if the position was queued for closure and premptively
+        // closed by the DEX engine during execution (e.g. auto-closing).
+        if prev_state.state == position::State::Closed {
+            tracing::debug!(
+                ?id,
+                "position is already closed so we can skip state updates"
+            );
+            return Ok(());
+        }
+
         let new_state = {
             let mut new_state = prev_state.clone();
             new_state.state = position::State::Closed;
@@ -186,6 +198,17 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Opens a new position, updating all necessary indexes and checking for
     /// its nonexistence prior to being opened.
+    ///
+    /// # Errors
+    /// This method returns an error if the position is malformed
+    /// e.g. it is set to a state other than `Opened`
+    ///  or, it specifies a position identifier already used by another position.
+    ///
+    /// An error can also occur if a DEX engine invariant is breached
+    /// e.g. overflowing the position counter (`u16::MAX`)
+    ///  or, overflowing the value circuit breaker (`u128::MAX`)
+    ///
+    /// In any of those cases, we do not want to allow a new position to be opened.
     #[tracing::instrument(level = "debug", skip_all)]
     async fn open_position(&mut self, position: position::Position) -> Result<()> {
         // Double-check that the position is in the `Opened` state
@@ -201,6 +224,9 @@ pub trait PositionManager: StateWrite + PositionRead {
                 existing
             );
         }
+
+        // Increase the position counter
+        self.increment_position_counter(&position.phi.pair).await?;
 
         // Credit the DEX for the inflows from this position.
         self.vcb_credit(position.reserves_1()).await?;
@@ -364,6 +390,8 @@ pub(crate) trait Inner: StateWrite {
         prev_state: Option<Position>,
         new_state: Position,
     ) -> Result<()> {
+        use position::State::*;
+
         tracing::debug!(?prev_state, ?new_state, "updating position state");
 
         let id = new_state.id();
@@ -375,13 +403,25 @@ pub(crate) trait Inner: StateWrite {
         }
 
         // Only index the position's liquidity if it is active.
-        if new_state.state == position::State::Opened {
+        if new_state.state == Opened {
             self.index_position_by_price(&new_state, &id);
+        }
+
+        if new_state.state == Closed {
+            // Make sure that we don't double decrement the position
+            // counter if a position was queued for closure AND closed
+            // by the DEX engine.
+            let is_already_closed = prev_state
+                .as_ref()
+                .map_or(false, |old_position| old_position.state == Closed);
+            if !is_already_closed {
+                self.decrement_position_counter(&new_state.phi.pair).await?;
+            }
         }
 
         // Update the available liquidity for this position's trading pair.
         // TODO: refactor and streamline this method while implementing eviction.
-        self.update_available_liquidity(&new_state, &prev_state)
+        self.update_available_liquidity(&prev_state, &new_state)
             .await?;
 
         self.put(state_key::position_by_id(&id), new_state);
@@ -580,8 +620,8 @@ pub(crate) trait Inner: StateWrite {
 
     async fn update_available_liquidity(
         &mut self,
-        position: &Position,
         prev_position: &Option<Position>,
+        position: &Position,
     ) -> Result<()> {
         // Since swaps may be performed in either direction, the available liquidity indices
         // need to be calculated and stored for both the A -> B and B -> A directions.

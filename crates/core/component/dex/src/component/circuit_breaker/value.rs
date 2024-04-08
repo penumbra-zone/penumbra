@@ -227,7 +227,7 @@ mod tests {
         let position = buy_1;
         state_tx.index_position_by_price(&position, &position.id());
         state_tx
-            .update_available_liquidity(&position, &None)
+            .update_available_liquidity(&None, &position)
             .await
             .expect("able to update liquidity");
         state_tx.put(state_key::position_by_id(&id), position);
