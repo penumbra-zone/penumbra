@@ -62,6 +62,15 @@ impl<C> TestNode<C> {
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
     pub fn with_data(self, data: Vec<Vec<u8>>) -> Self {
+        let Self { data: prev, .. } = self;
+
+        if !prev.is_empty() {
+            tracing::warn!(
+                count = %prev.len(),
+                "block builder overwriting transaction data, this may be a bug!"
+            );
+        }
+
         Self { data, ..self }
     }
 
