@@ -8215,9 +8215,39 @@ impl serde::Serialize for swap_view::Opaque {
         if self.swap.is_some() {
             len += 1;
         }
+        if self.batch_swap_output_data.is_some() {
+            len += 1;
+        }
+        if self.output_1_value.is_some() {
+            len += 1;
+        }
+        if self.output_2_value.is_some() {
+            len += 1;
+        }
+        if self.asset_1_metadata.is_some() {
+            len += 1;
+        }
+        if self.asset_2_metadata.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapView.Opaque", len)?;
         if let Some(v) = self.swap.as_ref() {
             struct_ser.serialize_field("swap", v)?;
+        }
+        if let Some(v) = self.batch_swap_output_data.as_ref() {
+            struct_ser.serialize_field("batchSwapOutputData", v)?;
+        }
+        if let Some(v) = self.output_1_value.as_ref() {
+            struct_ser.serialize_field("output1Value", v)?;
+        }
+        if let Some(v) = self.output_2_value.as_ref() {
+            struct_ser.serialize_field("output2Value", v)?;
+        }
+        if let Some(v) = self.asset_1_metadata.as_ref() {
+            struct_ser.serialize_field("asset1Metadata", v)?;
+        }
+        if let Some(v) = self.asset_2_metadata.as_ref() {
+            struct_ser.serialize_field("asset2Metadata", v)?;
         }
         struct_ser.end()
     }
@@ -8230,11 +8260,26 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
     {
         const FIELDS: &[&str] = &[
             "swap",
+            "batch_swap_output_data",
+            "batchSwapOutputData",
+            "output_1_value",
+            "output1Value",
+            "output_2_value",
+            "output2Value",
+            "asset_1_metadata",
+            "asset1Metadata",
+            "asset_2_metadata",
+            "asset2Metadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Swap,
+            BatchSwapOutputData,
+            Output1Value,
+            Output2Value,
+            Asset1Metadata,
+            Asset2Metadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -8258,6 +8303,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                     {
                         match value {
                             "swap" => Ok(GeneratedField::Swap),
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "output1Value" | "output_1_value" => Ok(GeneratedField::Output1Value),
+                            "output2Value" | "output_2_value" => Ok(GeneratedField::Output2Value),
+                            "asset1Metadata" | "asset_1_metadata" => Ok(GeneratedField::Asset1Metadata),
+                            "asset2Metadata" | "asset_2_metadata" => Ok(GeneratedField::Asset2Metadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -8278,6 +8328,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap__ = None;
+                let mut batch_swap_output_data__ = None;
+                let mut output_1_value__ = None;
+                let mut output_2_value__ = None;
+                let mut asset_1_metadata__ = None;
+                let mut asset_2_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
@@ -8286,6 +8341,36 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                             }
                             swap__ = map_.next_value()?;
                         }
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output1Value => {
+                            if output_1_value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output1Value"));
+                            }
+                            output_1_value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output2Value => {
+                            if output_2_value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output2Value"));
+                            }
+                            output_2_value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset1Metadata => {
+                            if asset_1_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset1Metadata"));
+                            }
+                            asset_1_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset2Metadata => {
+                            if asset_2_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset2Metadata"));
+                            }
+                            asset_2_metadata__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -8293,6 +8378,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                 }
                 Ok(swap_view::Opaque {
                     swap: swap__,
+                    batch_swap_output_data: batch_swap_output_data__,
+                    output_1_value: output_1_value__,
+                    output_2_value: output_2_value__,
+                    asset_1_metadata: asset_1_metadata__,
+                    asset_2_metadata: asset_2_metadata__,
                 })
             }
         }

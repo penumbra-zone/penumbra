@@ -305,6 +305,41 @@ pub mod swap_view {
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
+        /// Optionally, if the swap has been confirmed, the batch price it received.
+        ///
+        /// As soon as the swap is detected, the view server can in principle record
+        /// the relevant BSOD and provide it as part of the view.  This allows providing
+        /// info about the execution of the swap.
+        #[prost(message, optional, tag = "20")]
+        pub batch_swap_output_data: ::core::option::Option<super::BatchSwapOutputData>,
+        /// Optionally, if the swap has been confirmed, the output value of asset 1.
+        ///
+        /// This is the value of the note that will be minted by the SwapClaim action.
+        /// Note that unlike the `Visible` variant, this is only a `ValueView` since
+        /// the details of the note (in particular the claim address) are not publicly known.
+        #[prost(message, optional, tag = "30")]
+        pub output_1_value: ::core::option::Option<
+            super::super::super::super::asset::v1::ValueView,
+        >,
+        /// Optionally, if the swap has been confirmed, the output value of asset 2.
+        ///
+        /// This is the note that will be minted by the SwapClaim action.
+        /// Note that unlike the `Visible` variant, this is only a `ValueView` since
+        /// the details of the note (in particular the claim address) are not publicly known.
+        #[prost(message, optional, tag = "31")]
+        pub output_2_value: ::core::option::Option<
+            super::super::super::super::asset::v1::ValueView,
+        >,
+        /// Optionally, metadata about asset 1 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "40")]
+        pub asset_1_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
+        /// Optionally, metadata about asset 2 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "41")]
+        pub asset_2_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
     }
     impl ::prost::Name for Opaque {
         const NAME: &'static str = "Opaque";
