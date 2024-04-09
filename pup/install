@@ -8,6 +8,12 @@ PUP_DIR="${PUP_DIR-"$BASE_DIR/.pup"}"
 PUP_BIN_DIR="$PUP_DIR/bin"
 PUP_MAN_DIR="$PUP_DIR/share/man/man1"
 
+# Check for existing installation and remove it if found.
+if [ -d "$PUP_DIR" ]; then
+    echo "Existing installation of pup found. Uninstalling..."
+    rm -rf "$PUP_DIR"
+fi
+
 PUP_SCRIPT_PATH="./pup"
 BIN_PATH="$PUP_BIN_DIR/pup"
 
