@@ -81,6 +81,12 @@ check_cmd() {
   command -v "$1" &>/dev/null
 }
 
+# Run a command that should never fail. If the command fails execution
+# will immediately terminate with an error showing the failing command.
+ensure() {
+  if ! "$@"; then err "command failed: $*"; fi
+}
+
 determine_platform_and_architecture() {
   OS=$(uname -s)
   ARCH=$(uname -m)
@@ -108,8 +114,7 @@ uninstall_if_exists() {
 
   if [ -f "$BIN_PATH" ]; then
     say "Existing installation of ${TOOL} found. Uninstalling..."
-    rm -f "$BIN_PATH"
-    check_success "✅" "${TOOL} uninstallation failed."
+    ensure rm -f "$BIN_PATH"
   fi
 }
 
@@ -119,44 +124,37 @@ download_and_install() {
     err "Download URL or tool name is not set. Cannot proceed."
   fi
 
-  # Define the folder and file names based on the tool and architecture
-  FOLDER_NAME="${TOOL}-${ARCH}-${OS}"
-  FILE_NAME="${FOLDER_NAME}.tar.xz"
+  # Create and switch to a temporary directory
+  TEMP_DIR=$(mktemp -d)
+  pushd "$TEMP_DIR" >/dev/null
 
-  say "Downloading ${TOOL}..."
-  curl -sSfLO "$DOWNLOAD_URL"
+  sayf "Downloading ${TOOL}..."
+  ensure curl -sSfLO "$DOWNLOAD_URL"
 
-  check_success "✅" "Download failed. Please check the URL and your network connection."
-
-  # Decompress and extract the file
-  say "Extracting $FILE_NAME..."
-  unxz "$FILE_NAME"
-  tar -xf "${FILE_NAME%.xz}"
-
-  check_success "✅" "Extraction failed."
-
-  # Ensure the PUP_BIN_DIR is defined and exists
-  if [[ -z "$PUP_BIN_DIR" || ! -d "$PUP_BIN_DIR" ]]; then
-    err "$PUP_BIN_DIR is not set or does not exist."
+  sayf "Extracting ${TOOL}..."
+  if [[ "$DOWNLOAD_URL" =~ \.tar\.xz$ ]]; then
+    ensure tar -xJf "${TOOL}-${ARCH}-${OS}.tar.xz"
+  elif [[ "$DOWNLOAD_URL" =~ \.zip$ ]]; then
+    ensure unzip "${TOOL}-${ARCH}-${OS}.zip"
+  else
+    err "Unsupported archive format."
   fi
 
-  # Move the binary to the designated binaries directory
-  say "Moving ${TOOL} binary to $PUP_BIN_DIR..."
-  mkdir -p "$PUP_BIN_DIR" # Confirm the directory exists or create it
-  mv "${FOLDER_NAME}/${TOOL}" "$PUP_BIN_DIR/"
+  # Correctly identify the binary's path after extraction
+  BINARY_PATH=$(find . -type f -name "$TOOL" | head -n 1)
+  if [ -z "$BINARY_PATH" ]; then
+    err "Failed to find the $TOOL binary after extraction."
+  fi
 
-  check_success "✅" "Installation failed."
+  sayf "Moving ${TOOL} binary to $PUP_BIN_DIR..."
+  ensure mkdir -p "$PUP_BIN_DIR"
+  ensure mv "$BINARY_PATH" "$PUP_BIN_DIR/"
 
-  # Verify the installation
+  popd >/dev/null
+  ensure rm -rf "$TEMP_DIR"
+
   verify_installation "$TOOL"
-
-  # Cleanup
-  sayf "Cleaning up..."
-  rm -rf "$FOLDER_NAME"    # Delete the extracted folder
-  rm -f "${FILE_NAME%.xz}" # Delete the .tar file
-  rm -f "$FILE_NAME"       # Delete the .tar.xz file
 }
-
 
 verify_installation() {
   TOOL=$1
@@ -175,16 +173,6 @@ fetch_latest_version() {
   PUP_TAG=$(curl -s "https://api.github.com/repos/${PUP_REPO}/releases/latest" | jq -r .tag_name)
   if [[ "$PUP_TAG" == "null" ]]; then
     err "Could not fetch the latest version number. Please ensure the repository exists and has releases."
-  fi
-}
-
-# Utility function to check the success of the previous command
-# Usage: check_success "Success Message" "Failure Message"
-check_success() {
-  if [ $? -eq 0 ]; then
-    sayf "$1"
-  else
-    err "$2"
   fi
 }
 
