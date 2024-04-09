@@ -4,29 +4,33 @@ set -eo pipefail
 BASE_DIR="${XDG_CONFIG_HOME:-$HOME}"
 PUP_DIR="${PUP_DIR-"$BASE_DIR/.pup"}"
 PUP_BIN_DIR="$PUP_DIR/bin"
+ACCEPTED_PROGRAMS=("pcli" "pd" "pclientd")
+
+# Initial setup: checks for git, curl, jq
+for cmd in git curl jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "error: need '$cmd' (command not found)" >&2
+    exit 1
+  fi
+done
 
 main() {
-  need_cmd git
-  need_cmd curl
-  need_cmd jq
-
-  ACCEPTED_PROGRAMS=("pcli", "pd", "pclientd")
-
   # Display usage if no arguments, -h or --help is provided
-  if [[ $# -eq 0 || "$1" == "h" || "$1" == "help" ]]; then
+  if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
     exit 0
   fi
-
+ 
   # Process 'install' command
   if [[ "$1" == "i" || "$1" == "install" ]]; then
     shift # Move past 'install' to get to the tool name
     if [[ -z "$1" ]]; then
-      warn "No tool specified. Please specify a tool to install." 
+      err "No tool specified. Please specify a tool to install."
+    elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+      say "Install a specific Penumbra tool by using: pup install <TOOL>"
       exit 1
     elif [[ ! "${ACCEPTED_PROGRAMS[*]}" =~ "$1" ]]; then
-      warn "Unknown tool '$1'. Please specify a valid tool to install."
-      exit 1
+      err "Unknown tool '$1'. Please specify a valid tool to install."
     else
       # Handle the installation of the specified tool
       TOOL=$1
@@ -37,56 +41,24 @@ main() {
       download_and_install
     fi
   else
-    warn "Unknown command '$1'. Please specify a valid command."
-    exit 1
+    err "Unknown command '$1'. Please specify a valid command."
   fi
 }
 
-usage() {
-  cat 1>&2 <<EOF
-Install a specific Penumbra tool with ease.
+uninstall_if_exists() {
+  BIN_PATH="$PUP_BIN_DIR/${TOOL}"
 
-USAGE:
-    pup <COMMAND>
-
-AVAILABLE COMMANDS:
-    h, help           Print help information.
-    i, install <TOOL> Install a specific Penumbra tool.
-
-AVAILABLE TOOLS:
-    pcli              Penumbra CLI
-    pd                Penumbra node
-    pclientd          Penumbra client daemon
-EOF
-}
-
-say() {
-  printf "%s\n" "$1"
-}
-
-warn() {
-  say "warning: ${1}" >&2
-}
-
-err() {
-  say "$1" >&2
-  exit 1
-}
-
-need_cmd() {
-  if ! check_cmd "$1"; then
-    err "need '$1' (command not found)"
+  if [ -f "$BIN_PATH" ]; then
+    say "Existing installation of ${TOOL} found. Uninstalling..."
+    rm -f "$BIN_PATH"
   fi
 }
 
-check_cmd() {
-  command -v "$1" &>/dev/null
-}
-
-# Run a command that should never fail. If the command fails execution
-# will immediately terminate with an error showing the failing command.
-ensure() {
-  if ! "$@"; then err "command failed: $*"; fi
+fetch_latest_version() {
+  PUP_TAG=$(curl -s "https://api.github.com/repos/penumbra-zone/penumbra/releases/latest" | jq -r .tag_name)
+  if [[ "$PUP_TAG" == "null" ]]; then
+    err "Could not fetch the latest version number. Please ensure the repository exists and has releases."
+  fi
 }
 
 determine_platform_and_architecture() {
@@ -110,35 +82,15 @@ build_download_url() {
   DOWNLOAD_URL="https://github.com/penumbra-zone/penumbra/releases/download/${PUP_TAG}/${TOOL}-${ARCH}-${OS}.tar.xz"
 }
 
-uninstall_if_exists() {
-  BIN_PATH="$PUP_BIN_DIR/${TOOL}"
-
-  if [ -f "$BIN_PATH" ]; then
-    say "Existing installation of ${TOOL} found. Uninstalling..."
-    ensure rm -f "$BIN_PATH"
-  fi
-}
-
 download_and_install() {
-  if [[ -z "$DOWNLOAD_URL" || -z "$TOOL" ]]; then
-    err "Download URL or tool name is not set. Cannot proceed."
-  fi
-
-  # Create and switch to a temporary directory
   TEMP_DIR=$(mktemp -d)
   pushd "$TEMP_DIR" >/dev/null
 
-  say "Downloading ${TOOL}..."
-  ensure curl -sSfLO "$DOWNLOAD_URL"
+  say "Downloading $TOOL..."
+  curl -sSfLO "$DOWNLOAD_URL"
 
-  say "Extracting ${TOOL}..."
-  if [[ "$DOWNLOAD_URL" =~ \.tar\.xz$ ]]; then
-    ensure tar -xJf "${TOOL}-${ARCH}-${OS}.tar.xz"
-  elif [[ "$DOWNLOAD_URL" =~ \.zip$ ]]; then
-    ensure unzip "${TOOL}-${ARCH}-${OS}.zip"
-  else
-    err "Unsupported archive format."
-  fi
+  say "Extracting $TOOL..."
+  tar -xJf "${TOOL}-${ARCH}-${OS}.tar.xz"
 
   # Correctly identify the binary's path after extraction
   BINARY_PATH=$(find . -type f -name "$TOOL" | head -n 1)
@@ -146,12 +98,12 @@ download_and_install() {
     err "Failed to find the $TOOL binary after extraction."
   fi
 
-  say "Moving ${TOOL} binary to $PUP_BIN_DIR..."
-  ensure mkdir -p "$PUP_BIN_DIR"
-  ensure mv "$BINARY_PATH" "$PUP_BIN_DIR/"
+  say "Moving $TOOL binary to $PUP_BIN_DIR..."
+  mkdir -p "$PUP_BIN_DIR"
+  mv "$BINARY_PATH" "$PUP_BIN_DIR/"
 
   popd >/dev/null
-  ensure rm -rf "$TEMP_DIR"
+  rm -rf "$TEMP_DIR"
 
   verify_installation "$TOOL"
 }
@@ -167,11 +119,33 @@ verify_installation() {
   fi
 }
 
-fetch_latest_version() {
-  PUP_TAG=$(curl -s "https://api.github.com/repos/penumbra-zone/penumbra/releases/latest" | jq -r .tag_name)
-  if [[ "$PUP_TAG" == "null" ]]; then
-    err "Could not fetch the latest version number. Please ensure the repository exists and has releases."
-  fi
+usage() {
+  cat 1>&2 <<EOF
+Install a specific Penumbra tool with ease.
+
+USAGE:
+    pup <COMMAND> [options]
+
+AVAILABLE COMMANDS:
+    install     Install a specific Penumbra tool.
+
+AVAILABLE TOOLS:
+    pcli        Penumbra CLI
+    pd          Penumbra node
+    pclientd    Penumbra client daemon
+
+General Options:
+    -h, --help  Show help.
+EOF
+}
+
+say() {
+  printf "%s\n" "$1"
+}
+
+err() {
+  say "$1" >&2
+  exit 1
 }
 
 main "$@"

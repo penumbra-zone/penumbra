@@ -14,7 +14,7 @@ chmod +x ./pup/install
 To see all the available functionality:
 
 ```sh
-pup help
+pup --help
 ```
 
 To install the latest version of any tool:
@@ -22,9 +22,3 @@ To install the latest version of any tool:
 ```sh
 pup install <TOOL>
 ```
-
----
-
-**Tip**: All commands have a single character shorthand equivalent! You can use `h` instead of `help`, etc.
-
----
