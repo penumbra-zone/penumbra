@@ -8,18 +8,6 @@ pub use self::{
     test_node_ext::TestNodeExt, tracing_subscriber::set_tracing_subscriber,
 };
 
-use {
-    async_trait::async_trait,
-    cnidarium::TempStorage,
-    penumbra_app::{
-        app::App,
-        genesis::AppState,
-        server::consensus::{Consensus, ConsensusService},
-    },
-    penumbra_mock_consensus::TestNode,
-    std::ops::Deref,
-};
-
 /// Penumbra-specific extensions to the mock consensus builder.
 ///
 /// See [`BuilderExt`].
@@ -40,4 +28,5 @@ mod test_node_ext;
 mod tracing_subscriber;
 
 /// A [`TestNode`] coupled with Penumbra's [`Consensus`] service.
-pub type PenumbraTestNode = TestNode<ConsensusService>;
+pub type PenumbraTestNode =
+    penumbra_mock_consensus::TestNode<penumbra_app::server::consensus::ConsensusService>;
