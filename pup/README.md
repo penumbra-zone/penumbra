@@ -5,8 +5,9 @@ Install a specific Penumbra tool with ease.
 ## Installing
 
 ```sh
-chmod +x ./pup/install
-./pup/install
+cd pup/
+chmod +x install
+./install
 ```
 
 ## Usage
