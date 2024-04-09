@@ -1,8 +1,7 @@
 //! Shared integration testing facilities.
 
-// NB: Allow dead code, and unused imports. these are shared and consumed by files in `tests/`.
-#![allow(dead_code, unused_imports)]
-
+// NB: these reëxports are shared and consumed by files in `tests/`.
+#[allow(unused_imports)]
 pub use self::{
     temp_storage_ext::TempStorageExt, test_node_builder_ext::BuilderExt,
     test_node_ext::TestNodeExt, tracing_subscriber::set_tracing_subscriber,
@@ -26,7 +25,3 @@ mod test_node_ext;
 /// NB: this subscriber makes use of a test writer, that is compatible with `cargo test`'s output
 /// capturing.
 mod tracing_subscriber;
-
-/// A [`TestNode`] coupled with Penumbra's [`Consensus`] service.
-pub type PenumbraTestNode =
-    penumbra_mock_consensus::TestNode<penumbra_app::server::consensus::ConsensusService>;
