@@ -20,7 +20,7 @@ penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
 serde_json = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
-tonic = {workspace = true}
+tonic = {workspace = true, features = ["tls"]}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter"]}
 url = {workspace = true}

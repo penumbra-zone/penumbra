@@ -44,7 +44,6 @@ bytes                            = { workspace = true }
 chrono                           = { workspace = true, default-features = false, features = ["serde"] }
 clap                             = { workspace = true, features = ["derive", "env"] }
 cnidarium                        = { workspace = true, features = ["migration", "rpc"], default-features = true }
-console-subscriber               = { workspace = true }
 csv                              = "1.1"
 decaf377                         = { workspace = true, features = ["parallel"], default-features = true }
 decaf377-rdsa                    = { workspace = true }

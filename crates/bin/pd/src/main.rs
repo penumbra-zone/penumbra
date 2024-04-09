@@ -4,7 +4,6 @@
 use std::error::Error;
 use std::io::IsTerminal as _;
 
-use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 
@@ -32,7 +31,7 @@ use url::Url;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Validate options immediately.
-    let Opt { tokio_console, cmd } = <Opt as clap::Parser>::parse();
+    let Opt { cmd } = <Opt as clap::Parser>::parse();
 
     // Instantiate tracing layers.
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
@@ -44,19 +43,12 @@ async fn main() -> anyhow::Result<()> {
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    // Register the tracing subscribers, conditionally enabling tokio console support
+    // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
         .with(metrics_layer);
-    if tokio_console {
-        // The ConsoleLayer enables collection of data for `tokio-console`.
-        // The `spawn` call will panic if AddrInUse, so we only spawn if enabled.
-        let console_layer = ConsoleLayer::builder().with_default_env().spawn();
-        registry.with(console_layer).init();
-    } else {
-        registry.init();
-    }
+    registry.init();
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {

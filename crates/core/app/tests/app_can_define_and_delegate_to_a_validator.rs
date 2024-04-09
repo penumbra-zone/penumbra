@@ -1,11 +1,12 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
-    anyhow::{anyhow, Context},
+    self::common::{BuilderExt, TestNodeExt},
+    anyhow::anyhow,
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -19,6 +20,8 @@ use {
     tracing::{error_span, info, Instrument},
 };
 
+mod common;
+
 /// The length of the [`penumbra_sct`] epoch.
 ///
 /// This test relies on many epochs turning over, so we will work with a shorter epoch duration.
@@ -31,14 +34,8 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_app::genesis::Content {
-        sct_content: penumbra_sct::genesis::Content {
-            sct_params: penumbra_sct::params::SctParameters {
-                epoch_duration: EPOCH_DURATION,
-            },
-        },
-        ..Default::default()
-    });
+    let app_state =
+        AppState::Content(genesis::Content::default().with_epoch_duration(EPOCH_DURATION));
 
     // Start the test node.
     let mut node = {
@@ -58,24 +55,16 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
 
     // Fast forward to the next epoch.
     let snapshot_start = storage.latest_snapshot();
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!("fast forwarding test node to second epoch"))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let snapshot_end = storage.latest_snapshot();
 
     // Retrieve the validator definition from the latest snapshot.
-    let existing_validator = match snapshot_end
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+    let [existing_validator_id] = storage
+        .latest_snapshot()
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    };
-
-    let existing_validator_id = existing_validator.identity_key;
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
 
     // Check that we are now in a new epoch.
     {
@@ -340,12 +329,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     };
 
     // Fast forward to the next epoch.
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!(
-            "fast forwarding test node to epoch after delegation"
-        ))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let post_delegate_next_epoch_snapshot = storage.latest_snapshot();
 
     // Show that now, after an epoch and with a delegation, the validator is marked active.
@@ -491,12 +475,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
         });
 
     // Fast forward to the next epoch.
-    node.fast_forward(EPOCH_DURATION)
-        .instrument(error_span!(
-            "fast forwarding test node to epoch after undelegation"
-        ))
-        .await
-        .context("fast forwarding {EPOCH_LENGTH} blocks")?;
+    node.fast_forward_to_next_epoch(&storage).await?;
     let post_undelegate_next_epoch_snapshot = storage.latest_snapshot();
 
     // Show that after undelegating, the validator is no longer marked active.

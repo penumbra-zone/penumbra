@@ -8,7 +8,6 @@ mod init_chain;
 use {
     crate::{Keyring, TestNode},
     bytes::Bytes,
-    std::collections::BTreeMap,
 };
 
 /// A buider, used to prepare and instantiate a new [`TestNode`].
@@ -58,15 +57,38 @@ impl Builder {
             );
         }
 
-        // Generate a consensus key.
+        // Generate a key and place it in the keyring.
+        let mut keyring = Keyring::new();
+        Self::add_key(&mut keyring);
+
+        Self { keyring, ..self }
+    }
+
+    /// Generates a pair of validator keys.
+    pub fn two_validators(self) -> Self {
+        let Self { keyring: prev, .. } = self;
+
+        // Log a warning if we are about to overwrite any existing keys.
+        if !prev.is_empty() {
+            tracing::warn!(
+                count = %prev.len(),
+                "builder overwriting entries in keyring, this may be a bug!"
+            );
+        }
+
+        // Generate two keys and place them in the keyring.
+        let mut keyring = Keyring::new();
+        Self::add_key(&mut keyring);
+        Self::add_key(&mut keyring);
+
+        Self { keyring, ..self }
+    }
+
+    /// Generates consensus keys and places them in the provided keyring.
+    fn add_key(keyring: &mut Keyring) {
         let sk = ed25519_consensus::SigningKey::new(rand_core::OsRng);
         let vk = sk.verification_key();
         tracing::trace!(verification_key = ?vk, "generated consensus key");
-
-        // Place it into the keyring.
-        let mut keyring = BTreeMap::new();
         keyring.insert(vk, sk);
-
-        Self { keyring, ..self }
     }
 }

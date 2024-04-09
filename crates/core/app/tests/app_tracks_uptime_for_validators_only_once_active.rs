@@ -1,10 +1,11 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, TestNodeExt},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -16,8 +17,10 @@ use {
     },
     rand_core::OsRng,
     tap::Tap,
-    tracing::{error_span, info, Instrument},
+    tracing::{error_span, Instrument},
 };
+
+mod common;
 
 #[tokio::test]
 async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<()> {
@@ -31,14 +34,8 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_app::genesis::Content {
-        sct_content: penumbra_sct::genesis::Content {
-            sct_params: penumbra_sct::params::SctParameters {
-                epoch_duration: EPOCH_DURATION,
-            },
-        },
-        ..Default::default()
-    });
+    let app_state =
+        AppState::Content(genesis::Content::default().with_epoch_duration(EPOCH_DURATION));
 
     // Start the test node.
     let mut node = {
@@ -73,19 +70,12 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     };
 
     // Get the identity key of the genesis validator, before we go further.
-    // Retrieve the validator definition from the latest snapshot.
-    let existing_validator_id = {
-        use penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead;
-        let validators = &storage
-            .latest_snapshot()
-            .validator_definitions()
-            .tap(|_| info!("getting validator definitions"))
-            .await?;
-        match validators.as_slice() {
-            [Validator { identity_key, .. }] => *identity_key,
-            unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-        }
-    };
+    let [existing_validator_id] = storage
+        .latest_snapshot()
+        .validator_identity_keys()
+        .await?
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
 
     // To define a validator, we need to define two keypairs: an identity key
     // for the Penumbra application and a consensus key for cometbft.
@@ -237,19 +227,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     }
 
     // Fast forward to the next epoch.
+    node.fast_forward_to_next_epoch(&storage).await?;
+
+    // The new validator should now be in the consensus set.
     {
-        let get_epoch = || async { storage.latest_snapshot().get_current_epoch().await };
-        let start = get_epoch()
-            .await?
-            .tap(|start| tracing::info!(?start, "fast forwarding to next epoch"));
-        let next = loop {
-            node.block().execute().await?;
-            let current = get_epoch().await?;
-            if current != start {
-                break current;
-            }
-        };
-        tracing::info!(?start, ?next, "finished fast forwarding to next epoch");
         assert_eq!(
             get_latest_consensus_set().await.len(),
             2,
@@ -366,19 +347,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     );
 
     // Fast forward to the next epoch.
+    node.fast_forward_to_next_epoch(&storage).await?;
+
+    // The validator should no longer be part of the consensus set.
     {
-        let get_epoch = || async { storage.latest_snapshot().get_current_epoch().await };
-        let start = get_epoch()
-            .await?
-            .tap(|start| tracing::info!(?start, "fast forwarding to next epoch"));
-        let next = loop {
-            node.block().execute().await?;
-            let current = get_epoch().await?;
-            if current != start {
-                break current;
-            }
-        };
-        tracing::info!(?start, ?next, "finished fast forwarding to next epoch");
         assert_eq!(
             get_latest_consensus_set().await.len(),
             1,
@@ -406,19 +378,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     }
 
     // Fast forward to the next epoch.
+    node.fast_forward_to_next_epoch(&storage).await?;
+
+    // There should only be one validator in the consensus set.
     {
-        let get_epoch = || async { storage.latest_snapshot().get_current_epoch().await };
-        let start = get_epoch()
-            .await?
-            .tap(|start| tracing::info!(?start, "fast forwarding to next epoch"));
-        let next = loop {
-            node.block().execute().await?;
-            let current = get_epoch().await?;
-            if current != start {
-                break current;
-            }
-        };
-        tracing::info!(?start, ?next, "finished fast forwarding to next epoch");
         assert_eq!(
             get_latest_consensus_set().await.len(),
             1,
