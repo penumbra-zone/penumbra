@@ -2,7 +2,7 @@ use anyhow::bail;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 
-use crate::state_key;
+use crate::state_key::engine;
 use crate::TradingPair;
 use anyhow::Result;
 
@@ -11,7 +11,7 @@ pub(crate) trait PositionCounter: StateWrite {
     /// Returns the number of position for a [`TradingPair`].
     /// If there were no counter initialized for a given pair, this default to zero.
     async fn get_position_count(&self, trading_pair: &TradingPair) -> u16 {
-        let path = state_key::internal::counter::num_positions::by_trading_pair(trading_pair);
+        let path = engine::counter::num_positions::by_trading_pair(trading_pair);
         self.get_position_count_from_key(path).await
     }
 
@@ -34,7 +34,7 @@ pub(crate) trait PositionCounter: StateWrite {
     /// Increment the number of position for a [`TradingPair`].
     /// Returns the updated total, or an error if overflow occurred.
     async fn increment_position_counter(&mut self, trading_pair: &TradingPair) -> Result<u16> {
-        let path = state_key::internal::counter::num_positions::by_trading_pair(trading_pair);
+        let path = engine::counter::num_positions::by_trading_pair(trading_pair);
         let prev = self.get_position_count_from_key(path).await;
 
         let Some(new_total) = prev.checked_add(1) else {
@@ -47,7 +47,7 @@ pub(crate) trait PositionCounter: StateWrite {
     /// Decrement the number of positions for a [`TradingPair`], unless it would underflow.
     /// Returns the updated total, or an error if underflow occurred.
     async fn decrement_position_counter(&mut self, trading_pair: &TradingPair) -> Result<u16> {
-        let path = state_key::internal::counter::num_positions::by_trading_pair(trading_pair);
+        let path = engine::counter::num_positions::by_trading_pair(trading_pair);
         let prev = self.get_position_count_from_key(path).await;
 
         let Some(new_total) = prev.checked_sub(1) else {

@@ -12,15 +12,17 @@ use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::event;
 use crate::lp::position::State;
 use crate::lp::Reserves;
 use crate::{
     component::position_counter::PositionCounter,
     component::ValueCircuitBreaker,
     lp::position::{self, Position},
-    state_key, DirectedTradingPair,
+    state_key::engine,
+    state_key::eviction_queue,
+    DirectedTradingPair,
 };
+use crate::{event, state_key};
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 
@@ -47,7 +49,7 @@ pub trait PositionRead: StateRead {
         &self,
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::price_index::prefix(pair);
+        let prefix = engine::price_index::prefix(pair);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
         self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
@@ -118,7 +120,7 @@ pub trait PositionRead: StateRead {
         &self,
         from: &asset::Id,
     ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::routable_assets::prefix(from);
+        let prefix = engine::routable_assets::prefix(from);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
         self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
@@ -400,11 +402,13 @@ pub(crate) trait Inner: StateWrite {
         // reserves or the position state might have invalidated them.
         if let Some(prev_state) = prev_state.as_ref() {
             self.deindex_position_by_price(&prev_state, &id);
+            self.deindex_position_by_inventory(&prev_state, &id);
         }
 
         // Only index the position's liquidity if it is active.
         if new_state.state == Opened {
             self.index_position_by_price(&new_state, &id);
+            self.index_position_by_inventory(&new_state, &id);
         }
 
         if new_state.state == Closed {
@@ -428,6 +432,55 @@ pub(crate) trait Inner: StateWrite {
         Ok(())
     }
 
+    // TODO(erwan): break this out into a `position_manager::inventory_index` module.
+    fn index_position_by_inventory(&mut self, position: &position::Position, id: &position::Id) {
+        tracing::debug!("indexing position by inventory");
+        let canonical_pair = position.phi.pair;
+        // A position is bound to an unordered trading pair: A <> B.
+        // We want to index the position by inventory for each direction:
+        // A -> B
+        let pair_ab = DirectedTradingPair::new(canonical_pair.asset_1(), canonical_pair.asset_2());
+        let inventory_a = position
+            .reserves_for(pair_ab.start)
+            .expect("the directed trading pair is correct");
+        let key_ab = eviction_queue::inventory_index::key(&pair_ab, inventory_a, id).to_vec();
+        self.nonverifiable_put_raw(key_ab, vec![]);
+
+        // B -> A
+        let pair_ba = pair_ab.flip();
+        let inventory_b = position
+            .reserves_for(pair_ba.start)
+            .expect("the directed trading pair is correct");
+        let key_ba = eviction_queue::inventory_index::key(&pair_ba, inventory_b, id).to_vec();
+        self.nonverifiable_put_raw(key_ba, vec![]);
+    }
+
+    fn deindex_position_by_inventory(
+        &mut self,
+        prev_position: &position::Position,
+        id: &position::Id,
+    ) {
+        let canonical_pair = prev_position.phi.pair;
+
+        // To deindex the position, we need to reconstruct the tuple of keys
+        // that correspond to each direction of the trading pair:
+        // A -> B
+        let pair_ab = DirectedTradingPair::new(canonical_pair.asset_1(), canonical_pair.asset_2());
+        let inventory_a = prev_position
+            .reserves_for(pair_ab.start)
+            .expect("the directed trading pair is correct");
+        let key_ab = eviction_queue::inventory_index::key(&pair_ab, inventory_a, id).to_vec();
+        self.nonverifiable_delete(key_ab);
+
+        // B -> A
+        let pair_ba = pair_ab.flip();
+        let inventory_b = prev_position
+            .reserves_for(pair_ba.start)
+            .expect("the directed trading pair is correct");
+        let key_ba = eviction_queue::inventory_index::key(&pair_ba, inventory_b, id).to_vec();
+        self.nonverifiable_delete(key_ba);
+    }
+
     fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         if position.reserves.r2 != 0u64.into() {
@@ -437,10 +490,7 @@ pub(crate) trait Inner: StateWrite {
                 end: pair.asset_2(),
             };
             let phi12 = phi.component.clone();
-            self.nonverifiable_put_raw(
-                state_key::internal::price_index::key(&pair12, &phi12, &id),
-                vec![],
-            );
+            self.nonverifiable_put_raw(engine::price_index::key(&pair12, &phi12, &id), vec![]);
             tracing::debug!("indexing position for 1=>2 trades");
         }
 
@@ -451,10 +501,7 @@ pub(crate) trait Inner: StateWrite {
                 end: pair.asset_1(),
             };
             let phi21 = phi.component.flip();
-            self.nonverifiable_put_raw(
-                state_key::internal::price_index::key(&pair21, &phi21, &id),
-                vec![],
-            );
+            self.nonverifiable_put_raw(engine::price_index::key(&pair21, &phi21, &id), vec![]);
             tracing::debug!("indexing position for 2=>1 trades");
         }
     }
@@ -471,8 +518,8 @@ pub(crate) trait Inner: StateWrite {
             end: position.phi.pair.asset_1(),
         };
         let phi21 = position.phi.component.flip();
-        self.nonverifiable_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
-        self.nonverifiable_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
+        self.nonverifiable_delete(engine::price_index::key(&pair12, &phi12, &id));
+        self.nonverifiable_delete(engine::price_index::key(&pair21, &phi21, &id));
     }
 
     /// Updates the nonverifiable liquidity indices given a [`Position`] in the direction specified by the [`DirectedTradingPair`].
@@ -492,7 +539,7 @@ pub(crate) trait Inner: StateWrite {
                 // Query the current available liquidity for this trading pair, or zero if the trading pair
                 // has no current liquidity.
                 let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
+                    .nonverifiable_get_raw(&engine::routable_assets::a_from_b(&pair))
                     .await?
                     .map(|bytes| {
                         Amount::from_be_bytes(
@@ -524,7 +571,7 @@ pub(crate) trait Inner: StateWrite {
                 // Query the current available liquidity for this trading pair, or zero if the trading pair
                 // has no current liquidity.
                 let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
+                    .nonverifiable_get_raw(&engine::routable_assets::a_from_b(&pair))
                     .await?
                     .map(|bytes| {
                         Amount::from_be_bytes(
@@ -562,7 +609,7 @@ pub(crate) trait Inner: StateWrite {
                 // Query the current available liquidity for this trading pair, or zero if the trading pair
                 // has no current liquidity.
                 let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
+                    .nonverifiable_get_raw(&engine::routable_assets::a_from_b(&pair))
                     .await?
                     .map(|bytes| {
                         Amount::from_be_bytes(
@@ -597,20 +644,20 @@ pub(crate) trait Inner: StateWrite {
         // Delete the existing key for this position if the reserve amount has changed.
         if new_a_from_b != current_a_from_b {
             self.nonverifiable_delete(
-                state_key::internal::routable_assets::key(&pair.start, current_a_from_b).to_vec(),
+                engine::routable_assets::key(&pair.start, current_a_from_b).to_vec(),
             );
         }
 
         // Write the new key indicating that asset B is routable from asset A with `new_a_from_b` liquidity.
         self.nonverifiable_put_raw(
-            state_key::internal::routable_assets::key(&pair.start, new_a_from_b).to_vec(),
+            engine::routable_assets::key(&pair.start, new_a_from_b).to_vec(),
             pair.end.encode_to_vec(),
         );
         tracing::debug!(start = ?pair.start, end = ?pair.end, "marking routable from start -> end");
 
         // Write the new lookup index storing `new_a_from_b` for this trading pair.
         self.nonverifiable_put_raw(
-            state_key::internal::routable_assets::a_from_b(&pair).to_vec(),
+            engine::routable_assets::a_from_b(&pair).to_vec(),
             new_a_from_b.to_be_bytes().to_vec(),
         );
         tracing::debug!(available_liquidity = ?new_a_from_b, ?pair, "marking available liquidity for trading pair");
