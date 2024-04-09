@@ -41,17 +41,46 @@ mod abci;
 
 /// A test node.
 ///
-/// Construct a new test node by calling [`TestNode::builder()`]. Use [`TestNode::block()`] to
-/// build a new [`Block`].
+/// A [`TestNode<C>`] represents a validator node containing an instance of the state transition
+/// machine and its accompanying consensus engine.
 ///
-/// This contains a consensus service `C`, which should be a [`tower::Service`] implementor that
-/// accepts [`ConsensusRequest`][0_37::abci::ConsensusRequest]s, and returns
-/// [`ConsensusResponse`][0_37::abci::ConsensusResponse]s. For `tower-abci` users, this should
-/// correspond with the `ConsensusService` parameter of the `Server` type.
+/// # Initialization
+///
+/// Construct a new test node by calling [`TestNode::builder()`]. The [`builder::Builder`]
+/// returned by that method can be used to set the initial application state, and configure
+/// validators' consensus keys that should be present at genesis. Use
+/// [`builder::Builder::init_chain()`] to consume the builder and initialize the application.
+///
+/// # Consensus Service
+///
+/// A test node is generic in terms of a consensus service `C`. This service should implement
+/// [`tower::Service`], accepting [`ConsensusRequest`][consensus-request]s, and returning
+/// [`ConsensusResponse`][consensus-response]s.
+///
+/// For [`tower-abci`][tower-abci] users, this should correspond with the `C` parameter of the
+/// [`Server`][tower-abci-server] type.
+///
+/// # Blocks
+///
+/// Blocks can be executed by using [`TestNode::block()`]. This can be used to add transactions,
+/// signatures, and evidence to a [`Block`][tendermint-rs-block], before invoking
+/// [`block::Builder::execute()`] to execute the next block.
+///
+/// [consensus-request]: tendermint::v0_37::abci::ConsensusRequest
+/// [consensus-response]: tendermint::v0_37::abci::ConsensusResponse
+/// [tendermint-rs-block]: tendermint::block::Block
+/// [tower-abci-server]: https://docs.rs/tower-abci/latest/tower_abci/v037/struct.Server.html#
+/// [tower-abci]: https://docs.rs/tower-abci/latest/tower_abci
 pub struct TestNode<C> {
+    /// The inner consensus service being tested.
     consensus: C,
+    /// The last `app_hash` value.
     last_app_hash: Vec<u8>,
+    /// The current block [`Height`][tendermint::block::Height].
     height: tendermint::block::Height,
+    /// Validators' consensus keys.
+    ///
+    /// Entries in this keyring consist of a [`VerificationKey`] and a [`SigningKey`].
     keyring: Keyring,
 }
 
@@ -60,6 +89,7 @@ pub struct TestNode<C> {
 /// Entries in this keyring consist of a [`VerificationKey`] and a [`SigningKey`].
 type Keyring = BTreeMap<VerificationKey, SigningKey>;
 
+/// Accessors.
 impl<C> TestNode<C> {
     pub const CHAIN_ID: &'static str = "penumbra-test-chain";
 
@@ -86,6 +116,7 @@ impl<C> TestNode<C> {
     }
 }
 
+/// Fast forward interfaces.
 impl<C> TestNode<C>
 where
     C: tower::Service<
