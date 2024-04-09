@@ -20,7 +20,7 @@
 //!
 //! Projects implemented in Go may wish to consider using [CometMock][cometmock].
 //! `penumbra-mock-consensus` is primarily oriented towards projects implemented in Rust that wish
-//! to use [`cargo test`][cargo-test] or [`cargo test`][cargo-nextest] as a test-runner.
+//! to use [`cargo test`][cargo-test] or [`cargo nextest`][cargo-nextest] as a test-runner.
 //!
 //! [cargo-nextest]: https://nexte.st/
 //! [cargo-test]: https://doc.rust-lang.org/cargo/commands/cargo-test.html
