@@ -10,7 +10,7 @@ use {
     bytes::Bytes,
 };
 
-/// A buider, used to prepare and instantiate a new [`TestNode`].
+/// A builder, used to prepare and instantiate a new [`TestNode`].
 #[derive(Default)]
 pub struct Builder {
     pub app_state: Option<Bytes>,
