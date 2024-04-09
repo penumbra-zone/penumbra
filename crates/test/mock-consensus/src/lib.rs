@@ -1,8 +1,33 @@
-//! `penumbra-mock-consensus` is a library for testing consensus-driven applications.
+//! `penumbra-mock-consensus` is a library for testing consensus-driven ABCI applications.
 //!
-//! See [`TestNode`] for more information.
-//
-//  see penumbra-zone/penumbra#3588.
+//! # Overview
+//!
+//! This library provides facilities that can act as a stand-in for consensus engines like
+//! [CometBFT][cometbft] or [Tendermint][tendermint] in integration tests.
+//!
+//! Testing applications using a mock consensus engine has many benefits. For example, this allows
+//! integration test cases to run as fast as possible, without needing wait real wall-clock time
+//! for blocks to be generated, or for integration test cases to exercise slashing logic related to
+//! byzantine misbehavior (_e.g., double-signing_).
+//!
+//! This library is agnostic with respect to the replicable state transition machine that it
+//! is used to test. This means that, while it may be used to write integration tests for the
+//! [Penumbra][penumbra] network, it can also be used to test other decentralized applications.
+//!
+//! See [`TestNode`] for more information about using `penumbra-mock-consensus`.
+//!
+//! # Alternatives
+//!
+//! Projects implemented in Go may wish to consider using [CometMock][cometmock].
+//! `penumbra-mock-consensus` is primarily oriented towards projects implemented in Rust that wish
+//! to use [`cargo test`][cargo-test] or [`cargo test`][cargo-nextest] as a test-runner.
+//!
+//! [cargo-nextest]: https://nexte.st/
+//! [cargo-test]: https://doc.rust-lang.org/cargo/commands/cargo-test.html
+//! [cometbft]: https://github.com/cometbft/cometbft
+//! [cometmock]: https://github.com/informalsystems/CometMock
+//! [penumbra]: https://github.com/penumbra-zone/penumbra
+//! [tendermint]: https://github.com/tendermint/tendermint
 
 use {
     ed25519_consensus::{SigningKey, VerificationKey},
