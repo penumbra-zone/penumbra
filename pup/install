@@ -67,4 +67,4 @@ fi
 echo
 echo "Detected your preferred shell as $PREF_SHELL and added pup to PATH."
 echo "Run 'source $PROFILE' or start a new terminal session to use pup."
-echo "Then, simply run 'pup --pcli' to install the Penumbra CLI."
+echo "Then, simply run 'pup -h' to learn how to use pup."

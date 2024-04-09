@@ -10,7 +10,7 @@ main() {
   need_cmd curl
   need_cmd jq
 
-  ACCEPTED_PROGRAMS=("pcli")
+  ACCEPTED_PROGRAMS=("pcli", "pd", "pclientd")
 
   # Display usage if no arguments, -h or --help is provided
   if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
