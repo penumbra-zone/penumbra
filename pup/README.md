@@ -1,11 +1,30 @@
 # `pup`
 
-Update or revert to a specific release with ease.
+Install a specific Penumbra tool with ease.
 
 ## Installing
 
 ```sh
-curl -L <LINK HERE> | bash
+chmod +x ./pup/install
+./pup/install
 ```
 
 ## Usage
+
+To see all the available functionality:
+
+```sh
+pup help
+```
+
+To install the latest version of any tool:
+
+```sh
+pup install <TOOL>
+```
+
+---
+
+**Tip**: All commands have a single character shorthand equivalent! You can use `h` instead of `help`, etc.
+
+---

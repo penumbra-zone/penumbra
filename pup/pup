@@ -13,13 +13,13 @@ main() {
   ACCEPTED_PROGRAMS=("pcli", "pd", "pclientd")
 
   # Display usage if no arguments, -h or --help is provided
-  if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+  if [[ $# -eq 0 || "$1" == "h" || "$1" == "help" ]]; then
     usage
     exit 0
   fi
 
   # Process 'install' command
-  if [[ "$1" == "install" ]]; then
+  if [[ "$1" == "i" || "$1" == "install" ]]; then
     shift # Move past 'install' to get to the tool name
     if [[ -z "$1" ]]; then
       warn "No tool specified. Please specify a tool to install." 
@@ -47,30 +47,29 @@ usage() {
 Install a specific Penumbra tool with ease.
 
 USAGE:
-    pup install <TOOL> Install a specific Penumbra tool.
+    pup <COMMAND>
+
+AVAILABLE COMMANDS:
+    h, help           Print help information.
+    i, install <TOOL> Install a specific Penumbra tool.
 
 AVAILABLE TOOLS:
-    pcli               Penumbra CLI
-
-OPTIONS:
-    -h, --help         Print help information
+    pcli              Penumbra CLI
+    pd                Penumbra node
+    pclientd          Penumbra client daemon
 EOF
 }
 
 say() {
-  printf "%s" "$1"
-}
-
-sayf() {
   printf "%s\n" "$1"
 }
 
 warn() {
-  sayf "warning: ${1}" >&2
+  say "warning: ${1}" >&2
 }
 
 err() {
-  sayf "$1" >&2
+  say "$1" >&2
   exit 1
 }
 
@@ -129,10 +128,10 @@ download_and_install() {
   TEMP_DIR=$(mktemp -d)
   pushd "$TEMP_DIR" >/dev/null
 
-  sayf "Downloading ${TOOL}..."
+  say "Downloading ${TOOL}..."
   ensure curl -sSfLO "$DOWNLOAD_URL"
 
-  sayf "Extracting ${TOOL}..."
+  say "Extracting ${TOOL}..."
   if [[ "$DOWNLOAD_URL" =~ \.tar\.xz$ ]]; then
     ensure tar -xJf "${TOOL}-${ARCH}-${OS}.tar.xz"
   elif [[ "$DOWNLOAD_URL" =~ \.zip$ ]]; then
@@ -147,7 +146,7 @@ download_and_install() {
     err "Failed to find the $TOOL binary after extraction."
   fi
 
-  sayf "Moving ${TOOL} binary to $PUP_BIN_DIR..."
+  say "Moving ${TOOL} binary to $PUP_BIN_DIR..."
   ensure mkdir -p "$PUP_BIN_DIR"
   ensure mv "$BINARY_PATH" "$PUP_BIN_DIR/"
 
@@ -162,7 +161,7 @@ verify_installation() {
   INSTALLED_VERSION=$(PCLI_UNLEASH_DANGER=true ${TOOL} --version | awk '{print $2}')
 
   if [[ "v$INSTALLED_VERSION" == "$PUP_TAG" ]]; then
-    sayf "Verification successful: ${TOOL} $INSTALLED_VERSION installed."
+    say "Verification successful: ${TOOL} $INSTALLED_VERSION installed."
   else
     err "Verification failed for ${TOOL}: Version mismatch or installation error. Expected $PUP_TAG, got $INSTALLED_VERSION"
   fi
