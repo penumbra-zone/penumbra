@@ -1,4 +1,4 @@
-use penumbra_asset::asset::Metadata;
+use penumbra_asset::{asset::Metadata, ValueView};
 use penumbra_proto::{penumbra::core::component::dex::v1 as pb, DomainType};
 use penumbra_shielded_pool::NoteView;
 use penumbra_txhash::TransactionId;
@@ -24,6 +24,11 @@ pub enum SwapView {
     },
     Opaque {
         swap: Swap,
+        batch_swap_output_data: Option<BatchSwapOutputData>,
+        output_1: Option<ValueView>,
+        output_2: Option<ValueView>,
+        asset_1_metadata: Option<Metadata>,
+        asset_2_metadata: Option<Metadata>,
     },
 }
 
@@ -63,6 +68,14 @@ impl TryFrom<pb::SwapView> for SwapView {
                     .swap
                     .ok_or_else(|| anyhow::anyhow!("missing swap field"))?
                     .try_into()?,
+                batch_swap_output_data: x
+                    .batch_swap_output_data
+                    .map(TryInto::try_into)
+                    .transpose()?,
+                output_1: x.output_1_value.map(TryInto::try_into).transpose()?,
+                output_2: x.output_2_value.map(TryInto::try_into).transpose()?,
+                asset_1_metadata: x.asset_1_metadata.map(TryInto::try_into).transpose()?,
+                asset_2_metadata: x.asset_2_metadata.map(TryInto::try_into).transpose()?,
             }),
         }
     }
@@ -93,9 +106,21 @@ impl From<SwapView> for pb::SwapView {
                     batch_swap_output_data: batch_swap_output_data.map(Into::into),
                 })),
             },
-            SwapView::Opaque { swap } => Self {
+            SwapView::Opaque {
+                swap,
+                batch_swap_output_data,
+                output_1,
+                output_2,
+                asset_1_metadata,
+                asset_2_metadata,
+            } => Self {
                 swap_view: Some(sv::SwapView::Opaque(sv::Opaque {
                     swap: Some(swap.into()),
+                    batch_swap_output_data: batch_swap_output_data.map(Into::into),
+                    output_1_value: output_1.map(Into::into),
+                    output_2_value: output_2.map(Into::into),
+                    asset_1_metadata: asset_1_metadata.map(Into::into),
+                    asset_2_metadata: asset_2_metadata.map(Into::into),
                 })),
             },
         }
@@ -106,7 +131,7 @@ impl From<SwapView> for Swap {
     fn from(v: SwapView) -> Self {
         match v {
             SwapView::Visible { swap, .. } => swap,
-            SwapView::Opaque { swap } => swap,
+            SwapView::Opaque { swap, .. } => swap,
         }
     }
 }

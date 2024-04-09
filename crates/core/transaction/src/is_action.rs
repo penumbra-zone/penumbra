@@ -367,9 +367,40 @@ impl IsAction for Swap {
                         .cloned(),
                 }
             }
-            None => SwapView::Opaque {
-                swap: self.to_owned(),
-            },
+            None => {
+                // If we can find a matching BSOD in the TxP, use it to compute the output notes
+                // for the swap.
+                let bsod = txp
+                    .batch_swap_output_data
+                    .iter()
+                    // This finds the first matching one; there should only be one
+                    // per trading pair per block and we trust the TxP provider not to lie about it.
+                    .find(|bsod| bsod.trading_pair == self.body.trading_pair);
+
+                let denom_1 = txp.denoms.get(&self.body.trading_pair.asset_1()).cloned();
+                let denom_2 = txp.denoms.get(&self.body.trading_pair.asset_2()).cloned();
+
+                SwapView::Opaque {
+                    swap: self.to_owned(),
+                    batch_swap_output_data: bsod.cloned(),
+                    asset_1_metadata: denom_1.clone(),
+                    asset_2_metadata: denom_2.clone(),
+                    output_1: Some(
+                        Value {
+                            amount: self.body.delta_1_i,
+                            asset_id: self.body.trading_pair.asset_1(),
+                        }
+                        .view_with_cache(&txp.denoms),
+                    ),
+                    output_2: Some(
+                        Value {
+                            amount: self.body.delta_2_i,
+                            asset_id: self.body.trading_pair.asset_2(),
+                        }
+                        .view_with_cache(&txp.denoms),
+                    ),
+                }
+            }
         })
     }
 }
