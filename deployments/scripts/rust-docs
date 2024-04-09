@@ -42,6 +42,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-ibc \
   -p penumbra-keys \
   -p penumbra-measure \
+  -p penumbra-mock-consensus \
   -p penumbra-num \
   -p penumbra-proof-params \
   -p penumbra-proof-setup \

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+echo "Installing pup..."
+
+BASE_DIR="${XDG_CONFIG_HOME:-$HOME}"
+PUP_DIR="${PUP_DIR-"$BASE_DIR/.pup"}"
+PUP_BIN_DIR="$PUP_DIR/bin"
+PUP_MAN_DIR="$PUP_DIR/share/man/man1"
+
+# Check for existing installation and remove it if found.
+if [ -d "$PUP_DIR" ]; then
+    echo "Existing installation of pup found. Uninstalling..."
+    rm -rf "$PUP_DIR"
+fi
+
+PUP_SCRIPT_PATH="./pup"
+BIN_PATH="$PUP_BIN_DIR/pup"
+
+# Create the .pup bin directory if it doesn't exist.
+mkdir -p "$PUP_BIN_DIR"
+
+# Copy the pup script to the installation directory and make it executable.
+if [ -f "$PUP_SCRIPT_PATH" ]; then
+    cp "$PUP_SCRIPT_PATH" "$BIN_PATH"
+    chmod +x "$BIN_PATH"
+else
+    echo "The pup script at '$PUP_SCRIPT_PATH' was not found. Please check the path and try again."
+    exit 1
+fi
+
+# Create the man directory for future man files if it doesn't exist.
+mkdir -p "$PUP_MAN_DIR"
+
+# Store the correct profile file (i.e., .profile for bash, .zshenv for ZSH, etc.).
+case $SHELL in
+*/zsh)
+    PROFILE="${ZDOTDIR-"$HOME"}/.zshenv"
+    PREF_SHELL=zsh
+    ;;
+*/bash)
+    PROFILE=$HOME/.bashrc
+    PREF_SHELL=bash
+    ;;
+*/fish)
+    PROFILE=$HOME/.config/fish/config.fish
+    PREF_SHELL=fish
+    ;;
+*/ash)
+    PROFILE=$HOME/.profile
+    PREF_SHELL=ash
+    ;;
+*)
+    echo "pup: could not detect shell, manually add ${PUP_BIN_DIR} to your PATH."
+    exit 1
+esac
+
+# Only add pup to PATH if it isn't already there.
+if [[ ":$PATH:" != *":${PUP_BIN_DIR}:"* ]]; then
+    if [[ "$PREF_SHELL" == "fish" ]]; then
+        echo >> "$PROFILE" && echo "fish_add_path -a $PUP_BIN_DIR" >> "$PROFILE"
+    else
+        echo >> "$PROFILE" && echo "export PATH=\"\$PATH:$PUP_BIN_DIR\"" >> "$PROFILE"
+    fi
+fi
+
+echo
+echo "Detected your preferred shell as $PREF_SHELL and added pup to PATH."
+echo "Run 'source $PROFILE' or start a new terminal session to use pup."
+echo "Then, simply run 'pup -h' to learn how to use pup."
