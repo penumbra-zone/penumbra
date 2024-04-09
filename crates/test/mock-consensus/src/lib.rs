@@ -91,14 +91,15 @@ type Keyring = BTreeMap<VerificationKey, SigningKey>;
 
 /// Accessors.
 impl<C> TestNode<C> {
+    /// A chain ID for use in tests.
     pub const CHAIN_ID: &'static str = "penumbra-test-chain";
 
-    /// Returns the last app_hash value, as a slice of bytes.
+    /// Returns the last `app_hash` value, represented as a slice of bytes.
     pub fn last_app_hash(&self) -> &[u8] {
         &self.last_app_hash
     }
 
-    /// Returns the last app_hash value, as a hexadecimal string.
+    /// Returns the last `app_hash` value, represented as a hexadecimal string.
     pub fn last_app_hash_hex(&self) -> String {
         // Use upper-case hexadecimal integers, include leading zeroes.
         // - https://doc.rust-lang.org/std/fmt/#formatting-traits
@@ -129,7 +130,7 @@ where
     C::Future: Send + 'static,
     C::Error: Sized,
 {
-    /// Fast forwards a number of blocks.
+    /// Fast forwards the given number of blocks.
     #[tracing::instrument(
         skip(self),
         fields(fast_forward.blocks = %blocks)
