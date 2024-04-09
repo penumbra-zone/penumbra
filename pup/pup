@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+main() {
+  need_cmd git
+  need_cmd curl
+  need_cmd jq
+
+  while [[ -n $1 ]]; do
+    case $1 in
+      --)           shift; break;;
+      
+      --pcli)       PCLI=1;;
+      
+      -u|--uninstall) 
+        uninstall_pup 
+        exit 0 
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        warn "unknown option: $1"
+        usage
+        exit 1
+    esac; shift
+  done
+
+  PUP_REPO=${PUP_REPO=penumbra-zone/penumbra}
+
+  if [[ "$PCLI" == "1" ]]; then
+    uninstall_if_exists "pcli"
+    fetch_latest_version
+    determine_platform_and_architecture
+    build_download_url
+    download_and_install "pcli"
+  else
+    sayf "done"
+  fi
+}
+
+usage() {
+  cat 1>&2 <<EOF
+The installer for Penumbra.
+
+Update to a specific Penumbra release with ease.
+
+USAGE:
+    pup <OPTIONS>
+
+OPTIONS:
+    -h, --help Print help information
+EOF
+}
+
+say() {
+  printf "%s" "$1"
+}
+
+sayf() {
+  printf "%s\n" "$1"
+}
+
+warn() {
+  sayf "warning: ${1}" >&2
+}
+
+err() {
+  sayf "$1" >&2
+  exit 1
+}
+
+need_cmd() {
+  if ! check_cmd "$1"; then
+    err "need '$1' (command not found)"
+  fi
+}
+
+check_cmd() {
+  command -v "$1" &>/dev/null
+}
+
+determine_platform_and_architecture() {
+  OS=$(uname -s)
+  ARCH=$(uname -m)
+
+  case $OS in
+    Linux) OS="unknown-linux-gnu";;
+    Darwin) OS="apple-darwin";;
+    *) err "Unsupported operating system: $OS";;
+  esac
+
+  case $ARCH in
+    arm64) ARCH="aarch64";;
+    x86_64) ;;
+    *) err "Unsupported architecture: $ARCH";;
+  esac
+}
+
+build_download_url() {
+  DOWNLOAD_URL="https://github.com/${PUP_REPO}/releases/download/${PUP_TAG}/pcli-${ARCH}-${OS}.tar.xz"
+}
+
+uninstall_if_exists() {
+  TOOL=$1
+  BIN_PATH="/usr/local/bin/${TOOL}"
+
+  if [ -f "$BIN_PATH" ]; then
+    say "Existing installation of ${TOOL} found. Uninstalling..."
+    sudo rm -f "$BIN_PATH"
+    check_success "✅" "${TOOL} uninstallation failed."
+  fi
+}
+
+download_and_install() {
+  TOOL=$1
+  if [[ -z "$DOWNLOAD_URL" || -z "$TOOL" ]]; then
+    err "Download URL or tool name is not set. Cannot proceed."
+  fi
+
+  # Use the tool name in the file name
+  FOLDER_NAME="${TOOL}-${ARCH}-${OS}"
+  FILE_NAME="${FOLDER_NAME}.tar.xz"
+
+  say "Downloading ${TOOL}..."
+  curl -sSfLO "$DOWNLOAD_URL"
+
+  check_success "✅" "Download failed. Please check the URL and your network connection."
+
+  # Decompress and extract the file
+  say "Extracting $FILE_NAME..."
+  unxz "$FILE_NAME"
+  tar -xf "${FILE_NAME%.xz}"
+
+  check_success "✅" "Extraction failed."
+
+  # Move the binary to /usr/local/bin/
+  say "Moving ${TOOL} binary to /usr/local/bin/..."
+  sudo mv "${FOLDER_NAME}/${TOOL}" /usr/local/bin/
+
+  check_success "✅" "Installation failed."
+
+  # Verify the installation
+  verify_installation $TOOL
+
+  # Cleanup
+  sayf "Cleaning up..."
+  rm -rf "$FOLDER_NAME"    # Delete the extracted folder
+  rm -f "${FILE_NAME%.xz}" # Delete the .tar file
+  rm -f "$FILE_NAME"       # Delete the .tar.xz file
+}
+
+verify_installation() {
+  TOOL=$1
+
+  # Use awk to skip the tool name and directly compare version strings including the 'v' prefix
+  INSTALLED_VERSION=$(PCLI_UNLEASH_DANGER=true ${TOOL} --version | awk '{print $2}')
+
+  if [[ "v$INSTALLED_VERSION" == "$PUP_TAG" ]]; then
+    sayf "Verification successful: ${TOOL} $INSTALLED_VERSION installed."
+  else
+    err "Verification failed for ${TOOL}: Version mismatch or installation error. Expected $PUP_TAG, got $INSTALLED_VERSION"
+  fi
+}
+
+fetch_latest_version() {
+  PUP_TAG=$(curl -s "https://api.github.com/repos/${PUP_REPO}/releases/latest" | jq -r .tag_name)
+  if [[ "$PUP_TAG" == "null" ]]; then
+    err "Could not fetch the latest version number. Please ensure the repository exists and has releases."
+  fi
+}
+
+# Utility function to check the success of the previous command
+# Usage: check_success "Success Message" "Failure Message"
+check_success() {
+  if [ $? -eq 0 ]; then
+    sayf "$1"
+  else
+    err "$2"
+  fi
+}
+
+uninstall_pup() {
+  PUP_DIR="${XDG_CONFIG_HOME:-$HOME}/.pup"
+  say "Uninstalling pup..."
+
+  # Check if the .pup directory exists
+  if [ -d "$PUP_DIR" ]; then
+    sayf "Removing pup directory and all its contents..."
+    rm -rf "$PUP_DIR"
+  else
+    sayf "pup directory not found. It may have been removed or not installed."
+  fi
+
+  # Remove pup path from the shell profile script
+  case $SHELL in
+    */zsh)
+      PROFILE="${ZDOTDIR:-$HOME}/.zshenv"
+      ;;
+    */bash)
+      PROFILE="$HOME/.bashrc"
+      ;;
+    */fish)
+      PROFILE="$HOME/.config/fish/config.fish"
+      ;;
+    *)
+      PROFILE="$HOME/.profile"
+      ;;
+  esac
+  
+  if [ -f "$PROFILE" ]; then
+    sayf "Cleaning up PATH in $PROFILE..."
+    # This sed command attempts to remove the pup path addition. Test carefully in your environment.
+    sed -i '' '/\.pup\/bin/d' "$PROFILE"
+  else
+    sayf "Profile file not found. Manual PATH cleanup may be required."
+  fi
+
+  sayf "pup has been uninstalled."
+}
+
+
+main "$@"
