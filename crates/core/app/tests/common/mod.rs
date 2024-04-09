@@ -50,19 +50,6 @@ pub fn set_tracing_subscriber() -> tracing::subscriber::DefaultGuard {
 /// A [`TestNode`] coupled with Penumbra's [`Consensus`] service.
 pub type PenumbraTestNode = TestNode<ConsensusService>;
 
-/// Returns a new [`PenumbraTestNode`] backed by the given temporary storage.
-pub async fn start_test_node(storage: &TempStorage) -> anyhow::Result<PenumbraTestNode> {
-    use tap::TapFallible;
-    let app_state = AppState::default();
-    let consensus = Consensus::new(storage.as_ref().clone());
-    TestNode::builder()
-        .single_validator()
-        .with_penumbra_auto_app_state(app_state)?
-        .init_chain(consensus)
-        .await
-        .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))
-}
-
 #[async_trait]
 pub trait TempStorageExt: Sized {
     async fn apply_genesis(self, genesis: AppState) -> anyhow::Result<Self>;

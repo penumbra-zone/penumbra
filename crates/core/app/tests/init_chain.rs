@@ -3,12 +3,19 @@
 //  Note: these should eventually replace the existing test cases. mock consensus tests are placed
 //  here while the engine is still in development. See #3588.
 
-mod common;
-
 use {
-    anyhow::anyhow, cnidarium::TempStorage, penumbra_sct::component::clock::EpochRead,
-    penumbra_stake::component::validator_handler::ValidatorDataRead as _, tap::Tap, tracing::info,
+    self::common::BuilderExt,
+    anyhow::anyhow,
+    cnidarium::TempStorage,
+    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_mock_consensus::TestNode,
+    penumbra_sct::component::clock::EpochRead as _,
+    penumbra_stake::component::validator_handler::ValidatorDataRead as _,
+    tap::{Tap, TapFallible},
+    tracing::info,
 };
+
+mod common;
 
 /// Exercises that a test node can be instantiated using the consensus service.
 #[tokio::test]
@@ -16,9 +23,19 @@ async fn mock_consensus_can_send_an_init_chain_request() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-    let _ = common::start_test_node(&storage).await?;
+    let test_node = {
+        let app_state = AppState::default();
+        let consensus = Consensus::new(storage.as_ref().clone());
+        TestNode::builder()
+            .single_validator()
+            .with_penumbra_auto_app_state(app_state)?
+            .init_chain(consensus)
+            .await
+            .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
+    };
 
     // Free our temporary storage.
+    drop(test_node);
     drop(storage);
     drop(guard);
 
@@ -31,7 +48,16 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-    let _test_node = common::start_test_node(&storage).await?;
+    let test_node = {
+        let app_state = AppState::default();
+        let consensus = Consensus::new(storage.as_ref().clone());
+        TestNode::builder()
+            .single_validator()
+            .with_penumbra_auto_app_state(app_state)?
+            .init_chain(consensus)
+            .await
+            .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
+    };
 
     let snapshot = storage.latest_snapshot();
     let validators = snapshot
@@ -55,6 +81,7 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
     }
 
     // Free our temporary storage.
+    drop(test_node);
     drop(storage);
     drop(guard);
 
@@ -68,7 +95,16 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
     // Install a test logger, acquire some temporary storage, and start the test node.
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
-    let mut test_node = common::start_test_node(&storage).await?;
+    let mut test_node = {
+        let app_state = AppState::default();
+        let consensus = Consensus::new(storage.as_ref().clone());
+        TestNode::builder()
+            .single_validator()
+            .with_penumbra_auto_app_state(app_state)?
+            .init_chain(consensus)
+            .await
+            .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
+    };
 
     let height = || async { storage.latest_snapshot().get_block_height().await };
 
@@ -78,6 +114,7 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
     assert_eq!(height().await?, 8_u64, "height should grow");
 
     // Free our temporary storage.
+    drop(test_node);
     drop(storage);
     drop(guard);
 
