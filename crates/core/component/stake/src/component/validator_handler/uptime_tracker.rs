@@ -172,7 +172,7 @@ pub trait ValidatorUptimeTracker: StateWrite {
             "recorded vote info"
         );
         metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-            .increment(uptime.num_missed_blocks() as f64);
+            .set(uptime.num_missed_blocks() as f64);
 
         uptime.mark_height_as_signed(height, voted)?;
         if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
