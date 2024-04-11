@@ -1,11 +1,16 @@
 use {
+    decaf377_rdsa::VerificationKey,
     penumbra_app::genesis::AppState,
+    penumbra_keys::keys::{SpendKey, SpendKeyBytes},
     penumbra_mock_consensus::builder::Builder,
     penumbra_proto::{
         core::keys::v1::{GovernanceKey, IdentityKey},
         penumbra::core::component::stake::v1::Validator as PenumbraValidator,
     },
     penumbra_shielded_pool::genesis::Allocation,
+    penumbra_stake::DelegationToken,
+    rand::Rng,
+    rand_core::OsRng,
     tracing::trace,
 };
 
@@ -57,12 +62,6 @@ impl BuilderExt for Builder {
 fn generate_penumbra_validator(
     consensus_key: &ed25519_consensus::VerificationKey,
 ) -> (PenumbraValidator, Allocation) {
-    use decaf377_rdsa::VerificationKey;
-    use penumbra_keys::keys::{SpendKey, SpendKeyBytes};
-    use penumbra_stake::DelegationToken;
-    use rand::Rng;
-    use rand_core::OsRng;
-
     let seed = SpendKeyBytes(OsRng.gen());
     let spend_key = SpendKey::from(seed.clone());
     let validator_id_sk = spend_key.spend_auth_key();
