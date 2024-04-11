@@ -955,3 +955,122 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     tracing::info!(?arb_execution, "fetched arb execution!");
     Ok(())
 }
+
+#[tokio::test]
+/// Confirms the ordering of routable assets returns the assets
+/// with the most liquidity first, as discovered in https://github.com/penumbra-zone/penumbra/issues/4189
+async fn check_routable_asset_ordering() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let test_usd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+    let test_btc = asset::Cache::with_known_assets()
+        .get_unit("test_btc")
+        .unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let penumbra_usd = DirectedTradingPair::new(penumbra.id(), test_usd.id());
+
+    let reserves_1 = Reserves {
+        // 0 penumbra
+        r1: 0u64.into(),
+        // 120,000 test_usd
+        r2: 120_000u64.into(),
+    };
+
+    let position_1 = Position::new(
+        OsRng,
+        penumbra_usd,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_1,
+    );
+
+    state_tx.open_position(position_1).await.unwrap();
+
+    let penumbra_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
+
+    let reserves_2 = Reserves {
+        // 100,000 penumbra
+        r1: 100_000u64.into(),
+        // 0 gn
+        r2: 0u64.into(),
+    };
+
+    let position_2 = Position::new(
+        OsRng,
+        penumbra_gn,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_2,
+    );
+
+    state_tx.open_position(position_2).await.unwrap();
+
+    let penumbra_btc = DirectedTradingPair::new(penumbra.id(), test_btc.id());
+
+    let reserves_3 = Reserves {
+        // 100,000 penumbra
+        r1: 100_000u64.into(),
+        // 50,000 test_btc
+        r2: 50_000u64.into(),
+    };
+
+    let position_3 = Position::new(
+        OsRng,
+        penumbra_btc,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_3,
+    );
+
+    state_tx.open_position(position_3).await.unwrap();
+
+    let btc_gm = DirectedTradingPair::new(test_btc.id(), gm.id());
+
+    let reserves_4 = Reserves {
+        // 100,000 test_btc
+        r1: 100_000u64.into(),
+        // 100,000 gm
+        r2: 100_000u64.into(),
+    };
+
+    let position_4 = Position::new(
+        OsRng,
+        btc_gm,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_4,
+    );
+
+    state_tx.open_position(position_4).await.unwrap();
+    state_tx.apply();
+
+    // Expected: USD reserves > BTC reserves > GN reserves, and gm should not appear
+
+    // Find routable assets starting at the Penumbra asset.
+    let routable_assets: Vec<_> = state
+        .ordered_routable_assets(&penumbra.id())
+        .take(10)
+        .collect::<Vec<_>>()
+        .await;
+
+    assert!(
+        routable_assets.len() == 3,
+        "expected 3 routable assets, got {}",
+        routable_assets.len()
+    );
+
+    Ok(())
+}
