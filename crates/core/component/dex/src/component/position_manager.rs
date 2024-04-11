@@ -124,9 +124,9 @@ pub trait PositionRead: StateRead {
     /// Returns a stream of [`asset::Id`] routable from a given asset, ordered by liquidity.
     fn ordered_routable_assets(
         &self,
-        from: &asset::Id,
+        start: &asset::Id,
     ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
-        let prefix = engine::routable_assets::prefix(from);
+        let prefix = engine::routable_assets::starting_from(start);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
         self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {

@@ -103,52 +103,61 @@ pub(crate) mod engine {
         }
     }
 
-    /// Find assets with liquidity positions from asset `from`, ordered by price.
     pub(crate) mod routable_assets {
         use penumbra_asset::asset;
         use penumbra_num::Amount;
 
         use super::*;
 
-        /// `A || be_bytes(A_from_B) => B` this will be an ordered encoding of every asset `B` directly routable to from `A`.
-        /// `a_from_b` represents the amount of `A` that can be bought with `B`.
-        /// The prefix query includes only the `A` portion, meaning the keys will be returned in order of liquidity.
-        pub(crate) fn prefix(from: &asset::Id) -> [u8; 39] {
+        /// A prefix key that takes a start asset `A` (aka. base asset) and surface adjacent
+        /// assets `B` (aka. quote asset), in ascending order of the base liquidity available.
+        ///
+        /// # Encoding
+        /// The prefix key is encoded as `domain || A`.
+        pub(crate) fn starting_from(from: &asset::Id) -> [u8; 39] {
             let mut key = [0u8; 39];
             key[0..7].copy_from_slice(b"dex/ra/");
-            key[7..7 + 32].copy_from_slice(&from.to_bytes());
+            key[7..39].copy_from_slice(&from.to_bytes());
             key
         }
 
-        /// `A || be_bytes(A_from_B) => B` this will be an ordered encoding of every asset `B` directly routable to from `A`.
-        /// `a_from_b` represents the amount of `A` that can be bought with `B`.
+        /// An entry in the routable asset index that implements the mapping between
+        /// a base asset `A` and a quote asset `B`, based on the aggregate liquidity
+        /// available to route from `B` to `A` (aka. the base liquidity).
+        ///
+        /// # Encoding
+        /// The full key is encoded as: `prefix || BE(aggregate_base_liquidity)`
         pub(crate) fn key(from: &asset::Id, a_from_b: Amount) -> [u8; 55] {
             let mut key = [0u8; 55];
             key[0..7].copy_from_slice(b"dex/ra/");
-            key[7..32 + 7].copy_from_slice(&from.to_bytes());
-            key[32 + 7..32 + 7 + 16].copy_from_slice(&a_from_b.to_be_bytes());
+            key[7..39].copy_from_slice(&from.to_bytes());
+            key[39..55].copy_from_slice(&a_from_b.to_be_bytes());
             key
         }
 
-        /// `(A, B) => A_from_B` this will encode the current amount of `A` tradable into `B` for every directly routable trading pair.
-        /// This index can be used to determine the key values for the [`super::key`] ordered index to perform updates efficiently.
-        pub(crate) fn a_from_b(pair: &DirectedTradingPair) -> [u8; 71] {
+        /// A lookup index used to reconstruct and update the primary index entries.
+        /// It maps a directed trading pair `A -> B` to the current base liquidity available.
+        ///
+        /// # Encoding
+        /// The lookup key is encoded as `prefix_lookup || start_asset|| end_asset`.
+        pub(crate) fn lookup_base_liquidity_by_pair(pair: &DirectedTradingPair) -> [u8; 71] {
             let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/ab/");
-            key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
-            key[7 + 32..7 + 32 + 32].copy_from_slice(&pair.end.to_bytes());
+            key[7..39].copy_from_slice(&pair.start.to_bytes());
+            key[39..71].copy_from_slice(&pair.end.to_bytes());
             key
         }
     }
 
     pub(crate) mod price_index {
+
         use super::*;
 
         pub(crate) fn prefix(pair: &DirectedTradingPair) -> [u8; 71] {
             let mut key = [0u8; 71];
             key[0..7].copy_from_slice(b"dex/pi/");
-            key[7..7 + 32].copy_from_slice(&pair.start.to_bytes());
-            key[7 + 32..7 + 32 + 32].copy_from_slice(&pair.end.to_bytes());
+            key[7..39].copy_from_slice(&pair.start.to_bytes());
+            key[39..71].copy_from_slice(&pair.end.to_bytes());
             key
         }
 
