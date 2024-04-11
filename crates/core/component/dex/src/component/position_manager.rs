@@ -27,9 +27,9 @@ use crate::{event, state_key};
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 
-pub(crate) mod base_liquidity_index;
-pub(crate) mod counter;
-pub(crate) mod inventory_index;
+mod base_liquidity_index;
+mod counter;
+mod inventory_index;
 pub(crate) mod price_index;
 
 #[async_trait]

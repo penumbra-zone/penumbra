@@ -9,7 +9,7 @@ use crate::{
 use anyhow::Result;
 use position::State::*;
 
-pub(crate) trait PositionByInventoryIndex: StateWrite {
+pub(super) trait PositionByInventoryIndex: StateWrite {
     fn update_position_by_inventory_index(
         &mut self,
         prev_state: &Option<Position>,
