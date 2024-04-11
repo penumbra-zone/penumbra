@@ -1,13 +1,14 @@
-use anyhow::bail;
+use anyhow::{bail, ensure};
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
 
+use crate::lp::position::{self, Position};
 use crate::state_key::engine;
 use crate::TradingPair;
 use anyhow::Result;
 
 #[async_trait]
-pub(crate) trait PositionCounter: StateWrite {
+pub(crate) trait PositionCounterRead: StateRead {
     /// Returns the number of position for a [`TradingPair`].
     /// If there were no counter initialized for a given pair, this default to zero.
     async fn get_position_count(&self, trading_pair: &TradingPair) -> u16 {
@@ -24,12 +25,18 @@ pub(crate) trait PositionCounter: StateWrite {
             return 0;
         };
 
-        // This is safe because we only increment the counter via a [`Self::increase_position_counter`].
+        // This is safe because we only increment the counter via [`Self::increase_position_counter`].
         let raw_count: [u8; 2] = raw_count
             .try_into()
             .expect("position counter is at most two bytes");
         u16::from_be_bytes(raw_count)
     }
+}
+
+impl<T: StateRead + ?Sized> PositionCounterRead for T {}
+
+#[async_trait]
+pub(crate) trait PositionCounter: StateWrite {
 
     /// Increment the number of position for a [`TradingPair`].
     /// Returns the updated total, or an error if overflow occurred.
@@ -66,7 +73,7 @@ mod tests {
     use cnidarium::{StateDelta, TempStorage};
     use penumbra_asset::{asset::REGISTRY, Value};
 
-    use crate::component::position_counter::PositionCounter;
+    use crate::component::position_manager::counter::{PositionCounter, PositionCounterRead};
     use crate::TradingPair;
 
     #[tokio::test]

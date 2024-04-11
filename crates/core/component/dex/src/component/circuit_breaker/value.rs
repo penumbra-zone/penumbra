@@ -47,7 +47,8 @@ impl<T: StateWrite + ?Sized> ValueCircuitBreaker for T {}
 mod tests {
     use std::sync::Arc;
 
-    use crate::component::position_manager::Inner as _;
+    use crate::component::position_manager::base_liquidity_index::AssetByLiquidityIndex as _;
+    use crate::component::position_manager::price_index::PositionByPriceIndex;
     use crate::component::router::HandleBatchSwaps as _;
     use crate::component::{StateReadExt as _, StateWriteExt as _};
     use crate::lp::plan::PositionWithdrawPlan;
