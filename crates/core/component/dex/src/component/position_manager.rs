@@ -233,9 +233,6 @@ pub trait PositionManager: StateWrite + PositionRead {
             );
         }
 
-        // Increase the position counter
-        self.increment_position_counter(&position.phi.pair).await?;
-
         // Credit the DEX for the inflows from this position.
         self.vcb_credit(position.reserves_1()).await?;
         self.vcb_credit(position.reserves_2()).await?;

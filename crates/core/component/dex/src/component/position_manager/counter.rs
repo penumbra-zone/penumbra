@@ -60,7 +60,10 @@ pub(crate) trait PositionCounter: StateWrite {
         }
         Ok(())
     }
+}
+impl<T: StateWrite + ?Sized> PositionCounter for T {}
 
+trait Inner: StateWrite {
     /// Increment the number of position for a [`TradingPair`].
     /// Returns the updated total, or an error if overflow occurred.
     async fn increment_position_counter(&mut self, trading_pair: &TradingPair) -> Result<u16> {
@@ -87,7 +90,8 @@ pub(crate) trait PositionCounter: StateWrite {
         Ok(new_total)
     }
 }
-impl<T: StateWrite + ?Sized> PositionCounter for T {}
+
+impl<T: StateWrite + ?Sized> Inner for T {}
 
 // For some reason, `rust-analyzer` is complaining about used imports.
 // Silence the warnings until I find a fix.
@@ -96,7 +100,9 @@ mod tests {
     use cnidarium::{StateDelta, TempStorage};
     use penumbra_asset::{asset::REGISTRY, Value};
 
-    use crate::component::position_manager::counter::{PositionCounter, PositionCounterRead};
+    use crate::component::position_manager::counter::{
+        Inner, PositionCounter, PositionCounterRead,
+    };
     use crate::TradingPair;
 
     #[tokio::test]
