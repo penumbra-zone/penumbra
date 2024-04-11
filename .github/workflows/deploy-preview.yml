@@ -50,14 +50,14 @@ jobs:
           service_account: 'github-actions@penumbra-sl-testnet.iam.gserviceaccount.com'
 
       - name: get gke credentials
-        uses: google-github-actions/get-gke-credentials@v1
+        uses: google-github-actions/get-gke-credentials@v2
         with:
           cluster_name: testnet
           project_id: penumbra-sl-testnet
           location: us-central1
 
       - name: install helmfile
-        uses: mamezou-tech/setup-helmfile@v1.3.0
+        uses: mamezou-tech/setup-helmfile@v2.0.0
         with:
           helmfile-version: "v0.157.0"
 
