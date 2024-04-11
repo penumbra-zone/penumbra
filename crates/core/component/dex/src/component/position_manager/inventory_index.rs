@@ -16,7 +16,7 @@ pub(crate) trait PositionByInventoryIndex: StateWrite {
         new_state: &Position,
         position_id: &position::Id,
     ) -> Result<()> {
-        // Clear an existing index of the position, since changes to the
+        // Clear an existing record of the position, since changes to the
         // reserves or the position state might have invalidated it.
         if let Some(prev_lp) = prev_state {
             self.deindex_position_by_inventory(prev_lp, position_id);
@@ -28,7 +28,11 @@ pub(crate) trait PositionByInventoryIndex: StateWrite {
 
         Ok(())
     }
+}
 
+impl<T: StateWrite + ?Sized> PositionByInventoryIndex for T {}
+
+trait Inner: StateWrite {
     fn index_position_by_inventory(&mut self, position: &position::Position, id: &position::Id) {
         tracing::debug!("indexing position by inventory");
         let canonical_pair = position.phi.pair;
@@ -77,5 +81,4 @@ pub(crate) trait PositionByInventoryIndex: StateWrite {
         self.nonverifiable_delete(key_ba);
     }
 }
-
-impl<T: StateWrite + ?Sized> PositionByInventoryIndex for T {}
+impl<T: StateWrite + ?Sized> Inner for T {}

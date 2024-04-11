@@ -164,4 +164,4 @@ trait Inner: StateWrite {
     }
 }
 
-impl<T: AssetByLiquidityIndex + ?Sized> Inner for T {}
+impl<T: StateWrite + ?Sized> Inner for T {}

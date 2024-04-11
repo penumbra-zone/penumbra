@@ -1,4 +1,4 @@
-use anyhow::{bail, ensure};
+use anyhow::{bail};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 
@@ -51,15 +51,10 @@ pub(crate) trait PositionCounter: StateWrite {
                 (Opened, Closed) => {
                     let _ = self.decrement_position_counter(&trading_pair).await?;
                 }
-                _ => { /* no-op */ }
+                _ => {}
             },
 
             None => {
-                ensure!(
-                    matches!(new_state.state, Opened),
-                    "fresh position must start in the `Opened` state, found: {:?}",
-                    new_state.state
-                );
                 let _ = self.increment_position_counter(&trading_pair).await?;
             }
         }

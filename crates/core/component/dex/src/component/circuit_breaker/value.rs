@@ -226,7 +226,9 @@ mod tests {
         let id = buy_1.id();
 
         let position = buy_1;
-        state_tx.index_position_by_price(&position, &position.id());
+        state_tx
+            .update_position_by_price_index(&None, &position, &position.id())
+            .expect("can update price index");
         state_tx
             .update_asset_by_base_liquidity_index(&None, &position, &position.id())
             .await

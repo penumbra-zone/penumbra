@@ -387,7 +387,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
-pub(crate) trait Inner: StateWrite {
+trait Inner: StateWrite {
     /// Writes a position to the state, updating all necessary indexes.
     ///
     /// This should be the SOLE ENTRYPOINT for writing positions to the state.
