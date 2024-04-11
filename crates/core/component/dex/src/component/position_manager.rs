@@ -402,7 +402,8 @@ pub(crate) trait Inner: StateWrite {
 
         let id = new_state.id();
 
-        }
+        // Assert `update_position` state transitions invariants:
+        Self::guard_invalid_transitions(&prev_state, &new_state, &id)?;
 
         // Update the DEX engine indices:
         self.update_position_by_price_index(&prev_state, &new_state, &id)?;
@@ -416,7 +417,44 @@ pub(crate) trait Inner: StateWrite {
         Ok(())
     }
 
+    fn guard_invalid_transitions(
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        id: &position::Id,
+    ) -> Result<()> {
+        use position::State::*;
+
+        if let Some(prev_lp) = prev_state {
+            tracing::debug!(?id, prev = ?prev_lp.state, new = ?new_state.state, "evaluating state transition");
+            match (prev_lp.state, new_state.state) {
+                (Opened, Opened) => {}
+                (Opened, Closed) => {}
+                (Closed, Closed) => { /* no-op but allowed */ }
+                (Closed, Withdrawn { sequence }) => {
+                    ensure!(
+                        sequence == 0,
+                        "withdrawn positions must have their sequence start at zero (found: {})",
+                        sequence
+                    );
+                }
+                (Withdrawn { sequence: old_seq }, Withdrawn { sequence: new_seq }) => {
+                    let expected_seq = old_seq.saturating_add(1);
+                    ensure!(
+                        new_seq == expected_seq,
+                        "withdrawn must increase 1-by-1 (old: {}, new: {}, expected: {})",
+                        old_seq,
+                        new_seq,
+                        expected_seq
+                    );
+                }
+                _ => bail!("invalid transition"),
             }
+        } else {
+            ensure!(
+                matches!(new_state.state, Opened),
+                "fresh positions MUST start in the `Opened` state (found: {:?})",
+                new_state.state
+            );
         }
 
         Ok(())
