@@ -1,7 +1,7 @@
 use std::future;
 use std::{pin::Pin, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{bail, ensure, Result};
 use async_stream::try_stream;
 use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
@@ -17,7 +17,7 @@ use crate::component::position_manager::{
 };
 use crate::lp::Reserves;
 use crate::{
-    component::position_counter::PositionCounter,
+    component::position_manager::counter::PositionCounter,
     component::ValueCircuitBreaker,
     lp::position::{self, Position},
     state_key::engine,
@@ -28,6 +28,7 @@ use crate::{event, state_key};
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 
 pub(crate) mod base_liquidity_index;
+pub(crate) mod counter;
 pub(crate) mod inventory_index;
 pub(crate) mod price_index;
 
@@ -397,43 +398,27 @@ pub(crate) trait Inner: StateWrite {
         prev_state: Option<Position>,
         new_state: Position,
     ) -> Result<()> {
-        use position::State::*;
-
         tracing::debug!(?prev_state, ?new_state, "updating position state");
 
         let id = new_state.id();
 
-        // Clear any existing indexes of the position, since changes to the
-        // reserves or the position state might have invalidated them.
-        if let Some(prev_state) = prev_state.as_ref() {
-            self.deindex_position_by_price(&prev_state, &id);
-            self.deindex_position_by_inventory(&prev_state, &id);
         }
 
-        // Only index the position's liquidity if it is active.
-        if new_state.state == Opened {
-            self.index_position_by_price(&new_state, &id);
-            self.index_position_by_inventory(&new_state, &id);
-        }
-
-        if new_state.state == Closed {
-            // Make sure that we don't double decrement the position
-            // counter if a position was queued for closure AND closed
-            // by the DEX engine.
-            let is_already_closed = prev_state
-                .as_ref()
-                .map_or(false, |old_position| old_position.state == Closed);
-            if !is_already_closed {
-                self.decrement_position_counter(&new_state.phi.pair).await?;
-            }
-        }
-
-        // Update the available liquidity for this position's trading pair.
-        // TODO: refactor and streamline this method while implementing eviction.
-        self.update_available_liquidity(&prev_state, &new_state)
+        // Update the DEX engine indices:
+        self.update_position_by_price_index(&prev_state, &new_state, &id)?;
+        self.update_position_by_inventory_index(&prev_state, &new_state, &id)?;
+        self.update_asset_by_base_liquidity_index(&prev_state, &new_state, &id)
+            .await?;
+        self.update_trading_pair_position_counter(&prev_state, &new_state, &id)
             .await?;
 
         self.put(state_key::position_by_id(&id), new_state);
+        Ok(())
+    }
+
+            }
+        }
+
         Ok(())
     }
 }
