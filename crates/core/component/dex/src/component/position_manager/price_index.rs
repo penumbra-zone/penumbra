@@ -6,7 +6,29 @@ use crate::{
     DirectedTradingPair,
 };
 
+use anyhow::Result;
+use position::State::*;
+
 pub(crate) trait PositionByPriceIndex: StateWrite {
+    fn update_position_by_price_index(
+        &mut self,
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        position_id: &position::Id,
+    ) -> Result<()> {
+        // Clear an existing index of the position, since changes to the
+        // reserves or the position state might have invalidated it.
+        if let Some(prev_lp) = prev_state {
+            self.deindex_position_by_price(prev_lp, position_id);
+        }
+
+        if matches!(new_state.state, Opened) {
+            self.index_position_by_price(new_state, position_id);
+        }
+
+        Ok(())
+    }
+
     fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
         let (pair, phi) = (position.phi.pair, &position.phi);
         if position.reserves.r2 != 0u64.into() {

@@ -1,12 +1,34 @@
 use cnidarium::StateWrite;
 
 use crate::{
-    lp::position::{self},
+    lp::position::{self, Position},
     state_key::eviction_queue,
     DirectedTradingPair,
 };
 
+use anyhow::Result;
+use position::State::*;
+
 pub(crate) trait PositionByInventoryIndex: StateWrite {
+    fn update_position_by_inventory_index(
+        &mut self,
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        position_id: &position::Id,
+    ) -> Result<()> {
+        // Clear an existing index of the position, since changes to the
+        // reserves or the position state might have invalidated it.
+        if let Some(prev_lp) = prev_state {
+            self.deindex_position_by_inventory(prev_lp, position_id);
+        }
+
+        if matches!(new_state.state, Opened) {
+            self.index_position_by_inventory(new_state, position_id);
+        }
+
+        Ok(())
+    }
+
     fn index_position_by_inventory(&mut self, position: &position::Position, id: &position::Id) {
         tracing::debug!("indexing position by inventory");
         let canonical_pair = position.phi.pair;

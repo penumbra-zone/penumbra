@@ -37,6 +37,34 @@ impl<T: StateRead + ?Sized> PositionCounterRead for T {}
 
 #[async_trait]
 pub(crate) trait PositionCounter: StateWrite {
+    async fn update_trading_pair_position_counter(
+        &mut self,
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        _id: &position::Id,
+    ) -> Result<()> {
+        use position::State::*;
+        let trading_pair = new_state.phi.pair;
+
+        match prev_state {
+            Some(prev_state) => match (prev_state.state, new_state.state) {
+                (Opened, Closed) => {
+                    let _ = self.decrement_position_counter(&trading_pair).await?;
+                }
+                _ => { /* no-op */ }
+            },
+
+            None => {
+                ensure!(
+                    matches!(new_state.state, Opened),
+                    "fresh position must start in the `Opened` state, found: {:?}",
+                    new_state.state
+                );
+                let _ = self.increment_position_counter(&trading_pair).await?;
+            }
+        }
+        Ok(())
+    }
 
     /// Increment the number of position for a [`TradingPair`].
     /// Returns the updated total, or an error if overflow occurred.

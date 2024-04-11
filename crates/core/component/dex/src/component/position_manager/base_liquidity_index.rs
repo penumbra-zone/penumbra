@@ -2,7 +2,7 @@ use anyhow::Result;
 use cnidarium::StateWrite;
 use penumbra_num::Amount;
 
-use crate::lp::position::{Position, State};
+use crate::lp::position::{self, Position, State};
 use crate::state_key::engine;
 use crate::DirectedTradingPair;
 use penumbra_proto::DomainType;
@@ -151,20 +151,21 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
         Ok(())
     }
 
-    async fn update_available_liquidity(
+    async fn update_asset_by_base_liquidity_index(
         &mut self,
-        prev_position: &Option<Position>,
-        position: &Position,
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        _id: &position::Id,
     ) -> Result<()> {
         // Since swaps may be performed in either direction, the available liquidity indices
         // need to be calculated and stored for both the A -> B and B -> A directions.
-        let (a, b) = (position.phi.pair.asset_1(), position.phi.pair.asset_2());
+        let (a, b) = (new_state.phi.pair.asset_1(), new_state.phi.pair.asset_2());
 
         // A -> B
-        self.update_liquidity_index(DirectedTradingPair::new(a, b), position, prev_position)
+        self.update_liquidity_index(DirectedTradingPair::new(a, b), new_state, prev_state)
             .await?;
         // B -> A
-        self.update_liquidity_index(DirectedTradingPair::new(b, a), position, prev_position)
+        self.update_liquidity_index(DirectedTradingPair::new(b, a), new_state, prev_state)
             .await?;
 
         Ok(())
