@@ -19,8 +19,9 @@ pub(crate) use arb::Arbitrage;
 pub use circuit_breaker::ExecutionCircuitBreaker;
 pub(crate) use circuit_breaker::ValueCircuitBreaker;
 pub use dex::{Dex, StateReadExt, StateWriteExt};
-pub(crate) use position_manager::PositionManager;
-pub use position_manager::PositionRead;
+// TODO(erwan): exposing a DEX interface to other components
+// is useful but maybe we should restrict it to open/queue/close positions
+pub use position_manager::{PositionManager, PositionRead};
 pub use swap_manager::SwapManager;
 #[cfg(test)]
 pub(crate) mod tests;

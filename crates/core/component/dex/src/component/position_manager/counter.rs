@@ -1,4 +1,4 @@
-use anyhow::{bail};
+use anyhow::bail;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 
