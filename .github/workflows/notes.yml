@@ -21,11 +21,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
       - name: Load Rust caching
         uses: astriaorg/buildjet-rust-cache@v2.5.1
-      - name: Load get-version action to grab version component of deployment path
-        uses: battila7/get-version-action@v2
-        id: get_version
+
+      # Previously we used a GHA helper to look up the version, which was overkill.
+      # Let's still log the version of the docs we intend to build.
       - name: Print version component of deployment path
-        run: echo ${{ steps.get_version.outputs.version }}
+        run: echo ${{ github.event.inputs.image_tag || github.ref_name }}
 
       # Ostensibly building from source, but the cache-loading above
       # ensures we don't need to rebuild frequently.
@@ -41,7 +41,7 @@ jobs:
           cd docs/guide
           rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
           tree firebase-tmp
 
       - name: Deploy software guide to firebase
@@ -61,7 +61,7 @@ jobs:
           cd docs/protocol
           rm -rf firebase-tmp
           mkdir firebase-tmp
-          mv book/html firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv book/html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
           tree firebase-tmp
 
       - name: Deploy protocol spec to firebase
@@ -80,9 +80,9 @@ jobs:
           cd docs/rustdoc
           if [ -d "firebase-tmp" ]; then rm -rf firebase-tmp; fi
           mkdir firebase-tmp
-          mv ../../target/doc firebase-tmp/${{ steps.get_version.outputs.version }}
+          mv ../../target/doc firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
           # Copy in the static index file
-          cp index.html firebase-tmp/${{ steps.get_version.outputs.version }}
+          cp index.html firebase-tmp/${{ github.event.inputs.image_tag || github.ref_name }}
 
       - name: Deploy API docs to firebase
         uses: w9jds/firebase-action@v12.9.0
