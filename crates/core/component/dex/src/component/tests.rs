@@ -964,20 +964,6 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 /// the amount of A purchaseable with the candidate assets, i.e. the amount of
 /// A in the reserves for any A <-> * positions.
 async fn check_routable_asset_ordering() -> anyhow::Result<()> {
-    tracing_subscriber::fmt()
-        .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stdout()))
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::from_default_env()
-                // Without explicitly disabling the `r1cs` target, the ZK proof implementations
-                // will spend an enormous amount of CPU and memory building useless tracing output.
-                .add_directive(
-                    "r1cs=off"
-                        .parse()
-                        .expect("rics=off is a valid filter directive"),
-                ),
-        )
-        .with_writer(std::io::stderr)
-        .init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
