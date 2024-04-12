@@ -959,7 +959,25 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
 #[tokio::test]
 /// Confirms the ordering of routable assets returns the assets
 /// with the most liquidity first, as discovered in https://github.com/penumbra-zone/penumbra/issues/4189
+/// For the purposes of this test, it is important to remember
+/// that for a trade routing from A -> *, candidate liquidity is
+/// the amount of A purchaseable with the candidate assets, i.e. the amount of
+/// A in the reserves for any A <-> * positions.
 async fn check_routable_asset_ordering() -> anyhow::Result<()> {
+    tracing_subscriber::fmt()
+        .with_ansi(std::io::IsTerminal::is_terminal(&std::io::stdout()))
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::from_default_env()
+                // Without explicitly disabling the `r1cs` target, the ZK proof implementations
+                // will spend an enormous amount of CPU and memory building useless tracing output.
+                .add_directive(
+                    "r1cs=off"
+                        .parse()
+                        .expect("rics=off is a valid filter directive"),
+                ),
+        )
+        .with_writer(std::io::stderr)
+        .init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
     let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
     let mut state_tx = state.try_begin_transaction().unwrap();
@@ -999,8 +1017,8 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
     let penumbra_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
 
     let reserves_2 = Reserves {
-        // 100,000 penumbra
-        r1: 100_000u64.into(),
+        // 130,000 penumbra
+        r1: 130_000u64.into(),
         // 0 gn
         r2: 0u64.into(),
     };
@@ -1057,19 +1075,37 @@ async fn check_routable_asset_ordering() -> anyhow::Result<()> {
     state_tx.open_position(position_4).await.unwrap();
     state_tx.apply();
 
-    // Expected: USD reserves > BTC reserves > GN reserves, and gm should not appear
+    // Expected: GN reserves > BTC reserves, and USD/gm should not appear
 
     // Find routable assets starting at the Penumbra asset.
     let routable_assets: Vec<_> = state
         .ordered_routable_assets(&penumbra.id())
-        .take(10)
         .collect::<Vec<_>>()
         .await;
+    let routable_assets = routable_assets
+        .into_iter()
+        .collect::<anyhow::Result<Vec<_>>>()?;
 
     assert!(
-        routable_assets.len() == 3,
-        "expected 3 routable assets, got {}",
+        routable_assets.len() == 2,
+        "expected 2 routable assets, got {}",
         routable_assets.len()
+    );
+
+    let first = routable_assets[0];
+    let second = routable_assets[1];
+    assert!(
+        first == gn.id(),
+        "expected GN ({}) to be the first routable asset, got {}",
+        gn.id(),
+        first.clone()
+    );
+
+    assert!(
+        second == test_btc.id(),
+        "expected BTC ({}) to be the second routable asset, got {}",
+        test_btc.id(),
+        second.clone()
     );
 
     Ok(())
