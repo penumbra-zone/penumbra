@@ -3,8 +3,6 @@
 #[cfg(feature = "component")]
 pub mod component;
 
-pub mod event;
-
 mod action;
 pub use action::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 

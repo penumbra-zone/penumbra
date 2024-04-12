@@ -5,7 +5,6 @@
 #[cfg(feature = "component")]
 pub mod component;
 
-pub mod event;
 pub mod state_key;
 
 mod compact_block;
