@@ -1,0 +1,20 @@
+# Adds the `needs-refinement` label to newly opened issues.
+name: New issues need refinement
+on:
+  issues:
+    types:
+      - opened
+jobs:
+  label_issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - run: gh issue edit "$NUMBER" --add-label "$LABELS"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          # Separate multiple labels with commas if other labels are ever
+          # needed e.g., `needs-refinement,foo`.
+          LABELS: needs-refinement
