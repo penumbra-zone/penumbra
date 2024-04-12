@@ -3,7 +3,7 @@ use cnidarium::StateWrite;
 use penumbra_num::Amount;
 use position::State::*;
 
-use crate::lp::position::{self, Position, State};
+use crate::lp::position::{self, Position};
 use crate::state_key::engine;
 use crate::DirectedTradingPair;
 use penumbra_proto::{StateReadProto, StateWriteProto};
@@ -61,34 +61,62 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
         new_state: &Position,
         id: &position::Id,
     ) -> Result<()> {
-        match prev_state {
-            Some(prev_state) => match (prev_state.state, new_state.state) {
-                // We only want to update the index when we process active positions.
-                (Opened, Closed) => {}
-                (Opened, Opened) => {}
-                _ => return Ok(()),
-            },
-            None => {}
-        }
-
+        // We need to reconstruct the position's previous contribution and compute
+        // its new contribution to the index. We do this for each asset in the pair
+        // and short-circuit if all contributions are zero.
         let canonical_pair = new_state.phi.pair;
         let pair_ab = DirectedTradingPair::new(canonical_pair.asset_1(), canonical_pair.asset_2());
 
-        let (prev_a, prev_b) = prev_state
-            .as_ref()
-            .map(|p| {
-                (
-                    p.reserves_for(pair_ab.start).expect("asset ids match"),
-                    p.reserves_for(pair_ab.end).expect("asset ids match"),
-                )
-            })
-            .unwrap_or_else(|| (Amount::zero(), Amount::zero()));
+        // We reconstruct the position's *previous* contribution so that we can deduct them later:
+        let (prev_a, prev_b) = match prev_state {
+            // The position was just created, so its previous contributions are zero.
+            None => (Amount::zero(), Amount::zero()),
+            Some(prev) => match prev.state {
+                // The position was previously closed or withdrawn, so its previous contributions are zero.
+                Closed | Withdrawn { sequence: _ } => (Amount::zero(), Amount::zero()),
+                // The position's previous contributions are the reserves for the start and end assets.
+                _ => (
+                    prev.reserves_for(pair_ab.start)
+                        .expect("asset ids match for start"),
+                    prev.reserves_for(pair_ab.end)
+                        .expect("asset ids match for end"),
+                ),
+            },
+        };
+
+        // For each asset, we compute the new position's contribution to the index:
+        let (new_a, new_b) = if matches!(new_state.state, Closed | Withdrawn { sequence: _ }) {
+            // The position is being closed or withdrawn, so its new contributions are zero.
+            // Note a withdrawn position MUST have zero reserves, so hardcoding this is extra.
+            (Amount::zero(), Amount::zero())
+        } else {
+            (
+                // The new amount of asset A:
+                new_state
+                    .reserves_for(pair_ab.start)
+                    .expect("asset ids match for start"),
+                // The new amount of asset B:
+                new_state
+                    .reserves_for(pair_ab.end)
+                    .expect("asset ids match for end"),
+            )
+        };
+
+        // If all contributions are zero, we can skip the update.
+        // This can happen if we're processing inactive transitions like `Closed -> Withdrawn`.
+        if prev_a == Amount::zero()
+            && new_a == Amount::zero()
+            && prev_b == Amount::zero()
+            && new_b == Amount::zero()
+        {
+            return Ok(());
+        }
 
         // A -> B
-        self.update_asset_by_base_liquidity_index_inner(id, pair_ab, prev_a, new_state)
+        self.update_asset_by_base_liquidity_index_inner(id, pair_ab, prev_a, new_a)
             .await?;
         // B -> A
-        self.update_asset_by_base_liquidity_index_inner(id, pair_ab.flip(), prev_b, new_state)
+        self.update_asset_by_base_liquidity_index_inner(id, pair_ab.flip(), prev_b, new_b)
             .await?;
 
         Ok(())
@@ -103,7 +131,7 @@ trait Inner: StateWrite {
         id: &position::Id,
         pair: DirectedTradingPair,
         old_contrib: Amount,
-        new_position: &Position,
+        new_contrib: Amount,
     ) -> Result<()> {
         let aggregate_key = &engine::routable_assets::lookup_base_liquidity_by_pair(&pair);
 
@@ -112,28 +140,13 @@ trait Inner: StateWrite {
             .await?
             .unwrap_or_default();
 
-        // The previous contribution for this position is supplied to us by
-        // the caller. This default to zero if the position was just created.
-        // We use this to compute a view of the tally that excludes the position
-        // we are currently processing (and avoid double-counting).
-        let old_contrib = old_contrib;
+        // To compute the new aggregate liquidity, we deduct the old contribution
+        // and add the new contribution. We use saturating arithmetic defensively.
+        let new_tally = prev_tally
+            .saturating_sub(&old_contrib)
+            .saturating_add(&new_contrib);
 
-        // The updated contribution is the total amount of base asset routable
-        // from an adjacent asset.
-        let new_contrib = new_position
-            .reserves_for(pair.start)
-            .expect("asset ids should match");
-
-        let new_tally = match new_position.state {
-            State::Opened => prev_tally
-                .saturating_sub(&old_contrib)
-                .saturating_add(&new_contrib),
-            State::Closed => prev_tally.saturating_sub(&old_contrib),
-            _ => unreachable!("inner impl is guarded"),
-        };
-
-        // If the update operation is a no-op, we can skip the update
-        // and return early.
+        // If the update operation is a no-op, we can skip the update and return early.
         if prev_tally == new_tally {
             tracing::debug!(
                 ?prev_tally,

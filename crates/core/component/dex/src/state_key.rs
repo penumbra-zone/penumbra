@@ -109,9 +109,9 @@ pub(crate) mod engine {
 
         use super::*;
 
-        /// A prefix key that takes a start asset `A` (aka. base asset) and surface adjacent
-        /// assets `B` (aka. quote asset), in ascending order of the base liquidity available.
-        ///
+        // An ordered encoding of every asset `B` routable from `A` based on the
+        // aggregate liquidity available to route from `B` to `A` (aka. the base liquidity).
+        //
         /// # Encoding
         /// The prefix key is encoded as `domain || A`.
         pub(crate) fn starting_from(from: &asset::Id) -> [u8; 39] {
@@ -121,9 +121,8 @@ pub(crate) mod engine {
             key
         }
 
-        /// An entry in the routable asset index that implements the mapping between
-        /// a base asset `A` and a quote asset `B`, based on the aggregate liquidity
-        /// available to route from `B` to `A` (aka. the base liquidity).
+        /// A record that an asset `A` is routable to an asset `B` and contains the
+        /// aggregate liquidity available to route from `B` to `A` (aka. the base liquidity).
         ///
         /// # Encoding
         /// The full key is encoded as: `prefix || BE(aggregate_base_liquidity)`
@@ -136,7 +135,8 @@ pub(crate) mod engine {
         }
 
         /// A lookup index used to reconstruct and update the primary index entries.
-        /// It maps a directed trading pair `A -> B` to the current base liquidity available.
+        /// It maps a directed trading pair `A -> B` to the aggregate liquidity available
+        /// to route from `B` to `A` (aka. the base asset liquidity).
         ///
         /// # Encoding
         /// The lookup key is encoded as `prefix_lookup || start_asset|| end_asset`.
