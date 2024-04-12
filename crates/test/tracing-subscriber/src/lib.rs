@@ -1,3 +1,8 @@
+//! A pretty [`tracing`] subscriber for use in test cases.
+//!
+//! NB: this subscriber makes use of a test writer, that is compatible with `cargo test`'s output
+//! capturing.
+
 use {
     tracing::subscriber::{set_default, DefaultGuard},
     tracing_subscriber::{filter::EnvFilter, fmt},

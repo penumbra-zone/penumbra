@@ -45,6 +45,7 @@ members = [
   "crates/test/mock-client",
   "crates/test/mock-consensus",
   "crates/test/tct-property-test",
+  "crates/test/tracing-subscriber",
   "crates/util/auto-https",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
@@ -179,6 +180,7 @@ penumbra-sct                     = { default-features = false, path = "crates/co
 penumbra-shielded-pool           = { default-features = false, path = "crates/core/component/shielded-pool" }
 penumbra-stake                   = { default-features = false, path = "crates/core/component/stake" }
 penumbra-tct                     = { default-features = false, path = "crates/crypto/tct" }
+penumbra-test-subscriber         = { path = "crates/test/tracing-subscriber" }
 penumbra-transaction             = { default-features = false, path = "crates/core/transaction" }
 penumbra-txhash                  = { default-features = false, path = "crates/core/txhash" }
 penumbra-view                    = { path = "crates/view" }

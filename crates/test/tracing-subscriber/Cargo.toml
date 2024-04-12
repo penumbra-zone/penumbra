@@ -1,0 +1,13 @@
+[package]
+name = "penumbra-test-subscriber"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

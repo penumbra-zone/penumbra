@@ -4652,6 +4652,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-tct",
  "penumbra-tendermint-proxy",
+ "penumbra-test-subscriber",
  "penumbra-tower-trace",
  "penumbra-transaction",
  "penumbra-txhash",
@@ -5575,6 +5576,14 @@ dependencies = [
  "tower-service",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "penumbra-test-subscriber"
+version = "0.71.0"
+dependencies = [
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
