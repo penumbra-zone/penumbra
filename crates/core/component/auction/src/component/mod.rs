@@ -1,6 +1,6 @@
 pub mod action_handler;
+mod auction;
 pub mod metrics;
 pub mod rpc;
-mod auction;
 
 pub use self::auction::{StateReadExt, StateWriteExt};
