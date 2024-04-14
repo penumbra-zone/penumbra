@@ -7,13 +7,17 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
-    "penumbra-proto/cnidarium",
-    "penumbra-proto/rpc",
     "penumbra-sct/component",
     "penumbra-shielded-pool/component",
     "penumbra-dex/component",
     "tokio",
     "tonic",
+    "penumbra-proto/cnidarium",
+    "penumbra-proto/rpc",
+
+    "futures",
+    "async-stream",
+    "async-trait",
 ]
 default = ["component"]
 docsrs = []
@@ -46,7 +50,7 @@ decaf377-rdsa = {workspace = true}
 futures = {workspace = true, optional = true}
 hex = {workspace = true}
 im = {workspace = true, optional = true}
-metrics = {workspace = true, optional = true}
+metrics = {workspace = true}
 once_cell = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
