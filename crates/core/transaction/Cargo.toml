@@ -9,6 +9,7 @@ std = ["ark-ff/std", "ibc-types/std"]
 parallel = [
     "tokio",
     "penumbra-shielded-pool/parallel",
+    "penumbra-auction/parallel",
     "penumbra-dex/parallel",
     "penumbra-governance/parallel",
     "penumbra-stake/parallel",
@@ -37,6 +38,7 @@ once_cell = {workspace = true}
 pbjson-types = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
+penumbra-auction = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}

@@ -17,6 +17,7 @@ members = [
   "crates/core/asset",
   "crates/core/component/community-pool",
   "crates/core/component/compact-block",
+  "crates/core/component/auction",
   "crates/core/component/dex",
   "crates/core/component/distributions",
   "crates/core/component/fee",
@@ -163,6 +164,7 @@ penumbra-asset                   = { default-features = false, path = "crates/co
 penumbra-community-pool          = { default-features = false, path = "crates/core/component/community-pool" }
 penumbra-compact-block           = { default-features = false, path = "crates/core/component/compact-block" }
 penumbra-custody                 = { path = "crates/custody" }
+penumbra-auction                 = { default-features = false, path = "crates/core/component/auction" }
 penumbra-dex                     = { default-features = false, path = "crates/core/component/dex" }
 penumbra-distributions           = { default-features = false, path = "crates/core/component/distributions" }
 penumbra-fee                     = { default-features = false, path = "crates/core/component/fee" }
