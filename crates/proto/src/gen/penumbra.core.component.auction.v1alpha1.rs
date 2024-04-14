@@ -33,6 +33,36 @@ impl ::prost::Name for AuctionNft {
         )
     }
 }
+/// The configuration parameters for the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionParameters {}
+impl ::prost::Name for AuctionParameters {
+    const NAME: &'static str = "AuctionParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// Genesis data for the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The configuration parameters for the auction component at genesis.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<AuctionParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

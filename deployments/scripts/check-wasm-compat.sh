@@ -20,7 +20,6 @@ packages=(
     penumbra-asset
     penumbra-community-pool
     penumbra-compact-block
-    penumbra-auction
     penumbra-dex
     penumbra-distributions
     penumbra-fee
