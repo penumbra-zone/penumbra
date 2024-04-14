@@ -13,5 +13,14 @@ message AuctionNft {
   uint64 seq = 2;
 }
 
+// The configuration parameters for the auction component.
+message AuctionParameters {}
+
+// Genesis data for the auction component.
+message GenesisContent {
+  // The configuration parameters for the auction component at genesis.
+  AuctionParameters params = 1;
+}
+
 // Query operations for the Auction component.
 service QueryService {}
