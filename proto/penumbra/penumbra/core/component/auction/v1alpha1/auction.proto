@@ -1,0 +1,17 @@
+syntax = "proto3";
+package penumbra.core.component.auction.v1alpha1;
+
+// A unique identifier for an auction, obtained from hashing a domain separator
+// along with the immutable part of an auction description.
+message AuctionId {
+  bytes inner = 1;
+}
+
+// A bearer NFT tracking ownership of an auction and its proceeds.
+message AuctionNft {
+  AuctionId id = 1;
+  uint64 seq = 2;
+}
+
+// Query operations for the Auction component.
+service QueryService {}
