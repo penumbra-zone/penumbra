@@ -76,7 +76,9 @@ impl<R: RngCore + CryptoRng> Debug for Planner<R> {
 }
 
 impl<R: RngCore + CryptoRng> Planner<R> {
-    /// Create a new planner.
+    /// Creates a new `Planner` instance with default settings.
+    /// The planner is used to assemble and manage transaction plans, incorporating
+    /// various actions like spending and receiving, as well as handling gas and fees.
     pub fn new(rng: R) -> Self {
         Self {
             rng,
@@ -90,6 +92,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
     }
 
+    /// Calculates the total balance by summing up the balance of all actions and change outputs.
     fn calculate_balance(&self) -> Balance {
         let mut balance = Balance::zero();
         for action in &self.actions {
@@ -102,18 +105,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         balance
     }
 
+    /// Calculates the balance after accounting for the base fee estimation.
+    /// This helps understand the net balance available after fees are applied.
     fn calculate_balance_with_fees(&self, base_fee_estimation: Fee) -> Balance {
         self.calculate_balance() - base_fee_estimation.0
     }
 
+    /// Adds an action plan to the list of actions within the planner.
+    /// This is used when assembling the components of a transaction.
     fn push(&mut self, action: ActionPlan) {
         self.actions.push(action);
     }
 
+    /// Estimates the total gas usage of the transaction based on all actions and change outputs.
     fn gas_estimate(&self) -> Gas {
-        // TODO: this won't include the gas cost for the bytes of the tx itself
-        // so this gas estimate will be an underestimate, but since the tx-bytes contribution
-        // to the fee is ideally small, hopefully it doesn't matter.
         let mut gas = Gas::zero();
         for action in &self.actions {
             gas += action.gas_cost();
@@ -125,11 +130,16 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         gas
     }
 
+    /// Estimates the total fees for the transaction based on the estimated gas usage
+    /// and the current gas prices and fee tier.
     fn fee_estimate(&self, gas_prices: &GasPrices, fee_tier: &FeeTier) -> Fee {
         let base_fee: Fee = Fee::from_staking_token_amount(gas_prices.fee(&self.gas_estimate()));
+
         base_fee.apply_tier(*fee_tier)
     }
 
+    /// Refreshes the change outputs based on the current balance and specified change address.
+    /// This creates new change outputs for any excess value after actions are accounted for.
     fn refresh_change(&mut self, change_address: Address) {
         self.change_outputs = BTreeMap::new();
         // For each "provided" balance component, create a change note.
@@ -141,6 +151,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
     }
 
+    /// Adjusts the change outputs to account for transaction fees.
+    /// This reduces the change amount by the estimated fee to ensure the transaction
+    /// balances correctly after fees are considered.
     fn adjust_change_for_fee(&mut self, fee: Fee) {
         if !(self.change_outputs.is_empty()) {
             self.change_outputs.entry(fee.0.asset_id).and_modify(|e| {
@@ -769,7 +782,7 @@ mod tests {
     use rand_core::OsRng;
 
     #[test]
-    fn test_non_zero_fees() {
+    fn test_sufficient_funds_for_non_zero_fees_in_transaction() {
         let rng = OsRng;
         let seed_phrase = SeedPhrase::generate(rng);
         let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
@@ -798,32 +811,26 @@ mod tests {
             },
         );
 
-        // Create vec of spendable notes
         let mut spendable_notes: Vec<Note> = Vec::new();
         spendable_notes.push(note0);
         spendable_notes.push(note1);
 
-        // Instantiate new planner instance
         let mut planner = Planner::new(OsRng);
 
         // Set non-zero gas price.
         let mut gas_price = GasPrices::default();
-        gas_price.block_space_price = 2u64;
+        gas_price.block_space_price = 1u64;
         let fee_tier = FeeTier::Low;
 
         planner.set_gas_prices(gas_price).set_fee_tier(fee_tier);
 
-        // Amount to send recievcer from sender.
         let amount = Value {
             amount: 5u64.into(),
             asset_id: *STAKING_TOKEN_ASSET_ID,
         };
 
-        // For sample spend, add output to planner.
         planner.output(amount, reciever);
-
         planner.actions = planner.plan.actions.clone();
-
         let mut fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
 
         let mut iterations = 0usize;
@@ -852,5 +859,95 @@ mod tests {
         }
 
         assert!(planner.balance.is_zero());
+    }
+
+    #[test]
+    fn test_insufficient_funds_for_non_zero_fees_in_transaction() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let (sender, _dtk) = fvk.incoming().payment_address(0u32.into());
+
+        let seed_phrase_2 = SeedPhrase::generate(rng);
+        let sk_2 = SpendKey::from_seed_phrase_bip44(seed_phrase_2, &Bip44Path::new(0));
+        let fvk_2 = sk_2.full_viewing_key();
+        let (reciever, _dtk_2) = fvk_2.incoming().payment_address(0u32.into());
+
+        let note0 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 4u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+        let note1 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 3u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+
+        let mut spendable_notes: Vec<Note> = Vec::new();
+        spendable_notes.push(note0);
+        spendable_notes.push(note1);
+
+        let mut planner = Planner::new(OsRng);
+
+        // Set non-zero gas price.
+        let mut gas_price = GasPrices::default();
+        gas_price.block_space_price = 2u64;
+        let fee_tier = FeeTier::Low;
+
+        planner.set_gas_prices(gas_price).set_fee_tier(fee_tier);
+
+        let amount = Value {
+            amount: 5u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        planner.output(amount, reciever);
+        planner.actions = planner.plan.actions.clone();
+        let mut fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+        let mut iterations = 0usize;
+        let mut has_insufficient_funds = false;
+
+        while let Some(_required) = planner.calculate_balance_with_fees(fee).required().next() {
+            if iterations >= spendable_notes.len() {
+                has_insufficient_funds = true;
+                break;
+            }
+
+            // Add the required spends to the planner.
+            planner.push(
+                SpendPlan::new(&mut OsRng, spendable_notes[iterations].clone(), 0u64.into()).into(),
+            );
+
+            // Recompute the change outputs, without accounting for fees.
+            planner.refresh_change(sender);
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+            planner.adjust_change_for_fee(fee);
+
+            // Need to account to balance after applying fees.
+            planner.balance = planner.calculate_balance_with_fees(fee);
+
+            if planner.balance.is_zero() {
+                break;
+            }
+
+            iterations += 1;
+        }
+
+        assert!(
+            has_insufficient_funds && !planner.balance.is_zero(),
+            "The planner should identify insufficient funds and have a non-zero balance."
+        );
     }
 }
