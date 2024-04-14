@@ -1,4 +1,8 @@
-use std::{iter::Sum, mem, ops::{Add, AddAssign}};
+use std::{
+    iter::Sum,
+    mem,
+    ops::{Add, AddAssign},
+};
 
 use serde::{Deserialize, Serialize};
 
