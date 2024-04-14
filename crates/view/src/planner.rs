@@ -103,18 +103,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     fn calculate_balance_with_fees(&self, base_fee_estimation: Fee) -> Balance {
-        let mut balance = Balance::zero();
-        for action in &self.actions {
-            balance += action.balance();
-        }
-
-        for action in self.change_outputs.values() {
-            balance += action.balance();
-        }
-
-        balance -= base_fee_estimation.0;
-
-        balance
+        self.calculate_balance() - base_fee_estimation.0
     }
 
     fn push(&mut self, action: ActionPlan) {
@@ -127,13 +116,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // to the fee is ideally small, hopefully it doesn't matter.
         let mut gas = Gas::zero();
         for action in &self.actions {
-            // TODO missing AddAssign
-            gas = gas + action.gas_cost();
+            gas += action.gas_cost();
         }
         for action in self.change_outputs.values() {
-            // TODO missing AddAssign
-            // TODO missing GasCost impl on OutputPlan
-            gas = gas + ActionPlan::from(action.clone()).gas_cost();
+            gas += ActionPlan::from(action.clone()).gas_cost();
         }
 
         gas
@@ -185,7 +171,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     fn prioritize_and_filter_spendable_notes(
         records: Vec<SpendableNoteRecord>,
     ) -> Vec<SpendableNoteRecord> {
-        // Filter out zero valued notes. 
+        // Filter out zero valued notes.
         let mut filtered = records
             .into_iter()
             .filter(|record| record.note.amount() > Amount::zero())

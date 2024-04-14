@@ -1,4 +1,4 @@
-use std::{iter::Sum, ops::Add};
+use std::{iter::Sum, mem, ops::{Add, AddAssign}};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ use penumbra_proto::{core::component::fee::v1 as pb, DomainType};
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
 /// transaction resource consumption.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub struct Gas {
     pub block_space: u64,
     pub compact_block_space: u64,
@@ -101,5 +101,11 @@ impl TryFrom<pb::GasPrices> for GasPrices {
             verification_price: proto.verification_price,
             execution_price: proto.execution_price,
         })
+    }
+}
+
+impl AddAssign for Gas {
+    fn add_assign(&mut self, other: Self) {
+        *self = mem::take(self) + other;
     }
 }
