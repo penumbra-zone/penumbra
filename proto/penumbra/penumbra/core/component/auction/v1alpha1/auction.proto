@@ -89,3 +89,8 @@ message DutchAuction {
   // The mutable data describing the auction's execution.
   DutchAuctionState state = 2;
 }
+
+// Initiates a Dutch auction using protocol-controlled liquidity.
+message ActionDutchAuctionSchedule {
+  DutchAuctionDescription description = 1;
+}
