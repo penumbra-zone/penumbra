@@ -89,3 +89,14 @@ message DutchAuction {
   // The mutable data describing the auction's execution.
   DutchAuctionState state = 2;
 }
+
+// Initiates a Dutch auction using protocol-controlled liquidity.
+message ActionDutchAuctionSchedule {
+  DutchAuctionDescription description = 1;
+}
+
+// Terminate the auction associated with the specified `auction_id`
+message ActionDutchAuctionEnd {
+  // The auction to end.
+  AuctionId auction_id = 1;
+}
