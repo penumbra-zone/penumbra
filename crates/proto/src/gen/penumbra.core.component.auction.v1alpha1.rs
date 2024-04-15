@@ -1,3 +1,33 @@
+/// The configuration parameters for the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionParameters {}
+impl ::prost::Name for AuctionParameters {
+    const NAME: &'static str = "AuctionParameters";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// Genesis data for the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisContent {
+    /// The configuration parameters for the auction component at genesis.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<AuctionParameters>,
+}
+impl ::prost::Name for GenesisContent {
+    const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// A unique identifier for an auction, obtained from hashing a domain separator
 /// along with the immutable part of an auction description.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -33,12 +63,49 @@ impl ::prost::Name for AuctionNft {
         )
     }
 }
-/// The configuration parameters for the auction component.
+/// Describes a Dutch auction using programmatic liquidity on the DEX.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AuctionParameters {}
-impl ::prost::Name for AuctionParameters {
-    const NAME: &'static str = "AuctionParameters";
+pub struct DutchAuctionDescription {
+    /// The value the seller wishes to auction.
+    #[prost(message, optional, tag = "1")]
+    pub input: ::core::option::Option<super::super::super::asset::v1::Value>,
+    /// The asset ID of the target asset the seller wishes to acquire.
+    #[prost(message, optional, tag = "2")]
+    pub output: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The maximum output the seller can receive.
+    ///
+    /// This implicitly defines the starting price for the auction.
+    #[prost(message, optional, tag = "3")]
+    pub max_output: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The minimum output the seller is willing to receive.
+    ///
+    /// This implicitly defines the ending price for the auction.
+    #[prost(message, optional, tag = "4")]
+    pub min_output: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The block height at which the auction begins.
+    ///
+    /// This allows the seller to schedule an auction at a future time.
+    #[prost(uint64, tag = "5")]
+    pub start_height: u64,
+    /// The block height at which the auction ends.
+    ///
+    /// Together with `start_height`, `max_output`, and `min_output`,
+    /// this implicitly defines the speed of the auction.
+    #[prost(uint64, tag = "6")]
+    pub end_height: u64,
+    /// The number of discrete price steps to use for the auction.
+    ///
+    /// `end_height - start_height` must be a multiple of `step_count`.
+    #[prost(uint64, tag = "7")]
+    pub step_count: u64,
+    /// A random nonce used to allow identical auctions to have
+    /// distinct auction IDs.
+    #[prost(bytes = "vec", tag = "8")]
+    pub nonce: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for DutchAuctionDescription {
+    const NAME: &'static str = "DutchAuctionDescription";
     const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
@@ -46,16 +113,55 @@ impl ::prost::Name for AuctionParameters {
         )
     }
 }
-/// Genesis data for the auction component.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisContent {
-    /// The configuration parameters for the auction component at genesis.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<AuctionParameters>,
+pub struct DutchAuctionState {
+    /// The sequence number of the auction state.
+    ///
+    /// Dutch auctions move from:
+    /// 0 (opened) => 1 (closed) => n (withdrawn)
+    #[prost(uint64, tag = "1")]
+    pub seq: u64,
+    /// If present, the current position controlled by this auction.
+    #[prost(message, optional, tag = "2")]
+    pub current_position: ::core::option::Option<super::super::dex::v1::PositionId>,
+    /// If present, the next trigger height to step down the price.
+    #[prost(uint64, tag = "3")]
+    pub next_trigger: u64,
+    /// The amount of the input asset directly owned by the auction.
+    ///
+    /// The auction may also own the input asset indirectly,
+    /// via the reserves of `current_position` if it exists.
+    #[prost(message, optional, tag = "4")]
+    pub input_reserves: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The amount of the output asset directly owned by the auction.
+    ///
+    /// The auction may also own the output asset indirectly,
+    /// via the reserves of `current_position` if it exists.
+    #[prost(message, optional, tag = "5")]
+    pub output_reserves: ::core::option::Option<super::super::super::num::v1::Amount>,
 }
-impl ::prost::Name for GenesisContent {
-    const NAME: &'static str = "GenesisContent";
+impl ::prost::Name for DutchAuctionState {
+    const NAME: &'static str = "DutchAuctionState";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct DutchAuction {
+    /// The immutable data describing the auction and its auction ID.
+    #[prost(message, optional, tag = "1")]
+    pub description: ::core::option::Option<DutchAuctionDescription>,
+    /// The mutable data describing the auction's execution.
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<DutchAuctionState>,
+}
+impl ::prost::Name for DutchAuction {
+    const NAME: &'static str = "DutchAuction";
     const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
