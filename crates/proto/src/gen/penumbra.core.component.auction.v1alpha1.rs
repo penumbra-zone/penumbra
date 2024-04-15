@@ -202,6 +202,23 @@ impl ::prost::Name for ActionDutchAuctionEnd {
         )
     }
 }
+/// Withdraw funds from the ended auction associated with the specified `auction_id`
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionDutchAuctionWithdraw {
+    /// The auction to withdraw.
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+}
+impl ::prost::Name for ActionDutchAuctionWithdraw {
+    const NAME: &'static str = "ActionDutchAuctionWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
