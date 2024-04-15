@@ -165,8 +165,7 @@ impl TryFrom<pb::DutchAuctionState> for DutchAuctionState {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::DutchAuctionState) -> Result<Self, Self::Error> {
-        let current_position =
-            msg.current_position.map(TryInto::try_into).transpose()?;
+        let current_position = msg.current_position.map(TryInto::try_into).transpose()?;
 
         let domain_type = DutchAuctionState {
             sequence: msg.seq,
