@@ -46,6 +46,7 @@ impl AppParameters {
                     proposal_valid_quorum,
                     proposal_pass_threshold,
                     proposal_slash_threshold,
+                    community_pool_is_frozen: _,
                 },
             ibc_params:
                 IBCParameters {
@@ -141,6 +142,7 @@ impl AppParameters {
                     proposal_valid_quorum,
                     proposal_pass_threshold,
                     proposal_slash_threshold,
+                    community_pool_is_frozen: _,
                 },
             ibc_params:
                 IBCParameters {

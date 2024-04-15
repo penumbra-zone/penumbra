@@ -980,6 +980,9 @@ pub struct GovernanceParameters {
     /// would have passed it, as a ratio of "no" votes over all total votes.
     #[prost(string, tag = "5")]
     pub proposal_slash_threshold: ::prost::alloc::string::String,
+    /// All community pool transactions are disabled if this is true.
+    #[prost(bool, tag = "6")]
+    pub community_pool_is_frozen: bool,
 }
 impl ::prost::Name for GovernanceParameters {
     const NAME: &'static str = "GovernanceParameters";
