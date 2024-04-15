@@ -30,7 +30,7 @@ Address is viewable with this full viewing key. Account index is 0.
 Addresses are opaque and do not reveal account information. Only you, or someone
 who has your viewing key, can decrypt the account information from the address.
 
-### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
+### Getting testnet tokens on Discord in the `#testnet-faucet` channel
 
 In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
 way to do this is to join our [Discord](https://discord.gg/hKvkrqa3zC) and post your address in the `#testnet-faucet` channel.

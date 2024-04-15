@@ -22,7 +22,7 @@ additional-js =["theme/js/mermaid.min.js", "theme/js/mermaid-init.js"]
 [output.linkcheck]
 # Consider setting `follow-web-links=true` ad-hoc, to validate external URLs.
 follow-web-links = false
-warning-policy = "ignore"
+warning-policy = "error"
 
 # The buf.build website doesn't support HTTP HEAD calls, returning 405.
 # Only relevant when `follow-web-links=true`.

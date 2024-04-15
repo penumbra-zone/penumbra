@@ -40,7 +40,7 @@ at slightly different times.
 
 ### Testnet 70 -> 71
 
-For the first chain upgrade performed on a Penumbra testnet, use this value for genesis time: `{{ #include ../upgrade_genesis_time_70_71.md }}`.
+For the first chain upgrade performed on a Penumbra testnet, use this value for genesis time: `{{ #include ../../upgrade_genesis_time_70_71.md }}`.
 See an example below for how to supply this value when performing the migration.
 
 ## Performing a chain upgrade
@@ -52,7 +52,7 @@ If your instance is using a different directory, update the paths accordingly.
 2. Using the same version of `pd` that was running when the chain halted, prepare an export directory:
    `pd export --home ~/.penumbra/testnet_data/node0/pd --export-directory ~/.penumbra/testnet_data/node0/pd-exported-state`
 3. Back up the historical state directory: `mv ~/.penumbra/testnet_data/node0/pd ~/.penumbra/testnet_data/node0/pd-state-backup`
-4. Download the latest version of `pd` and install it. Run `pd --version` and confirm you see `{{ #include ../penumbra_version.md }}` before proceeding.
+4. Download the latest version of `pd` and install it. Run `pd --version` and confirm you see `{{ #include ../../penumbra_version.md }}` before proceeding.
 
 <!--
 An example log message emitted by `pd migrate` without providing `--genesis-start`:
@@ -62,7 +62,7 @@ An example log message emitted by `pd migrate` without providing `--genesis-star
 The value after `now=` is what should be copied. In practice, for testnets, Penumbra Labs will advise on a genesis time
 and provide that value in the documentation. Or should we just pick a genesis start ahead of time, and use that for all?
 -->
-5. Apply the migration: `pd migrate --genesis-start "{{ #include ../upgrade_genesis_time_70_71.md }}" --target-directory ~/.penumbra/testnet_data/node0/pd-exported-state/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../penumbra_version.md }}.tar.gz`.
+5. Apply the migration: `pd migrate --genesis-start "{{ #include ../../upgrade_genesis_time_70_71.md }}" --target-directory ~/.penumbra/testnet_data/node0/pd-exported-state/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../../penumbra_version.md }}.tar.gz`.
    You must use that precise genesis time, otherwise your node will not be able to reach consensus with the rest of the network.
 6. Move the migrated state into place: `mkdir ~/.penumbra/testnet_data/node0/pd && mv ~/.penumbra/testnet_data/node0/pd-exported-state/rocksdb ~/.penumbra/testnet_data/node0/pd/`
 7. Move the upgrade cometbft state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json
@@ -73,5 +73,5 @@ Finally, restart the node, e.g. `sudo systemctl restart penumbra cometbft`. Chec
 past the halt height `n`.
 
 If you want to host a snapshot for this migration, copy the file
-`~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../penumbra_version.md }}.tar.gz` to the appropriate hosting environment,
+`~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../../penumbra_version.md }}.tar.gz` to the appropriate hosting environment,
 and inform the users of your validator.
