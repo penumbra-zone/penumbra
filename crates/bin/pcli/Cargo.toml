@@ -21,6 +21,7 @@ parallel = [
     "penumbra-proof-params/parallel",
     "decaf377/parallel",
     "penumbra-shielded-pool/parallel",
+    "penumbra-auction/parallel",
     "penumbra-dex/parallel",
     "penumbra-governance/parallel",
     "penumbra-stake/parallel",
@@ -62,6 +63,7 @@ penumbra-asset = {workspace = true, default-features = false}
 penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-compact-block = {workspace = true, default-features = false}
 penumbra-custody = {workspace = true}
+penumbra-auction = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}

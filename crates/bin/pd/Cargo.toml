@@ -70,6 +70,7 @@ penumbra-asset                   = { workspace = true, default-features = true }
 penumbra-auto-https              = { path = "../../util/auto-https" }
 penumbra-compact-block           = { workspace = true, default-features = true }
 penumbra-custody                 = { workspace = true }
+penumbra-auction                 = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-dex                     = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-fee                     = { workspace = true, default-features = true }
 penumbra-governance              = { workspace = true, features = ["parallel"], default-features = true }
