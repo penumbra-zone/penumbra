@@ -14,6 +14,7 @@ pub struct AuctionId(pub [u8; 32]);
 impl std::str::FromStr for AuctionId {
     type Err = anyhow::Error;
 
+    // IMPORTANT: changing this is state-breaking.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let inner = bech32str::decode(s, bech32str::auction_id::BECH32_PREFIX, bech32str::Bech32m)?;
         pb::AuctionId { inner }.try_into()
@@ -21,18 +22,19 @@ impl std::str::FromStr for AuctionId {
 }
 
 impl std::fmt::Debug for AuctionId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        std::fmt::Display::fmt(self, f)
+    }
+}
+
+impl std::fmt::Display for AuctionId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // IMPORTANT: changing this is state-breaking.
         f.write_str(&bech32str::encode(
             &self.0,
             bech32str::auction_id::BECH32_PREFIX,
             bech32str::Bech32m,
         ))
-    }
-}
-
-impl std::fmt::Display for AuctionId {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
     }
 }
 

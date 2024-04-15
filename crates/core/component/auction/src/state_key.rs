@@ -9,18 +9,21 @@ pub mod parameters {
 }
 
 pub mod store {
+    use crate::auction::id::AuctionId;
+
     pub fn prefix() -> &'static str {
         "auction/store/"
     }
 
-    // TODO: change this to `AuctionId`
-    pub fn by_id(auction_id: u64) -> String {
+    pub fn by_id(auction_id: AuctionId) -> String {
         format!("{}{auction_id}", prefix())
     }
 }
 
 pub mod dutch {
     pub mod trigger {
+        use crate::auction::id::AuctionId;
+
         pub fn prefix() -> &'static str {
             "auction/dutch/trigger/"
         }
@@ -29,9 +32,8 @@ pub mod dutch {
             format!("{}{trigger_height:020}/", prefix())
         }
 
-        // TODO: change to `auction_id: AuctionId` when we define it
-        pub fn auction_at_height(auction_id: u64, trigger_height: u64) -> String {
-            format!("{}{}", by_height(trigger_height), auction_id)
+        pub fn auction_at_height(auction_id: AuctionId, trigger_height: u64) -> String {
+            format!("{}{auction_id}", by_height(trigger_height))
         }
     }
 }
