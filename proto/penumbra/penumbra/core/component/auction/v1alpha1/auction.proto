@@ -100,3 +100,33 @@ message ActionDutchAuctionEnd {
   // The auction to end.
   AuctionId auction_id = 1;
 }
+
+// Withdraw funds from the ended auction associated with the specified `auction_id`
+message ActionDutchAuctionWithdraw {
+    // The auction to withdraw funds from.
+    AuctionId auction_id = 1;
+    // The sequence number of the withdrawal.
+    uint64 seq = 2;
+    // A transparent (zero blinding factor) commitment to the 
+    // auction's final reserves.
+    //
+    // The chain will check this commitment by recomputing it 
+    // with the on-chain state.
+    asset.v1.BalanceCommitment reserves_commitment = 3;
+}
+
+// An `ActionDutchAuctionWithdraw` augmented with additional metadata.
+message ActionDutchAuctionWithdrawView {
+    ActionDutchAuctionWithdraw action = 1;
+    // A sequence of values that sum together to the provided 
+    // reserves commitment.
+    repeated asset.v1.ValueView reserves = 2;
+}
+
+// An `ActionDutchAuctionSchedule` augmented with additional metadata.
+message ActionDutchAuctionScheduleView {
+    ActionDutchAuctionSchedule action = 1;
+    AuctionId auction_id = 2;
+    asset.v1.Metadata input_metadata = 3;
+    asset.v1.Metadata output_metadata = 4;
+}
