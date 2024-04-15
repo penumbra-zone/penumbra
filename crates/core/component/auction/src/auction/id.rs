@@ -37,7 +37,6 @@ impl std::fmt::Display for AuctionId {
 }
 
 /* Protobuf impls */
-
 impl From<AuctionId> for pb::AuctionId {
     fn from(domain: AuctionId) -> Self {
         Self {
