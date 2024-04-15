@@ -3,6 +3,8 @@
 - [Using Penumbra from the command line](./pcli.md)
   - [Installing `pcli`](./pcli/install.md)
   - [Generating a Wallet](./pcli/wallet.md)
+    - [Software Custody Backend](./pcli/wallet/softkms.md)
+    - [Threshold Custody Backend](./pcli/wallet/threshold.md)
   - [Updating to the latest testnet](./pcli/update.md)
   - [Viewing Balances](./pcli/balance.md)
   - [Sending Transactions](./pcli/transaction.md)
