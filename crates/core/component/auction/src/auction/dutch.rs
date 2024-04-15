@@ -5,6 +5,8 @@ use penumbra_num::Amount;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+pub mod actions;
+
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -47,7 +49,7 @@ impl TryFrom<pb::DutchAuction> for DutchAuction {
 /* ********************************** */
 
 /// A description of the immutable parts of a dutch auction.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(
     try_from = "pb::DutchAuctionDescription",
     into = "pb::DutchAuctionDescription"

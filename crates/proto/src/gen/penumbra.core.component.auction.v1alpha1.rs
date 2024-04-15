@@ -169,6 +169,22 @@ impl ::prost::Name for DutchAuction {
         )
     }
 }
+/// Initiates a Dutch auction using protocol-controlled liquidity.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionDutchAuctionSchedule {
+    #[prost(message, optional, tag = "1")]
+    pub description: ::core::option::Option<DutchAuctionDescription>,
+}
+impl ::prost::Name for ActionDutchAuctionSchedule {
+    const NAME: &'static str = "ActionDutchAuctionSchedule";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
