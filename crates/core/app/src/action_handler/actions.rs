@@ -92,6 +92,20 @@ impl AppActionHandler for Action {
                 }
                 action.check_historical(state).await
             }
+            // Reject community pool spends, deposits, and outputs if the pool is currently frozen.
+            Action::CommunityPoolSpend(_)
+            | Action::CommunityPoolOutput(_)
+            | Action::CommunityPoolDeposit(_)
+                // SAFETY: this is safe to check in parallel because the community pool's
+                // enablement cannot change during transaction execution.
+                if penumbra_governance::StateReadExt::get_governance_params(&state)
+                    .await?
+                    .community_pool_is_frozen =>
+            {
+                anyhow::bail!(
+                    "transaction contains community pool actions, but the pool is currently frozen"
+                );
+            }
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
