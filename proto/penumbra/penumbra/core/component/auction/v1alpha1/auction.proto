@@ -82,3 +82,10 @@ message DutchAuctionState {
   // via the reserves of `current_position` if it exists.
   num.v1.Amount output_reserves = 5;
 }
+
+message DutchAuction {
+  // The immutable data describing the auction and its auction ID.
+  DutchAuctionDescription description = 1;
+  // The mutable data describing the auction's execution.
+  DutchAuctionState state = 2;
+}
