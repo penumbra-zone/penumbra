@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::fmd::{should_update_fmd_params, ClueManagerInternal as _};
+use super::fmd::ClueManagerInternal as _;
+use crate::fmd::should_update_fmd_params;
 use crate::params::ShieldedPoolParameters;
 use crate::{fmd, genesis, state_key};
 use anyhow::anyhow;

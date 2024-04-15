@@ -10,7 +10,7 @@ pub mod parameters {
     }
 }
 
-pub(super) mod clue_count {
+pub(crate) mod clue_count {
     pub fn current() -> &'static str {
         "shielded_pool/fmd_clue_count/current"
     }
