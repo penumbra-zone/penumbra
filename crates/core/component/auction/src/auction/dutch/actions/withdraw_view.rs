@@ -1,5 +1,6 @@
-use crate::auction::dutch::DutchAuctionauction_id;
+use crate::auction::dutch::actions::ActionDutchAuctionWithdraw;
 use anyhow::anyhow;
+use penumbra_asset::ValueView;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -24,7 +25,11 @@ impl From<ActionDutchAuctionWithdrawView> for pb::ActionDutchAuctionWithdrawView
     fn from(domain: ActionDutchAuctionWithdrawView) -> Self {
         pb::ActionDutchAuctionWithdrawView {
             action: Some(domain.action.into()),
-            reserves: Some(domain.reserves.into()),
+            reserves: domain
+                .reserves
+                .into_iter()
+                .map(Into::into)
+                .collect::<Vec<_>>(),
         }
     }
 }
@@ -42,10 +47,9 @@ impl TryFrom<pb::ActionDutchAuctionWithdrawView> for ActionDutchAuctionWithdrawV
                 .try_into()?,
             reserves: msg
                 .reserves
-                .ok_or_else(|| {
-                    anyhow!("ActionDutchAuctionWithdrawView message is missing reserves")
-                })?
-                .try_into()?,
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()?,
         })
     }
 }

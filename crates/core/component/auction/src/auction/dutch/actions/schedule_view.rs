@@ -1,4 +1,7 @@
-use crate::auction::dutch::DutchAuctionDescription;
+use crate::auction::{
+    dutch::{actions::ActionDutchAuctionSchedule, asset::Metadata},
+    id::AuctionId,
+};
 use anyhow::anyhow;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};

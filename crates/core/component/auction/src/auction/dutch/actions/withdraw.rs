@@ -1,5 +1,6 @@
-use crate::auction::dutch::DutchAuctionauction_id;
+use crate::auction::id::AuctionId;
 use anyhow::anyhow;
+use penumbra_asset::balance;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
