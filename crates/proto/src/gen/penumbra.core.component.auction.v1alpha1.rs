@@ -72,7 +72,7 @@ pub struct DutchAuctionDescription {
     pub input: ::core::option::Option<super::super::super::asset::v1::Value>,
     /// The asset ID of the target asset the seller wishes to acquire.
     #[prost(message, optional, tag = "2")]
-    pub output: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    pub output_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
     /// The maximum output the seller can receive.
     ///
     /// This implicitly defines the starting price for the auction.
