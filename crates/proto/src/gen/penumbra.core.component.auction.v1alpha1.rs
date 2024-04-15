@@ -206,12 +206,68 @@ impl ::prost::Name for ActionDutchAuctionEnd {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ActionDutchAuctionWithdraw {
-    /// The auction to withdraw.
+    /// The auction to withdraw funds from.
     #[prost(message, optional, tag = "1")]
     pub auction_id: ::core::option::Option<AuctionId>,
+    /// The sequence number of the withdrawal.
+    #[prost(uint64, tag = "2")]
+    pub seq: u64,
+    /// A transparent (zero blinding factor) commitment to the
+    /// auction's final reserves.
+    ///
+    /// The chain will check this commitment by recomputing it
+    /// with the on-chain state.
+    #[prost(message, optional, tag = "3")]
+    pub reserves_commitment: ::core::option::Option<
+        super::super::super::asset::v1::BalanceCommitment,
+    >,
 }
 impl ::prost::Name for ActionDutchAuctionWithdraw {
     const NAME: &'static str = "ActionDutchAuctionWithdraw";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// An `ActionDutchAuctionWithdraw` augmented with additional metadata.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionDutchAuctionWithdrawView {
+    #[prost(message, optional, tag = "1")]
+    pub action: ::core::option::Option<ActionDutchAuctionWithdraw>,
+    /// A sequence of values that sum together to the provided
+    /// reserves commitment.
+    #[prost(message, repeated, tag = "2")]
+    pub reserves: ::prost::alloc::vec::Vec<super::super::super::asset::v1::ValueView>,
+}
+impl ::prost::Name for ActionDutchAuctionWithdrawView {
+    const NAME: &'static str = "ActionDutchAuctionWithdrawView";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// An `ActionDutchAuctionSchedule` augmented with additional metadata.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionDutchAuctionScheduleView {
+    #[prost(message, optional, tag = "1")]
+    pub action: ::core::option::Option<ActionDutchAuctionSchedule>,
+    #[prost(message, optional, tag = "2")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(message, optional, tag = "3")]
+    pub input_metadata: ::core::option::Option<super::super::super::asset::v1::Metadata>,
+    #[prost(message, optional, tag = "4")]
+    pub output_metadata: ::core::option::Option<
+        super::super::super::asset::v1::Metadata,
+    >,
+}
+impl ::prost::Name for ActionDutchAuctionScheduleView {
+    const NAME: &'static str = "ActionDutchAuctionScheduleView";
     const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(
