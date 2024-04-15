@@ -1,17 +1,8 @@
 syntax = "proto3";
 package penumbra.core.component.auction.v1alpha1;
 
-// A unique identifier for an auction, obtained from hashing a domain separator
-// along with the immutable part of an auction description.
-message AuctionId {
-  bytes inner = 1;
-}
-
-// A bearer NFT tracking ownership of an auction and its proceeds.
-message AuctionNft {
-  AuctionId id = 1;
-  uint64 seq = 2;
-}
+import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/num/v1/num.proto";
 
 // The configuration parameters for the auction component.
 message AuctionParameters {}
@@ -24,3 +15,47 @@ message GenesisContent {
 
 // Query operations for the Auction component.
 service QueryService {}
+
+// A unique identifier for an auction, obtained from hashing a domain separator
+// along with the immutable part of an auction description.
+message AuctionId {
+  bytes inner = 1;
+}
+
+// A bearer NFT tracking ownership of an auction and its proceeds.
+message AuctionNft {
+  AuctionId id = 1;
+  uint64 seq = 2;
+}
+
+// Describes a Dutch auction using programmatic liquidity on the DEX.
+message DutchAuctionDescription {
+  // The value the seller wishes to auction.
+  asset.v1.Value input = 1;
+  // The asset ID of the target asset the seller wishes to acquire.
+  asset.v1.AssetId output = 2;
+  // The maximum output the seller can receive.
+  //
+  // This implicitly defines the starting price for the auction.
+  num.v1.Amount max_output = 3;
+  // The minimum output the seller is willing to receive.
+  //
+  // This implicitly defines the ending price for the auction.
+  num.v1.Amount min_output = 4;
+  // The block height at which the auction begins.
+  //
+  // This allows the seller to schedule an auction at a future time.
+  uint64 start_height = 5;
+  // The block height at which the auction ends.
+  //
+  // Together with `start_height`, `max_output`, and `min_output`,
+  // this implicitly defines the speed of the auction.
+  uint64 end_height = 6;
+  // The number of discrete price steps to use for the auction.
+  //
+  // `end_height - start_height` must be a multiple of `step_count`.
+  uint64 step_count = 7;
+  // A random nonce used to allow identical auctions to have
+  // distinct auction IDs.
+  bytes nonce = 8;
+}
