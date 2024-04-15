@@ -94,3 +94,9 @@ message DutchAuction {
 message ActionDutchAuctionSchedule {
   DutchAuctionDescription description = 1;
 }
+
+// Terminate the auction associated with the specified `auction_id`
+message ActionDutchAuctionEnd {
+  // The auction to end.
+  AuctionId auction_id = 1;
+}
