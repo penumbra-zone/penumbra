@@ -29,9 +29,13 @@ message GenesisContent {
   repeated Allocation allocations = 3;
 }
 
+// The parameters which control how the FMD parameters evolve over time.
 message FmdMetaParameters {
+  // How much time users have to transition to new parameters.
+  uint64 fmd_grace_period_blocks = 1; 
+  // The algorithm governing how the parameters change.
   oneof algorithm {
-    uint32 fixed_precision_bits = 1;
+    uint32 fixed_precision_bits = 2;
   }
 }
 

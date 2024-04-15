@@ -693,10 +693,17 @@ impl serde::Serialize for FmdMetaParameters {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
+        if self.fmd_grace_period_blocks != 0 {
+            len += 1;
+        }
         if self.algorithm.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters", len)?;
+        if self.fmd_grace_period_blocks != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("fmdGracePeriodBlocks", ToString::to_string(&self.fmd_grace_period_blocks).as_str())?;
+        }
         if let Some(v) = self.algorithm.as_ref() {
             match v {
                 fmd_meta_parameters::Algorithm::FixedPrecisionBits(v) => {
@@ -714,12 +721,15 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
+            "fmd_grace_period_blocks",
+            "fmdGracePeriodBlocks",
             "fixed_precision_bits",
             "fixedPrecisionBits",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
+            FmdGracePeriodBlocks,
             FixedPrecisionBits,
             __SkipField__,
         }
@@ -743,6 +753,7 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                         E: serde::de::Error,
                     {
                         match value {
+                            "fmdGracePeriodBlocks" | "fmd_grace_period_blocks" => Ok(GeneratedField::FmdGracePeriodBlocks),
                             "fixedPrecisionBits" | "fixed_precision_bits" => Ok(GeneratedField::FixedPrecisionBits),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -763,9 +774,18 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                 where
                     V: serde::de::MapAccess<'de>,
             {
+                let mut fmd_grace_period_blocks__ = None;
                 let mut algorithm__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
+                        GeneratedField::FmdGracePeriodBlocks => {
+                            if fmd_grace_period_blocks__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fmdGracePeriodBlocks"));
+                            }
+                            fmd_grace_period_blocks__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::FixedPrecisionBits => {
                             if algorithm__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("fixedPrecisionBits"));
@@ -778,6 +798,7 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                     }
                 }
                 Ok(FmdMetaParameters {
+                    fmd_grace_period_blocks: fmd_grace_period_blocks__.unwrap_or_default(),
                     algorithm: algorithm__,
                 })
             }

@@ -2,11 +2,11 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    decaf377_fmd::Precision,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
     },
-    decaf377_fmd::Precision,
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,

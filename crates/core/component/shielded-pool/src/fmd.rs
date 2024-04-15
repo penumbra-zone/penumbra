@@ -9,14 +9,12 @@ use serde::{Deserialize, Serialize};
 pub mod state_key;
 
 /// How long users have to switch to updated parameters.
-pub const FMD_GRACE_PERIOD_BLOCKS: u64 = 1 << 4;
-/// How often we update the params.
-pub const FMD_UPDATE_FREQUENCY_BLOCKS: u64 = 1 << 6;
-/// How many blocks we expect per day, approximately.
-const _BLOCKS_PER_DAY: u64 = 1 << 13;
+pub const FMD_GRACE_PERIOD_BLOCKS_DEFAULT: u64 = 1 << 4;
+/// How often we update the params, in terms of the number of grace periods
+pub const FMD_UPDATE_FREQUENCY_GRACE_PERIOD: u64 = 4;
 
-pub fn should_update_fmd_params(height: u64) -> bool {
-    height % FMD_UPDATE_FREQUENCY_BLOCKS == 0
+pub fn should_update_fmd_params(fmd_grace_period_blocks: u64, height: u64) -> bool {
+    height % (fmd_grace_period_blocks * FMD_UPDATE_FREQUENCY_GRACE_PERIOD) == 0
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -61,34 +59,50 @@ impl Default for Parameters {
     }
 }
 
-/// Meta parameters are an algorithm for dynamically choosing FMD parameters.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
-pub enum MetaParameters {
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MetaParametersAlgorithm {
     /// Used a fixed precision forever.
     Fixed(Precision),
+}
+
+/// Meta paramaters governing how FMD parameters change.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
+pub struct MetaParameters {
+    pub fmd_grace_period_blocks: u64,
+    pub algorithm: MetaParametersAlgorithm,
 }
 
 impl TryFrom<pb::FmdMetaParameters> for MetaParameters {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::FmdMetaParameters) -> Result<Self> {
-        match value.algorithm.ok_or(anyhow!("missing algorithm"))? {
+        let fmd_grace_period_blocks = value.fmd_grace_period_blocks;
+        let algorithm = match value
+            .algorithm
+            .ok_or(anyhow!("FmdMetaParameters missing algorithm"))?
+        {
             pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(p) => {
-                Ok(MetaParameters::Fixed(Precision::new(p as u8)?))
+                MetaParametersAlgorithm::Fixed(Precision::new(p as u8)?)
             }
-        }
+        };
+        Ok(MetaParameters {
+            fmd_grace_period_blocks,
+            algorithm,
+        })
     }
 }
 
 impl From<MetaParameters> for pb::FmdMetaParameters {
     fn from(value: MetaParameters) -> Self {
-        match value {
-            MetaParameters::Fixed(p) => pb::FmdMetaParameters {
-                algorithm: Some(pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(
-                    p.bits().into(),
-                )),
-            },
+        let algorithm = match value.algorithm {
+            MetaParametersAlgorithm::Fixed(p) => {
+                pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(p.bits().into())
+            }
+        };
+        pb::FmdMetaParameters {
+            fmd_grace_period_blocks: value.fmd_grace_period_blocks,
+            algorithm: Some(algorithm),
         }
     }
 }
@@ -99,7 +113,10 @@ impl DomainType for MetaParameters {
 
 impl Default for MetaParameters {
     fn default() -> Self {
-        Self::Fixed(Precision::default())
+        Self {
+            fmd_grace_period_blocks: FMD_GRACE_PERIOD_BLOCKS_DEFAULT,
+            algorithm: MetaParametersAlgorithm::Fixed(Precision::default()),
+        }
     }
 }
 
@@ -110,8 +127,8 @@ impl MetaParameters {
         height: u64,
         _clue_count_delta: (u64, u64),
     ) -> Parameters {
-        match *self {
-            MetaParameters::Fixed(precision) => Parameters {
+        match self.algorithm {
+            MetaParametersAlgorithm::Fixed(precision) => Parameters {
                 precision,
                 as_of_block_height: height,
             },

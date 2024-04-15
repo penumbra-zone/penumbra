@@ -60,18 +60,24 @@ impl ::prost::Name for GenesisContent {
         )
     }
 }
+/// The parameters which control how the FMD parameters evolve over time.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FmdMetaParameters {
-    #[prost(oneof = "fmd_meta_parameters::Algorithm", tags = "1")]
+    /// How much time users have to transition to new parameters.
+    #[prost(uint64, tag = "1")]
+    pub fmd_grace_period_blocks: u64,
+    /// The algorithm governing how the parameters change.
+    #[prost(oneof = "fmd_meta_parameters::Algorithm", tags = "2")]
     pub algorithm: ::core::option::Option<fmd_meta_parameters::Algorithm>,
 }
 /// Nested message and enum types in `FmdMetaParameters`.
 pub mod fmd_meta_parameters {
+    /// The algorithm governing how the parameters change.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Algorithm {
-        #[prost(uint32, tag = "1")]
+        #[prost(uint32, tag = "2")]
         FixedPrecisionBits(u32),
     }
 }

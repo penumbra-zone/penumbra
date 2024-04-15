@@ -73,13 +73,13 @@ impl Component for ShieldedPool {
             .height
             .try_into()
             .expect("height should not be negative");
-        if should_update_fmd_params(height) {
-            let state = Arc::get_mut(state).expect("the state should not be shared");
-            let meta_params = state
-                .get_shielded_pool_params()
-                .await
-                .expect("should be able to read state")
-                .fmd_meta_params;
+        let state = Arc::get_mut(state).expect("the state should not be shared");
+        let meta_params = state
+            .get_shielded_pool_params()
+            .await
+            .expect("should be able to read state")
+            .fmd_meta_params;
+        if should_update_fmd_params(meta_params.fmd_grace_period_blocks, height) {
             let old = state
                 .get_current_fmd_parameters()
                 .await
