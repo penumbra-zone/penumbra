@@ -15,7 +15,7 @@ command = "mdbook-mermaid"
 default-theme = "coal"
 preferred-dark-theme = "coal"
 curly-quotes = true
-fold = { enable = true, level = 1 }
+fold = { enable = true, level = 2 }
 git-repository-url = "https://github.com/penumbra-zone/penumbra"
 additional-js =["theme/js/mermaid.min.js", "theme/js/mermaid-init.js"]
 

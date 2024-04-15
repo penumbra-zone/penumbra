@@ -39,5 +39,5 @@ can be found in the Penumbra repo's [`deployments/`](https://github.com/penumbra
 You should consult these configurations as a reference, and write your own
 scripts to maintain your node.
 
-Consider [joining the Penumbra Discord](../resources.md#discord) to receive announcements
+Consider [joining the Penumbra Discord](../../resources.md#discord) to receive announcements
 about new versions and required actions by node operators.
