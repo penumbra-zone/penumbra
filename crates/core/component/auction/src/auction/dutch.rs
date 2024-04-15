@@ -165,11 +165,9 @@ impl TryFrom<pb::DutchAuctionState> for DutchAuctionState {
     type Error = anyhow::Error;
 
     fn try_from(msg: pb::DutchAuctionState) -> Result<Self, Self::Error> {
-        let current_position = msg.current_position.map(TryInto::try_into).transpose()?;
-
-        let domain_type = DutchAuctionState {
+        Ok(DutchAuctionState {
             sequence: msg.seq,
-            current_position: domain_position_id,
+            current_position: msg.current_position.map(TryInto::try_into).transpose()?,
             next_trigger: msg.next_trigger,
             input_reserves: msg
                 .input_reserves
@@ -179,9 +177,7 @@ impl TryFrom<pb::DutchAuctionState> for DutchAuctionState {
                 .output_reserves
                 .ok_or_else(|| anyhow!("DutchAuctionState message is missing output reserves"))?
                 .try_into()?,
-        };
-
-        Ok(domain_type)
+        })
     }
 }
 /* ********************************** */
