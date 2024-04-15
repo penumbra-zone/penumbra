@@ -2,6 +2,7 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![deny(clippy::unwrap_used)]
 
+pub mod auction;
 pub mod params;
 pub mod state_key;
 
