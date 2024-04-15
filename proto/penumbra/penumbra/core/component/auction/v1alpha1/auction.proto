@@ -2,6 +2,7 @@ syntax = "proto3";
 package penumbra.core.component.auction.v1alpha1;
 
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/num/v1/num.proto";
 
 // The configuration parameters for the auction component.
@@ -58,4 +59,26 @@ message DutchAuctionDescription {
   // A random nonce used to allow identical auctions to have
   // distinct auction IDs.
   bytes nonce = 8;
+}
+
+message DutchAuctionState {
+  // The sequence number of the auction state.
+  //
+  // Dutch auctions move from:
+  // 0 (opened) => 1 (closed) => n (withdrawn)
+  uint64 seq = 1;
+  // If present, the current position controlled by this auction.
+  dex.v1.PositionId current_position = 2;
+  // If present, the next trigger height to step down the price.
+  uint64 next_trigger = 3;
+  // The amount of the input asset directly owned by the auction.
+  //
+  // The auction may also own the input asset indirectly,
+  // via the reserves of `current_position` if it exists.
+  num.v1.Amount input_reserves = 4;
+  // The amount of the output asset directly owned by the auction.
+  //
+  // The auction may also own the output asset indirectly,
+  // via the reserves of `current_position` if it exists.
+  num.v1.Amount output_reserves = 5;
 }
