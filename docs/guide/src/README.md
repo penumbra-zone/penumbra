@@ -1,99 +1,67 @@
 # Penumbra Guide
 
-[Penumbra] is a fully shielded zone for the Cosmos ecosystem, allowing anyone to
-securely transact, stake, swap, or marketmake without broadcasting their
-personal information to the world.
+[Penumbra] is a fully private, cross-chain proof-of-stake network and
+decentralized exchange for the Cosmos and beyond. Penumbra brings privacy to
+IBC, allowing anyone to shield any IBC asset just by transferring it into
+Penumbra's multi-asset shielded pool.  Within Penumbra, users can transact,
+stake, swap, or marketmake without broadcasting their personal information to
+the world.
 
-This site contains documentation on how to use, deploy, and develop the Penumbra
-software.  The description of the protocol itself can be found in the [protocol
-specification][protocol], and the API documentation can be found
-[here][rustdoc].
+<picture>
+  <img src="./assets/interchain-shielded-pool.jpg" />
+</picture>
 
-## Test networks
+Unlike a transparent chain, where all information is public, Penumbra is
+end-to-end encrypted. 
 
-Penumbra is a decentralized protocol, so Penumbra Labs is [building in
-public][how-were-building], launching (and crashing) lots of work-in-progress
-testnets to allow community participation, engagement, and feedback.
+## Using Penumbra on the web
 
-Currently, Penumbra only has a command line client, `pcli` (pronounced
-"pickle-y"), which bundles all of the client components in one binary, and a
-chain-scanning daemon, `pclientd`, which runs just the view service, without spend
-capability.  To get started with the Penumbra test network, all that's required
-is to download and build `pcli`, as described in
-[Installation](./pcli/install.md).
+The easiest way to get started using Penumbra is with the Penumbra web
+extension.  The web extension runs entirely locally, and contains an embedded
+ultralight node that syncs and decrypts only the data visible to your wallet.
+Websites can request to connect to your wallet and query your data.
 
-The Penumbra node software is the Penumbra daemon, `pd`.  This is an ABCI
-application, which must be driven by CometBFT, so a Penumbra full node
-consists of both a `pd` instance and a `cometbft` instance.
+The [_Using Penumbra on the web_](./web.md) chapter describes how to use
+Penumbra on the web.
 
-The basic architecture of Penumbra is as follows:
+## Using Penumbra from the command line
 
-```text
-          ╭   ┌───────┐
-  spending│   │custody│
-capability│   │service│
-          ╰   └───────┘
-               ▲     │
-               │tx   │auth
-               │plan │data
-               │     ▼
-          ╭   ┌───────┐
-   viewing│   │wallet │ tx submission
-capability│   │logic  │────────┐
-          │   └───────┘        │
-          │    ▲               │
-          │    │view private state
-          │    │               │
-          │    │               │
-          │   ┌───────┐        │
-          │   │view   │        │
-          │   │service│        │
-          ╰   └───────┘        │
-               ▲               │
-               │sync private state
-               │               │
-          ╭ ┌──┼───────────────┼──────┐
-    public│ │  │     Penumbra Fullnode│
-     chain│ │  │               │      │
-      data│ │  │               ▼      │
-          │ │ ┌──┐ app   ┌──────────┐ │
-          │ │ │pd│◀─────▶│ cometbft │ │
-          │ │ └──┘ sync  └──────────┘ │
-          │ │               ▲         │
-          ╰ └───────────────┼─────────┘
-                         .──│.
-                       ,'   │ `.
-                  .───;     │consensus
-                 ;          │sync
-               .─┤          │   ├──.
-             ,'             │       `.
-            ;   Penumbra    │         :
-            :   Network  ◀──┘         ;
-             ╲                       ╱
-              `.     `.     `.     ,'
-                `───'  `───'  `───'
-```
+Penumbra also has a command-line client, `pcli`.  Some protocol features, such
+as threshold custody for shielded multisigs, do not yet have support in web
+frontends and are only accessible via the command line.
 
-The custody service holds signing keys and is responsible for authorizing
-transaction plans.  The view service holds viewing keys and scans the chain
-state.  Wallet logic can query the view service to get information about what
-funds are available, submit a transaction plan to the custody service for
-signing, and then use the returned signatures to build the transaction and
-submit it.
+The [_Using Penumbra from the command line_](./pcli.md) chapter describes how to
+use `pcli`.
 
-As a shielded chain, Penumbra's architecture is slightly different than a
-transparent chain, because user data such as account balances, transaction
-activity, etc., is not part of the public chain state.  This means that clients
-need to synchronize with the chain to build a copy of the private user data they
-have access to.  This logic is provided by the *view service*, which is bundled
-into `pcli`, but can also be run as a standalone `pclientd` daemon.
+## Running a node
 
-Modeling authorization as an (asynchronous) RPC to a custody service means that
-the client software is compatible with many different custody flows by default
--- an in-process "SoftHSM", a hardware wallet with user intervention, a cluster
-of online threshold signers, an offline threshold signing process, etc.
+Running a node is not necessary to use the protocol. Both the web extension and
+`pcli` are designed to operate with any RPC endpoint. However, we've tried to
+make it as easy as possible to run nodes so that users can host their own RPC.
 
-[how-were-building]: https://penumbra.zone/blog/how-were-building-penumbra
+There are two kinds of Penumbra nodes:
+
+* Penumbra fullnodes run `pd` and `cometbft` to synchronize and verify the entire chain state, as described in [_Running a node: `pd`_](./node/pd.md).
+* Penumbra ultralight nodes run `pclientd` to scan, decrypt, and synchronize a specific wallet's data, as well as build and sign transactions, as described in [_Running a node: `pclientd`_](./node/pclientd.md).
+
+The web extension and `pcli` embed the view and custody functionality provided
+by `pclientd`, so it is not necessary to run `pclientd` to use them. Instead,
+`pclientd` is intended to act as a local RPC for programmatic tooling (e.g.,
+trading bots) not written in Rust that cannot easily embed the code for working
+with Penumbra's shielded cryptography.
+
+## Participating in development
+
+Penumbra is a decentralized, open-source protocol, built in public.
+
+The [_Participating in development_](./dev.md) chapter has developer
+documentation for working on the protocol itself.
+
+## Resources
+
+The [_Resources_](./resources.md) chapter has links to other resources about the Penumbra protocol.
+
+
 [protocol]: https://protocol.penumbra.zone
 [rustdoc]: https://rustdoc.penumbra.zone
 [Penumbra]: https://github.com/penumbra-zone/penumbra

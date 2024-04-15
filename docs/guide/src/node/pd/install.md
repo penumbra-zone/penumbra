@@ -17,7 +17,7 @@ sudo mv pd-x86_64-unknown-linux-gnu/pd /usr/local/bin/
 pd --version
 ```
 As of v0.64.1 (released 2023-12-12), we build Linux binaries on Ubuntu 22.04. If these binaries don't work for you out of the box,
-you'll need to [build from source](../dev/build.md), or use the container images.
+you'll need to [build from source](../../dev/build.md), or use the container images.
 
 ### Installing CometBFT
 
