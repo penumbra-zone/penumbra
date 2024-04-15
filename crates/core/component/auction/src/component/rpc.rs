@@ -1,10 +1,8 @@
 #![allow(unused)] // TODO: remove this when filling in the RPCs
 
-// TODO: uncomment this when we have defined the auction query service
-// with v1alpha
-// use penumbra_proto::{
-//     core::component::auction::v1alpha::query_service_server::QueryService, DomainType,
-// };
+use penumbra_proto::{
+    core::component::auction::v1alpha1::query_service_server::QueryService, DomainType,
+};
 
 use async_stream::try_stream;
 use cnidarium::Storage;
@@ -23,6 +21,5 @@ impl Server {
     }
 }
 
-// #[tonic::async_trait]
-// impl QueryService for Server {
-// }
+#[tonic::async_trait]
+impl QueryService for Server {}
