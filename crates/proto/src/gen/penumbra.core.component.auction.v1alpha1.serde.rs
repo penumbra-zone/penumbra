@@ -406,7 +406,7 @@ impl serde::Serialize for DutchAuctionDescription {
         if self.input.is_some() {
             len += 1;
         }
-        if self.output.is_some() {
+        if self.output_id.is_some() {
             len += 1;
         }
         if self.max_output.is_some() {
@@ -431,8 +431,8 @@ impl serde::Serialize for DutchAuctionDescription {
         if let Some(v) = self.input.as_ref() {
             struct_ser.serialize_field("input", v)?;
         }
-        if let Some(v) = self.output.as_ref() {
-            struct_ser.serialize_field("output", v)?;
+        if let Some(v) = self.output_id.as_ref() {
+            struct_ser.serialize_field("outputId", v)?;
         }
         if let Some(v) = self.max_output.as_ref() {
             struct_ser.serialize_field("maxOutput", v)?;
@@ -467,7 +467,8 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
     {
         const FIELDS: &[&str] = &[
             "input",
-            "output",
+            "output_id",
+            "outputId",
             "max_output",
             "maxOutput",
             "min_output",
@@ -484,7 +485,7 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Input,
-            Output,
+            OutputId,
             MaxOutput,
             MinOutput,
             StartHeight,
@@ -514,7 +515,7 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
                     {
                         match value {
                             "input" => Ok(GeneratedField::Input),
-                            "output" => Ok(GeneratedField::Output),
+                            "outputId" | "output_id" => Ok(GeneratedField::OutputId),
                             "maxOutput" | "max_output" => Ok(GeneratedField::MaxOutput),
                             "minOutput" | "min_output" => Ok(GeneratedField::MinOutput),
                             "startHeight" | "start_height" => Ok(GeneratedField::StartHeight),
@@ -541,7 +542,7 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut input__ = None;
-                let mut output__ = None;
+                let mut output_id__ = None;
                 let mut max_output__ = None;
                 let mut min_output__ = None;
                 let mut start_height__ = None;
@@ -556,11 +557,11 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
                             }
                             input__ = map_.next_value()?;
                         }
-                        GeneratedField::Output => {
-                            if output__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("output"));
+                        GeneratedField::OutputId => {
+                            if output_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("outputId"));
                             }
-                            output__ = map_.next_value()?;
+                            output_id__ = map_.next_value()?;
                         }
                         GeneratedField::MaxOutput => {
                             if max_output__.is_some() {
@@ -613,7 +614,7 @@ impl<'de> serde::Deserialize<'de> for DutchAuctionDescription {
                 }
                 Ok(DutchAuctionDescription {
                     input: input__,
-                    output: output__,
+                    output_id: output_id__,
                     max_output: max_output__,
                     min_output: min_output__,
                     start_height: start_height__.unwrap_or_default(),

@@ -34,7 +34,7 @@ message DutchAuctionDescription {
   // The value the seller wishes to auction.
   asset.v1.Value input = 1;
   // The asset ID of the target asset the seller wishes to acquire.
-  asset.v1.AssetId output = 2;
+  asset.v1.AssetId output_id = 2;
   // The maximum output the seller can receive.
   //
   // This implicitly defines the starting price for the auction.
