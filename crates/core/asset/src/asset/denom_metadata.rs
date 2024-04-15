@@ -386,7 +386,28 @@ impl Ord for Metadata {
 
 impl Debug for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.inner.base_denom.as_str())
+        let Self { inner } = self;
+        let Inner {
+            id,
+            base_denom,
+            description,
+            images,
+            units,
+            display_index,
+            name,
+            symbol,
+        } = inner.as_ref();
+
+        f.debug_struct("Metadata")
+            .field("id", id)
+            .field("base_denom", base_denom)
+            .field("description", description)
+            .field("images", images)
+            .field("units", units)
+            .field("display_index", display_index)
+            .field("name", name)
+            .field("symbol", symbol)
+            .finish()
     }
 }
 
