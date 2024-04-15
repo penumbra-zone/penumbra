@@ -1,7 +1,8 @@
-use crate::auction::dutch::DutchAuctionauction_id;
 use anyhow::anyhow;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
+
+use crate::auction::id::AuctionId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
