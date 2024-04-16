@@ -9,7 +9,7 @@ use crate::auction::AuctionId;
 
 pub mod actions;
 
-pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_dutch_auction_nft";
+pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_DA_nft";
 
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.
