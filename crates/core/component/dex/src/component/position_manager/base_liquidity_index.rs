@@ -6,8 +6,10 @@ use position::State::*;
 use crate::lp::position::{self, Position};
 use crate::state_key::engine;
 use crate::DirectedTradingPair;
+use async_trait::async_trait;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
+#[async_trait]
 pub(crate) trait AssetByLiquidityIndex: StateWrite {
     /// Update the base liquidity index, used by the DEX engine during path search.
     ///
