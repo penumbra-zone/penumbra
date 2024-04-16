@@ -410,10 +410,10 @@ impl IsAction for SwapClaim {
 
 impl IsAction for ActionDutchAuctionSchedule {
     fn balance_commitment(&self) -> balance::Commitment {
-        todo!()
+        self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
         todo!()
     }
 }
