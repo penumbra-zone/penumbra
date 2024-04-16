@@ -48,7 +48,7 @@ impl ProposalSubmit {
     }
 
     /// Returns the [`Value`] of the proposal NFT.
-    fn proposal_nft_value(&self) -> Value {
+    pub fn proposal_nft_value(&self) -> Value {
         Value {
             amount: Amount::from(1u64),
             asset_id: ProposalNft::deposit(self.proposal.id).denom().into(),
