@@ -9,6 +9,8 @@ use crate::auction::AuctionId;
 
 pub mod actions;
 
+pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_dutch_auction_nft";
+
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -71,7 +73,7 @@ impl DutchAuctionDescription {
     /// Compute the unique identifier for the auction description.
     pub fn id(&self) -> AuctionId {
         let mut state = blake2b_simd::Params::default()
-            .personal(b"penumbra_dutch_auction_nft")
+            .personal(DUTCH_AUCTION_DOMAIN_SEP)
             .to_state();
 
         state.update(&self.nonce);
