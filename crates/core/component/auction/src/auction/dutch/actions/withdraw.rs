@@ -1,6 +1,8 @@
-use crate::auction::id::AuctionId;
+use crate::auction::{id::AuctionId, AuctionNft};
 use anyhow::anyhow;
-use penumbra_asset::balance;
+use ark_ff::Zero;
+use decaf377_rdsa::Fr;
+use penumbra_asset::{balance, Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +15,44 @@ pub struct ActionDutchAuctionWithdraw {
     pub auction_id: AuctionId,
     pub seq: u64,
     pub reserves_commitment: balance::Commitment,
+}
+
+impl ActionDutchAuctionWithdraw {
+    /// Compute a balance **commitment** for this action.
+    ///
+    /// # Diagram
+    ///
+    /// The value balance commitment is built from the balance:
+    ///  ┌────────────────────┬──────────────────────┐
+    ///  │      Burn (-)      │       Mint (+)       │
+    ///  ├────────────────────┼──────────────────────┤
+    ///  │    auction nft     │       auction        │
+    ///  │   with seq >= 1    │    value balance     │
+    ///  └────────────────────┼──────────────────────┤
+    ///                       │withdrawn auction nft │
+    ///                       │      with seq+1      │
+    ///                       └──────────────────────┘
+    ///
+    /// More context: [Actions and Value balance][protocol-spec]
+    /// [protocol-spec]: https://protocol.penumbra.zone/main/transactions.html#actions-and-value-balance
+    pub fn balance_commitment(&self) -> balance::Commitment {
+        let prev_auction_nft = Balance::from(Value {
+            amount: 1u128.into(),
+            // The sequence number should always be >= 1, because we can
+            // only withdraw an auction that has ended (i.e. with sequence number `>=1`).
+            // We use a saturating operation defensively so that we don't underflow.
+            asset_id: AuctionNft::new(self.auction_id, self.seq.saturating_sub(1)).asset_id(),
+        })
+        .commit(Fr::zero());
+
+        let next_auction_nft = Balance::from(Value {
+            amount: 1u128.into(),
+            asset_id: AuctionNft::new(self.auction_id, self.seq).asset_id(),
+        })
+        .commit(Fr::zero());
+
+        self.reserves_commitment + next_auction_nft - prev_auction_nft
+    }
 }
 
 /* Protobuf impls */

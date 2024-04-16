@@ -5,7 +5,11 @@ use penumbra_num::Amount;
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
+use crate::auction::AuctionId;
+
 pub mod actions;
+
+pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_DA_nft";
 
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.
@@ -63,6 +67,28 @@ pub struct DutchAuctionDescription {
     pub end_height: u64,
     pub step_count: u64,
     pub nonce: [u8; 32],
+}
+
+impl DutchAuctionDescription {
+    /// Compute the unique identifier for the auction description.
+    pub fn id(&self) -> AuctionId {
+        let mut state = blake2b_simd::Params::default()
+            .personal(DUTCH_AUCTION_DOMAIN_SEP)
+            .to_state();
+
+        state.update(&self.nonce);
+        state.update(&self.input.asset_id.to_bytes());
+        state.update(&self.input.amount.to_le_bytes());
+        state.update(&self.max_output.to_le_bytes());
+        state.update(&self.start_height.to_le_bytes());
+        state.update(&self.end_height.to_le_bytes());
+        state.update(&self.step_count.to_le_bytes());
+
+        let hash = state.finalize();
+        let mut bytes = [0; 32];
+        bytes[0..32].copy_from_slice(&hash.as_bytes()[0..32]);
+        AuctionId(bytes)
+    }
 }
 
 /* Protobuf impls */

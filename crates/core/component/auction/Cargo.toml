@@ -45,6 +45,7 @@ bech32 = {workspace = true}
 bitvec = {workspace = true}
 cnidarium = {workspace = true, default-features = false, optional = true}
 cnidarium-component = {workspace = true, default-features = false, optional = true}
+blake2b_simd = {workspace = true}
 decaf377 = {workspace = true, features = ["r1cs"], default-features = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true, optional = true}

@@ -1,8 +1,9 @@
 use anyhow::anyhow;
+use penumbra_asset::{Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
-use crate::auction::id::AuctionId;
+use crate::auction::{id::AuctionId, AuctionNft};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
@@ -11,6 +12,31 @@ use crate::auction::id::AuctionId;
 )]
 pub struct ActionDutchAuctionEnd {
     pub auction_id: AuctionId,
+}
+
+impl ActionDutchAuctionEnd {
+    /// Compute the value balance for this action
+    ///
+    /// # Diagram
+    ///
+    ///  ┌────────────────────┬──────────────────────┐
+    ///  │      Burn (-)      │       Mint (+)       │
+    ///  ├────────────────────┼──────────────────────┤
+    ///  │ opened auction nft │  closed auction nft  │
+    ///  └────────────────────┴──────────────────────┘
+    pub fn balance(&self) -> Balance {
+        let start_auction = Value {
+            amount: 1u128.into(),
+            asset_id: AuctionNft::new(self.auction_id, 0u64).asset_id(),
+        };
+
+        let end_auction = Value {
+            amount: 1u128.into(),
+            asset_id: AuctionNft::new(self.auction_id, 1u64).asset_id(),
+        };
+
+        Balance::from(end_auction) - Balance::from(start_auction)
+    }
 }
 
 /* Protobuf impls */
