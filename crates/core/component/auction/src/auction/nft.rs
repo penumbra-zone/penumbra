@@ -6,10 +6,10 @@ use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 #[derive(Debug, Clone)]
 pub struct AuctionNft {
     /// The unique identifier for the auction this nft resolves to.
-    id: AuctionId,
+    pub id: AuctionId,
     /// The state of an auction, its specific semantics depend on the
     /// type of auction the NFT resolves to.
-    seq: u64,
+    pub seq: u64,
 }
 
 /* Protobuf impls ;*/
