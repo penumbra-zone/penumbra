@@ -1,7 +1,9 @@
 use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
+use penumbra_auction::auction::dutch::actions::{
+    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::{
@@ -411,6 +413,26 @@ impl IsAction for SwapClaim {
 impl IsAction for ActionDutchAuctionSchedule {
     fn balance_commitment(&self) -> balance::Commitment {
         self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        todo!()
+    }
+}
+
+impl IsAction for ActionDutchAuctionEnd {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance().commit(Fr::zero())
+    }
+
+    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
+        todo!()
+    }
+}
+
+impl IsAction for ActionDutchAuctionWithdraw {
+    fn balance_commitment(&self) -> balance::Commitment {
+        self.balance_commitment()
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
