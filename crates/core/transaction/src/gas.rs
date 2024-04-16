@@ -1,3 +1,4 @@
+use penumbra_auction::auction::dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
 use penumbra_fee::Gas;
@@ -231,6 +232,18 @@ fn position_withdraw_gas_cost() -> Gas {
     }
 }
 
+fn dutch_auction_schedule_gas_cost() -> Gas {
+    Gas { block_space: todo!(), compact_block_space: todo!(), verification: todo!(), execution: todo!() }
+}
+
+fn dutch_auction_end_gas_cost() -> Gas {
+    Gas { block_space: todo!(), compact_block_space: todo!(), verification: todo!(), execution: todo!() }
+}
+
+fn dutch_auction_withdraw_gas_cost() -> Gas {
+    Gas { block_space: todo!(), compact_block_space: todo!(), verification: todo!(), execution: todo!() }
+}
+
 impl GasCost for Transaction {
     fn gas_cost(&self) -> Gas {
         self.actions().map(GasCost::gas_cost).sum()
@@ -264,6 +277,9 @@ impl GasCost for ActionPlan {
             ActionPlan::SwapClaim(_) => swap_claim_gas_cost(),
             ActionPlan::DelegatorVote(_) => delegator_vote_gas_cost(),
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
+            ActionPlan::ActionDutchAuctionSchedule(_) => dutch_auction_schedule_gas_cost(),
+            ActionPlan::ActionDutchAuctionEnd(_) => dutch_auction_end_gas_cost(),
+            ActionPlan::ActionDutchAuctionWithdraw(_) => dutch_auction_withdraw_gas_cost(),
 
             ActionPlan::Delegate(d) => d.gas_cost(),
             ActionPlan::Undelegate(u) => u.gas_cost(),
@@ -307,6 +323,9 @@ impl GasCost for Action {
             Action::CommunityPoolOutput(output) => output.gas_cost(),
             Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
+            Action::ActionDutchAuctionSchedule(action_dutch_auction_schedule) => action_dutch_auction_schedule.gas_cost(),
+            Action::ActionDutchAuctionEnd(action_dutch_auction_end) => action_dutch_auction_end.gas_cost(),
+            Action::ActionDutchAuctionWithdraw(action_dutch_auction_withdraw) => action_dutch_auction_withdraw.gas_cost(),
         }
     }
 }
@@ -558,5 +577,24 @@ impl GasCost for IbcRelay {
 impl GasCost for ValidatorDefinition {
     fn gas_cost(&self) -> Gas {
         validator_definition_gas_cost(&self)
+    }
+}
+
+impl GasCost for ActionDutchAuctionSchedule {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_schedule_gas_cost()
+    }
+}
+
+impl GasCost for ActionDutchAuctionEnd {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_end_gas_cost()
+    }
+}
+
+
+impl GasCost for ActionDutchAuctionWithdraw {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_withdraw_gas_cost()
     }
 }
