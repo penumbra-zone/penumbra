@@ -468,6 +468,15 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::CommunityPoolDeposit(v) => {
                     struct_ser.serialize_field("communityPoolDeposit", v)?;
                 }
+                action_plan::Action::DutchAuctionSchedule(v) => {
+                    struct_ser.serialize_field("dutchAuctionSchedule", v)?;
+                }
+                action_plan::Action::DutchAuctionEnd(v) => {
+                    struct_ser.serialize_field("dutchAuctionEnd", v)?;
+                }
+                action_plan::Action::DutchAuctionWithdraw(v) => {
+                    struct_ser.serialize_field("dutchAuctionWithdraw", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -519,6 +528,12 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "communityPoolOutput",
             "community_pool_deposit",
             "communityPoolDeposit",
+            "dutch_auction_schedule",
+            "dutchAuctionSchedule",
+            "dutch_auction_end",
+            "dutchAuctionEnd",
+            "dutch_auction_withdraw",
+            "dutchAuctionWithdraw",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -545,6 +560,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             CommunityPoolSpend,
             CommunityPoolOutput,
             CommunityPoolDeposit,
+            DutchAuctionSchedule,
+            DutchAuctionEnd,
+            DutchAuctionWithdraw,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -589,6 +607,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "communityPoolDeposit" | "community_pool_deposit" => Ok(GeneratedField::CommunityPoolDeposit),
+                            "dutchAuctionSchedule" | "dutch_auction_schedule" => Ok(GeneratedField::DutchAuctionSchedule),
+                            "dutchAuctionEnd" | "dutch_auction_end" => Ok(GeneratedField::DutchAuctionEnd),
+                            "dutchAuctionWithdraw" | "dutch_auction_withdraw" => Ok(GeneratedField::DutchAuctionWithdraw),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -763,6 +784,27 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                                 return Err(serde::de::Error::duplicate_field("communityPoolDeposit"));
                             }
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::CommunityPoolDeposit)
+;
+                        }
+                        GeneratedField::DutchAuctionSchedule => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dutchAuctionSchedule"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionSchedule)
+;
+                        }
+                        GeneratedField::DutchAuctionEnd => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dutchAuctionEnd"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionEnd)
+;
+                        }
+                        GeneratedField::DutchAuctionWithdraw => {
+                            if action__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("dutchAuctionWithdraw"));
+                            }
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionWithdraw)
 ;
                         }
                         GeneratedField::__SkipField__ => {

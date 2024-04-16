@@ -3,6 +3,7 @@ package penumbra.core.transaction.v1;
 
 import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1alpha1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
@@ -309,6 +310,11 @@ message ActionPlan {
     component.governance.v1.CommunityPoolSpend community_pool_spend = 50;
     component.governance.v1.CommunityPoolOutput community_pool_output = 51;
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
+
+    // Auctions
+    component.auction.v1alpha1.ActionDutchAuctionSchedule dutch_auction_schedule = 60;
+    component.auction.v1alpha1.ActionDutchAuctionEnd dutch_auction_end = 61;
+    component.auction.v1alpha1.ActionDutchAuctionWithdraw dutch_auction_withdraw = 62;
   }
 }
 

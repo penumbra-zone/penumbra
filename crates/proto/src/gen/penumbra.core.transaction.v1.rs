@@ -568,7 +568,7 @@ impl ::prost::Name for DetectionDataPlan {
 pub struct ActionPlan {
     #[prost(
         oneof = "action_plan::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 200, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 60, 61, 62"
     )]
     pub action: ::core::option::Option<action_plan::Action>,
 }
@@ -643,6 +643,19 @@ pub mod action_plan {
         #[prost(message, tag = "52")]
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
+        /// Auctions
+        #[prost(message, tag = "60")]
+        DutchAuctionSchedule(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+        ),
+        #[prost(message, tag = "61")]
+        DutchAuctionEnd(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "62")]
+        DutchAuctionWithdraw(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
     }
 }

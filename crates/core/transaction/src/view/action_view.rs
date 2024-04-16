@@ -44,6 +44,7 @@ pub enum ActionView {
     CommunityPoolDeposit(CommunityPoolDeposit),
     CommunityPoolSpend(CommunityPoolSpend),
     CommunityPoolOutput(CommunityPoolOutput),
+    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
 }
 
 impl DomainType for ActionView {
@@ -117,6 +118,9 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::CommunityPoolDeposit(x) => AV::CommunityPoolDeposit(x.into()),
                 ActionView::CommunityPoolSpend(x) => AV::CommunityPoolSpend(x.into()),
                 ActionView::CommunityPoolOutput(x) => AV::CommunityPoolOutput(x.into()),
+                ActionView::ActionDutchAuctionWithdraw(x) => {
+                    AV::ActionDutchAuctionWithdraw(x.into())
+                }
             }),
         }
     }
@@ -146,6 +150,7 @@ impl From<ActionView> for Action {
             ActionView::CommunityPoolDeposit(x) => Action::CommunityPoolDeposit(x),
             ActionView::CommunityPoolSpend(x) => Action::CommunityPoolSpend(x),
             ActionView::CommunityPoolOutput(x) => Action::CommunityPoolOutput(x),
+            ActionView::ActionDutchAuctionWithdraw(x) => Action::ActionDutchAuctionWithdraw(x),
         }
     }
 }
