@@ -15,8 +15,17 @@ pub struct ActionDutchAuctionEnd {
 }
 
 impl ActionDutchAuctionEnd {
+    /// Compute the value balance for this action
+    ///
+    /// # Diagram
+    ///
+    ///  ┌────────────────────┬──────────────────────┐
+    ///  │      Burn (-)      │       Mint (+)       │
+    ///  ├────────────────────┼──────────────────────┤
+    ///  │ opened auction nft │  closed auction nft  │
+    ///  └────────────────────┴──────────────────────┘
     pub fn balance(&self) -> Balance {
-        let schedule_auction = Value {
+        let start_auction = Value {
             amount: 1u128.into(),
             asset_id: AuctionNft::new(self.auction_id, 0u64).asset_id(),
         };
@@ -26,7 +35,7 @@ impl ActionDutchAuctionEnd {
             asset_id: AuctionNft::new(self.auction_id, 1u64).asset_id(),
         };
 
-        Balance::from(end_auction) - Balance::from(schedule_auction)
+        Balance::from(end_auction) - Balance::from(start_auction)
     }
 }
 
