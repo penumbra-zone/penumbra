@@ -11,7 +11,7 @@ pub struct AuctionNft {
     /// The state of an auction, its specific semantics depend on the
     /// type of auction the NFT resolves to.
     pub seq: u64,
-    /// The metadata corresponding to the Nft's denomination.
+    /// The metadata corresponding to the nft denom.
     pub metadata: asset::Metadata,
 }
 
@@ -21,6 +21,10 @@ impl AuctionNft {
             .parse_denom(&format!("auctionnft_{seq}_{id}"))
             .expect("auction nft denom is valid");
         AuctionNft { id, seq, metadata }
+    }
+
+    pub fn asset_id(&self) -> asset::Id {
+        self.metadata.id()
     }
 }
 
