@@ -1,6 +1,6 @@
-use crate::auction::id::AuctionId;
+use crate::auction::{id::AuctionId, AuctionNft};
 use anyhow::anyhow;
-use penumbra_asset::balance;
+use penumbra_asset::{balance, Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +13,24 @@ pub struct ActionDutchAuctionWithdraw {
     pub auction_id: AuctionId,
     pub seq: u64,
     pub reserves_commitment: balance::Commitment,
+}
+
+impl ActionDutchAuctionWithdraw {
+    pub fn balance(&self) -> Balance {
+        let prev_auction_nft: Balance = Value {
+            amount: 1u128.into(),
+            asset_id: AuctionNft::new(self.auction_id, self.seq.saturating_sub(1)).asset_id(),
+        }
+        .into();
+
+        let next_auction_nft: Balance = Value {
+            amount: 1u128.into(),
+            asset_id: AuctionNft::new(self.auction_id, self.seq).asset_id(),
+        }
+        .into();
+
+        next_auction_nft - prev_auction_nft
+    }
 }
 
 /* Protobuf impls */
