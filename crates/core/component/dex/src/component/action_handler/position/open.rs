@@ -1,10 +1,10 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 
 use crate::{
-    component::PositionManager,
+    component::{PositionManager, StateReadExt},
     lp::{action::PositionOpen, position},
 };
 
@@ -28,6 +28,14 @@ impl ActionHandler for PositionOpen {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Only open the position if the dex is enabled in the dex params.
+        let dex_params = state.get_dex_params().await?;
+
+        ensure!(
+            dex_params.is_enabled,
+            "Dex MUST be enabled to open positions."
+        );
+
         state.open_position(self.position.clone()).await?;
         Ok(())
     }
