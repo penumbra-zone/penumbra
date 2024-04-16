@@ -1,5 +1,7 @@
 use crate::auction::{id::AuctionId, AuctionNft};
 use anyhow::anyhow;
+use ark_ff::Zero;
+use decaf377_rdsa::Fr;
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
@@ -16,20 +18,20 @@ pub struct ActionDutchAuctionWithdraw {
 }
 
 impl ActionDutchAuctionWithdraw {
-    pub fn balance(&self) -> Balance {
-        let prev_auction_nft: Balance = Value {
+    pub fn balance_commitment(&self) -> balance::Commitment {
+        let prev_auction_nft = Balance::from(Value {
             amount: 1u128.into(),
             asset_id: AuctionNft::new(self.auction_id, self.seq.saturating_sub(1)).asset_id(),
-        }
-        .into();
+        })
+        .commit(Fr::zero());
 
-        let next_auction_nft: Balance = Value {
+        let next_auction_nft = Balance::from(Value {
             amount: 1u128.into(),
             asset_id: AuctionNft::new(self.auction_id, self.seq).asset_id(),
-        }
-        .into();
+        })
+        .commit(Fr::zero());
 
-        next_auction_nft - prev_auction_nft
+        self.reserves_commitment + next_auction_nft - prev_auction_nft
     }
 }
 
