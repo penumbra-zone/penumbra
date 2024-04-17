@@ -63,7 +63,11 @@ impl ActionHandler for ActionDutchAuctionSchedule {
         );
 
         // Check that height delta is a multiple of `step_count`.
-        let block_window = end_height - start_height;
+        let block_window = end_height.checked_sub(start_height).ok_or_else(|| {
+            anyhow::anyhow!(
+                "underflow ({end_height} < {start_height}) - the validation rules are incoherent!"
+            )
+        })?;
         ensure!(
             (block_window % step_count) == 0,
             "the block window ({block_window}) MUST be a multiple of the step count ({step_count})"

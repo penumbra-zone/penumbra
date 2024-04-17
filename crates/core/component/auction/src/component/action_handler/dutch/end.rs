@@ -30,7 +30,7 @@ impl ActionHandler for ActionDutchAuctionEnd {
 
         // Check that the sequence number for the auction state is 0 (opened) or 1 (closed).
         ensure!(
-            auction.state.sequence <= 1,
+            matches!(auction.state.sequence, 0 | 1),
             "auction MUST have a sequence number set to opened (0) or closed (1) (got: {})",
             auction.state.sequence
         );
