@@ -239,7 +239,9 @@ fn position_withdraw_gas_cost() -> Gas {
         compact_block_space: 0,
         // Does not include a zk-SNARK proof, so there's no verification cost.
         verification: 0,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
+        // Execution cost is currently hardcoded at 10 for all `Action`` variants.
+        // Reminder: Any change to this execution gas vector must also be reflected 
+        // in updates to the dutch auction gas vectors.
         execution: 10,
     }
 }
@@ -254,19 +256,15 @@ fn dutch_auction_schedule_gas_cost(dutch_action_schedule: &ActionDutchAuctionSch
         // uint64 `end_height` = 8 bytes
         // uint64 `step_count` = 8 bytes
         // bytes `nonce` = 32 bytes
-
-        // TODO: Multidimentional fees will enable gas fees to dynamically be based on both `block_space`
-        // and `execution`, where execution cost is roughly proportional to computational cost,
-        // while block space is proportional to the space the action takes up in a block.
-        // We can therefore separately price the resource of “work performed during execution”
-        // and “bandwidth between nodes”.
-        //
-        // Currently we make the execution cost for DA actions proportional to the number of steps
-        // and costs of position open/close in dutch action.
-        block_space: 168, // 168 bytes
+        
+        // TODO(erwan): sanity check if this block space fee calculation is correct -- more dex context needed. 
+        block_space: 168 * dutch_action_schedule.description.step_count, // (168 * step_count) bytes
         compact_block_space: 0,
         verification: 50,
-        execution: 2 * dutch_action_schedule.description.step_count * 20,
+        // Currently, we make the execution cost for DA actions proportional to the number of steps
+        // and costs of position open/close in dutch action. The gas cost is calculated by:
+        // 2 * step_count * (`PositionOpen`` + `PositionClose` cost).
+        execution: 2 * dutch_action_schedule.description.step_count * (10 + 10),
     }
 }
 
@@ -513,6 +511,8 @@ impl GasCost for PositionOpen {
             // There are some small validations performed so a token amount of gas is charged.
             verification: 50,
             // Execution cost is currently hardcoded at 10 for all Action variants.
+            // Reminder: Any change to this execution gas vector must also be reflected 
+            // in updates to the dutch auction gas vectors.
             execution: 10,
         }
     }
@@ -530,6 +530,8 @@ impl GasCost for PositionClose {
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
+            // Reminder: Any change to this execution gas vector must also be reflected 
+            // in updates to the dutch auction gas vectors.
             execution: 10,
         }
     }
