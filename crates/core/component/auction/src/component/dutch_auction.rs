@@ -28,7 +28,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             nonce: _,
         } = description;
 
-        let next_trigger = Self::compute_next_trigger(TriggerData {
+        let next_trigger = compute_next_trigger(TriggerData {
             start_height,
             end_height,
             step_count,
@@ -202,65 +202,6 @@ trait Inner: StateWrite {
         self.put_raw(key, raw_any);
     }
 
-    /// Compute the next trigger height, return `None` if the step count
-    /// has been reached and the auction should be retired.
-    ///
-    /// # Errors
-    /// This method errors if the block interval is not a multiple of the
-    /// specified `step_count`, or if it operates over an invalid block
-    /// interval (which should NEVER happen unless validation is broken).
-    ///
-    // TODO(erwan): doing everything checked at least for now, will remove as
-    // i fill the tests module.
-    fn compute_next_trigger(trigger_data: TriggerData) -> Result<Option<u64>> {
-        let block_interval = trigger_data
-            .end_height
-            .checked_sub(trigger_data.start_height)
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "block interval calculation has underflowed (end={}, start={})",
-                    trigger_data.end_height,
-                    trigger_data.start_height
-                )
-            })?;
-
-        // Compute the step size, based on the block interval and the number of
-        // discrete steps the auction specifies.
-        let step_size = block_interval
-            .checked_div(trigger_data.step_count)
-            .ok_or_else(|| anyhow::anyhow!("step count is zero"))?;
-
-        // Compute the step index for the current height, this should work even if
-        // the supplied height does not fall perfectly on a step boundary. First, we
-        // "clamp it" to a previous step index, then we increment by 1 to compute the
-        // next one, and finally we determine a concrete trigger height based off that.
-        let prev_step_index = trigger_data
-            .current_height
-            .checked_div(step_size)
-            .ok_or_else(|| anyhow::anyhow!("step size is zero"))?;
-
-        if prev_step_index >= trigger_data.step_count {
-            return Ok(None);
-        }
-
-        let next_step_index = prev_step_index
-            .checked_add(1)
-            .ok_or_else(|| anyhow::anyhow!("step index has overflowed"))?;
-
-        let next_step_size_from_start =
-            step_size.checked_mul(next_step_index).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "next step size from start has overflowed (step_size={}, next_step_index={})",
-                    step_size,
-                    next_step_index
-                )
-            })?;
-
-        Ok(trigger_data
-            .start_height
-            .checked_add(next_step_size_from_start))
-    }
-
     /// Set a trigger for an auction.
     fn set_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
         let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
@@ -276,7 +217,66 @@ trait Inner: StateWrite {
 
 impl<T: StateWrite + ?Sized> Inner for T {}
 
-#[allow(unused)] // Spurious warning that this is not used.
+/// Compute the next trigger height, return `None` if the step count
+/// has been reached and the auction should be retired.
+///
+/// # Errors
+/// This method errors if the block interval is not a multiple of the
+/// specified `step_count`, or if it operates over an invalid block
+/// interval (which should NEVER happen unless validation is broken).
+///
+// TODO(erwan): doing everything checked at least for now, will remove as
+// i fill the tests module.
+fn compute_next_trigger(trigger_data: TriggerData) -> Result<Option<u64>> {
+    let TriggerData {
+        start_height,
+        end_height,
+        current_height,
+        step_count,
+    } = trigger_data;
+
+    let block_interval = end_height.checked_sub(start_height).ok_or_else(|| {
+        anyhow::anyhow!(
+            "block interval calculation has underflowed (end={}, start={})",
+            trigger_data.end_height,
+            trigger_data.start_height
+        )
+    })?;
+
+    // Compute the step size, based on the block interval and the number of
+    // discrete steps the auction specifies.
+    let step_size = block_interval
+        .checked_div(step_count)
+        .ok_or_else(|| anyhow::anyhow!("step count is zero"))?;
+
+    // Compute the step index for the current height, this should work even if
+    // the supplied height does not fall perfectly on a step boundary. First, we
+    // "clamp it" to a previous step index, then we increment by 1 to compute the
+    // next one, and finally we determine a concrete trigger height based off that.
+    let distance_from_start = current_height.saturating_sub(start_height);
+
+    let prev_step_index = distance_from_start
+        .checked_div(step_size)
+        .ok_or_else(|| anyhow::anyhow!("step size is zero"))?;
+
+    if prev_step_index >= step_count {
+        return Ok(None);
+    }
+
+    let next_step_index = prev_step_index
+        .checked_add(1)
+        .ok_or_else(|| anyhow::anyhow!("step index has overflowed"))?;
+
+    let next_step_size_from_start = step_size.checked_mul(next_step_index).ok_or_else(|| {
+        anyhow::anyhow!(
+            "next step size from start has overflowed (step_size={}, next_step_index={})",
+            step_size,
+            next_step_index
+        )
+    })?;
+
+    Ok(start_height.checked_add(next_step_size_from_start))
+}
 struct TriggerData {
     pub start_height: u64,
     pub end_height: u64,
@@ -284,5 +284,73 @@ struct TriggerData {
     pub step_count: u64,
 }
 
-#[cfg(tests)]
-mod tests {}
+#[cfg(test)]
+mod tests {
+    use crate::component::dutch_auction::{compute_next_trigger, TriggerData};
+
+    #[test]
+    fn test_current_height_equals_start_height() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 100,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
+    }
+
+    #[test]
+    fn test_current_height_equals_end_height() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 200,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), None);
+    }
+
+    #[test]
+    fn test_current_height_below_start_height() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 90,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
+    }
+
+    #[test]
+    fn test_current_height_above_end_height() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 210,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), None);
+    }
+
+    #[test]
+    fn test_current_height_below_boundary() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 119,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
+    }
+
+    #[test]
+    fn test_current_height_above_boundary() {
+        let data = TriggerData {
+            start_height: 100,
+            end_height: 200,
+            step_count: 5,
+            current_height: 121,
+        };
+        assert_eq!(compute_next_trigger(data).unwrap(), Some(140));
+    }
+}
