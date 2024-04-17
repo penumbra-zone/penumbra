@@ -65,11 +65,11 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .get_dutch_auction_by_id(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("auction not found"))?;
-        self.close_auction(auction)
+        self.close_auction(auction).await
     }
 
     /// Terminate and update the supplied auction state.
-    fn close_auction(&mut self, auction_to_close: DutchAuction) -> Result<()> {
+    async fn close_auction(&mut self, auction_to_close: DutchAuction) -> Result<()> {
         let DutchAuctionState {
             sequence,
             current_position,
@@ -88,15 +88,38 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         // We close and retire the DEX position owned by this auction state,
         // and return the respective amount of input and output we should credit
         // to the total tracked amount, so that it can be returned to its bearer.
-        let (input_from_position, output_from_position) = if let Some(_position) = current_position
-        {
-            // Get position state
-            // Withdraw position from the dex
-            // Return reserves so that we can credit them to i/o rs.
-            (Amount::zero(), Amount::zero())
-        } else {
-            (Amount::zero(), Amount::zero())
-        };
+        let (input_from_position, output_from_position) =
+            if let Some(position_id) = current_position {
+                use penumbra_dex::component::{PositionManager, PositionRead};
+
+                let _ = self // TODO: redundant.
+                    .position_by_id(&position_id)
+                    .await
+                    .expect("no deserialization error")
+                    .expect("position MUST exist");
+
+                let _ = self.close_position_by_id(&position_id).await?;
+                let balance = self.withdraw_position(position_id, 0).await?;
+
+                let input_id = auction_to_close.description.input.asset_id;
+                let output_id = auction_to_close.description.output_id;
+
+                let input_balance = balance
+                    .provided()
+                    .filter(|v| v.asset_id == input_id)
+                    .map(|v| v.amount)
+                    .sum::<Amount>();
+
+                let output_balance = balance
+                    .provided()
+                    .filter(|v| v.asset_id == output_id)
+                    .map(|v| v.amount)
+                    .sum::<Amount>();
+
+                (input_balance, output_balance)
+            } else {
+                (Amount::zero(), Amount::zero())
+            };
 
         // If a `next_trigger` entry is set, we remove it.
         if next_trigger != 0 {
