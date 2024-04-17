@@ -1,11 +1,12 @@
-use crate::{auction::dutch::DutchAuctionDescription, component::auction::StateReadExt};
+use crate::auction::dutch::DutchAuctionDescription;
+use crate::component::AuctionStoreRead;
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_sct::component::clock::EpochRead; // AuctionRead?
 
-use crate::auction::dutch::actions::ActionDutchAuctionSchedule;
+use crate::auction::dutch::ActionDutchAuctionSchedule;
 
 #[async_trait]
 impl ActionHandler for ActionDutchAuctionSchedule {
