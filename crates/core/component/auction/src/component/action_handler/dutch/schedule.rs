@@ -1,4 +1,4 @@
-use crate::component::auction::StateReadExt;
+use crate::{auction::dutch::DutchAuctionDescription, component::auction::StateReadExt};
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
@@ -11,10 +11,31 @@ use crate::auction::dutch::actions::ActionDutchAuctionSchedule;
 impl ActionHandler for ActionDutchAuctionSchedule {
     type CheckStatelessContext = ();
     async fn check_stateless(&self, _context: ()) -> Result<()> {
-        let schedule = self;
-        let end_height = schedule.description.end_height;
-        let start_height = schedule.description.start_height;
-        let step_count = schedule.description.step_count;
+        let DutchAuctionDescription {
+            input,
+            output_id,
+            max_output,
+            min_output,
+            start_height,
+            end_height,
+            step_count,
+            nonce: _,
+        } = self.description;
+
+        // Check that we disallow identical input/output ids.
+        ensure!(
+            input.asset_id != output_id,
+            "input id MUST be different from output id"
+        );
+
+        // Check that the `max_output` is greater than the `min_output`
+        ensure!(
+            max_output > min_output,
+            "max_output MUST be greater than min_output"
+        );
+
+        // Check that the max output is greater than zero.
+        ensure!(max_output > 0u128.into(), "max output MUST be positive");
 
         // Check that the start and end height are valid.
         ensure!(
@@ -46,7 +67,7 @@ impl ActionHandler for ActionDutchAuctionSchedule {
         Ok(())
     }
 
-    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
         let schedule = self;
 
         // Check that `start_height` is in the future.
