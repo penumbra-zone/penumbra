@@ -4536,6 +4536,7 @@ dependencies = [
  "penumbra-governance",
  "penumbra-ibc",
  "penumbra-keys",
+ "penumbra-num",
  "penumbra-proof-params",
  "penumbra-proto",
  "penumbra-sct",
