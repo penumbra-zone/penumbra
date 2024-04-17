@@ -6,10 +6,7 @@ use std::sync::Arc;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
-use crate::{auction::id::AuctionId, state_key};
-
 pub struct Auction {}
-impl Auction {}
 
 #[async_trait]
 impl Component for Auction {
@@ -46,13 +43,7 @@ impl Component for Auction {
 /// Extension trait providing read access to auction data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Returns `true` if the suppied `auction_id` is already used.
-    async fn auction_id_exists(&self, auction_id: AuctionId) -> bool {
-        self.get_raw(&state_key::auction_store::by_id(auction_id))
-            .await
-            .expect("no storage errors")
-            .map_or(false, |_| true)
-    }
+    // Params accessors
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
