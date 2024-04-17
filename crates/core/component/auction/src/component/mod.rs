@@ -7,3 +7,4 @@ pub mod rpc;
 
 pub use auction::{StateReadExt, StateWriteExt};
 pub(crate) use auction_store::AuctionStoreRead;
+pub(crate) use dutch_auction::DutchAuctionManager;

@@ -5,6 +5,8 @@ use cnidarium_component::ActionHandler;
 
 use crate::auction::dutch::ActionDutchAuctionEnd;
 use crate::component::AuctionStoreRead;
+use crate::component::DutchAuctionManager;
+
 use anyhow::{bail, Context};
 
 #[async_trait]
@@ -14,7 +16,7 @@ impl ActionHandler for ActionDutchAuctionEnd {
         Ok(())
     }
 
-    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let auction_id = self.auction_id;
 
         let auction_state = state
@@ -32,6 +34,8 @@ impl ActionHandler for ActionDutchAuctionEnd {
             "auction MUST have a sequence number set to opened (0) or closed (1) (got: {})",
             auction.state.sequence
         );
+
+        state.close_auction(auction).await?;
         Ok(())
     }
 }

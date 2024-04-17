@@ -7,6 +7,7 @@ use cnidarium_component::ActionHandler;
 use penumbra_sct::component::clock::EpochRead; // AuctionRead?
 
 use crate::auction::dutch::ActionDutchAuctionSchedule;
+use crate::component::DutchAuctionManager;
 
 #[async_trait]
 impl ActionHandler for ActionDutchAuctionSchedule {
@@ -68,7 +69,7 @@ impl ActionHandler for ActionDutchAuctionSchedule {
         Ok(())
     }
 
-    async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let schedule = self;
 
         // Check that `start_height` is in the future.
@@ -88,6 +89,7 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             "the supplied auction id is already known to the chain (id={id})"
         );
 
+        state.schedule_auction(schedule.description.clone()).await;
         Ok(())
     }
 }

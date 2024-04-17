@@ -5,6 +5,7 @@ use crate::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use penumbra_asset::{Balance, Value};
 use penumbra_num::Amount;
 use penumbra_proto::core::component::auction::v1alpha1 as pb;
 use penumbra_sct::component::clock::EpochRead;
@@ -158,13 +159,26 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         Ok(())
     }
 
-    fn withdraw_auction(&mut self, mut auction: DutchAuction) {
+    fn withdraw_auction(&mut self, mut auction: DutchAuction) -> Balance {
+        let previous_input_reserves = Balance::from(Value {
+            amount: auction.state.input_reserves,
+            asset_id: auction.description.input.asset_id,
+        });
+        let previous_output_reserves = Balance::from(Value {
+            amount: auction.state.output_reserves,
+            asset_id: auction.description.output_id,
+        });
+
+        let withdraw_balance = previous_input_reserves + previous_output_reserves;
+
         auction.state.sequence = auction.state.sequence.saturating_add(1);
         auction.state.current_position = None;
         auction.state.next_trigger = 0;
         auction.state.input_reserves = Amount::zero();
         auction.state.output_reserves = Amount::zero();
-        self.write_dutch_auction_state(auction)
+        self.write_dutch_auction_state(auction);
+
+        withdraw_balance
     }
 }
 
