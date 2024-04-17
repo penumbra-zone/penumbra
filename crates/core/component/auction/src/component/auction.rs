@@ -7,7 +7,6 @@ use tendermint::v0_37::abci;
 use tracing::instrument;
 
 pub struct Auction {}
-impl Auction {}
 
 #[async_trait]
 impl Component for Auction {
@@ -43,7 +42,9 @@ impl Component for Auction {
 
 /// Extension trait providing read access to auction data.
 #[async_trait]
-pub trait StateReadExt: StateRead {}
+pub trait StateReadExt: StateRead {
+    // Params accessors
+}
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 

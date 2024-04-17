@@ -8,12 +8,13 @@ use serde::{Deserialize, Serialize};
 use crate::auction::AuctionId;
 
 pub mod actions;
+pub use actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw};
 
 pub const DUTCH_AUCTION_DOMAIN_SEP: &[u8] = b"penumbra_DA_nft";
 
 /// A deployed Dutch Auction, containing an immutable description
 /// and stateful data about its current state.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(try_from = "pb::DutchAuction", into = "pb::DutchAuction")]
 pub struct DutchAuction {
     pub description: DutchAuctionDescription,
@@ -162,7 +163,7 @@ impl TryFrom<pb::DutchAuctionDescription> for DutchAuctionDescription {
 ///  Opened                                   
 ///     │                                     
 ///
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(try_from = "pb::DutchAuctionState", into = "pb::DutchAuctionState")]
 pub struct DutchAuctionState {
     pub sequence: u64,
