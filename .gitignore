@@ -5,12 +5,12 @@ wallet-next/pwalletd-db.sqlite-wal
 
 *.DS_STORE
 
-book
+# mdbook docs builds
+docs/*/book/*
+# firebase config
 .firebase/
-# For some reason mdbook dumps this here because the main page is ../README.md
-#index.html
-# Used for deployments
-firebase-tmp/
+firebase-debug.log
+docs/*/firebase-tmp/
 
 # Nix build output goes here
 result
