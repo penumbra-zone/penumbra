@@ -1,7 +1,10 @@
 #![allow(unused)] // TODO: remove this when filling in the RPCs
 
 use penumbra_proto::{
-    core::component::auction::v1alpha1::query_service_server::QueryService, DomainType,
+    core::component::auction::v1alpha1::{
+        query_service_server::QueryService, AuctionStateByIdRequest, AuctionStateByIdResponse,
+    },
+    DomainType,
 };
 
 use async_stream::try_stream;
@@ -22,4 +25,12 @@ impl Server {
 }
 
 #[tonic::async_trait]
-impl QueryService for Server {}
+impl QueryService for Server {
+    #[instrument(skip(self, request))]
+    async fn auction_state_by_id(
+        &self,
+        request: tonic::Request<AuctionStateByIdRequest>,
+    ) -> Result<tonic::Response<AuctionStateByIdResponse>, Status> {
+        todo!()
+    }
+}
