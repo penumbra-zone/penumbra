@@ -83,6 +83,8 @@
 - [Governance](./governance.md)
   - [Transaction Actions](./governance/action.md)
     - [`DelegatorVote`](./governance/action/delegator_vote.md)
+    - [`ValidatorVote`](./governance/action/validator_vote.md)
+    - [`Proposal` Actions](./governance/action/proposal.md)
 - [IBC Integration](./ibc.md)
   - [Transaction Actions](./ibc/action.md)
     - [`IbcRelay`](./ibc/action/ibc_relay.md)
