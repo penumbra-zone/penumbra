@@ -240,7 +240,7 @@ fn position_withdraw_gas_cost() -> Gas {
         // Does not include a zk-SNARK proof, so there's no verification cost.
         verification: 0,
         // Execution cost is currently hardcoded at 10 for all `Action`` variants.
-        // Reminder: Any change to this execution gas vector must also be reflected 
+        // Reminder: Any change to this execution gas vector must also be reflected
         // in updates to the dutch auction gas vectors.
         execution: 10,
     }
@@ -256,8 +256,8 @@ fn dutch_auction_schedule_gas_cost(dutch_action_schedule: &ActionDutchAuctionSch
         // uint64 `end_height` = 8 bytes
         // uint64 `step_count` = 8 bytes
         // bytes `nonce` = 32 bytes
-        
-        // TODO(erwan): sanity check if this block space fee calculation is correct -- more dex context needed. 
+
+        // TODO(erwan): sanity check if this block space fee calculation is correct -- more dex context needed.
         block_space: 168 * dutch_action_schedule.description.step_count, // (168 * step_count) bytes
         compact_block_space: 0,
         verification: 50,
@@ -511,7 +511,7 @@ impl GasCost for PositionOpen {
             // There are some small validations performed so a token amount of gas is charged.
             verification: 50,
             // Execution cost is currently hardcoded at 10 for all Action variants.
-            // Reminder: Any change to this execution gas vector must also be reflected 
+            // Reminder: Any change to this execution gas vector must also be reflected
             // in updates to the dutch auction gas vectors.
             execution: 10,
         }
@@ -530,7 +530,7 @@ impl GasCost for PositionClose {
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
-            // Reminder: Any change to this execution gas vector must also be reflected 
+            // Reminder: Any change to this execution gas vector must also be reflected
             // in updates to the dutch auction gas vectors.
             execution: 10,
         }
