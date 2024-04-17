@@ -239,6 +239,7 @@ trait Inner: StateWrite {
 
 impl<T: StateWrite + ?Sized> Inner for T {}
 
+#[allow(unused)] // Spurious warning that this is not used.
 struct TriggerData {
     pub start_height: u64,
     pub end_height: u64,
