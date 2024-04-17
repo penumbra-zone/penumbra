@@ -12,8 +12,10 @@ use prost::{Message, Name};
 
 #[async_trait]
 pub(crate) trait DutchAuctionManager: StateWrite {
-    /// Schedule an auction with the specified [`DutchAuctionDescritpion`].
+    /// Schedule an auction for the specified [`DutchAuctionDescritpion`], initializing
+    /// its state, and registering it for execution by the component.
     async fn schedule_auction(&mut self, description: DutchAuctionDescription) {
+        let auction_id = description.id();
         let DutchAuctionDescription {
             input: _,
             output_id: _,
@@ -48,11 +50,12 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         let dutch_auction = DutchAuction { description, state };
 
         // Set the triggger
+        self.set_trigger_for_id(auction_id, next_trigger);
         // Write position to state
         self.write_dutch_auction_state(dutch_auction);
     }
 
-    /// Terminate a Dutch auction associated with the specified [`AuctionId`].
+    /// Terminate the Dutch auction associated with the specified [`AuctionId`].
     ///
     /// # Errors
     /// This method returns an error if the id is not found, or if the
@@ -95,12 +98,6 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             (Amount::zero(), Amount::zero())
         };
 
-        if let Some(_position) = current_position {
-            // Close position from the dex.
-            // Withdraw position from the dex.
-            // Credit balances to total input/output
-        }
-
         // If a `next_trigger` entry is set, we remove it.
         if next_trigger != 0 {
             self.unset_trigger_for_id(auction_id, next_trigger)
@@ -123,7 +120,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         Ok(())
     }
 
-    /// Withdraw a dutch auction, zero-ing out its reserves and increasing its sequence
+    /// Withdraw a dutch auction, zero-ing out its state, and increasing its sequence
     /// number.
     ///
     /// # Errors
@@ -141,6 +138,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
     fn withdraw_auction(&mut self, mut auction: DutchAuction) {
         auction.state.sequence = auction.state.sequence.saturating_add(1);
         auction.state.current_position = None;
+        auction.state.next_trigger = 0;
         auction.state.input_reserves = Amount::zero();
         auction.state.output_reserves = Amount::zero();
         self.write_dutch_auction_state(auction)
@@ -226,13 +224,13 @@ trait Inner: StateWrite {
             .checked_add(next_step_size_from_start))
     }
 
-    /// Set the trigger for an auction.
+    /// Set a trigger for an auction.
     fn set_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
         let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
         self.put_raw(trigger_path, vec![]);
     }
 
-    /// Delete the trigger for an auction and height
+    /// Delete a trigger for an auction.
     fn unset_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
         let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
         self.delete(trigger_path);
