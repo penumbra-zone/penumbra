@@ -256,9 +256,7 @@ fn dutch_auction_schedule_gas_cost(dutch_action_schedule: &ActionDutchAuctionSch
         // uint64 `end_height` = 8 bytes
         // uint64 `step_count` = 8 bytes
         // bytes `nonce` = 32 bytes
-
-        // TODO(erwan): sanity check if this block space fee calculation is correct -- more dex context needed.
-        block_space: 168 * dutch_action_schedule.description.step_count, // (168 * step_count) bytes
+        block_space: 168,
         compact_block_space: 0,
         verification: 50,
         // Currently, we make the execution cost for DA actions proportional to the number of steps
