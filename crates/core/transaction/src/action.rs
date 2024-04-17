@@ -1,5 +1,7 @@
 use anyhow::anyhow;
-use penumbra_auction::auction::dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw};
+use penumbra_auction::auction::dutch::actions::{
+    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+};
 use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
