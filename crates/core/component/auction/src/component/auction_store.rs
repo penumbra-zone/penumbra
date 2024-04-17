@@ -1,24 +1,20 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::{StateRead, StateWrite};
-use cnidarium_component::Component;
+use cnidarium::StateRead;
 use penumbra_proto::core::component::auction::v1alpha1 as pb;
 use penumbra_proto::DomainType;
 use penumbra_proto::Name;
 use penumbra_proto::StateReadProto;
 use prost_types::Any;
-use std::sync::Arc;
-use tendermint::v0_37::abci;
-use tracing::instrument;
 
 use crate::{
     auction::{dutch::DutchAuction, id::AuctionId},
     state_key,
 };
 
-/// Extension trait providing read access to auction data.
+/// Provide access to internal auction data.
 #[async_trait]
-pub trait AuctionStoreRead: StateRead {
+pub(crate) trait AuctionStoreRead: StateRead {
     /// Returns whether the supplied `auction_id` exists in the chain state.
     async fn auction_id_exists(&self, auction_id: AuctionId) -> bool {
         self.get_raw_auction(auction_id).await.is_some()
