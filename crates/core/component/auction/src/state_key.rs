@@ -8,11 +8,11 @@ pub mod parameters {
     }
 }
 
-pub mod store {
+pub mod auction_store {
     use crate::auction::id::AuctionId;
 
     pub fn prefix() -> &'static str {
-        "auction/store/"
+        "auction/auction_store/"
     }
 
     pub fn by_id(auction_id: AuctionId) -> String {
