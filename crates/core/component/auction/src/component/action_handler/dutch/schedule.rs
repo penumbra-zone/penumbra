@@ -24,6 +24,9 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             nonce: _,
         } = self.description;
 
+        // Fail fast if the step count is zero
+        ensure!(step_count > 0, "step count MUST be positive (got zero)");
+
         // Check that we disallow identical input/output ids.
         ensure!(
             input.asset_id != output_id,
