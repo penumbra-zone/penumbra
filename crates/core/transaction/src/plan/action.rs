@@ -81,7 +81,8 @@ pub enum ActionPlan {
 
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
-    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
+    // TODO: define plan.
+    //     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
 }
 
 impl ActionPlan {
@@ -162,7 +163,6 @@ impl ActionPlan {
             Ics20Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
             ActionDutchAuctionSchedule(plan) => Action::ActionDutchAuctionSchedule(plan.clone()),
             ActionDutchAuctionEnd(plan) => Action::ActionDutchAuctionEnd(plan.clone()),
-            ActionDutchAuctionWithdraw(plan) => Action::ActionDutchAuctionWithdraw(plan.clone()),
         })
     }
 
@@ -188,12 +188,11 @@ impl ActionPlan {
             PositionClose(position_close) => position_close.balance(),
             PositionWithdraw(position_withdraw) => position_withdraw.balance(),
             Ics20Withdrawal(withdrawal) => withdrawal.balance(),
-            // None of these contribute to transaction balance:
-            IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
-            // TODO: fill in skeleton
             ActionDutchAuctionSchedule(action) => action.balance(),
             ActionDutchAuctionEnd(action) => action.balance(),
-            ActionDutchAuctionWithdraw(action) => action.balance(),
+
+            // None of these contribute to transaction balance:
+            IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
         }
     }
 
@@ -515,6 +514,12 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::CommunityPoolOutput(inner) => {
                 Ok(ActionPlan::CommunityPoolOutput(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionDutchAuctionSchedule(inner) => {
+                Ok(ActionPlan::ActionDutchAuctionSchedule(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionDutchAuctionEnd(inner) => {
+                Ok(ActionPlan::ActionDutchAuctionEnd(inner.try_into()?))
             }
             pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
                 Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
