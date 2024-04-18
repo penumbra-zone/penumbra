@@ -49,8 +49,8 @@ impl AppActionHandler for Action {
             Action::CommunityPoolOutput(action) => action.check_stateless(()).await,
             Action::CommunityPoolDeposit(action) => action.check_stateless(()).await,
             Action::ActionDutchAuctionSchedule(action) => action.check_stateless(()).await,
-            Action::ActionDutchAuctionEnd(action) => action.check_stateless(()),
-            Action::ActionDutchAuctionWithdraw(action) => action.check_stateless(()),
+            Action::ActionDutchAuctionEnd(action) => action.check_stateless(()).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_stateless(()).await,
         }
     }
 
