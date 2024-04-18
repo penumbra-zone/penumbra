@@ -262,10 +262,15 @@ impl From<Action> for pb::Action {
             Action::CommunityPoolDeposit(inner) => pb::Action {
                 action: Some(pb::action::Action::CommunityPoolDeposit(inner.into())),
             },
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionSchedule(inner.into())),
+            },
+            Action::ActionDutchAuctionEnd(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionEnd(inner.into())),
+            },
+            Action::ActionDutchAuctionWithdraw(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionWithdraw(inner.into())),
+            },
         }
     }
 }
