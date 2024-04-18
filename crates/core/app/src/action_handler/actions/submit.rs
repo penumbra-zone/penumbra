@@ -1,3 +1,4 @@
+use std::ops::Not;
 use std::str::FromStr;
 
 use anyhow::{Context, Result};
@@ -176,11 +177,20 @@ impl AppActionHandler for ProposalSubmit {
                 /* no stateful checks for parameter change (checks are applied when proposal finishes) */
             }
             ProposalPayload::CommunityPoolSpend { transaction_plan } => {
-                // If Community Pool spend proposals aren't enabled, then we can't allow them to be submitted
+                // If Community Pool spend proposals are not enabled, then we can't allow them to
+                // be submitted.
                 let community_pool_parameters = state.get_community_pool_params().await?;
                 anyhow::ensure!(
                     community_pool_parameters.community_pool_spend_proposals_enabled,
                     "Community Pool spend proposals are not enabled",
+                );
+
+                // If the pool is currently frozen, we also can't allow spend proposals to be
+                // submitted.
+                let governance_parameters = state.get_governance_params().await?;
+                anyhow::ensure!(
+                    governance_parameters.community_pool_is_frozen.not(),
+                    "Community Pool spend proposals are not allowed when the pool is frozen",
                 );
 
                 // Check that the transaction plan can be built without any witness or auth data and
