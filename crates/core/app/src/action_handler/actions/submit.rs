@@ -118,7 +118,8 @@ impl AppActionHandler for ProposalSubmit {
                         | Ics20Withdrawal(_)
                         | CommunityPoolDeposit(_)
                         | ActionDutchAuctionSchedule(_)
-                        | ActionDutchAuctionEnd(_) => {}
+                        | ActionDutchAuctionEnd(_)
+                        | ActionDutchAuctionWithdraw(_) => {}
                     }
                 }
             }

@@ -6,6 +6,7 @@ use decaf377::Fr;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
+use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_txhash::{EffectHash, EffectingData};
 
@@ -80,6 +81,7 @@ pub enum ActionPlan {
 
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
+    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawPlan),
 }
 
 impl ActionPlan {
@@ -160,6 +162,9 @@ impl ActionPlan {
             Ics20Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
             ActionDutchAuctionSchedule(plan) => Action::ActionDutchAuctionSchedule(plan.clone()),
             ActionDutchAuctionEnd(plan) => Action::ActionDutchAuctionEnd(plan.clone()),
+            ActionDutchAuctionWithdraw(plan) => {
+                Action::ActionDutchAuctionWithdraw(plan.to_action())
+            }
         })
     }
 
@@ -187,6 +192,7 @@ impl ActionPlan {
             Ics20Withdrawal(withdrawal) => withdrawal.balance(),
             ActionDutchAuctionSchedule(action) => action.balance(),
             ActionDutchAuctionEnd(action) => action.balance(),
+            ActionDutchAuctionWithdraw(action) => action.balance(),
 
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
@@ -220,6 +226,7 @@ impl ActionPlan {
             Ics20Withdrawal(_) => Fr::zero(),
             ActionDutchAuctionSchedule(_) => Fr::zero(),
             ActionDutchAuctionEnd(_) => Fr::zero(),
+            ActionDutchAuctionWithdraw(_) => Fr::zero(),
         }
     }
 
@@ -251,6 +258,7 @@ impl ActionPlan {
             Ics20Withdrawal(plan) => plan.effect_hash(),
             ActionDutchAuctionSchedule(plan) => plan.effect_hash(),
             ActionDutchAuctionEnd(plan) => plan.effect_hash(),
+            ActionDutchAuctionWithdraw(plan) => plan.to_action().effect_hash(),
         }
     }
 }
@@ -441,6 +449,11 @@ impl From<ActionPlan> for pb_t::ActionPlan {
                     inner.into(),
                 )),
             },
+            ActionPlan::ActionDutchAuctionWithdraw(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionDutchAuctionWithdraw(
+                    inner.into(),
+                )),
+            },
         }
     }
 }
@@ -519,6 +532,9 @@ impl TryFrom<pb_t::ActionPlan> for ActionPlan {
             }
             pb_t::action_plan::Action::ActionDutchAuctionEnd(inner) => {
                 Ok(ActionPlan::ActionDutchAuctionEnd(inner.try_into()?))
+            }
+            pb_t::action_plan::Action::ActionDutchAuctionWithdraw(inner) => {
+                Ok(ActionPlan::ActionDutchAuctionWithdraw(inner.try_into()?))
             }
             pb_t::action_plan::Action::Ics20Withdrawal(inner) => {
                 Ok(ActionPlan::Ics20Withdrawal(inner.try_into()?))
