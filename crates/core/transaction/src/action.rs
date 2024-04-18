@@ -336,6 +336,15 @@ impl TryFrom<pb::Action> for Action {
             pb::action::Action::CommunityPoolDeposit(inner) => {
                 Ok(Action::CommunityPoolDeposit(inner.try_into()?))
             }
+            pb::action::Action::ActionDutchAuctionSchedule(inner) => {
+                Ok(Action::ActionDutchAuctionSchedule(inner.try_into()?))
+            }
+            pb::action::Action::ActionDutchAuctionEnd(inner) => {
+                Ok(Action::ActionDutchAuctionEnd(inner.try_into()?))
+            }
+            pb::action::Action::ActionDutchAuctionWithdraw(inner) => {
+                Ok(Action::ActionDutchAuctionWithdraw(inner.try_into()?))
+            }
         }
     }
 }
