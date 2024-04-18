@@ -135,5 +135,6 @@ message ActionDutchAuctionScheduleView {
 message ActionDutchAuctionWithdrawPlan {
   AuctionId auction_id = 1;
   uint64 seq = 2;
-  asset.v1.Balance reserves = 3;
+  asset.v1.Value reserves_input = 3;
+  asset.v1.Value reserves_output = 4;
 }
