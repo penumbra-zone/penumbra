@@ -71,10 +71,9 @@ impl EffectingData for Action {
             Action::CommunityPoolSpend(d) => d.effect_hash(),
             Action::CommunityPoolOutput(d) => d.effect_hash(),
             Action::CommunityPoolDeposit(d) => d.effect_hash(),
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(a) => a.effect_hash(),
+            Action::ActionDutchAuctionEnd(a) => a.effect_hash(),
+            Action::ActionDutchAuctionWithdraw(a) => a.effect_hash(),
         }
     }
 }
@@ -119,10 +118,13 @@ impl Action {
             Action::CommunityPoolDeposit(_) => tracing::info_span!("CommunityPoolDeposit", ?idx),
             Action::CommunityPoolSpend(_) => tracing::info_span!("CommunityPoolSpend", ?idx),
             Action::CommunityPoolOutput(_) => tracing::info_span!("CommunityPoolOutput", ?idx),
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(_) => {
+                tracing::info_span!("ActionDutchAuctionSchedule", ?idx)
+            }
+            Action::ActionDutchAuctionEnd(_) => tracing::info_span!("ActionDutchAuctionEnd", ?idx),
+            Action::ActionDutchAuctionWithdraw(_) => {
+                tracing::info_span!("ActionDutchAuctionWithdraw", ?idx)
+            }
         }
     }
 }
@@ -181,10 +183,8 @@ impl IsAction for Action {
             Action::CommunityPoolSpend(x) => x.view_from_perspective(txp),
             Action::CommunityPoolOutput(x) => x.view_from_perspective(txp),
             Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
-            // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
-            // TODO: fill in skeleton
             Action::ActionDutchAuctionSchedule(_) => todo!(),
             Action::ActionDutchAuctionEnd(_) => todo!(),
             Action::ActionDutchAuctionWithdraw(_) => todo!(),

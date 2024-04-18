@@ -1,3 +1,6 @@
+use penumbra_auction::auction::dutch::{
+    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen, PositionWithdraw},
@@ -44,6 +47,9 @@ pub enum ActionView {
     CommunityPoolDeposit(CommunityPoolDeposit),
     CommunityPoolSpend(CommunityPoolSpend),
     CommunityPoolOutput(CommunityPoolOutput),
+    ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
+    ActionDutchAuctionEnd(ActionDutchAuctionEnd),
+    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
 }
 
 impl DomainType for ActionView {
@@ -86,9 +92,13 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::CommunityPoolDeposit(x) => ActionView::CommunityPoolDeposit(x.try_into()?),
                 AV::CommunityPoolSpend(x) => ActionView::CommunityPoolSpend(x.try_into()?),
                 AV::CommunityPoolOutput(x) => ActionView::CommunityPoolOutput(x.try_into()?),
-                AV::ActionDutchAuctionSchedule(_) => todo!(),
-                AV::ActionDutchAuctionEnd(_) => todo!(),
-                AV::ActionDutchAuctionWithdraw(_) => todo!(),
+                AV::ActionDutchAuctionSchedule(x) => {
+                    ActionView::ActionDutchAuctionSchedule(x.try_into()?)
+                }
+                AV::ActionDutchAuctionEnd(x) => ActionView::ActionDutchAuctionEnd(x.try_into()?),
+                AV::ActionDutchAuctionWithdraw(x) => {
+                    ActionView::ActionDutchAuctionWithdraw(x.try_into()?)
+                }
             },
         )
     }
@@ -120,6 +130,13 @@ impl From<ActionView> for pbt::ActionView {
                 ActionView::CommunityPoolDeposit(x) => AV::CommunityPoolDeposit(x.into()),
                 ActionView::CommunityPoolSpend(x) => AV::CommunityPoolSpend(x.into()),
                 ActionView::CommunityPoolOutput(x) => AV::CommunityPoolOutput(x.into()),
+                ActionView::ActionDutchAuctionSchedule(x) => {
+                    AV::ActionDutchAuctionSchedule(x.into())
+                }
+                ActionView::ActionDutchAuctionEnd(x) => AV::ActionDutchAuctionEnd(x.into()),
+                ActionView::ActionDutchAuctionWithdraw(x) => {
+                    AV::ActionDutchAuctionWithdraw(x.into())
+                }
             }),
         }
     }
@@ -149,6 +166,9 @@ impl From<ActionView> for Action {
             ActionView::CommunityPoolDeposit(x) => Action::CommunityPoolDeposit(x),
             ActionView::CommunityPoolSpend(x) => Action::CommunityPoolSpend(x),
             ActionView::CommunityPoolOutput(x) => Action::CommunityPoolOutput(x),
+            ActionView::ActionDutchAuctionSchedule(x) => Action::ActionDutchAuctionSchedule(x),
+            ActionView::ActionDutchAuctionEnd(x) => Action::ActionDutchAuctionEnd(x),
+            ActionView::ActionDutchAuctionWithdraw(x) => Action::ActionDutchAuctionWithdraw(x),
         }
     }
 }
