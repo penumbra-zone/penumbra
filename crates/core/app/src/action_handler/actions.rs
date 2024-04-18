@@ -48,9 +48,9 @@ impl AppActionHandler for Action {
             Action::CommunityPoolSpend(action) => action.check_stateless(()).await,
             Action::CommunityPoolOutput(action) => action.check_stateless(()).await,
             Action::CommunityPoolDeposit(action) => action.check_stateless(()).await,
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(action) => action.check_stateless(()).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_stateless(()),
+            Action::ActionDutchAuctionWithdraw(action) => action.check_stateless(()),
         }
     }
 
@@ -95,9 +95,9 @@ impl AppActionHandler for Action {
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(action) => action.check_historical(state).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_historical(state).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_historical(state).await,
         }
     }
 
@@ -130,9 +130,9 @@ impl AppActionHandler for Action {
             Action::CommunityPoolSpend(action) => action.check_and_execute(state).await,
             Action::CommunityPoolOutput(action) => action.check_and_execute(state).await,
             Action::CommunityPoolDeposit(action) => action.check_and_execute(state).await,
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(action) => action.check_and_execute(state).await,
+            Action::ActionDutchAuctionEnd(action) => action.check_and_execute(state).await,
+            Action::ActionDutchAuctionWithdraw(action) => action.check_and_execute(state).await,
         }
     }
 }
