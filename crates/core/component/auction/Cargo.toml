@@ -77,6 +77,7 @@ tendermint = {workspace = true, default-features = true}
 tokio = {workspace = true, features = ["full", "tracing"], optional = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
+pbjson-types = "0.6.0"
 
 [dev-dependencies]
 ed25519-consensus = {workspace = true}

@@ -4753,6 +4753,7 @@ dependencies = [
  "im",
  "metrics",
  "once_cell",
+ "pbjson-types",
  "penumbra-asset",
  "penumbra-dex",
  "penumbra-keys",

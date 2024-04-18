@@ -49,21 +49,9 @@ impl QueryService for Server {
             .await
             .ok_or_else(|| tonic::Status::not_found("auction data not found for specified id"))?;
 
-        if auction_data.type_url
-            != format!("penumbra.core.component.auction.v1alpha1.DutchAuctionState")
-        {
-            return Err(Status::invalid_argument(
-                "Auction data type does not contain a `DutchAuctionState`",
-            ));
-        }
-
-        // Attempt to deserialize value into a `DutchAuctionState` message.
-        let auction_state_proto = DutchAuctionState::decode(auction_data.value.as_ref())
-            .map_err(|_| Status::invalid_argument("Failed to decode DutchAuctionState"))?;
-
         Ok(tonic::Response::new(AuctionStateByIdResponse {
-            auction: Some(auction_state_proto),
-            positions: todo!(),
+            auction: Some(auction_data),
+            positions: Vec::new(),
         }))
     }
 
