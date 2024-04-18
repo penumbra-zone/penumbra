@@ -4,6 +4,7 @@ use ark_ff::Zero;
 use decaf377_rdsa::Fr;
 use penumbra_asset::{balance, Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +53,13 @@ impl ActionDutchAuctionWithdraw {
         .commit(Fr::zero());
 
         self.reserves_commitment + next_auction_nft - prev_auction_nft
+    }
+}
+
+/* Effect hash */
+impl EffectingData for ActionDutchAuctionWithdraw {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 

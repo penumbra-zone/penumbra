@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use penumbra_asset::{Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectingData, EffectHash};
 use serde::{Deserialize, Serialize};
 
 use crate::auction::{id::AuctionId, AuctionNft};
@@ -39,6 +40,12 @@ impl ActionDutchAuctionEnd {
     }
 }
 
+/* Effect hash */
+impl EffectingData for ActionDutchAuctionEnd {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
+    }
+}
 /* Protobuf impls */
 impl DomainType for ActionDutchAuctionEnd {
     type Proto = pb::ActionDutchAuctionEnd;
