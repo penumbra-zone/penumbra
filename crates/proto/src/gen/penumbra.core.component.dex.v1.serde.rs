@@ -614,6 +614,9 @@ impl serde::Serialize for BatchSwapOutputData {
         if self.epoch_starting_height != 0 {
             len += 1;
         }
+        if self.sct_position_prefix != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.BatchSwapOutputData", len)?;
         if let Some(v) = self.delta_1.as_ref() {
             struct_ser.serialize_field("delta1", v)?;
@@ -644,6 +647,10 @@ impl serde::Serialize for BatchSwapOutputData {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochStartingHeight", ToString::to_string(&self.epoch_starting_height).as_str())?;
         }
+        if self.sct_position_prefix != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sctPositionPrefix", ToString::to_string(&self.sct_position_prefix).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -671,6 +678,8 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             "tradingPair",
             "epoch_starting_height",
             "epochStartingHeight",
+            "sct_position_prefix",
+            "sctPositionPrefix",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -684,6 +693,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             Height,
             TradingPair,
             EpochStartingHeight,
+            SctPositionPrefix,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -715,6 +725,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                             "height" => Ok(GeneratedField::Height),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "epochStartingHeight" | "epoch_starting_height" => Ok(GeneratedField::EpochStartingHeight),
+                            "sctPositionPrefix" | "sct_position_prefix" => Ok(GeneratedField::SctPositionPrefix),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -743,6 +754,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                 let mut height__ = None;
                 let mut trading_pair__ = None;
                 let mut epoch_starting_height__ = None;
+                let mut sct_position_prefix__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Delta1 => {
@@ -803,6 +815,14 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::SctPositionPrefix => {
+                            if sct_position_prefix__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sctPositionPrefix"));
+                            }
+                            sct_position_prefix__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -818,6 +838,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                     height: height__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                     epoch_starting_height: epoch_starting_height__.unwrap_or_default(),
+                    sct_position_prefix: sct_position_prefix__.unwrap_or_default(),
                 })
             }
         }

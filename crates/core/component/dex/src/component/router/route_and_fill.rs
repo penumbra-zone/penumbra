@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
+use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{
@@ -23,21 +24,13 @@ use super::fill_route::FillError;
 /// a block's batch swap flows.
 #[async_trait]
 pub trait HandleBatchSwaps: StateWrite + Sized {
-    #[instrument(skip(
-        self,
-        trading_pair,
-        batch_data,
-        block_height,
-        epoch_starting_height,
-        params
-    ))]
+    #[instrument(skip(self, trading_pair, batch_data, block_height, params))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
-        // TODO: why not read these 2 from the state?
+        // This will be read from the ABCI request
         block_height: u64,
-        epoch_starting_height: u64,
         params: RoutingParams,
     ) -> Result<()>
     where
@@ -95,9 +88,9 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             ),
             None => (0u64.into(), delta_2),
         };
+        let epoch = self.get_current_epoch().await.expect("epoch is set");
         let output_data = BatchSwapOutputData {
             height: block_height,
-            epoch_starting_height,
             trading_pair,
             delta_1,
             delta_2,
@@ -105,6 +98,15 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             lambda_2,
             unfilled_1,
             unfilled_2,
+            sct_position_prefix: (
+                u16::try_from(epoch.index).expect("epoch index should be small enough"),
+                // The block index is determined by looking at how many blocks have elapsed since
+                // the start of the epoch.
+                u16::try_from(block_height - epoch.start_height)
+                    .expect("block index should be small enough"),
+                0,
+            )
+                .into(),
         };
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
