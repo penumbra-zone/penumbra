@@ -3473,9 +3473,15 @@ impl serde::Serialize for LiquidityPositionsByPriceResponse {
         if self.data.is_some() {
             len += 1;
         }
+        if self.id.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.LiquidityPositionsByPriceResponse", len)?;
         if let Some(v) = self.data.as_ref() {
             struct_ser.serialize_field("data", v)?;
+        }
+        if let Some(v) = self.id.as_ref() {
+            struct_ser.serialize_field("id", v)?;
         }
         struct_ser.end()
     }
@@ -3488,11 +3494,13 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
     {
         const FIELDS: &[&str] = &[
             "data",
+            "id",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Data,
+            Id,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3516,6 +3524,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                     {
                         match value {
                             "data" => Ok(GeneratedField::Data),
+                            "id" => Ok(GeneratedField::Id),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3536,6 +3545,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut data__ = None;
+                let mut id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Data => {
@@ -3544,6 +3554,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                             }
                             data__ = map_.next_value()?;
                         }
+                        GeneratedField::Id => {
+                            if id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3551,6 +3567,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                 }
                 Ok(LiquidityPositionsByPriceResponse {
                     data: data__,
+                    id: id__,
                 })
             }
         }

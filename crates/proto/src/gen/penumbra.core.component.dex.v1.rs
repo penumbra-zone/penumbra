@@ -1172,6 +1172,8 @@ impl ::prost::Name for LiquidityPositionsByPriceRequest {
 pub struct LiquidityPositionsByPriceResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+    #[prost(message, optional, tag = "2")]
+    pub id: ::core::option::Option<PositionId>,
 }
 impl ::prost::Name for LiquidityPositionsByPriceResponse {
     const NAME: &'static str = "LiquidityPositionsByPriceResponse";
