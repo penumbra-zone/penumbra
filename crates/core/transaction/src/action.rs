@@ -154,9 +154,9 @@ impl IsAction for Action {
             Action::IbcRelay(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(action) => action.balance_commitment(),
+            Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
+            Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
         }
     }
 

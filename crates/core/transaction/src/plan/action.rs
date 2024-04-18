@@ -160,10 +160,9 @@ impl ActionPlan {
             CommunityPoolOutput(plan) => Action::CommunityPoolOutput(plan.clone()),
             CommunityPoolDeposit(plan) => Action::CommunityPoolDeposit(plan.clone()),
             Ics20Withdrawal(plan) => Action::Ics20Withdrawal(plan.clone()),
-            // TODO: fill in skeleton
-            ActionDutchAuctionSchedule(_) => todo!(),
-            ActionDutchAuctionEnd(_) => todo!(),
-            ActionDutchAuctionWithdraw(_) => todo!(),
+            ActionDutchAuctionSchedule(plan) => Action::ActionDutchAuctionSchedule(plan.clone()),
+            ActionDutchAuctionEnd(plan) => Action::ActionDutchAuctionEnd(plan.clone()),
+            ActionDutchAuctionWithdraw(plan) => Action::ActionDutchAuctionWithdraw(plan.clone()),
         })
     }
 
@@ -192,9 +191,9 @@ impl ActionPlan {
             // None of these contribute to transaction balance:
             IbcAction(_) | ValidatorDefinition(_) | ValidatorVote(_) => Balance::default(),
             // TODO: fill in skeleton
-            ActionDutchAuctionSchedule(_) => todo!(),
-            ActionDutchAuctionEnd(_) => todo!(),
-            ActionDutchAuctionWithdraw(_) => todo!(),
+            ActionDutchAuctionSchedule(action) => action.balance(),
+            ActionDutchAuctionEnd(action) => action.balance(),
+            ActionDutchAuctionWithdraw(action) => action.balance(),
         }
     }
 

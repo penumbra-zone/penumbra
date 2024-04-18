@@ -94,7 +94,7 @@ impl ::prost::Name for DetectionData {
 pub struct Action {
     #[prost(
         oneof = "action::Action",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 40, 41, 42, 50, 51, 52, 53, 54, 55, 200"
     )]
     pub action: ::core::option::Option<action::Action>,
 }
@@ -163,6 +163,19 @@ pub mod action {
         #[prost(message, tag = "52")]
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
+        /// Dutch auctions
+        #[prost(message, tag = "53")]
+        DutchAuctionSchedule(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+        ),
+        #[prost(message, tag = "54")]
+        DutchAuctionEnd(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "55")]
+        DutchAuctionWithdraw(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
@@ -387,7 +400,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 43, 200"
+        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -453,6 +466,19 @@ pub mod action_view {
         #[prost(message, tag = "52")]
         CommunityPoolDeposit(
             super::super::super::component::governance::v1::CommunityPoolDeposit,
+        ),
+        /// Dutch auctions
+        #[prost(message, tag = "53")]
+        DutchAuctionSchedule(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+        ),
+        #[prost(message, tag = "54")]
+        DutchAuctionEnd(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+        ),
+        #[prost(message, tag = "55")]
+        DutchAuctionWithdraw(
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest
