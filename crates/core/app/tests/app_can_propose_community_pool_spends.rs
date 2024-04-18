@@ -5,12 +5,14 @@ use {
     penumbra_app::{
         genesis::{AppState, Content},
         server::consensus::Consensus,
+        CommunityPoolStateReadExt as _,
     },
     penumbra_community_pool::{
-        CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend, StateReadExt,
+        CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend, StateReadExt as _,
     },
     penumbra_governance::{
-        Proposal, ProposalSubmit, ValidatorVote, ValidatorVoteBody, ValidatorVoteReason,
+        Proposal, ProposalSubmit, StateReadExt as _, ValidatorVote, ValidatorVoteBody,
+        ValidatorVoteReason,
     },
     penumbra_keys::{
         keys::{SpendKey, SpendKeyBytes},
@@ -48,6 +50,12 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
 
     // Define a helper to get the current community pool balance.
     let pool_balance = || async { storage.latest_snapshot().community_pool_balance().await };
+    let pending_pool_txs = || async {
+        storage
+            .latest_snapshot()
+            .pending_community_pool_transactions()
+            .await
+    };
 
     // Generate a set of consensus keys.
     let consensus_sk = ed25519_consensus::SigningKey::new(OsRng);
@@ -123,6 +131,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             .await
             .tap_ok(|e| tracing::info!(hash = %e.last_app_hash_hex(), "finished init chain"))?
     };
+    let original_pool_balance = pool_balance().await?;
     let [_validator] = storage
         .latest_snapshot()
         .validator_definitions()
@@ -242,6 +251,8 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
         .instrument(error_span!("executing block with governance proposal"))
         .await?;
     let post_proposal_pool_balance = pool_balance().await?;
+    let post_proposal_pending_txs = pending_pool_txs().await?;
+    let post_proposal_state = storage.latest_snapshot().proposal_state(0).await?;
 
     // Now make another transaction that will contain a validator vote upon our transaction.
     let mut plan = {
@@ -275,9 +286,20 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
         .instrument(error_span!("executing block with validator vote"))
         .await?;
     let post_vote_pool_balance = pool_balance().await?;
+    let post_vote_pending_txs = pending_pool_txs().await?;
+    let post_vote_state = storage.latest_snapshot().proposal_state(0).await?;
 
     test_node.fast_forward(PROPOSAL_VOTING_BLOCKS).await?;
     let post_voting_period_pool_balance = pool_balance().await?;
+    let post_voting_period_pending_txs = pending_pool_txs().await?;
+    let post_voting_period_state = storage.latest_snapshot().proposal_state(0).await?;
+
+    // At the outset, the pool should be empty.
+    assert_eq!(
+        original_pool_balance,
+        BTreeMap::default(),
+        "the community pool should be empty at the beginning of the chain"
+    );
 
     // After we deposit a note into the community pool, we should see the original pool contents,
     // plus the amount that we deposited.
@@ -294,18 +316,58 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
         post_deposit_pool_balance, post_proposal_pool_balance,
         "the community pool balance should not be affected by a proposal"
     );
+    assert_eq!(
+        post_proposal_state,
+        Some(penumbra_governance::proposal_state::State::Voting),
+        "a new proposal should be in the voting phase"
+    );
+    assert_eq!(
+        post_proposal_pending_txs.len(),
+        0,
+        "a proposal is being voted upon, but its transaction(s) are not pending yet"
+    );
 
     // ...nor should a vote by itself.
     assert_eq!(
         post_proposal_pool_balance, post_vote_pool_balance,
         "the community pool balance should not be affected by a vote, even with quorum"
     );
+    assert_eq!(
+        post_vote_state,
+        Some(penumbra_governance::proposal_state::State::Voting),
+        "a proposal should remain in the voting phase"
+    );
+    assert_eq!(
+        post_vote_pending_txs.len(),
+        0,
+        "a proposal is being voted upon, but its transaction(s) are not pending yet"
+    );
 
     // After the proposal passes, we should see the balance decrease by the amount proposed.
     assert_eq!(
-        BTreeMap::default(),
         post_voting_period_pool_balance,
+        BTreeMap::default(),
         "the successful proposal should decrease the funds of the community pool"
+    );
+    assert_eq!(
+        post_voting_period_state,
+        Some(penumbra_governance::proposal_state::State::Finished {
+            outcome: penumbra_governance::proposal_state::Outcome::Passed,
+        }),
+        "a proposal should be finished after the voting period completes"
+    );
+    assert_eq!(
+        post_voting_period_pending_txs.len(),
+        1,
+        "a proposal has finished, its transaction(s) are pending"
+    );
+
+    // Move forward one block, and show that the transaction is no longer pending.
+    test_node.block().execute().await?;
+    assert_eq!(
+        pending_pool_txs().await?.len(),
+        0,
+        "the community pool spend is no longer pending"
     );
 
     // Free our temporary storage.
