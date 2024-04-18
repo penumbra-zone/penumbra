@@ -1024,7 +1024,7 @@ async fn best_position_route_and_fill() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -1165,7 +1165,7 @@ async fn multi_hop_route_and_fill() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), routing_params)
         .await
         .expect("unable to process batch swaps");
 

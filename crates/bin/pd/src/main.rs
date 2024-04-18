@@ -13,7 +13,7 @@ use cnidarium::{StateDelta, Storage};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    migrate::Migration::Testnet70,
+    migrate::Migration::Testnet72,
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
         generate::TestnetConfig,
@@ -442,7 +442,7 @@ async fn main() -> anyhow::Result<()> {
             migrate_archive,
         } => {
             tracing::info!("migrating state in {}", target_directory.display());
-            Testnet70
+            Testnet72
                 .migrate(target_directory.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;

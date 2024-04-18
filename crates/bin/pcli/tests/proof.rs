@@ -278,7 +278,7 @@ fn swap_claim_parameters_vs_current_swap_claim_circuit() {
         unfilled_2: Amount::from(50u64),
         height: height.into(),
         trading_pair: swap_plaintext.trading_pair,
-        epoch_starting_height: (epoch_duration * position.epoch()).into(),
+        sct_position_prefix: position,
     };
     let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 

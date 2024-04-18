@@ -619,7 +619,7 @@ impl App {
 ///
 /// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
 /// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 1;
+const TOTAL_HALT_COUNT: u64 = 2;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
