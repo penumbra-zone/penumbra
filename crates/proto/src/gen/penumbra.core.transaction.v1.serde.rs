@@ -516,9 +516,6 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::ActionDutchAuctionEnd(v) => {
                     struct_ser.serialize_field("actionDutchAuctionEnd", v)?;
                 }
-                action_plan::Action::ActionDutchAuctionWithdraw(v) => {
-                    struct_ser.serialize_field("actionDutchAuctionWithdraw", v)?;
-                }
             }
         }
         struct_ser.end()
@@ -574,8 +571,6 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "actionDutchAuctionSchedule",
             "action_dutch_auction_end",
             "actionDutchAuctionEnd",
-            "action_dutch_auction_withdraw",
-            "actionDutchAuctionWithdraw",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -604,7 +599,6 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             CommunityPoolDeposit,
             ActionDutchAuctionSchedule,
             ActionDutchAuctionEnd,
-            ActionDutchAuctionWithdraw,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -651,7 +645,6 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "communityPoolDeposit" | "community_pool_deposit" => Ok(GeneratedField::CommunityPoolDeposit),
                             "actionDutchAuctionSchedule" | "action_dutch_auction_schedule" => Ok(GeneratedField::ActionDutchAuctionSchedule),
                             "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
-                            "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -840,13 +833,6 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                                 return Err(serde::de::Error::duplicate_field("actionDutchAuctionEnd"));
                             }
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionDutchAuctionEnd)
-;
-                        }
-                        GeneratedField::ActionDutchAuctionWithdraw => {
-                            if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionWithdraw"));
-                            }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionDutchAuctionWithdraw)
 ;
                         }
                         GeneratedField::__SkipField__ => {
