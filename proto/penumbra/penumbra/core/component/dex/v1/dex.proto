@@ -573,6 +573,7 @@ message LiquidityPositionsByPriceRequest {
 
 message LiquidityPositionsByPriceResponse {
   core.component.dex.v1.Position data = 1;
+  core.component.dex.v1.PositionId id = 2;
 }
 
 message SpreadRequest {
