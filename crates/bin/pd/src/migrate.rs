@@ -4,6 +4,8 @@
 //! node operators must coordinate to perform a chain upgrade.
 //! This module declares how local `pd` state should be altered, if at all,
 //! in order to be compatible with the network post-chain-upgrade.
+mod testnet72;
+
 use anyhow::Context;
 use futures::StreamExt as _;
 use std::path::PathBuf;
@@ -28,6 +30,9 @@ pub enum Migration {
     SimpleMigration,
     /// Testnet-70 migration: move swap executions from the jmt to nv-storage.
     Testnet70,
+    /// Testnet-72 migration:
+    /// - Migrate `BatchSwapOutputData` to new protobuf, replacing epoch height with index.
+    Testnet72,
 }
 
 impl Migration {
@@ -37,7 +42,7 @@ impl Migration {
         genesis_start: Option<tendermint::time::Time>,
     ) -> anyhow::Result<()> {
         match self {
-            Migration::Noop => (),
+            Migration::Noop => Ok(()),
             Migration::SimpleMigration => {
                 let rocksdb_dir = path_to_export.join("rocksdb");
                 let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
@@ -101,6 +106,7 @@ impl Migration {
                     crate::testnet::generate::TestnetValidator::initial_state();
                 std::fs::write(validator_state_path, fresh_validator_state)
                     .expect("can write validator state");
+                Ok(())
             }
             Migration::Testnet70 => {
                 // Our goal is to fetch all swap executions from the jmt and store them in nv-storage.
@@ -189,9 +195,11 @@ impl Migration {
                     duration = migration_duration.as_secs(),
                     "successful migration!"
                 );
+
+                Ok(())
             }
+            Migration::Testnet72 => testnet72::migrate(path_to_export, genesis_start).await,
         }
-        Ok(())
     }
 }
 

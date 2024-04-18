@@ -4549,6 +4549,7 @@ dependencies = [
  "penumbra-sct",
  "penumbra-shielded-pool",
  "penumbra-stake",
+ "penumbra-tct",
  "penumbra-tendermint-proxy",
  "penumbra-tower-trace",
  "penumbra-transaction",
