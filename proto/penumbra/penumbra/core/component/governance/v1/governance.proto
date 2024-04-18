@@ -421,8 +421,6 @@ message GovernanceParameters {
   // The threshold for a proposal to be slashed, regardless of whether the "yes" and "no" votes
   // would have passed it, as a ratio of "no" votes over all total votes.
   string proposal_slash_threshold = 5;
-  // All community pool transactions are disabled if this is true.
-  bool community_pool_is_frozen = 6;
 }
 
 // Governance genesis state.

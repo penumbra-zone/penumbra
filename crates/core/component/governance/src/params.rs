@@ -23,8 +23,6 @@ pub struct GovernanceParameters {
     pub proposal_pass_threshold: Ratio,
     /// The threshold for a proposal to be slashed, as a ratio of "no" votes over all total votes.
     pub proposal_slash_threshold: Ratio,
-    /// Whether the community pool is frozen.
-    pub community_pool_is_frozen: bool,
 }
 
 impl DomainType for GovernanceParameters {
@@ -53,7 +51,6 @@ impl TryFrom<pb::GovernanceParameters> for GovernanceParameters {
                 .proposal_slash_threshold
                 .parse()
                 .context("couldn't parse proposal_slash_threshold")?,
-            community_pool_is_frozen: msg.community_pool_is_frozen,
         })
     }
 }
@@ -66,7 +63,6 @@ impl From<GovernanceParameters> for pb::GovernanceParameters {
             proposal_valid_quorum: params.proposal_valid_quorum.to_string(),
             proposal_pass_threshold: params.proposal_pass_threshold.to_string(),
             proposal_slash_threshold: params.proposal_slash_threshold.to_string(),
-            community_pool_is_frozen: params.community_pool_is_frozen,
         }
     }
 }
@@ -82,8 +78,6 @@ impl Default for GovernanceParameters {
             proposal_pass_threshold: Ratio::new(50, 100),
             // slash threshold means if (no / no + yes + abstain) > slash_threshold, then proposal is slashed
             proposal_slash_threshold: Ratio::new(80, 100),
-            // community pool is NOT frozen by default.
-            community_pool_is_frozen: false,
         }
     }
 }

@@ -2674,9 +2674,6 @@ impl serde::Serialize for GovernanceParameters {
         if !self.proposal_slash_threshold.is_empty() {
             len += 1;
         }
-        if self.community_pool_is_frozen {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.GovernanceParameters", len)?;
         if self.proposal_voting_blocks != 0 {
             #[allow(clippy::needless_borrow)]
@@ -2693,9 +2690,6 @@ impl serde::Serialize for GovernanceParameters {
         }
         if !self.proposal_slash_threshold.is_empty() {
             struct_ser.serialize_field("proposalSlashThreshold", &self.proposal_slash_threshold)?;
-        }
-        if self.community_pool_is_frozen {
-            struct_ser.serialize_field("communityPoolIsFrozen", &self.community_pool_is_frozen)?;
         }
         struct_ser.end()
     }
@@ -2717,8 +2711,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
             "proposalPassThreshold",
             "proposal_slash_threshold",
             "proposalSlashThreshold",
-            "community_pool_is_frozen",
-            "communityPoolIsFrozen",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2728,7 +2720,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
             ProposalValidQuorum,
             ProposalPassThreshold,
             ProposalSlashThreshold,
-            CommunityPoolIsFrozen,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2756,7 +2747,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                             "proposalValidQuorum" | "proposal_valid_quorum" => Ok(GeneratedField::ProposalValidQuorum),
                             "proposalPassThreshold" | "proposal_pass_threshold" => Ok(GeneratedField::ProposalPassThreshold),
                             "proposalSlashThreshold" | "proposal_slash_threshold" => Ok(GeneratedField::ProposalSlashThreshold),
-                            "communityPoolIsFrozen" | "community_pool_is_frozen" => Ok(GeneratedField::CommunityPoolIsFrozen),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2781,7 +2771,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                 let mut proposal_valid_quorum__ = None;
                 let mut proposal_pass_threshold__ = None;
                 let mut proposal_slash_threshold__ = None;
-                let mut community_pool_is_frozen__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ProposalVotingBlocks => {
@@ -2816,12 +2805,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                             }
                             proposal_slash_threshold__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::CommunityPoolIsFrozen => {
-                            if community_pool_is_frozen__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("communityPoolIsFrozen"));
-                            }
-                            community_pool_is_frozen__ = Some(map_.next_value()?);
-                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2833,7 +2816,6 @@ impl<'de> serde::Deserialize<'de> for GovernanceParameters {
                     proposal_valid_quorum: proposal_valid_quorum__.unwrap_or_default(),
                     proposal_pass_threshold: proposal_pass_threshold__.unwrap_or_default(),
                     proposal_slash_threshold: proposal_slash_threshold__.unwrap_or_default(),
-                    community_pool_is_frozen: community_pool_is_frozen__.unwrap_or_default(),
                 })
             }
         }
