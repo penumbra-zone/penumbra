@@ -323,7 +323,6 @@ impl GasCost for ActionPlan {
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
             ActionPlan::ActionDutchAuctionSchedule(das) => das.gas_cost(),
             ActionPlan::ActionDutchAuctionEnd(_) => dutch_auction_end_gas_cost(),
-            ActionPlan::ActionDutchAuctionWithdraw(_) => dutch_auction_withdraw_gas_cost(),
 
             ActionPlan::Delegate(d) => d.gas_cost(),
             ActionPlan::Undelegate(u) => u.gas_cost(),
