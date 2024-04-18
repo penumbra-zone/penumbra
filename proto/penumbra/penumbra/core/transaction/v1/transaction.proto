@@ -323,6 +323,7 @@ message ActionPlan {
     // Dutch auctions
     component.auction.v1alpha1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
     component.auction.v1alpha1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1alpha1.ActionDutchAuctionWithdrawPlan action_dutch_auction_withdraw = 55;
   }
 }
 
