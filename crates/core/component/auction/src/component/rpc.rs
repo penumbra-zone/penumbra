@@ -3,7 +3,7 @@
 use penumbra_proto::{
     core::component::auction::v1alpha1::{
         query_service_server::QueryService, AuctionStateByIdRequest, AuctionStateByIdResponse,
-        DutchAuctionState,
+        AuctionStateByIdsRequest, AuctionStateByIdsResponse, DutchAuctionState,
     },
     DomainType,
 };
@@ -65,5 +65,17 @@ impl QueryService for Server {
             auction: Some(auction_state_proto),
             positions: todo!(),
         }))
+    }
+
+    type AuctionStateByIdsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<AuctionStateByIdsResponse, tonic::Status>> + Send>,
+    >;
+
+    #[instrument(skip(self, request))]
+    async fn auction_state_by_ids(
+        &self,
+        request: tonic::Request<AuctionStateByIdsRequest>,
+    ) -> Result<tonic::Response<Self::AuctionStateByIdsStream>, Status> {
+        todo!()
     }
 }

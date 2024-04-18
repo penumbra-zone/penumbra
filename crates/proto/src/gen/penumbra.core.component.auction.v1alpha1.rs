@@ -64,6 +64,46 @@ impl ::prost::Name for AuctionStateByIdResponse {
         )
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionStateByIdsRequest {
+    /// The auction IDs to request. Only known IDs will be returned in the response.
+    #[prost(message, repeated, tag = "1")]
+    pub id: ::prost::alloc::vec::Vec<AuctionId>,
+}
+impl ::prost::Name for AuctionStateByIdsRequest {
+    const NAME: &'static str = "AuctionStateByIdsRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionStateByIdsResponse {
+    /// The auction ID of the returned auction.
+    #[prost(message, optional, tag = "1")]
+    pub id: ::core::option::Option<AuctionId>,
+    /// The state of the returned auction.
+    #[prost(message, optional, tag = "2")]
+    pub auction: ::core::option::Option<DutchAuctionState>,
+    /// The state of any DEX positions relevant to the returned auction.
+    ///
+    /// Could be empty, depending on the auction state.
+    #[prost(message, repeated, tag = "3")]
+    pub positions: ::prost::alloc::vec::Vec<super::super::dex::v1::Position>,
+}
+impl ::prost::Name for AuctionStateByIdsResponse {
+    const NAME: &'static str = "AuctionStateByIdsResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// A unique identifier for an auction, obtained from hashing a domain separator
 /// along with the immutable part of an auction description.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -429,6 +469,37 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Get the current state of a group of auctions by ID.
+        pub async fn auction_state_by_ids(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuctionStateByIdsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::AuctionStateByIdsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.auction.v1alpha1.QueryService/AuctionStateByIds",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.auction.v1alpha1.QueryService",
+                        "AuctionStateByIds",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -445,6 +516,23 @@ pub mod query_service_server {
             request: tonic::Request<super::AuctionStateByIdRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AuctionStateByIdResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the AuctionStateByIds method.
+        type AuctionStateByIdsStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::AuctionStateByIdsResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Get the current state of a group of auctions by ID.
+        async fn auction_state_by_ids(
+            &self,
+            request: tonic::Request<super::AuctionStateByIdsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::AuctionStateByIdsStream>,
             tonic::Status,
         >;
     }
@@ -571,6 +659,55 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.auction.v1alpha1.QueryService/AuctionStateByIds" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuctionStateByIdsSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::AuctionStateByIdsRequest,
+                    > for AuctionStateByIdsSvc<T> {
+                        type Response = super::AuctionStateByIdsResponse;
+                        type ResponseStream = T::AuctionStateByIdsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AuctionStateByIdsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::auction_state_by_ids(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuctionStateByIdsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
