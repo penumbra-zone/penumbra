@@ -14,6 +14,8 @@ use std::pin::Pin;
 use tonic::Status;
 use tracing::instrument;
 
+use super::AuctionStoreRead;
+
 pub struct Server {
     storage: Storage,
 }
@@ -31,6 +33,17 @@ impl QueryService for Server {
         &self,
         request: tonic::Request<AuctionStateByIdRequest>,
     ) -> Result<tonic::Response<AuctionStateByIdResponse>, Status> {
-        todo!()
+        let state = self.storage.latest_snapshot();
+
+        let auction_data = state.get_raw_auction().await.map_err(|e| {
+            tonic::Status::unknown(format!(
+                "could not get stateful auction data for specified auction id: {e}"
+            ))
+        })?;
+
+        Ok(tonic::Response::new(AuctionStateByIdResponse {
+            auction: todo!(),
+            positions: todo!(),
+        }))
     }
 }
