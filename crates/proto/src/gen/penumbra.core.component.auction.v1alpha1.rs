@@ -48,7 +48,7 @@ impl ::prost::Name for AuctionStateByIdRequest {
 pub struct AuctionStateByIdResponse {
     /// If present, the state of the auction. If not present, no such auction is known.
     #[prost(message, optional, tag = "2")]
-    pub auction: ::core::option::Option<DutchAuctionState>,
+    pub auction: ::core::option::Option<::pbjson_types::Any>,
     /// The state of any DEX positions relevant to the returned auction.
     ///
     /// Could be empty, depending on the auction state.

@@ -4,6 +4,7 @@ package penumbra.core.component.auction.v1alpha1;
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/num/v1/num.proto";
+import "google/protobuf/any.proto";
 
 // The configuration parameters for the auction component.
 message AuctionParameters {}
@@ -28,7 +29,7 @@ message AuctionStateByIdRequest {
 
 message AuctionStateByIdResponse {
     // If present, the state of the auction. If not present, no such auction is known.
-    DutchAuctionState auction = 2;
+    google.protobuf.Any auction = 2;
     // The state of any DEX positions relevant to the returned auction.
     //
     // Could be empty, depending on the auction state.
