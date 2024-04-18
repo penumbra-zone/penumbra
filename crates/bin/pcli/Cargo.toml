@@ -97,6 +97,7 @@ tokio-util = {workspace = true}
 toml = {workspace = true, features = ["preserve_order"]}
 tonic = {workspace = true, features = ["tls-webpki-roots", "tls"]}
 tower = {workspace = true, features = ["full"]}
+termion = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
 url = {workspace = true, features = ["serde"]}
