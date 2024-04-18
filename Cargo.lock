@@ -4635,6 +4635,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-compact-block",
  "penumbra-dex",
