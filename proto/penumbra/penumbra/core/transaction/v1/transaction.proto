@@ -98,9 +98,9 @@ message Action {
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
 
     // Dutch auctions
-    component.auction.v1alpha1.ActionDutchAuctionSchedule dutch_auction_schedule = 53;
-    component.auction.v1alpha1.ActionDutchAuctionEnd dutch_auction_end = 54;
-    component.auction.v1alpha1.ActionDutchAuctionWithdraw dutch_auction_withdraw = 55;
+    component.auction.v1alpha1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
+    component.auction.v1alpha1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1alpha1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
 
     component.ibc.v1.Ics20Withdrawal ics20_withdrawal = 200;
   }
@@ -223,9 +223,9 @@ message ActionView {
     component.governance.v1.CommunityPoolOutput community_pool_output = 51;
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
     // Dutch auctions
-    component.auction.v1alpha1.ActionDutchAuctionSchedule dutch_auction_schedule = 53;
-    component.auction.v1alpha1.ActionDutchAuctionEnd dutch_auction_end = 54;
-    component.auction.v1alpha1.ActionDutchAuctionWithdraw dutch_auction_withdraw = 55;
+    component.auction.v1alpha1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
+    component.auction.v1alpha1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1alpha1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
 
     // TODO: we have no way to recover the opening of the undelegate_claim's
     // balance commitment, and can only infer the value from looking at the rest
@@ -321,9 +321,9 @@ message ActionPlan {
     component.governance.v1.CommunityPoolDeposit community_pool_deposit = 52;
 
     // Dutch auctions
-    component.auction.v1alpha1.ActionDutchAuctionSchedule dutch_auction_schedule = 53;
-    component.auction.v1alpha1.ActionDutchAuctionEnd dutch_auction_end = 54;
-    component.auction.v1alpha1.ActionDutchAuctionWithdraw dutch_auction_withdraw = 55;
+    component.auction.v1alpha1.ActionDutchAuctionSchedule action_dutch_auction_schedule = 53;
+    component.auction.v1alpha1.ActionDutchAuctionEnd action_dutch_auction_end = 54;
+    component.auction.v1alpha1.ActionDutchAuctionWithdraw action_dutch_auction_withdraw = 55;
   }
 }
 
