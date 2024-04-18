@@ -394,7 +394,7 @@ impl ViewService for ViewServer {
         &self,
         request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        todo!()
+        unimplemented!("auctions")
     }
 
     async fn broadcast_transaction(
