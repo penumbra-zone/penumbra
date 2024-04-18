@@ -6,3 +6,6 @@ pub use end::ActionDutchAuctionEnd;
 
 pub mod withdraw;
 pub use withdraw::ActionDutchAuctionWithdraw;
+
+pub mod plan;
+pub use plan::ActionDutchAuctionWithdrawPlan;

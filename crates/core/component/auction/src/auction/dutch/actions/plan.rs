@@ -15,7 +15,8 @@ use crate::auction::{dutch::ActionDutchAuctionWithdraw, AuctionId};
 pub struct ActionDutchAuctionWithdrawPlan {
     pub auction_id: AuctionId,
     pub seq: u64,
-    pub reserves: Balance,
+    pub balance_input: Value,
+    pub balance_output: Value,
 }
 
 impl ActionDutchAuctionWithdrawPlan {
