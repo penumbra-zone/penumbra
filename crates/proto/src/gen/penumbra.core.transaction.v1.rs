@@ -166,15 +166,15 @@ pub mod action {
         ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
-        DutchAuctionSchedule(
+        ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
-        DutchAuctionEnd(
+        ActionDutchAuctionEnd(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
-        DutchAuctionWithdraw(
+        ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
         #[prost(message, tag = "200")]
@@ -469,15 +469,15 @@ pub mod action_view {
         ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
-        DutchAuctionSchedule(
+        ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
-        DutchAuctionEnd(
+        ActionDutchAuctionEnd(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
-        DutchAuctionWithdraw(
+        ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
@@ -672,15 +672,15 @@ pub mod action_plan {
         ),
         /// Dutch auctions
         #[prost(message, tag = "53")]
-        DutchAuctionSchedule(
+        ActionDutchAuctionSchedule(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
-        DutchAuctionEnd(
+        ActionDutchAuctionEnd(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
-        DutchAuctionWithdraw(
+        ActionDutchAuctionWithdraw(
             super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
         ),
     }

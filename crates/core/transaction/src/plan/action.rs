@@ -6,7 +6,6 @@ use decaf377::Fr;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionEnd;
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionSchedule;
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdraw;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_txhash::{EffectHash, EffectingData};
 
@@ -81,8 +80,6 @@ pub enum ActionPlan {
 
     ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
-    // TODO: define plan.
-    //     ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
 }
 
 impl ActionPlan {
@@ -221,10 +218,8 @@ impl ActionPlan {
             CommunityPoolOutput(_) => Fr::zero(),
             CommunityPoolDeposit(_) => Fr::zero(),
             Ics20Withdrawal(_) => Fr::zero(),
-            // TODO: fill in skeleton
-            ActionDutchAuctionSchedule(_) => todo!(),
-            ActionDutchAuctionEnd(_) => todo!(),
-            ActionDutchAuctionWithdraw(_) => todo!(),
+            ActionDutchAuctionSchedule(_) => Fr::zero(),
+            ActionDutchAuctionEnd(_) => Fr::zero(),
         }
     }
 
@@ -254,10 +249,8 @@ impl ActionPlan {
             CommunityPoolOutput(plan) => plan.effect_hash(),
             CommunityPoolDeposit(plan) => plan.effect_hash(),
             Ics20Withdrawal(plan) => plan.effect_hash(),
-            // TODO: fill in skeleton
-            ActionDutchAuctionSchedule(_) => todo!(),
-            ActionDutchAuctionEnd(_) => todo!(),
-            ActionDutchAuctionWithdraw(_) => todo!(),
+            ActionDutchAuctionSchedule(plan) => plan.effect_hash(),
+            ActionDutchAuctionEnd(plan) => plan.effect_hash(),
         }
     }
 }
@@ -438,10 +431,16 @@ impl From<ActionPlan> for pb_t::ActionPlan {
             ActionPlan::Ics20Withdrawal(inner) => pb_t::ActionPlan {
                 action: Some(pb_t::action_plan::Action::Ics20Withdrawal(inner.into())),
             },
-            // TODO: fill in skeleton
-            ActionPlan::ActionDutchAuctionSchedule(_) => todo!(),
-            ActionPlan::ActionDutchAuctionEnd(_) => todo!(),
-            ActionPlan::ActionDutchAuctionWithdraw(_) => todo!(),
+            ActionPlan::ActionDutchAuctionSchedule(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionDutchAuctionSchedule(
+                    inner.into(),
+                )),
+            },
+            ActionPlan::ActionDutchAuctionEnd(inner) => pb_t::ActionPlan {
+                action: Some(pb_t::action_plan::Action::ActionDutchAuctionEnd(
+                    inner.into(),
+                )),
+            },
         }
     }
 }

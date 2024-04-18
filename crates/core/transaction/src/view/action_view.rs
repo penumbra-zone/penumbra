@@ -86,6 +86,9 @@ impl TryFrom<pbt::ActionView> for ActionView {
                 AV::CommunityPoolDeposit(x) => ActionView::CommunityPoolDeposit(x.try_into()?),
                 AV::CommunityPoolSpend(x) => ActionView::CommunityPoolSpend(x.try_into()?),
                 AV::CommunityPoolOutput(x) => ActionView::CommunityPoolOutput(x.try_into()?),
+                AV::ActionDutchAuctionSchedule(_) => todo!(),
+                AV::ActionDutchAuctionEnd(_) => todo!(),
+                AV::ActionDutchAuctionWithdraw(_) => todo!(),
             },
         )
     }

@@ -75,14 +75,14 @@ impl serde::Serialize for Action {
                 action::Action::CommunityPoolDeposit(v) => {
                     struct_ser.serialize_field("communityPoolDeposit", v)?;
                 }
-                action::Action::DutchAuctionSchedule(v) => {
-                    struct_ser.serialize_field("dutchAuctionSchedule", v)?;
+                action::Action::ActionDutchAuctionSchedule(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionSchedule", v)?;
                 }
-                action::Action::DutchAuctionEnd(v) => {
-                    struct_ser.serialize_field("dutchAuctionEnd", v)?;
+                action::Action::ActionDutchAuctionEnd(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionEnd", v)?;
                 }
-                action::Action::DutchAuctionWithdraw(v) => {
-                    struct_ser.serialize_field("dutchAuctionWithdraw", v)?;
+                action::Action::ActionDutchAuctionWithdraw(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionWithdraw", v)?;
                 }
                 action::Action::Ics20Withdrawal(v) => {
                     struct_ser.serialize_field("ics20Withdrawal", v)?;
@@ -136,12 +136,12 @@ impl<'de> serde::Deserialize<'de> for Action {
             "communityPoolOutput",
             "community_pool_deposit",
             "communityPoolDeposit",
-            "dutch_auction_schedule",
-            "dutchAuctionSchedule",
-            "dutch_auction_end",
-            "dutchAuctionEnd",
-            "dutch_auction_withdraw",
-            "dutchAuctionWithdraw",
+            "action_dutch_auction_schedule",
+            "actionDutchAuctionSchedule",
+            "action_dutch_auction_end",
+            "actionDutchAuctionEnd",
+            "action_dutch_auction_withdraw",
+            "actionDutchAuctionWithdraw",
             "ics20_withdrawal",
             "ics20Withdrawal",
         ];
@@ -169,9 +169,9 @@ impl<'de> serde::Deserialize<'de> for Action {
             CommunityPoolSpend,
             CommunityPoolOutput,
             CommunityPoolDeposit,
-            DutchAuctionSchedule,
-            DutchAuctionEnd,
-            DutchAuctionWithdraw,
+            ActionDutchAuctionSchedule,
+            ActionDutchAuctionEnd,
+            ActionDutchAuctionWithdraw,
             Ics20Withdrawal,
             __SkipField__,
         }
@@ -216,9 +216,9 @@ impl<'de> serde::Deserialize<'de> for Action {
                             "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "communityPoolDeposit" | "community_pool_deposit" => Ok(GeneratedField::CommunityPoolDeposit),
-                            "dutchAuctionSchedule" | "dutch_auction_schedule" => Ok(GeneratedField::DutchAuctionSchedule),
-                            "dutchAuctionEnd" | "dutch_auction_end" => Ok(GeneratedField::DutchAuctionEnd),
-                            "dutchAuctionWithdraw" | "dutch_auction_withdraw" => Ok(GeneratedField::DutchAuctionWithdraw),
+                            "actionDutchAuctionSchedule" | "action_dutch_auction_schedule" => Ok(GeneratedField::ActionDutchAuctionSchedule),
+                            "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
+                            "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -389,25 +389,25 @@ impl<'de> serde::Deserialize<'de> for Action {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::CommunityPoolDeposit)
 ;
                         }
-                        GeneratedField::DutchAuctionSchedule => {
+                        GeneratedField::ActionDutchAuctionSchedule => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionSchedule"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionSchedule"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::DutchAuctionSchedule)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionDutchAuctionSchedule)
 ;
                         }
-                        GeneratedField::DutchAuctionEnd => {
+                        GeneratedField::ActionDutchAuctionEnd => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionEnd"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionEnd"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::DutchAuctionEnd)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionDutchAuctionEnd)
 ;
                         }
-                        GeneratedField::DutchAuctionWithdraw => {
+                        GeneratedField::ActionDutchAuctionWithdraw => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionWithdraw"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionWithdraw"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::DutchAuctionWithdraw)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action::Action::ActionDutchAuctionWithdraw)
 ;
                         }
                         GeneratedField::Ics20Withdrawal => {
@@ -510,14 +510,14 @@ impl serde::Serialize for ActionPlan {
                 action_plan::Action::CommunityPoolDeposit(v) => {
                     struct_ser.serialize_field("communityPoolDeposit", v)?;
                 }
-                action_plan::Action::DutchAuctionSchedule(v) => {
-                    struct_ser.serialize_field("dutchAuctionSchedule", v)?;
+                action_plan::Action::ActionDutchAuctionSchedule(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionSchedule", v)?;
                 }
-                action_plan::Action::DutchAuctionEnd(v) => {
-                    struct_ser.serialize_field("dutchAuctionEnd", v)?;
+                action_plan::Action::ActionDutchAuctionEnd(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionEnd", v)?;
                 }
-                action_plan::Action::DutchAuctionWithdraw(v) => {
-                    struct_ser.serialize_field("dutchAuctionWithdraw", v)?;
+                action_plan::Action::ActionDutchAuctionWithdraw(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionWithdraw", v)?;
                 }
             }
         }
@@ -570,12 +570,12 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             "communityPoolOutput",
             "community_pool_deposit",
             "communityPoolDeposit",
-            "dutch_auction_schedule",
-            "dutchAuctionSchedule",
-            "dutch_auction_end",
-            "dutchAuctionEnd",
-            "dutch_auction_withdraw",
-            "dutchAuctionWithdraw",
+            "action_dutch_auction_schedule",
+            "actionDutchAuctionSchedule",
+            "action_dutch_auction_end",
+            "actionDutchAuctionEnd",
+            "action_dutch_auction_withdraw",
+            "actionDutchAuctionWithdraw",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -602,9 +602,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
             CommunityPoolSpend,
             CommunityPoolOutput,
             CommunityPoolDeposit,
-            DutchAuctionSchedule,
-            DutchAuctionEnd,
-            DutchAuctionWithdraw,
+            ActionDutchAuctionSchedule,
+            ActionDutchAuctionEnd,
+            ActionDutchAuctionWithdraw,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -649,9 +649,9 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "communityPoolDeposit" | "community_pool_deposit" => Ok(GeneratedField::CommunityPoolDeposit),
-                            "dutchAuctionSchedule" | "dutch_auction_schedule" => Ok(GeneratedField::DutchAuctionSchedule),
-                            "dutchAuctionEnd" | "dutch_auction_end" => Ok(GeneratedField::DutchAuctionEnd),
-                            "dutchAuctionWithdraw" | "dutch_auction_withdraw" => Ok(GeneratedField::DutchAuctionWithdraw),
+                            "actionDutchAuctionSchedule" | "action_dutch_auction_schedule" => Ok(GeneratedField::ActionDutchAuctionSchedule),
+                            "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
+                            "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -828,25 +828,25 @@ impl<'de> serde::Deserialize<'de> for ActionPlan {
                             action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::CommunityPoolDeposit)
 ;
                         }
-                        GeneratedField::DutchAuctionSchedule => {
+                        GeneratedField::ActionDutchAuctionSchedule => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionSchedule"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionSchedule"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionSchedule)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionDutchAuctionSchedule)
 ;
                         }
-                        GeneratedField::DutchAuctionEnd => {
+                        GeneratedField::ActionDutchAuctionEnd => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionEnd"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionEnd"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionEnd)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionDutchAuctionEnd)
 ;
                         }
-                        GeneratedField::DutchAuctionWithdraw => {
+                        GeneratedField::ActionDutchAuctionWithdraw => {
                             if action__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionWithdraw"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionWithdraw"));
                             }
-                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::DutchAuctionWithdraw)
+                            action__ = map_.next_value::<::std::option::Option<_>>()?.map(action_plan::Action::ActionDutchAuctionWithdraw)
 ;
                         }
                         GeneratedField::__SkipField__ => {
@@ -936,14 +936,14 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::CommunityPoolDeposit(v) => {
                     struct_ser.serialize_field("communityPoolDeposit", v)?;
                 }
-                action_view::ActionView::DutchAuctionSchedule(v) => {
-                    struct_ser.serialize_field("dutchAuctionSchedule", v)?;
+                action_view::ActionView::ActionDutchAuctionSchedule(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionSchedule", v)?;
                 }
-                action_view::ActionView::DutchAuctionEnd(v) => {
-                    struct_ser.serialize_field("dutchAuctionEnd", v)?;
+                action_view::ActionView::ActionDutchAuctionEnd(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionEnd", v)?;
                 }
-                action_view::ActionView::DutchAuctionWithdraw(v) => {
-                    struct_ser.serialize_field("dutchAuctionWithdraw", v)?;
+                action_view::ActionView::ActionDutchAuctionWithdraw(v) => {
+                    struct_ser.serialize_field("actionDutchAuctionWithdraw", v)?;
                 }
                 action_view::ActionView::UndelegateClaim(v) => {
                     struct_ser.serialize_field("undelegateClaim", v)?;
@@ -998,12 +998,12 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "communityPoolOutput",
             "community_pool_deposit",
             "communityPoolDeposit",
-            "dutch_auction_schedule",
-            "dutchAuctionSchedule",
-            "dutch_auction_end",
-            "dutchAuctionEnd",
-            "dutch_auction_withdraw",
-            "dutchAuctionWithdraw",
+            "action_dutch_auction_schedule",
+            "actionDutchAuctionSchedule",
+            "action_dutch_auction_end",
+            "actionDutchAuctionEnd",
+            "action_dutch_auction_withdraw",
+            "actionDutchAuctionWithdraw",
             "undelegate_claim",
             "undelegateClaim",
             "ics20_withdrawal",
@@ -1032,9 +1032,9 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             CommunityPoolSpend,
             CommunityPoolOutput,
             CommunityPoolDeposit,
-            DutchAuctionSchedule,
-            DutchAuctionEnd,
-            DutchAuctionWithdraw,
+            ActionDutchAuctionSchedule,
+            ActionDutchAuctionEnd,
+            ActionDutchAuctionWithdraw,
             UndelegateClaim,
             Ics20Withdrawal,
             __SkipField__,
@@ -1079,9 +1079,9 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "communityPoolSpend" | "community_pool_spend" => Ok(GeneratedField::CommunityPoolSpend),
                             "communityPoolOutput" | "community_pool_output" => Ok(GeneratedField::CommunityPoolOutput),
                             "communityPoolDeposit" | "community_pool_deposit" => Ok(GeneratedField::CommunityPoolDeposit),
-                            "dutchAuctionSchedule" | "dutch_auction_schedule" => Ok(GeneratedField::DutchAuctionSchedule),
-                            "dutchAuctionEnd" | "dutch_auction_end" => Ok(GeneratedField::DutchAuctionEnd),
-                            "dutchAuctionWithdraw" | "dutch_auction_withdraw" => Ok(GeneratedField::DutchAuctionWithdraw),
+                            "actionDutchAuctionSchedule" | "action_dutch_auction_schedule" => Ok(GeneratedField::ActionDutchAuctionSchedule),
+                            "actionDutchAuctionEnd" | "action_dutch_auction_end" => Ok(GeneratedField::ActionDutchAuctionEnd),
+                            "actionDutchAuctionWithdraw" | "action_dutch_auction_withdraw" => Ok(GeneratedField::ActionDutchAuctionWithdraw),
                             "undelegateClaim" | "undelegate_claim" => Ok(GeneratedField::UndelegateClaim),
                             "ics20Withdrawal" | "ics20_withdrawal" => Ok(GeneratedField::Ics20Withdrawal),
                             _ => Ok(GeneratedField::__SkipField__),
@@ -1246,25 +1246,25 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::CommunityPoolDeposit)
 ;
                         }
-                        GeneratedField::DutchAuctionSchedule => {
+                        GeneratedField::ActionDutchAuctionSchedule => {
                             if action_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionSchedule"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionSchedule"));
                             }
-                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DutchAuctionSchedule)
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionDutchAuctionSchedule)
 ;
                         }
-                        GeneratedField::DutchAuctionEnd => {
+                        GeneratedField::ActionDutchAuctionEnd => {
                             if action_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionEnd"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionEnd"));
                             }
-                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DutchAuctionEnd)
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionDutchAuctionEnd)
 ;
                         }
-                        GeneratedField::DutchAuctionWithdraw => {
+                        GeneratedField::ActionDutchAuctionWithdraw => {
                             if action_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("dutchAuctionWithdraw"));
+                                return Err(serde::de::Error::duplicate_field("actionDutchAuctionWithdraw"));
                             }
-                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DutchAuctionWithdraw)
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ActionDutchAuctionWithdraw)
 ;
                         }
                         GeneratedField::UndelegateClaim => {
