@@ -387,6 +387,15 @@ impl ViewService for ViewServer {
                 > + Send,
         >,
     >;
+    type AuctionsStream =
+        Pin<Box<dyn futures::Stream<Item = Result<pb::AuctionsResponse, tonic::Status>> + Send>>;
+
+    async fn auctions(
+        &self,
+        request: tonic::Request<pb::AuctionsRequest>,
+    ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
+        todo!()
+    }
 
     async fn broadcast_transaction(
         &self,
