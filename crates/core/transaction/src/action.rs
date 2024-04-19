@@ -71,10 +71,9 @@ impl EffectingData for Action {
             Action::CommunityPoolSpend(d) => d.effect_hash(),
             Action::CommunityPoolOutput(d) => d.effect_hash(),
             Action::CommunityPoolDeposit(d) => d.effect_hash(),
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(a) => a.effect_hash(),
+            Action::ActionDutchAuctionEnd(a) => a.effect_hash(),
+            Action::ActionDutchAuctionWithdraw(a) => a.effect_hash(),
         }
     }
 }
@@ -119,10 +118,13 @@ impl Action {
             Action::CommunityPoolDeposit(_) => tracing::info_span!("CommunityPoolDeposit", ?idx),
             Action::CommunityPoolSpend(_) => tracing::info_span!("CommunityPoolSpend", ?idx),
             Action::CommunityPoolOutput(_) => tracing::info_span!("CommunityPoolOutput", ?idx),
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(_) => {
+                tracing::info_span!("ActionDutchAuctionSchedule", ?idx)
+            }
+            Action::ActionDutchAuctionEnd(_) => tracing::info_span!("ActionDutchAuctionEnd", ?idx),
+            Action::ActionDutchAuctionWithdraw(_) => {
+                tracing::info_span!("ActionDutchAuctionWithdraw", ?idx)
+            }
         }
     }
 }
@@ -154,9 +156,9 @@ impl IsAction for Action {
             Action::IbcRelay(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
             // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(action) => action.balance_commitment(),
+            Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
+            Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
         }
     }
 
@@ -181,10 +183,8 @@ impl IsAction for Action {
             Action::CommunityPoolSpend(x) => x.view_from_perspective(txp),
             Action::CommunityPoolOutput(x) => x.view_from_perspective(txp),
             Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
-            // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
-            // TODO: fill in skeleton
             Action::ActionDutchAuctionSchedule(_) => todo!(),
             Action::ActionDutchAuctionEnd(_) => todo!(),
             Action::ActionDutchAuctionWithdraw(_) => todo!(),
@@ -262,10 +262,15 @@ impl From<Action> for pb::Action {
             Action::CommunityPoolDeposit(inner) => pb::Action {
                 action: Some(pb::action::Action::CommunityPoolDeposit(inner.into())),
             },
-            // TODO: fill in skeleton
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionSchedule(inner.into())),
+            },
+            Action::ActionDutchAuctionEnd(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionEnd(inner.into())),
+            },
+            Action::ActionDutchAuctionWithdraw(inner) => pb::Action {
+                action: Some(pb::action::Action::ActionDutchAuctionWithdraw(inner.into())),
+            },
         }
     }
 }
@@ -330,6 +335,15 @@ impl TryFrom<pb::Action> for Action {
             }
             pb::action::Action::CommunityPoolDeposit(inner) => {
                 Ok(Action::CommunityPoolDeposit(inner.try_into()?))
+            }
+            pb::action::Action::ActionDutchAuctionSchedule(inner) => {
+                Ok(Action::ActionDutchAuctionSchedule(inner.try_into()?))
+            }
+            pb::action::Action::ActionDutchAuctionEnd(inner) => {
+                Ok(Action::ActionDutchAuctionEnd(inner.try_into()?))
+            }
+            pb::action::Action::ActionDutchAuctionWithdraw(inner) => {
+                Ok(Action::ActionDutchAuctionWithdraw(inner.try_into()?))
             }
         }
     }

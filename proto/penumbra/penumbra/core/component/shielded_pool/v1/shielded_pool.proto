@@ -194,6 +194,13 @@ message OutputPlan {
 // Query operations for the shielded pool component.
 service QueryService {
   rpc AssetMetadataById(AssetMetadataByIdRequest) returns (AssetMetadataByIdResponse);
+
+  // Requests a stream of asset metadata, given an array of asset IDs. Responses
+  // may be streamed in a different order from that of the asset IDs in the
+  // request, and asset IDs unknown to the node will not receive any response
+  // objects -- that is, the number of responses may be smaller than the length
+  // of the asset IDs array.
+  rpc AssetMetadataByIds(AssetMetadataByIdsRequest) returns (stream AssetMetadataByIdsResponse);
 }
 
 // Requests information on an asset by asset id
@@ -206,5 +213,17 @@ message AssetMetadataByIdResponse {
   // If present, information on the requested asset.
   //
   // If the requested asset was unknown, this field will not be present.
+  core.asset.v1.Metadata denom_metadata = 1;
+}
+
+// Requests information on an asset by multiple asset ids
+message AssetMetadataByIdsRequest {
+  // The asset IDs to request information on. Note that node is neither required
+  // nor expected to stream responses in the same order as this array.
+  repeated core.asset.v1.AssetId asset_id = 1;
+}
+
+message AssetMetadataByIdsResponse {
+  // A single asset metadata streamed from the node.
   core.asset.v1.Metadata denom_metadata = 1;
 }

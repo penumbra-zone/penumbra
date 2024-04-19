@@ -36,6 +36,7 @@ metrics                          = { workspace = true }
 once_cell                        = { workspace = true }
 parking_lot                      = { workspace = true }
 penumbra-asset                   = { workspace = true, default-features = true }
+penumbra-auction                 = { workspace = true, default-features = true }
 penumbra-community-pool          = { workspace = true, default-features = true }
 penumbra-compact-block           = { workspace = true, default-features = true }
 penumbra-dex                     = { workspace = true, default-features = true }
