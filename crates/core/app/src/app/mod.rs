@@ -257,6 +257,7 @@ impl App {
             begin_block,
         )
         .await;
+        Dex::begin_block(&mut arc_state_tx, begin_block).await;
         CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
