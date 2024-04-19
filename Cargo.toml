@@ -60,7 +60,7 @@ members = [
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.5.0"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.73"
+rust-toolchain-version = "1.75"
 # CI backends to support
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
@@ -213,6 +213,7 @@ tendermint-config                = { version = "0.34.0" }
 tendermint-light-client-verifier = { version = "0.34.0" }
 tendermint-proto                 = { version = "0.34.0" }
 tendermint-rpc                   = { version = "0.34.0" }
+termion                          = { version = "3" }
 thiserror                        = { version = "1.0" }
 tokio                            = { version = "1.3" }
 tokio-stream                     = { version = "0.1.8" }

@@ -57,7 +57,7 @@ jobs:
         with:
           submodules: recursive
       - name: Install Rust
-        run: rustup update "1.73" --no-self-update && rustup default "1.73"
+        run: rustup update "1.75" --no-self-update && rustup default "1.75"
       - name: Install cargo-dist
         run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.5.0/cargo-dist-installer.sh | sh"
       - id: plan
@@ -111,7 +111,7 @@ jobs:
         with:
           lfs: true
       - name: Install Rust
-        run: rustup update "1.73" --no-self-update && rustup default "1.73"
+        run: rustup update "1.75" --no-self-update && rustup default "1.75"
       - uses: swatinem/rust-cache@v2
       - name: Install cargo-dist
         run: ${{ matrix.install_dist }}

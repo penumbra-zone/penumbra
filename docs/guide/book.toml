@@ -27,3 +27,17 @@ warning-policy = "error"
 # The buf.build website doesn't support HTTP HEAD calls, returning 405.
 # Only relevant when `follow-web-links=true`.
 exclude = ['buf\.build']
+
+[output.html.redirect]
+# Renames in GH4215.
+"pd.html" = "node/pd.html"
+"pd/chain-upgrade.html" = "node/pd/chain-upgrade.html"
+"pd/debugging.html" = "node/pd/debugging.html"
+"pd/install.html" = "node/pd/install.html"
+"pd/join-testnet.html" = "node/pd/join-testnet.html"
+"pd/requirements.html" = "node/pd/requirements.html"
+"pd/validator.html" = "node/pd/validator.html"
+"pclientd.html" = "node/pclientd.html"
+"pclientd/build_transaction.html" = "node/pclientd/build_transaction.html"
+"pclientd/configure.html" = "node/pclientd/configure.html"
+"pclientd/rpc.html" = "node/pclientd/rpc.html"

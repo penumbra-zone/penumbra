@@ -1,4 +1,7 @@
 use anyhow::anyhow;
+use penumbra_auction::auction::dutch::actions::{
+    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+};
 use penumbra_txhash::{EffectHash, EffectingData};
 use std::convert::{TryFrom, TryInto};
 
@@ -38,6 +41,10 @@ pub enum Action {
     CommunityPoolSpend(penumbra_community_pool::CommunityPoolSpend),
     CommunityPoolOutput(penumbra_community_pool::CommunityPoolOutput),
     CommunityPoolDeposit(penumbra_community_pool::CommunityPoolDeposit),
+
+    ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
+    ActionDutchAuctionEnd(ActionDutchAuctionEnd),
+    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
 }
 
 impl EffectingData for Action {
@@ -64,6 +71,10 @@ impl EffectingData for Action {
             Action::CommunityPoolSpend(d) => d.effect_hash(),
             Action::CommunityPoolOutput(d) => d.effect_hash(),
             Action::CommunityPoolDeposit(d) => d.effect_hash(),
+            // TODO: fill in skeleton
+            Action::ActionDutchAuctionSchedule(_) => todo!(),
+            Action::ActionDutchAuctionEnd(_) => todo!(),
+            Action::ActionDutchAuctionWithdraw(_) => todo!(),
         }
     }
 }
@@ -108,6 +119,10 @@ impl Action {
             Action::CommunityPoolDeposit(_) => tracing::info_span!("CommunityPoolDeposit", ?idx),
             Action::CommunityPoolSpend(_) => tracing::info_span!("CommunityPoolSpend", ?idx),
             Action::CommunityPoolOutput(_) => tracing::info_span!("CommunityPoolOutput", ?idx),
+            // TODO: fill in skeleton
+            Action::ActionDutchAuctionSchedule(_) => todo!(),
+            Action::ActionDutchAuctionEnd(_) => todo!(),
+            Action::ActionDutchAuctionWithdraw(_) => todo!(),
         }
     }
 }
@@ -138,6 +153,10 @@ impl IsAction for Action {
             // value balance unchanged.
             Action::IbcRelay(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
+            // TODO: fill in skeleton
+            Action::ActionDutchAuctionSchedule(_) => todo!(),
+            Action::ActionDutchAuctionEnd(_) => todo!(),
+            Action::ActionDutchAuctionWithdraw(_) => todo!(),
         }
     }
 
@@ -165,6 +184,10 @@ impl IsAction for Action {
             // TODO: figure out where to implement the actual decryption methods for these? where are their action definitions?
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
+            // TODO: fill in skeleton
+            Action::ActionDutchAuctionSchedule(_) => todo!(),
+            Action::ActionDutchAuctionEnd(_) => todo!(),
+            Action::ActionDutchAuctionWithdraw(_) => todo!(),
         }
     }
 }
@@ -239,6 +262,10 @@ impl From<Action> for pb::Action {
             Action::CommunityPoolDeposit(inner) => pb::Action {
                 action: Some(pb::action::Action::CommunityPoolDeposit(inner.into())),
             },
+            // TODO: fill in skeleton
+            Action::ActionDutchAuctionSchedule(_) => todo!(),
+            Action::ActionDutchAuctionEnd(_) => todo!(),
+            Action::ActionDutchAuctionWithdraw(_) => todo!(),
         }
     }
 }
