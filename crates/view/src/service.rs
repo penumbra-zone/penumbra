@@ -392,7 +392,7 @@ impl ViewService for ViewServer {
 
     async fn auctions(
         &self,
-        request: tonic::Request<pb::AuctionsRequest>,
+        _request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
         unimplemented!("auctions")
     }
