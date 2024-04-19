@@ -1,7 +1,10 @@
+use std::pin::Pin;
+
 use cnidarium::Storage;
 use penumbra_asset::asset;
 use penumbra_proto::core::component::shielded_pool::v1::{
     query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
+    AssetMetadataByIdsRequest, AssetMetadataByIdsResponse,
 };
 
 use tonic::Status;
@@ -22,6 +25,10 @@ impl Server {
 
 #[tonic::async_trait]
 impl QueryService for Server {
+    type AssetMetadataByIdsStream = Pin<
+        Box<dyn futures::Stream<Item = Result<AssetMetadataByIdsResponse, tonic::Status>> + Send>,
+    >;
+
     #[instrument(skip(self, request))]
     async fn asset_metadata_by_id(
         &self,
@@ -52,5 +59,12 @@ impl QueryService for Server {
         };
 
         Ok(tonic::Response::new(rsp))
+    }
+
+    async fn asset_metadata_by_ids(
+        &self,
+        _request: tonic::Request<AssetMetadataByIdsRequest>,
+    ) -> Result<tonic::Response<Self::AssetMetadataByIdsStream>, tonic::Status> {
+        unimplemented!("asset_metadata_by_ids not yet implemented")
     }
 }

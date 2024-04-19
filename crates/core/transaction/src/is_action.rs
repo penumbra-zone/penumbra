@@ -416,7 +416,7 @@ impl IsAction for ActionDutchAuctionSchedule {
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        todo!()
+        ActionView::ActionDutchAuctionSchedule(self.to_owned())
     }
 }
 
@@ -426,7 +426,7 @@ impl IsAction for ActionDutchAuctionEnd {
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        todo!()
+        ActionView::ActionDutchAuctionEnd(self.to_owned())
     }
 }
 
@@ -436,6 +436,6 @@ impl IsAction for ActionDutchAuctionWithdraw {
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        todo!()
+        ActionView::ActionDutchAuctionWithdraw(self.to_owned())
     }
 }

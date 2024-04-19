@@ -1274,7 +1274,9 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::RewardClaim {}) => {
+                unimplemented!("deprecated, remove this")
+            }
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
             }

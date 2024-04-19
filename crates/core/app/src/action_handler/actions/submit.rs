@@ -116,10 +116,10 @@ impl AppActionHandler for ProposalSubmit {
                         | CommunityPoolSpend(_)
                         | CommunityPoolOutput(_)
                         | Ics20Withdrawal(_)
-                        | CommunityPoolDeposit(_) => {}
-                        ActionDutchAuctionSchedule(_) => todo!(),
-                        ActionDutchAuctionEnd(_) => todo!(),
-                        ActionDutchAuctionWithdraw(_) => todo!(),
+                        | CommunityPoolDeposit(_)
+                        | ActionDutchAuctionSchedule(_)
+                        | ActionDutchAuctionEnd(_)
+                        | ActionDutchAuctionWithdraw(_) => {}
                     }
                 }
             }

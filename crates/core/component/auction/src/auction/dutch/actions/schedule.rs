@@ -2,6 +2,7 @@ use crate::auction::{dutch::DutchAuctionDescription, nft::AuctionNft};
 use anyhow::anyhow;
 use penumbra_asset::{Balance, Value};
 use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +35,13 @@ impl ActionDutchAuctionSchedule {
         let input_balance = Balance::from(self.description.input);
 
         output_nft_balance - input_balance
+    }
+}
+
+/* Effect hash */
+impl EffectingData for ActionDutchAuctionSchedule {
+    fn effect_hash(&self) -> EffectHash {
+        EffectHash::from_proto_effecting_data(&self.to_proto())
     }
 }
 
