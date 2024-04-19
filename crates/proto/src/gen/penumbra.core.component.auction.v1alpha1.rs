@@ -275,6 +275,28 @@ impl ::prost::Name for ActionDutchAuctionScheduleView {
         )
     }
 }
+/// A plan to a `ActionDutchAuctionWithdraw` which contains both private and public data.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ActionDutchAuctionWithdrawPlan {
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(uint64, tag = "2")]
+    pub seq: u64,
+    #[prost(message, optional, tag = "3")]
+    pub reserves_input: ::core::option::Option<super::super::super::asset::v1::Value>,
+    #[prost(message, optional, tag = "4")]
+    pub reserves_output: ::core::option::Option<super::super::super::asset::v1::Value>,
+}
+impl ::prost::Name for ActionDutchAuctionWithdrawPlan {
+    const NAME: &'static str = "ActionDutchAuctionWithdrawPlan";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
