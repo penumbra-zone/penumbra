@@ -13,9 +13,7 @@ use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
 use penumbra_auction::auction::{
-    dutch::actions::{
-        ActionDutchAuctionEnd, ActionDutchAuctionSchedule,
-    },
+    dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
     AuctionId,
 };
 use penumbra_community_pool::CommunityPoolDeposit;
