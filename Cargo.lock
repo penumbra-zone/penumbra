@@ -808,8 +808,8 @@ dependencies = [
  "bytes",
  "futures-util",
  "headers",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "itoa",
  "matchit",
@@ -838,8 +838,8 @@ dependencies = [
  "async-trait",
  "bytes",
  "futures-util",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "mime",
  "rustversion",
  "tower-layer",
@@ -855,8 +855,8 @@ dependencies = [
  "arc-swap",
  "bytes",
  "futures-util",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "pin-project-lite",
  "rustls 0.20.9",
@@ -2686,7 +2686,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http",
+ "http 0.2.11",
  "indexmap 2.2.3",
  "slab",
  "tokio",
@@ -2772,7 +2772,7 @@ dependencies = [
  "base64 0.21.7",
  "bytes",
  "headers-core",
- "http",
+ "http 0.2.11",
  "httpdate",
  "mime",
  "sha1 0.10.6",
@@ -2784,7 +2784,7 @@ version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
 dependencies = [
- "http",
+ "http 0.2.11",
 ]
 
 [[package]]
@@ -2887,13 +2887,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "http"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
+]
+
+[[package]]
 name = "http-body"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ceab25649e9960c0311ea418d17bee82c0dcec1bd053b5f9a66e265a693bed2"
 dependencies = [
  "bytes",
- "http",
+ "http 0.2.11",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "http-body"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cac85db508abc24a2e48553ba12a996e87244a0395ce011e62b37158745d643"
+dependencies = [
+ "bytes",
+ "http 1.1.0",
+]
+
+[[package]]
+name = "http-body-util"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0475f8b2ac86659c21b64320d5d653f9efe42acd2a4e560073ec61a155a34f1d"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "http 1.1.0",
+ "http-body 1.0.0",
  "pin-project-lite",
 ]
 
@@ -2954,8 +2988,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "httparse",
  "httpdate",
  "itoa",
@@ -2974,7 +3008,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
 dependencies = [
  "futures-util",
- "http",
+ "http 0.2.11",
  "hyper",
  "rustls 0.21.10",
  "tokio",
@@ -4379,7 +4413,7 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "http-body",
+ "http-body 0.4.6",
  "ibc-proto",
  "ibc-types",
  "indicatif",
@@ -4451,8 +4485,8 @@ dependencies = [
  "ed25519-consensus",
  "futures",
  "hex",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "ibc-proto",
  "ibc-types",
  "metrics",
@@ -4513,7 +4547,9 @@ dependencies = [
  "fs_extra",
  "futures",
  "hex",
- "http",
+ "http 0.2.11",
+ "http-body-util",
+ "hyper",
  "ibc-proto",
  "ibc-types",
  "ics23",
@@ -5399,7 +5435,7 @@ dependencies = [
  "decaf377-rdsa",
  "futures",
  "hex",
- "http-body",
+ "http-body 0.4.6",
  "ibc-proto",
  "ibc-types",
  "ics23",
@@ -5634,7 +5670,7 @@ dependencies = [
  "chrono",
  "futures",
  "hex",
- "http",
+ "http 0.2.11",
  "metrics",
  "pbjson-types",
  "penumbra-proto",
@@ -5671,7 +5707,7 @@ version = "0.71.0"
 dependencies = [
  "futures",
  "hex",
- "http",
+ "http 0.2.11",
  "pin-project",
  "pin-project-lite",
  "sha2 0.10.8",
@@ -6649,8 +6685,8 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "hyper-rustls",
  "hyper-tls",
@@ -7642,7 +7678,7 @@ dependencies = [
  "decaf377 0.5.0",
  "futures",
  "hex",
- "http-body",
+ "http-body 0.4.6",
  "metrics-tracing-context",
  "penumbra-asset",
  "penumbra-keys",
@@ -8258,8 +8294,8 @@ dependencies = [
  "base64 0.21.7",
  "bytes",
  "h2",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "hyper-timeout",
  "percent-encoding",
@@ -8298,8 +8334,8 @@ checksum = "0fddb2a37b247e6adcb9f239f4e5cefdcc5ed526141a416b943929f13aea2cce"
 dependencies = [
  "base64 0.21.7",
  "bytes",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "hyper",
  "pin-project",
  "tokio-stream",
@@ -8375,8 +8411,8 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
- "http",
- "http-body",
+ "http 0.2.11",
+ "http-body 0.4.6",
  "http-range-header",
  "pin-project-lite",
  "tower-layer",

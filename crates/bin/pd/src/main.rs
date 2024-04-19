@@ -25,8 +25,14 @@ use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
+use tracing::Span;
+use http::Request;
+// use http::Response;
+use hyper::body::Body;
+// use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -123,9 +129,31 @@ async fn main() -> anyhow::Result<()> {
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
             let node_status = pd::zipserve::router("/", pd::NODE_STATUS_ARCHIVE_BYTES);
 
+
+            // new imports for TraceLayer
+            use http::{Request, Response, HeaderMap, StatusCode};
+            use http_body_util::Full;
+            use bytes::Bytes;
+            use tower::ServiceBuilder;
+            use tower_http::trace::TraceLayer;
+            use tracing::Span;
+            use std::time::Duration;
+
             // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
             let router = grpc_server
                 .into_router()
+                // Add layer for bundling gRPC request info into log messages.
+                .layer(TraceLayer::new_for_http()
+                    .on_request(|request: &Request<Body>, _span: &Span| {
+                        tracing::warn!("JAWN started {} {}", request.method(), request.uri().path())
+                    })
+                    // The `on_response` example, taken straight from the tower_http::trace docs,
+                    // throws a type error. Looks like we're gumming up the type constraints
+                    // by mixing-and-matching tonic/axum routers, perhaps?
+                    .on_response(|response: &Response<Full<Bytes>>, latency: Duration, _span: &Span| {
+                        tracing::debug!("response generated in {:?}", latency)
+                    })
+                )
                 .merge(frontend)
                 .merge(node_status)
                 // Set rather permissive CORS headers for pd's gRPC: the service
