@@ -355,6 +355,24 @@ impl From<PositionWithdrawPlan> for ActionPlan {
     }
 }
 
+impl From<CommunityPoolSpend> for ActionPlan {
+    fn from(inner: CommunityPoolSpend) -> ActionPlan {
+        ActionPlan::CommunityPoolSpend(inner)
+    }
+}
+
+impl From<CommunityPoolOutput> for ActionPlan {
+    fn from(inner: CommunityPoolOutput) -> ActionPlan {
+        ActionPlan::CommunityPoolOutput(inner)
+    }
+}
+
+impl From<CommunityPoolDeposit> for ActionPlan {
+    fn from(inner: CommunityPoolDeposit) -> ActionPlan {
+        ActionPlan::CommunityPoolDeposit(inner)
+    }
+}
+
 impl From<Ics20Withdrawal> for ActionPlan {
     fn from(inner: Ics20Withdrawal) -> ActionPlan {
         ActionPlan::Ics20Withdrawal(inner)
