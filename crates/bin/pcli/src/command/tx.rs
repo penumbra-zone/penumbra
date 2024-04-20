@@ -63,6 +63,8 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
+use super::auction::AuctionCmd;
+
 mod liquidity_position;
 mod proposal;
 mod replicate;
@@ -222,62 +224,9 @@ pub enum TxCmd {
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Schedule a Dutch auction, a tool to help accomplish price discovery.
-    #[clap(display_order = 600)]
-    DutchAuctionSchedule {
-        /// Only spend funds originally received by the given account.
-        #[clap(long, default_value = "0", display_order = 100)]
-        source: u32,
-        /// The amount the seller wishes to auction.
-        #[clap(long, default_value = "0", display_order = 200)]
-        amount: String,
-        /// The denomination of the target asset the seller wishes to acquire.
-        #[clap(long, display_order = 300)]
-        recieve: String,
-        /// The time duration of the auction, expressed with quantized values,
-        /// e.g., 10min, 30min, 1h, 2h, 6h, 12h, 24h, 48h
-        #[clap(long, default_value = "0", display_order = 400)]
-        auction_duration: u64,
-        /// The maximum output the seller can receive.
-        ///
-        /// This implicitly defines the starting price for the auction.
-        #[clap(long, default_value = "0", display_order = 500)]
-        starting_price: String,
-        /// The minimum output the seller is willing to receive.
-        ///
-        /// This implicitly defines the ending price for the auction.
-        #[clap(long, default_value = "0", display_order = 600)]
-        reserve_price: String,
-        /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 700)]
-        fee_tier: FeeTier,
-    },
-    /// Withdraws the reserves of the Dutch auction.
-    #[clap(display_order = 700)]
-    DutchAuctionWithdraw {
-        /// Identifier of the auction.
-        #[clap(long, default_value = "0", display_order = 100)]
-        auction_id: u32,
-        /// Source address withdrawing from auction.
-        #[clap(long, default_value = "0", display_order = 200)]
-        source: u32,
-        /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 300)]
-        fee_tier: FeeTier,
-    },
-    /// Ends a Dutch auction.
-    #[clap(display_order = 800)]
-    DutchAuctionEnd {
-        /// Identifier of the auction.
-        #[clap(long, default_value = "0", display_order = 100)]
-        auction_id: u32,
-        /// Source address withdrawing from auction.
-        #[clap(long, default_value = "0", display_order = 200)]
-        source: u32,
-        /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 300)]
-        fee_tier: FeeTier,
-    },
+    /// Auction related commands.
+    #[clap(display_order = 600, subcommand)]
+    Auction(AuctionCmd),
 }
 
 // A fee tier enum suitable for use with clap.
@@ -367,10 +316,7 @@ impl TxCmd {
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
-            // TODO: check this.
-            TxCmd::DutchAuctionSchedule { .. } => false,
-            TxCmd::DutchAuctionWithdraw { .. } => false,
-            TxCmd::DutchAuctionEnd { .. } => false,
+            TxCmd::Auction(_) => false,
         }
     }
 
@@ -1335,104 +1281,8 @@ impl TxCmd {
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
             }
-            TxCmd::DutchAuctionSchedule {
-                source,
-                amount,
-                recieve: _,
-                auction_duration,
-                starting_price,
-                reserve_price,
-                fee_tier,
-            } => {
-                let _amount = amount.parse::<Value>()?;
-
-                // Use the specified time interval to calculate the auction's `start_height` and `end_height`,
-                // implicitely defining the speed of the auction.
-                let view: &mut dyn ViewClient = app
-                    .view
-                    .as_mut()
-                    .context("view service must be initialized")?;
-                let start_height = view.status().await?.full_sync_height;
-
-                // TODO: make this a valid calculation.
-                let end_height = start_height + auction_duration;
-
-                let _block_interval = end_height.checked_sub(start_height).ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "block interval calculation has underflowed (end={}, start={})",
-                        end_height,
-                        start_height
-                    )
-                })?;
-
-                // TODO: what should the step_count be?
-
-                let _starting_price_ = starting_price.parse::<Value>()?;
-                let _reserve_price = reserve_price.parse::<Value>()?;
-
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                // TODO: add `ActionDutchAuctionSchedule` to planner (depends on #4248).
-
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
-            }
-            TxCmd::DutchAuctionWithdraw {
-                auction_id: _,
-                source,
-                fee_tier,
-            } => {
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                // TODO: add `ActionDutchAuctionWithdraw` to planner (depends on #4248).
-
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
-            }
-            TxCmd::DutchAuctionEnd {
-                auction_id: _,
-                source,
-                fee_tier,
-            } => {
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                // TODO: add `ActionDutchAuctionEnd` to planner (depends on #4248).
-
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+            TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
+                auction_cmd.exec(app).await?;
             }
         }
         Ok(())
