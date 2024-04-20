@@ -500,7 +500,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         ))
     }
 
-    /// Ends a Dutch auction using protocol-controlled liquiidty.
+/// Ends a Dutch auction using protocol-controlled liquidity.
     #[instrument(skip(self))]
     pub fn dutch_auction_end(&mut self, auction_id: AuctionId) -> &mut Self {
         self.action(ActionPlan::ActionDutchAuctionEnd(ActionDutchAuctionEnd {
