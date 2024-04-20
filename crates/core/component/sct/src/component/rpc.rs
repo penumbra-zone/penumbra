@@ -46,10 +46,10 @@ impl QueryService for Server {
     ) -> Result<tonic::Response<AnchorByHeightResponse>, Status> {
         let state = self.storage.latest_snapshot();
 
-        let anchor = state
-            .get_anchor_by_height(request.get_ref().height)
-            .await
-            .map_err(|e| tonic::Status::unknown(format!("could not get anchor for height: {e}")))?;
+        let height = request.get_ref().height;
+        let anchor = state.get_anchor_by_height(height).await.map_err(|e| {
+            tonic::Status::unknown(format!("could not get anchor for height {height}: {e}"))
+        })?;
 
         Ok(tonic::Response::new(AnchorByHeightResponse {
             anchor: anchor.map(Into::into),
