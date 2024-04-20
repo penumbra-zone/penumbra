@@ -1,7 +1,14 @@
 use super::tx::FeeTier;
 use crate::App;
+use anyhow::Context;
 use clap::Subcommand;
-use penumbra_wallet::plan::{self, Planner};
+use penumbra_asset::{asset, Value};
+use penumbra_auction::auction::AuctionId;
+use penumbra_keys::keys::AddressIndex;
+use penumbra_num::Amount;
+use penumbra_proto::view::v1::GasPricesRequest;
+use penumbra_wallet::plan::Planner;
+use rand_core::OsRng;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {
@@ -20,21 +27,21 @@ pub enum DutchCmd {
         #[clap(long, default_value = "0", display_order = 100)]
         source: u32,
         /// The value the seller wishes to auction.
-        #[clap(long, default_value = "0", display_order = 200)]
-        input: u32,
+        #[clap(long, display_order = 200)]
+        input: String,
         /// The asset ID of the target asset the seller wishes to acquire.
         #[clap(long, display_order = 300)]
         output: String,
         /// The maximum output the seller can receive.
         ///
         /// This implicitly defines the starting price for the auction.
-        #[clap(long, display_order = 400)]
-        max_output: String,
+        #[clap(long, default_value = "0", display_order = 400)]
+        max_output: u64,
         /// The minimum output the seller is willing to receive.
         ///
         /// This implicitly defines the ending price for the auction.
-        #[clap(long, display_order = 500)]
-        min_output: String,
+        #[clap(long, default_value = "0", display_order = 500)]
+        min_output: u64,
         /// The block height at which the auction begins.
         ///
         /// This allows the seller to schedule an auction at a future time.
@@ -66,8 +73,8 @@ pub enum DutchCmd {
         #[clap(long, default_value = "0", display_order = 100)]
         source: u32,
         /// The auction to withdraw funds from.
-        #[clap(long, default_value = "0", display_order = 200)]
-        auction_id: u32,
+        #[clap(long, display_order = 200)]
+        auction_id: String,
         ///  The sequence number of the withdrawal.
         #[clap(long, default_value = "0", display_order = 300)]
         seq: u64,
@@ -95,7 +102,7 @@ pub enum DutchCmd {
         source: u32,
         /// Identifier of the auction.
         #[clap(long, default_value = "0", display_order = 200)]
-        auction_id: u32,
+        auction_id: String,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 300)]
         fee_tier: FeeTier,
@@ -105,6 +112,17 @@ pub enum DutchCmd {
 impl DutchCmd {
     /// Process the command by performing the appropriate action.
     pub async fn exec(&self, app: &mut App) -> anyhow::Result<()> {
+        let gas_prices = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
+
         match self {
             DutchCmd::DutchAuctionSchedule {
                 source,
@@ -115,16 +133,29 @@ impl DutchCmd {
                 start_height,
                 end_height,
                 step_count,
-                nonce,
+                nonce: _,
                 fee_tier,
             } => {
-                let mut planner = Planner::new(OsRng);
-                // planner
-                //     .set_gas_prices(gas_prices)
-                //     .set_fee_tier((*fee_tier).into());
+                let input = input.parse::<Value>()?;
+                let output = output.parse::<asset::Id>()?;
+                let max_output = Amount::from(*max_output);
+                let min_output = Amount::from(*min_output);
 
-                // TODO: add `ActionDutchAuctionSchedule` to planner (depends on #4248).
-                // planner
+                let mut planner = Planner::new(OsRng);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
+
+                planner.dutch_auction_schedule(
+                    input,
+                    output,
+                    max_output,
+                    min_output,
+                    *start_height,
+                    *end_height,
+                    *step_count,
+                    [0; 32],
+                );
 
                 let plan = planner
                     .plan(
@@ -136,6 +167,7 @@ impl DutchCmd {
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
+                Ok(())
             }
             DutchCmd::DutchAuctionWithdraw {
                 source,
@@ -145,12 +177,16 @@ impl DutchCmd {
                 reserves_output,
                 fee_tier,
             } => {
+                let auction_id = auction_id.parse::<AuctionId>()?;
+                let reserves_input = reserves_input.parse::<Value>()?;
+                let reserves_output = reserves_output.parse::<Value>()?;
+
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
 
-                // TODO: add `ActionDutchAuctionWithdraw` to planner (depends on #4248).
+                planner.dutch_auction_withdraw(auction_id, *seq, reserves_input, reserves_output);
 
                 let plan = planner
                     .plan(
@@ -162,18 +198,21 @@ impl DutchCmd {
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
+                Ok(())
             }
             DutchCmd::DutchAuctionEnd {
                 auction_id,
                 source,
                 fee_tier,
             } => {
+                let auction_id = auction_id.parse::<AuctionId>()?;
+
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
 
-                // TODO: add `ActionDutchAuctionEnd` to planner (depends on #4248).
+                planner.dutch_auction_end(auction_id);
 
                 let plan = planner
                     .plan(
@@ -185,6 +224,7 @@ impl DutchCmd {
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;
+                Ok(())
             }
         }
     }
