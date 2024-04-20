@@ -5772,6 +5772,7 @@ dependencies = [
  "parking_lot",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-compact-block",
  "penumbra-dex",
