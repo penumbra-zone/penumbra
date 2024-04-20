@@ -257,6 +257,7 @@ impl App {
             begin_block,
         )
         .await;
+        Dex::begin_block(&mut arc_state_tx, begin_block).await;
         CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
@@ -382,6 +383,7 @@ impl App {
 
         tracing::debug!("running app components' `end_block` hooks");
         let mut arc_state_tx = Arc::new(state_tx);
+        Sct::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
         Ibc::end_block(&mut arc_state_tx, end_block).await;
@@ -485,6 +487,9 @@ impl App {
 
             let mut arc_state_tx = Arc::new(state_tx);
 
+            Sct::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Sct component");
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");

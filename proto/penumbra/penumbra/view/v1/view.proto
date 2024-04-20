@@ -15,6 +15,8 @@ import "penumbra/core/num/v1/num.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
+import "penumbra/core/component/auction/v1alpha1/auction.proto";
+import "google/protobuf/any.proto";
 
 // The view RPC is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -140,6 +142,34 @@ service ViewService {
   // Get unbonding tokens for the given address index, optionally filtered by
   // whether the tokens are currently claimable.
   rpc UnbondingTokensByAddressIndex(UnbondingTokensByAddressIndexRequest) returns (stream UnbondingTokensByAddressIndexResponse);
+
+  // Gets the auctions controlled by the user's wallet.
+  rpc Auctions(AuctionsRequest) returns (stream AuctionsResponse);
+}
+
+message AuctionsRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 1;
+  // If present, include inactive auctions as well as active ones.
+  bool include_inactive = 2;
+  // If set, query a fullnode for the current state of the auctions.
+  bool query_latest_state = 3;
+}
+
+message AuctionsResponse {
+  core.component.auction.v1alpha1.AuctionId id = 1;
+  // The note recording the auction NFT.
+  SpendableNoteRecord note_record = 4;
+
+  // The state of the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  google.protobuf.Any auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
 }
 
 message AuthorizeAndBuildRequest {

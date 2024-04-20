@@ -4,6 +4,7 @@ package penumbra.core.component.auction.v1alpha1;
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/num/v1/num.proto";
+import "google/protobuf/any.proto";
 
 // The configuration parameters for the auction component.
 message AuctionParameters {}
@@ -14,8 +15,42 @@ message GenesisContent {
   AuctionParameters params = 1;
 }
 
-// Query operations for the Auction component.
-service QueryService {}
+// Query operations for the auction component.
+service QueryService {
+  // Get the current state of an auction by ID.
+  rpc AuctionStateById(AuctionStateByIdRequest) returns (AuctionStateByIdResponse);
+  // Get the current state of a group of auctions by ID.
+  rpc AuctionStateByIds(AuctionStateByIdsRequest) returns (stream AuctionStateByIdsResponse);
+}
+
+message AuctionStateByIdRequest {
+    AuctionId id = 1;
+}
+
+message AuctionStateByIdResponse {
+    // If present, the state of the auction. If not present, no such auction is known.
+    google.protobuf.Any auction = 2;
+    // The state of any DEX positions relevant to the returned auction.
+    //
+    // Could be empty, depending on the auction state.
+    repeated core.component.dex.v1.Position positions = 3;
+}
+
+message AuctionStateByIdsRequest {
+  // The auction IDs to request. Only known IDs will be returned in the response.
+  repeated AuctionId id = 1;
+}
+
+message AuctionStateByIdsResponse {
+  // The auction ID of the returned auction.
+  AuctionId id = 1;
+  // The state of the returned auction.
+  DutchAuctionState auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
+}
 
 // A unique identifier for an auction, obtained from hashing a domain separator
 // along with the immutable part of an auction description.
