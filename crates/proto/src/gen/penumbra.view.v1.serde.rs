@@ -847,6 +847,285 @@ impl<'de> serde::Deserialize<'de> for AssetsResponse {
         deserializer.deserialize_struct("penumbra.view.v1.AssetsResponse", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for AuctionsRequest {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.account_filter.is_some() {
+            len += 1;
+        }
+        if self.include_inactive {
+            len += 1;
+        }
+        if self.query_latest_state {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.AuctionsRequest", len)?;
+        if let Some(v) = self.account_filter.as_ref() {
+            struct_ser.serialize_field("accountFilter", v)?;
+        }
+        if self.include_inactive {
+            struct_ser.serialize_field("includeInactive", &self.include_inactive)?;
+        }
+        if self.query_latest_state {
+            struct_ser.serialize_field("queryLatestState", &self.query_latest_state)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuctionsRequest {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "account_filter",
+            "accountFilter",
+            "include_inactive",
+            "includeInactive",
+            "query_latest_state",
+            "queryLatestState",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AccountFilter,
+            IncludeInactive,
+            QueryLatestState,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "accountFilter" | "account_filter" => Ok(GeneratedField::AccountFilter),
+                            "includeInactive" | "include_inactive" => Ok(GeneratedField::IncludeInactive),
+                            "queryLatestState" | "query_latest_state" => Ok(GeneratedField::QueryLatestState),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuctionsRequest;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.AuctionsRequest")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuctionsRequest, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut account_filter__ = None;
+                let mut include_inactive__ = None;
+                let mut query_latest_state__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AccountFilter => {
+                            if account_filter__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("accountFilter"));
+                            }
+                            account_filter__ = map_.next_value()?;
+                        }
+                        GeneratedField::IncludeInactive => {
+                            if include_inactive__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("includeInactive"));
+                            }
+                            include_inactive__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::QueryLatestState => {
+                            if query_latest_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("queryLatestState"));
+                            }
+                            query_latest_state__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuctionsRequest {
+                    account_filter: account_filter__,
+                    include_inactive: include_inactive__.unwrap_or_default(),
+                    query_latest_state: query_latest_state__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.AuctionsRequest", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for AuctionsResponse {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.id.is_some() {
+            len += 1;
+        }
+        if self.note_record.is_some() {
+            len += 1;
+        }
+        if self.auction.is_some() {
+            len += 1;
+        }
+        if !self.positions.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.AuctionsResponse", len)?;
+        if let Some(v) = self.id.as_ref() {
+            struct_ser.serialize_field("id", v)?;
+        }
+        if let Some(v) = self.note_record.as_ref() {
+            struct_ser.serialize_field("noteRecord", v)?;
+        }
+        if let Some(v) = self.auction.as_ref() {
+            struct_ser.serialize_field("auction", v)?;
+        }
+        if !self.positions.is_empty() {
+            struct_ser.serialize_field("positions", &self.positions)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for AuctionsResponse {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "id",
+            "note_record",
+            "noteRecord",
+            "auction",
+            "positions",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Id,
+            NoteRecord,
+            Auction,
+            Positions,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "id" => Ok(GeneratedField::Id),
+                            "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
+                            "auction" => Ok(GeneratedField::Auction),
+                            "positions" => Ok(GeneratedField::Positions),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = AuctionsResponse;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.view.v1.AuctionsResponse")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<AuctionsResponse, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut id__ = None;
+                let mut note_record__ = None;
+                let mut auction__ = None;
+                let mut positions__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Id => {
+                            if id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id__ = map_.next_value()?;
+                        }
+                        GeneratedField::NoteRecord => {
+                            if note_record__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("noteRecord"));
+                            }
+                            note_record__ = map_.next_value()?;
+                        }
+                        GeneratedField::Auction => {
+                            if auction__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("auction"));
+                            }
+                            auction__ = map_.next_value()?;
+                        }
+                        GeneratedField::Positions => {
+                            if positions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positions"));
+                            }
+                            positions__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(AuctionsResponse {
+                    id: id__,
+                    note_record: note_record__,
+                    auction: auction__,
+                    positions: positions__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.view.v1.AuctionsResponse", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for AuthorizeAndBuildRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
