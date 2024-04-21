@@ -24,7 +24,7 @@ pub enum DutchCmd {
     #[clap(display_order = 100, name = "schedule")]
     DutchAuctionSchedule {
         /// Source address initiating the auction.
-        #[clap(long, default_value = "0", display_order = 100)]
+        #[clap(long, display_order = 100)]
         source: u32,
         /// The value the seller wishes to auction.
         #[clap(long, display_order = 200)]
@@ -35,32 +35,32 @@ pub enum DutchCmd {
         /// The maximum output the seller can receive.
         ///
         /// This implicitly defines the starting price for the auction.
-        #[clap(long, default_value = "0", display_order = 400)]
+        #[clap(long, display_order = 400)]
         max_output: u64,
         /// The minimum output the seller is willing to receive.
         ///
         /// This implicitly defines the ending price for the auction.
-        #[clap(long, default_value = "0", display_order = 500)]
+        #[clap(long, display_order = 500)]
         min_output: u64,
         /// The block height at which the auction begins.
         ///
         /// This allows the seller to schedule an auction at a future time.
-        #[clap(long, default_value = "0", display_order = 600)]
+        #[clap(long, display_order = 600)]
         start_height: u64,
         /// The block height at which the auction ends.
         ///
         /// Together with `start_height`, `max_output`, and `min_output`,
         /// this implicitly defines the speed of the auction.
-        #[clap(long, default_value = "0", display_order = 700)]
+        #[clap(long, display_order = 700)]
         end_height: u64,
         /// The number of discrete price steps to use for the auction.
         ///
         /// `end_height - start_height` must be a multiple of `step_count`.
-        #[clap(long, default_value = "0", display_order = 800)]
+        #[clap(long, display_order = 800)]
         step_count: u64,
         /// A random nonce used to allow identical auctions to have
         /// distinct auction IDs.
-        #[clap(long, default_value = "0", display_order = 900)]
+        #[clap(long, display_order = 900)]
         nonce: u64,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 1000)]
@@ -70,13 +70,13 @@ pub enum DutchCmd {
     #[clap(display_order = 200, name = "withdraw")]
     DutchAuctionWithdraw {
         /// Source address withdrawing from the auction.
-        #[clap(long, default_value = "0", display_order = 100)]
+        #[clap(long, display_order = 100)]
         source: u32,
         /// The auction to withdraw funds from.
         #[clap(long, display_order = 200)]
         auction_id: String,
         ///  The sequence number of the withdrawal.
-        #[clap(long, default_value = "0", display_order = 300)]
+        #[clap(long, display_order = 300)]
         seq: u64,
         /// The amount of the input asset directly owned by the auction.
         ///
@@ -98,10 +98,10 @@ pub enum DutchCmd {
     #[clap(display_order = 300, name = "end")]
     DutchAuctionEnd {
         /// Source address withdrawing from auction.
-        #[clap(long, default_value = "0", display_order = 100)]
+        #[clap(long, display_order = 100)]
         source: u32,
         /// Identifier of the auction.
-        #[clap(long, default_value = "0", display_order = 200)]
+        #[clap(long, display_order = 200)]
         auction_id: String,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 300)]
