@@ -63,6 +63,12 @@ impl Amount {
             .map(|inner| Self { inner })
     }
 
+    pub fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        self.inner
+            .checked_mul(rhs.inner)
+            .map(|inner| Self { inner })
+    }
+
     pub fn saturating_add(&self, rhs: &Self) -> Self {
         Self {
             inner: self.inner.saturating_add(rhs.inner),
