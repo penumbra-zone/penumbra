@@ -354,4 +354,23 @@ mod tests {
         };
         assert_eq!(compute_next_trigger(data).unwrap(), Some(140));
     }
+/// TODO(erwan): prove that this works. More work needed to work out validation
+/// rules that let us operate within the 112 bits constraint.
+fn compute_pq_at_step(
+    auction_description: &DutchAuctionDescription,
+    step_index: u64,
+) -> (Amount, Amount) {
+    let step_index = Amount::from(step_index);
+    let step_count = Amount::from(auction_description.step_count);
+
+    let q = auction_description
+        .input
+        .amount
+        .checked_mul(&step_count)
+        .unwrap();
+
+    let p = (step_count - step_index) * auction_description.max_output
+        + step_index * auction_description.min_output;
+
+    (p, q)
 }
