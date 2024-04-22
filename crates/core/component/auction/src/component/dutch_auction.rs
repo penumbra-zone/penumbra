@@ -245,8 +245,6 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         // to the total tracked amount, so that it can be returned to its bearer.
         let (input_from_position, output_from_position) =
             if let Some(position_id) = current_position {
-                use penumbra_dex::component::{PositionManager, PositionRead};
-
                 let _ = self // TODO: redundant.
                     .position_by_id(&position_id)
                     .await
@@ -278,7 +276,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
         // If a `next_trigger` entry is set, we remove it.
         if next_trigger != 0 {
-            self.unset_trigger_for_id(auction_id, next_trigger)
+            self.unset_trigger_for_dutch_id(auction_id, next_trigger)
         }
 
         let total_input_reserves = input_reserves + input_from_position;
@@ -338,6 +336,58 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
 impl<T: StateWrite + ?Sized> DutchAuctionManager for T {}
 
+#[async_trait]
+pub(crate) trait HandleDutchTriggers: StateWrite {
+    /// Process the trigger height for a [`DutchAuction`],
+    async fn process_trigger(&mut self, trigger_height: u64) -> Result<()> {
+        use futures::StreamExt;
+        // TODO(erwan): somewhat self-defeating, but this is a first pass.
+        let auction_ids: Vec<AuctionId> = self
+            .stream_dutch_ids_by_trigger(trigger_height)
+            .await
+            .collect()
+            .await;
+
+        for auction_id in auction_ids.into_iter() {
+            let _ = self
+                .execute_dutch_auction(auction_id, trigger_height)
+                .await?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> HandleDutchTriggers for T {}
+
+#[async_trait]
+pub(crate) trait DutchAuctionData: StateRead {
+    async fn stream_dutch_ids_by_trigger(
+        &self,
+        trigger_height: u64,
+    ) -> Pin<Box<dyn futures::Stream<Item = AuctionId> + Send + 'static>> {
+        use penumbra_proto::StateReadProto;
+        let prefix_key = state_key::dutch::trigger::by_height(trigger_height)
+            .as_bytes()
+            .to_vec();
+
+        self.nonverifiable_prefix::<AuctionId>(&prefix_key)
+            .map(|res| {
+                let (_, auction_id) = res.expect("no deserialization error");
+                auction_id
+            })
+            .boxed()
+    }
+
+    async fn stream_dutch_state_by_trigger(
+        &self,
+        _trigger_height: u64,
+    ) -> Pin<Box<dyn futures::Stream<Item = DutchAuction> + Send + 'static>> {
+        todo!()
+    }
+}
+
+impl<T: StateRead + ?Sized> DutchAuctionData for T {}
+
 trait Inner: StateWrite {
     /// Serialize a `DutchAuction` as an `Any` into chain state.
     fn write_dutch_auction_state(&mut self, new_state: DutchAuction) {
@@ -356,16 +406,20 @@ trait Inner: StateWrite {
         self.put_raw(key, raw_any);
     }
 
-    /// Set a trigger for an auction.
-    fn set_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
-        self.put_raw(trigger_path, vec![]);
+    /// Set a trigger for a Dutch auction.
+    fn set_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
+            .as_bytes()
+            .to_vec();
+        self.nonverifiable_put(trigger_path, auction_id);
     }
 
-    /// Delete a trigger for an auction.
-    fn unset_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
-        self.delete(trigger_path);
+    /// Delete a trigger for a Dutch auction.
+    fn unset_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
+            .as_bytes()
+            .to_vec();
+        self.nonverifiable_delete(trigger_path);
     }
 }
 
