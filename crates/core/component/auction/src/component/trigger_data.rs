@@ -42,9 +42,9 @@ impl TriggerData {
         // next one, and finally we determine a concrete trigger height based off that.
         let distance_from_start = current_height.saturating_sub(*start_height);
 
-        Ok(distance_from_start
+        distance_from_start
             .checked_div(step_size)
-            .ok_or_else(|| anyhow::anyhow!("step size is zero"))?)
+            .ok_or_else(|| anyhow::anyhow!("step size is zero"))
     }
 
     /// Compute the next trigger height, return `None` if the step count

@@ -188,21 +188,23 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             // We compute the price parameters for the LP:
             let (p, q) = compute_pq_at_step(&new_dutch_auction.description, step_index);
 
-            // To open a position, we need to attribute it a deterministic nonce.
-            // If a PCL position id collides with an existing position in the dex,
-            // we increment an `attempt_counter` and derive a new position nonce:
+            // Next, we want to construct an auction LP position and send it to the DEX.
+            // The nonce must be chosen so that the resulting position id is unique:
+            // `PositionManager::open_position` will reject duplicates.
+            //
+            // To do this, we keep track of our number of attempts at opening a position,
+            // and compute:
             // position_nonce = H(auction_nonce || step_index || attempt_counter)
-            // and try again, until it works.
+            // until the resulting position id (based on the nonce) is unique and accepted
+            // by the DEX.
             let mut attempt_counter = 0u64;
             loop {
-                // We open the position, and, on success, record an execution trigger:
-                // Finally, we create a new position and set it to be auto-closing.
                 let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
                 let lp_reserves = Reserves {
                     r1: new_dutch_auction.state.input_reserves,
                     r2: Amount::zero(),
                 };
-                let auction_nonce = new_dutch_auction.description.nonce.clone();
+                let auction_nonce = new_dutch_auction.description.nonce;
                 let full_hash = blake2b_simd::Params::default()
                     .personal(b"penum-DA-nonce")
                     .to_state()
@@ -215,8 +217,10 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
                 let mut lp = Position::new_with_nonce(tough_nonce, pair, 0u32, p, q, lp_reserves);
                 lp.close_on_fill = true;
-                let id: penumbra_dex::lp::position::Id = lp.id();
+
+                let id = lp.id();
                 new_dutch_auction.state.current_position = Some(id);
+
                 match self.open_position(lp).await {
                     Ok(_) => break,
                     Err(e) => {
@@ -465,7 +469,8 @@ fn compute_pq_at_step(
         .input
         .amount
         .checked_mul(&step_count)
-        .unwrap();
+        // TODO(erwan): this isn't true, this must part of 112 bits extra validation pass todo.
+        .expect("checked in validation");
 
     let p = (step_count - step_index) * auction_description.max_output
         + step_index * auction_description.min_output;
