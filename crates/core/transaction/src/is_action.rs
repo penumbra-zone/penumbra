@@ -378,7 +378,6 @@ impl IsAction for Swap {
                     .find(|bsod| bsod.trading_pair == self.body.trading_pair);
 
                 // We can get the denom metadata whether we get a BSOD or not
-
                 let denom_1 = txp.denoms.get(&self.body.trading_pair.asset_1()).cloned();
                 let denom_2 = txp.denoms.get(&self.body.trading_pair.asset_2()).cloned();
 
@@ -386,7 +385,6 @@ impl IsAction for Swap {
                     None => {
                         // If we can't find a matching BSOD, we can't compute the output notes
                         // for the swap.
-                        // TODO: is defaulting to 'None' the right behavior here, or is not matching on a BSOD as above an error?
                         SwapView::Opaque {
                             swap: self.to_owned(),
                             batch_swap_output_data: None,
@@ -399,10 +397,8 @@ impl IsAction for Swap {
                     Some(bsod) => {
                         // If we can find a matching BSOD, use it to compute the output notes
                         // for the swap.
-
                         let (lambda_1_i, lambda_2_i) =
                             bsod.pro_rata_outputs((self.body.delta_1_i, self.body.delta_2_i));
-
                         SwapView::Opaque {
                             swap: self.to_owned(),
                             batch_swap_output_data: Some(bsod.clone()),
