@@ -4,6 +4,7 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_num::Amount;
 use penumbra_sct::component::clock::EpochRead;
 
 use crate::auction::dutch::ActionDutchAuctionSchedule;
@@ -24,7 +25,13 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             nonce: _,
         } = self.description;
 
-        // Fail fast if the step count is zero
+        // Fail fast if the input is zero.
+        ensure!(
+            input.amount > Amount::zero(),
+            "input amount MUST be positive (got zero)"
+        );
+
+        // Fail fast if the step count is zero.
         ensure!(step_count > 0, "step count MUST be positive (got zero)");
 
         // Check that we disallow identical input/output ids.
