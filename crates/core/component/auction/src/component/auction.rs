@@ -35,11 +35,13 @@ impl Component for Auction {
     ) {
     }
 
-    #[instrument(name = "auction", skip(_state, _end_block))]
+    #[instrument(name = "auction", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
+        let state: &mut S = Arc::get_mut(state).expect("state should be unique");
+        let _ = state.process_trigger(end_block.height as u64).await;
     }
 
     #[instrument(name = "auction", skip(_state))]
