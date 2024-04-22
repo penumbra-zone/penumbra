@@ -99,6 +99,48 @@ impl Position {
         }
     }
 
+    /// Construct a new opened [Position] with a supplied random nonce.
+    pub fn new_with_nonce(
+        nonce: [u8; 32],
+        pair: DirectedTradingPair,
+        fee: u32,
+        p: Amount,
+        q: Amount,
+        reserves: Reserves,
+    ) -> Position {
+        // Internally mutable so we can swap the `p` and `q` values if necessary.
+        let mut p = p;
+        let mut q = q;
+        let mut reserves = reserves;
+
+        // The [`TradingFunction`] uses a canonical non-directed trading pair ([`TradingPair`]).
+        // This means that the `p` and `q` values may need to be swapped, depending on the canonical
+        // representation of the trading pair.
+        let canonical_tp: TradingPair = pair.into();
+
+        // The passed-in `p` value is associated with the start asset, as is `r1`.
+        if pair.start != canonical_tp.asset_1() {
+            // The canonical representation of the trading pair has the start asset as the second
+            // asset, so we need to swap the `p` and `q` values.
+            std::mem::swap(&mut p, &mut q);
+
+            // The ordering of the reserves should also be swapped.
+            reserves = Reserves {
+                r1: reserves.r2,
+                r2: reserves.r1,
+            };
+        }
+
+        let phi = TradingFunction::new(canonical_tp, fee, p, q);
+        Position {
+            phi,
+            nonce,
+            state: State::Opened,
+            reserves,
+            close_on_fill: false,
+        }
+    }
+
     /// Get the ID of this position.
     pub fn id(&self) -> Id {
         let mut state = blake2b_simd::Params::default()
