@@ -4,6 +4,7 @@ mod auction_store;
 mod dutch_auction;
 pub mod metrics;
 pub mod rpc;
+mod trigger_data;
 
 pub use auction::Auction;
 pub use auction::{StateReadExt, StateWriteExt};
