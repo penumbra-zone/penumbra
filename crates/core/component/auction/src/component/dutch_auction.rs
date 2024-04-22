@@ -187,20 +187,47 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
             // We compute the price parameters for the LP:
             let (p, q) = compute_pq_at_step(&new_dutch_auction.description, step_index);
-            let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
-            let nonce = new_dutch_auction.description.nonce.clone();
-            let lp_reserves = Reserves {
-                r1: new_dutch_auction.state.input_reserves,
-                r2: Amount::zero(),
-            };
-            // Finally, we create a new position and set it to be auto-closing.
-            let mut lp = Position::new_with_nonce(nonce, pair, 0u32, p, q, lp_reserves);
-            lp.close_on_fill = true;
-            let id = lp.id();
-            new_dutch_auction.state.current_position = Some(id);
 
-            // We open the position, and, on success, record an execution trigger:
-            let _ = self.open_position(lp).await?;
+            // To open a position, we need to attribute it a deterministic nonce.
+            // If a PCL position id collides with an existing position in the dex,
+            // we increment an `attempt_counter` and derive a new position nonce:
+            // position_nonce = H(auction_nonce || step_index || attempt_counter)
+            // and try again, until it works.
+            let mut attempt_counter = 0u64;
+            loop {
+                // We open the position, and, on success, record an execution trigger:
+                // Finally, we create a new position and set it to be auto-closing.
+                let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
+                let lp_reserves = Reserves {
+                    r1: new_dutch_auction.state.input_reserves,
+                    r2: Amount::zero(),
+                };
+                let auction_nonce = new_dutch_auction.description.nonce.clone();
+                let full_hash = blake2b_simd::Params::default()
+                    .personal(b"penum-DA-nonce")
+                    .to_state()
+                    .update(&auction_nonce)
+                    .update(&step_index.to_le_bytes())
+                    .update(&attempt_counter.to_le_bytes())
+                    .finalize();
+                let mut tough_nonce = [0u8; 32];
+                tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
+
+                let mut lp = Position::new_with_nonce(tough_nonce, pair, 0u32, p, q, lp_reserves);
+                lp.close_on_fill = true;
+                let id: penumbra_dex::lp::position::Id = lp.id();
+                new_dutch_auction.state.current_position = Some(id);
+                match self.open_position(lp).await {
+                    Ok(_) => break,
+                    Err(e) => {
+                        // TODO(erwan): this coarsely assumes that all errors
+                        // are id collisions which obviously does not hold.
+                        // for now it's impossible to do finer grained control flow.
+                        tracing::error!(?e, attempt_counter, ?id, "failed to open position");
+                        attempt_counter += 1;
+                    }
+                }
+            }
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
         };
 
