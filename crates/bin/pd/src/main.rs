@@ -305,6 +305,7 @@ async fn main() -> anyhow::Result<()> {
                     allocations_input_file,
                     validators_input_file,
                     chain_id,
+                    gas_price_simple,
                     preserve_chain_id,
                     external_addresses,
                     proposal_voting_blocks,
@@ -364,6 +365,7 @@ async fn main() -> anyhow::Result<()> {
                 epoch_duration,
                 unbonding_delay,
                 proposal_voting_blocks,
+                gas_price_simple,
             )?;
             tracing::info!(
                 n_validators = t.validators.len(),

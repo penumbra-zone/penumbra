@@ -48,7 +48,7 @@ cargo build --quiet --release --bin pd
 echo "Generating testnet config..."
 EPOCH_DURATION="${EPOCH_DURATION:-50}"
 UNBONDING_DELAY="${UNBONDING_DELAY:-50}"
-cargo run --quiet --release --bin pd -- testnet generate --unbonding-delay "$UNBONDING_DELAY" --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
+cargo run --quiet --release --bin pd -- testnet generate --unbonding-delay "$UNBONDING_DELAY" --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms --gas-price-simple 5
 
 echo "Starting CometBFT..."
 cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" > "${SMOKE_LOG_DIR}/comet.log" &
