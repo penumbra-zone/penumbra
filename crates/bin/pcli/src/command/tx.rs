@@ -63,6 +63,8 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
+use super::auction::AuctionCmd;
+
 mod liquidity_position;
 mod proposal;
 mod replicate;
@@ -197,16 +199,13 @@ pub enum TxCmd {
         /// chain will be discovered automatically, based on the `--channel` setting.
         #[clap(long)]
         to: String,
-
         /// The value to withdraw, eg "1000upenumbra"
         value: String,
-
         /// The IBC channel on the primary Penumbra chain to use for performing the withdrawal.
         /// This channel must already exist, as configured by a relayer client.
         /// You can search for channels via e.g. `pcli query ibc channel transfer 0`.
         #[clap(long)]
         channel: u64,
-
         /// Block height on the counterparty chain, after which the withdrawal will be considered
         /// invalid if not already relayed. Must be specified as a tuple of revision number and block
         /// height, e.g. `5-1000000` means "chain revision 5, block height of 1000000".
@@ -218,15 +217,16 @@ pub enum TxCmd {
         /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
         timeout_timestamp: u64,
-
         /// Only withdraw funds from the specified wallet id within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
-
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
+    /// Auction related commands.
+    #[clap(display_order = 600, subcommand)]
+    Auction(AuctionCmd),
 }
 
 // A fee tier enum suitable for use with clap.
@@ -316,6 +316,7 @@ impl TxCmd {
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
+            TxCmd::Auction(_) => false,
         }
     }
 
@@ -1279,6 +1280,9 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
+            }
+            TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
+                auction_cmd.exec(app).await?;
             }
         }
         Ok(())
