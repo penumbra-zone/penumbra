@@ -1,3 +1,4 @@
+use crate::component::dutch_auction::HandleDutchTriggers;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
