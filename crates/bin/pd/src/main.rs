@@ -1,4 +1,5 @@
 #![allow(clippy::clone_on_copy)]
+#![allow(unused_imports)]
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
 use std::error::Error;
@@ -150,9 +151,9 @@ async fn main() -> anyhow::Result<()> {
                     // The `on_response` example, taken straight from the tower_http::trace docs,
                     // throws a type error. Looks like we're gumming up the type constraints
                     // by mixing-and-matching tonic/axum routers, perhaps?
-                    .on_response(|response: &Response<Full<Bytes>>, latency: Duration, _span: &Span| {
-                        tracing::debug!("response generated in {:?}", latency)
-                    })
+                    // .on_response(|response: &Response<Full<Bytes>>, latency: Duration, _span: &Span| {
+                    //    tracing::debug!("response generated in {:?}", latency)
+                    // })
                 )
                 .merge(frontend)
                 .merge(node_status)
