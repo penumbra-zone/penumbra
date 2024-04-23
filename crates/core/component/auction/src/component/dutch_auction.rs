@@ -173,9 +173,10 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .compute_step_index(trigger_height)
             .expect("trigger data is validated");
 
-        // The auction selected its minimum price at `step_count - 1`, if we are
-        // at `step_count`, we have reached the end height and retire this auction.
-        if step_index >= step_count {
+        // Termination conditions:
+        // 1. We have reached the `step_count` (= `end_height`)
+        // 2. There are no more input reserves.
+        if step_index >= step_count || new_dutch_auction.state.input_reserves == Amount::zero() {
             // If the termination condition has been reached, we set the auction
             // sequence to 1 (Closed).
             new_dutch_auction.state.sequence = 1;
