@@ -380,8 +380,7 @@ pub(crate) trait HandleDutchTriggers: StateWrite {
             .await;
 
         for auction_id in auction_ids.into_iter() {
-            let _ = self
-                .execute_dutch_auction(auction_id, trigger_height)
+            self.execute_dutch_auction(auction_id, trigger_height)
                 .await?;
         }
         Ok(())
@@ -456,24 +455,26 @@ trait Inner: StateWrite {
 
 impl<T: StateWrite + ?Sized> Inner for T {}
 
-/// TODO(erwan): prove that this works. More work needed to work out validation
-/// rules that let us operate within the 112 bits constraint.
 fn compute_pq_at_step(
     auction_description: &DutchAuctionDescription,
     step_index: u64,
 ) -> (Amount, Amount) {
+    let max_output = auction_description.max_output;
+    let min_output = auction_description.min_output;
+    let input = auction_description.input;
     let step_index = Amount::from(step_index);
     let step_count = Amount::from(auction_description.step_count);
 
-    let q = auction_description
-        .input
-        .amount
-        .checked_mul(&step_count)
-        // TODO(erwan): this isn't true, this must part of 112 bits extra validation pass todo.
-        .expect("checked in validation");
+    // The target output, scaled up by `step_count` to avoid divisions.
+    // Linearly interpolate between `max_output` at `step_index = 0`
+    //                          and `min_output` at `step_index = step_count`.
+    let target_output_scaled = (step_count - step_index) * max_output + step_index * min_output;
+    // The input, scaled up by `step_count` to match.
+    let input_scaled = step_count * input.amount;
 
-    let p = (step_count - step_index) * auction_description.max_output
-        + step_index * auction_description.min_output;
+    // The trading function interpolates between (input, 0) and (0, target_output)
+    let p = target_output_scaled;
+    let q = input_scaled;
 
     (p, q)
 }
