@@ -370,7 +370,7 @@ impl<T: StateWrite + ?Sized> DutchAuctionManager for T {}
 #[async_trait]
 pub(crate) trait HandleDutchTriggers: StateWrite {
     /// Process the trigger height for a [`DutchAuction`],
-    async fn process_trigger(&mut self, trigger_height: u64) -> Result<()> {
+    async fn process_triggers(&mut self, trigger_height: u64) -> Result<()> {
         use futures::StreamExt;
         // TODO(erwan): somewhat self-defeating, but this is a first pass.
         let auction_ids: Vec<AuctionId> = self
