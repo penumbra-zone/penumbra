@@ -1,3 +1,4 @@
+use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::DexParameters;
 use penumbra_distributions::DistributionsParameters;
@@ -19,6 +20,7 @@ pub mod change;
 #[serde(try_from = "pb::AppParameters", into = "pb::AppParameters")]
 pub struct AppParameters {
     pub chain_id: String,
+    pub auction_params: AuctionParameters,
     pub community_pool_params: CommunityPoolParameters,
     pub distributions_params: DistributionsParameters,
     pub dex_params: DexParameters,
