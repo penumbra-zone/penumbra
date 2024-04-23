@@ -1,5 +1,5 @@
 use {
-    self::common::{BuilderExt, TestNodeExt},
+    self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,

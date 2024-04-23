@@ -1,5 +1,5 @@
 use {
-    self::common::{BuilderExt, TestNodeExt},
+    self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},

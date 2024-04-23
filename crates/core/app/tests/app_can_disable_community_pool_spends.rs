@@ -1,4 +1,5 @@
 use {
+    self::common::ValidatorDataReadExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
     decaf377_rdsa::VerificationKey,
@@ -26,7 +27,7 @@ use {
         DomainType,
     },
     penumbra_shielded_pool::{genesis::Allocation, OutputPlan, SpendPlan},
-    penumbra_stake::{component::validator_handler::ValidatorDataRead, DelegationToken},
+    penumbra_stake::DelegationToken,
     penumbra_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
     },

@@ -1,5 +1,5 @@
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
     penumbra_app::{genesis::AppState, server::consensus::Consensus},
