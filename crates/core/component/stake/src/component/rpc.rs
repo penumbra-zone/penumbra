@@ -1,8 +1,7 @@
 use std::pin::Pin;
 
-use async_stream::try_stream;
 use cnidarium::Storage;
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use penumbra_proto::{
     core::component::stake::v1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
@@ -13,10 +12,10 @@ use penumbra_proto::{
     DomainType,
 };
 use tonic::Status;
-use tracing::instrument;
+use tracing::{error_span, instrument, Instrument, Span};
 
-use super::{validator_handler::ValidatorDataRead, SlashingData};
-use crate::validator;
+use super::{validator_handler::ValidatorDataRead, ConsensusIndexRead, SlashingData};
+use crate::validator::{Info, State};
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -39,38 +38,67 @@ impl QueryService for Server {
         &self,
         request: tonic::Request<ValidatorInfoRequest>,
     ) -> Result<tonic::Response<Self::ValidatorInfoStream>, Status> {
-        let state = self.storage.latest_snapshot();
+        use futures::TryStreamExt;
 
-        let validators = state
-            .validator_definitions() // TODO(erwan): think through a UX for defined validators. Then we can remove `validator_list` entirely.
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error listing validators: {e}")))?;
+        // Get the latest snapshot from the backing storage, and determine whether or not the
+        // response should include inactive validator definitions.
+        let snapshot = self.storage.latest_snapshot();
+        let ValidatorInfoRequest { show_inactive } = request.into_inner();
 
-        let show_inactive = request.get_ref().show_inactive;
-        let s = try_stream! {
-            for v in validators {
-                let info = state.get_validator_info(&v.identity_key)
+        // Returns `true` if we should include a validator in the outbound response.
+        let filter_inactive = move |info: &Info| {
+            let should = match info.status.state {
+                State::Active => true,
+                _ if show_inactive => true, // Include other validators if the request asked us to.
+                _ => false,                 // Otherwise, skip this entry.
+            };
+            futures::future::ready(should)
+        };
+
+        // Converts information about a validator into a RPC response.
+        let to_resp = |info: Info| {
+            let validator_info = Some(info.to_proto());
+            ValidatorInfoResponse { validator_info }
+        };
+
+        // Creates a span that follows from the current tracing context.
+        let make_span = |identity_key| -> Span {
+            let span = error_span!("fetching validator information", %identity_key);
+            let current = Span::current();
+            span.follows_from(current);
+            span
+        };
+
+        // Get a stream of identity keys corresponding to validators in the consensus set.
+        let consensus_set = snapshot
+            .consensus_set_stream()
+            .map_err(|e| format!("error getting consensus set: {e}"))
+            .map_err(Status::unavailable)?;
+
+        // Adapt the stream of identity keys into a stream of validator information.
+        // Define a span indicating that the spawned future follows from the current context.
+        let validators = async_stream::try_stream! {
+            for await identity_key in consensus_set {
+                let identity_key = identity_key?;
+                let span = make_span(identity_key);
+                yield snapshot
+                    .get_validator_info(&identity_key)
+                    .instrument(span)
                     .await?
                     .expect("known validator must be present");
-                // Slashed and inactive validators are not shown by default.
-                if !show_inactive && info.status.state != validator::State::Active {
-                    continue;
-                }
-                yield info.to_proto();
             }
         };
 
-        Ok(tonic::Response::new(
-            s.map_ok(|info| ValidatorInfoResponse {
-                validator_info: Some(info),
-            })
-            .map_err(|e: anyhow::Error| {
-                tonic::Status::unavailable(format!("error getting validator info: {e}"))
-            })
-            // TODO: how do we instrument a Stream
-            //.instrument(Span::current())
-            .boxed(),
-        ))
+        // Construct the outbound response.
+        let stream = validators
+            .try_filter(filter_inactive)
+            .map_ok(to_resp)
+            .map_err(|e: anyhow::Error| format!("error getting validator info: {e}"))
+            .map_err(Status::unavailable)
+            .into_stream()
+            .boxed();
+
+        Ok(tonic::Response::new(stream))
     }
 
     #[instrument(skip(self, request))]
