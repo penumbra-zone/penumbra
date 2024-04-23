@@ -89,6 +89,11 @@ pub struct AppParameters {
     pub dex_params: ::core::option::Option<
         super::super::component::dex::v1::DexParameters,
     >,
+    /// Auction module parameters.
+    #[prost(message, optional, tag = "12")]
+    pub auction_params: ::core::option::Option<
+        super::super::component::auction::v1alpha1::AuctionParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";
@@ -200,6 +205,11 @@ pub struct GenesisContent {
     #[prost(message, optional, tag = "11")]
     pub dex_content: ::core::option::Option<
         super::super::component::dex::v1::GenesisContent,
+    >,
+    /// Auction component genesis state.
+    #[prost(message, optional, tag = "12")]
+    pub auction_content: ::core::option::Option<
+        super::super::component::auction::v1alpha1::GenesisContent,
     >,
 }
 impl ::prost::Name for GenesisContent {

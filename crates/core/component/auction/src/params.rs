@@ -23,3 +23,9 @@ impl TryFrom<pb::AuctionParameters> for AuctionParameters {
         Ok(AuctionParameters {})
     }
 }
+
+impl Default for AuctionParameters {
+    fn default() -> Self {
+        AuctionParameters {}
+    }
+}
