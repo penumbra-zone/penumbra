@@ -585,6 +585,67 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             voting_notes.push(notes);
         }
 
+        // Add the required votes to the planner
+        for (
+            records,
+            (
+                proposal,
+                VoteIntent {
+                    start_position,
+                    vote,
+                    rate_data,
+                    ..
+                },
+            ),
+        ) in voting_notes
+            .into_iter()
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .zip(mem::take(&mut self.vote_intents).into_iter())
+        {
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
+
+            for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                    continue;
+                };
+                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.spend(record.note.clone(), record.position);
+                }
+
+                self.delegator_vote_precise(
+                    proposal,
+                    start_position,
+                    vote,
+                    record.note,
+                    record.position,
+                    unbonded_amount,
+                );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                anyhow::bail!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                );
+            }
+        }
+
         let mut notes_by_asset_id = BTreeMap::new();
         for required in self.calculate_balance().required() {
             // Find all the notes of this asset in the source account.
@@ -648,70 +709,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             iterations += 1;
             if iterations > 100 {
                 return Err(anyhow!("failed to plan transaction after 100 iterations").into());
-            }
-        }
-
-        // Add the required votes to the planner
-        for (
-            records,
-            (
-                proposal,
-                VoteIntent {
-                    start_position,
-                    vote,
-                    rate_data,
-                    ..
-                },
-            ),
-        ) in voting_notes
-            .into_iter()
-            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
-            .zip(mem::take(&mut self.vote_intents).into_iter())
-        {
-            // Keep track of whether we successfully could vote on this proposal
-            let mut voted = false;
-
-            for (record, identity_key) in records {
-                // Vote with precisely this note on the proposal, computing the correct exchange
-                // rate for self-minted vote receipt tokens using the exchange rate of the validator
-                // at voting start time. If the validator was not active at the start of the
-                // proposal, the vote will be rejected by stateful verification, so skip the note
-                // and continue to the next one.
-                let Some(rate_data) = rate_data.get(&identity_key) else {
-                    continue;
-                };
-                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
-
-                // If the delegation token is unspent, "roll it over" by spending it (this will
-                // result in change sent back to us). This unlinks nullifiers used for voting on
-                // multiple non-overlapping proposals, increasing privacy.
-                if record.height_spent.is_none() {
-                    self.push(
-                        SpendPlan::new(&mut OsRng, record.clone().note, record.clone().position)
-                            .into(),
-                    );
-                }
-
-                self.delegator_vote_precise(
-                    proposal,
-                    start_position,
-                    vote,
-                    record.note,
-                    record.position,
-                    unbonded_amount,
-                );
-
-                voted = true;
-            }
-
-            if !voted {
-                // If there are no notes to vote with, return an error, because otherwise the user
-                // would compose a transaction that would not satisfy their intention, and would
-                // silently eat the fee.
-                anyhow::bail!(
-                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
-                    proposal
-                );
             }
         }
 
