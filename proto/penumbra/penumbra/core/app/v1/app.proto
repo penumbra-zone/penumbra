@@ -100,4 +100,6 @@ message GenesisContent {
   core.component.funding.v1.GenesisContent funding_content = 10;
   // DEX component genesis state.
   core.component.dex.v1.GenesisContent dex_content = 11;
+  // Auction component genesis state.
+  core.component.auction.v1alpha1.GenesisContent auction_content = 12;
 }
