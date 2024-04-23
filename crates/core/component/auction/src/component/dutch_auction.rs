@@ -480,13 +480,15 @@ fn compute_pq_at_step(
     let input = auction_description.input;
     let step_index = Amount::from(step_index);
     let step_count = Amount::from(auction_description.step_count);
+    let one = Amount::from(1u128);
 
     // The target output, scaled up by `step_count` to avoid divisions.
     // Linearly interpolate between `max_output` at `step_index = 0`
-    //                          and `min_output` at `step_index = step_count`.
-    let target_output_scaled = (step_count - step_index) * max_output + step_index * min_output;
+    //                          and `min_output` at `step_index = step_count - 1`.
+    let target_output_scaled =
+        (step_count - step_index - one) * max_output + step_index * min_output;
     // The input, scaled up by `step_count` to match.
-    let input_scaled = step_count * input.amount;
+    let input_scaled = (step_count - one) * input.amount;
 
     // The trading function interpolates between (input, 0) and (0, target_output)
     let p = target_output_scaled;
