@@ -47,6 +47,8 @@ pub struct Content {
     pub stake_content: StakeContent,
     /// Dex component genesis state.
     pub dex_content: DexContent,
+    /// Auction component genesis state.
+    pub auction_content: AuctionContent,
 }
 
 impl DomainType for Content {

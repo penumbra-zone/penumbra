@@ -206,6 +206,11 @@ pub struct GenesisContent {
     pub dex_content: ::core::option::Option<
         super::super::component::dex::v1::GenesisContent,
     >,
+    /// Auction component genesis state.
+    #[prost(message, optional, tag = "12")]
+    pub auction_content: ::core::option::Option<
+        super::super::component::auction::v1alpha1::GenesisContent,
+    >,
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";

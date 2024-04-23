@@ -616,6 +616,9 @@ impl serde::Serialize for GenesisContent {
         if self.dex_content.is_some() {
             len += 1;
         }
+        if self.auction_content.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.app.v1.GenesisContent", len)?;
         if !self.chain_id.is_empty() {
             struct_ser.serialize_field("chainId", &self.chain_id)?;
@@ -650,6 +653,9 @@ impl serde::Serialize for GenesisContent {
         if let Some(v) = self.dex_content.as_ref() {
             struct_ser.serialize_field("dexContent", v)?;
         }
+        if let Some(v) = self.auction_content.as_ref() {
+            struct_ser.serialize_field("auctionContent", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -682,6 +688,8 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             "fundingContent",
             "dex_content",
             "dexContent",
+            "auction_content",
+            "auctionContent",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -697,6 +705,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
             DistributionsContent,
             FundingContent,
             DexContent,
+            AuctionContent,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -730,6 +739,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             "distributionsContent" | "distributions_content" => Ok(GeneratedField::DistributionsContent),
                             "fundingContent" | "funding_content" => Ok(GeneratedField::FundingContent),
                             "dexContent" | "dex_content" => Ok(GeneratedField::DexContent),
+                            "auctionContent" | "auction_content" => Ok(GeneratedField::AuctionContent),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -760,6 +770,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                 let mut distributions_content__ = None;
                 let mut funding_content__ = None;
                 let mut dex_content__ = None;
+                let mut auction_content__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::ChainId => {
@@ -828,6 +839,12 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                             }
                             dex_content__ = map_.next_value()?;
                         }
+                        GeneratedField::AuctionContent => {
+                            if auction_content__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("auctionContent"));
+                            }
+                            auction_content__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -845,6 +862,7 @@ impl<'de> serde::Deserialize<'de> for GenesisContent {
                     distributions_content: distributions_content__,
                     funding_content: funding_content__,
                     dex_content: dex_content__,
+                    auction_content: auction_content__,
                 })
             }
         }
