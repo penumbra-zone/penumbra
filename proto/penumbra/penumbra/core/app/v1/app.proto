@@ -1,6 +1,7 @@
 syntax = "proto3";
 package penumbra.core.app.v1;
 
+import "penumbra/core/component/auction/v1alpha1/auction.proto";
 import "penumbra/core/component/community_pool/v1/community_pool.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/distributions/v1/distributions.proto";
@@ -58,6 +59,8 @@ message AppParameters {
   core.component.shielded_pool.v1.ShieldedPoolParameters shielded_pool_params = 10;
   // DEX module parameters.
   core.component.dex.v1.DexParameters dex_params = 11;
+  // Auction module parameters.
+  core.component.auction.v1alpha1.AuctionParameters auction_params = 12;
 }
 
 // Requests the global configuration data for the app.
