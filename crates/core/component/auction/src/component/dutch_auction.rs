@@ -49,8 +49,6 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .expect("block height is not missing");
 
         let next_trigger = auction_trigger
-            .compute_next_trigger_height(current_height)
-            .expect("infaillible because of action validation")
             .expect("action validation guarantees the auction is not expired");
 
         let state = DutchAuctionState {
@@ -173,7 +171,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .compute_step_index(trigger_height)
             .expect("trigger data is validated");
 
-        if step_index >= step_count {
+        if step_index > step_count {
             // If the termination condition has been reached, we set the auction
             // sequence to 1 (Closed).
             new_dutch_auction.state.sequence = 1;
