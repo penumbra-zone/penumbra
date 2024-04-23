@@ -198,12 +198,16 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             // until the resulting position id (based on the nonce) is unique and accepted
             // by the DEX.
             let mut attempt_counter = 0u64;
+            // Take the input reserves from the auction state, and zero it out.
+            let input_reserves = new_dutch_auction.state.input_reserves;
+            new_dutch_auction.state.input_reserves = Amount::zero();
+            let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
             loop {
-                let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
                 let lp_reserves = Reserves {
-                    r1: new_dutch_auction.state.input_reserves,
+                    r1: input_reserves,
                     r2: Amount::zero(),
                 };
+
                 let auction_nonce = new_dutch_auction.description.nonce;
                 let full_hash = blake2b_simd::Params::default()
                     .personal(b"penum-DA-nonce")
