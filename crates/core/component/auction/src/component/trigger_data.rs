@@ -47,62 +47,40 @@ impl TriggerData {
             .ok_or_else(|| anyhow::anyhow!("step size is zero"))
     }
 
-    /// Compute the next trigger height, return `None` if the step count
-    /// has been reached and the auction should be retired.
-    ///
-    /// # Errors
-    /// This method errors if the block interval is not a multiple of the
-    /// specified `step_count`, or if it operates over an invalid block
-    /// interval (which should NEVER happen unless validation is broken).
-    pub fn compute_next_trigger_height(&self, current_height: u64) -> Result<Option<u64>> {
+    /// Compute the next trigger height.
+    pub fn compute_next_trigger_height(&self, current_height: u64) -> u64 {
         let TriggerData {
             start_height,
             end_height,
             step_count,
         } = self;
 
-        let block_interval = end_height.checked_sub(*start_height).ok_or_else(|| {
-            anyhow::anyhow!(
-                "block interval calculation has underflowed (end={}, start={})",
-                self.end_height,
-                self.start_height
-            )
-        })?;
+        let block_interval = end_height - *start_height;
 
         // Compute the step size, based on the block interval and the number of
         // discrete steps the auction specifies.
-        let step_size = block_interval
-            .checked_div(*step_count)
-            .ok_or_else(|| anyhow::anyhow!("step count is zero"))?;
+        let step_size = block_interval / *step_count;
 
         // Compute the step index for the current height, this should work even if
         // the supplied height does not fall perfectly on a step boundary. First, we
         // "clamp it" to a previous step index, then we increment by 1 to compute the
         // next one, and finally we determine a concrete trigger height based off that.
-        let distance_from_start = current_height.saturating_sub(*start_height);
+        let distance_from_start = current_height - *start_height;
+        let prev_step_index = distance_from_start / step_size;
+        let next_step_index = prev_step_index + 1;
 
-        let prev_step_index = distance_from_start
-            .checked_div(step_size)
-            .ok_or_else(|| anyhow::anyhow!("step size is zero"))?;
+        let next_step_size_from_start = step_size * next_step_index;
+        start_height + next_step_size_from_start
+    }
 
-        if prev_step_index >= *step_count {
-            return Ok(None);
+    /// Return the next trigger height if it is within the auction interval, and `None` otherwise.
+    pub fn try_next_trigger_height(&self, current_height: u64) -> Option<u64> {
+        let next_trigger_height = self.compute_next_trigger_height(current_height);
+        if next_trigger_height > self.end_height {
+            None
+        } else {
+            Some(next_trigger_height)
         }
-
-        let next_step_index = prev_step_index
-            .checked_add(1)
-            .ok_or_else(|| anyhow::anyhow!("step index has overflowed"))?;
-
-        let next_step_size_from_start =
-            step_size.checked_mul(next_step_index).ok_or_else(|| {
-                anyhow::anyhow!(
-                    "next step size from start has overflowed (step_size={}, next_step_index={})",
-                    step_size,
-                    next_step_index
-                )
-            })?;
-
-        Ok(start_height.checked_add(next_step_size_from_start))
     }
 }
 
@@ -118,10 +96,7 @@ mod tests {
             step_count: 5,
         };
         let current_height = 100;
-        assert_eq!(
-            trigger.compute_next_trigger_height(current_height).unwrap(),
-            Some(120)
-        );
+        assert_eq!(trigger.try_next_trigger_height(current_height), Some(120));
     }
 
     #[test]
@@ -132,10 +107,7 @@ mod tests {
             step_count: 5,
         };
         let current_height = 200;
-        assert_eq!(
-            data.compute_next_trigger_height(current_height).unwrap(),
-            None
-        );
+        assert_eq!(data.try_next_trigger_height(current_height), None);
     }
 
     #[test]
@@ -146,10 +118,7 @@ mod tests {
             step_count: 5,
         };
         let current_height = 90;
-        assert_eq!(
-            data.compute_next_trigger_height(current_height).unwrap(),
-            Some(120)
-        );
+        assert_eq!(data.try_next_trigger_height(current_height), Some(120));
     }
 
     #[test]
@@ -160,10 +129,7 @@ mod tests {
             step_count: 5,
         };
         let current_height = 210;
-        assert_eq!(
-            data.compute_next_trigger_height(current_height).unwrap(),
-            None
-        );
+        assert_eq!(data.try_next_trigger_height(current_height), None);
     }
 
     #[test]
@@ -174,10 +140,7 @@ mod tests {
             step_count: 5,
         };
         let current_height = 119;
-        assert_eq!(
-            data.compute_next_trigger_height(current_height).unwrap(),
-            Some(120)
-        );
+        assert_eq!(data.try_next_trigger_height(current_height), Some(120));
     }
 
     #[test]
@@ -188,9 +151,6 @@ mod tests {
             step_count: 5,
         };
         let current_height = 121;
-        assert_eq!(
-            data.compute_next_trigger_height(current_height).unwrap(),
-            Some(140)
-        );
+        assert_eq!(data.try_next_trigger_height(current_height), Some(140));
     }
 }
