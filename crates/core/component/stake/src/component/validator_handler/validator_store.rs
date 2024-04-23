@@ -8,7 +8,7 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use futures::{Future, FutureExt, TryStreamExt};
+use futures::{Future, FutureExt};
 use penumbra_num::Amount;
 use penumbra_proto::{state::future::DomainFuture, DomainType, StateReadProto, StateWriteProto};
 use std::pin::Pin;
@@ -226,23 +226,6 @@ pub trait ValidatorDataRead: StateRead {
         self.get(&state_key::validators::definitions::by_id(identity_key))
             .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
             .boxed()
-    }
-
-    /// Returns a list of **all** known validators metadata.
-    async fn validator_definitions(&self) -> Result<Vec<Validator>> {
-        self.prefix(state_key::validators::definitions::prefix())
-            .map_ok(|(_key, validator)| validator)
-            .try_collect()
-            .await
-    }
-
-    /// Returns a list of **all** known validators identity keys.
-    async fn validator_identity_keys(&self) -> Result<Vec<IdentityKey>> {
-        self.prefix(state_key::validators::definitions::prefix())
-            .map_ok(|(_key, validator)| validator)
-            .map_ok(|validator: Validator| validator.identity_key)
-            .try_collect()
-            .await
     }
 }
 

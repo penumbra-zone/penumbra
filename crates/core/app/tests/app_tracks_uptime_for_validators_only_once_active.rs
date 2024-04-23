@@ -1,5 +1,5 @@
 use {
-    self::common::{BuilderExt, TestNodeExt},
+    self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
