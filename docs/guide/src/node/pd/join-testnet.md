@@ -102,5 +102,5 @@ sudo systemctl daemon-reload
 sudo systemctl restart penumbra cometbft
 ```
 
-See the [`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../penumbra_version.md }}/deployments)
+See the [`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../../penumbra_version.md }}/deployments)
 directory for more examples on configuration scripts.

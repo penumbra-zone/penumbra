@@ -132,7 +132,7 @@ pub static VALUE_GENERATOR_DOMAIN_SEP: Lazy<Fq> = Lazy::new(|| {
 });
 
 impl Id {
-    /// Compute the value commitment generator for this asset.
+    /// Compute the value generator for this asset, used for computing balance commitments.
     pub fn value_generator(&self) -> decaf377::Element {
         decaf377::Element::encode_to_curve(&poseidon377::hash_1(
             &VALUE_GENERATOR_DOMAIN_SEP,

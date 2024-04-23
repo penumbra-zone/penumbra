@@ -35,9 +35,9 @@ the `--grpc-auto-https <DOMAIN>` option. See `pd start --help` for more info.
 
 We expect node operators to manage the lifecycle of their Penumbra deployments.
 Some example configs for systemd, docker compose, and kubernetes helm charts
-can be found in the Penumbra repo's [`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../penumbra_version.md }}/deployments) directory.
+can be found in the Penumbra repo's [`deployments/`](https://github.com/penumbra-zone/penumbra/tree/{{ #include ../../penumbra_version.md }}/deployments) directory.
 You should consult these configurations as a reference, and write your own
 scripts to maintain your node.
 
-Consider [joining the Penumbra Discord](../resources.md#discord) to receive announcements
+Consider [joining the Penumbra Discord](../../resources.md#discord) to receive announcements
 about new versions and required actions by node operators.

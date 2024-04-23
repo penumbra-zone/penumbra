@@ -108,7 +108,7 @@ impl TryFrom<pb::OutputBody> for Body {
 
         let balance_commitment = proto
             .balance_commitment
-            .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
+            .ok_or_else(|| anyhow::anyhow!("missing balance commitment"))?
             .try_into()
             .context("malformed balance commitment")?;
 

@@ -106,6 +106,7 @@ mod tests {
     use penumbra_proof_params::generate_prepared_test_parameters;
     use proptest::prelude::*;
     use rand_core::OsRng;
+    use rdsa::VerificationKey;
 
     use crate::{IdentityKey, Penalty, UnbondingToken};
     use penumbra_shielded_pool::ConvertCircuit;
@@ -124,7 +125,7 @@ mod tests {
             let (pk, vk) = generate_prepared_test_parameters::<ConvertCircuit>(&mut rng);
 
             let sk = rdsa::SigningKey::new_from_field(validator_randomness);
-            let validator_identity = IdentityKey((&sk).into());
+            let validator_identity = IdentityKey(VerificationKey::from(&sk).into());
             let unbonding_amount = Amount::from(value1_amount);
 
             let start_epoch_index = 1;

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
@@ -34,6 +34,14 @@ impl ActionHandler for Swap {
     }
 
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
+        // Only execute the swap if the dex is enabled in the dex params.
+        let dex_params = state.get_dex_params().await?;
+
+        ensure!(
+            dex_params.is_enabled,
+            "Dex MUST be enabled to process swap actions."
+        );
+
         let swap_start = std::time::Instant::now();
         let swap = self;
 

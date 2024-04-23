@@ -18,6 +18,6 @@ ed25519-consensus = { workspace = true }
 rand_core = { workspace = true }
 sha2 = { workspace = true }
 tap = { workspace = true }
-tendermint = { workspace = true }
+tendermint = { workspace = true, default-features = true }
 tower = { workspace = true, features = ["full"] }
 tracing = { workspace = true }

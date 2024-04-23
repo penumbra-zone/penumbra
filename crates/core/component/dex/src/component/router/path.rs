@@ -73,7 +73,7 @@ impl<S: StateRead + 'static> Path<S> {
         };
         // Deindex the position we "consumed" in this and all descendant state forks,
         // ensuring we don't double-count liquidity while traversing cycles.
-        use super::super::position_manager::Inner as _;
+        use crate::component::position_manager::price_index::PositionByPriceIndex;
         self.state
             .deindex_position_by_price(&best_price_position, &best_price_position.id());
 

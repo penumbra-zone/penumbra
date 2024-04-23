@@ -89,7 +89,7 @@ fn check_circuit_satisfaction(
 }
 
 /// Public:
-/// * vcm (value commitment)
+/// * vcm (balance commitment)
 /// * ncm (note commitment)
 ///
 /// Witnesses:

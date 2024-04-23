@@ -394,6 +394,12 @@ impl ops::Sub<Amount> for Amount {
     }
 }
 
+impl ops::SubAssign<Amount> for Amount {
+    fn sub_assign(&mut self, rhs: Amount) {
+        self.inner -= rhs.inner;
+    }
+}
+
 impl ops::Rem<Amount> for Amount {
     type Output = Amount;
 

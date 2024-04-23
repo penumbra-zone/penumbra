@@ -47,7 +47,7 @@ impl<T: StateWrite + ?Sized> ValueCircuitBreaker for T {}
 mod tests {
     use std::sync::Arc;
 
-    use crate::component::position_manager::Inner as _;
+    use crate::component::position_manager::price_index::PositionByPriceIndex;
     use crate::component::router::HandleBatchSwaps as _;
     use crate::component::{StateReadExt as _, StateWriteExt as _};
     use crate::lp::plan::PositionWithdrawPlan;
@@ -225,11 +225,9 @@ mod tests {
         let id = buy_1.id();
 
         let position = buy_1;
-        state_tx.index_position_by_price(&position, &position.id());
         state_tx
-            .update_available_liquidity(&position, &None)
-            .await
-            .expect("able to update liquidity");
+            .update_position_by_price_index(&None, &position, &position.id())
+            .expect("can update price index");
         state_tx.put(state_key::position_by_id(&id), position);
 
         // Now there's a position in the state, but the circuit breaker is not aware of it.

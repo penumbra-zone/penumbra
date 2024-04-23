@@ -1,3 +1,6 @@
+use penumbra_auction::auction::dutch::actions::{
+    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+};
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{PositionClose, PositionOpen, PositionWithdraw, Swap, SwapClaim};
 use penumbra_fee::Gas;
@@ -19,8 +22,9 @@ use crate::{
 use penumbra_proto::DomainType;
 
 const NULLIFIER_SIZE: u64 = 2 + 32;
-const NOTEPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 32 + 2 + 132;
-const SWAPPAYLOAD_SIZE: u64 = 2 + 32 + 2 + 272;
+const NOTEPAYLOAD_SIZE: u64 = 32 + 32 + 176;
+const SWAPPAYLOAD_SIZE: u64 = 32 + 272;
+const ZKPROOF_SIZE: u64 = 192;
 // This is an approximation, the actual size is variable
 const BSOD_SIZE: u64 = 16 + 16 + 0 + 4 + 64 + 4;
 
@@ -36,40 +40,40 @@ pub trait GasCost {
 
 pub fn spend_gas_cost() -> Gas {
     Gas {
-        // Of fixed size, so we hardcode the block space cost proportional to the size of the following fields of the protobuf encoding of the type:
+        // penumbra.core.asset.v1.BalanceCommitment `balance_commitment`  = 32 bytes
+        // penumbra.core.component.sct.v1.Nullifier `nullifier`           = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey `rk`     = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature `auth_sig` = 64 bytes
+        // ZKSpendProof `proof`                                           = 192 bytes
 
-        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
-        // penumbra.core.component.sct.v1.Nullifier  = 32 bytes
-        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey = 32 bytes
-        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature = 64 bytes
-        // ZKSpendProof = 192 bytes
-        block_space: 352,
+        // The block space measured as the byte length of the encoded action.
+        block_space: 160 + ZKPROOF_SIZE, // 352 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
-        // to the compact block.
-        // For a Spend this is the byte size of a `Nullifier`.
+        // to the compact block. For a `Spend`, this is the byte size of a `Nullifier`.
         compact_block_space: NULLIFIER_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
+        // Execution cost is currently hardcoded at 10 for all [`Action`] variants.
         execution: 10,
     }
 }
 
 pub fn output_gas_cost() -> Gas {
     Gas {
-        // Of fixed size, so we hardcode the block space cost proportional to the size of the following fields of the protobuf encoding of the type:
-        // NOTEPAYLOAD_SIZE = 202 bytes
-        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
-        // wrapped_memo_key = 48 bytes
-        // ovk_wrapped_key = 48 bytes
-        // ZKOutputProof = 192 bytes
-        block_space: NOTEPAYLOAD_SIZE + 352,
+        // NotePayload `note_payload` = 32 + 32 + 176                    = 240 bytes
+        // penumbra.core.asset.v1.BalanceCommitment `balance_commitment` = 32 bytes
+        // wrapped_memo_key `wrapped_memo_key`                           = 48 bytes
+        // ovk_wrapped_key `ovk_wrapped_key`                             = 48 bytes
+        // ZKOutputProof `proof`                                         = 192 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 128 + NOTEPAYLOAD_SIZE + ZKPROOF_SIZE, // 560 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         compact_block_space: NOTEPAYLOAD_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
+        // Execution cost is currently hardcoded at 10 for all [`Action`] variants.
         execution: 10,
     }
 }
@@ -82,7 +86,7 @@ fn delegate_gas_cost(delegate: &Delegate) -> Gas {
         // to the compact block.
         // For a Delegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
         // actions will add their costs, but there's nothing to add here.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Does not include a zk-SNARK proof, so there's no verification cost.
         verification: 0,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -98,7 +102,7 @@ fn undelegate_gas_cost(undelegate: &Undelegate) -> Gas {
         // to the compact block.
         // For an Undelegate, nothing is added to the compact block directly. The associated [`Action::Spend`]
         // actions will add their costs, but there's nothing to add here.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Does not include a zk-SNARK proof, so there's no verification cost.
         verification: 0,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -108,16 +112,18 @@ fn undelegate_gas_cost(undelegate: &Undelegate) -> Gas {
 
 fn undelegate_claim_gas_cost() -> Gas {
     Gas {
-        // penumbra.core.keys.v1.IdentityKey = 64 bytes
-        // uint64 = 8 bytes
-        // Penalty penalty = 64 bytes
-        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
-        // uint64  = 8 bytes
-        // proof = 192 bytes
-        block_space: 368,
+        // penumbra.core.keys.v1.IdentityKey `validator_identity`         = 32 bytes
+        // uint64 `start_epoch_index`                                     = 8 bytes
+        // Penalty `penalty`                                              = 32 bytes
+        // penumbra.core.asset.v1.BalanceCommitment `balance_commitment`  = 32 bytes
+        // uint64 `unbonding_start_height`                                = 8 bytes
+        // ZKSpendProof `proof`                                           = 192 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 112 + ZKPROOF_SIZE, // 304 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
-        // For an UndelegateClaim, nothing is added to the compact block directly. The associated [`Action::Output`]
+        // For an `UndelegateClaim`, nothing is added to the compact block directly. The associated [`Action::Output`]
         // actions will add their costs, but there's nothing to add here.
         compact_block_space: 0,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
@@ -134,7 +140,7 @@ fn validator_definition_gas_cost(validator_definition: &ValidatorDefinition) -> 
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a ValidatorDefinition the compact block is not modified.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Includes a signature verification, so we include a small constant verification cost.
         verification: 200,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -144,20 +150,22 @@ fn validator_definition_gas_cost(validator_definition: &ValidatorDefinition) -> 
 
 fn swap_gas_cost() -> Gas {
     Gas {
-        // ZKSwapProof = 192 bytes
-        // TradingPair = 128 bytes
-        // penumbra.core.num.v1.Amount = 64 bytes
-        // penumbra.core.num.v1.Amount = 64 bytes
-        // penumbra.core.asset.v1.BalanceCommitment = 32 bytes
-        // SwapPayload payload = 308 bytes
-        // batch swap output data = 104 bytes
-        block_space: 192 + 128 + 64 + 64 + SWAPPAYLOAD_SIZE + BSOD_SIZE,
+        // TradingPair `trading_pair`                                = 64 bytes
+        // penumbra.core.num.v1.Amount `delta_1_i`                   = 16 bytes
+        // penumbra.core.num.v1.Amount `delta_2_i`                   = 16 bytes
+        // penumbra.core.asset.v1.BalanceCommitment `fee_commitment` = 32 bytes
+        // SwapPayload `payload`                                     = 304 bytes
+        // ZKSwapProof `proof`                                       = 192 bytes
+        // Batch swap output data                                    = 104 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 128 + ZKPROOF_SIZE + SWAPPAYLOAD_SIZE + BSOD_SIZE, // 728 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
-        // For a Swap this is the byte size of a [`StatePayload`] and a [`BatchSwapOutputData`].
-        // Swaps batched so technically the cost of the `BatchSwapOutputData` is shared across
-        // multiple swaps, but if only one swap for a trading pair is performed in a block, that
-        // swap will add a `BatchSwapOutputData` all on its own.
+        // For a `Swap` this is the byte size of a [`StatePayload`] and a [`BatchSwapOutputData`].
+        // `Swap`s are batched so technically the cost of the `BatchSwapOutputData` is shared across
+        // multiple swaps, but if only one `swap` for a trading pair is performed in a block, that
+        // `swap` will add a `BatchSwapOutputData` all on its own.
         // Note: the BSOD has variable size, we pick an approximation.
         compact_block_space: SWAPPAYLOAD_SIZE + BSOD_SIZE,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
@@ -169,19 +177,22 @@ fn swap_gas_cost() -> Gas {
 
 pub fn swap_claim_gas_cost() -> Gas {
     Gas {
-        // 	ZKSwapClaimProof = 192 bytes
-        // 	penumbra.core.component.sct.v1.Nullifier = 32 bytes
-        // 	penumbra.core.component.fee.v1.Fee fee = 128 + 128 + 64 bytes
-        // 	penumbra.crypto.tct.v1.StateCommitment output_1_commitment = 64 bytes
-        // 	penumbra.crypto.tct.v1.StateCommitment output_2_commitment = 64 bytes
-        // 	BatchSwapOutputData output_data = 104 bytes
-        // 	uint64 epoch_duration = 8 bytes
-        block_space: 192 + 32 + 128 + 128 + 64 + 64 + 64 + BSOD_SIZE + 8,
+        // penumbra.core.component.sct.v1.Nullifier `nullifier`           = 32 bytes
+        // penumbra.core.component.fee.v1.Fee `fee``                      = 48 bytes
+        // penumbra.crypto.tct.v1.StateCommitment `output_1_commitment``  = 32 bytes
+        // penumbra.crypto.tct.v1.StateCommitment `output_2_commitment`   = 32 bytes
+        // BatchSwapOutputData `output_data`                              = 176 bytes
+        // uint64 `epoch_duration`                                        = 8 bytes
+        // ZKSwapClaimProof `proof`                                       = 192 bytes
+        // Batch swap output data                                          = 104 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 328 + ZKPROOF_SIZE + BSOD_SIZE, // 624 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
-        // For a SwapClaim, nothing is added to the compact block directly. The associated [`Action::Spend`]
+        // For a `SwapClaim`, nothing is added to the compact block directly. The associated [`Action::Spend`]
         // and [`Action::Output`] actions will add their costs, but there's nothing to add here.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -191,22 +202,22 @@ pub fn swap_claim_gas_cost() -> Gas {
 
 fn delegator_vote_gas_cost() -> Gas {
     Gas {
-        // uint64 = 8 bytes
-        // uint64 = 8 bytes
-        // Vote vote = 8 bytes
-        // penumbra.core.asset.v1.Value = 8 + 8 + 64 + 64 + 64 bytes
-        // penumbra.core.num.v1.Amount unbonded_amount = 64 bytes
-        // penumbra.core.component.sct.v1.Nullifier nullifier = 32 bytes
-        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 64 bytes
-        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature auth_sig = 64 bytes
-        // ZKDelegatorVoteProof proof = 192 bytes
+        // uint64 `proposal`                                                = 8 bytes
+        // uint64 `start_position`                                          = 8 bytes
+        // Vote `vote`                                                      = 1 byte
+        // penumbra.core.asset.v1.Value `value`                             = 48 bytes
+        // penumbra.core.num.v1.Amount `unbonded_amount`                    = 16 bytes
+        // penumbra.core.component.sct.v1.Nullifier `nullifier`             = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendVerificationKey `rk`       = 32 bytes
+        // penumbra.crypto.decaf377_rdsa.v1.SpendAuthSignature `auth_sig`   = 64 bytes
+        // ZKDelegatorVoteProof `proof`                                     = 192 bytes
 
         // The block space measured as the byte length of the encoded action.
-        block_space: 8 + 8 + 8 + 8 + 8 + 64 + 64 + 64 + 64 + 32 + 64 + 64 + 192,
+        block_space: 209 + ZKPROOF_SIZE, // 401 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a DelegatorVote the compact block is not modified.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Includes a zk-SNARK proof, so we include a constant verification cost.
         verification: 1000,
         // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -216,17 +227,63 @@ fn delegator_vote_gas_cost() -> Gas {
 
 fn position_withdraw_gas_cost() -> Gas {
     Gas {
-        // position ID = 64 + 64 bytes
-        // balance commitment = 64 bytes
-        // uint64 = 8 bytes
-        block_space: 64 + 64 + 64 + 8,
+        // PositionId `position_id`                                        = 32 bytes
+        // penumbra.core.asset.v1.BalanceCommitment `reserves_commitment`  = 32 bytes
+        // uint64 `sequence`                                               = 8 bytes
+
+        // The block space measured as the byte length of the encoded action.
+        block_space: 72, // 72 bytes
         // The compact block space cost is based on the byte size of the data the [`Action`] adds
         // to the compact block.
         // For a PositionWithdraw the compact block is not modified.
-        compact_block_space: 0u64,
+        compact_block_space: 0,
         // Does not include a zk-SNARK proof, so there's no verification cost.
         verification: 0,
-        // Execution cost is currently hardcoded at 10 for all Action variants.
+        // Execution cost is currently hardcoded at 10 for all `Action`` variants.
+        // Reminder: Any change to this execution gas vector must also be reflected
+        // in updates to the dutch auction gas vectors.
+        execution: 10,
+    }
+}
+
+fn dutch_auction_schedule_gas_cost(dutch_action_schedule: &ActionDutchAuctionSchedule) -> Gas {
+    Gas {
+        // penumbra.core.asset.v1.Value `input` = 48 bytes
+        // penumbra.core.asset.v1.AssetId `output_id` = 32 bytes
+        // penumbra.core.num.v1.Amount `max_output` = 16 bytes
+        // penumbra.core.num.v1.Amount `min_output` = 16 bytes
+        // uint64 `start_height` = 8 bytes
+        // uint64 `end_height` = 8 bytes
+        // uint64 `step_count` = 8 bytes
+        // bytes `nonce` = 32 bytes
+        block_space: 168,
+        compact_block_space: 0,
+        verification: 50,
+        // Currently, we make the execution cost for DA actions proportional to the number of steps
+        // and costs of position open/close in dutch action. The gas cost is calculated by:
+        // 2 * step_count * (`PositionOpen`` + `PositionClose` cost).
+        execution: 2 * dutch_action_schedule.description.step_count * (10 + 10),
+    }
+}
+
+fn dutch_auction_end_gas_cost() -> Gas {
+    Gas {
+        // AuctionId `auction_id` = 32 bytes
+        block_space: 32, // 32 bytes
+        compact_block_space: 0,
+        verification: 0,
+        execution: 10,
+    }
+}
+
+fn dutch_auction_withdraw_gas_cost() -> Gas {
+    Gas {
+        // AuctionId `auction_id` = 32 bytes
+        // uint64 `seq`= 8 bytes
+        // penumbra.core.asset.v1.BalanceCommitment `reserves_commitment` = 32 bytes
+        block_space: 72, // 72 bytes
+        compact_block_space: 0,
+        verification: 0,
         execution: 10,
     }
 }
@@ -264,6 +321,9 @@ impl GasCost for ActionPlan {
             ActionPlan::SwapClaim(_) => swap_claim_gas_cost(),
             ActionPlan::DelegatorVote(_) => delegator_vote_gas_cost(),
             ActionPlan::PositionWithdraw(_) => position_withdraw_gas_cost(),
+            ActionPlan::ActionDutchAuctionSchedule(das) => das.gas_cost(),
+            ActionPlan::ActionDutchAuctionEnd(_) => dutch_auction_end_gas_cost(),
+            ActionPlan::ActionDutchAuctionWithdraw(_) => dutch_auction_withdraw_gas_cost(),
 
             ActionPlan::Delegate(d) => d.gas_cost(),
             ActionPlan::Undelegate(u) => u.gas_cost(),
@@ -307,6 +367,15 @@ impl GasCost for Action {
             Action::CommunityPoolOutput(output) => output.gas_cost(),
             Action::IbcRelay(x) => x.gas_cost(),
             Action::ValidatorDefinition(x) => x.gas_cost(),
+            Action::ActionDutchAuctionSchedule(action_dutch_auction_schedule) => {
+                action_dutch_auction_schedule.gas_cost()
+            }
+            Action::ActionDutchAuctionEnd(action_dutch_auction_end) => {
+                action_dutch_auction_end.gas_cost()
+            }
+            Action::ActionDutchAuctionWithdraw(action_dutch_auction_withdraw) => {
+                action_dutch_auction_withdraw.gas_cost()
+            }
         }
     }
 }
@@ -379,7 +448,7 @@ impl GasCost for ProposalWithdraw {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ProposalWithdraw the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -402,7 +471,7 @@ impl GasCost for ValidatorVote {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ValidatorVote the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Includes a signature verification, so we include a small constant verification cost.
             verification: 200,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -419,7 +488,7 @@ impl GasCost for ProposalDepositClaim {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a ProposalDepositClaim the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -436,10 +505,12 @@ impl GasCost for PositionOpen {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionOpen the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // There are some small validations performed so a token amount of gas is charged.
             verification: 50,
             // Execution cost is currently hardcoded at 10 for all Action variants.
+            // Reminder: Any change to this execution gas vector must also be reflected
+            // in updates to the dutch auction gas vectors.
             execution: 10,
         }
     }
@@ -453,10 +524,12 @@ impl GasCost for PositionClose {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a PositionClose the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
+            // Reminder: Any change to this execution gas vector must also be reflected
+            // in updates to the dutch auction gas vectors.
             execution: 10,
         }
     }
@@ -476,7 +549,7 @@ impl GasCost for Ics20Withdrawal {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a Ics20Withdrawal the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -493,7 +566,7 @@ impl GasCost for CommunityPoolDeposit {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a CommunityPoolDeposit the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -510,7 +583,7 @@ impl GasCost for CommunityPoolSpend {
             // The compact block space cost is based on the byte size of the data the [`Action`] adds
             // to the compact block.
             // For a CommunityPoolSpend the compact block is not modified.
-            compact_block_space: 0u64,
+            compact_block_space: 0,
             // Does not include a zk-SNARK proof, so there's no verification cost.
             verification: 0,
             // Execution cost is currently hardcoded at 10 for all Action variants.
@@ -542,12 +615,12 @@ impl GasCost for IbcRelay {
             compact_block_space: match self {
                 // RecvPacket will mint a note if successful.
                 IbcRelay::RecvPacket(_) => NOTEPAYLOAD_SIZE,
-                _ => 0u64,
+                _ => 0,
             },
             // Includes a proof in the execution for RecvPacket (TODO: check the other variants).
             verification: match self {
                 IbcRelay::RecvPacket(_) => 1000,
-                _ => 0u64,
+                _ => 0,
             },
             // Execution cost is currently hardcoded at 10 for all Action variants.
             execution: 10,
@@ -558,5 +631,23 @@ impl GasCost for IbcRelay {
 impl GasCost for ValidatorDefinition {
     fn gas_cost(&self) -> Gas {
         validator_definition_gas_cost(&self)
+    }
+}
+
+impl GasCost for ActionDutchAuctionSchedule {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_schedule_gas_cost(&self)
+    }
+}
+
+impl GasCost for ActionDutchAuctionEnd {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_end_gas_cost()
+    }
+}
+
+impl GasCost for ActionDutchAuctionWithdraw {
+    fn gas_cost(&self) -> Gas {
+        dutch_auction_withdraw_gas_cost()
     }
 }

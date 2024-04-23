@@ -28,3 +28,8 @@ pub mod v037 {
     mod request_ext;
     pub use request_ext::RequestExt;
 }
+
+pub mod v038 {
+    mod request_ext;
+    pub use request_ext::RequestExt;
+}

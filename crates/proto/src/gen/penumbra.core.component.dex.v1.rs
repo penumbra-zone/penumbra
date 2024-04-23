@@ -1509,6 +1509,11 @@ pub struct DexParameters {
     /// The number of hops to traverse while routing from A to B.
     #[prost(uint32, tag = "3")]
     pub max_hops: u32,
+    /// The maximum number of positions per trading pair.
+    /// If this number is exceeded, positions with the least
+    /// inventory get evicted from the DEX.
+    #[prost(uint32, tag = "4")]
+    pub max_positions_per_pair: u32,
 }
 impl ::prost::Name for DexParameters {
     const NAME: &'static str = "DexParameters";

@@ -1,9 +1,6 @@
 //! [`Builder`] facilities for constructing [`Block`]s.
 //!
-//! Builders are acquired by calling [`TestNode::block()`].
-
-/// Interfaces for generating commit signatures.
-mod signature;
+//! Builders are acquired by calling [`TestNode::block()`], see [`TestNode`] for more information.
 
 use {
     crate::TestNode,
@@ -19,19 +16,24 @@ use {
     tracing::{instrument, trace},
 };
 
-/// A builder, used to prepare and instantiate a new [`Block`].
+/// Interfaces for generating commit signatures.
+mod signature;
+
+/// A block builder.
 ///
-/// These are acquired by calling [`TestNode::block()`].
+/// A block builder can be used to prepare and instantiate a new [`Block`]. A block builder is
+/// acquired by calling [`TestNode::block()`]. This builder holds an exclusive reference to a
+/// [`TestNode`], so only one block may be built at once.
+///
+/// This builder can be consumed, executing the block against the [`TestNode`]'s consensus service,
+/// by calling [`Builder::execute()`].
 pub struct Builder<'e, C> {
     /// A unique reference to the test node.
     test_node: &'e mut TestNode<C>,
-
     /// Transaction data.
     data: Vec<Vec<u8>>,
-
     /// Evidence of malfeasance.
     evidence: evidence::List,
-
     /// The list of signatures.
     signatures: Vec<block::CommitSig>,
 }
@@ -40,6 +42,10 @@ pub struct Builder<'e, C> {
 
 impl<C> TestNode<C> {
     /// Returns a new [`Builder`].
+    ///
+    /// By default, signatures for all of the validators currently within the keyring will be
+    /// included in the block. Use [`Builder::with_signatures()`] to set a different set of
+    /// validator signatures.
     pub fn block<'e>(&'e mut self) -> Builder<'e, C> {
         let signatures = self.generate_signatures().collect();
         Builder {
@@ -56,6 +62,15 @@ impl<C> TestNode<C> {
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
     pub fn with_data(self, data: Vec<Vec<u8>>) -> Self {
+        let Self { data: prev, .. } = self;
+
+        if !prev.is_empty() {
+            tracing::warn!(
+                count = %prev.len(),
+                "block builder overwriting transaction data, this may be a bug!"
+            );
+        }
+
         Self { data, ..self }
     }
 

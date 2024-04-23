@@ -1440,15 +1440,13 @@ dependencies = [
 
 [[package]]
 name = "colored_json"
-version = "2.1.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fd32eb54d016e203b7c2600e3a7802c75843a92e38ccc4869aefeca21771a64"
+checksum = "79cff32df5cfea75e6484eeff0b4e48ad3977fb6582676a7862b3590dddc7a87"
 dependencies = [
- "ansi_term",
- "atty",
- "libc",
  "serde",
  "serde_json",
+ "yansi",
 ]
 
 [[package]]
@@ -1483,43 +1481,6 @@ dependencies = [
  "libc",
  "unicode-width",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "console-api"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd326812b3fd01da5bb1af7d340d0d555fd3d4b641e7f1dfcf5962a902952787"
-dependencies = [
- "futures-core",
- "prost",
- "prost-types",
- "tonic",
- "tracing-core",
-]
-
-[[package]]
-name = "console-subscriber"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7481d4c57092cd1c19dd541b92bdce883de840df30aa5d03fd48a3935c01842e"
-dependencies = [
- "console-api",
- "crossbeam-channel",
- "crossbeam-utils",
- "futures-task",
- "hdrhistogram",
- "humantime",
- "prost-types",
- "serde",
- "serde_json",
- "thread_local",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-core",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -1650,15 +1611,6 @@ name = "critical-section"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
-
-[[package]]
-name = "crossbeam-channel"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "176dc175b78f56c0f321911d9c8eb2b77a78a4860b9c19db83835fea1a46649b"
-dependencies = [
- "crossbeam-utils",
-]
 
 [[package]]
 name = "crossbeam-deque"
@@ -2807,10 +2759,7 @@ version = "7.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "765c9198f173dd59ce26ff9f95ef0aafd0a0fe01fb9d72841bc5066a4c06511d"
 dependencies = [
- "base64 0.21.7",
  "byteorder",
- "flate2",
- "nom",
  "num-traits",
 ]
 
@@ -2993,12 +2942,6 @@ name = "humansize"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02296996cb8796d7c6e3bc2d9211b7802812d36999a51bb754123ead7d37d026"
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -3726,6 +3669,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libredox"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3af92c55d7d839293953fcd0fda5ecfe93297cfde6ffbdec13b41d99c0ba6607"
+dependencies = [
+ "bitflags 2.4.2",
+ "libc",
+ "redox_syscall",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "0.11.0+8.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4164,6 +4118,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
+name = "numtoa"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8f8bdf33df195859076e54ab11ee78a1b208382d3a26ec40d142ffc1ecc49ef"
+
+[[package]]
 name = "object"
 version = "0.32.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4428,6 +4388,7 @@ dependencies = [
  "once_cell",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-compact-block",
  "penumbra-custody",
@@ -4461,6 +4422,7 @@ dependencies = [
  "simple-base64",
  "tempfile",
  "tendermint",
+ "termion",
  "time 0.3.34",
  "tokio",
  "tokio-stream",
@@ -4542,7 +4504,6 @@ dependencies = [
  "chrono",
  "clap",
  "cnidarium",
- "console-subscriber",
  "csv",
  "decaf377 0.5.0",
  "decaf377-rdsa",
@@ -4566,6 +4527,7 @@ dependencies = [
  "pbjson-types",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-auto-https",
  "penumbra-compact-block",
  "penumbra-custody",
@@ -4691,6 +4653,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-compact-block",
  "penumbra-dex",
@@ -4710,6 +4673,7 @@ dependencies = [
  "penumbra-stake",
  "penumbra-tct",
  "penumbra-tendermint-proxy",
+ "penumbra-test-subscriber",
  "penumbra-tower-trace",
  "penumbra-transaction",
  "penumbra-txhash",
@@ -4779,6 +4743,62 @@ dependencies = [
  "sha2 0.10.8",
  "thiserror",
  "tracing",
+]
+
+[[package]]
+name = "penumbra-auction"
+version = "0.71.0"
+dependencies = [
+ "anyhow",
+ "ark-ff",
+ "ark-groth16",
+ "ark-r1cs-std",
+ "ark-relations",
+ "ark-serialize",
+ "ark-snark",
+ "async-stream",
+ "async-trait",
+ "base64 0.21.7",
+ "bech32",
+ "bitvec",
+ "blake2b_simd 1.0.2",
+ "cnidarium",
+ "cnidarium-component",
+ "decaf377 0.5.0",
+ "decaf377-rdsa",
+ "ed25519-consensus",
+ "futures",
+ "hex",
+ "im",
+ "metrics",
+ "once_cell",
+ "pbjson-types",
+ "penumbra-asset",
+ "penumbra-dex",
+ "penumbra-keys",
+ "penumbra-num",
+ "penumbra-proof-params",
+ "penumbra-proto",
+ "penumbra-sct",
+ "penumbra-shielded-pool",
+ "penumbra-tct",
+ "penumbra-txhash",
+ "proptest",
+ "prost",
+ "prost-types",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+ "regex",
+ "serde",
+ "serde_unit_struct",
+ "serde_with",
+ "sha2 0.10.8",
+ "tap",
+ "tendermint",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -5450,6 +5470,7 @@ dependencies = [
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
+ "futures",
  "hex",
  "ibc-types",
  "im",
@@ -5636,6 +5657,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-test-subscriber"
+version = "0.71.0"
+dependencies = [
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "penumbra-tower-trace"
 version = "0.71.0"
 dependencies = [
@@ -5680,6 +5709,7 @@ dependencies = [
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-dex",
  "penumbra-fee",
@@ -5742,6 +5772,7 @@ dependencies = [
  "parking_lot",
  "penumbra-app",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-compact-block",
  "penumbra-dex",
@@ -6545,13 +6576,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "redox_termios"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20145670ba436b55d91fc92d25e71160fbfbdd57831631c8d7d36377a476f1cb"
+
+[[package]]
 name = "redox_users"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a18479200779601e498ada4e8c1e1f50e3ee19deb0259c25825a98b5603b2cb4"
 dependencies = [
  "getrandom 0.2.12",
- "libredox",
+ "libredox 0.0.1",
  "thiserror",
 ]
 
@@ -7601,7 +7638,6 @@ dependencies = [
  "camino",
  "chrono",
  "clap",
- "console-subscriber",
  "decaf377 0.5.0",
  "futures",
  "hex",
@@ -7865,6 +7901,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "termion"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "417813675a504dfbbf21bfde32c03e5bf9f2413999962b479023c02848c1c7a5"
+dependencies = [
+ "libc",
+ "libredox 0.0.2",
+ "numtoa",
+ "redox_termios",
 ]
 
 [[package]]
@@ -9025,6 +9073,12 @@ dependencies = [
  "linux-raw-sys 0.4.13",
  "rustix 0.38.31",
 ]
+
+[[package]]
+name = "yansi"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
 name = "yasna"

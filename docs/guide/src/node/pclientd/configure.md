@@ -1,7 +1,7 @@
 # Configuring `pclientd`
 
 First, install `pclientd` following the [instructions for installing
-`pcli`](../pcli/install.md) but downloading `pclientd` rather than `pcli`.
+`pcli`](../../pcli/install.md) but downloading `pclientd` rather than `pcli`.
 
 ## Generating configs
 

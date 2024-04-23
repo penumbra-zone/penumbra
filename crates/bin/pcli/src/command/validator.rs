@@ -158,11 +158,11 @@ impl ValidatorCmd {
 
         match self {
             ValidatorCmd::Identity { base64 } => {
-                let ik = IdentityKey(fvk.spend_verification_key().clone());
+                let ik = IdentityKey(fvk.spend_verification_key().clone().into());
 
                 if *base64 {
                     use base64::{display::Base64Display, engine::general_purpose::STANDARD};
-                    println!("{}", Base64Display::new(&ik.0.to_bytes(), &STANDARD));
+                    println!("{}", Base64Display::new(ik.0.as_ref(), &STANDARD));
                 } else {
                     println!("{ik}");
                 }
@@ -276,7 +276,7 @@ impl ValidatorCmd {
                 reason,
                 signature_file,
             }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
@@ -323,7 +323,7 @@ impl ValidatorCmd {
                 reason,
                 signature,
             }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
@@ -385,7 +385,7 @@ impl ValidatorCmd {
                 tendermint_validator_keyfile,
             }) => {
                 let (address, _dtk) = fvk.incoming().payment_address(0u32.into());
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 // By default, the template sets the governance key to the same verification key as
                 // the identity key, but a validator can change this if they want to use different
                 // key material.
@@ -473,7 +473,7 @@ impl ValidatorCmd {
                 }
             }
             ValidatorCmd::Definition(DefinitionCmd::Fetch { file }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone());
+                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
                 super::query::ValidatorCmd::Definition {
                     file: file.clone(),
                     identity_key: identity_key.to_string(),

@@ -1,22 +1,19 @@
-use penumbra_num::fixpoint::U128x128;
-
-mod common;
-
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, TestNodeExt},
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
+    penumbra_num::fixpoint::U128x128,
     penumbra_proto::DomainType,
     penumbra_sct::component::clock::EpochRead as _,
-    penumbra_stake::{
-        component::validator_handler::ValidatorDataRead as _, validator::Validator,
-        UndelegateClaimPlan,
-    },
+    penumbra_stake::{component::validator_handler::ValidatorDataRead as _, UndelegateClaimPlan},
     penumbra_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
@@ -24,6 +21,8 @@ use {
     tap::Tap,
     tracing::{error_span, info, Instrument},
 };
+
+mod common;
 
 /// The length of the [`penumbra_sct`] epoch.
 ///
@@ -58,21 +57,11 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     };
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state = AppState::Content(penumbra_app::genesis::Content {
-        sct_content: penumbra_sct::genesis::Content {
-            sct_params: penumbra_sct::params::SctParameters {
-                epoch_duration: EPOCH_DURATION,
-            },
-        },
-        stake_content: penumbra_stake::genesis::Content {
-            stake_params: penumbra_stake::params::StakeParameters {
-                unbonding_delay: UNBONDING_DELAY,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        ..Default::default()
-    });
+    let app_state = AppState::Content(
+        genesis::Content::default()
+            .with_epoch_duration(EPOCH_DURATION)
+            .with_unbonding_delay(UNBONDING_DELAY),
+    );
 
     // Start the test node.
     let mut node = {
@@ -85,16 +74,12 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     }?;
 
     // Retrieve the validator definition from the latest snapshot.
-    let Validator { identity_key, .. } = match storage
+    let [identity_key] = storage
         .latest_snapshot()
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    }; // ..and note the asset id for delegation tokens tied to this validator.
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
     let delegate_token_id = penumbra_stake::DelegationToken::new(identity_key).id();
 
     // Sync the mock client, using the test wallet's spend key, to the latest snapshot.
@@ -203,12 +188,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     }
 
     // Fast forward to the next epoch.
-    {
-        let start = get_latest_epoch().await.index;
-        while get_latest_epoch().await.index < start {
-            node.block().execute().await?;
-        }
-    }
+    node.fast_forward_to_next_epoch(&storage).await?;
 
     // Build a transaction that will now undelegate from the validator.
     let undelegate_rate = storage

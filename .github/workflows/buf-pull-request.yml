@@ -54,12 +54,8 @@ jobs:
         with:
           lfs: true
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: false
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - uses: bufbuild/buf-setup-action@v1
         with:

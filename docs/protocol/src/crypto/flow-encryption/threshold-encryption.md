@@ -11,7 +11,7 @@ scheme described here.
 
 For our threshold encryption scheme, we require three important properties:
 
-* Homomorphism: we must be able to operate over ciphertexts, by combining value commitments from many participants into a batched value.
+* Homomorphism: we must be able to operate over ciphertexts, by combining balance commitments from many participants into a batched value.
 * Verifiability: we must be able to verify that a given value $v_i$ was encrypted correctly to a given ciphertext $c_i$
 * Robustness: up to $n-t$ validators must be permitted to either fail to provide a decryption share or provide in invalid decryption share.
 

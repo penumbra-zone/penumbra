@@ -15,13 +15,16 @@ impl MultistoreConfig {
     }
 
     /// Returns the substore matching the key's prefix, return `None` otherwise.
-    pub fn find_substore(&self, key: &[u8]) -> Arc<SubstoreConfig> {
+    pub fn find_substore(&self, key: &[u8]) -> Option<Arc<SubstoreConfig>> {
+        if key.is_empty() {
+            return Some(self.main_store.clone());
+        }
+
         // Note: This is a linear search, but the number of substores is small.
         self.substores
             .iter()
             .find(|s| key.starts_with(s.prefix.as_bytes()))
             .cloned()
-            .unwrap_or(self.main_store.clone())
     }
 
     /// Route a key to a substore, and return the truncated key and the corresponding `SubstoreConfig`.
@@ -46,7 +49,12 @@ impl MultistoreConfig {
     /// `prefix_a/` -> `prefix_a/` in `main_store
     /// `nonexistent_prefix` -> `nonexistent_prefix` in `main_store`
     pub fn route_key_str<'a>(&self, key: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
-        let config = self.find_substore(key.as_bytes());
+        let config = self
+            .find_substore(key.as_bytes())
+            .unwrap_or_else(|| self.main_store.clone());
+
+        // If the key is a total match, we want to return the key bound to the
+        // main store. This is where the root hash of the prefix tree is located.
         if key == config.prefix {
             return (key, self.main_store.clone());
         }
@@ -93,7 +101,9 @@ impl MultistoreConfig {
     /// `prefix_a/` -> `prefix_a/` in `main_store`
     /// `nonexistent_prefix` -> `nonexistent_prefix` in `main_store`
     pub fn route_key_bytes<'a>(&self, key: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
-        let config = self.find_substore(key);
+        let config = self
+            .find_substore(key)
+            .unwrap_or_else(|| self.main_store.clone());
 
         // If the key is a total match for the prefix, we return the original key
         // routed to the main store. This is where subtree root hashes are stored.
@@ -136,7 +146,9 @@ impl MultistoreConfig {
     /// `prefix_a/` -> "" in `substore_a`
     /// `nonexistent_prefix` -> "" in `main_store`
     pub fn match_prefix_str<'a>(&self, prefix: &'a str) -> (&'a str, Arc<SubstoreConfig>) {
-        let config = self.find_substore(prefix.as_bytes());
+        let config = self
+            .find_substore(prefix.as_bytes())
+            .unwrap_or_else(|| self.main_store.clone());
 
         let truncated_prefix = prefix
             .strip_prefix(&config.prefix)
@@ -162,7 +174,9 @@ impl MultistoreConfig {
     /// `prefix_a/` -> "" in `substore_a`
     /// `nonexistent_prefix` -> "" in `main_store`
     pub fn match_prefix_bytes<'a>(&self, prefix: &'a [u8]) -> (&'a [u8], Arc<SubstoreConfig>) {
-        let config = self.find_substore(prefix);
+        let config = self
+            .find_substore(prefix)
+            .unwrap_or_else(|| self.main_store.clone());
 
         let truncated_prefix = prefix
             .strip_prefix(config.prefix.as_bytes())
