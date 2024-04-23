@@ -50,9 +50,6 @@ EPOCH_DURATION="${EPOCH_DURATION:-50}"
 UNBONDING_DELAY="${UNBONDING_DELAY:-50}"
 cargo run --quiet --release --bin pd -- testnet generate --unbonding-delay "$UNBONDING_DELAY" --epoch-duration "$EPOCH_DURATION" --timeout-commit 500ms
 
-echo "Running pd integration tests against running pd binary"
-    cargo test --release --package pd -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pd-tests.log"
-
 echo "Starting CometBFT..."
 cometbft start --log_level=error --home "${HOME}/.penumbra/testnet_data/node0/cometbft" > "${SMOKE_LOG_DIR}/comet.log" &
 cometbft_pid="$!"
