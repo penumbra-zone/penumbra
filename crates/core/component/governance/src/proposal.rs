@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
+use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
@@ -14,7 +15,6 @@ use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType
 use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
-use penumbra_auction::params::AuctionParameters;
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -486,6 +486,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
+            auction_params: params.auction_params.map(Into::into),
             community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),

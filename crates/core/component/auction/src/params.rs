@@ -26,6 +26,6 @@ impl TryFrom<pb::AuctionParameters> for AuctionParameters {
 
 impl Default for AuctionParameters {
     fn default() -> Self {
-        AuctionParameters {  }
+        AuctionParameters {}
     }
 }
