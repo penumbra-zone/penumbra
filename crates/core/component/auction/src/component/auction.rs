@@ -18,11 +18,13 @@ impl Component for Auction {
     // addition easy to do.
     type AppState = crate::genesis::Content;
 
-    #[instrument(name = "auction", skip(_state, app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "auction", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* perform upgrade specific check */ }
-            Some(_) => {}
+            Some(content) => {
+                state.put_auction_params(content.auction_params.clone());
+            }
         }
     }
 
