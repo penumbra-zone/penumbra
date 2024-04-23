@@ -215,21 +215,24 @@ pub(crate) trait DutchAuctionManager: StateWrite {
                 let mut tough_nonce = [0u8; 32];
                 tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
 
-                let mut lp = Position::new_with_nonce(tough_nonce, pair, 0u32, p, q, lp_reserves);
+                let mut lp =
+                    Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
                 lp.close_on_fill = true;
 
                 let id = lp.id();
                 new_dutch_auction.state.current_position = Some(id);
 
-                match self.open_position(lp).await {
-                    Ok(_) => break,
-                    Err(e) => {
-                        // TODO(erwan): this coarsely assumes that all errors
-                        // are id collisions which obviously does not hold.
-                        // for now it's impossible to do finer grained control flow.
-                        tracing::error!(?e, attempt_counter, ?id, "failed to open position");
-                        attempt_counter += 1;
-                    }
+                if self.check_position_by_id(&id).await? {
+                    tracing::error!(
+                        attempt_counter,
+                        ?id,
+                        "another position with our attempted id exists, retrying"
+                    );
+                    attempt_counter += 1;
+                    continue;
+                } else {
+                    self.open_position(lp).await.expect("no state incoherence");
+                    break;
                 }
             }
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
