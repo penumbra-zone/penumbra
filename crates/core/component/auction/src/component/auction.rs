@@ -2,9 +2,13 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
+use penumbra_proto::StateReadProto;
+use penumbra_proto::StateWriteProto;
 use std::sync::Arc;
 use tendermint::v0_37::abci;
 use tracing::instrument;
+
+use crate::{params::AuctionParameters, state_key};
 
 pub struct Auction {}
 
@@ -43,14 +47,30 @@ impl Component for Auction {
 /// Extension trait providing read access to auction data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    // Params accessors
+    async fn get_auction_params(&self) -> Result<AuctionParameters> {
+        self.get(state_key::parameters::key())
+            .await
+            .expect("no deserialization errors")
+            .ok_or_else(|| anyhow::anyhow!("Missing AuctionParameters"))
+    }
+
+    fn auction_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::parameters::updated_flag())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 /// Extension trait providing write access to auction data.
 #[async_trait]
-pub trait StateWriteExt: StateWrite {}
+pub trait StateWriteExt: StateWrite {
+    /// Writes the provided auction parameters to the chain state.
+    fn put_auction_params(&mut self, params: AuctionParameters) {
+        self.object_put(state_key::parameters::updated_flag(), ());
+        self.put(state_key::parameters::key().into(), params)
+    }
+}
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
