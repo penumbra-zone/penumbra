@@ -55,7 +55,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         let state = DutchAuctionState {
             sequence: 0,
             current_position: None,
-            next_trigger,
+            next_trigger: NonZeroU64::new(next_trigger),
             input_reserves: description.input.amount,
             output_reserves: Amount::zero(),
         };
@@ -263,8 +263,8 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             };
 
         // If a `next_trigger` entry is set, we remove it.
-        if next_trigger != 0 {
-            self.unset_trigger_for_dutch_id(auction_id, next_trigger)
+        if let Some(height) = next_trigger {
+            self.unset_trigger_for_dutch_id(auction_id, height.into())
         }
 
         let total_input_reserves = input_reserves + input_from_position;
@@ -275,7 +275,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             state: DutchAuctionState {
                 sequence: 1u64,
                 current_position: None,
-                next_trigger: 0,
+                next_trigger: None,
                 input_reserves: total_input_reserves,
                 output_reserves: total_output_reserves,
             },
@@ -313,7 +313,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
         auction.state.sequence = auction.state.sequence.saturating_add(1);
         auction.state.current_position = None;
-        auction.state.next_trigger = 0;
+        auction.state.next_trigger = None;
         auction.state.input_reserves = Amount::zero();
         auction.state.output_reserves = Amount::zero();
         self.write_dutch_auction_state(auction);
@@ -329,7 +329,6 @@ pub(crate) trait HandleDutchTriggers: StateWrite {
     /// Process the trigger height for a [`DutchAuction`],
     async fn process_triggers(&mut self, trigger_height: u64) -> Result<()> {
         use futures::StreamExt;
-        // TODO(erwan): somewhat self-defeating, but this is a first pass.
         let auction_ids: Vec<AuctionId> = self
             .stream_dutch_ids_by_trigger(trigger_height)
             .await

@@ -1,3 +1,5 @@
+use std::num::NonZeroU64;
+
 use anyhow::anyhow;
 use penumbra_asset::{asset, Value};
 use penumbra_dex::lp::position::{self};
@@ -168,7 +170,7 @@ impl TryFrom<pb::DutchAuctionDescription> for DutchAuctionDescription {
 pub struct DutchAuctionState {
     pub sequence: u64,
     pub current_position: Option<position::Id>,
-    pub next_trigger: u64,
+    pub next_trigger: Option<NonZeroU64>,
     pub input_reserves: Amount,
     pub output_reserves: Amount,
 }
@@ -183,7 +185,7 @@ impl From<DutchAuctionState> for pb::DutchAuctionState {
         Self {
             seq: domain.sequence,
             current_position: domain.current_position.map(Into::into),
-            next_trigger: domain.next_trigger,
+            next_trigger: domain.next_trigger.map_or(0u64, Into::into),
             input_reserves: Some(domain.input_reserves.into()),
             output_reserves: Some(domain.output_reserves.into()),
         }
@@ -197,7 +199,7 @@ impl TryFrom<pb::DutchAuctionState> for DutchAuctionState {
         Ok(DutchAuctionState {
             sequence: msg.seq,
             current_position: msg.current_position.map(TryInto::try_into).transpose()?,
-            next_trigger: msg.next_trigger,
+            next_trigger: NonZeroU64::new(msg.next_trigger),
             input_reserves: msg
                 .input_reserves
                 .ok_or_else(|| anyhow!("DutchAuctionState message is missing input reserves"))?
