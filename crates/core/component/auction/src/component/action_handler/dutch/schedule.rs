@@ -1,3 +1,4 @@
+use crate::auction::dutch::actions::schedule::MAX_AUCTION_AMOUNT_RESERVES;
 use crate::auction::dutch::DutchAuctionDescription;
 use crate::component::AuctionStoreRead;
 use anyhow::{ensure, Result};
@@ -34,6 +35,12 @@ impl ActionHandler for ActionDutchAuctionSchedule {
         // Fail fast if the step count is zero.
         ensure!(step_count > 0, "step count MUST be positive (got zero)");
 
+        // Check that the input amount is less than 52 bits wide.
+        ensure!(
+            input.amount <= MAX_AUCTION_AMOUNT_RESERVES.into(),
+            "input amount MUST be less than 52 bits wide"
+        );
+
         // Check that we disallow identical input/output ids.
         ensure!(
             input.asset_id != output_id,
@@ -49,6 +56,21 @@ impl ActionHandler for ActionDutchAuctionSchedule {
         // Check that the max output is greater than zero.
         ensure!(max_output > 0u128.into(), "max output MUST be positive");
 
+        // Check that the max output is less than 52 bits wide.
+        ensure!(
+            max_output <= MAX_AUCTION_AMOUNT_RESERVES.into(),
+            "max output amount MUST be less than 52 bits wide"
+        );
+
+        // Check that the min output is greater than zero.
+        ensure!(min_output > 0u128.into(), "min output MUST be positive");
+
+        // Check that the min output is less than 52 bits wide.
+        ensure!(
+            min_output <= MAX_AUCTION_AMOUNT_RESERVES.into(),
+            "min output amount MUST be less than 52 bits wide"
+        );
+
         // Check that the start and end height are valid.
         ensure!(
             start_height < end_height,
@@ -63,10 +85,10 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             "step count MUST be greater than zero (got: {step_count})"
         );
 
-        // Check that the step count is less than 1000.
+        // Check that the step count is less than 255.
         ensure!(
-            step_count <= 1000,
-            "the dutch auction step count MUST be less than 1000 (got: {step_count})",
+            step_count <= 255,
+            "the dutch auction step count MUST be less than 255 (got: {step_count})",
         );
 
         // Check that height delta is a multiple of `step_count`.
