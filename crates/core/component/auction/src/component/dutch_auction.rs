@@ -11,7 +11,7 @@ use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
 use penumbra_asset::{Balance, Value};
 use penumbra_dex::component::{PositionManager, PositionRead};
-use penumbra_dex::lp::position::Position;
+use penumbra_dex::lp::position::{self, Position};
 use penumbra_dex::lp::Reserves;
 use penumbra_dex::DirectedTradingPair;
 use penumbra_num::Amount;
@@ -49,6 +49,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .expect("block height is not missing");
 
         let next_trigger = auction_trigger
+            .try_next_trigger_height(current_height)
             .expect("action validation guarantees the auction is not expired");
 
         let state = DutchAuctionState {
@@ -160,8 +161,9 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .map(|v| v.amount)
             .sum::<Amount>();
 
+        // After consuming the LP, we reset the state, getting ready to either
+        // execute another session, or retire the auction.
         new_dutch_auction.state.current_position = None;
-        // We overwrite the input amount
         new_dutch_auction.state.input_reserves = balance_input_asset;
         new_dutch_auction.state.output_reserves += balance_output_asset;
         new_dutch_auction.state.next_trigger = 0;
@@ -178,71 +180,24 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         } else {
             // Otherwise, we compute the next trigger height and generate a liquidity
             // position for the new auction round.
-            let next_trigger = auction_trigger
-                .compute_next_trigger_height(trigger_height)
-                .expect("trigger data is validated")
-                .expect("the step count has not been reached");
-
+            let next_trigger = auction_trigger.compute_next_trigger_height(trigger_height);
             // We compute the price parameters for the LP:
-            let (p, q) = compute_pq_at_step(&new_dutch_auction.description, step_index);
-
-            // Next, we want to construct an auction LP position and send it to the DEX.
-            // The nonce must be chosen so that the resulting position id is unique:
-            // `PositionManager::open_position` will reject duplicates.
-            //
-            // To do this, we keep track of our number of attempts at opening a position,
-            // and compute:
-            // position_nonce = H(auction_nonce || step_index || attempt_counter)
-            // until the resulting position id (based on the nonce) is unique and accepted
-            // by the DEX.
-            let mut attempt_counter = 0u64;
+            let price = compute_pq_at_step(&new_dutch_auction.description, step_index);
             // Take the input reserves from the auction state, and zero it out.
             let input_reserves = new_dutch_auction.state.input_reserves;
             new_dutch_auction.state.input_reserves = Amount::zero();
             let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
-            loop {
-                let lp_reserves = Reserves {
-                    r1: input_reserves,
-                    r2: Amount::zero(),
-                };
+            let auction_nonce = new_dutch_auction.description.nonce;
+            let id = self
+                .allocate_position(pair, input_reserves, step_index, price, auction_nonce)
+                .await
+                .expect("no state incoherence");
+            new_dutch_auction.state.current_position = Some(id);
 
-                let auction_nonce = new_dutch_auction.description.nonce;
-                let full_hash = blake2b_simd::Params::default()
-                    .personal(b"penum-DA-nonce")
-                    .to_state()
-                    .update(&auction_nonce)
-                    .update(&step_index.to_le_bytes())
-                    .update(&attempt_counter.to_le_bytes())
-                    .finalize();
-                let mut tough_nonce = [0u8; 32];
-                tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
-
-                let mut lp =
-                    Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
-                lp.close_on_fill = true;
-
-                let id = lp.id();
-                new_dutch_auction.state.current_position = Some(id);
-
-                if self.check_position_by_id(&id).await? {
-                    tracing::error!(
-                        attempt_counter,
-                        ?id,
-                        "another position with our attempted id exists, retrying"
-                    );
-                    attempt_counter += 1;
-                    continue;
-                } else {
-                    self.open_position(lp).await.expect("no state incoherence");
-                    break;
-                }
-            }
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
         };
 
-        // We write-back the updated auction state, and complete execution.
         self.write_dutch_auction_state(new_dutch_auction);
-
         Ok(())
     }
 
@@ -424,6 +379,62 @@ pub(crate) trait DutchAuctionData: StateRead {
 impl<T: StateRead + ?Sized> DutchAuctionData for T {}
 
 trait Inner: StateWrite {
+    async fn allocate_position(
+        &mut self,
+        pair: DirectedTradingPair,
+        input_reserves: Amount,
+        step_index: u64,
+        (p, q): (Amount, Amount),
+        auction_nonce: [u8; 32],
+    ) -> Result<position::Id> {
+        // Next, we want to construct an auction LP position and send it to the DEX.
+        // The nonce must be chosen so that the resulting position id is unique:
+        // `PositionManager::open_position` will reject duplicates.
+        //
+        // To do this, we keep track of our number of attempts at opening a position,
+        // and compute:
+        // position_nonce = H(auction_nonce || step_index || attempt_counter)
+        // until the resulting position id (based on the nonce) is unique and accepted
+        // by the DEX.
+        let mut attempt_counter = 0u64;
+
+        loop {
+            let lp_reserves = Reserves {
+                r1: input_reserves,
+                r2: Amount::zero(),
+            };
+
+            let full_hash = blake2b_simd::Params::default()
+                .personal(b"penum-DA-nonce")
+                .to_state()
+                .update(&auction_nonce)
+                .update(&step_index.to_le_bytes())
+                .update(&attempt_counter.to_le_bytes())
+                .finalize();
+            let mut tough_nonce = [0u8; 32];
+            tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
+
+            let mut lp =
+                Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
+            lp.close_on_fill = true;
+
+            let position_id = lp.id();
+
+            if self.check_position_by_id(&position_id).await? {
+                tracing::error!(
+                    attempt_counter,
+                    ?position_id,
+                    "another position with our attempted id exists, retrying"
+                );
+                attempt_counter += 1;
+                continue;
+            } else {
+                self.open_position(lp).await.expect("no state incoherence");
+                return Ok(position_id);
+            }
+        }
+    }
+
     /// Serialize a `DutchAuction` as an `Any` into chain state.
     fn write_dutch_auction_state(&mut self, new_state: DutchAuction) {
         let id = new_state.description.id();
