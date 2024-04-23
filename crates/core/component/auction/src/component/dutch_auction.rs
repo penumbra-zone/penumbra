@@ -1,3 +1,4 @@
+use std::num::NonZeroU64;
 use std::pin::Pin;
 
 use crate::auction::dutch::{DutchAuction, DutchAuctionDescription, DutchAuctionState};
@@ -150,23 +151,20 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             state: old_dutch_auction.state,
         };
 
-        let balance_input_asset = lp_reserves
+        // After consuming the LP, we reset the state, getting ready to either
+        // execute another session, or retire the auction.
+        new_dutch_auction.state.current_position = None;
+        new_dutch_auction.state.input_reserves += lp_reserves
             .provided()
             .filter(|v| v.asset_id == input.asset_id)
             .map(|v| v.amount)
             .sum::<Amount>();
-        let balance_output_asset = lp_reserves
+        new_dutch_auction.state.output_reserves += lp_reserves
             .provided()
             .filter(|v| v.asset_id == output_id)
             .map(|v| v.amount)
             .sum::<Amount>();
-
-        // After consuming the LP, we reset the state, getting ready to either
-        // execute another session, or retire the auction.
-        new_dutch_auction.state.current_position = None;
-        new_dutch_auction.state.input_reserves = balance_input_asset;
-        new_dutch_auction.state.output_reserves += balance_output_asset;
-        new_dutch_auction.state.next_trigger = 0;
+        new_dutch_auction.state.next_trigger = None;
 
         // Compute the current step index, between 0 and `step_count`.
         let step_index = auction_trigger
