@@ -1,3 +1,4 @@
+use penumbra_auction::genesis::Content as AuctionContent;
 use penumbra_community_pool::genesis::Content as CommunityPoolContent;
 use penumbra_dex::genesis::Content as DexContent;
 use penumbra_distributions::genesis::Content as DistributionsContent;
@@ -80,6 +81,7 @@ impl From<Content> for pb::GenesisContent {
     fn from(genesis: Content) -> Self {
         pb::GenesisContent {
             chain_id: genesis.chain_id,
+            auction_content: Some(genesis.auction_content.into()),
             community_pool_content: Some(genesis.community_pool_content.into()),
             distributions_content: Some(genesis.distributions_content.into()),
             fee_content: Some(genesis.fee_content.into()),
@@ -118,6 +120,10 @@ impl TryFrom<pb::GenesisContent> for Content {
     fn try_from(msg: pb::GenesisContent) -> Result<Self, Self::Error> {
         Ok(Content {
             chain_id: msg.chain_id,
+            auction_content: msg
+                .auction_content
+                .ok_or_else(|| anyhow::anyhow!("proto response missing Auction content"))?
+                .try_into()?,
             community_pool_content: msg
                 .community_pool_content
                 .ok_or_else(|| anyhow::anyhow!("proto response missing Community Pool content"))?

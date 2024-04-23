@@ -14,13 +14,15 @@ pub struct Auction {}
 
 #[async_trait]
 impl Component for Auction {
-    type AppState = ();
+    // Note: this is currently empty, but will make future
+    // addition easy to do.
+    type AppState = crate::genesis::Content;
 
     #[instrument(name = "auction", skip(_state, app_state))]
     async fn init_chain<S: StateWrite>(_state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* perform upgrade specific check */ }
-            Some(&()) => {}
+            Some(_) => {}
         }
     }
 
