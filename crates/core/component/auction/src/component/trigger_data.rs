@@ -65,7 +65,7 @@ impl TriggerData {
         // the supplied height does not fall perfectly on a step boundary. First, we
         // "clamp it" to a previous step index, then we increment by 1 to compute the
         // next one, and finally we determine a concrete trigger height based off that.
-        let distance_from_start = current_height - *start_height;
+        let distance_from_start = current_height.saturating_sub(*start_height);
         let prev_step_index = distance_from_start / step_size;
         let next_step_index = prev_step_index + 1;
 
