@@ -43,6 +43,10 @@ impl TryFrom<pb::AppParameters> for AppParameters {
     fn try_from(msg: pb::AppParameters) -> anyhow::Result<Self> {
         Ok(AppParameters {
             chain_id: msg.chain_id,
+            auction_params: msg
+                .auction_params
+                .ok_or_else(|| anyhow::anyhow!("proto response missing auction params"))?
+                .try_into()?,
             community_pool_params: msg
                 .community_pool_params
                 .ok_or_else(|| anyhow::anyhow!("proto response missing community pool params"))?
@@ -91,6 +95,7 @@ impl From<AppParameters> for pb::AppParameters {
     fn from(params: AppParameters) -> Self {
         pb::AppParameters {
             chain_id: params.chain_id,
+            auction_params: Some(params.auction_params.into()),
             community_pool_params: Some(params.community_pool_params.into()),
             distributions_params: Some(params.distributions_params.into()),
             fee_params: Some(params.fee_params.into()),

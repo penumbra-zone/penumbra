@@ -14,6 +14,7 @@ use penumbra_proto::{penumbra::core::component::governance::v1 as pb, DomainType
 use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
+use penumbra_auction::params::AuctionParameters;
 
 /// A governance proposal.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -436,6 +437,7 @@ impl ProposalPayload {
     into = "pb::ChangedAppParameters"
 )]
 pub struct ChangedAppParameters {
+    pub auction_params: Option<AuctionParameters>,
     pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
@@ -457,6 +459,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
+            auction_params: msg.auction_params.map(TryInto::try_into).transpose()?,
             community_pool_params: msg
                 .community_pool_params
                 .map(TryInto::try_into)

@@ -6,6 +6,7 @@ use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, S
 use cnidarium_component::Component;
 use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
+use penumbra_auction::component::{StateReadExt as _, StateWriteExt as _};
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
@@ -691,9 +692,11 @@ pub trait StateReadExt: StateRead {
         let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
         let dex_params = self.get_dex_params().await?;
+        let auction_params = self.get_auction_params().await?;
 
         Ok(AppParameters {
             chain_id,
+            auction_params,
             community_pool_params,
             distributions_params,
             fee_params,
