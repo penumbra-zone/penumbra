@@ -5,6 +5,8 @@ use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 
+pub const MAX_AUCTION_AMOUNT_RESERVES: u128 = (1 << 52) - 1;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
     try_from = "pb::ActionDutchAuctionSchedule",
