@@ -34,7 +34,7 @@ impl Component for Auction {
         end_block: &abci::request::EndBlock,
     ) {
         let state: &mut S = Arc::get_mut(state).expect("state should be unique");
-        let _ = state.process_trigger(end_block.height as u64).await;
+        let _ = state.process_triggers(end_block.height as u64).await;
     }
 
     #[instrument(name = "auction", skip(_state))]
