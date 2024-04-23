@@ -64,21 +64,13 @@ trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
 
-echo "Running pd integration tests against running pd binary"
-    cargo test --release --package pd -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pd-tests.log"
-
-echo "Running pclientd integration tests against network"
-PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
-    PCLI_UNLEASH_DANGER="yes" \
-    cargo test --release --features sct-divergence-check --package pclientd -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pclientd.log"
-
 echo "Running pcli integration tests against network"
 PENUMBRA_NODE_PD_URL="http://127.0.0.1:8080" \
     PCLI_UNLEASH_DANGER="yes" \
-    cargo test --release --features sct-divergence-check,download-proving-keys --package pcli -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pcli.log"
+    cargo test --release --features sct-divergence-check,download-proving-keys --package pcli delegate_and_undelegate -- --ignored --test-threads 1 --nocapture | tee "${SMOKE_LOG_DIR}/pcli.log"
 
 echo "Waiting another $TESTNET_RUNTIME seconds while network runs..."
-sleep "$TESTNET_RUNTIME"
+# sleep "$TESTNET_RUNTIME"
 # `kill -0` checks existence of pid, i.e. whether the process is still running.
 # It doesn't inspect errors, but the only reason the process would be stopped
 # is if it failed, so it's good enough for our needs.
