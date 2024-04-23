@@ -79,10 +79,11 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             end_height
         );
 
-        // Check that the step count is positive.
+        // Check that the step count is at least 2. This is important
+        // because DA price interpolation assumes that `step_count-1` is positive.
         ensure!(
-            step_count > 0,
-            "step count MUST be greater than zero (got: {step_count})"
+            step_count >= 2,
+            "step count MUST be at least two (got: {step_count})"
         );
 
         // Check that the step count is less than 255.
