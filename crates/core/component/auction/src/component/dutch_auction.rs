@@ -239,13 +239,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         // to the total tracked amount, so that it can be returned to its bearer.
         let (input_from_position, output_from_position) =
             if let Some(position_id) = current_position {
-                let _ = self // TODO: redundant.
-                    .position_by_id(&position_id)
-                    .await
-                    .expect("no deserialization error")
-                    .expect("position MUST exist");
-
-                let _ = self.close_position_by_id(&position_id).await?;
+                self.close_position_by_id(&position_id).await?;
                 let balance = self.withdraw_position(position_id, 0).await?;
 
                 let input_id = auction_to_close.description.input.asset_id;
