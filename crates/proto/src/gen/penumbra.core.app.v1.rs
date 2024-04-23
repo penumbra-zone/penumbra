@@ -89,6 +89,11 @@ pub struct AppParameters {
     pub dex_params: ::core::option::Option<
         super::super::component::dex::v1::DexParameters,
     >,
+    /// Auction module parameters.
+    #[prost(message, optional, tag = "12")]
+    pub auction_params: ::core::option::Option<
+        super::super::component::auction::v1alpha1::AuctionParameters,
+    >,
 }
 impl ::prost::Name for AppParameters {
     const NAME: &'static str = "AppParameters";
