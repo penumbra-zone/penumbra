@@ -218,6 +218,10 @@ impl Opt {
                     bytes += block_rsp.encoded_len();
                     let block: CompactBlock = block_rsp.try_into()?;
                     nf_count += block.nullifiers.len();
+                    for bsod in block.swap_outputs.values() {
+                        // Use serde-json to print the bsod as json
+                        println!("{}", serde_json::to_string(bsod)?);
+                    }
                     sp_rolled_up_count += block
                         .state_payloads
                         .iter()
