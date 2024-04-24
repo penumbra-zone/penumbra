@@ -6,8 +6,9 @@ use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
-use penumbra_auction::auction::dutch::DutchAuctionState;
+use penumbra_auction::auction::dutch::{DutchAuctionDescription, DutchAuctionState};
 use penumbra_auction::auction::AuctionId;
+use penumbra_dex::DirectedTradingPair;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
@@ -1021,6 +1022,34 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn record_auction_with_state(
+        &self,
+        auction_description: DutchAuctionDescription,
+        auction_state: u64,
+    ) -> anyhow::Result<()> {
+        let auction_id = auction_description.id().to_string();
+        let trading_pair = DirectedTradingPair::new(
+            auction_description.input.asset_id,
+            auction_description.output_id,
+        )
+        .to_canonical() // TODO: would be nice to render correct order.
+        .to_string();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "INSERT OR REPLACE INTO auctions (auction_id, auction_state, trading_pair) VALUES (?1, ?2, ?3)",
+                    (auction_id, auction_state, trading_pair),
+                )
+                .map_err(anyhow::Error::from)
+        })
+            .await??;
+
+        Ok(())
+    }
+
     pub async fn record_unknown_asset(&self, id: asset::Id) -> anyhow::Result<()> {
         let asset_id = id.to_bytes().to_vec();
         let denom = "Unknown".to_string();
@@ -1075,6 +1104,29 @@ impl Storage {
             pool.get()?
                 .execute(
                     "UPDATE positions SET (position_state) = ?1 WHERE position_id = ?2",
+                    (position_state, position_id),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    pub async fn update_auction_with_state(
+        &self,
+        auction_id: AuctionId,
+        auction_state: u64,
+    ) -> anyhow::Result<()> {
+        let position_id = auction_id.0.to_vec();
+        let position_state = auction_state.to_string();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "UPDATE auctions SET (auction_state) = ?1 WHERE auction_id = ?2",
                     (position_state, position_id),
                 )
                 .map_err(anyhow::Error::from)
