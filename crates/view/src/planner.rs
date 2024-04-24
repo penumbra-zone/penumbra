@@ -57,7 +57,6 @@ pub struct Planner<R: RngCore + CryptoRng> {
     balance: Balance,
     vote_intents: BTreeMap<u64, VoteIntent>,
     plan: TransactionPlan,
-    ibc_actions: Vec<IbcRelay>,
     gas_prices: GasPrices,
     fee_tier: FeeTier,
     actions: Vec<ActionPlan>,
@@ -92,7 +91,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             balance: Balance::default(),
             vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
-            ibc_actions: Vec::new(),
             gas_prices: GasPrices::zero(),
             fee_tier: FeeTier::default(),
             actions: Vec::new(),
@@ -781,7 +779,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             };
 
         while let Some(required) = balance_iter.next() {
-            println!("required is: {:?}", required);
             // Spend a single note towards the required balance, if possible.
             // This adds the required spends to the planner.
             let Some(note) = notes_by_asset_id
@@ -796,7 +793,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 )
                 .into());
             };
-            print!("note is: {:?}", note);
 
             // Add the required spends to the planner. If it's a voting action, avoid adding the spend
             // to the planner since we already added it, otherwise it will double spend the nullifier.
