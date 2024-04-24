@@ -238,12 +238,24 @@ message Penalty {
 
 // Query operations for the staking component.
 service QueryService {
+  // Queries for information about a specific validator.
+  rpc GetValidatorInfo(GetValidatorInfoRequest) returns (GetValidatorInfoResponse);
   // Queries the current validator set, with filtering.
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
   rpc ValidatorUptime(ValidatorUptimeRequest) returns (ValidatorUptimeResponse);
+}
+
+// Requests information about a specific validator.
+message GetValidatorInfoRequest {
+  // The identity key of the validator.
+  core.keys.v1.IdentityKey identity_key = 2;
+}
+
+message GetValidatorInfoResponse {
+  core.component.stake.v1.ValidatorInfo validator_info = 1;
 }
 
 // Requests information on the chain's validators.
