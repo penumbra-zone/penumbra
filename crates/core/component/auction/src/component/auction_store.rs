@@ -31,7 +31,7 @@ pub(crate) trait AuctionStoreRead: StateRead {
             return Ok(None);
         };
 
-        let dutch_auction_type_str = pb::DutchAuction::full_name();
+        let dutch_auction_type_str = pb::DutchAuction::type_url();
 
         anyhow::ensure!(
             any_auction.type_url == dutch_auction_type_str,
