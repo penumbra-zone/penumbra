@@ -1,3 +1,5 @@
+//! [Payment address][Address] facilities.
+
 use std::io::{Cursor, Read, Write};
 
 use anyhow::Context;
@@ -16,7 +18,9 @@ pub use view::AddressView;
 
 use crate::{fmd, ka, keys::Diversifier};
 
+/// The length of an [`Address`] in bytes.
 pub const ADDRESS_LEN_BYTES: usize = 80;
+
 /// Number of bits in the address short form divided by the number of bits per Bech32m character
 pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 
@@ -24,18 +28,22 @@ pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
+    /// The address diversifier.
     d: Diversifier,
-    /// cached copy of the diversified base
+    /// A cached copy of the diversified base.
     g_d: decaf377::Element,
 
+    /// The public key for this payment address.
+    ///
     /// extra invariant: the bytes in pk_d should be the canonical encoding of an
     /// s value (whether or not it is a valid decaf377 encoding)
     /// this ensures we can use a PaymentAddress to form a note commitment,
     /// which involves hashing s as a field element.
     pk_d: ka::Public,
-    /// transmission key s value
+    /// The transmission key s value.
     transmission_key_s: Fq,
 
+    /// The clue key for this payment address.
     ck_d: fmd::ClueKey,
 }
 
@@ -79,26 +87,32 @@ impl Address {
         }
     }
 
+    /// Returns a reference to the address diversifier.
     pub fn diversifier(&self) -> &Diversifier {
         &self.d
     }
 
+    /// Returns a reference to the diversified base.
     pub fn diversified_generator(&self) -> &decaf377::Element {
         &self.g_d
     }
 
+    /// Returns a reference to the transmission key.
     pub fn transmission_key(&self) -> &ka::Public {
         &self.pk_d
     }
 
+    /// Returns a reference to the clue key.
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
     }
 
+    /// Returns a reference to the transmission key `s` value.
     pub fn transmission_key_s(&self) -> &Fq {
         &self.transmission_key_s
     }
 
+    /// Converts this address to a vector of bytes.
     pub fn to_vec(&self) -> Vec<u8> {
         let mut bytes = std::io::Cursor::new(Vec::new());
         bytes
@@ -114,7 +128,7 @@ impl Address {
         f4jumble(bytes.get_ref()).expect("can jumble")
     }
 
-    /// A randomized dummy address.
+    /// Generates a randomized dummy address.
     pub fn dummy<R: CryptoRng + Rng>(rng: &mut R) -> Self {
         loop {
             let mut diversifier_bytes = [0u8; 16];
