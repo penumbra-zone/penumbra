@@ -300,6 +300,18 @@ impl TryFrom<&[u8]> for Address {
     }
 }
 
+/// Assert the addresses are both [`Send`] and [`Sync`].
+//  NB: allow dead code, because this block only contains compile-time assertions.
+#[allow(dead_code)]
+mod assert_address_is_send_and_sync {
+    fn is_send<T: Send>() {}
+    fn is_sync<T: Sync>() {}
+    fn f() {
+        is_send::<super::Address>();
+        is_sync::<super::Address>();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
