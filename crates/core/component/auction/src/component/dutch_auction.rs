@@ -190,14 +190,14 @@ trait Inner: StateWrite {
         let id = new_state.description.id();
         let key = state_key::auction_store::by_id(id);
         let pb_state: pb::DutchAuction = new_state.into();
-        let raw_auction = pb_state.encode_length_delimited_to_vec();
+        let raw_auction = pb_state.encode_to_vec();
 
         let any_auction = prost_types::Any {
-            type_url: pb::DutchAuction::full_name(),
+            type_url: pb::DutchAuction::type_url(),
             value: raw_auction,
         };
 
-        let raw_any = any_auction.encode_length_delimited_to_vec();
+        let raw_any = any_auction.encode_to_vec();
 
         self.put_raw(key, raw_any);
     }
@@ -286,6 +286,7 @@ struct TriggerData {
 
 #[cfg(test)]
 mod tests {
+
     use crate::component::dutch_auction::{compute_next_trigger, TriggerData};
 
     #[test]
