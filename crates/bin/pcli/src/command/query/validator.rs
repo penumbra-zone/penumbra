@@ -167,25 +167,6 @@ impl ValidatorCmd {
             ValidatorCmd::Definition { file, identity_key } => {
                 let identity_key = identity_key.parse::<IdentityKey>()?;
 
-                /*
-                use penumbra_proto::client::specific::ValidatorStatusRequest;
-
-                let mut client = opt.specific_client().await?;
-                let status: ValidatorStatus = client
-                    .validator_status(ValidatorStatusRequest {
-                        chain_id: "".to_string(), // TODO: fill in
-                        identity_key: Some(identity_key.into()),
-                    })
-                    .await?
-                    .into_inner()
-                    .try_into()?;
-
-                // why isn't the validator definition part of the status?
-                // why do we have all these different validator messages?
-                // do we need them?
-                status.state.
-                */
-
                 // Intsead just download everything
                 let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
 
