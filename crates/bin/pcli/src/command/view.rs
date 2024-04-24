@@ -66,7 +66,9 @@ impl ViewCmd {
         let full_viewing_key = app.config.full_viewing_key.clone();
 
         match self {
-            ViewCmd::Auction(auction_cmd) => auction_cmd.exec(app.view(), &full_viewing_key).await?,
+            ViewCmd::Auction(auction_cmd) => {
+                auction_cmd.exec(app.view(), &full_viewing_key).await?
+            }
             ViewCmd::WalletId(wallet_id_cmd) => {
                 wallet_id_cmd.exec(&full_viewing_key)?;
             }

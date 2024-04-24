@@ -1,5 +1,4 @@
-use std::str::FromStr;
-use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
@@ -1021,21 +1020,19 @@ impl Storage {
 
     pub async fn record_auction_with_state(
         &self,
-        asset_id: asset::Id,
         auction_id: AuctionId,
         auction_state: u64,
     ) -> anyhow::Result<()> {
-        let asset_id = asset_id.0.to_bytes().to_vec();
         let auction_id = auction_id.0.to_vec();
-        let auction_state = auction_state.to_string();
+        let auction_state = auction_state;
 
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
             pool.get()?
                 .execute(
-                    "INSERT INTO auctions (asset_id, auction_id, auction_state, note_commitment) VALUES (?1, ?2, ?3, NULL)",
-            (asset_id, auction_id, auction_state),
+                    "INSERT INTO auctions (auction_id, auction_state, note_commitment) VALUES (?1, ?2, ?3, NULL)",
+            (auction_id, auction_state),
                 )
                 .map_err(anyhow::Error::from)
         })
@@ -1046,10 +1043,10 @@ impl Storage {
 
     pub async fn update_auction_with_note_commitment(
         &self,
-        asset_id: asset::Id,
+        auction_id: AuctionId,
         note_commitment: StateCommitment,
     ) -> anyhow::Result<()> {
-        let asset_id = asset_id.0.to_bytes().to_vec();
+        let auction_id = auction_id.0.to_vec();
         let blob_nc = note_commitment.0.to_bytes().to_vec();
 
         let pool = self.pool.clone();
@@ -1057,8 +1054,8 @@ impl Storage {
         spawn_blocking(move || {
             pool.get()?
                 .execute(
-                    "UPDATE auctions SET (note_commitment) = ?1 WHERE asset_id = ?2",
-                    (blob_nc, asset_id),
+                    "UPDATE auctions SET (note_commitment) = ?1 WHERE auction_id = ?2",
+                    (blob_nc, auction_id),
                 )
                 .map_err(anyhow::Error::from)
         })
