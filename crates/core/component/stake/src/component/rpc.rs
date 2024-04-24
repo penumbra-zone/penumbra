@@ -5,12 +5,14 @@ use futures::StreamExt;
 use penumbra_proto::{
     core::component::stake::v1::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
-        CurrentValidatorRateResponse, ValidatorInfoRequest, ValidatorInfoResponse,
-        ValidatorPenaltyRequest, ValidatorPenaltyResponse, ValidatorStatusRequest,
-        ValidatorStatusResponse, ValidatorUptimeRequest, ValidatorUptimeResponse,
+        CurrentValidatorRateResponse, GetValidatorInfoRequest, GetValidatorInfoResponse,
+        ValidatorInfoRequest, ValidatorInfoResponse, ValidatorPenaltyRequest,
+        ValidatorPenaltyResponse, ValidatorStatusRequest, ValidatorStatusResponse,
+        ValidatorUptimeRequest, ValidatorUptimeResponse,
     },
     DomainType,
 };
+use tap::{TapFallible, TapOptional};
 use tonic::Status;
 use tracing::{error_span, instrument, Instrument, Span};
 
@@ -30,6 +32,38 @@ impl Server {
 
 #[tonic::async_trait]
 impl QueryService for Server {
+    #[instrument(skip(self, request))]
+    async fn get_validator_info(
+        &self,
+        request: tonic::Request<GetValidatorInfoRequest>,
+    ) -> Result<tonic::Response<GetValidatorInfoResponse>, tonic::Status> {
+        let state = self.storage.latest_snapshot();
+        let GetValidatorInfoRequest { identity_key } = request.into_inner();
+
+        // Take the identity key from the inbound request.
+        let identity_key = identity_key
+            .ok_or_else(|| Status::invalid_argument("an identity key must be provided"))?
+            .try_into()
+            .tap_err(|error| tracing::debug!(?error, "request contained an invalid identity key"))
+            .map_err(|_| Status::invalid_argument("invalid identity key"))?;
+
+        // Look up the information for the validator with the given identity key.
+        let info = state
+            .get_validator_info(&identity_key)
+            .await
+            .tap_err(|error| tracing::error!(?error, %identity_key, "failed to get validator info"))
+            .map_err(|_| Status::invalid_argument("failed to get validator info"))?
+            .tap_none(|| tracing::debug!(%identity_key, "validator info was not found"))
+            .ok_or_else(|| Status::not_found("validator info was not found"))?;
+
+        // Construct the outbound response.
+        let resp = GetValidatorInfoResponse {
+            validator_info: Some(info.to_proto()),
+        };
+
+        Ok(tonic::Response::new(resp))
+    }
+
     type ValidatorInfoStream =
         Pin<Box<dyn futures::Stream<Item = Result<ValidatorInfoResponse, tonic::Status>> + Send>>;
 
