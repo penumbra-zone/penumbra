@@ -10,6 +10,7 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
 use futures::stream::{StreamExt, TryStreamExt};
+use penumbra_auction::auction;
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -394,7 +395,21 @@ impl ViewService for ViewServer {
         &self,
         _request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        unimplemented!("auctions")
+        let _auction = self.storage.auction_by_address().await.map_err(|_| {
+            tonic::Status::failed_precondition("Error retrieving auction information.")
+        })?;
+
+        let stream = try_stream! {
+            yield pb::AuctionsResponse { id: todo!(), note_record: todo!(), auction: todo!(), positions: todo!() }
+        };
+
+        Ok(tonic::Response::new(
+            stream
+                .map_err(|e: anyhow::Error| {
+                    tonic::Status::unavailable(format!("error getting auction: {e}"))
+                })
+                .boxed(),
+        ))
     }
 
     async fn broadcast_transaction(

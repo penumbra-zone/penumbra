@@ -6,6 +6,8 @@ use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use penumbra_auction::auction::dutch::DutchAuctionState;
+use penumbra_auction::auction::AuctionId;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
@@ -1591,5 +1593,12 @@ impl Storage {
         .await??;
 
         Ok(records)
+    }
+
+    pub async fn auction_by_address(
+        &self,
+    ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>> {
+        // TODO: Add a sqlite table to track auction state/
+        todo!()
     }
 }
