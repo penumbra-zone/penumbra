@@ -51,6 +51,11 @@ pub enum ValidatorCmd {
         /// The identity key of the validator to fetch.
         identity_key: String,
     },
+    /// Fetch the current status for a particular validator.
+    Status {
+        /// The identity key of the validator to fetch.
+        identity_key: String,
+    },
 }
 
 impl ValidatorCmd {
@@ -337,6 +342,35 @@ impl ValidatorCmd {
                         };
                     }
                 }
+            }
+            ValidatorCmd::Status { identity_key } => {
+                // Parse the identity key and construct the RPC request.
+                let request = tonic::Request::new(GetValidatorInfoRequest {
+                    identity_key: identity_key
+                        .parse::<IdentityKey>()
+                        .map(|ik| ik.to_proto())
+                        .map(Some)?,
+                });
+
+                // Instantiate an RPC client and send the request.
+                let GetValidatorInfoResponse { validator_info } = app
+                    .pd_channel()
+                    .await
+                    .map(StakeQueryServiceClient::new)?
+                    .get_validator_info(request)
+                    .await?
+                    .into_inner();
+
+                // Parse the validator status, or return an error if it was not found within the
+                // client's response.
+                let Info { status, .. } = validator_info
+                    .ok_or_else(|| anyhow!("response did not include validator info"))?
+                    .try_into()
+                    .context("parsing validator info")?;
+
+                // Serialize the status to TOML, and print it to stdout.
+                let toml = toml::to_string_pretty(&status)?;
+                println!("{}", toml);
             }
         }
 
