@@ -1,20 +1,26 @@
 use std::{fs::File, io::Write, ops::RangeInclusive, time::Duration};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Error, Result};
 use colored::Colorize;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
 use penumbra_num::Amount;
-use penumbra_proto::core::app::v1::{
-    query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
-};
-use penumbra_proto::core::component::stake::v1::{
-    query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
-    ValidatorStatusRequest, ValidatorUptimeRequest,
+use penumbra_proto::{
+    core::{
+        app::v1::{
+            query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+        },
+        component::stake::v1::{
+            query_service_client::QueryServiceClient as StakeQueryServiceClient,
+            GetValidatorInfoRequest, GetValidatorInfoResponse, ValidatorInfoRequest,
+            ValidatorStatusRequest, ValidatorUptimeRequest,
+        },
+    },
+    DomainType,
 };
 use penumbra_stake::{
-    validator::{self, ValidatorToml},
+    validator::{self, Info, ValidatorToml},
     IdentityKey, Uptime,
 };
 
@@ -165,39 +171,42 @@ impl ValidatorCmd {
                 println!("{table}");
             }
             ValidatorCmd::Definition { file, identity_key } => {
-                let identity_key = identity_key.parse::<IdentityKey>()?;
+                // Parse the identity key and construct the RPC request.
+                let request = tonic::Request::new(GetValidatorInfoRequest {
+                    identity_key: identity_key
+                        .parse::<IdentityKey>()
+                        .map(|ik| ik.to_proto())
+                        .map(Some)?,
+                });
 
-                // Intsead just download everything
-                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
-
-                let validators = client
-                    .validator_info(ValidatorInfoRequest {
-                        show_inactive: true,
-                        ..Default::default()
-                    })
+                // Instantiate an RPC client and send the request.
+                let GetValidatorInfoResponse { validator_info } = app
+                    .pd_channel()
+                    .await
+                    .map(StakeQueryServiceClient::new)?
+                    .get_validator_info(request)
                     .await?
-                    .into_inner()
-                    .try_collect::<Vec<_>>()
-                    .await?
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<Vec<validator::Info>, _>>()?;
+                    .into_inner();
 
-                let validator: ValidatorToml = validators
-                    .iter()
-                    .map(|info| &info.validator)
-                    .find(|v| v.identity_key == identity_key)
-                    .cloned()
-                    .ok_or_else(|| anyhow::anyhow!("Could not find validator {}", identity_key))?
-                    .into();
+                // Coerce the validator information into TOML, or return an error if it was not
+                // found within the client's response.
+                let serialize = |v| toml::to_string_pretty(&v).map_err(Error::from);
+                let toml = validator_info
+                    .ok_or_else(|| anyhow!("response did not include validator info"))?
+                    .try_into()
+                    .context("parsing validator info")
+                    .map(|Info { validator, .. }| validator)
+                    .map(ValidatorToml::from)
+                    .and_then(serialize)?;
 
+                // Write to a file if an output file was specified, otherwise print to stdout.
                 if let Some(file) = file {
                     File::create(file)
                         .with_context(|| format!("cannot create file {file:?}"))?
-                        .write_all(toml::to_string_pretty(&validator)?.as_bytes())
+                        .write_all(toml.as_bytes())
                         .context("could not write file")?;
                 } else {
-                    println!("{}", toml::to_string_pretty(&validator)?);
+                    println!("{}", toml);
                 }
             }
             ValidatorCmd::Uptime { identity_key } => {
