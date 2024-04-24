@@ -180,6 +180,12 @@ impl DomainType for Address {
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {
+        Self::from(&a)
+    }
+}
+
+impl From<&Address> for pb::Address {
+    fn from(a: &Address) -> Self {
         pb::Address {
             inner: a.to_vec(),
             // Always produce encodings without the alt format.
