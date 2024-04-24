@@ -19,6 +19,7 @@ use {
         client::v1::query_server::QueryServer as ClientQueryServer,
         connection::v1::query_server::QueryServer as ConnectionQueryServer,
     },
+    penumbra_auction::component::rpc::Server as AuctionServer,
     penumbra_compact_block::component::rpc::Server as CompactBlockServer,
     penumbra_dex::component::rpc::Server as DexServer,
     penumbra_fee::component::rpc::Server as FeeServer,
@@ -27,6 +28,7 @@ use {
         core::{
             app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
             component::{
+                auction::v1alpha1::query_service_server::QueryServiceServer as AuctionQueryServiceServer,
                 compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
                 dex::v1::{
                     query_service_server::QueryServiceServer as DexQueryServiceServer,
@@ -79,6 +81,9 @@ pub fn router(
         .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
             storage.clone(),
         ))))
+        .add_service(AuctionQueryServiceServer::new(AuctionServer::new(
+            storage.clone(),
+        )))
         .add_service(we(AppQueryServiceServer::new(AppQueryServer::new(
             storage.clone(),
         ))))
