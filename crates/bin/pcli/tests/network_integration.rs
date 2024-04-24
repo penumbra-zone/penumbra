@@ -298,7 +298,7 @@ fn delegate_and_undelegate() {
     // need to pull the amount of delegation tokens we obtained so that we can later
     // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
     // To do this, we use a regex to extract the amount of delegation tokens we obtained:
-    let delegation_token_pattern = Regex::new(r"(\d+\.?\d+[a-z]?delegation_[a-zA-Z0-9]*)").unwrap();
+    let delegation_token_pattern = Regex::new(r"(\d+\.?\d*[a-z]?delegation_[a-zA-Z0-9]*)").unwrap();
     let (delegation_token_str, [_match]) = delegation_token_pattern
         .captures(&balance_output_string)
         .expect("can find delegation token in balance output")
@@ -1252,6 +1252,7 @@ fn delegate_submit_proposal_and_vote() {
 
     let mut num_attempts = 0;
     loop {
+        tracing::info!(attempt_number = num_attempts, "attempting delegation");
         // Delegate a tiny bit of penumbra to the validator.
         let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
         delegate_cmd
@@ -1266,11 +1267,14 @@ fn delegate_submit_proposal_and_vote() {
             ])
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let delegation_result = delegate_cmd.assert().try_success();
+        tracing::info!(?delegation_result, "delegation result");
 
         // If the undelegation command succeeded, we can exit this loop.
         if delegation_result.is_ok() {
+            tracing::info!("delegation succeeded");
             break;
         } else {
+            tracing::info!("delegation failed");
             num_attempts += 1;
             if num_attempts >= max_attempts {
                 panic!("Exceeded max attempts for fallible command");
