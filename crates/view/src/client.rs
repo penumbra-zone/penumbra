@@ -2,7 +2,10 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
-use penumbra_auction::auction::{dutch::{DutchAuction, DutchAuctionState}, AuctionId};
+use penumbra_auction::auction::{
+    dutch::{DutchAuction, DutchAuctionState},
+    AuctionId,
+};
 use penumbra_tct::Position;
 use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
@@ -19,10 +22,14 @@ use penumbra_dex::{
 use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::{core::component::auction, serializers::bech32str::auction_id, view::v1::{
-    self as pb, view_service_client::ViewServiceClient, BalancesResponse,
-    BroadcastTransactionResponse, WitnessRequest,
-}};
+use penumbra_proto::{
+    core::component::auction,
+    serializers::bech32str::auction_id,
+    view::v1::{
+        self as pb, view_service_client::ViewServiceClient, BalancesResponse,
+        BroadcastTransactionResponse, WitnessRequest,
+    },
+};
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
 use penumbra_stake::IdentityKey;
@@ -310,10 +317,25 @@ pub trait ViewClient {
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>>;
 
     /// Queries for auctions controlled by the user's wallet.
-    fn auctions_by_index(&mut self, address_index: AddressIndex) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>>> + Send + 'static>>;
+    fn auctions_by_index(
+        &mut self,
+        address_index: AddressIndex,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    >;
 
     /// Queries for auctions controlled by the user's wallet.
-    fn auctions_by_id(&mut self, auction_id: AuctionId) -> Pin<Box<dyn Future<Output = Result<Vec<DutchAuction>>> + Send + 'static>>;
+    fn auctions_by_id(
+        &mut self,
+        auction_id: AuctionId,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<DutchAuction>>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -926,8 +948,17 @@ where
 
     fn auctions_by_index(
         &mut self,
-        address_index: AddressIndex
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>>> + Send + 'static>> {
+        address_index: AddressIndex,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    > {
         let _ = address_index;
         let _request = pb::AuctionsRequest {
             account_filter: todo!(),
@@ -940,7 +971,7 @@ where
 
     fn auctions_by_id(
         &mut self,
-        _auction_id: AuctionId
+        _auction_id: AuctionId,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<DutchAuction>>> + Send + 'static>> {
         // TODO: fill in stub for `pcli query auction id AUCTION_ID` (#4243)
         todo!();
