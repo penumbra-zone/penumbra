@@ -11,7 +11,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Balance, Value};
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
 use penumbra_auction::auction::{
