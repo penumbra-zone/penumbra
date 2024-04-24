@@ -65,7 +65,8 @@ and provide that value in the documentation. Or should we just pick a genesis st
    You must use that precise genesis time, otherwise your node will not be able to reach consensus with the rest of the network.
 6. Move the migrated state into place: `rm -r ~/.penumbra/testnet_data/node0/pd/rocksdb && mv ~/.penumbra/testnet_data/node0/pd-exported-state/rocksdb ~/.penumbra/testnet_data/node0/pd/`
 7. Copy the new genesis into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json`
-8. Clean up the old CometBFT state: `find ~/.penumbra/testnet_data/node0/cometbft/data/ -mindepth 1 -maxdepth 1 -type d -and -not -name tx_index.db -exec rm -r {} +`
+8. Copy the new signing state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/priv_validator_state.json ~/.penumbra/testnet_data/node0/cometbft/data/priv_validator_state.json`
+9. Clean up the old CometBFT state: `find ~/.penumbra/testnet_data/node0/cometbft/data/ -mindepth 1 -maxdepth 1 -type d -and -not -name tx_index.db -exec rm -r {} +`
 
 <!--
 N.B. We use an ugly ad-hoc find command rather than `cometbft reset-state` because we want to preserve the `tx_index.db` directory.
