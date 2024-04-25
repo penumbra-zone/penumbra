@@ -21,9 +21,9 @@ impl AuctionCmd {
     ) -> Result<()> {
         let auctions = view_client.auctions().await?;
 
-        auctions.iter().for_each(|(id, snr)|{
-            println!("{id:?} {}",snr.note.amount());
+        auctions.iter().for_each(|(id, snr)| {
+            println!("{id:?} {}", snr.note.amount());
         });
-        todo!()
+        Ok(())
     }
 }
