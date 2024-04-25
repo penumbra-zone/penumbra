@@ -309,22 +309,28 @@ impl Worker {
                                 let auction_id = schedule_da.description.id();
                                 let auction_nft_opened = AuctionNft::new(auction_id, 0);
                                 let nft_metadata_opened = auction_nft_opened.metadata.clone();
+                                let asset_id = nft_metadata_opened.id();
 
                                 self.storage.record_asset(nft_metadata_opened).await?;
 
                                 self.storage
-                                    .record_auction_with_state(schedule_da.description.clone(), 0)
+                                    .record_auction_with_state(
+                                        asset_id,
+                                        schedule_da.description.id(),
+                                        0u64, // Opened
+                                    )
                                     .await?;
                             }
                             penumbra_transaction::Action::ActionDutchAuctionEnd(end_da) => {
                                 let auction_id = end_da.auction_id;
                                 let auction_nft_closed = AuctionNft::new(auction_id, 1);
                                 let nft_metadata_closed = auction_nft_closed.metadata.clone();
+                                let asset_id = nft_metadata_closed.id();
 
                                 self.storage.record_asset(nft_metadata_closed).await?;
 
                                 self.storage
-                                    .update_auction_with_state(end_da.auction_id, 1)
+                                    .record_auction_with_state(asset_id, end_da.auction_id, 1)
                                     .await?;
                             }
                             penumbra_transaction::Action::ActionDutchAuctionWithdraw(
@@ -334,10 +340,15 @@ impl Worker {
                                 let auction_nft_withdrawn =
                                     AuctionNft::new(auction_id, withdraw_da.seq);
                                 let nft_metadata_withdrawn = auction_nft_withdrawn.metadata.clone();
+                                let asset_id = nft_metadata_withdrawn.id();
 
                                 self.storage.record_asset(nft_metadata_withdrawn).await?;
                                 self.storage
-                                    .update_auction_with_state(auction_id, withdraw_da.seq)
+                                    .record_auction_with_state(
+                                        asset_id,
+                                        auction_id,
+                                        withdraw_da.seq,
+                                    )
                                     .await?;
                             }
                             _ => (),
@@ -347,14 +358,24 @@ impl Worker {
 
                 // Record any new assets we detected.
                 for note_record in filtered_block.new_notes.values() {
-                    // If the asset is already known, skip it.
-
-                    if self
+                    // If the asset is already known, skip it, unless there's useful information
+                    // to cross-reference.
+                    if let Some(note_denom) = self
                         .storage
                         .asset_by_id(&note_record.note.asset_id())
                         .await?
-                        .is_some()
                     {
+                        // If the asset metata is for an auction, we record the associated note commitment
+                        // so we can use it as a fast index into SNRs.
+                        if note_denom.is_auction_nft() {
+                            let note_commitment = note_record.note_commitment;
+                            self.storage
+                                .update_auction_with_note_commitment(
+                                    note_denom.id(),
+                                    note_commitment,
+                                )
+                                .await?;
+                        }
                         continue;
                     } else {
                         // If the asset is unknown, we may be able to query for its denom metadata and store that.
@@ -384,7 +405,6 @@ impl Worker {
                 }
 
                 // Commit the block to the database.
-
                 self.storage
                     .record_block(
                         filtered_block.clone(),
