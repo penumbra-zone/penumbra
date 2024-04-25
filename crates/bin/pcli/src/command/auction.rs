@@ -1,14 +1,19 @@
 use super::tx::FeeTier;
 use crate::App;
-use anyhow::Context;
+use anyhow::{anyhow, Context, Result};
 use clap::Subcommand;
-use penumbra_asset::{asset, Value};
+use penumbra_asset::{
+    asset::{self, Unit, REGISTRY},
+    Value,
+};
 use penumbra_auction::auction::AuctionId;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
 use penumbra_proto::view::v1::GasPricesRequest;
 use penumbra_wallet::plan::Planner;
+use rand::{Rng, RngCore};
 use rand_core::OsRng;
+use regex::Regex;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {
@@ -29,19 +34,16 @@ pub enum DutchCmd {
         /// The value the seller wishes to auction.
         #[clap(long, display_order = 200)]
         input: String,
-        /// The asset ID of the target asset the seller wishes to acquire.
-        #[clap(long, display_order = 300)]
-        output: String,
         /// The maximum output the seller can receive.
         ///
         /// This implicitly defines the starting price for the auction.
         #[clap(long, display_order = 400)]
-        max_output: u64,
+        max_output: String,
         /// The minimum output the seller is willing to receive.
         ///
         /// This implicitly defines the ending price for the auction.
         #[clap(long, display_order = 500)]
-        min_output: u64,
+        min_output: String,
         /// The block height at which the auction begins.
         ///
         /// This allows the seller to schedule an auction at a future time.
@@ -58,10 +60,6 @@ pub enum DutchCmd {
         /// `end_height - start_height` must be a multiple of `step_count`.
         #[clap(long, display_order = 800)]
         step_count: u64,
-        /// A random nonce used to allow identical auctions to have
-        /// distinct auction IDs.
-        #[clap(long, display_order = 900)]
-        nonce: u64,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 1000)]
         fee_tier: FeeTier,
@@ -109,6 +107,16 @@ pub enum DutchCmd {
     },
 }
 
+fn extract_unit(input: &str) -> Result<Unit> {
+    let unit_re = Regex::new(r"[0-9.]+([^0-9.].*+)$")?;
+    if let Some(captures) = unit_re.captures(input) {
+        let unit = captures.get(1).expect("matched regex").as_str();
+        Ok(asset::REGISTRY.parse_unit(unit))
+    } else {
+        Err(anyhow!("could not extract unit from {}", input))
+    }
+}
+
 impl DutchCmd {
     /// Process the command by performing the appropriate action.
     pub async fn exec(&self, app: &mut App) -> anyhow::Result<()> {
@@ -127,19 +135,22 @@ impl DutchCmd {
             DutchCmd::DutchAuctionSchedule {
                 source,
                 input,
-                output,
                 max_output,
                 min_output,
                 start_height,
                 end_height,
                 step_count,
-                nonce: _,
                 fee_tier,
             } => {
+                let mut nonce = [0u8; 32];
+                OsRng.fill_bytes(&mut nonce);
+
                 let input = input.parse::<Value>()?;
-                let output = output.parse::<asset::Id>()?;
-                let max_output = Amount::from(*max_output);
-                let min_output = Amount::from(*min_output);
+
+                let max_output = max_output.parse::<Value>()?;
+                let min_output = min_output.parse::<Value>()?;
+
+                let output_id = max_output.asset_id;
 
                 let mut planner = Planner::new(OsRng);
                 planner
@@ -148,14 +159,40 @@ impl DutchCmd {
 
                 planner.dutch_auction_schedule(
                     input,
-                    output,
-                    max_output,
-                    min_output,
+                    output_id,
+                    max_output.amount,
+                    min_output.amount,
                     *start_height,
                     *end_height,
                     *step_count,
-                    [0; 32],
+                    nonce,
                 );
+
+                let plan = planner
+                    .plan(
+                        app.view
+                            .as_mut()
+                            .context("view service must be initialized")?,
+                        AddressIndex::new(*source),
+                    )
+                    .await
+                    .context("can't build send transaction")?;
+                app.build_and_submit_transaction(plan).await?;
+                Ok(())
+            }
+            DutchCmd::DutchAuctionEnd {
+                auction_id,
+                source,
+                fee_tier,
+            } => {
+                let auction_id = auction_id.parse::<AuctionId>()?;
+
+                let mut planner = Planner::new(OsRng);
+                planner
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into());
+
+                planner.dutch_auction_end(auction_id);
 
                 let plan = planner
                     .plan(
@@ -187,32 +224,6 @@ impl DutchCmd {
                     .set_fee_tier((*fee_tier).into());
 
                 planner.dutch_auction_withdraw(auction_id, *seq, reserves_input, reserves_output);
-
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
-                Ok(())
-            }
-            DutchCmd::DutchAuctionEnd {
-                auction_id,
-                source,
-                fee_tier,
-            } => {
-                let auction_id = auction_id.parse::<AuctionId>()?;
-
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
-
-                planner.dutch_auction_end(auction_id);
 
                 let plan = planner
                     .plan(
