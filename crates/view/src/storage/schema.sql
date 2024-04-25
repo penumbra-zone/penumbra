@@ -128,3 +128,14 @@ CREATE TABLE positions (
      position_state         TEXT NOT NULL,
      trading_pair           TEXT NOT NULL
 );
+
+-- This table records the auction state, using the asset id
+-- as a primary key, so that we can have multiple rows with
+-- matching auction ids but differing states and associated
+-- note commitments.
+CREATE TABLE auctions (
+     asset_id               BLOB PRIMARY KEY NOT NULL,
+     auction_id             BLOB NOT NULL,
+     auction_state          TEXT NOT NULL,
+     note_commitment        BLOB
+);
