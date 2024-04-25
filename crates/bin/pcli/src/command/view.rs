@@ -9,7 +9,10 @@ use wallet_id::WalletIdCmd;
 
 use crate::App;
 
+use self::auction::AuctionCmd;
+
 mod address;
+mod auction;
 mod balance;
 mod staked;
 mod wallet_id;
@@ -19,6 +22,8 @@ mod tx;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ViewCmd {
+    /// View your auction information
+    Auction(AuctionCmd),
     /// View your wallet id
     WalletId(WalletIdCmd),
     /// View one of your addresses, either by numerical index, or a random ephemeral one.
@@ -44,6 +49,7 @@ pub enum ViewCmd {
 impl ViewCmd {
     pub fn offline(&self) -> bool {
         match self {
+            ViewCmd::Auction(auction_cmd) => auction_cmd.offline(),
             ViewCmd::WalletId(wallet_id_cmd) => wallet_id_cmd.offline(),
             ViewCmd::Address(address_cmd) => address_cmd.offline(),
             ViewCmd::Balance(balance_cmd) => balance_cmd.offline(),
@@ -60,6 +66,7 @@ impl ViewCmd {
         let full_viewing_key = app.config.full_viewing_key.clone();
 
         match self {
+            ViewCmd::Auction(auction_cmd) => auction_cmd.exec(app.view(), &full_viewing_key).await?,
             ViewCmd::WalletId(wallet_id_cmd) => {
                 wallet_id_cmd.exec(&full_viewing_key)?;
             }
