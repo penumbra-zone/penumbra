@@ -38,9 +38,9 @@ until the `--genesis-start` time is reached, at which point it will resume proce
 the community of validators can coordinate resumption of chain activity, even when operators perform migrate their ndoes
 at slightly different times.
 
-### Testnet 70 -> 71
+### Testnet 71 -> 72
 
-For the first chain upgrade performed on a Penumbra testnet, use this value for genesis time: `{{ #include ../../upgrade_genesis_time_70_71.md }}`.
+For the most recent upgrade on the Penumbra testnet, use this value for genesis time: `{{ #include ../../upgrade_genesis_time_71_72.md }}`.
 See an example below for how to supply this value when performing the migration.
 
 ## Performing a chain upgrade
@@ -49,10 +49,10 @@ The following steps assume that your node uses the default directory of `~/.penu
 to store state for both `pd` and `cometbft`. If your instance is using a different directory, update the paths accordingly.
 
 1. Stop both `pd` and `cometbft`. Depending on how you run Penumbra, this could mean `sudo systemctl stop penumbra cometbft`.
-2. Back up the existing node state, as a precaution: `tar -cf ~/.penumbra/testnet_data/node0-state-backup.tar ~/.penumbra/testnet_data/node0`
+2. Back up the existing node state, as a precaution: `tar -cf ~/.penumbra/testnet_data/node0-state-backup-71.tar ~/.penumbra/testnet_data/node0`
 3. Download the latest version of `pd` and install it. Run `pd --version` and confirm you see `{{ #include ../../penumbra_version.md }}` before proceeding.
 4. Prepare an export directory:
-   `pd export --home ~/.penumbra/testnet_data/node0/pd --export-directory ~/.penumbra/testnet_data/node0/pd-exported-state`
+   `pd export --home ~/.penumbra/testnet_data/node0/pd --export-directory ~/.penumbra/testnet_data/node0/pd-exported-state-71`
 <!--
 An example log message emitted by `pd migrate` without providing `--genesis-start`:
 
@@ -61,11 +61,11 @@ An example log message emitted by `pd migrate` without providing `--genesis-star
 The value after `now=` is what should be copied. In practice, for testnets, Penumbra Labs will advise on a genesis time
 and provide that value in the documentation. Or should we just pick a genesis start ahead of time, and use that for all?
 -->
-5. Apply the migration: `pd migrate --genesis-start "{{ #include ../../upgrade_genesis_time_70_71.md }}" --target-directory ~/.penumbra/testnet_data/node0/pd-exported-state/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../../penumbra_version.md }}.tar.gz`.
+5. Apply the migration: `pd migrate --genesis-start "{{ #include ../../upgrade_genesis_time_71_72.md }}" --target-directory ~/.penumbra/testnet_data/node0/pd-exported-state-71/ --migrate-archive ~/.penumbra/testnet_data/node0/pd-migrated-state-{{ #include ../../penumbra_version.md }}.tar.gz`.
    You must use that precise genesis time, otherwise your node will not be able to reach consensus with the rest of the network.
-6. Move the migrated state into place: `rm -r ~/.penumbra/testnet_data/node0/pd/rocksdb && mv ~/.penumbra/testnet_data/node0/pd-exported-state/rocksdb ~/.penumbra/testnet_data/node0/pd/`
-7. Copy the new genesis into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json`
-8. Copy the new signing state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state/priv_validator_state.json ~/.penumbra/testnet_data/node0/cometbft/data/priv_validator_state.json`
+6. Move the migrated state into place: `rm -r ~/.penumbra/testnet_data/node0/pd/rocksdb && mv ~/.penumbra/testnet_data/node0/pd-exported-state-71/rocksdb ~/.penumbra/testnet_data/node0/pd/`
+7. Copy the new genesis into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state-71/genesis.json ~/.penumbra/testnet_data/node0/cometbft/config/genesis.json`
+8. Copy the new signing state into place: `cp ~/.penumbra/testnet_data/node0/pd-exported-state-71/priv_validator_state.json ~/.penumbra/testnet_data/node0/cometbft/data/priv_validator_state.json`
 9. Clean up the old CometBFT state: `find ~/.penumbra/testnet_data/node0/cometbft/data/ -mindepth 1 -maxdepth 1 -type d -and -not -name tx_index.db -exec rm -r {} +`
 
 <!--
