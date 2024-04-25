@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Context;
+use penumbra_auction::auction::AuctionNft;
 use penumbra_compact_block::CompactBlock;
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
@@ -257,7 +258,6 @@ impl Worker {
                                 let position_id = position_open.position.id();
 
                                 // Record every possible permutation.
-
                                 let lp_nft = LpNft::new(position_id, position::State::Opened);
                                 let _id = lp_nft.asset_id();
                                 let denom = lp_nft.denom();
@@ -302,6 +302,43 @@ impl Worker {
 
                                 // Update the position record
                                 self.storage.update_position(position_id, state).await?;
+                            }
+                            penumbra_transaction::Action::ActionDutchAuctionSchedule(
+                                schedule_da,
+                            ) => {
+                                let auction_id = schedule_da.description.id();
+                                let auction_nft_opened = AuctionNft::new(auction_id, 0);
+                                let nft_metadata_opened = auction_nft_opened.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_opened).await?;
+
+                                self.storage
+                                    .record_auction_with_state(schedule_da.description.clone(), 0)
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::ActionDutchAuctionEnd(end_da) => {
+                                let auction_id = end_da.auction_id;
+                                let auction_nft_closed = AuctionNft::new(auction_id, 1);
+                                let nft_metadata_closed = auction_nft_closed.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_closed).await?;
+
+                                self.storage
+                                    .update_auction_with_state(end_da.auction_id, 1)
+                                    .await?;
+                            }
+                            penumbra_transaction::Action::ActionDutchAuctionWithdraw(
+                                withdraw_da,
+                            ) => {
+                                let auction_id = withdraw_da.auction_id;
+                                let auction_nft_withdrawn =
+                                    AuctionNft::new(auction_id, withdraw_da.seq);
+                                let nft_metadata_withdrawn = auction_nft_withdrawn.metadata.clone();
+
+                                self.storage.record_asset(nft_metadata_withdrawn).await?;
+                                self.storage
+                                    .update_auction_with_state(auction_id, withdraw_da.seq)
+                                    .await?;
                             }
                             _ => (),
                         };
