@@ -342,10 +342,6 @@ message TransactionPlannerRequest {
     core.component.auction.v1alpha1.AuctionId auction_id = 1;
     // The sequence number of the withdrawal.
     uint64 seq = 2;
-    // The auction's reserves of input asset
-    core.num.v1.Amount input_reserves = 3;
-    // The auction's reserves of output asset.
-    core.num.v1.Amount output_reserves = 4;
   }
 }
 

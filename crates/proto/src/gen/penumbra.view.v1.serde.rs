@@ -6652,12 +6652,6 @@ impl serde::Serialize for transaction_planner_request::ActionDutchAuctionWithdra
         if self.seq != 0 {
             len += 1;
         }
-        if self.input_reserves.is_some() {
-            len += 1;
-        }
-        if self.output_reserves.is_some() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("penumbra.view.v1.TransactionPlannerRequest.ActionDutchAuctionWithdraw", len)?;
         if let Some(v) = self.auction_id.as_ref() {
             struct_ser.serialize_field("auctionId", v)?;
@@ -6665,12 +6659,6 @@ impl serde::Serialize for transaction_planner_request::ActionDutchAuctionWithdra
         if self.seq != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("seq", ToString::to_string(&self.seq).as_str())?;
-        }
-        if let Some(v) = self.input_reserves.as_ref() {
-            struct_ser.serialize_field("inputReserves", v)?;
-        }
-        if let Some(v) = self.output_reserves.as_ref() {
-            struct_ser.serialize_field("outputReserves", v)?;
         }
         struct_ser.end()
     }
@@ -6685,18 +6673,12 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
             "auction_id",
             "auctionId",
             "seq",
-            "input_reserves",
-            "inputReserves",
-            "output_reserves",
-            "outputReserves",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AuctionId,
             Seq,
-            InputReserves,
-            OutputReserves,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -6721,8 +6703,6 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
                         match value {
                             "auctionId" | "auction_id" => Ok(GeneratedField::AuctionId),
                             "seq" => Ok(GeneratedField::Seq),
-                            "inputReserves" | "input_reserves" => Ok(GeneratedField::InputReserves),
-                            "outputReserves" | "output_reserves" => Ok(GeneratedField::OutputReserves),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -6744,8 +6724,6 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
             {
                 let mut auction_id__ = None;
                 let mut seq__ = None;
-                let mut input_reserves__ = None;
-                let mut output_reserves__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::AuctionId => {
@@ -6762,18 +6740,6 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::InputReserves => {
-                            if input_reserves__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("inputReserves"));
-                            }
-                            input_reserves__ = map_.next_value()?;
-                        }
-                        GeneratedField::OutputReserves => {
-                            if output_reserves__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("outputReserves"));
-                            }
-                            output_reserves__ = map_.next_value()?;
-                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -6782,8 +6748,6 @@ impl<'de> serde::Deserialize<'de> for transaction_planner_request::ActionDutchAu
                 Ok(transaction_planner_request::ActionDutchAuctionWithdraw {
                     auction_id: auction_id__,
                     seq: seq__.unwrap_or_default(),
-                    input_reserves: input_reserves__,
-                    output_reserves: output_reserves__,
                 })
             }
         }
