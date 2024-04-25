@@ -548,22 +548,6 @@ pub mod transaction_planner_request {
         /// The sequence number of the withdrawal.
         #[prost(uint64, tag = "2")]
         pub seq: u64,
-        /// The auction's reserves of input asset.
-        /// This field is deprecated - the planner can query the user's view agent
-        /// to populate this field.
-        #[deprecated]
-        #[prost(message, optional, tag = "3")]
-        pub input_reserves: ::core::option::Option<
-            super::super::super::core::num::v1::Amount,
-        >,
-        /// The auction's reserves of output asset.
-        /// This field is deprecated - the planner can query the user's view agent
-        /// to populate this field.
-        #[deprecated]
-        #[prost(message, optional, tag = "4")]
-        pub output_reserves: ::core::option::Option<
-            super::super::super::core::num::v1::Amount,
-        >,
     }
     impl ::prost::Name for ActionDutchAuctionWithdraw {
         const NAME: &'static str = "ActionDutchAuctionWithdraw";
