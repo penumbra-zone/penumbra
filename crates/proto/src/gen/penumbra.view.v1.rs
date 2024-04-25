@@ -551,12 +551,12 @@ pub mod transaction_planner_request {
         /// The auction's reserves of input asset
         #[prost(message, optional, tag = "3")]
         pub input_reserves: ::core::option::Option<
-            super::super::super::core::num::v1::Amount,
+            super::super::super::core::asset::v1::Value,
         >,
         /// The auction's reserves of output asset.
         #[prost(message, optional, tag = "4")]
         pub output_reserves: ::core::option::Option<
-            super::super::super::core::num::v1::Amount,
+            super::super::super::core::asset::v1::Value,
         >,
     }
     impl ::prost::Name for ActionDutchAuctionWithdraw {
