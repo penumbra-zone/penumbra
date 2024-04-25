@@ -2,11 +2,7 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
-use penumbra_auction::auction::{
-    dutch::{DutchAuction, DutchAuctionState},
-    AuctionId,
-};
-use penumbra_tct::Position;
+use penumbra_auction::auction::AuctionId;
 use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
 
@@ -22,13 +18,9 @@ use penumbra_dex::{
 use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::{
-    core::component::auction,
-    serializers::bech32str::auction_id,
-    view::v1::{
-        self as pb, view_service_client::ViewServiceClient, BalancesResponse,
-        BroadcastTransactionResponse, WitnessRequest,
-    },
+use penumbra_proto::view::v1::{
+    self as pb, view_service_client::ViewServiceClient, BalancesResponse,
+    BroadcastTransactionResponse, WitnessRequest,
 };
 use penumbra_sct::Nullifier;
 use penumbra_shielded_pool::{fmd, note};
@@ -57,6 +49,11 @@ pub(crate) type BroadcastStatusStream = Pin<
 ///   enforce that it is a tower `Service`.
 #[allow(clippy::type_complexity)]
 pub trait ViewClient {
+    /// Query the auction state
+    fn auctions(
+        &mut self,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord)>>> + Send + 'static>>;
+
     /// Get the current status of chain sync.
     fn status(
         &mut self,
@@ -315,27 +312,6 @@ pub trait ViewClient {
     fn unclaimed_swaps(
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<SwapRecord>>> + Send + 'static>>;
-
-    /// Queries for auctions controlled by the user's wallet.
-    fn auctions_by_index(
-        &mut self,
-        address_index: AddressIndex,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<
-                        Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>,
-                    >,
-                > + Send
-                + 'static,
-        >,
-    >;
-
-    /// Queries for auctions controlled by the user's wallet.
-    fn auctions_by_id(
-        &mut self,
-        auction_id: AuctionId,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<DutchAuction>>> + Send + 'static>>;
 }
 
 // We need to tell `async_trait` not to add a `Send` bound to the boxed
@@ -946,34 +922,44 @@ where
         .boxed()
     }
 
-    fn auctions_by_index(
+    fn auctions(
         &mut self,
-        address_index: AddressIndex,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<
-                        Vec<(AuctionId, SpendableNoteRecord, DutchAuctionState, Position)>,
-                    >,
-                > + Send
-                + 'static,
-        >,
-    > {
-        let _ = address_index;
-        let _request = pb::AuctionsRequest {
-            account_filter: todo!(),
-            include_inactive: todo!(),
-            query_latest_state: todo!(),
-        };
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord)>>> + Send + 'static>>
+    {
+        let mut client = self.clone();
+        async move {
+            let request = tonic::Request::new(pb::AuctionsRequest {
+                account_filter: None,
+                include_inactive: true,
+                query_latest_state: false,
+            });
 
-        // TODO: craft a tonic request and handle responses.
-    }
+            let auctions: Vec<pb::AuctionsResponse> =
+                ViewServiceClient::auctions(&mut client, request)
+                    .await?
+                    .into_inner()
+                    .try_collect()
+                    .await?;
 
-    fn auctions_by_id(
-        &mut self,
-        _auction_id: AuctionId,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<DutchAuction>>> + Send + 'static>> {
-        // TODO: fill in stub for `pcli query auction id AUCTION_ID` (#4243)
-        todo!();
+            let resp: Vec<(AuctionId, SpendableNoteRecord)> = auctions
+                .into_iter()
+                .map(|auction_rsp| {
+                    let pb_id = auction_rsp
+                        .id
+                        .ok_or_else(|| anyhow::anyhow!("missing auction id!!"))?;
+                    let auction_id: AuctionId = pb_id.try_into()?;
+                    let snr: SpendableNoteRecord = auction_rsp
+                        .note_record
+                        .ok_or_else(|| anyhow::anyhow!("mission SNR from auction response"))?
+                        .try_into()?;
+
+                    Ok::<(AuctionId, SpendableNoteRecord), anyhow::Error>((auction_id, snr))
+                })
+                .filter_map(|res| res.ok()) // TODO: scrap this later.
+                .collect();
+
+            Ok(resp)
+        }
+        .boxed()
     }
 }

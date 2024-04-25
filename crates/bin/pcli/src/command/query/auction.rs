@@ -1,19 +1,11 @@
 use crate::App;
-use anyhow::Context;
 use clap::Subcommand;
 use comfy_table::{presets, Table};
-use penumbra_asset::{asset, Value};
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_auction::auction::AuctionId;
-use penumbra_keys::keys::AddressIndex;
-use penumbra_num::Amount;
 use penumbra_proto::core::component::auction::v1alpha1::query_service_client::QueryServiceClient;
 use penumbra_proto::core::component::auction::v1alpha1::AuctionStateByIdRequest;
-use penumbra_proto::view::v1::GasPricesRequest;
 use penumbra_proto::Name;
-use penumbra_view::ViewClient;
-use penumbra_wallet::plan::Planner;
-use rand_core::OsRng;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {

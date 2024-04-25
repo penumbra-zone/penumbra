@@ -1,19 +1,14 @@
 use super::tx::FeeTier;
 use crate::App;
-use anyhow::{anyhow, Context, Result};
+use anyhow::Context;
 use clap::Subcommand;
-use penumbra_asset::{
-    asset::{self, Unit, REGISTRY},
-    Value,
-};
+use penumbra_asset::Value;
 use penumbra_auction::auction::AuctionId;
 use penumbra_keys::keys::AddressIndex;
-use penumbra_num::Amount;
 use penumbra_proto::view::v1::GasPricesRequest;
 use penumbra_wallet::plan::Planner;
-use rand::{Rng, RngCore};
+use rand::RngCore;
 use rand_core::OsRng;
-use regex::Regex;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {
@@ -105,16 +100,6 @@ pub enum DutchCmd {
         #[clap(short, long, value_enum, default_value_t, display_order = 300)]
         fee_tier: FeeTier,
     },
-}
-
-fn extract_unit(input: &str) -> Result<Unit> {
-    let unit_re = Regex::new(r"[0-9.]+([^0-9.].*+)$")?;
-    if let Some(captures) = unit_re.captures(input) {
-        let unit = captures.get(1).expect("matched regex").as_str();
-        Ok(asset::REGISTRY.parse_unit(unit))
-    } else {
-        Err(anyhow!("could not extract unit from {}", input))
-    }
 }
 
 impl DutchCmd {

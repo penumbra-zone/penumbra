@@ -9,8 +9,7 @@ use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
-use futures::stream::{StreamExt, TryStreamExt};
-use penumbra_auction::auction;
+use futures::stream::{self, StreamExt, TryStreamExt};
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -393,21 +392,37 @@ impl ViewService for ViewServer {
 
     async fn auctions(
         &self,
-        _request: tonic::Request<pb::AuctionsRequest>,
+        request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        let _auction = self.storage.auction_by_address().await.map_err(|_| {
-            tonic::Status::failed_precondition("Error retrieving auction information.")
-        })?;
+        let parameters = request.into_inner();
 
-        let stream = try_stream! {
-            yield pb::AuctionsResponse { id: todo!(), note_record: todo!(), auction: todo!(), positions: todo!() }
-        };
+        let _query_latest_state = parameters.query_latest_state;
+        let include_inactive = parameters.include_inactive;
+        let account_filter = parameters
+            .account_filter
+            .to_owned()
+            .map(AddressIndex::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid account filter"))?;
+
+        let all_auctions = self
+            .storage
+            .fetch_auctions_by_account(account_filter, include_inactive)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let stream = stream::iter(all_auctions.into_iter().map(|(auction_id, note_record)| {
+            Result::<_, tonic::Status>::Ok(pb::AuctionsResponse {
+                id: Some(auction_id.into()),
+                note_record: Some(note_record.into()),
+                auction: None,
+                positions: vec![],
+            })
+        }));
 
         Ok(tonic::Response::new(
             stream
-                .map_err(|e: anyhow::Error| {
-                    tonic::Status::unavailable(format!("error getting auction: {e}"))
-                })
+                .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))
                 .boxed(),
         ))
     }
