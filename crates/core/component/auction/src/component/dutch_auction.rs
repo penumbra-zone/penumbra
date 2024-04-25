@@ -1,13 +1,23 @@
+use std::num::NonZeroU64;
+use std::pin::Pin;
+
 use crate::auction::dutch::{DutchAuction, DutchAuctionDescription, DutchAuctionState};
 use crate::auction::AuctionId;
+use crate::component::trigger_data::TriggerData;
 use crate::component::AuctionStoreRead;
 use crate::state_key;
 use anyhow::Result;
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
+use futures::StreamExt;
 use penumbra_asset::{Balance, Value};
+use penumbra_dex::component::{PositionManager, PositionRead};
+use penumbra_dex::lp::position::{self, Position};
+use penumbra_dex::lp::Reserves;
+use penumbra_dex::DirectedTradingPair;
 use penumbra_num::Amount;
 use penumbra_proto::core::component::auction::v1alpha1 as pb;
+use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::clock::EpochRead;
 use prost::{Message, Name};
 
@@ -28,22 +38,25 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             nonce: _,
         } = description;
 
-        let next_trigger = compute_next_trigger(TriggerData {
+        let auction_trigger = TriggerData {
             start_height,
             end_height,
             step_count,
-            current_height: self
-                .get_block_height()
-                .await
-                .expect("block height is not missing"),
-        })
-        .expect("infaillible because of action validation")
-        .expect("action validation guarantees the auction is not expired");
+        };
+
+        let current_height = self
+            .get_block_height()
+            .await
+            .expect("block height is not missing");
+
+        let next_trigger = auction_trigger
+            .try_next_trigger_height(current_height)
+            .expect("action validation guarantees the auction is not expired");
 
         let state = DutchAuctionState {
             sequence: 0,
             current_position: None,
-            next_trigger,
+            next_trigger: NonZeroU64::new(next_trigger),
             input_reserves: description.input.amount,
             output_reserves: Amount::zero(),
         };
@@ -51,9 +64,142 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         let dutch_auction = DutchAuction { description, state };
 
         // Set the triggger
-        self.set_trigger_for_id(auction_id, next_trigger);
+        self.set_trigger_for_dutch_id(auction_id, next_trigger);
         // Write position to state
         self.write_dutch_auction_state(dutch_auction);
+    }
+
+    /// Execute the [`DutchAuction`] associated with [`AuctionId`], ticking its
+    /// internal state using its immutable description.
+    ///
+    /// For a given auction, this translates into withdrawing a PCL liquidity position,
+    /// credit and zero-out its reserves, and finally, examine the auction's termination
+    /// condition.
+    async fn execute_dutch_auction(
+        &mut self,
+        auction_id: AuctionId,
+        trigger_height: u64,
+    ) -> Result<()> {
+        let old_dutch_auction = self
+            .get_dutch_auction_by_id(auction_id)
+            .await
+            .expect("no deserialization errors")
+            .expect("the auction exists");
+
+        let DutchAuctionDescription {
+            input,
+            output_id,
+            max_output: _,
+            min_output: _,
+            start_height,
+            end_height,
+            step_count,
+            nonce: _,
+        } = old_dutch_auction.description;
+
+        let DutchAuctionState {
+            sequence: _,
+            current_position,
+            next_trigger: _,
+            input_reserves: _,
+            output_reserves: _,
+        } = old_dutch_auction.state;
+
+        let auction_input_id = input.asset_id;
+        let auction_output_id = output_id;
+
+        let auction_trigger = TriggerData {
+            start_height,
+            end_height,
+            step_count,
+        };
+
+        // Recover the LP's balances, if it exists.
+        let lp_reserves = if let Some(auction_lp_id) = current_position {
+            self.close_position_by_id(&auction_lp_id)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        ?e,
+                        ?auction_lp_id,
+                        ?auction_id,
+                        "failed to close dutch auction LP"
+                    )
+                })
+                .expect("position should exist and be opened or closed");
+            self.withdraw_position(auction_lp_id, 0u64)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        ?e,
+                        ?auction_lp_id,
+                        ?auction_id,
+                        "failed to close dutch auction LP"
+                    )
+                })
+                .expect("no state incoherence")
+        } else {
+            Balance::zero()
+        };
+
+        // We remove the execution trigger that we are currently processing:
+        self.unset_trigger_for_dutch_id(auction_id, trigger_height);
+
+        // Prepare a new auction, based on the previous one.
+        let mut new_dutch_auction = DutchAuction {
+            description: old_dutch_auction.description,
+            state: old_dutch_auction.state,
+        };
+
+        // After consuming the LP, we reset the state, getting ready to either
+        // execute another session, or retire the auction.
+        new_dutch_auction.state.current_position = None;
+        new_dutch_auction.state.input_reserves += lp_reserves
+            .provided()
+            .filter(|v| v.asset_id == input.asset_id)
+            .map(|v| v.amount)
+            .sum::<Amount>();
+        new_dutch_auction.state.output_reserves += lp_reserves
+            .provided()
+            .filter(|v| v.asset_id == output_id)
+            .map(|v| v.amount)
+            .sum::<Amount>();
+        new_dutch_auction.state.next_trigger = None;
+
+        // Compute the current step index, between 0 and `step_count`.
+        let step_index = auction_trigger
+            .compute_step_index(trigger_height)
+            .expect("trigger data is validated");
+
+        // Termination conditions:
+        // 1. We have reached the `step_count` (= `end_height`)
+        // 2. There are no more input reserves.
+        if step_index >= step_count || new_dutch_auction.state.input_reserves == Amount::zero() {
+            // If the termination condition has been reached, we set the auction
+            // sequence to 1 (Closed).
+            new_dutch_auction.state.sequence = 1;
+        } else {
+            // Otherwise, we compute the next trigger height and generate a liquidity
+            // position for the new auction round.
+            let next_trigger = auction_trigger.compute_next_trigger_height(trigger_height);
+            // We compute the price parameters for the LP:
+            let price = compute_pq_at_step(&new_dutch_auction.description, step_index);
+            // Take the input reserves from the auction state, and zero it out.
+            let input_reserves = new_dutch_auction.state.input_reserves;
+            new_dutch_auction.state.input_reserves = Amount::zero();
+            let pair = DirectedTradingPair::new(auction_input_id, auction_output_id);
+            let auction_nonce = new_dutch_auction.description.nonce;
+            let id = self
+                .allocate_position(pair, input_reserves, step_index, price, auction_nonce)
+                .await
+                .expect("no state incoherence");
+            new_dutch_auction.state.current_position = Some(id);
+
+            self.set_trigger_for_dutch_id(auction_id, next_trigger);
+        };
+
+        self.write_dutch_auction_state(new_dutch_auction);
+        Ok(())
     }
 
     /// Terminate the Dutch auction associated with the specified [`AuctionId`].
@@ -91,15 +237,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         // to the total tracked amount, so that it can be returned to its bearer.
         let (input_from_position, output_from_position) =
             if let Some(position_id) = current_position {
-                use penumbra_dex::component::{PositionManager, PositionRead};
-
-                let _ = self // TODO: redundant.
-                    .position_by_id(&position_id)
-                    .await
-                    .expect("no deserialization error")
-                    .expect("position MUST exist");
-
-                let _ = self.close_position_by_id(&position_id).await?;
+                self.close_position_by_id(&position_id).await?;
                 let balance = self.withdraw_position(position_id, 0).await?;
 
                 let input_id = auction_to_close.description.input.asset_id;
@@ -123,8 +261,8 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             };
 
         // If a `next_trigger` entry is set, we remove it.
-        if next_trigger != 0 {
-            self.unset_trigger_for_id(auction_id, next_trigger)
+        if let Some(height) = next_trigger {
+            self.unset_trigger_for_dutch_id(auction_id, height.into())
         }
 
         let total_input_reserves = input_reserves + input_from_position;
@@ -135,7 +273,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             state: DutchAuctionState {
                 sequence: 1u64,
                 current_position: None,
-                next_trigger: 0,
+                next_trigger: None,
                 input_reserves: total_input_reserves,
                 output_reserves: total_output_reserves,
             },
@@ -173,7 +311,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
         auction.state.sequence = auction.state.sequence.saturating_add(1);
         auction.state.current_position = None;
-        auction.state.next_trigger = 0;
+        auction.state.next_trigger = None;
         auction.state.input_reserves = Amount::zero();
         auction.state.output_reserves = Amount::zero();
         self.write_dutch_auction_state(auction);
@@ -184,7 +322,117 @@ pub(crate) trait DutchAuctionManager: StateWrite {
 
 impl<T: StateWrite + ?Sized> DutchAuctionManager for T {}
 
+#[async_trait]
+pub(crate) trait HandleDutchTriggers: StateWrite {
+    /// Process the trigger height for a [`DutchAuction`],
+    async fn process_triggers(&mut self, trigger_height: u64) -> Result<()> {
+        use futures::StreamExt;
+        let auction_ids: Vec<AuctionId> = self
+            .stream_dutch_ids_by_trigger(trigger_height)
+            .await
+            .collect()
+            .await;
+
+        for auction_id in auction_ids.into_iter() {
+            self.execute_dutch_auction(auction_id, trigger_height)
+                .await?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> HandleDutchTriggers for T {}
+
+#[async_trait]
+pub(crate) trait DutchAuctionData: StateRead {
+    async fn stream_dutch_ids_by_trigger(
+        &self,
+        trigger_height: u64,
+    ) -> Pin<Box<dyn futures::Stream<Item = AuctionId> + Send + 'static>> {
+        use penumbra_proto::StateReadProto;
+        let prefix_key = state_key::dutch::trigger::by_height(trigger_height)
+            .as_bytes()
+            .to_vec();
+
+        self.nonverifiable_prefix::<AuctionId>(&prefix_key)
+            .map(|res| {
+                let (_, auction_id) = res.expect("no deserialization error");
+                auction_id
+            })
+            .boxed()
+    }
+
+    async fn stream_dutch_state_by_trigger(
+        &self,
+        _trigger_height: u64,
+    ) -> Pin<Box<dyn futures::Stream<Item = DutchAuction> + Send + 'static>> {
+        todo!()
+    }
+}
+
+impl<T: StateRead + ?Sized> DutchAuctionData for T {}
+
 trait Inner: StateWrite {
+    async fn allocate_position(
+        &mut self,
+        pair: DirectedTradingPair,
+        input_reserves: Amount,
+        step_index: u64,
+        (p, q): (Amount, Amount),
+        auction_nonce: [u8; 32],
+    ) -> Result<position::Id> {
+        // Next, we want to construct an auction LP position and send it to the DEX.
+        // The nonce must be chosen so that the resulting position id is unique:
+        // `PositionManager::open_position` will reject duplicates.
+        //
+        // To do this, we keep track of our number of attempts at opening a position,
+        // and compute:
+        // position_nonce = H(auction_nonce || step_index || attempt_counter)
+        // until the resulting position id (based on the nonce) is unique and accepted
+        // by the DEX.
+        let mut attempt_counter = 0u64;
+
+        loop {
+            let lp_reserves = Reserves {
+                r1: input_reserves,
+                r2: Amount::zero(),
+            };
+
+            let full_hash = blake2b_simd::Params::default()
+                .personal(b"penum-DA-nonce")
+                .to_state()
+                .update(&auction_nonce)
+                .update(&step_index.to_le_bytes())
+                .update(&attempt_counter.to_le_bytes())
+                .finalize();
+            let mut tough_nonce = [0u8; 32];
+            tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
+
+            let mut lp =
+                Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
+            // PSA, hackers:
+            // Since our goal is to acquire some output asset, we want to close the
+            // position as soon as it gets filled. Otherwise, it could round-trip
+            // back to the input asset which defeats the purpose.
+            lp.close_on_fill = true;
+
+            let position_id = lp.id();
+
+            if self.check_position_by_id(&position_id).await? {
+                tracing::error!(
+                    attempt_counter,
+                    ?position_id,
+                    "another position with our attempted id exists, retrying"
+                );
+                attempt_counter += 1;
+                continue;
+            } else {
+                self.open_position(lp).await.expect("no state incoherence");
+                return Ok(position_id);
+            }
+        }
+    }
+
     /// Serialize a `DutchAuction` as an `Any` into chain state.
     fn write_dutch_auction_state(&mut self, new_state: DutchAuction) {
         let id = new_state.description.id();
@@ -202,155 +450,47 @@ trait Inner: StateWrite {
         self.put_raw(key, raw_any);
     }
 
-    /// Set a trigger for an auction.
-    fn set_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
-        self.put_raw(trigger_path, vec![]);
+    /// Set a trigger for a Dutch auction.
+    fn set_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
+            .as_bytes()
+            .to_vec();
+        self.nonverifiable_put(trigger_path, auction_id);
     }
 
-    /// Delete a trigger for an auction.
-    fn unset_trigger_for_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
-        self.delete(trigger_path);
+    /// Delete a trigger for a Dutch auction.
+    fn unset_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
+            .as_bytes()
+            .to_vec();
+        self.nonverifiable_delete(trigger_path);
     }
 }
 
 impl<T: StateWrite + ?Sized> Inner for T {}
 
-/// Compute the next trigger height, return `None` if the step count
-/// has been reached and the auction should be retired.
-///
-/// # Errors
-/// This method errors if the block interval is not a multiple of the
-/// specified `step_count`, or if it operates over an invalid block
-/// interval (which should NEVER happen unless validation is broken).
-///
-// TODO(erwan): doing everything checked at least for now, will remove as
-// i fill the tests module.
-fn compute_next_trigger(trigger_data: TriggerData) -> Result<Option<u64>> {
-    let TriggerData {
-        start_height,
-        end_height,
-        current_height,
-        step_count,
-    } = trigger_data;
+fn compute_pq_at_step(
+    auction_description: &DutchAuctionDescription,
+    step_index: u64,
+) -> (Amount, Amount) {
+    let max_output = auction_description.max_output;
+    let min_output = auction_description.min_output;
+    let input = auction_description.input;
+    let step_index = Amount::from(step_index);
+    let step_count = Amount::from(auction_description.step_count);
+    let one = Amount::from(1u128);
 
-    let block_interval = end_height.checked_sub(start_height).ok_or_else(|| {
-        anyhow::anyhow!(
-            "block interval calculation has underflowed (end={}, start={})",
-            trigger_data.end_height,
-            trigger_data.start_height
-        )
-    })?;
+    // The target output, scaled up by `step_count` to avoid divisions.
+    // Linearly interpolate between `max_output` at `step_index = 0`
+    //                          and `min_output` at `step_index = step_count - 1`.
+    let target_output_scaled =
+        (step_count - step_index - one) * max_output + step_index * min_output;
+    // The input, scaled up by `step_count` to match.
+    let input_scaled = (step_count - one) * input.amount;
 
-    // Compute the step size, based on the block interval and the number of
-    // discrete steps the auction specifies.
-    let step_size = block_interval
-        .checked_div(step_count)
-        .ok_or_else(|| anyhow::anyhow!("step count is zero"))?;
+    // The trading function interpolates between (input, 0) and (0, target_output)
+    let p = target_output_scaled;
+    let q = input_scaled;
 
-    // Compute the step index for the current height, this should work even if
-    // the supplied height does not fall perfectly on a step boundary. First, we
-    // "clamp it" to a previous step index, then we increment by 1 to compute the
-    // next one, and finally we determine a concrete trigger height based off that.
-    let distance_from_start = current_height.saturating_sub(start_height);
-
-    let prev_step_index = distance_from_start
-        .checked_div(step_size)
-        .ok_or_else(|| anyhow::anyhow!("step size is zero"))?;
-
-    if prev_step_index >= step_count {
-        return Ok(None);
-    }
-
-    let next_step_index = prev_step_index
-        .checked_add(1)
-        .ok_or_else(|| anyhow::anyhow!("step index has overflowed"))?;
-
-    let next_step_size_from_start = step_size.checked_mul(next_step_index).ok_or_else(|| {
-        anyhow::anyhow!(
-            "next step size from start has overflowed (step_size={}, next_step_index={})",
-            step_size,
-            next_step_index
-        )
-    })?;
-
-    Ok(start_height.checked_add(next_step_size_from_start))
-}
-struct TriggerData {
-    pub start_height: u64,
-    pub end_height: u64,
-    pub current_height: u64,
-    pub step_count: u64,
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::component::dutch_auction::{compute_next_trigger, TriggerData};
-
-    #[test]
-    fn test_current_height_equals_start_height() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 100,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
-    }
-
-    #[test]
-    fn test_current_height_equals_end_height() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 200,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), None);
-    }
-
-    #[test]
-    fn test_current_height_below_start_height() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 90,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
-    }
-
-    #[test]
-    fn test_current_height_above_end_height() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 210,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), None);
-    }
-
-    #[test]
-    fn test_current_height_below_boundary() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 119,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), Some(120));
-    }
-
-    #[test]
-    fn test_current_height_above_boundary() {
-        let data = TriggerData {
-            start_height: 100,
-            end_height: 200,
-            step_count: 5,
-            current_height: 121,
-        };
-        assert_eq!(compute_next_trigger(data).unwrap(), Some(140));
-    }
+    (p, q)
 }
