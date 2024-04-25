@@ -343,9 +343,9 @@ message TransactionPlannerRequest {
     // The sequence number of the withdrawal.
     uint64 seq = 2;
     // The auction's reserves of input asset
-    core.num.v1.Amount input_reserves = 3;
+    core.asset.v1.Value input_reserves = 3;
     // The auction's reserves of output asset.
-    core.num.v1.Amount output_reserves = 4;
+    core.asset.v1.Value output_reserves = 4;
   }
 }
 
