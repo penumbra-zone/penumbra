@@ -226,7 +226,7 @@ impl DutchCmd {
                     amount: dutch_auction.state.output_reserves,
                     asset_id: dutch_auction.description.output_id,
                 };
-                let seq = dutch_auction.state.sequence;
+                let seq = dutch_auction.state.sequence + 1;
 
                 let mut planner = Planner::new(OsRng);
 
