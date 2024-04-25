@@ -1,22 +1,25 @@
 use anyhow::{anyhow, Context, Result};
 
-mod shielded_pool;
-use colored_json::ToColoredJson;
-use shielded_pool::ShieldedPool;
-mod tx;
-use tx::Tx;
+mod auction;
 mod chain;
-use chain::ChainCmd;
-mod dex;
-use dex::DexCmd;
-mod governance;
-use governance::GovernanceCmd;
 mod community_pool;
-use community_pool::CommunityPoolCmd;
-mod validator;
-pub(super) use validator::ValidatorCmd;
+mod dex;
+mod governance;
 mod ibc_query;
+mod shielded_pool;
+mod tx;
+mod validator;
+
+use auction::AuctionCmd;
+use chain::ChainCmd;
+use colored_json::ToColoredJson;
+use community_pool::CommunityPoolCmd;
+use dex::DexCmd;
+use governance::GovernanceCmd;
 use ibc_query::IbcCmd;
+use shielded_pool::ShieldedPool;
+use tx::Tx;
+pub(super) use validator::ValidatorCmd;
 
 use crate::App;
 
@@ -75,6 +78,9 @@ pub enum QueryCmd {
         #[clap(long, default_value = "")]
         nv_key_regex: String,
     },
+    /// Queries information about a Dutch auction.
+    #[clap(subcommand)]
+    Auction(AuctionCmd),
 }
 
 impl QueryCmd {
@@ -116,6 +122,10 @@ impl QueryCmd {
             return ibc.exec(app).await;
         }
 
+        if let QueryCmd::Auction(AuctionCmd::Dutch(auction)) = self {
+            return auction.exec(app).await;
+        }
+
         // TODO: this is a hack; we should replace all raw state key uses with RPC methods.
         if let QueryCmd::ShieldedPool(ShieldedPool::CompactBlock { height }) = self {
             use penumbra_proto::core::component::compact_block::v1::{
@@ -143,6 +153,7 @@ impl QueryCmd {
             | QueryCmd::Governance(_)
             | QueryCmd::CommunityPool(_)
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
@@ -181,6 +192,7 @@ impl QueryCmd {
             | QueryCmd::Governance { .. }
             | QueryCmd::Key { .. }
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => true,
         }
     }
@@ -198,6 +210,7 @@ impl QueryCmd {
             | QueryCmd::Governance { .. }
             | QueryCmd::CommunityPool { .. }
             | QueryCmd::Watch { .. }
+            | QueryCmd::Auction { .. }
             | QueryCmd::Ibc(_) => {
                 unreachable!("query is special cased")
             }
