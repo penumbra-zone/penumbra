@@ -342,10 +342,14 @@ message TransactionPlannerRequest {
     core.component.auction.v1alpha1.AuctionId auction_id = 1;
     // The sequence number of the withdrawal.
     uint64 seq = 2;
-    // The auction's reserves of input asset
-    core.asset.v1.Value input_reserves = 3;
+    // The auction's reserves of input asset.
+    // This field is deprecated - the planner can query the user's view agent
+    // to populate this field.
+    core.num.v1.Amount input_reserves = 3 [deprecated = true];
     // The auction's reserves of output asset.
-    core.asset.v1.Value output_reserves = 4;
+    // This field is deprecated - the planner can query the user's view agent
+    // to populate this field.
+    core.num.v1.Amount output_reserves = 4 [deprecated = true];
   }
 }
 
