@@ -1,4 +1,4 @@
-use super::tx::FeeTier;
+use super::FeeTier;
 use crate::App;
 use anyhow::{anyhow, bail, Context};
 use clap::Subcommand;
