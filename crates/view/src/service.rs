@@ -394,10 +394,13 @@ impl ViewService for ViewServer {
         &self,
         request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        let parameters = request.into_inner();
+        use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
+        use penumbra_proto::core::component::auction::v1alpha1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
 
-        let _query_latest_state = parameters.query_latest_state;
+        let parameters = request.into_inner();
+        let query_latest_state = parameters.query_latest_state;
         let include_inactive = parameters.include_inactive;
+
         let account_filter = parameters
             .account_filter
             .to_owned()
@@ -411,20 +414,48 @@ impl ViewService for ViewServer {
             .await
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-        let stream = stream::iter(all_auctions.into_iter().map(|(auction_id, note_record)| {
-            Result::<_, tonic::Status>::Ok(pb::AuctionsResponse {
-                id: Some(auction_id.into()),
-                note_record: Some(note_record.into()),
-                auction: None,
-                positions: vec![],
-            })
-        }));
+        let client = if query_latest_state {
+            Some(
+                AuctionQueryServiceClient::connect(self.node.to_string())
+                    .await
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?,
+            )
+        } else {
+            None
+        };
 
-        Ok(tonic::Response::new(
-            stream
-                .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))
-                .boxed(),
-        ))
+        let responses =
+            futures::future::join_all(all_auctions.into_iter().map(|(auction_id, note_record)| {
+                let maybe_client = client.clone();
+                async move {
+                    let (any_state, positions) = if let Some(mut client2) = maybe_client {
+                        let extra_data = client2
+                            .auction_state_by_id(pb_auction::AuctionStateByIdRequest {
+                                id: Some(auction_id.into()),
+                            })
+                            .await
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?
+                            .into_inner();
+                        (extra_data.auction, extra_data.positions)
+                    } else {
+                        (None, vec![])
+                    };
+
+                    Result::<_, tonic::Status>::Ok(pb::AuctionsResponse {
+                        id: Some(auction_id.into()),
+                        note_record: Some(note_record.into()),
+                        auction: any_state,
+                        positions,
+                    })
+                }
+            }))
+            .await;
+
+        let stream = stream::iter(responses)
+            .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))
+            .boxed();
+
+        Ok(Response::new(stream))
     }
 
     async fn broadcast_transaction(

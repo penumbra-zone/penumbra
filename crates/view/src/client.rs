@@ -2,6 +2,7 @@ use std::{collections::BTreeMap, future::Future, pin::Pin};
 
 use anyhow::Result;
 use futures::{FutureExt, Stream, StreamExt, TryStreamExt};
+use pbjson_types::Any;
 use penumbra_auction::auction::AuctionId;
 use tonic::{codegen::Bytes, Streaming};
 use tracing::instrument;
@@ -12,7 +13,7 @@ use penumbra_asset::{
     ValueView,
 };
 use penumbra_dex::{
-    lp::position::{self},
+    lp::position::{self, Position},
     TradingPair,
 };
 use penumbra_fee::GasPrices;
@@ -52,7 +53,19 @@ pub trait ViewClient {
     /// Query the auction state
     fn auctions(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord)>>> + Send + 'static>>;
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+        query_latest_state: bool,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    >;
 
     /// Get the current status of chain sync.
     fn status(
@@ -924,14 +937,25 @@ where
 
     fn auctions(
         &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<(AuctionId, SpendableNoteRecord)>>> + Send + 'static>>
-    {
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+        query_latest_state: bool,
+    ) -> Pin<
+        Box<
+            dyn Future<
+                    Output = Result<
+                        Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)>,
+                    >,
+                > + Send
+                + 'static,
+        >,
+    > {
         let mut client = self.clone();
         async move {
             let request = tonic::Request::new(pb::AuctionsRequest {
-                account_filter: None,
-                include_inactive: true,
-                query_latest_state: false,
+                account_filter: account_filter.map(Into::into),
+                include_inactive,
+                query_latest_state,
             });
 
             let auctions: Vec<pb::AuctionsResponse> =
@@ -941,22 +965,33 @@ where
                     .try_collect()
                     .await?;
 
-            let resp: Vec<(AuctionId, SpendableNoteRecord)> = auctions
-                .into_iter()
-                .map(|auction_rsp| {
-                    let pb_id = auction_rsp
-                        .id
-                        .ok_or_else(|| anyhow::anyhow!("missing auction id!!"))?;
-                    let auction_id: AuctionId = pb_id.try_into()?;
-                    let snr: SpendableNoteRecord = auction_rsp
-                        .note_record
-                        .ok_or_else(|| anyhow::anyhow!("mission SNR from auction response"))?
-                        .try_into()?;
+            let resp: Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)> =
+                auctions
+                    .into_iter()
+                    .map(|auction_rsp| {
+                        let pb_id = auction_rsp
+                            .id
+                            .ok_or_else(|| anyhow::anyhow!("missing auction id!!"))?;
+                        let auction_id: AuctionId = pb_id.try_into()?;
+                        let snr: SpendableNoteRecord = auction_rsp
+                            .note_record
+                            .ok_or_else(|| anyhow::anyhow!("mission SNR from auction response"))?
+                            .try_into()?;
 
-                    Ok::<(AuctionId, SpendableNoteRecord), anyhow::Error>((auction_id, snr))
-                })
-                .filter_map(|res| res.ok()) // TODO: scrap this later.
-                .collect();
+                        let auction = auction_rsp.auction;
+                        let lps: Vec<Position> = auction_rsp
+                            .positions
+                            .into_iter()
+                            .map(TryInto::try_into)
+                            .collect::<Result<Vec<_>>>()?;
+
+                        Ok::<
+                            (AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>),
+                            anyhow::Error,
+                        >((auction_id, snr, auction, lps))
+                    })
+                    .filter_map(|res| res.ok()) // TODO: scrap this later.
+                    .collect();
 
             Ok(resp)
         }

@@ -61,7 +61,7 @@ impl TryFrom<Metadata> for AuctionNft {
 
     fn try_from(denom: Metadata) -> Result<Self, Self::Error> {
         let regex = Regex::new(
-            "^auctionnft_(?P<seq_num>[0-9]+)_(?P<auction_id>paucid1[a-zA-HJ-NP-Z0-9]+)$",
+            "^auctionnft_(?P<seq_num>[0-9]+)_(?P<auction_id>pauctid1[a-zA-HJ-NP-Z0-9]+)$",
         )
         .expect("regex is valid");
 

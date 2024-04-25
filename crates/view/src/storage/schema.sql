@@ -135,7 +135,6 @@ CREATE TABLE positions (
 -- note commitments.
 CREATE TABLE auctions (
      auction_id             BLOB PRIMARY KEY NOT NULL,
-     asset_id               BLOB NOT NULL,
      auction_state          BIGINT NOT NULL,
      note_commitment        BLOB
 );

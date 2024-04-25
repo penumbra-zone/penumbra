@@ -19,9 +19,11 @@ impl AuctionCmd {
         view_client: &mut impl ViewClient,
         _fvk: &FullViewingKey,
     ) -> Result<()> {
-        let auctions = view_client.auctions().await?;
+        let auctions = view_client
+            .auctions(None, self.include_inactive, false)
+            .await?;
 
-        auctions.iter().for_each(|(id, snr)| {
+        auctions.iter().for_each(|(id, snr, _, _)| {
             println!("{id:?} {}", snr.note.amount());
         });
         Ok(())

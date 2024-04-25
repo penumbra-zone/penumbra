@@ -122,7 +122,7 @@ impl QueryCmd {
             return ibc.exec(app).await;
         }
 
-        if let QueryCmd::Auction(AuctionCmd::Dutch(auction)) = self {
+        if let QueryCmd::Auction(auction) = self {
             return auction.exec(app).await;
         }
 

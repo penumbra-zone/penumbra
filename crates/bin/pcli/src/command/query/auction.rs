@@ -3,31 +3,25 @@ use clap::Subcommand;
 use comfy_table::{presets, Table};
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_auction::auction::AuctionId;
+use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
 use penumbra_proto::core::component::auction::v1alpha1::query_service_client::QueryServiceClient;
 use penumbra_proto::core::component::auction::v1alpha1::AuctionStateByIdRequest;
+use penumbra_proto::DomainType;
 use penumbra_proto::Name;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {
     /// Commands related to Dutch auctions
-    #[clap(display_order = 100, subcommand)]
-    Dutch(DutchCmd),
-}
-
-/// Commands related to querying Dutch auctions.
-#[derive(Debug, Subcommand)]
-pub enum DutchCmd {
-    #[clap(display_order = 100, name = "state")]
-    State {
-        #[clap(long, display_order = 100)]
+    Dutch {
+        #[clap(index = 1)]
         auction_id: AuctionId,
     },
 }
 
-impl DutchCmd {
+impl AuctionCmd {
     pub async fn exec(&self, app: &mut App) -> anyhow::Result<()> {
         match self {
-            DutchCmd::State { auction_id } => {
+            AuctionCmd::Dutch { auction_id } => {
                 let auction_id = auction_id.clone();
                 let mut client = QueryServiceClient::new(app.pd_channel().await?);
                 let rsp = client
@@ -40,22 +34,28 @@ impl DutchCmd {
                 let pb_auction_state = rsp
                     .auction
                     .ok_or_else(|| anyhow::anyhow!("auction state is missing!"))?;
-                use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
-                use penumbra_proto::DomainType;
 
                 if pb_auction_state.type_url == pb_auction::DutchAuction::type_url() {
-                    let auction_state = DutchAuction::decode(pb_auction_state.value)?;
+                    let dutch_auction = DutchAuction::decode(pb_auction_state.value)?;
                     println!("dutch auction with id {auction_id:?}");
 
                     let mut table = Table::new();
                     table.load_preset(presets::NOTHING);
                     table
-                        .set_header(vec!["", ""])
-                        .add_row(vec!["Auction Id", &auction_id.to_string()])
-                        .add_row(vec![
+                        .set_header(vec![
+                            "Auction Id",
                             "State",
-                            &format!("Opened ({})", auction_state.state.sequence),
-                        ]); // TODO: render state string
+                            "Start height",
+                            "End height",
+                            "Step count",
+                        ]) // TODO: make this more useful
+                        .add_row(vec![
+                            &auction_id.to_string(),
+                            &render_state(dutch_auction.state.sequence),
+                            &dutch_auction.description.start_height.to_string(),
+                            &dutch_auction.description.end_height.to_string(),
+                            &dutch_auction.description.step_count.to_string(),
+                        ]);
                     println!("{table}");
                 } else {
                     unimplemented!("only supporting dutch auctions at the moment, come back later");
@@ -63,5 +63,15 @@ impl DutchCmd {
             }
         }
         Ok(())
+    }
+}
+
+fn render_state(state: u64) -> String {
+    if state == 0 {
+        format!("Opened")
+    } else if state == 1 {
+        format!("Closed")
+    } else {
+        format!("Withdrawn (seq={state})")
     }
 }

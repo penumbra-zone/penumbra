@@ -1029,13 +1029,21 @@ impl Storage {
         let pool = self.pool.clone();
 
         spawn_blocking(move || {
-            pool.get()?
-                .execute(
-                    "INSERT INTO auctions (auction_id, auction_state, note_commitment) VALUES (?1, ?2, ?3, NULL)",
-            (auction_id, auction_state),
-                )
-                .map_err(anyhow::Error::from)
-        })
+            let mut lock = pool.get()?;
+            let tx = lock.transaction()?;
+            tx.execute(
+                "INSERT OR IGNORE INTO auctions (auction_id, auction_state, note_commitment) VALUES (?1, ?2, NULL)",
+                (auction_id.clone(), auction_state),
+            )?;
+            tx.execute(
+                "UPDATE auctions SET auction_state = ?2 WHERE auction_id = ?1",
+                (auction_id, auction_state),
+            )
+                .map_err(anyhow::Error::from)?;
+
+            tx.commit()?;
+            Ok::<(), anyhow::Error>(())
+            })
             .await??;
 
         Ok(())
@@ -1067,7 +1075,7 @@ impl Storage {
     pub async fn fetch_auctions_by_account(
         &self,
         account_filter: Option<AddressIndex>,
-        only_active: bool,
+        include_inactive: bool,
     ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord)>> {
         let account_clause = account_filter
             .map(|idx| {
@@ -1078,8 +1086,8 @@ impl Storage {
             })
             .unwrap_or_else(|| "".to_string());
 
-        let active_clause = if only_active {
-            "AND auctions.auction_state = '0'"
+        let active_clause = if !include_inactive {
+            "AND auctions.auction_state = 0"
         } else {
             ""
         };
