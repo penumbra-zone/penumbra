@@ -410,6 +410,10 @@ trait Inner: StateWrite {
 
             let mut lp =
                 Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
+            // PSA, hackers:
+            // Since our goal is to acquire some output asset, we want to close the
+            // position as soon as it gets filled. Otherwise, it could round-trip
+            // back to the input asset which defeats the purpose.
             lp.close_on_fill = true;
 
             let position_id = lp.id();
