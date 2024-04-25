@@ -309,13 +309,11 @@ impl Worker {
                                 let auction_id = schedule_da.description.id();
                                 let auction_nft_opened = AuctionNft::new(auction_id, 0);
                                 let nft_metadata_opened = auction_nft_opened.metadata.clone();
-                                let asset_id = nft_metadata_opened.id();
 
                                 self.storage.record_asset(nft_metadata_opened).await?;
 
                                 self.storage
                                     .record_auction_with_state(
-                                        asset_id,
                                         schedule_da.description.id(),
                                         0u64, // Opened
                                     )
@@ -325,12 +323,11 @@ impl Worker {
                                 let auction_id = end_da.auction_id;
                                 let auction_nft_closed = AuctionNft::new(auction_id, 1);
                                 let nft_metadata_closed = auction_nft_closed.metadata.clone();
-                                let asset_id = nft_metadata_closed.id();
 
                                 self.storage.record_asset(nft_metadata_closed).await?;
 
                                 self.storage
-                                    .record_auction_with_state(asset_id, end_da.auction_id, 1)
+                                    .record_auction_with_state(end_da.auction_id, 1)
                                     .await?;
                             }
                             penumbra_transaction::Action::ActionDutchAuctionWithdraw(
@@ -340,15 +337,10 @@ impl Worker {
                                 let auction_nft_withdrawn =
                                     AuctionNft::new(auction_id, withdraw_da.seq);
                                 let nft_metadata_withdrawn = auction_nft_withdrawn.metadata.clone();
-                                let asset_id = nft_metadata_withdrawn.id();
 
                                 self.storage.record_asset(nft_metadata_withdrawn).await?;
                                 self.storage
-                                    .record_auction_with_state(
-                                        asset_id,
-                                        auction_id,
-                                        withdraw_da.seq,
-                                    )
+                                    .record_auction_with_state(auction_id, withdraw_da.seq)
                                     .await?;
                             }
                             _ => (),
@@ -366,12 +358,13 @@ impl Worker {
                         .await?
                     {
                         // If the asset metata is for an auction, we record the associated note commitment
-                        // so we can use it as a fast index into SNRs.
+                        // in the auction state table to cross reference with SNRs.
                         if note_denom.is_auction_nft() {
                             let note_commitment = note_record.note_commitment;
+                            let auction_nft: AuctionNft = note_denom.try_into()?;
                             self.storage
                                 .update_auction_with_note_commitment(
-                                    note_denom.id(),
+                                    auction_nft.id,
                                     note_commitment,
                                 )
                                 .await?;

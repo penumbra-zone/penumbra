@@ -134,8 +134,8 @@ CREATE TABLE positions (
 -- matching auction ids but differing states and associated
 -- note commitments.
 CREATE TABLE auctions (
-     asset_id               BLOB PRIMARY KEY NOT NULL,
-     auction_id             BLOB NOT NULL,
-     auction_state          TEXT NOT NULL,
+     auction_id             BLOB PRIMARY KEY NOT NULL,
+     asset_id               BLOB NOT NULL,
+     auction_state          BIGINT NOT NULL,
      note_commitment        BLOB
 );
