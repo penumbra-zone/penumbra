@@ -1,22 +1,31 @@
+use crate::component::dutch_auction::HandleDutchTriggers;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
+use penumbra_proto::StateReadProto;
+use penumbra_proto::StateWriteProto;
 use std::sync::Arc;
 use tendermint::v0_37::abci;
 use tracing::instrument;
+
+use crate::{params::AuctionParameters, state_key};
 
 pub struct Auction {}
 
 #[async_trait]
 impl Component for Auction {
-    type AppState = ();
+    // Note: this is currently empty, but will make future
+    // addition easy to do.
+    type AppState = crate::genesis::Content;
 
-    #[instrument(name = "auction", skip(_state, app_state))]
-    async fn init_chain<S: StateWrite>(_state: S, app_state: Option<&Self::AppState>) {
+    #[instrument(name = "auction", skip(state, app_state))]
+    async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
             None => { /* perform upgrade specific check */ }
-            Some(&()) => {}
+            Some(content) => {
+                state.put_auction_params(content.auction_params.clone());
+            }
         }
     }
 
@@ -27,11 +36,13 @@ impl Component for Auction {
     ) {
     }
 
-    #[instrument(name = "auction", skip(_state, _end_block))]
+    #[instrument(name = "auction", skip(state, end_block))]
     async fn end_block<S: StateWrite + 'static>(
-        _state: &mut Arc<S>,
-        _end_block: &abci::request::EndBlock,
+        state: &mut Arc<S>,
+        end_block: &abci::request::EndBlock,
     ) {
+        let state: &mut S = Arc::get_mut(state).expect("state should be unique");
+        let _ = state.process_triggers(end_block.height as u64).await;
     }
 
     #[instrument(name = "auction", skip(_state))]
@@ -43,14 +54,30 @@ impl Component for Auction {
 /// Extension trait providing read access to auction data.
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    // Params accessors
+    async fn get_auction_params(&self) -> Result<AuctionParameters> {
+        self.get(state_key::parameters::key())
+            .await
+            .expect("no deserialization errors")
+            .ok_or_else(|| anyhow::anyhow!("Missing AuctionParameters"))
+    }
+
+    fn auction_params_updated(&self) -> bool {
+        self.object_get::<()>(state_key::parameters::updated_flag())
+            .is_some()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
 /// Extension trait providing write access to auction data.
 #[async_trait]
-pub trait StateWriteExt: StateWrite {}
+pub trait StateWriteExt: StateWrite {
+    /// Writes the provided auction parameters to the chain state.
+    fn put_auction_params(&mut self, params: AuctionParameters) {
+        self.object_put(state_key::parameters::updated_flag(), ());
+        self.put(state_key::parameters::key().into(), params)
+    }
+}
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 

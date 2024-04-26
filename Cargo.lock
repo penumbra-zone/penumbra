@@ -5129,6 +5129,7 @@ dependencies = [
  "once_cell",
  "pbjson-types",
  "penumbra-asset",
+ "penumbra-auction",
  "penumbra-community-pool",
  "penumbra-dex",
  "penumbra-distributions",

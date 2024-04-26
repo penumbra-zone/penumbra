@@ -261,6 +261,18 @@ pub struct TransactionPlannerRequest {
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
     >,
+    #[prost(message, repeated, tag = "73")]
+    pub dutch_auction_schedule_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionSchedule,
+    >,
+    #[prost(message, repeated, tag = "74")]
+    pub dutch_auction_end_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionEnd,
+    >,
+    #[prost(message, repeated, tag = "75")]
+    pub dutch_auction_withdraw_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionWithdraw,
+    >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
     #[prost(uint64, tag = "200")]
@@ -482,6 +494,63 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for PositionWithdraw {
         const NAME: &'static str = "PositionWithdraw";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionSchedule {
+        /// The description of the auction to schedule.
+        #[prost(message, optional, tag = "1")]
+        pub description: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::DutchAuctionDescription,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionSchedule {
+        const NAME: &'static str = "ActionDutchAuctionSchedule";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionEnd {
+        /// The unique id of the auction to close.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::AuctionId,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionEnd {
+        const NAME: &'static str = "ActionDutchAuctionEnd";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionWithdraw {
+        /// The auction to withdraw funds from.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::AuctionId,
+        >,
+        /// The sequence number of the withdrawal.
+        #[prost(uint64, tag = "2")]
+        pub seq: u64,
+    }
+    impl ::prost::Name for ActionDutchAuctionWithdraw {
+        const NAME: &'static str = "ActionDutchAuctionWithdraw";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(

@@ -4,6 +4,7 @@
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
+use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
 use penumbra_sct::genesis::Content as SctContent;
@@ -69,6 +70,7 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
+        gas_price_simple: Option<u64>,
     ) -> anyhow::Result<TestnetConfig> {
         let external_addresses = external_addresses.unwrap_or_default();
 
@@ -98,6 +100,7 @@ impl TestnetConfig {
             epoch_duration,
             unbonding_delay,
             proposal_voting_blocks,
+            gas_price_simple,
         )?;
         let genesis = Self::make_genesis(app_state)?;
 
@@ -186,6 +189,7 @@ impl TestnetConfig {
         epoch_duration: Option<u64>,
         unbonding_delay: Option<u64>,
         proposal_voting_blocks: Option<u64>,
+        gas_price_simple: Option<u64>,
     ) -> anyhow::Result<penumbra_app::genesis::Content> {
         let default_gov_params = penumbra_governance::params::GovernanceParameters::default();
 
@@ -198,6 +202,8 @@ impl TestnetConfig {
         // Look up default app params, so we can fill in defaults.
         let default_app_params = AppParameters::default();
 
+        let gas_price_simple = gas_price_simple.unwrap_or_default();
+
         let app_state = penumbra_app::genesis::Content {
             chain_id: chain_id.to_string(),
             stake_content: StakeContent {
@@ -208,6 +214,16 @@ impl TestnetConfig {
                     unbonding_delay: unbonding_delay
                         .unwrap_or(default_app_params.stake_params.unbonding_delay),
                     ..Default::default()
+                },
+            },
+            fee_content: FeeContent {
+                fee_params: penumbra_fee::params::FeeParameters {
+                    fixed_gas_prices: penumbra_fee::GasPrices {
+                        block_space_price: gas_price_simple,
+                        compact_block_space_price: gas_price_simple,
+                        verification_price: gas_price_simple,
+                        execution_price: gas_price_simple,
+                    },
                 },
             },
             governance_content: GovernanceContent {
@@ -349,6 +365,7 @@ pub fn testnet_generate(
     validators_input_file: Option<PathBuf>,
     allocations_input_file: Option<PathBuf>,
     proposal_voting_blocks: Option<u64>,
+    gas_price_simple: Option<u64>,
 ) -> anyhow::Result<()> {
     tracing::info!(?chain_id, "Generating network config");
     let t = TestnetConfig::generate(
@@ -363,6 +380,7 @@ pub fn testnet_generate(
         epoch_duration,
         unbonding_delay,
         proposal_voting_blocks,
+        gas_price_simple,
     )?;
     tracing::info!(
         n_validators = t.validators.len(),
@@ -668,6 +686,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         )?;
         assert_eq!(testnet_config.name, "test-chain-1234");
         assert_eq!(testnet_config.genesis.validators.len(), 0);
@@ -692,6 +711,7 @@ mod tests {
             None,
             None,
             Some(ci_validators_filepath),
+            None,
             None,
             None,
             None,

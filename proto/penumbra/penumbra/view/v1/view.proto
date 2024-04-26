@@ -2,8 +2,10 @@ syntax = "proto3";
 
 package penumbra.view.v1;
 
+import "google/protobuf/any.proto";
 import "penumbra/core/app/v1/app.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1alpha1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
@@ -15,8 +17,6 @@ import "penumbra/core/num/v1/num.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/core/txhash/v1/txhash.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
-import "penumbra/core/component/auction/v1alpha1/auction.proto";
-import "google/protobuf/any.proto";
 
 // The view RPC is used by a view client, who wants to do some
 // transaction-related actions, to request data from a view service, which is
@@ -244,6 +244,9 @@ message TransactionPlannerRequest {
   repeated PositionOpen position_opens = 70;
   repeated PositionClose position_closes = 71;
   repeated PositionWithdraw position_withdraws = 72;
+  repeated ActionDutchAuctionSchedule dutch_auction_schedule_actions = 73;
+  repeated ActionDutchAuctionEnd dutch_auction_end_actions = 74;
+  repeated ActionDutchAuctionWithdraw dutch_auction_withdraw_actions = 75;
 
   // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
   oneof fee_mode {
@@ -322,6 +325,23 @@ message TransactionPlannerRequest {
     core.component.dex.v1.Reserves reserves = 2;
     // The trading pair of the position.
     core.component.dex.v1.TradingPair trading_pair = 3;
+  }
+
+  message ActionDutchAuctionSchedule {
+    // The description of the auction to schedule.
+    core.component.auction.v1alpha1.DutchAuctionDescription description = 1;
+  }
+
+  message ActionDutchAuctionEnd {
+    // The unique id of the auction to close.
+    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+  }
+
+  message ActionDutchAuctionWithdraw {
+    // The auction to withdraw funds from.
+    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+    // The sequence number of the withdrawal.
+    uint64 seq = 2;
   }
 }
 

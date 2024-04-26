@@ -97,6 +97,7 @@ impl ProposalKindCmd {
             ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
                 old: Box::new(app_params.as_changed_params()),
                 new: Box::new(ChangedAppParameters {
+                    auction_params: None,
                     community_pool_params: None,
                     distributions_params: None,
                     ibc_params: None,

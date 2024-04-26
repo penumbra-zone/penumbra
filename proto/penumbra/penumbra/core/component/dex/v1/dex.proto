@@ -156,6 +156,28 @@ message SwapView {
 
   message Opaque {
     dex.v1.Swap swap = 1;
+    // Optionally, if the swap has been confirmed, the batch price it received.
+    //
+    // As soon as the swap is detected, the view server can in principle record
+    // the relevant BSOD and provide it as part of the view.  This allows providing
+    // info about the execution of the swap.
+    BatchSwapOutputData batch_swap_output_data = 20;
+    // Optionally, if the swap has been confirmed, the output value of asset 1.
+    //
+    // This is the value of the note that will be minted by the SwapClaim action.
+    // Note that unlike the `Visible` variant, this is only a `ValueView` since
+    // the details of the note (in particular the claim address) are not publicly known.
+    asset.v1.ValueView output_1_value = 30;
+    // Optionally, if the swap has been confirmed, the output value of asset 2.
+    //
+    // This is the note that will be minted by the SwapClaim action.
+    // Note that unlike the `Visible` variant, this is only a `ValueView` since
+    // the details of the note (in particular the claim address) are not publicly known.
+    asset.v1.ValueView output_2_value = 31;
+    // Optionally, metadata about asset 1 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_1_metadata = 40;
+    // Optionally, metadata about asset 2 in the `swap`'s trading pair.
+    asset.v1.Metadata asset_2_metadata = 41;
   }
 
   oneof swap_view {

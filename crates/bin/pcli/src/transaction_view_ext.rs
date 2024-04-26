@@ -254,7 +254,7 @@ impl TransactionViewExt for TransactionView {
 
                             ["Swap", &action]
                         }
-                        SwapView::Opaque { swap } => {
+                        SwapView::Opaque { swap, .. } => {
                             action = format!(
                                 "Opaque swap for trading pair: {} <=> {}",
                                 format_asset_id(&swap.body.trading_pair.asset_1()),
