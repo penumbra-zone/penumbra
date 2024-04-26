@@ -235,6 +235,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     let data_dir = tempdir().unwrap();
 
     // 1. Construct a config for the `pclientd` instance:
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 1");
     let config = generate_config()?;
 
     let mut config_file_path = data_dir.path().to_owned();
@@ -242,6 +243,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     config.save(&config_file_path)?;
 
     // 2. Run a `pclientd` instance in the background as a subprocess.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 2");
     let home_dir = data_dir.path().to_owned();
     // Use a std Command so we can use the cargo-specific extensions from assert_cmd
     let mut pclientd_cmd = StdCommand::cargo_bin("pclientd")?;
@@ -261,6 +263,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     }
 
     // 3. Build a client for the daemon we just started.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 3");
     let channel = tonic::transport::Channel::from_static("http://127.0.0.1:8081")
         .connect()
         .await?;
@@ -268,6 +271,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     let mut custody_client = CustodyServiceClient::new(channel.clone());
 
     // 4. Use the view protocol to wait for it to sync.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 4");
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
         .status_stream()
         .await?;
@@ -284,6 +288,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
 
     // 5.1. Generate a transaction plan performing a swap. Since there are no liquidity positions
     // on this test network, we'll expect to get all our inputs back.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.1");
     let gm = asset::Cache::with_known_assets()
         .get_unit("gm")
         .unwrap()
@@ -322,6 +327,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .clone();
 
     // 5.2. Get authorization data for the transaction from pclientd (signing).
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.2");
     let auth_data = custody_client
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
@@ -333,6 +339,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
 
     // 5.3. Have pclientd build and sign the planned transaction.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.3");
     let mut tx_rsp = view_client
         .witness_and_build(WitnessAndBuildRequest {
             transaction_plan: Some(plan),
@@ -366,6 +373,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     .context("error building transaction")?;
 
     // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.4");
     let mut broadcast_rsp = view_client
         .broadcast_transaction(BroadcastTransactionRequest {
             transaction: Some(tx),
@@ -410,6 +418,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     }
 
     // 6. Use the view protocol to wait for it to sync.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 6");
     let mut status_stream = (&mut view_client as &mut dyn ViewClient)
         .status_stream()
         .await?;
@@ -423,11 +432,12 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .await?;
 
     // 7. Prepare the swap claim
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 7");
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
             swap_claims: vec![tpr::SwapClaim {
                 swap_commitment: Some(swap_plaintext.swap_commitment().into()),
-            }],
+            }], 
             ..Default::default()
         })
         .await?
@@ -436,6 +446,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("TransactionPlannerResponse missing plan"))?;
 
     // 5.2. Get authorization data for the transaction from pclientd (signing).
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.2 again");
     let auth_data = custody_client
         .authorize(AuthorizeRequest {
             plan: Some(plan.clone()),
@@ -447,6 +458,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("AuthorizeResponse missing data"))?;
 
     // 5.3. Have pclientd build and sign the planned transaction.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.3 again");
     let mut tx_rsp = view_client
         .witness_and_build(WitnessAndBuildRequest {
             transaction_plan: Some(plan),
@@ -480,6 +492,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     .context("error building transaction")?;
 
     // 5.4. Have pclientd broadcast and await confirmation of the built transaction.
+    tracing::info!(":::::::::::::::::::::::::::::::::::::::::::::: 5.4 again");
     let mut broadcast_rsp = view_client
         .broadcast_transaction(BroadcastTransactionRequest {
             transaction: Some(tx),
@@ -514,6 +527,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
     .context("error building transaction")?;
 
     tracing::debug!(?tx_id);
+    tracing::info!("end");
 
     // Check that we didn't have any errors:
     if let Some(status) = pclientd.try_wait()? {
