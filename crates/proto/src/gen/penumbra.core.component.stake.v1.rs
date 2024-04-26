@@ -763,6 +763,32 @@ impl ::prost::Name for GenesisContent {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventTombstoneValidator {
+    /// The height at which the offense occurred.
+    #[prost(uint64, tag = "1")]
+    pub evidence_height: u64,
+    /// The height at which the evidence was processed.
+    #[prost(uint64, tag = "2")]
+    pub current_height: u64,
+    /// The validator identity key.
+    #[prost(message, optional, tag = "4")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The validator's Comet address.
+    #[prost(bytes = "vec", tag = "5")]
+    pub address: ::prost::alloc::vec::Vec<u8>,
+    /// The voting power for the validator.
+    #[prost(uint64, tag = "6")]
+    pub voting_power: u64,
+}
+impl ::prost::Name for EventTombstoneValidator {
+    const NAME: &'static str = "EventTombstoneValidator";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

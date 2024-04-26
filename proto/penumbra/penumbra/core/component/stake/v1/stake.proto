@@ -311,3 +311,16 @@ message GenesisContent {
   // The list of validators present at genesis.
   repeated stake.v1.Validator validators = 2;
 }
+
+message EventTombstoneValidator {
+  // The height at which the offense occurred.
+  uint64 evidence_height = 1;
+  // The height at which the evidence was processed.
+  uint64 current_height = 2;
+  // The validator identity key.
+  keys.v1.IdentityKey identity_key = 4;
+  // The validator's Comet address.
+  bytes address = 5;
+  // The voting power for the validator.
+  uint64 voting_power = 6;
+}
