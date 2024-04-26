@@ -444,18 +444,10 @@ impl TxCmd {
                 planner
                     .set_gas_prices(gas_prices.clone())
                     .set_fee_tier((*fee_tier).into());
-                // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
-                // This shouldn't be an issue, since the planner will account for the difference and add additional
-                // spends alongside the swap claim transaction as necessary.
-                //
-                // Regardless, we apply a gas adjustment factor of 2.0 up-front to reduce the likelihood of
-                // requiring an additional spend at the time of claim.
-                //
-                // Since the swap claim fee needs to be passed in to the planner to build the swap (it is
-                // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
-                // call the helper method directly.
+                
+
                 let estimated_claim_fee = Fee::from_staking_token_amount(
-                    Amount::from(2u32) * gas_prices.fee(&swap_claim_gas_cost()),
+                    gas_prices.fee(&swap_claim_gas_cost()),
                 );
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
