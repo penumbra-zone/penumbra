@@ -732,8 +732,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             } else if provided_iter.peek().is_some() {
                 Box::new(provided_iter)
             } else {
-                // Handle the case where neither iterator has elements
-                todo!();
+                // Handle the case where neither iterator has elements with empty iterator
+                Box::new(std::iter::empty::<penumbra_asset::Value>())
+                    as Box<dyn Iterator<Item = _> + Send>
             };
 
         for required in balance_iter {
@@ -774,8 +775,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             } else if provided_iter.peek().is_some() {
                 Box::new(provided_iter)
             } else {
-                // Handle the case where neither iterator has elements
-                todo!();
+                // Handle the case where neither iterator has elements with empty iterator
+                Box::new(std::iter::empty::<penumbra_asset::Value>())
+                    as Box<dyn Iterator<Item = _> + Send>
             };
 
         while let Some(required) = balance_iter.next() {
