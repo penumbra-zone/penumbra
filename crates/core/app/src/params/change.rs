@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use anyhow::Result;
+use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
@@ -25,9 +26,9 @@ impl AppParameters {
         new.check_valid()?;
         // TODO: move the checks below into their respective components.
         // Tracked by #3593
-
         let AppParameters {
             chain_id,
+            auction_params: AuctionParameters {},
             community_pool_params:
                 CommunityPoolParameters {
                     community_pool_spend_proposals_enabled: _,
@@ -75,6 +76,7 @@ impl AppParameters {
                     is_enabled: _,
                     fixed_candidates: _,
                     max_hops: _,
+                    max_positions_per_pair: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -122,6 +124,7 @@ impl AppParameters {
     pub fn check_valid(&self) -> Result<()> {
         let AppParameters {
             chain_id,
+            auction_params: AuctionParameters {},
             community_pool_params:
                 CommunityPoolParameters {
                     community_pool_spend_proposals_enabled: _,
@@ -169,6 +172,7 @@ impl AppParameters {
                     is_enabled: _,
                     fixed_candidates: _,
                     max_hops: _,
+                    max_positions_per_pair: _,
                 },
             // IMPORTANT: Don't use `..` here! We want to ensure every single field is verified!
         } = self;
@@ -244,12 +248,14 @@ impl AppParameters {
                 *min_validator_stake >= 1_000_000u128.into(),
                 "the minimum validator stake must be at least 1penumbra",
             ),
+            // TODO(erwan): add a `max_positions_per_pair` check
         ])
     }
 
     /// Converts an `AppParameters` instance to a complete `ChangedAppParameters`.
     pub fn as_changed_params(&self) -> ChangedAppParameters {
         ChangedAppParameters {
+            auction_params: Some(self.auction_params.clone()),
             community_pool_params: Some(self.community_pool_params.clone()),
             distributions_params: Some(self.distributions_params.clone()),
             fee_params: Some(self.fee_params.clone()),
@@ -281,7 +287,8 @@ impl AppParameters {
                 || new.ibc_params.is_none()
                 || new.sct_params.is_none()
                 || new.shielded_pool_params.is_none()
-                || new.stake_params.is_none())
+                || new.stake_params.is_none()
+                || new.auction_params.is_none())
         {
             anyhow::bail!("all parameters must be specified if no old parameters are provided");
         }
@@ -294,6 +301,11 @@ impl AppParameters {
                 .expect("old should be set if new has any None values")
                 .chain_id
                 .clone(),
+            auction_params: new.auction_params.clone().unwrap_or_else(|| {
+                old.expect("old should be set if new has any None values")
+                    .auction_params
+                    .clone()
+            }),
             community_pool_params: new.community_pool_params.clone().unwrap_or_else(|| {
                 old.expect("old should be set if new has any None values")
                     .community_pool_params

@@ -4,7 +4,6 @@
 use std::error::Error;
 use std::io::IsTerminal as _;
 
-use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 
@@ -32,7 +31,7 @@ use url::Url;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Validate options immediately.
-    let Opt { tokio_console, cmd } = <Opt as clap::Parser>::parse();
+    let Opt { cmd } = <Opt as clap::Parser>::parse();
 
     // Instantiate tracing layers.
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
@@ -44,19 +43,12 @@ async fn main() -> anyhow::Result<()> {
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    // Register the tracing subscribers, conditionally enabling tokio console support
+    // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
         .with(metrics_layer);
-    if tokio_console {
-        // The ConsoleLayer enables collection of data for `tokio-console`.
-        // The `spawn` call will panic if AddrInUse, so we only spawn if enabled.
-        let console_layer = ConsoleLayer::builder().with_default_env().spawn();
-        registry.with(console_layer).init();
-    } else {
-        registry.init();
-    }
+    registry.init();
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {
@@ -120,10 +112,9 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            let abci_server = tokio::task::Builder::new()
-                .name("abci_server")
-                .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
-                .expect("failed to spawn abci server");
+            let abci_server = tokio::task::spawn(
+                penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
+            );
 
             let grpc_server =
                 penumbra_app::rpc::router(&storage, cometbft_addr, enable_expensive_rpc)?;
@@ -148,10 +139,7 @@ async fn main() -> anyhow::Result<()> {
             // resolver if auto-https has been enabled.
             macro_rules! spawn_grpc_server {
                 ($server:expr) => {
-                    tokio::task::Builder::new()
-                        .name("grpc_server")
-                        .spawn($server.serve(make_svc))
-                        .expect("failed to spawn grpc server")
+                    tokio::task::spawn($server.serve(make_svc))
                 };
             }
             let grpc_server = axum_server::bind(grpc_bind);
@@ -317,6 +305,7 @@ async fn main() -> anyhow::Result<()> {
                     allocations_input_file,
                     validators_input_file,
                     chain_id,
+                    gas_price_simple,
                     preserve_chain_id,
                     external_addresses,
                     proposal_voting_blocks,
@@ -376,6 +365,7 @@ async fn main() -> anyhow::Result<()> {
                 epoch_duration,
                 unbonding_delay,
                 proposal_voting_blocks,
+                gas_price_simple,
             )?;
             tracing::info!(
                 n_validators = t.validators.len(),

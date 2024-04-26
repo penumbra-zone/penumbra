@@ -1,3 +1,5 @@
 [build]
 # Enable Tokio's `tracing` support for `tokio-console`
-rustflags = ["--cfg", "tokio_unstable"]
+# rustflags = ["--cfg", "tokio_unstable"]
+# Note(erwan): We decided to disable it for the time being,
+# I'm keeping this around to be able to reactivate it on a whim.

@@ -62,3 +62,18 @@ jobs:
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
+
+  check:
+    name: Check all crate features
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+      - name: install cargo-hack
+        run: cargo install cargo-hack
+      # Build each crate separately, to validate that the feature-gating is working.
+      # This is a lighter-weight version of `cargo check-all-features --workspace --release`.
+      - run: ./deployments/scripts/check-crate-feature-sets

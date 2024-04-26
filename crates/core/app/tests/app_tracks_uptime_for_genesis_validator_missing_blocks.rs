@@ -6,11 +6,9 @@ use {
     cnidarium::TempStorage,
     penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_mock_consensus::TestNode,
-    penumbra_stake::{
-        component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,
-    },
+    penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead,
     tap::Tap,
-    tracing::{error_span, info, trace, Instrument},
+    tracing::{error_span, trace, Instrument},
 };
 
 #[tokio::test]
@@ -31,16 +29,12 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
     }?;
 
     // Retrieve the validator definition from the latest snapshot.
-    let Validator { identity_key, .. } = match storage
+    let [identity_key] = storage
         .latest_snapshot()
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    };
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
     let get_uptime = || async {
         storage
             .latest_snapshot()

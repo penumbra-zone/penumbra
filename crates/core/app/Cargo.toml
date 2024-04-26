@@ -36,6 +36,7 @@ metrics                          = { workspace = true }
 once_cell                        = { workspace = true }
 parking_lot                      = { workspace = true }
 penumbra-asset                   = { workspace = true, default-features = true }
+penumbra-auction                 = { workspace = true, default-features = true }
 penumbra-community-pool          = { workspace = true, default-features = true }
 penumbra-compact-block           = { workspace = true, default-features = true }
 penumbra-dex                     = { workspace = true, default-features = true }
@@ -81,14 +82,15 @@ tracing                          = { workspace = true }
 url                              = { workspace = true }
 
 [dev-dependencies]
-ed25519-consensus       = { workspace = true }
-penumbra-mock-consensus = { workspace = true }
-penumbra-mock-client    = { workspace = true }
-rand                    = { workspace = true }
-rand_core               = { workspace = true }
-rand_chacha             = { workspace = true }
-tap                     = { workspace = true }
-tracing-subscriber      = { workspace = true }
+ed25519-consensus        = { workspace = true }
+penumbra-mock-consensus  = { workspace = true }
+penumbra-mock-client     = { workspace = true }
+penumbra-test-subscriber = { workspace = true }
+rand                     = { workspace = true }
+rand_core                = { workspace = true }
+rand_chacha              = { workspace = true }
+tap                      = { workspace = true }
+tracing-subscriber       = { workspace = true }
 
 # Enable the feature flags to get proving keys when running tests.
 [dev-dependencies.penumbra-proof-params]

@@ -63,6 +63,12 @@ impl Amount {
             .map(|inner| Self { inner })
     }
 
+    pub fn checked_mul(&self, rhs: &Self) -> Option<Self> {
+        self.inner
+            .checked_mul(rhs.inner)
+            .map(|inner| Self { inner })
+    }
+
     pub fn saturating_add(&self, rhs: &Self) -> Self {
         Self {
             inner: self.inner.saturating_add(rhs.inner),
@@ -391,6 +397,12 @@ impl ops::Sub<Amount> for Amount {
         Amount {
             inner: self.inner - rhs.inner,
         }
+    }
+}
+
+impl ops::SubAssign<Amount> for Amount {
+    fn sub_assign(&mut self, rhs: Amount) {
+        self.inner -= rhs.inner;
     }
 }
 

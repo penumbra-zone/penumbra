@@ -8,6 +8,7 @@ pub use view::ViewCmd;
 
 use self::ceremony::CeremonyCmd;
 
+mod auction;
 mod ceremony;
 mod debug;
 mod init;

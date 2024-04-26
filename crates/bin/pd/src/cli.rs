@@ -9,9 +9,6 @@ use {
 #[derive(Debug, Parser)]
 #[clap(name = "pd", about = "The Penumbra daemon.", version)]
 pub struct Opt {
-    /// Enable Tokio Console support.
-    #[clap(long)]
-    pub tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: RootCommand,
@@ -175,6 +172,13 @@ pub enum TestnetCommand {
         /// can be voted on.
         #[clap(long)]
         proposal_voting_blocks: Option<u64>,
+        /// The fixed gas price for all transactions on the network.
+        /// Described as "simple" because the single value will be reused
+        /// for all gas price types: block space, compact block space, verification, and execution.
+        /// The numeric value is one-thousandths of the staking token,
+        /// so `--gas-price-simple=1000` means all transactions will have a cost of 1penumbra.
+        #[clap(long)]
+        gas_price_simple: Option<u64>,
         /// Base hostname for a validator's p2p service. If multiple validators
         /// exist in the genesis, e.g. via `--validators-input-file`, then
         /// numeric suffixes are automatically added, e.g. "-0", "-1", etc.

@@ -17,7 +17,7 @@ use super::position::{Id, State};
 /// be recorded in a programmatic on-chain account (in the future, e.g., to
 /// support interchain accounts).  This also means that LP-related actions don't
 /// require any cryptographic implementation (proofs, signatures, etc), other
-/// than hooking into the value commitment mechanism used for transaction
+/// than hooking into the balance commitment mechanism used for transaction
 /// balances.
 #[derive(Debug, Clone)]
 pub struct LpNft {

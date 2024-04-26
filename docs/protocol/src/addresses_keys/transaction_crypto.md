@@ -84,7 +84,7 @@ should be able to decrypt the per-transaction memo.
 ### Outgoing Cipher Key
 
 The symmetric outgoing cipher key is a 32-byte key derived from the sender's outgoing viewing key
-$ovk$, the value commitment $cv$, the note commitment $cm$, the ephemeral
+$ovk$, the balance commitment $cv$, the note commitment $cm$, the ephemeral
 public key $epk$, and personalization string "Penumbra_OutCiph":
 
 ```

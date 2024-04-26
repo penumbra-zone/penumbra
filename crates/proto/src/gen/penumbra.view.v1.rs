@@ -1,5 +1,58 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionsRequest {
+    /// If present, filter balances to only include the account specified by the `AddressIndex`.
+    #[prost(message, optional, tag = "1")]
+    pub account_filter: ::core::option::Option<
+        super::super::core::keys::v1::AddressIndex,
+    >,
+    /// If present, include inactive auctions as well as active ones.
+    #[prost(bool, tag = "2")]
+    pub include_inactive: bool,
+    /// If set, query a fullnode for the current state of the auctions.
+    #[prost(bool, tag = "3")]
+    pub query_latest_state: bool,
+}
+impl ::prost::Name for AuctionsRequest {
+    const NAME: &'static str = "AuctionsRequest";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuctionsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub id: ::core::option::Option<
+        super::super::core::component::auction::v1alpha1::AuctionId,
+    >,
+    /// The note recording the auction NFT.
+    #[prost(message, optional, tag = "4")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
+    /// The state of the returned auction.
+    ///
+    /// Only present when `query_latest_state` was provided.
+    #[prost(message, optional, tag = "2")]
+    pub auction: ::core::option::Option<::pbjson_types::Any>,
+    /// The state of any DEX positions relevant to the returned auction.
+    ///
+    /// Only present when `query_latest_state` was provided.
+    /// Could be empty, depending on the auction state.
+    #[prost(message, repeated, tag = "3")]
+    pub positions: ::prost::alloc::vec::Vec<
+        super::super::core::component::dex::v1::Position,
+    >,
+}
+impl ::prost::Name for AuctionsResponse {
+    const NAME: &'static str = "AuctionsResponse";
+    const PACKAGE: &'static str = "penumbra.view.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.view.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthorizeAndBuildRequest {
     /// The transaction plan to authorize and build.
     #[prost(message, optional, tag = "1")]
@@ -207,6 +260,18 @@ pub struct TransactionPlannerRequest {
     #[prost(message, repeated, tag = "72")]
     pub position_withdraws: ::prost::alloc::vec::Vec<
         transaction_planner_request::PositionWithdraw,
+    >,
+    #[prost(message, repeated, tag = "73")]
+    pub dutch_auction_schedule_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionSchedule,
+    >,
+    #[prost(message, repeated, tag = "74")]
+    pub dutch_auction_end_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionEnd,
+    >,
+    #[prost(message, repeated, tag = "75")]
+    pub dutch_auction_withdraw_actions: ::prost::alloc::vec::Vec<
+        transaction_planner_request::ActionDutchAuctionWithdraw,
     >,
     /// The epoch index of the transaction being planned.
     #[deprecated]
@@ -429,6 +494,63 @@ pub mod transaction_planner_request {
     }
     impl ::prost::Name for PositionWithdraw {
         const NAME: &'static str = "PositionWithdraw";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionSchedule {
+        /// The description of the auction to schedule.
+        #[prost(message, optional, tag = "1")]
+        pub description: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::DutchAuctionDescription,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionSchedule {
+        const NAME: &'static str = "ActionDutchAuctionSchedule";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionEnd {
+        /// The unique id of the auction to close.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::AuctionId,
+        >,
+    }
+    impl ::prost::Name for ActionDutchAuctionEnd {
+        const NAME: &'static str = "ActionDutchAuctionEnd";
+        const PACKAGE: &'static str = "penumbra.view.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.view.v1.TransactionPlannerRequest.{}", Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ActionDutchAuctionWithdraw {
+        /// The auction to withdraw funds from.
+        #[prost(message, optional, tag = "1")]
+        pub auction_id: ::core::option::Option<
+            super::super::super::core::component::auction::v1alpha1::AuctionId,
+        >,
+        /// The sequence number of the withdrawal.
+        #[prost(uint64, tag = "2")]
+        pub seq: u64,
+    }
+    impl ::prost::Name for ActionDutchAuctionWithdraw {
+        const NAME: &'static str = "ActionDutchAuctionWithdraw";
         const PACKAGE: &'static str = "penumbra.view.v1";
         fn full_name() -> ::prost::alloc::string::String {
             ::prost::alloc::format!(
@@ -2457,6 +2579,32 @@ pub mod view_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Gets the auctions controlled by the user's wallet.
+        pub async fn auctions(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuctionsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::AuctionsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.view.v1.ViewService/Auctions",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("penumbra.view.v1.ViewService", "Auctions"));
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -2805,6 +2953,17 @@ pub mod view_service_server {
             tonic::Response<Self::UnbondingTokensByAddressIndexStream>,
             tonic::Status,
         >;
+        /// Server streaming response type for the Auctions method.
+        type AuctionsStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::AuctionsResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Gets the auctions controlled by the user's wallet.
+        async fn auctions(
+            &self,
+            request: tonic::Request<super::AuctionsRequest>,
+        ) -> std::result::Result<tonic::Response<Self::AuctionsStream>, tonic::Status>;
     }
     /// The view RPC is used by a view client, who wants to do some
     /// transaction-related actions, to request data from a view service, which is
@@ -4205,6 +4364,53 @@ pub mod view_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = UnbondingTokensByAddressIndexSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.view.v1.ViewService/Auctions" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuctionsSvc<T: ViewService>(pub Arc<T>);
+                    impl<
+                        T: ViewService,
+                    > tonic::server::ServerStreamingService<super::AuctionsRequest>
+                    for AuctionsSvc<T> {
+                        type Response = super::AuctionsResponse;
+                        type ResponseStream = T::AuctionsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AuctionsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as ViewService>::auctions(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuctionsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

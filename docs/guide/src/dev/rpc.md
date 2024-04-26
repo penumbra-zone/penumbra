@@ -1,7 +1,7 @@
 # Working with gRPC for Penumbra
 
-The Penumbra [`pd`](../pd.md) application exposes a [gRPC] service for integration
-with other tools, such as [`pcli`](../pcli.md) or the [web extension](../extension.md).
+The Penumbra [`pd`](../node/pd.md) application exposes a [gRPC] service for integration
+with other tools, such as [`pcli`](../pcli.md) or the [web extension](../web.md).
 A solid understanding of how the gRPC methods work is helpful when
 building software that interoperates with Penumbra.
 
@@ -37,11 +37,11 @@ Click **Send** to submit the request and view response data in the right-hand pa
 
 Regardless of which interface you choose, you can connect to an instance of `pd` running
 on your machine, which can be useful while adding new features.
-First, make sure you've [joined a testnet](../pd/join-testnet.md)
+First, make sure you've [joined a testnet](../node/pd/join-testnet.md)
 by setting up a node on your local machine. Once it's running, you can connect directly
 to the pd port via `http://localhost:8080`.
 
-Alternatively, you can use `pclientd`. First, make sure you've [configured pclientd locally](../pclientd/configure.md)
+Alternatively, you can use `pclientd`. First, make sure you've [configured pclientd locally](../node/pclientd/configure.md)
 with your full viewing key. Once it's running, you can connect directly
 to the pclient port via `http://localhost:8081`.
 

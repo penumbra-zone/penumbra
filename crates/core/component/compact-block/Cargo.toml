@@ -12,6 +12,7 @@ component = [
     "tokio-stream",
     "tokio",
     "penumbra-governance/component",
+    "penumbra-dex/component",
 ]
 # proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component"]

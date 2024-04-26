@@ -109,7 +109,16 @@ message EpochByHeightResponse {
   Epoch epoch = 1;
 }
 
+message AnchorByHeightRequest {
+  uint64 height = 1;
+}
+
+message AnchorByHeightResponse {
+  crypto.tct.v1.MerkleRoot anchor = 1;
+}
+
 // Query operations for the SCT component.
 service QueryService {
+  rpc AnchorByHeight(AnchorByHeightRequest) returns (AnchorByHeightResponse);
   rpc EpochByHeight(EpochByHeightRequest) returns (EpochByHeightResponse);
 }

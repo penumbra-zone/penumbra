@@ -33,19 +33,29 @@ impl From<ProposalWithdraw> for pb::ProposalWithdraw {
 }
 
 impl ProposalWithdraw {
-    /// Compute a commitment to the value contributed to a transaction by this proposal submission.
+    /// Compute a commitment to the value contributed to a transaction by this proposal withdrawal.
     pub fn balance(&self) -> Balance {
-        let voting_proposal_nft = Value {
-            amount: Amount::from(1u64),
-            asset_id: ProposalNft::deposit(self.proposal).denom().into(),
-        };
-        let withdrawn_proposal_nft = Value {
-            amount: Amount::from(1u64),
-            asset_id: ProposalNft::unbonding_deposit(self.proposal).denom().into(),
-        };
+        let voting_proposal_nft = self.voting_proposal_nft_value();
+        let withdrawn_proposal_nft = self.withdrawn_proposal_nft();
 
         // Proposal withdrawals consume the submitted proposal and produce a withdrawn proposal:
         Balance::from(withdrawn_proposal_nft) - Balance::from(voting_proposal_nft)
+    }
+
+    /// Returns the [`Value`] of the proposal NFT.
+    fn voting_proposal_nft_value(&self) -> Value {
+        Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::deposit(self.proposal).denom().into(),
+        }
+    }
+
+    /// Returns a withdrawal NFT.
+    fn withdrawn_proposal_nft(&self) -> Value {
+        Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::unbonding_deposit(self.proposal).denom().into(),
+        }
     }
 }
 

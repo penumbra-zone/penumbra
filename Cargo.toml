@@ -17,6 +17,7 @@ members = [
   "crates/core/asset",
   "crates/core/component/community-pool",
   "crates/core/component/compact-block",
+  "crates/core/component/auction",
   "crates/core/component/dex",
   "crates/core/component/distributions",
   "crates/core/component/fee",
@@ -45,6 +46,7 @@ members = [
   "crates/test/mock-client",
   "crates/test/mock-consensus",
   "crates/test/tct-property-test",
+  "crates/test/tracing-subscriber",
   "crates/util/auto-https",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
@@ -58,7 +60,7 @@ members = [
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.5.0"
 # The preferred Rust toolchain to use in CI (rustup toolchain syntax)
-rust-toolchain-version = "1.73"
+rust-toolchain-version = "1.75"
 # CI backends to support
 ci = ["github"]
 # Target platforms to build apps for (Rust target-triple syntax)
@@ -129,7 +131,6 @@ chrono                           = { default-features = false, version = "0.4" }
 clap                             = { version = "3.2" }
 cnidarium                        = { default-features = false, path = "crates/cnidarium" }
 cnidarium-component              = { default-features = false, path = "crates/cnidarium-component" }
-console-subscriber               = { version = "0.2" }
 criterion                        = { version = "0.4" }
 decaf377                         = { default-features = false, version = "0.5" }
 decaf377-fmd                     = { path = "crates/crypto/decaf377-fmd" }
@@ -163,6 +164,7 @@ penumbra-asset                   = { default-features = false, path = "crates/co
 penumbra-community-pool          = { default-features = false, path = "crates/core/component/community-pool" }
 penumbra-compact-block           = { default-features = false, path = "crates/core/component/compact-block" }
 penumbra-custody                 = { path = "crates/custody" }
+penumbra-auction                 = { default-features = false, path = "crates/core/component/auction" }
 penumbra-dex                     = { default-features = false, path = "crates/core/component/dex" }
 penumbra-distributions           = { default-features = false, path = "crates/core/component/distributions" }
 penumbra-fee                     = { default-features = false, path = "crates/core/component/fee" }
@@ -180,6 +182,7 @@ penumbra-sct                     = { default-features = false, path = "crates/co
 penumbra-shielded-pool           = { default-features = false, path = "crates/core/component/shielded-pool" }
 penumbra-stake                   = { default-features = false, path = "crates/core/component/stake" }
 penumbra-tct                     = { default-features = false, path = "crates/crypto/tct" }
+penumbra-test-subscriber         = { path = "crates/test/tracing-subscriber" }
 penumbra-transaction             = { default-features = false, path = "crates/core/transaction" }
 penumbra-txhash                  = { default-features = false, path = "crates/core/txhash" }
 penumbra-view                    = { path = "crates/view" }
@@ -210,6 +213,7 @@ tendermint-config                = { version = "0.34.0" }
 tendermint-light-client-verifier = { version = "0.34.0" }
 tendermint-proto                 = { version = "0.34.0" }
 tendermint-rpc                   = { version = "0.34.0" }
+termion                          = { version = "3" }
 thiserror                        = { version = "1.0" }
 tokio                            = { version = "1.3" }
 tokio-stream                     = { version = "0.1.8" }

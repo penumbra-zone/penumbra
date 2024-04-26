@@ -21,7 +21,7 @@ update the configuration for a validator.
 
 #### Creating a template definition
 
-First, make sure you've [installed `pcli`](../pcli/install.md).
+First, make sure you've [installed `pcli`](../../pcli/install.md).
 To create a template configuration, use `pcli validator definition template`:
 
 ```shell
@@ -78,7 +78,7 @@ Note that by default the `enabled` field is set to false and will need to be
 enabled in order to activate one's validator.
 
 In the default template, there is a funding stream declared to [contribute funds to the
-Community Pool](../pcli/governance.md#contributing-to-the-community-pool). This is not required, and may be altered or
+Community Pool](../../pcli/governance.md#contributing-to-the-community-pool). This is not required, and may be altered or
 removed if you wish.
 
 #### Setting the consensus key

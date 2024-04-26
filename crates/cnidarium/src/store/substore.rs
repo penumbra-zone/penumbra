@@ -18,7 +18,7 @@ use jmt::storage::TreeWriter;
 
 /// Specifies the configuration of a substore, which is a prefixed subset of
 /// the main store with its own merkle tree, nonverifiable data, preimage index, etc.
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct SubstoreConfig {
     /// The prefix of the substore. If empty, it is the root-level store config.
     pub prefix: String,
@@ -365,9 +365,8 @@ impl SubstoreStorage {
     ) -> Result<(RootHash, rocksdb::WriteBatch)> {
         let span = Span::current();
 
-        tokio::task::Builder::new()
-                .name("Storage::commit_inner_substore")
-                .spawn_blocking(move || {
+        tokio::task
+                ::spawn_blocking(move || {
                     span.in_scope(|| {
                         let jmt = jmt::Sha256Jmt::new(&self.substore_snapshot);
                         let unwritten_changes: Vec<_> = cache
@@ -440,7 +439,7 @@ impl SubstoreStorage {
 
                         Ok((root_hash, write_batch))
                     })
-                })?
+                })
                 .await?
     }
 }

@@ -1,27 +1,36 @@
 use std::future;
 use std::{pin::Pin, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{bail, ensure, Result};
 use async_stream::try_stream;
 use async_trait::async_trait;
 use cnidarium::{EscapedByteSlice, StateRead, StateWrite};
 use futures::Stream;
 use futures::StreamExt;
 use penumbra_asset::{asset, Balance};
-use penumbra_num::Amount;
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::event;
-use crate::lp::position::State;
+use crate::component::position_manager::{
+    base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
+    price_index::PositionByPriceIndex,
+};
 use crate::lp::Reserves;
 use crate::{
+    component::position_manager::counter::PositionCounter,
     component::ValueCircuitBreaker,
     lp::position::{self, Position},
-    state_key, DirectedTradingPair,
+    state_key::engine,
+    DirectedTradingPair,
 };
+use crate::{event, state_key};
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
+
+mod base_liquidity_index;
+mod counter;
+mod inventory_index;
+pub(crate) mod price_index;
 
 #[async_trait]
 pub trait PositionRead: StateRead {
@@ -46,7 +55,7 @@ pub trait PositionRead: StateRead {
         &self,
         pair: &DirectedTradingPair,
     ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::price_index::prefix(pair);
+        let prefix = engine::price_index::prefix(pair);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
         self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
@@ -61,6 +70,13 @@ pub trait PositionRead: StateRead {
 
     async fn position_by_id(&self, id: &position::Id) -> Result<Option<position::Position>> {
         self.get(&state_key::position_by_id(id)).await
+    }
+
+    async fn check_position_by_id(&self, id: &position::Id) -> Result<bool> {
+        Ok(self
+            .get_raw(&state_key::position_by_id(id))
+            .await?
+            .is_some())
     }
 
     async fn best_position(
@@ -115,9 +131,9 @@ pub trait PositionRead: StateRead {
     /// Returns a stream of [`asset::Id`] routable from a given asset, ordered by liquidity.
     fn ordered_routable_assets(
         &self,
-        from: &asset::Id,
+        start: &asset::Id,
     ) -> Pin<Box<dyn Stream<Item = Result<asset::Id>> + Send + 'static>> {
-        let prefix = state_key::internal::routable_assets::prefix(from);
+        let prefix = engine::routable_assets::starting_from(start);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for routable assets by liquidity");
         self.nonverifiable_prefix_raw(&prefix)
             .map(|entry| match entry {
@@ -156,6 +172,17 @@ pub trait PositionManager: StateWrite + PositionRead {
             prev_state.state
         );
 
+        // Optimization: skip state update if the position is already closed.
+        // This can happen if the position was queued for closure and premptively
+        // closed by the DEX engine during execution (e.g. auto-closing).
+        if prev_state.state == position::State::Closed {
+            tracing::debug!(
+                ?id,
+                "position is already closed so we can skip state updates"
+            );
+            return Ok(());
+        }
+
         let new_state = {
             let mut new_state = prev_state.clone();
             new_state.state = position::State::Closed;
@@ -186,6 +213,17 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Opens a new position, updating all necessary indexes and checking for
     /// its nonexistence prior to being opened.
+    ///
+    /// # Errors
+    /// This method returns an error if the position is malformed
+    /// e.g. it is set to a state other than `Opened`
+    ///  or, it specifies a position identifier already used by another position.
+    ///
+    /// An error can also occur if a DEX engine invariant is breached
+    /// e.g. overflowing the position counter (`u16::MAX`)
+    ///  or, overflowing the value circuit breaker (`u128::MAX`)
+    ///
+    /// In any of those cases, we do not want to allow a new position to be opened.
     #[tracing::instrument(level = "debug", skip_all)]
     async fn open_position(&mut self, position: position::Position) -> Result<()> {
         // Double-check that the position is in the `Opened` state
@@ -353,7 +391,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 impl<T: StateWrite + ?Sized> PositionManager for T {}
 
 #[async_trait]
-pub(crate) trait Inner: StateWrite {
+trait Inner: StateWrite {
     /// Writes a position to the state, updating all necessary indexes.
     ///
     /// This should be the SOLE ENTRYPOINT for writing positions to the state.
@@ -368,231 +406,60 @@ pub(crate) trait Inner: StateWrite {
 
         let id = new_state.id();
 
-        // Clear any existing indexes of the position, since changes to the
-        // reserves or the position state might have invalidated them.
-        if let Some(prev_state) = prev_state.as_ref() {
-            self.deindex_position_by_price(&prev_state, &id);
-        }
+        // Assert `update_position` state transitions invariants:
+        Self::guard_invalid_transitions(&prev_state, &new_state, &id)?;
 
-        // Only index the position's liquidity if it is active.
-        if new_state.state == position::State::Opened {
-            self.index_position_by_price(&new_state, &id);
-        }
-
-        // Update the available liquidity for this position's trading pair.
-        // TODO: refactor and streamline this method while implementing eviction.
-        self.update_available_liquidity(&new_state, &prev_state)
+        // Update the DEX engine indices:
+        self.update_position_by_price_index(&prev_state, &new_state, &id)?;
+        self.update_position_by_inventory_index(&prev_state, &new_state, &id)?;
+        self.update_asset_by_base_liquidity_index(&prev_state, &new_state, &id)
+            .await?;
+        self.update_trading_pair_position_counter(&prev_state, &new_state, &id)
             .await?;
 
         self.put(state_key::position_by_id(&id), new_state);
         Ok(())
     }
 
-    fn index_position_by_price(&mut self, position: &position::Position, id: &position::Id) {
-        let (pair, phi) = (position.phi.pair, &position.phi);
-        if position.reserves.r2 != 0u64.into() {
-            // Index this position for trades FROM asset 1 TO asset 2, since the position has asset 2 to give out.
-            let pair12 = DirectedTradingPair {
-                start: pair.asset_1(),
-                end: pair.asset_2(),
-            };
-            let phi12 = phi.component.clone();
-            self.nonverifiable_put_raw(
-                state_key::internal::price_index::key(&pair12, &phi12, &id),
-                vec![],
-            );
-            tracing::debug!("indexing position for 1=>2 trades");
-        }
-
-        if position.reserves.r1 != 0u64.into() {
-            // Index this position for trades FROM asset 2 TO asset 1, since the position has asset 1 to give out.
-            let pair21 = DirectedTradingPair {
-                start: pair.asset_2(),
-                end: pair.asset_1(),
-            };
-            let phi21 = phi.component.flip();
-            self.nonverifiable_put_raw(
-                state_key::internal::price_index::key(&pair21, &phi21, &id),
-                vec![],
-            );
-            tracing::debug!("indexing position for 2=>1 trades");
-        }
-    }
-
-    fn deindex_position_by_price(&mut self, position: &Position, id: &position::Id) {
-        tracing::debug!("deindexing position");
-        let pair12 = DirectedTradingPair {
-            start: position.phi.pair.asset_1(),
-            end: position.phi.pair.asset_2(),
-        };
-        let phi12 = position.phi.component.clone();
-        let pair21 = DirectedTradingPair {
-            start: position.phi.pair.asset_2(),
-            end: position.phi.pair.asset_1(),
-        };
-        let phi21 = position.phi.component.flip();
-        self.nonverifiable_delete(state_key::internal::price_index::key(&pair12, &phi12, &id));
-        self.nonverifiable_delete(state_key::internal::price_index::key(&pair21, &phi21, &id));
-    }
-
-    /// Updates the nonverifiable liquidity indices given a [`Position`] in the direction specified by the [`DirectedTradingPair`].
-    /// An [`Option<Position>`] may be specified to allow for the case where a position is being updated.
-    async fn update_liquidity_index(
-        &mut self,
-        pair: DirectedTradingPair,
-        position: &Position,
-        prev: &Option<Position>,
+    fn guard_invalid_transitions(
+        prev_state: &Option<Position>,
+        new_state: &Position,
+        id: &position::Id,
     ) -> Result<()> {
-        tracing::debug!(?pair, "updating available liquidity indices");
+        use position::State::*;
 
-        let (new_a_from_b, current_a_from_b) = match (position.state, prev) {
-            (State::Opened, None) => {
-                // Add the new position's contribution to the index, no cancellation of the previous version necessary.
-
-                // Query the current available liquidity for this trading pair, or zero if the trading pair
-                // has no current liquidity.
-                let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
-                    .await?
-                    .map(|bytes| {
-                        Amount::from_be_bytes(
-                            bytes
-                                .try_into()
-                                .expect("liquidity index amount can always be parsed"),
-                        )
-                    })
-                    .unwrap_or_default();
-
-                // Use the new reserves to compute `new_position_contribution`,
-                // the amount of asset A contributed by the position (i.e. the reserves of asset A).
-                let new_position_contribution = position
-                    .reserves_for(pair.start)
-                    .expect("specified position should match provided trading pair");
-
-                // Compute `new_A_from_B`.
-                let new_a_from_b =
-                    // Add the contribution from the updated version.
-                    current_a_from_b.saturating_add(&new_position_contribution);
-
-                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, "newly opened position, adding contribution to existing available liquidity for trading pair");
-
-                (new_a_from_b, current_a_from_b)
+        if let Some(prev_lp) = prev_state {
+            tracing::debug!(?id, prev = ?prev_lp.state, new = ?new_state.state, "evaluating state transition");
+            match (prev_lp.state, new_state.state) {
+                (Opened, Opened) => {}
+                (Opened, Closed) => {}
+                (Closed, Closed) => { /* no-op but allowed */ }
+                (Closed, Withdrawn { sequence }) => {
+                    ensure!(
+                        sequence == 0,
+                        "withdrawn positions must have their sequence start at zero (found: {})",
+                        sequence
+                    );
+                }
+                (Withdrawn { sequence: old_seq }, Withdrawn { sequence: new_seq }) => {
+                    let expected_seq = old_seq.saturating_add(1);
+                    ensure!(
+                        new_seq == expected_seq,
+                        "withdrawn must increase 1-by-1 (old: {}, new: {}, expected: {})",
+                        old_seq,
+                        new_seq,
+                        expected_seq
+                    );
+                }
+                _ => bail!("invalid transition"),
             }
-            (State::Opened, Some(prev)) => {
-                // Add the new position's contribution to the index, deleting the previous version's contribution.
-
-                // Query the current available liquidity for this trading pair, or zero if the trading pair
-                // has no current liquidity.
-                let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
-                    .await?
-                    .map(|bytes| {
-                        Amount::from_be_bytes(
-                            bytes
-                                .try_into()
-                                .expect("liquidity index amount can always be parsed"),
-                        )
-                    })
-                    .unwrap_or_default();
-
-                // Use the previous reserves to compute `prev_position_contribution` (denominated in asset_1).
-                let prev_position_contribution = prev
-                    .reserves_for(pair.start)
-                    .expect("specified position should match provided trading pair");
-
-                // Use the new reserves to compute `new_position_contribution`,
-                // the amount of asset A contributed by the position (i.e. the reserves of asset A).
-                let new_position_contribution = position
-                    .reserves_for(pair.start)
-                    .expect("specified position should match provided trading pair");
-
-                // Compute `new_A_from_B`.
-                let new_a_from_b =
-                // Subtract the previous version of the position's contribution to represent that position no longer
-                // being correct, and add the contribution from the updated version.
-                (current_a_from_b.saturating_sub(&prev_position_contribution)).saturating_add(&new_position_contribution);
-
-                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?new_position_contribution, ?prev_position_contribution, "updated position, adding new contribution and subtracting previous contribution to existing available liquidity for trading pair");
-
-                (new_a_from_b, current_a_from_b)
-            }
-            (State::Closed, Some(prev)) => {
-                // Compute the previous contribution and erase it from the current index
-
-                // Query the current available liquidity for this trading pair, or zero if the trading pair
-                // has no current liquidity.
-                let current_a_from_b = self
-                    .nonverifiable_get_raw(&state_key::internal::routable_assets::a_from_b(&pair))
-                    .await?
-                    .map(|bytes| {
-                        Amount::from_be_bytes(
-                            bytes
-                                .try_into()
-                                .expect("liquidity index amount can always be parsed"),
-                        )
-                    })
-                    .unwrap_or_default();
-
-                // Use the previous reserves to compute `prev_position_contribution` (denominated in asset_1).
-                let prev_position_contribution = prev
-                    .reserves_for(pair.start)
-                    .expect("specified position should match provided trading pair");
-
-                // Compute `new_A_from_B`.
-                let new_a_from_b =
-                // Subtract the previous version of the position's contribution to represent that position no longer
-                // being correct, and since the updated version is Closed, it has no contribution.
-                current_a_from_b.saturating_sub(&prev_position_contribution);
-
-                tracing::debug!(?pair, current_liquidity = ?current_a_from_b, ?prev_position_contribution, "closed position, subtracting previous contribution to existing available liquidity for trading pair");
-
-                (new_a_from_b, current_a_from_b)
-            }
-            (State::Withdrawn { .. }, _) | (State::Closed, None) => {
-                // The position already went through the `Closed` state or was opened in the `Closed` state, so its contribution has already been subtracted.
-                return Ok(());
-            }
-        };
-
-        // Delete the existing key for this position if the reserve amount has changed.
-        if new_a_from_b != current_a_from_b {
-            self.nonverifiable_delete(
-                state_key::internal::routable_assets::key(&pair.start, current_a_from_b).to_vec(),
+        } else {
+            ensure!(
+                matches!(new_state.state, Opened),
+                "fresh positions MUST start in the `Opened` state (found: {:?})",
+                new_state.state
             );
         }
-
-        // Write the new key indicating that asset B is routable from asset A with `new_a_from_b` liquidity.
-        self.nonverifiable_put_raw(
-            state_key::internal::routable_assets::key(&pair.start, new_a_from_b).to_vec(),
-            pair.end.encode_to_vec(),
-        );
-        tracing::debug!(start = ?pair.start, end = ?pair.end, "marking routable from start -> end");
-
-        // Write the new lookup index storing `new_a_from_b` for this trading pair.
-        self.nonverifiable_put_raw(
-            state_key::internal::routable_assets::a_from_b(&pair).to_vec(),
-            new_a_from_b.to_be_bytes().to_vec(),
-        );
-        tracing::debug!(available_liquidity = ?new_a_from_b, ?pair, "marking available liquidity for trading pair");
-
-        Ok(())
-    }
-
-    async fn update_available_liquidity(
-        &mut self,
-        position: &Position,
-        prev_position: &Option<Position>,
-    ) -> Result<()> {
-        // Since swaps may be performed in either direction, the available liquidity indices
-        // need to be calculated and stored for both the A -> B and B -> A directions.
-        let (a, b) = (position.phi.pair.asset_1(), position.phi.pair.asset_2());
-
-        // A -> B
-        self.update_liquidity_index(DirectedTradingPair::new(a, b), position, prev_position)
-            .await?;
-        // B -> A
-        self.update_liquidity_index(DirectedTradingPair::new(b, a), position, prev_position)
-            .await?;
 
         Ok(())
     }

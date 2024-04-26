@@ -12,6 +12,12 @@ use rand_core::OsRng;
 use tracing::instrument;
 
 use penumbra_asset::{asset, Balance, Value};
+use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
+use penumbra_auction::auction::dutch::DutchAuctionDescription;
+use penumbra_auction::auction::{
+    dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
+    AuctionId,
+};
 use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -546,6 +552,62 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         self.push(vote);
         self
+    }
+
+    /// Initiates a Dutch auction using protocol-controlled liquidity.
+    #[instrument(skip(self))]
+    pub fn dutch_auction_schedule(
+        &mut self,
+        input: Value,
+        output_id: asset::Id,
+        max_output: Amount,
+        min_output: Amount,
+        start_height: u64,
+        end_height: u64,
+        step_count: u64,
+        nonce: [u8; 32],
+    ) -> &mut Self {
+        self.action(ActionPlan::ActionDutchAuctionSchedule(
+            ActionDutchAuctionSchedule {
+                description: DutchAuctionDescription {
+                    input,
+                    output_id,
+                    max_output,
+                    min_output,
+                    start_height,
+                    end_height,
+                    step_count,
+                    nonce,
+                },
+            },
+        ))
+    }
+
+    /// Ends a Dutch auction using protocol-controlled liquidity.
+    #[instrument(skip(self))]
+    pub fn dutch_auction_end(&mut self, auction_id: AuctionId) -> &mut Self {
+        self.action(ActionPlan::ActionDutchAuctionEnd(ActionDutchAuctionEnd {
+            auction_id,
+        }))
+    }
+
+    /// Withdraws the reserves of the Dutch auction.
+    #[instrument(skip(self))]
+    pub fn dutch_auction_withdraw(
+        &mut self,
+        auction_id: AuctionId,
+        seq: u64,
+        reserves_input: Value,
+        reserves_output: Value,
+    ) -> &mut Self {
+        self.action(ActionPlan::ActionDutchAuctionWithdraw(
+            ActionDutchAuctionWithdrawPlan {
+                auction_id,
+                seq,
+                reserves_input,
+                reserves_output,
+            },
+        ))
     }
 
     fn action(&mut self, action: ActionPlan) -> &mut Self {
