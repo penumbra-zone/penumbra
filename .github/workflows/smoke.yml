@@ -23,26 +23,16 @@ jobs:
       - name: Install cometbft binary
         run: ./deployments/scripts/install-cometbft
 
+      - name: Install process-compose
+        run: >-
+          sh -c "$(curl --location https://raw.githubusercontent.com/F1bonacc1/process-compose/main/scripts/get-pc.sh)" --
+          -d -b ~/bin
+
       - name: Run the smoke test suite
         run: |
           export PATH="$HOME/bin:$PATH"
           ./deployments/scripts/smoke-test.sh
 
-      - name: Display comet logs
+      - name: Display smoke-test logs
         if: always()
-        run: cat deployments/logs/comet.log
-      - name: Display pd runtime logs
-        if: always()
-        run: cat deployments/logs/pd.log
-      - name: Display pd test logs
-        if: always()
-        run: cat deployments/logs/pd-tests.log
-      - name: Display pclientd logs
-        if: always()
-        run: cat deployments/logs/pclientd.log
-      - name: Display pcli logs
-        if: always()
-        run: cat deployments/logs/pcli.log
-    env:
-      TESTNET_RUNTIME: 2m
-
+        run: cat deployments/logs/smoke-*.log
