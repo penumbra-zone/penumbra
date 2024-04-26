@@ -29,8 +29,8 @@ pub enum Migration {
     SimpleMigration,
     /// Testnet-70 migration: move swap executions from the jmt to nv-storage.
     Testnet70,
-    /// Testnet-71 migration: change liquidity positions to be ordered in descending order rather than ascending.
-    Testnet71,
+    /// Testnet-73 migration: change liquidity positions to be ordered in descending order rather than ascending.
+    Testnet73,
 }
 
 impl Migration {
@@ -193,7 +193,7 @@ impl Migration {
                     "successful migration!"
                 );
             }
-            Migration::Testnet71 => {
+            Migration::Testnet73 => {
                 // Lookups for liquidity positions based on starting asset were ordered backwards
                 // and returning the positions with the least liquidity first. This migration
                 // needs to modify the keys stored under the JMT `dex/ra/` prefix key to reverse
