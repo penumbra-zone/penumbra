@@ -220,9 +220,9 @@ impl TestnetConfig {
                 fee_params: penumbra_fee::params::FeeParameters {
                     fixed_gas_prices: penumbra_fee::GasPrices {
                         block_space_price: gas_price_simple,
-                        compact_block_space_price: gas_price_simple,
-                        verification_price: gas_price_simple,
-                        execution_price: gas_price_simple,
+                        compact_block_space_price: 0u64,
+                        verification_price: 0u64,
+                        execution_price: 0u64,
                     },
                 },
             },
