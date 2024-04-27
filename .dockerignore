@@ -6,6 +6,7 @@
 !Cargo.toml
 !Cargo.lock
 !.cargo/
+!rust-toolchain.toml
 
 # testnets for 'pd testnet generate' defaults
 !testnets/

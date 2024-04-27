@@ -9,8 +9,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+
+      # The `rust-toolchain.toml` file dictates which version of rust to setup.
+      - name: check rust version
+        run: rustc --version
+
       - name: Install nextest
         uses: taiki-e/install-action@nextest
       - name: Load rust cache
@@ -18,7 +21,7 @@ jobs:
       - name: Run cargo check, failing on warnings
         run: cargo check --release --all-targets
         env:
-          # The `-D warnings` option causes an error on warnings;
+          # The `-D warnings` option causes an error on warnings.
           # we must duplicate the rustflags from `.cargo/config.toml`.
           RUSTFLAGS: "-D warnings --cfg tokio_unstable"
 
@@ -45,10 +48,6 @@ jobs:
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - run: cargo fmt --all -- --check
