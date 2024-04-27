@@ -144,6 +144,7 @@ futures                          = { version = "0.3.28" }
 hex                              = { version = "0.4.3" }
 http                             = { version = "0.2.9" }
 http-body                        = { version = "0.4.5" }
+humantime                        = { version = "2.1" }
 ibc-proto                        = { default-features = false, version = "0.41.0" }
 ibc-types                        = { default-features = false, version = "0.12.0" }
 ibig                             = { version = "0.3" }
