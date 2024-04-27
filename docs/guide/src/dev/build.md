@@ -13,6 +13,8 @@ of the Rust compiler, installation instructions for which you can find
 `cargo` is available in your `$PATH`!
 
 You can verify the rust compiler version by running `rustc --version` which should indicate version 1.75 or later.
+The project uses a `rust-toolchain.toml` file, which will ensure that your version of rust stays current enough
+to build the project from source.
 
 ### Installing build prerequisites
 
