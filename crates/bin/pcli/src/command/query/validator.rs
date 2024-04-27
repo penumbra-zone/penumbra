@@ -299,12 +299,12 @@ impl ValidatorCmd {
                 };
                 println!("Current status: {state}{state_note}");
                 if active {
-                    println!("Minimum required uptime: {min_uptime_blocks}/{window_len} blocks ({percent_min_uptime}%)");
+                    println!("Minimum uptime: {min_uptime_blocks}/{window_len} blocks ({percent_min_uptime}%)");
                 }
                 if !downtime_ranges.is_empty() {
                     let s = if missed_blocks == 1 { "" } else { "s" };
                     println!(
-                        "Validator missed signing {missed_blocks}/{window_len} block{s} ({percent_downtime}%):"
+                        "Validator recently missed signing {missed_blocks}/{window_len} block{s} ({percent_downtime}%):"
                     );
                 }
                 for range in downtime_ranges.iter() {
