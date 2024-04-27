@@ -54,13 +54,6 @@ jobs:
         with:
           lfs: true
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: false
-
       - uses: bufbuild/buf-setup-action@v1
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}
