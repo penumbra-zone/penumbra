@@ -44,13 +44,13 @@ impl QueryService for Server {
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid auction id"))?;
 
-        let auction_data = state
+        let raw_auction = state
             .get_raw_auction(id)
             .await
             .ok_or_else(|| tonic::Status::not_found("auction data not found for specified id"))?;
 
         Ok(tonic::Response::new(AuctionStateByIdResponse {
-            auction: Some(auction_data),
+            auction: Some(raw_auction),
             positions: Vec::new(),
         }))
     }

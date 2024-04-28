@@ -25,6 +25,7 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use rand_core::OsRng;
 use regex::Regex;
 
+use auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -63,8 +64,7 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
-use super::auction::AuctionCmd;
-
+mod auction;
 mod liquidity_position;
 mod proposal;
 mod replicate;
