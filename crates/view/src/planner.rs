@@ -718,6 +718,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
+        // Check enum for swap-claim based action
+        let mut is_swap_claim = false;
+        for action in self.actions.iter() {
+            if matches!(action, ActionPlan::SwapClaim(_)) {
+                is_swap_claim = true;
+            }
+        }
+
         let mut notes_by_asset_id = BTreeMap::new();
 
         // Cache the balance calculations to avoid multiple calls
@@ -781,6 +789,25 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             };
 
         while let Some(required) = balance_iter.next() {
+            // If it's a swap claim, handle it differently
+            if is_swap_claim {
+                let records: Vec<SpendableNoteRecord> = view
+                    .notes(NotesRequest {
+                        include_spent: false,
+                        asset_id: Some(required.asset_id.into()),
+                        address_index: Some(source.into()),
+                        amount_to_spend: None,
+                    })
+                    .await?;
+
+                println!("records is: {:?}", records);
+
+                notes_by_asset_id.insert(
+                    required.asset_id,
+                    Self::prioritize_and_filter_spendable_notes(records),
+                );
+            }
+
             // Spend a single note towards the required balance, if possible.
             // This adds the required spends to the planner.
             let Some(note) = notes_by_asset_id
