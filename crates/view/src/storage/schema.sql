@@ -128,3 +128,13 @@ CREATE TABLE positions (
      position_state         TEXT NOT NULL,
      trading_pair           TEXT NOT NULL
 );
+
+-- This table records the user's own auction state, using the
+-- auction id as a primary key. An extra-column is available
+-- to cross-reference note commitments that is associated with
+-- the entry.
+CREATE TABLE auctions (
+     auction_id             BLOB PRIMARY KEY NOT NULL,
+     auction_state          BIGINT NOT NULL,
+     note_commitment        BLOB
+);

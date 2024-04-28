@@ -1,11 +1,11 @@
-use std::str::FromStr;
-use std::{collections::BTreeMap, num::NonZeroU64, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, num::NonZeroU64, str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context};
 use camino::Utf8Path;
 use decaf377::{FieldExt, Fq};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use penumbra_auction::auction::AuctionId;
 use r2d2_sqlite::{
     rusqlite::{OpenFlags, OptionalExtension},
     SqliteConnectionManager,
@@ -977,7 +977,6 @@ impl Storage {
                 .query_and_then((), |row| row.try_into())?
                 .collect::<anyhow::Result<Vec<_>>>()?;
 
-
             // TODO: this could be internalized into the SQL query in principle, but it's easier to
             // do it this way; if it becomes slow, we can do it better
             let mut results = Vec::new();
@@ -1017,6 +1016,116 @@ impl Storage {
         .await??;
 
         Ok(())
+    }
+
+    pub async fn record_auction_with_state(
+        &self,
+        auction_id: AuctionId,
+        auction_state: u64,
+    ) -> anyhow::Result<()> {
+        let auction_id = auction_id.0.to_vec();
+        let auction_state = auction_state;
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            let mut lock = pool.get()?;
+            let tx = lock.transaction()?;
+            tx.execute(
+                "INSERT OR IGNORE INTO auctions (auction_id, auction_state, note_commitment) VALUES (?1, ?2, NULL)",
+                (auction_id.clone(), auction_state),
+            )?;
+            tx.execute(
+                "UPDATE auctions SET auction_state = ?2 WHERE auction_id = ?1",
+                (auction_id, auction_state),
+            )
+                .map_err(anyhow::Error::from)?;
+
+            tx.commit()?;
+            Ok::<(), anyhow::Error>(())
+            })
+            .await??;
+
+        Ok(())
+    }
+
+    pub async fn update_auction_with_note_commitment(
+        &self,
+        auction_id: AuctionId,
+        note_commitment: StateCommitment,
+    ) -> anyhow::Result<()> {
+        let auction_id = auction_id.0.to_vec();
+        let blob_nc = note_commitment.0.to_bytes().to_vec();
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            pool.get()?
+                .execute(
+                    "UPDATE auctions SET (note_commitment) = ?1 WHERE auction_id = ?2",
+                    (blob_nc, auction_id),
+                )
+                .map_err(anyhow::Error::from)
+        })
+        .await??;
+
+        Ok(())
+    }
+
+    pub async fn fetch_auctions_by_account(
+        &self,
+        account_filter: Option<AddressIndex>,
+        include_inactive: bool,
+    ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord)>> {
+        let account_clause = account_filter
+            .map(|idx| {
+                format!(
+                    "AND spendable_notes.address_index = x'{}'",
+                    hex::encode(idx.to_bytes())
+                )
+            })
+            .unwrap_or_else(|| "".to_string());
+
+        let active_clause = if !include_inactive {
+            "AND auctions.auction_state = 0"
+        } else {
+            ""
+        };
+
+        let query = format!(
+            "SELECT auctions.auction_id, spendable_notes.*, notes.*
+                 FROM auctions
+                 JOIN spendable_notes ON auctions.note_commitment = spendable_notes.note_commitment
+                 JOIN notes ON auctions.note_commitment = notes.note_commitment
+                 WHERE 1 = 1
+                 {account_clause}
+                 {active_clause}",
+            account_clause = account_clause,
+            active_clause = active_clause,
+        );
+
+        let pool = self.pool.clone();
+
+        spawn_blocking(move || {
+            let mut conn = pool.get()?;
+            let tx = conn.transaction()?;
+
+            let spendable_note_records: Vec<(AuctionId, SpendableNoteRecord)> = tx
+                .prepare(&query)?
+                .query_and_then((), |row| {
+                    let raw_auction_id: Vec<u8> = row.get("auction_id")?;
+                    let array_auction_id: [u8; 32] = raw_auction_id
+                        .try_into()
+                        .map_err(|_| anyhow!("auction id must be 32 bytes"))?;
+                    let auction_id = AuctionId(array_auction_id);
+                    let spendable_note_record: SpendableNoteRecord = row.try_into()?;
+                    Ok((auction_id, spendable_note_record))
+                })?
+                .collect::<anyhow::Result<Vec<_>>>()?;
+
+            Ok(spendable_note_records)
+        })
+        .await?
     }
 
     pub async fn record_unknown_asset(&self, id: asset::Id) -> anyhow::Result<()> {
