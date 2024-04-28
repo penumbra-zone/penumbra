@@ -1129,9 +1129,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
             // }
             
-            // if (!self.change_outputs.contains_key(&*STAKING_TOKEN_ASSET_ID)) {
+            if (!self.change_outputs.contains_key(&*STAKING_TOKEN_ASSET_ID)) {
                 self.push(SpendPlan::new(&mut OsRng, note_fee[0].clone().note, note_fee[0].clone().position).into());
-            // }
+            }
 
             // Recompute the change outputs, without accounting for fees.
             self.refresh_change(change_address);
