@@ -13,12 +13,12 @@ use rand_core::OsRng;
 use tracing::instrument;
 
 use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
-use penumbra_auction::auction::dutch::DutchAuctionDescription;
-use penumbra_auction::auction::{
-    dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
-    AuctionId,
-};
+// use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
+// use penumbra_auction::auction::dutch::DutchAuctionDescription;
+// use penumbra_auction::auction::{
+//     dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
+//     AuctionId,
+// };
 use penumbra_community_pool::CommunityPoolDeposit;
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -202,7 +202,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     //     let mut balance = Balance::zero();
     //     println!("actions 1: {:?}", self.actions);
 
-    //     // we'll add another spend note here.
+    //     // we'll add another spend note here. 
     //     for action in &self.actions {
     //         balance += action.balance();
     //     }
@@ -222,6 +222,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     //     balance
     // }
+
 
     // fn push(&mut self, action: ActionPlan) {
     //     self.actions.push(action);
@@ -669,61 +670,61 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
-    /// Initiates a Dutch auction using protocol-controlled liquidity.
-    #[instrument(skip(self))]
-    pub fn dutch_auction_schedule(
-        &mut self,
-        input: Value,
-        output_id: asset::Id,
-        max_output: Amount,
-        min_output: Amount,
-        start_height: u64,
-        end_height: u64,
-        step_count: u64,
-        nonce: [u8; 32],
-    ) -> &mut Self {
-        self.action(ActionPlan::ActionDutchAuctionSchedule(
-            ActionDutchAuctionSchedule {
-                description: DutchAuctionDescription {
-                    input,
-                    output_id,
-                    max_output,
-                    min_output,
-                    start_height,
-                    end_height,
-                    step_count,
-                    nonce,
-                },
-            },
-        ))
-    }
+    // /// Initiates a Dutch auction using protocol-controlled liquidity.
+    // #[instrument(skip(self))]
+    // pub fn dutch_auction_schedule(
+    //     &mut self,
+    //     input: Value,
+    //     output_id: asset::Id,
+    //     max_output: Amount,
+    //     min_output: Amount,
+    //     start_height: u64,
+    //     end_height: u64,
+    //     step_count: u64,
+    //     nonce: [u8; 32],
+    // ) -> &mut Self {
+    //     self.action(ActionPlan::ActionDutchAuctionSchedule(
+    //         ActionDutchAuctionSchedule {
+    //             description: DutchAuctionDescription {
+    //                 input,
+    //                 output_id,
+    //                 max_output,
+    //                 min_output,
+    //                 start_height,
+    //                 end_height,
+    //                 step_count,
+    //                 nonce,
+    //             },
+    //         },
+    //     ))
+    // }
 
-    /// Ends a Dutch auction using protocol-controlled liquidity.
-    #[instrument(skip(self))]
-    pub fn dutch_auction_end(&mut self, auction_id: AuctionId) -> &mut Self {
-        self.action(ActionPlan::ActionDutchAuctionEnd(ActionDutchAuctionEnd {
-            auction_id,
-        }))
-    }
+    // /// Ends a Dutch auction using protocol-controlled liquidity.
+    // #[instrument(skip(self))]
+    // pub fn dutch_auction_end(&mut self, auction_id: AuctionId) -> &mut Self {
+    //     self.action(ActionPlan::ActionDutchAuctionEnd(ActionDutchAuctionEnd {
+    //         auction_id,
+    //     }))
+    // }
 
-    /// Withdraws the reserves of the Dutch auction.
-    #[instrument(skip(self))]
-    pub fn dutch_auction_withdraw(
-        &mut self,
-        auction_id: AuctionId,
-        seq: u64,
-        reserves_input: Value,
-        reserves_output: Value,
-    ) -> &mut Self {
-        self.action(ActionPlan::ActionDutchAuctionWithdraw(
-            ActionDutchAuctionWithdrawPlan {
-                auction_id,
-                seq,
-                reserves_input,
-                reserves_output,
-            },
-        ))
-    }
+    // /// Withdraws the reserves of the Dutch auction.
+    // #[instrument(skip(self))]
+    // pub fn dutch_auction_withdraw(
+    //     &mut self,
+    //     auction_id: AuctionId,
+    //     seq: u64,
+    //     reserves_input: Value,
+    //     reserves_output: Value,
+    // ) -> &mut Self {
+    //     self.action(ActionPlan::ActionDutchAuctionWithdraw(
+    //         ActionDutchAuctionWithdrawPlan {
+    //             auction_id,
+    //             seq,
+    //             reserves_input,
+    //             reserves_output,
+    //         },
+    //     ))
+    // }
 
     fn action(&mut self, action: ActionPlan) -> &mut Self {
         // Track the contribution of the action to the transaction's balance
@@ -756,10 +757,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Query voting notes.
         let mut voting_notes = Vec::new();
-        let (_spendable_requests, voting_requests) = self.notes_requests(source);
+        let mut spendable_notes = Vec::new();
+        let (spendable_requests, voting_requests) = self.notes_requests(source);
         for request in voting_requests {
             let notes = view.notes_for_voting(request).await?;
             voting_notes.push(notes);
+        }
+        for request in spendable_requests {
+            let notes: Vec<SpendableNoteRecord> = view.notes(request).await?;
+            spendable_notes.extend(notes);
+        }
+        // Add the required spends to the planner
+        for record in spendable_notes {
+            // self.spend(record.note, record.position);
+            self.push(SpendPlan::new(&mut OsRng, record.clone().note, record.clone().position).into());
         }
 
         // Add the required votes to the planner
@@ -829,6 +840,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let mut notes_by_asset_id = BTreeMap::new();
 
+
         // Cache the balance calculations to avoid multiple calls
         let balance = self.calculate_balance();
         let mut required_iter = balance.required().peekable();
@@ -836,18 +848,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Determine which iterator to use based on the presence of elements
         let balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
-            if required_iter.peek().is_some() {
-                println!("+++++++++++++++++++++++++++++++++++++++++++");
-                Box::new(required_iter)
-            } else if provided_iter.peek().is_some() {
-                println!("???????????????????????????????");
-                Box::new(provided_iter)
-            } else {
-                // Handle the case where neither iterator has elements
-                println!("------------------------------------");
-                Box::new(std::iter::empty::<penumbra_asset::Value>())
-                    as Box<dyn Iterator<Item = _> + Send>
-            };
+        if required_iter.peek().is_some() {
+            println!("+++++++++++++++++++++++++++++++++++++++++++");
+            Box::new(required_iter)
+        } else if provided_iter.peek().is_some() {
+            println!("???????????????????????????????");
+            Box::new(provided_iter)
+        } else {
+            // Handle the case where neither iterator has elements
+            println!("------------------------------------");
+            Box::new(std::iter::empty::<penumbra_asset::Value>()) as Box<dyn Iterator<Item = _> + Send>
+        };
 
         for required in balance_iter {
             println!("iter 1 is: {:?}", required);
@@ -862,16 +873,14 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .await?;
 
             println!("records is: {:?}", records);
-
+            
             for record in &records {
-                println!(
-                    "record.note.value().amount: {:?}",
-                    record.note.value().amount
-                );
+                println!("record.note.value().amount: {:?}", record.note.value().amount);
                 // if record.note.value().amount == 0 {
                 //     println!("zero note detected ======================================================================================================");
                 // }
             }
+            
 
             notes_by_asset_id.insert(
                 required.asset_id,
@@ -892,7 +901,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.set_gas_prices(gas_price).set_fee_tier(fee_tier);
 
         let mut fee: Fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
-
+        
         println!("fee: {:?}", fee);
 
         // Add fee notes
@@ -907,12 +916,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             .await?;
 
         println!("fee ecords is: {:?}", records);
-
+        
         for record in &records {
-            println!(
-                "fee record.note.value().amount: {:?}",
-                record.note.value().amount
-            );
+            println!("fee record.note.value().amount: {:?}", record.note.value().amount);
             // if record.note.value().amount == 0 {
             //     println!("zero note detected ======================================================================================================");
             // }
@@ -935,15 +941,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // notes provided. It is the caller's responsibility to ensure that the notes are the result of
         // collected responses to the requests generated by an immediately preceding call to
         // [`Planner::note_requests`].
-        let mut iterations = 0usize;
-        while let Some(required) = self.calculate_balance().required().next() {
+        // let mut iterations = 0usize;
+        // while let Some(required) = self.calculate_balance().required().next() {
             println!("self.actions 1: {:?}", self.actions);
-            println!("iter 2 is: {:?}", required);
-            // Spend a single note towards the required balance, if possible.
-            // This adds the required spends to the planner.
-            println!("required.asset_id: {:?}", required.asset_id);
+        //     println!("iter 2 is: {:?}", required);
+        //     // Spend a single note towards the required balance, if possible.
+        //     // This adds the required spends to the planner.
+        //     println!("required.asset_id: {:?}", required.asset_id);
 
-            // If it's a swap claim, handle it differently
+             // If it's a swap claim, handle it differently
             //  if is_swap_claim {
             //     let records: Vec<SpendableNoteRecord> = view
             //     .notes(NotesRequest {
@@ -961,26 +967,26 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             //         Self::prioritize_and_filter_spendable_notes(records),
             //     );
             // }
-
+            
             // this will fail for swap_claims!
-            // let mut zero_amount_records = Vec::new();
-            // if !is_swap_claim {
-            let Some((asset_id, mut note)) = notes_by_asset_id.pop_first()
-            // let Some(note) = notes_by_asset_id
-            // .get_mut(&required.asset_id)
-            // .expect("we already queried")
-            // .pop()
-            else {
-                return Err(anyhow!(
-                    "ran out of notes to spend while planning transaction, need {} of asset {}",
-                    required.amount,
-                    required.asset_id,
-                )
-                .into());
-            };
+            // let mut zero_amount_records = Vec::new(); 
+            // if !is_swap_claim { 
+                // let Some((asset_id, mut note)) = notes_by_asset_id.pop_first()
+                // // let Some(note) = notes_by_asset_id
+                //     // .get_mut(&required.asset_id)
+                //     // .expect("we already queried")
+                //     // .pop()
+                // else {
+                //     return Err(anyhow!(
+                //         "ran out of notes to spend while planning transaction, need {} of asset {}",
+                //         required.amount,
+                //         required.asset_id,
+                //     )
+                //     .into());
+                // };
 
-            // zero_amount_records.push(note.clone());
-            // zero_amount_records.push(note[0].clone());
+                // zero_amount_records.push(note.clone());
+                // zero_amount_records.push(note[0].clone());
             // }
 
             // push a staking token note
@@ -998,13 +1004,12 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // };
 
             // Add the required spends to the planner.
-            // if !is_swap_claim {
-            self.push(
-                SpendPlan::new(&mut OsRng, note[0].clone().note, note[0].clone().position).into(),
-            );
+            // if !is_swap_claim { 
+                // self.push(SpendPlan::new(&mut OsRng, note[0].clone().note, note[0].clone().position).into());
             // }
-
+            
             // self.push(SpendPlan::new(&mut OsRng, note_fee[0].clone().note, note_fee[0].clone().position).into());
+            
 
             // Recompute the change outputs, without accounting for fees.
             self.refresh_change(change_address);
@@ -1019,7 +1024,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // self.balance = self.calculate_balance_with_fees(fee);
             self.balance = self.calculate_balance();
 
-            println!("self.actions: {:?}", self.actions);
             println!("self.balance is: {:?}", self.balance);
 
             // println!("elf.balance.provided().next() is: {:?}", self.balance.provided().next().unwrap().amount);
@@ -1028,27 +1032,44 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // if self.balance.provided().next().unwrap().amount == 0u64.into() {
             //     break;
             // }
-            if self.balance.is_zero() {
-                println!("self.balance is zero!");
-                break;
-            }
+            // if self.balance.is_zero() {
+            //     println!("self.balance is zero!");
+            //     break;
+            // } 
 
-            iterations += 1;
-            if iterations > 100 {
-                return Err(anyhow!("failed to plan transaction after 100 iterations").into());
-            }
-        }
+            // iterations += 1;
+            // if iterations > 100 {
+            //     return Err(anyhow!("failed to plan transaction after 100 iterations").into());
+            // }
+        // }
+
+
+        // println!("self.changeoutpuits before: {:?}", self.cha);
+
+        // println!("self.actions before: {:?}", self.actions);
+
+        // pop staking token from actions to balance fees later
+        // Find the index of the entry with the staking token asset ID
+        // if let Some(index) = self.actions.iter().position(|x| x.into() == &*STAKING_TOKEN_ASSET_ID) {
+        //     // Remove the entry from the vector
+        //     let removed_entry = self.actions.remove(index);
+        //     println!("Removed entry: {:?}", removed_entry);
+        // } else {
+        //     println!("No entry found for the staking token asset ID");
+        // }
+
+        println!("self.actions afer: {:?}", self.actions);
 
         println!("continue hell!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
-        let mut iterations2 = 0usize;
+       
+       let mut iterations2 = 0usize;
         while let Some(required) = self.calculate_balance_with_fees(fee).required().next() {
             println!("iter 2 is: {:?}", required);
             // Spend a single note towards the required balance, if possible.
             // This adds the required spends to the planner.
             println!("required.asset_id: {:?}", required.asset_id);
 
-            // If it's a swap claim, handle it differently
+             // If it's a swap claim, handle it differently
             //  if is_swap_claim {
             //     let records: Vec<SpendableNoteRecord> = view
             //     .notes(NotesRequest {
@@ -1066,34 +1087,34 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             //         Self::prioritize_and_filter_spendable_notes(records),
             //     );
             // }
-
+            
             // this will fail for swap_claims!
-            // let mut zero_amount_records = Vec::new();
-            // if !is_swap_claim {
-            // let Some((asset_id, mut note)) = notes_by_asset_id.pop_first()
-            // let Some(note) = notes_by_asset_id
-            //     .get_mut(&required.asset_id)
-            //     .expect("we already queried")
-            //     .pop()
-            // else {
-            //     return Err(anyhow!(
-            //         "ran out of notes to spend while planning transaction, need {} of asset {}",
-            //         required.amount,
-            //         required.asset_id,
-            //     )
-            //     .into());
-            // };
+            // let mut zero_amount_records = Vec::new(); 
+            // if !is_swap_claim { 
+                // let Some((asset_id, mut note)) = notes_by_asset_id.pop_first()
+                // let Some(note) = notes_by_asset_id
+                //     .get_mut(&required.asset_id)
+                //     .expect("we already queried")
+                //     .pop()
+                // else {
+                //     return Err(anyhow!(
+                //         "ran out of notes to spend while planning transaction, need {} of asset {}",
+                //         required.amount,
+                //         required.asset_id,
+                //     )
+                //     .into());
+                // };
 
-            // zero_amount_records.push(note.clone());
-            // zero_amount_records.push(note[0].clone());
+                // zero_amount_records.push(note.clone());
+                // zero_amount_records.push(note[0].clone());
             // }
 
             // push a staking token note
             println!(":))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) self.balance: {:?}", self.balance);
             let Some((asset_id_fee, mut note_fee)) = staking_token_notes_for_fees.pop_first()
-            // .get_mut(&required.asset_id)
-            // .expect("we already queried")
-            // .pop()
+                // .get_mut(&required.asset_id)
+                // .expect("we already queried")
+                // .pop()
             else {
                 return Err(anyhow!(
                     "ran out of notes to spend while planning transaction, need {} of asset {}",
@@ -1104,20 +1125,13 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             };
 
             // Add the required spends to the planner.
-            // if !is_swap_claim {
-            // self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
+            // if !is_swap_claim { 
+                // self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
             // }
-
-            if (!self.change_outputs.contains_key(&*STAKING_TOKEN_ASSET_ID)) {
-                self.push(
-                    SpendPlan::new(
-                        &mut OsRng,
-                        note_fee[0].clone().note,
-                        note_fee[0].clone().position,
-                    )
-                    .into(),
-                );
-            }
+            
+            // if (!self.change_outputs.contains_key(&*STAKING_TOKEN_ASSET_ID)) {
+                self.push(SpendPlan::new(&mut OsRng, note_fee[0].clone().note, note_fee[0].clone().position).into());
+            // }
 
             // Recompute the change outputs, without accounting for fees.
             self.refresh_change(change_address);
@@ -1132,7 +1146,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // self.balance = self.calculate_balance_with_fees(fee);
             self.balance = self.calculate_balance_with_fees(fee);
 
-            println!("self.actions: {:?}", self.actions);
+            println!("self.actions after 2: {:?}", self.actions);
             println!("self.balance is: {:?}", self.balance);
 
             // We've successfully balanced the equation.
@@ -1142,7 +1156,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             if self.balance.is_zero() {
                 println!("self.balance is zero!");
                 break;
-            }
+            } 
 
             iterations2 += 1;
             if iterations2 > 100 {
