@@ -112,16 +112,16 @@ pub enum DutchCmd {
 impl DutchCmd {
     /// Process the command by performing the appropriate action.
     pub async fn exec(&self, app: &mut App) -> anyhow::Result<()> {
-        let gas_prices = app
-            .view
-            .as_mut()
-            .context("view service must be initialized")?
-            .gas_prices(GasPricesRequest {})
-            .await?
-            .into_inner()
-            .gas_prices
-            .expect("gas prices must be available")
-            .try_into()?;
+        // let gas_prices = app
+        //     .view
+        //     .as_mut()
+        //     .context("view service must be initialized")?
+        //     .gas_prices(GasPricesRequest {})
+        //     .await?
+        //     .into_inner()
+        //     .gas_prices
+        //     .expect("gas prices must be available")
+        //     .try_into()?;
 
         match self {
             DutchCmd::DutchAuctionSchedule {
@@ -136,37 +136,37 @@ impl DutchCmd {
                 nonce: _,
                 fee_tier,
             } => {
-                let input = input.parse::<Value>()?;
-                let output = output.parse::<asset::Id>()?;
-                let max_output = Amount::from(*max_output);
-                let min_output = Amount::from(*min_output);
+                // let input = input.parse::<Value>()?;
+                // let output = output.parse::<asset::Id>()?;
+                // let max_output = Amount::from(*max_output);
+                // let min_output = Amount::from(*min_output);
 
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
+                // let mut planner = Planner::new(OsRng);
+                // planner
+                //     .set_gas_prices(gas_prices)
+                //     .set_fee_tier((*fee_tier).into());
 
-                planner.dutch_auction_schedule(
-                    input,
-                    output,
-                    max_output,
-                    min_output,
-                    *start_height,
-                    *end_height,
-                    *step_count,
-                    [0; 32],
-                );
+                // planner.dutch_auction_schedule(
+                //     input,
+                //     output,
+                //     max_output,
+                //     min_output,
+                //     *start_height,
+                //     *end_height,
+                //     *step_count,
+                //     [0; 32],
+                // );
 
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+                // let plan = planner
+                //     .plan(
+                //         app.view
+                //             .as_mut()
+                //             .context("view service must be initialized")?,
+                //         AddressIndex::new(*source),
+                //     )
+                //     .await
+                //     .context("can't build send transaction")?;
+                // app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
             DutchCmd::DutchAuctionWithdraw {
@@ -177,27 +177,27 @@ impl DutchCmd {
                 reserves_output,
                 fee_tier,
             } => {
-                let auction_id = auction_id.parse::<AuctionId>()?;
-                let reserves_input = reserves_input.parse::<Value>()?;
-                let reserves_output = reserves_output.parse::<Value>()?;
+                // let auction_id = auction_id.parse::<AuctionId>()?;
+                // let reserves_input = reserves_input.parse::<Value>()?;
+                // let reserves_output = reserves_output.parse::<Value>()?;
 
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
+                // let mut planner = Planner::new(OsRng);
+                // planner
+                //     .set_gas_prices(gas_prices)
+                //     .set_fee_tier((*fee_tier).into());
 
-                planner.dutch_auction_withdraw(auction_id, *seq, reserves_input, reserves_output);
+                // planner.dutch_auction_withdraw(auction_id, *seq, reserves_input, reserves_output);
 
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+                // let plan = planner
+                //     .plan(
+                //         app.view
+                //             .as_mut()
+                //             .context("view service must be initialized")?,
+                //         AddressIndex::new(*source),
+                //     )
+                //     .await
+                //     .context("can't build send transaction")?;
+                // app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
             DutchCmd::DutchAuctionEnd {
@@ -205,25 +205,25 @@ impl DutchCmd {
                 source,
                 fee_tier,
             } => {
-                let auction_id = auction_id.parse::<AuctionId>()?;
+                // let auction_id = auction_id.parse::<AuctionId>()?;
 
-                let mut planner = Planner::new(OsRng);
-                planner
-                    .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
+                // let mut planner = Planner::new(OsRng);
+                // planner
+                //     .set_gas_prices(gas_prices)
+                //     .set_fee_tier((*fee_tier).into());
 
-                planner.dutch_auction_end(auction_id);
+                // planner.dutch_auction_end(auction_id);
 
-                let plan = planner
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
-                    .await
-                    .context("can't build send transaction")?;
-                app.build_and_submit_transaction(plan).await?;
+                // let plan = planner
+                //     .plan(
+                //         app.view
+                //             .as_mut()
+                //             .context("view service must be initialized")?,
+                //         AddressIndex::new(*source),
+                //     )
+                //     .await
+                //     .context("can't build send transaction")?;
+                // app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
         }
