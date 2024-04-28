@@ -937,6 +937,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // [`Planner::note_requests`].
         let mut iterations = 0usize;
         while let Some(required) = self.calculate_balance().required().next() {
+            println!("self.actions 1: {:?}", self.actions);
             println!("iter 2 is: {:?}", required);
             // Spend a single note towards the required balance, if possible.
             // This adds the required spends to the planner.
@@ -1088,6 +1089,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // }
 
             // push a staking token note
+            println!(":))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) self.balance: {:?}", self.balance);
             let Some((asset_id_fee, mut note_fee)) = staking_token_notes_for_fees.pop_first()
             // .get_mut(&required.asset_id)
             // .expect("we already queried")
@@ -1106,14 +1108,16 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
             // }
 
-            self.push(
-                SpendPlan::new(
-                    &mut OsRng,
-                    note_fee[0].clone().note,
-                    note_fee[0].clone().position,
-                )
-                .into(),
-            );
+            if (!self.change_outputs.contains_key(&*STAKING_TOKEN_ASSET_ID)) {
+                self.push(
+                    SpendPlan::new(
+                        &mut OsRng,
+                        note_fee[0].clone().note,
+                        note_fee[0].clone().position,
+                    )
+                    .into(),
+                );
+            }
 
             // Recompute the change outputs, without accounting for fees.
             self.refresh_change(change_address);
