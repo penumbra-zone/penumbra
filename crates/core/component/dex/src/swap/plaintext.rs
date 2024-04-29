@@ -70,7 +70,7 @@ impl SwapPlaintext {
             batch_data.pro_rata_outputs((self.delta_1_i, self.delta_2_i));
 
         let output_1_note = Note::from_parts(
-            self.claim_address,
+            self.claim_address.clone(),
             Value {
                 amount: lambda_1_i,
                 asset_id: self.trading_pair.asset_1(),
@@ -80,7 +80,7 @@ impl SwapPlaintext {
         .expect("claim address is valid");
 
         let output_2_note = Note::from_parts(
-            self.claim_address,
+            self.claim_address.clone(),
             Value {
                 amount: lambda_2_i,
                 asset_id: self.trading_pair.asset_2(),
@@ -344,7 +344,7 @@ impl From<&SwapPlaintext> for [u8; SWAP_LEN_BYTES] {
         bytes[80..96].copy_from_slice(&swap.delta_2_i.to_le_bytes());
         bytes[96..112].copy_from_slice(&swap.claim_fee.0.amount.to_le_bytes());
         bytes[112..144].copy_from_slice(&swap.claim_fee.0.asset_id.to_bytes());
-        let pb_address = pb_keys::Address::from(swap.claim_address);
+        let pb_address = pb_keys::Address::from(swap.claim_address.clone());
         bytes[144..224].copy_from_slice(&pb_address.inner);
         bytes[224..256].copy_from_slice(&swap.rseed.to_bytes());
         bytes

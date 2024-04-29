@@ -25,7 +25,7 @@ pub const ADDRESS_LEN_BYTES: usize = 80;
 pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 
 /// A valid payment address.
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
     /// The address diversifier.
@@ -165,7 +165,7 @@ impl Address {
 
     /// Compat (bech32 non-m) address format
     pub fn compat_encoding(&self) -> String {
-        let proto_address = pb::Address::from(*self);
+        let proto_address = pb::Address::from(self);
         bech32str::encode(
             &proto_address.inner,
             bech32str::compat_address::BECH32_PREFIX,
@@ -213,7 +213,7 @@ impl TryFrom<pb::Address> for Address {
 
 impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let proto_address = pb::Address::from(*self);
+        let proto_address = pb::Address::from(self);
         f.write_str(&bech32str::encode(
             &proto_address.inner,
             bech32str::address::BECH32_PREFIX,
@@ -348,7 +348,7 @@ mod tests {
             alt_bech32m: bech32m_addr,
         }
         .encode_to_vec();
-        let proto_addr_direct: pb::Address = dest.into();
+        let proto_addr_direct: pb::Address = dest.clone().into();
         let addr_from_proto: Address = proto_addr_direct
             .try_into()
             .expect("can convert from proto back to address");

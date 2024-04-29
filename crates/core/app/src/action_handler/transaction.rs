@@ -110,6 +110,8 @@ impl AppActionHandler for Transaction {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use anyhow::Result;
     use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
     use penumbra_fee::Fee;
@@ -163,10 +165,14 @@ mod tests {
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
                 SpendPlan::new(&mut OsRng, note2, auth_path2.position()).into(),
-                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
             ],
             detection_data: Some(DetectionDataPlan {
-                clue_plans: vec![CluePlan::new(&mut OsRng, *test_keys::ADDRESS_1, 1)],
+                clue_plans: vec![CluePlan::new(
+                    &mut OsRng,
+                    test_keys::ADDRESS_1.deref().clone(),
+                    1,
+                )],
             }),
             memo: None,
         };
@@ -228,7 +234,7 @@ mod tests {
             },
             actions: vec![
                 SpendPlan::new(&mut OsRng, note, auth_path.position()).into(),
-                OutputPlan::new(&mut OsRng, value, *test_keys::ADDRESS_1).into(),
+                OutputPlan::new(&mut OsRng, value, test_keys::ADDRESS_1.deref().clone()).into(),
             ],
             detection_data: None,
             memo: None,

@@ -106,7 +106,7 @@ where
     let mut planner = Planner::new(rng);
     planner.fee(fee);
     for value in values.iter().cloned() {
-        planner.output(value, dest_address);
+        planner.output(value, dest_address.clone());
     }
     let source_address = view.address_by_index(source_address_index).await?;
     planner
