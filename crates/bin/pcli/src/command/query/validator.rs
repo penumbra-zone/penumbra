@@ -1,11 +1,16 @@
-use std::{fs::File, io::Write, ops::RangeInclusive, time::Duration};
+use std::{
+    fs::File,
+    io::Write,
+    ops::{Deref, RangeInclusive},
+    time::Duration,
+};
 
 use anyhow::{anyhow, Context, Error, Result};
 use colored::Colorize;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
-use penumbra_num::Amount;
+use penumbra_num::{fixpoint::U128x128, Amount};
 use penumbra_proto::{
     core::{
         app::v1::{
@@ -20,8 +25,9 @@ use penumbra_proto::{
     DomainType,
 };
 use penumbra_stake::{
-    validator::{self, Info, ValidatorToml},
-    IdentityKey, Uptime,
+    rate::RateData,
+    validator::{self, Info, Status, Validator, ValidatorToml},
+    IdentityKey, Uptime, BPS_SQUARED_SCALING_FACTOR,
 };
 
 use crate::App;
@@ -363,17 +369,110 @@ impl ValidatorCmd {
 
                 // Parse the validator status, or return an error if it was not found within the
                 // client's response.
-                let Info { status, .. } = validator_info
+                let info = validator_info
                     .ok_or_else(|| anyhow!("response did not include validator info"))?
                     .try_into()
                     .context("parsing validator info")?;
 
-                // Serialize the status to TOML, and print it to stdout.
-                let toml = toml::to_string_pretty(&status)?;
-                println!("{}", toml);
+                // Initialize a table, add a header and insert this validator's information.
+                let mut table = Table::new();
+                table
+                    .load_preset(presets::NOTHING)
+                    .set_header(vec![
+                        "Voting Power",
+                        "Commission",
+                        "State",
+                        "Bonding State",
+                        "Exchange Rate",
+                        "Identity Key",
+                        "Name",
+                    ])
+                    .add_row(StatusRow::new(info));
+                println!("{table}");
             }
         }
 
         Ok(())
+    }
+}
+
+/// A row within the `status` command's table output.
+struct StatusRow {
+    power: f64,
+    commission: u16,
+    state: validator::State,
+    bonding_state: validator::BondingState,
+    exchange_rate: U128x128,
+    identity_key: IdentityKey,
+    name: String,
+}
+
+impl StatusRow {
+    /// Constructs a new [`StatusRow`].
+    fn new(
+        Info {
+            validator:
+                Validator {
+                    funding_streams,
+                    identity_key,
+                    name,
+                    ..
+                },
+            status:
+                Status {
+                    state,
+                    bonding_state,
+                    voting_power,
+                    ..
+                },
+            rate_data:
+                RateData {
+                    validator_exchange_rate,
+                    ..
+                },
+        }: Info,
+    ) -> Self {
+        // Calculate the scaled voting power, exchange rate, and commissions.
+        let power = (voting_power.value() as f64) * 1e-6;
+        let commission = funding_streams.iter().map(|fs| fs.rate_bps()).sum();
+        let exchange_rate = {
+            let rate_bps_sq = U128x128::from(validator_exchange_rate);
+            (rate_bps_sq / BPS_SQUARED_SCALING_FACTOR.deref()).expect("nonzero scaling factor")
+        };
+
+        Self {
+            power,
+            commission,
+            state,
+            bonding_state,
+            exchange_rate,
+            identity_key,
+            name,
+        }
+    }
+}
+
+impl Into<comfy_table::Row> for StatusRow {
+    fn into(self) -> comfy_table::Row {
+        let Self {
+            power,
+            commission,
+            state,
+            bonding_state,
+            exchange_rate,
+            identity_key,
+            name,
+        } = self;
+
+        [
+            format!("{power:.3}"),
+            format!("{commission}bps"),
+            state.to_string(),
+            bonding_state.to_string(),
+            exchange_rate.to_string(),
+            identity_key.to_string(),
+            name,
+        ]
+        .into()
     }
 }
