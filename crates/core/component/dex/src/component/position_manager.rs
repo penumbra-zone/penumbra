@@ -279,8 +279,9 @@ pub trait PositionManager: StateWrite + PositionRead {
         mut new_state: Position,
         context: DirectedTradingPair,
     ) -> Result<Position> {
+        let position_id = new_state.id();
         let prev_state = self
-            .position_by_id(&new_state.id())
+            .position_by_id(&position_id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", new_state.id()))?;
 
@@ -311,21 +312,26 @@ pub trait PositionManager: StateWrite + PositionRead {
             prev_state.state
         );
 
+        // We have already short-circuited no-op execution updates, so we can emit an execution
+        // event and not worry about duplicates.
+        self.record_proto(event::position_execution(&prev_state, &new_state, context));
+
         // Handle "close-on-fill": automatically flip the position state to "closed" if
         // either of the reserves are zero.
         if new_state.close_on_fill {
             if new_state.reserves.r1 == 0u64.into() || new_state.reserves.r2 == 0u64.into() {
                 tracing::debug!(
-                    id = ?new_state.id(),
+                    ?position_id,
                     r1 = ?new_state.reserves.r1,
                     r2 = ?new_state.reserves.r2,
                     "marking position as closed due to close-on-fill"
                 );
+
                 new_state.state = position::State::Closed;
+                self.record_proto(event::position_close_by_id(position_id));
             }
         }
 
-        self.record_proto(event::position_execution(&prev_state, &new_state, context));
         self.update_position(Some(prev_state), new_state).await
     }
 

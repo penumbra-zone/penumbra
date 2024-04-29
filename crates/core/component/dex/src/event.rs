@@ -40,6 +40,12 @@ pub fn position_open(position: &Position) -> pb::EventPositionOpen {
     }
 }
 
+pub fn position_close_by_id(id: position::Id) -> pb::EventPositionClose {
+    pb::EventPositionClose {
+        position_id: Some(id.into()),
+    }
+}
+
 pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
     pb::EventPositionClose {
         position_id: Some(action.position_id.into()),
