@@ -7,7 +7,7 @@ use penumbra_proto::{
         query_service_server::QueryService, CurrentValidatorRateRequest,
         CurrentValidatorRateResponse, ValidatorInfoRequest, ValidatorInfoResponse,
         ValidatorPenaltyRequest, ValidatorPenaltyResponse, ValidatorStatusRequest,
-        ValidatorStatusResponse,
+        ValidatorStatusResponse, ValidatorUptimeRequest, ValidatorUptimeResponse,
     },
     DomainType,
 };
@@ -172,6 +172,32 @@ impl QueryService for Server {
                 data: Some(r.into()),
             })),
             None => Err(Status::not_found("current validator rate not found")),
+        }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn validator_uptime(
+        &self,
+        request: tonic::Request<ValidatorUptimeRequest>,
+    ) -> Result<tonic::Response<ValidatorUptimeResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        let identity_key = request
+            .into_inner()
+            .identity_key
+            .ok_or_else(|| tonic::Status::invalid_argument("empty message"))?
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("invalid identity key"))?;
+
+        let uptime_data = state
+            .get_validator_uptime(&identity_key)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        match uptime_data {
+            Some(u) => Ok(tonic::Response::new(ValidatorUptimeResponse {
+                uptime: Some(u.into()),
+            })),
+            None => Err(Status::not_found("validator uptime not found")),
         }
     }
 }
