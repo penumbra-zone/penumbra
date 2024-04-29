@@ -28,7 +28,7 @@ pub const ADDRESS_LEN_BYTES: usize = 80;
 pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 
 /// A valid payment address.
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
     /// The address diversifier.
@@ -48,6 +48,41 @@ pub struct Address {
 
     /// The clue key for this payment address.
     ck_d: fmd::ClueKey,
+}
+
+impl std::cmp::PartialEq for Address {
+    fn eq(
+        &self,
+        rhs @ Self {
+            d: rhs_d,
+            g_d: rhs_g_d,
+            pk_d: rhs_pk_d,
+            transmission_key_s: rhs_transmission_key_s,
+            ck_d: rhs_ck_d,
+        }: &Self,
+    ) -> bool {
+        let lhs @ Self {
+            d: lhs_d,
+            g_d: lhs_g_d,
+            pk_d: lhs_pk_d,
+            transmission_key_s: lhs_transmission_key_s,
+            ck_d: lhs_ck_d,
+        } = self;
+
+        // When a `OnceLock<T>` value is compared, it will only call `get()`, refraining from
+        // initializing the value. To make sure that an address that *hasn't* yet accessed its
+        // diversified base is considered equal to an address that *has*, compute the base points
+        // if they have not already been generated.
+        lhs.diversified_generator();
+        rhs.diversified_generator();
+
+        // Compare all of the fields.
+        lhs_d.eq(rhs_d)
+            && lhs_g_d.eq(rhs_g_d)
+            && lhs_pk_d.eq(rhs_pk_d)
+            && lhs_transmission_key_s.eq(rhs_transmission_key_s)
+            && lhs_ck_d.eq(rhs_ck_d)
+    }
 }
 
 impl std::cmp::PartialOrd for Address {
@@ -96,6 +131,9 @@ impl Address {
     }
 
     /// Returns a reference to the diversified base.
+    ///
+    /// This method computes the diversified base if it has not been computed yet. This value is
+    /// cached after it has been computed once.
     pub fn diversified_generator(&self) -> &decaf377::Element {
         self.g_d
             .get_or_init(|| self.diversifier().diversified_generator())
