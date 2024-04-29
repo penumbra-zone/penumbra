@@ -310,6 +310,8 @@ impl Migration {
                     duration = migration_duration.as_secs(),
                     "successful migration!"
                 );
+
+                Ok(())
             }
         }
     }
