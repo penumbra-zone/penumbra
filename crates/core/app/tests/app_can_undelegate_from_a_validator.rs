@@ -1,5 +1,5 @@
 use {
-    self::common::{BuilderExt, TestNodeExt},
+    self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,
@@ -18,6 +18,7 @@ use {
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,
+    std::ops::Deref,
     tap::Tap,
     tracing::{error_span, info, Instrument},
 };
@@ -132,13 +133,16 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         let output = OutputPlan::new(
             &mut rand_core::OsRng,
             delegate.delegation_value(),
-            *test_keys::ADDRESS_1,
+            test_keys::ADDRESS_1.deref().clone(),
         );
         let mut plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), delegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
-            memo: MemoPlan::new(&mut OsRng, MemoPlaintext::blank_memo(*test_keys::ADDRESS_0))
-                .map(Some)?,
+            memo: MemoPlan::new(
+                &mut OsRng,
+                MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
+            )
+            .map(Some)?,
             detection_data: None, // We'll set this automatically below
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
@@ -230,13 +234,16 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         let output = OutputPlan::new(
             &mut rand_core::OsRng,
             undelegate.unbonded_value(),
-            *test_keys::ADDRESS_1,
+            test_keys::ADDRESS_1.deref().clone(),
         );
         let mut plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), undelegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
-            memo: MemoPlan::new(&mut OsRng, MemoPlaintext::blank_memo(*test_keys::ADDRESS_0))
-                .map(Some)?,
+            memo: MemoPlan::new(
+                &mut OsRng,
+                MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
+            )
+            .map(Some)?,
             detection_data: None, // We'll set this automatically below
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
@@ -317,8 +324,11 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
         let mut plan = TransactionPlan {
             actions: vec![claim.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
-            memo: MemoPlan::new(&mut OsRng, MemoPlaintext::blank_memo(*test_keys::ADDRESS_0))
-                .map(Some)?,
+            memo: MemoPlan::new(
+                &mut OsRng,
+                MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
+            )
+            .map(Some)?,
             detection_data: None, // We'll set this automatically below
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),

@@ -592,6 +592,34 @@ impl ::prost::Name for Penalty {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+/// Requests information about a specific validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetValidatorInfoRequest {
+    /// The identity key of the validator.
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+}
+impl ::prost::Name for GetValidatorInfoRequest {
+    const NAME: &'static str = "GetValidatorInfoRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GetValidatorInfoResponse {
+    #[prost(message, optional, tag = "1")]
+    pub validator_info: ::core::option::Option<ValidatorInfo>,
+}
+impl ::prost::Name for GetValidatorInfoResponse {
+    const NAME: &'static str = "GetValidatorInfoResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Requests information on the chain's validators.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -703,6 +731,32 @@ impl ::prost::Name for CurrentValidatorRateResponse {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorUptimeRequest {
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+}
+impl ::prost::Name for ValidatorUptimeRequest {
+    const NAME: &'static str = "ValidatorUptimeRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorUptimeResponse {
+    #[prost(message, optional, tag = "1")]
+    pub uptime: ::core::option::Option<Uptime>,
+}
+impl ::prost::Name for ValidatorUptimeResponse {
+    const NAME: &'static str = "ValidatorUptimeResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Staking configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -758,6 +812,32 @@ pub struct GenesisContent {
 }
 impl ::prost::Name for GenesisContent {
     const NAME: &'static str = "GenesisContent";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventTombstoneValidator {
+    /// The height at which the offense occurred.
+    #[prost(uint64, tag = "1")]
+    pub evidence_height: u64,
+    /// The height at which the evidence was processed.
+    #[prost(uint64, tag = "2")]
+    pub current_height: u64,
+    /// The validator identity key.
+    #[prost(message, optional, tag = "4")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The validator's Comet address.
+    #[prost(bytes = "vec", tag = "5")]
+    pub address: ::prost::alloc::vec::Vec<u8>,
+    /// The voting power for the validator.
+    #[prost(uint64, tag = "6")]
+    pub voting_power: u64,
+}
+impl ::prost::Name for EventTombstoneValidator {
+    const NAME: &'static str = "EventTombstoneValidator";
     const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
@@ -849,6 +929,37 @@ pub mod query_service_client {
         pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
+        }
+        /// Queries for information about a specific validator.
+        pub async fn get_validator_info(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetValidatorInfoRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetValidatorInfoResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.stake.v1.QueryService/GetValidatorInfo",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.stake.v1.QueryService",
+                        "GetValidatorInfo",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
         }
         /// Queries the current validator set, with filtering.
         pub async fn validator_info(
@@ -971,6 +1082,36 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn validator_uptime(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ValidatorUptimeRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidatorUptimeResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.stake.v1.QueryService/ValidatorUptime",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.stake.v1.QueryService",
+                        "ValidatorUptime",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -981,6 +1122,14 @@ pub mod query_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer.
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
+        /// Queries for information about a specific validator.
+        async fn get_validator_info(
+            &self,
+            request: tonic::Request<super::GetValidatorInfoRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetValidatorInfoResponse>,
+            tonic::Status,
+        >;
         /// Server streaming response type for the ValidatorInfo method.
         type ValidatorInfoStream: tonic::codegen::tokio_stream::Stream<
                 Item = std::result::Result<super::ValidatorInfoResponse, tonic::Status>,
@@ -1014,6 +1163,13 @@ pub mod query_service_server {
             request: tonic::Request<super::CurrentValidatorRateRequest>,
         ) -> std::result::Result<
             tonic::Response<super::CurrentValidatorRateResponse>,
+            tonic::Status,
+        >;
+        async fn validator_uptime(
+            &self,
+            request: tonic::Request<super::ValidatorUptimeRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidatorUptimeResponse>,
             tonic::Status,
         >;
     }
@@ -1097,6 +1253,53 @@ pub mod query_service_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
+                "/penumbra.core.component.stake.v1.QueryService/GetValidatorInfo" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetValidatorInfoSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::GetValidatorInfoRequest>
+                    for GetValidatorInfoSvc<T> {
+                        type Response = super::GetValidatorInfoResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetValidatorInfoRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::get_validator_info(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetValidatorInfoSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/penumbra.core.component.stake.v1.QueryService/ValidatorInfo" => {
                     #[allow(non_camel_case_types)]
                     struct ValidatorInfoSvc<T: QueryService>(pub Arc<T>);
@@ -1269,6 +1472,52 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = CurrentValidatorRateSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.stake.v1.QueryService/ValidatorUptime" => {
+                    #[allow(non_camel_case_types)]
+                    struct ValidatorUptimeSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::ValidatorUptimeRequest>
+                    for ValidatorUptimeSvc<T> {
+                        type Response = super::ValidatorUptimeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ValidatorUptimeRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::validator_uptime(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ValidatorUptimeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

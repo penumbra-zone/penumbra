@@ -54,9 +54,6 @@ jobs:
         with:
           lfs: true
 
-      - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
       - uses: bufbuild/buf-setup-action@v1
         with:
           buf_api_token: ${{ secrets.BUF_TOKEN }}

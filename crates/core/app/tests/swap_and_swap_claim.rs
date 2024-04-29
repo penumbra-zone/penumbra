@@ -58,7 +58,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
-    let claim_address: Address = *test_keys::ADDRESS_0;
+    let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
@@ -295,7 +295,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
     let delta_1 = Amount::from(100_000u64);
     let delta_2 = Amount::from(0u64);
     let fee = Fee::from_staking_token_amount(Amount::from(1u64));
-    let claim_address: Address = *test_keys::ADDRESS_0;
+    let claim_address: Address = test_keys::ADDRESS_0.deref().clone();
 
     let plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);

@@ -632,7 +632,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -740,7 +740,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -756,8 +756,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             unfilled_1: 0u32.into(),
             unfilled_2: 0u32.into(),
             height: 0,
-            epoch_starting_height: 0,
             trading_pair,
+            sct_position_prefix: Default::default(),
         }
     );
 

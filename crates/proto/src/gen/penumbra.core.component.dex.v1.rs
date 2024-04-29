@@ -508,8 +508,12 @@ pub struct BatchSwapOutputData {
     #[prost(message, optional, tag = "8")]
     pub trading_pair: ::core::option::Option<TradingPair>,
     /// The starting block height of the epoch for which the batch swap data is valid.
+    #[deprecated]
     #[prost(uint64, tag = "9")]
     pub epoch_starting_height: u64,
+    /// The prefix (epoch, block) of the position where this batch swap occurred.
+    #[prost(uint64, tag = "10")]
+    pub sct_position_prefix: u64,
 }
 impl ::prost::Name for BatchSwapOutputData {
     const NAME: &'static str = "BatchSwapOutputData";

@@ -9,7 +9,7 @@ use ark_std::UniformRand;
 use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
-use futures::stream::{StreamExt, TryStreamExt};
+use futures::stream::{self, StreamExt, TryStreamExt};
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -392,9 +392,70 @@ impl ViewService for ViewServer {
 
     async fn auctions(
         &self,
-        _request: tonic::Request<pb::AuctionsRequest>,
+        request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        unimplemented!("auctions")
+        use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
+        use penumbra_proto::core::component::auction::v1alpha1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
+
+        let parameters = request.into_inner();
+        let query_latest_state = parameters.query_latest_state;
+        let include_inactive = parameters.include_inactive;
+
+        let account_filter = parameters
+            .account_filter
+            .to_owned()
+            .map(AddressIndex::try_from)
+            .map_or(Ok(None), |v| v.map(Some))
+            .map_err(|_| tonic::Status::invalid_argument("invalid account filter"))?;
+
+        let all_auctions = self
+            .storage
+            .fetch_auctions_by_account(account_filter, include_inactive)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        let client = if query_latest_state {
+            Some(
+                AuctionQueryServiceClient::connect(self.node.to_string())
+                    .await
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?,
+            )
+        } else {
+            None
+        };
+
+        let responses =
+            futures::future::join_all(all_auctions.into_iter().map(|(auction_id, note_record)| {
+                let maybe_client = client.clone();
+                async move {
+                    let (any_state, positions) = if let Some(mut client2) = maybe_client {
+                        let extra_data = client2
+                            .auction_state_by_id(pb_auction::AuctionStateByIdRequest {
+                                id: Some(auction_id.into()),
+                            })
+                            .await
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?
+                            .into_inner();
+                        (extra_data.auction, extra_data.positions)
+                    } else {
+                        (None, vec![])
+                    };
+
+                    Result::<_, tonic::Status>::Ok(pb::AuctionsResponse {
+                        id: Some(auction_id.into()),
+                        note_record: Some(note_record.into()),
+                        auction: any_state,
+                        positions,
+                    })
+                }
+            }))
+            .await;
+
+        let stream = stream::iter(responses)
+            .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))
+            .boxed();
+
+        Ok(Response::new(stream))
     }
 
     async fn broadcast_transaction(
@@ -865,12 +926,12 @@ impl ViewService for ViewServer {
             match action_view {
                 ActionView::Spend(SpendView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
                 }
                 ActionView::Output(OutputView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address.clone()));
                     asset_ids.insert(note.asset_id());
 
                     // Also add an AddressView for the return address in the memo.
@@ -880,8 +941,8 @@ impl ViewService for ViewServer {
                     address_views.insert(memo.return_address(), fvk.view_address(address));
                 }
                 ActionView::Swap(SwapView::Visible { swap_plaintext, .. }) => {
-                    let address = swap_plaintext.claim_address;
-                    address_views.insert(address, fvk.view_address(address));
+                    let address = swap_plaintext.claim_address.clone();
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(swap_plaintext.trading_pair.asset_1());
                     asset_ids.insert(swap_plaintext.trading_pair.asset_2());
                 }
@@ -890,13 +951,13 @@ impl ViewService for ViewServer {
                 }) => {
                     // Both will be sent to the same address so this only needs to be added once
                     let address = output_1.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(output_1.asset_id());
                     asset_ids.insert(output_2.asset_id());
                 }
                 ActionView::DelegatorVote(DelegatorVoteView::Visible { note, .. }) => {
                     let address = note.address();
-                    address_views.insert(address, fvk.view_address(address));
+                    address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
                 }
                 _ => {}

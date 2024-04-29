@@ -67,3 +67,4 @@ tonic = {workspace = true}
 tracing = {workspace = true}
 tracing-subscriber = {workspace = true}
 url = {workspace = true}
+pbjson-types = { workspace = true }

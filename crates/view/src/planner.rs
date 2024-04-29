@@ -714,7 +714,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // For any remaining provided balance, make a single change note for each
         for value in self.balance.provided().collect::<Vec<_>>() {
-            self.output(value, self_address);
+            self.output(value, self_address.clone());
         }
 
         // All actions have now been added, so check to make sure that you don't build and submit an

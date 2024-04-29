@@ -13,6 +13,7 @@ use {
         memo::MemoPlaintext, plan::MemoPlan, TransactionParameters, TransactionPlan,
     },
     rand_core::OsRng,
+    std::ops::Deref,
     tap::{Tap, TapFallible},
     tracing::info,
 };
@@ -63,12 +64,17 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
             )
             .into(),
             // Next, create a new output of the exact same amount.
-            OutputPlan::new(&mut OsRng, input_note.value(), *test_keys::ADDRESS_1).into(),
+            OutputPlan::new(
+                &mut OsRng,
+                input_note.value(),
+                test_keys::ADDRESS_1.deref().clone(),
+            )
+            .into(),
         ],
         // Now fill out the remaining parts of the transaction needed for verification:
         memo: Some(MemoPlan::new(
             &mut OsRng,
-            MemoPlaintext::blank_memo(*test_keys::ADDRESS_0),
+            MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
         )?),
         detection_data: None, // We'll set this automatically below
         transaction_parameters: TransactionParameters {

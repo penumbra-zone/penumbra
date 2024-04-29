@@ -23,10 +23,6 @@
         let
           # Define versions of Penumbra and CometBFT
           penumbraRelease = null; # Use the local working copy
-          # penumbraRelease = { # Use a specific release
-          #   version = "0.71.0";
-          #   sha256 = "sha256-2mpyBEt44UlXm6hahJG9sHGxj6nzh7z9lnj/vLtAAzs=";
-          # };
           cometBftRelease = {
             version = "0.37.5";
             sha256 = "sha256-wNVHsifieAtZgedavCEJLgG0kRDqUhG4Lk5ciTPoNzI=";
@@ -107,7 +103,7 @@
           devShells.default = craneLib.devShell {
             inherit LIBCLANG_PATH;
             inputsFrom = [ penumbra ];
-            packages = [ cargo-watch ];
+            packages = [ cargo-watch cargo-nextest protobuf ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
