@@ -243,6 +243,7 @@ service QueryService {
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
+  rpc ValidatorUptime(ValidatorUptimeRequest) returns (ValidatorUptimeResponse);
 }
 
 // Requests information on the chain's validators.
@@ -280,6 +281,14 @@ message CurrentValidatorRateRequest {
 
 message CurrentValidatorRateResponse {
   core.component.stake.v1.RateData data = 1;
+}
+
+message ValidatorUptimeRequest {
+  core.keys.v1.IdentityKey identity_key = 2;
+}
+
+message ValidatorUptimeResponse {
+  Uptime uptime = 1;
 }
 
 // Staking configuration data.

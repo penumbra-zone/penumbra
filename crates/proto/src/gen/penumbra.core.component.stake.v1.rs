@@ -703,6 +703,32 @@ impl ::prost::Name for CurrentValidatorRateResponse {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorUptimeRequest {
+    #[prost(message, optional, tag = "2")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+}
+impl ::prost::Name for ValidatorUptimeRequest {
+    const NAME: &'static str = "ValidatorUptimeRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorUptimeResponse {
+    #[prost(message, optional, tag = "1")]
+    pub uptime: ::core::option::Option<Uptime>,
+}
+impl ::prost::Name for ValidatorUptimeResponse {
+    const NAME: &'static str = "ValidatorUptimeResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
 /// Staking configuration data.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -997,6 +1023,36 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        pub async fn validator_uptime(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ValidatorUptimeRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidatorUptimeResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.stake.v1.QueryService/ValidatorUptime",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.stake.v1.QueryService",
+                        "ValidatorUptime",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -1040,6 +1096,13 @@ pub mod query_service_server {
             request: tonic::Request<super::CurrentValidatorRateRequest>,
         ) -> std::result::Result<
             tonic::Response<super::CurrentValidatorRateResponse>,
+            tonic::Status,
+        >;
+        async fn validator_uptime(
+            &self,
+            request: tonic::Request<super::ValidatorUptimeRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::ValidatorUptimeResponse>,
             tonic::Status,
         >;
     }
@@ -1295,6 +1358,52 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = CurrentValidatorRateSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.stake.v1.QueryService/ValidatorUptime" => {
+                    #[allow(non_camel_case_types)]
+                    struct ValidatorUptimeSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::ValidatorUptimeRequest>
+                    for ValidatorUptimeSvc<T> {
+                        type Response = super::ValidatorUptimeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ValidatorUptimeRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::validator_uptime(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ValidatorUptimeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -53,6 +53,7 @@ ed25519-consensus = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
 http-body = {workspace = true}
+humantime = {workspace = true}
 ibc-proto = {workspace = true, default-features = true}
 ibc-types = {workspace = true, features = ["std", "with_serde"], default-features = true}
 indicatif = {workspace = true}

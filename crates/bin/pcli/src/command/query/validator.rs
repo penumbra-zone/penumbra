@@ -1,16 +1,21 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, ops::RangeInclusive, time::Duration};
 
 use anyhow::{Context, Result};
 use colored::Colorize;
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
+use penumbra_app::params::AppParameters;
 use penumbra_num::Amount;
+use penumbra_proto::core::app::v1::{
+    query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
+};
 use penumbra_proto::core::component::stake::v1::{
     query_service_client::QueryServiceClient as StakeQueryServiceClient, ValidatorInfoRequest,
+    ValidatorStatusRequest, ValidatorUptimeRequest,
 };
 use penumbra_stake::{
     validator::{self, ValidatorToml},
-    IdentityKey,
+    IdentityKey, Uptime,
 };
 
 use crate::App;
@@ -32,6 +37,11 @@ pub enum ValidatorCmd {
         /// The JSON file to write the definition to [default: stdout].
         #[clap(long)]
         file: Option<String>,
+        /// The identity key of the validator to fetch.
+        identity_key: String,
+    },
+    /// Get the uptime of the validator.
+    Uptime {
         /// The identity key of the validator to fetch.
         identity_key: String,
     },
@@ -207,6 +217,135 @@ impl ValidatorCmd {
                         .context("could not write file")?;
                 } else {
                     println!("{}", toml::to_string_pretty(&validator)?);
+                }
+            }
+            ValidatorCmd::Uptime { identity_key } => {
+                let identity_key = identity_key.parse::<IdentityKey>()?;
+
+                let mut client = StakeQueryServiceClient::new(app.pd_channel().await?);
+
+                // What's the uptime?
+                let uptime: Uptime = client
+                    .validator_uptime(ValidatorUptimeRequest {
+                        identity_key: Some(identity_key.into()),
+                    })
+                    .await?
+                    .into_inner()
+                    .uptime
+                    .ok_or_else(|| anyhow::anyhow!("uptime must be present in response"))?
+                    .try_into()?;
+
+                // Is the validator active?
+                let status: validator::Status = client
+                    .validator_status(ValidatorStatusRequest {
+                        identity_key: Some(identity_key.into()),
+                    })
+                    .await?
+                    .into_inner()
+                    .status
+                    .ok_or_else(|| anyhow::anyhow!("status must be present in response"))?
+                    .try_into()?;
+                let state = status.state;
+                let active = matches!(state, validator::State::Active);
+
+                // Get the chain parameters
+                let mut client = AppQueryServiceClient::new(app.pd_channel().await?);
+                let params: AppParameters = client
+                    .app_parameters(tonic::Request::new(AppParametersRequest {}))
+                    .await?
+                    .into_inner()
+                    .app_parameters
+                    .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?
+                    .try_into()?;
+
+                let as_of_height = uptime.as_of_height();
+                let missed_blocks = uptime.num_missed_blocks();
+                let window_len = uptime.missed_blocks_window();
+
+                let mut downtime_ranges: Vec<RangeInclusive<u64>> = vec![];
+                for missed_block in uptime.missed_blocks() {
+                    if let Some(range) = downtime_ranges.last_mut() {
+                        if range.end() + 1 == missed_block {
+                            *range = *range.start()..=missed_block;
+                        } else {
+                            downtime_ranges.push(missed_block..=missed_block);
+                        }
+                    } else {
+                        downtime_ranges.push(missed_block..=missed_block);
+                    }
+                }
+
+                let percent_uptime =
+                    100.0 * (window_len as f64 - missed_blocks as f64) / window_len as f64;
+                let signed_blocks = window_len as u64 - missed_blocks as u64;
+                let min_uptime_blocks =
+                    window_len as u64 - params.stake_params.missed_blocks_maximum;
+                let percent_min_uptime = 100.0 * min_uptime_blocks as f64 / window_len as f64;
+                let percent_max_downtime =
+                    100.0 * params.stake_params.missed_blocks_maximum as f64 / window_len as f64;
+                let percent_downtime = 100.0 * missed_blocks as f64 / window_len as f64;
+                let percent_downtime_penalty =
+                    // Converting from basis points squared to percentage
+                    params.stake_params.slashing_penalty_downtime as f64 / 100.0 / 100.0;
+                let min_remaining_downtime_blocks = (window_len as u64)
+                    .saturating_sub(missed_blocks as u64)
+                    .saturating_sub(min_uptime_blocks);
+                let min_remaining_downtime = humantime::Duration::from(Duration::from_secs(
+                    (min_remaining_downtime_blocks * 5) as u64,
+                ));
+                let cumulative_downtime =
+                    humantime::Duration::from(Duration::from_secs((missed_blocks * 5) as u64));
+                let percent_grace = 100.0 * min_remaining_downtime_blocks as f64
+                    / (window_len - min_uptime_blocks as usize) as f64;
+                let window_len_len = window_len.to_string().len();
+
+                println!("{state} validator: as of block {as_of_height}");
+                println!("Unmissed signing: {percent_uptime:>6.2}% = {signed_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
+                if active {
+                    println!("Required signing: {percent_min_uptime:>6.2}% = {min_uptime_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
+                }
+                println!("Salient downtime: {percent_downtime:>6.2}% = {missed_blocks:width$}/{window_len} most-recent blocks ~ {cumulative_downtime} cumulative downtime", width = window_len_len);
+                if active {
+                    println!("Unexpended grace: {percent_grace:>6.2}% = {min_remaining_downtime_blocks:width$}/{window_len} forthcoming blocks ~ {min_remaining_downtime} at minimum before penalty", width = window_len_len);
+                    println!( "Downtime penalty: {percent_downtime_penalty:>6.2}% - if downtime exceeds {percent_max_downtime:.2}%, penalty will be applied to all delegations");
+                }
+                if !downtime_ranges.is_empty() {
+                    println!("Downtime details:");
+                    let mut max_blocks_width = 0;
+                    let mut max_start_width = 0;
+                    let mut max_end_width = 0;
+                    for range in downtime_ranges.iter() {
+                        let blocks = range.end() - range.start() + 1;
+                        max_blocks_width = max_blocks_width.max(blocks.to_string().len());
+                        max_start_width = max_start_width.max(range.start().to_string().len());
+                        if blocks != 1 {
+                            max_end_width = max_end_width.max(range.end().to_string().len());
+                        }
+                    }
+                    for range in downtime_ranges.iter() {
+                        let blocks = range.end() - range.start() + 1;
+                        let estimated_duration =
+                            humantime::Duration::from(Duration::from_secs((blocks * 5) as u64));
+                        if blocks == 1 {
+                            let height = range.start();
+                            println!(
+                                "  • {blocks:width$} missed:  block {height:>height_width$} {empty:>duration_width$}(~ {estimated_duration})",
+                                width = max_blocks_width,
+                                height_width = max_start_width,
+                                duration_width = max_end_width + 5,
+                                empty = "",
+                            );
+                        } else {
+                            let start = range.start();
+                            let end = range.end();
+                            println!(
+                                "  • {blocks:width$} missed: blocks {start:>start_width$} ..= {end:>end_width$} (~ {estimated_duration})",
+                                width = max_blocks_width,
+                                start_width = max_start_width,
+                                end_width = max_end_width,
+                            );
+                        };
+                    }
                 }
             }
         }
