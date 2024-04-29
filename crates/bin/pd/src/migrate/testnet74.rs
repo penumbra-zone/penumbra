@@ -1,22 +1,18 @@
 //! Contains functions related to the migration script of Testnet72
 
 use anyhow;
-use cnidarium::{Snapshot, StateDelta, StateRead, StateWrite, Storage};
+use cnidarium::{EscapedByteSlice, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use futures::StreamExt as _;
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
 use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_dex::SwapExecution;
-use penumbra_proto::core::component::sct::v1::query_service_server::QueryService;
+use penumbra_num::Amount;
 use penumbra_proto::penumbra::core::component as pb;
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use penumbra_sct::component::rpc::Server as SctServer;
-use penumbra_tct::Position;
 use prost::Message;
 use std::path::PathBuf;
-use std::sync::Arc;
-use tonic::IntoRequest;
 
 use crate::testnet::generate::TestnetConfig;
 
@@ -28,7 +24,10 @@ async fn fix_arb_execution_outputs(delta: &mut StateDelta<Snapshot>) -> anyhow::
         let (key, swap_ex_bytes) = r?;
         let mut swap_ex: SwapExecution =
             pb::dex::v1::SwapExecution::decode(swap_ex_bytes.as_slice())?.try_into()?;
-        swap_ex.output = swap_ex.output + swap_ex.input;
+        swap_ex.output = swap_ex
+            .input
+            .asset_id
+            .value(swap_ex.output.amount + swap_ex.input.amount);
         delta.put(key, swap_ex);
     }
     Ok(())
@@ -41,7 +40,7 @@ async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
     let mut liquidity_stream = delta.nonverifiable_prefix_raw(&prefix_key).boxed();
 
     while let Some(r) = liquidity_stream.next().await {
-        let (old_key, asset_id) = r?;
+        let (old_key, asset_id): (Vec<u8>, Vec<u8>) = r?;
         tracing::info!(?old_key, asset_id = ?EscapedByteSlice(&asset_id), "migrating asset liquidity");
 
         // Construct the new key:
@@ -79,7 +78,6 @@ pub async fn migrate(
     // the ordering of the existing data.
 
     // Setup:
-    let start_time = std::time::SystemTime::now();
     let rocksdb_dir = path_to_export.join("rocksdb");
     let storage = Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
     let export_state = storage.latest_snapshot();
@@ -110,12 +108,7 @@ pub async fn migrate(
         (start_time.elapsed().unwrap(), post_upgrade_root_hash)
     };
 
-    delta.put_block_height(0u64);
-
-    let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
     tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
-
-    let migration_duration = start_time.elapsed().unwrap();
 
     storage.release().await;
     let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;

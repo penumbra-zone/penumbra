@@ -11,10 +11,9 @@ use anyhow::Context;
 use futures::StreamExt as _;
 use std::path::PathBuf;
 
-use cnidarium::{EscapedByteSlice, StateDelta, StateRead, StateWrite, Storage};
+use cnidarium::{StateDelta, StateRead, StateWrite, Storage};
 use jmt::RootHash;
 use penumbra_app::{app::StateReadExt, SUBSTORE_PREFIXES};
-use penumbra_num::Amount;
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 
 use crate::testnet::generate::TestnetConfig;
