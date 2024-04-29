@@ -2209,6 +2209,102 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionWithdraw", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventQueuePositionClose {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventQueuePositionClose", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventQueuePositionClose {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventQueuePositionClose;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventQueuePositionClose")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventQueuePositionClose, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventQueuePositionClose {
+                    position_id: position_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventQueuePositionClose", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventSwap {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

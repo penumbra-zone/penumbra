@@ -1399,6 +1399,20 @@ impl ::prost::Name for EventPositionClose {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventQueuePositionClose {
+    /// The ID of the position queued that is closed for closure.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+}
+impl ::prost::Name for EventQueuePositionClose {
+    const NAME: &'static str = "EventQueuePositionClose";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventPositionWithdraw {
     /// The ID of the withdrawn position.
     #[prost(message, optional, tag = "1")]

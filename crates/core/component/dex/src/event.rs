@@ -41,9 +41,13 @@ pub fn position_open(position: &Position) -> pb::EventPositionOpen {
 }
 
 pub fn position_close(action: &PositionClose) -> pb::EventPositionClose {
-    // TODO: should we have another event triggered by the position manager for when
-    // the position is actually closed?
     pb::EventPositionClose {
+        position_id: Some(action.position_id.into()),
+    }
+}
+
+pub fn queue_position_close(action: &PositionClose) -> pb::EventQueuePositionClose {
+    pb::EventQueuePositionClose {
         position_id: Some(action.position_id.into()),
     }
 }
