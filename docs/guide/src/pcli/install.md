@@ -4,18 +4,16 @@ Download prebuilt binaries from the [Penumbra releases page on Github](https://g
 Make sure to use the most recent version available, as the version of `pcli` must
 match the software currently running on the network.
 
-Make sure choose the correct platform for your machine. After downloading the `.tar.xz` file,
-extract it, and copy its contents to your `$PATH`. For example:
+Make sure choose the correct platform for your machine. Or, you can use a one-liner install script:
 
 ```
-curl -sSfL -O https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../penumbra_version.md }}/pcli-x86_64-unknown-linux-gnu.tar.xz
-unxz pcli-x86_64-unknown-linux-gnu.tar.xz
-tar -xf pcli-x86_64-unknown-linux-gnu.tar
-sudo mv pcli-x86_64-unknown-linux-gnu/pcli /usr/local/bin/
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../penumbra_version.md }}/pcli-installer.sh | sh
 
 # confirm the pcli binary is installed by running:
 pcli --version
 ```
+
+The installer script will place the binary in `$HOME/.cargo/bin/`.
 
 If you see an error message containing `GLIBC`, then your system is not compatible
 with the precompiled binaries. See details below.
