@@ -868,7 +868,10 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 /// terminates.
 ///
 /// This test also ensures that the created `SwapExecution` has the
-/// correct data.
+///
+/// *Arbitrage execution record bug:*
+/// This test also ensures that the created `SwapExecution` has the
+/// correct data. (See #3790).
 async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
