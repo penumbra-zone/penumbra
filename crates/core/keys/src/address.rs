@@ -1,6 +1,9 @@
 //! [Payment address][Address] facilities.
 
-use std::io::{Cursor, Read, Write};
+use std::{
+    io::{Cursor, Read, Write},
+    sync::OnceLock,
+};
 
 use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
@@ -31,7 +34,7 @@ pub struct Address {
     /// The address diversifier.
     d: Diversifier,
     /// A cached copy of the diversified base.
-    g_d: decaf377::Element,
+    g_d: OnceLock<decaf377::Element>,
 
     /// The public key for this payment address.
     ///
@@ -77,7 +80,7 @@ impl Address {
             // don't need an error type here, caller will probably .expect anyways
             Some(Self {
                 d,
-                g_d: d.diversified_generator(),
+                g_d: OnceLock::new(),
                 pk_d,
                 ck_d,
                 transmission_key_s,
@@ -94,7 +97,8 @@ impl Address {
 
     /// Returns a reference to the diversified base.
     pub fn diversified_generator(&self) -> &decaf377::Element {
-        &self.g_d
+        self.g_d
+            .get_or_init(|| self.diversifier().diversified_generator())
     }
 
     /// Returns a reference to the transmission key.
