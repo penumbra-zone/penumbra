@@ -253,21 +253,52 @@ pub trait PositionManager: StateWrite + PositionRead {
 
     /// Record execution against an opened position.
     ///
+    /// IMPORTANT: This method can mutate its input state.
+    ///
+    /// We return the position that was ultimately written to the state,
+    /// it could differ from the initial input e.g. if the position is
+    /// auto-closing.
+    ///
+    /// # Context parameter
+    ///
     /// The `context` parameter records the global context of the path in which
     /// the position execution happened. This may be completely different than
     /// the trading pair of the position itself, and is used to link the
     /// micro-scale execution (processed by this method) with the macro-scale
     /// context (a swap or arbitrage).
+    ///
+    /// # Auto-closing positions
+    ///
+    /// Some positions are `close_on_fill` i.e. they are programmed to close after
+    /// execution exhausts either side of their reserves. This method returns the
+    /// position that was written to the chain state, making it possible for callers
+    /// to inspect any change that has occured during execution handling.
     #[tracing::instrument(level = "debug", skip_all)]
     async fn position_execution(
         &mut self,
         mut new_state: Position,
         context: DirectedTradingPair,
-    ) -> Result<()> {
+    ) -> Result<Position> {
         let prev_state = self
             .position_by_id(&new_state.id())
             .await?
             .ok_or_else(|| anyhow::anyhow!("withdrew from unknown position {}", new_state.id()))?;
+
+        // Optimization: it's possible that the position's reserves haven't
+        // changed, and that we're about to do a no-op update. This can happen
+        // when saving a frontier, for instance, since the FillRoute code saves
+        // the entire frontier when it finishes.
+        //
+        // If so, skip the write, but more importantly, skip emitting an event,
+        // so tooling doesn't get confused about a no-op execution.
+        if prev_state == new_state {
+            anyhow::ensure!(
+            matches!(&prev_state.state, position::State::Opened | position::State::Closed),
+            "attempted to do a no-op execution against a position with state {:?}, expected Opened or Closed",
+            prev_state.state
+        );
+            return Ok(new_state);
+        }
 
         anyhow::ensure!(
             matches!(&prev_state.state, position::State::Opened),
@@ -294,19 +325,8 @@ pub trait PositionManager: StateWrite + PositionRead {
             }
         }
 
-        // Optimization: it's possible that the position's reserves haven't
-        // changed, and that we're about to do a no-op update. This can happen
-        // when saving a frontier, for instance, since the FillRoute code saves
-        // the entire frontier when it finishes.
-        //
-        // If so, skip the write, but more importantly, skip emitting an event,
-        // so tooling doesn't get confused about a no-op execution.
-        if prev_state != new_state {
-            self.record_proto(event::position_execution(&prev_state, &new_state, context));
-            self.update_position(Some(prev_state), new_state).await?;
-        }
-
-        Ok(())
+        self.record_proto(event::position_execution(&prev_state, &new_state, context));
+        self.update_position(Some(prev_state), new_state).await
     }
 
     /// Withdraw from a closed position, incrementing its sequence number.
@@ -401,7 +421,7 @@ trait Inner: StateWrite {
         &mut self,
         prev_state: Option<Position>,
         new_state: Position,
-    ) -> Result<()> {
+    ) -> Result<Position> {
         tracing::debug!(?prev_state, ?new_state, "updating position state");
 
         let id = new_state.id();
@@ -417,8 +437,8 @@ trait Inner: StateWrite {
         self.update_trading_pair_position_counter(&prev_state, &new_state, &id)
             .await?;
 
-        self.put(state_key::position_by_id(&id), new_state);
-        Ok(())
+        self.put(state_key::position_by_id(&id), new_state.clone());
+        Ok(new_state)
     }
 
     fn guard_invalid_transitions(
