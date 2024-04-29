@@ -82,6 +82,14 @@ impl Amount {
     }
 }
 
+impl ops::Not for Amount {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self { inner: !self.inner }
+    }
+}
+
 #[derive(Clone)]
 pub struct AmountVar {
     pub amount: FqVar,
