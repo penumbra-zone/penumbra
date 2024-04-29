@@ -68,7 +68,7 @@ impl OutputPlan {
     }
 
     pub fn output_note(&self) -> Note {
-        Note::from_parts(self.dest_address, self.value, self.rseed)
+        Note::from_parts(self.dest_address.clone(), self.value, self.rseed)
             .expect("transmission key in address is always valid")
     }
 

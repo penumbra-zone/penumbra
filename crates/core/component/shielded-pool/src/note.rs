@@ -137,7 +137,7 @@ impl Note {
         Ok(Note {
             value,
             rseed,
-            address,
+            address: address.clone(),
             transmission_key_s: Fq::from_bytes(address.transmission_key().0)
                 .map_err(|_| Error::InvalidTransmissionKey)?,
         })
@@ -155,12 +155,12 @@ impl Note {
     /// random blinding factor.
     pub fn generate(rng: &mut (impl Rng + CryptoRng), address: &Address, value: Value) -> Self {
         let rseed = Rseed::generate(rng);
-        Note::from_parts(*address, value, rseed)
+        Note::from_parts(address.clone(), value, rseed)
             .expect("transmission key in address is always valid")
     }
 
     pub fn address(&self) -> Address {
-        self.address
+        self.address.clone()
     }
 
     pub fn diversified_generator(&self) -> decaf377::Element {

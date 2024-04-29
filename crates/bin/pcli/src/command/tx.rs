@@ -31,7 +31,7 @@ use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
-use penumbra_keys::keys::AddressIndex;
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
@@ -346,7 +346,7 @@ impl TxCmd {
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
                 let to = to
-                    .parse()
+                    .parse::<Address>()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
                 let return_address = app
@@ -364,7 +364,7 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 for value in values.iter().cloned() {
-                    planner.output(value, to);
+                    planner.output(value, to.clone());
                 }
                 let plan = planner
                     .memo(memo_plaintext)?
