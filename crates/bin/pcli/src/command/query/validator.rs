@@ -262,7 +262,7 @@ impl ValidatorCmd {
                 let missed_blocks = uptime.num_missed_blocks();
                 let window_len = uptime.missed_blocks_window();
 
-                let mut downtime_ranges: Vec<RangeInclusive<u64>> = Vec::new();
+                let mut downtime_ranges: Vec<RangeInclusive<u64>> = vec![];
                 for missed_block in uptime.missed_blocks() {
                     if let Some(range) = downtime_ranges.last_mut() {
                         if range.end() + 1 == missed_block {
@@ -277,51 +277,76 @@ impl ValidatorCmd {
 
                 let percent_uptime =
                     100.0 * (window_len as f64 - missed_blocks as f64) / window_len as f64;
+                let signed_blocks = window_len as u64 - missed_blocks as u64;
                 let min_uptime_blocks =
                     window_len as u64 - params.stake_params.missed_blocks_maximum;
                 let percent_min_uptime = 100.0 * min_uptime_blocks as f64 / window_len as f64;
+                let percent_max_downtime =
+                    100.0 * params.stake_params.missed_blocks_maximum as f64 / window_len as f64;
                 let percent_downtime = 100.0 * missed_blocks as f64 / window_len as f64;
                 let percent_downtime_penalty =
                     // Converting from basis points squared to percentage
-                    100.0 * params.stake_params.slashing_penalty_downtime as f64 * 100.0;
+                    params.stake_params.slashing_penalty_downtime as f64 / 100.0 / 100.0;
                 let min_remaining_downtime_blocks = (window_len as u64)
                     .saturating_sub(missed_blocks as u64)
                     .saturating_sub(min_uptime_blocks);
                 let min_remaining_downtime = humantime::Duration::from(Duration::from_secs(
                     (min_remaining_downtime_blocks * 5) as u64,
                 ));
+                let cumulative_downtime =
+                    humantime::Duration::from(Duration::from_secs((missed_blocks * 5) as u64));
+                let percent_grace = 100.0 * min_remaining_downtime_blocks as f64
+                    / (window_len - min_uptime_blocks as usize) as f64;
+                let window_len_len = window_len.to_string().len();
 
-                println!("Current uptime: {percent_uptime}% as of height {as_of_height}");
-                let state_note = if active {
-                    " (delegated funds are at stake)"
-                } else {
-                    ""
-                };
-                println!("Current status: {state}{state_note}");
+                println!("{state} validator: as of block {as_of_height}");
+                println!("Unmissed signing: {percent_uptime:>6.2}% = {signed_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
                 if active {
-                    println!("Minimum uptime: {min_uptime_blocks}/{window_len} blocks ({percent_min_uptime}%)");
+                    println!("Required signing: {percent_min_uptime:>6.2}% = {min_uptime_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
+                }
+                println!("Salient downtime: {percent_downtime:>6.2}% = {missed_blocks:width$}/{window_len} most-recent blocks ~ {cumulative_downtime} cumulative downtime", width = window_len_len);
+                if active {
+                    println!("Unexpended grace: {percent_grace:>6.2}% = {min_remaining_downtime_blocks:width$}/{window_len} forthcoming blocks ~ {min_remaining_downtime} at minimum before penalty", width = window_len_len);
+                    println!( "Downtime penalty: {percent_downtime_penalty:>6.2}% - if downtime exceeds {percent_max_downtime:.2}%, penalty will be applied to all delegations");
                 }
                 if !downtime_ranges.is_empty() {
-                    let s = if missed_blocks == 1 { "" } else { "s" };
-                    println!(
-                        "Validator recently missed signing {missed_blocks}/{window_len} block{s} ({percent_downtime}%):"
-                    );
-                }
-                for range in downtime_ranges.iter() {
-                    let blocks = range.end() - range.start() + 1;
-                    let s = if blocks == 1 { "" } else { "s" };
-                    println!("  • {range:?} ({blocks} block{s})");
-                }
-                if active {
-                    println!(
-                        "Downtime penalty: {percent_downtime_penalty}% penalty will be applied if uptime falls below minimum"
-                    );
-                    if !downtime_ranges.is_empty() {
-                        println!(
-                            "Minimum remaining consecutive downtime before penalty: {min_remaining_downtime_blocks} blocks (approximately {min_remaining_downtime})"
-                        );
+                    println!("Downtime details:");
+                    let mut max_blocks_width = 0;
+                    let mut max_start_width = 0;
+                    let mut max_end_width = 0;
+                    for range in downtime_ranges.iter() {
+                        let blocks = range.end() - range.start() + 1;
+                        max_blocks_width = max_blocks_width.max(blocks.to_string().len());
+                        max_start_width = max_start_width.max(range.start().to_string().len());
+                        if blocks != 1 {
+                            max_end_width = max_end_width.max(range.end().to_string().len());
+                        }
                     }
-                };
+                    for range in downtime_ranges.iter() {
+                        let blocks = range.end() - range.start() + 1;
+                        let estimated_duration =
+                            humantime::Duration::from(Duration::from_secs((blocks * 5) as u64));
+                        if blocks == 1 {
+                            let height = range.start();
+                            println!(
+                                "  • {blocks:width$} missed:  block {height:>height_width$} {empty:>duration_width$}(~ {estimated_duration})",
+                                width = max_blocks_width,
+                                height_width = max_start_width,
+                                duration_width = max_end_width + 5,
+                                empty = "",
+                            );
+                        } else {
+                            let start = range.start();
+                            let end = range.end();
+                            println!(
+                                "  • {blocks:width$} missed: blocks {start:>start_width$} ..= {end:>end_width$} (~ {estimated_duration})",
+                                width = max_blocks_width,
+                                start_width = max_start_width,
+                                end_width = max_end_width,
+                            );
+                        };
+                    }
+                }
             }
         }
 
