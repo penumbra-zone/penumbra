@@ -90,9 +90,9 @@ impl Component for Dex {
                 .fixed_candidates
                 .iter()
                 .cloned()
-                // Limit the inclusion of recently accessed assets to 10 to avoid
+                // The set of recently accessed assets is already limited to avoid
                 // potentially blowing up routing time.
-                .chain(state.recently_accessed_assets().iter().take(10).cloned())
+                .chain(state.recently_accessed_assets().iter().cloned())
                 .collect::<Vec<_>>(),
         );
 

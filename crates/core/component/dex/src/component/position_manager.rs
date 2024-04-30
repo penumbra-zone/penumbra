@@ -26,6 +26,7 @@ use crate::{
 use crate::{event, state_key};
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
+const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;
 
 mod base_liquidity_index;
 mod counter;
@@ -144,7 +145,7 @@ pub trait PositionRead: StateRead {
     }
 
     /// Fetch the list of assets interacted with during this block.
-    fn recently_accessed_assets(&self) -> im::Vector<asset::Id> {
+    fn recently_accessed_assets(&self) -> im::OrdSet<asset::Id> {
         self.object_get(state_key::recently_accessed_assets())
             .unwrap_or_default()
     }
@@ -270,7 +271,14 @@ pub trait PositionManager: StateWrite + PositionRead {
     #[tracing::instrument(level = "debug", skip_all)]
     fn add_recently_accessed_asset(&mut self, asset_id: asset::Id) {
         let mut assets = self.recently_accessed_assets();
-        assets.push_back(asset_id);
+
+        // Limit the number of recently accessed assets to prevent blowing
+        // up routing time.
+        if assets.len() >= RECENTLY_ACCESSED_ASSET_LIMIT {
+            return;
+        }
+
+        assets.insert(asset_id);
         self.object_put(state_key::recently_accessed_assets(), assets);
     }
 
