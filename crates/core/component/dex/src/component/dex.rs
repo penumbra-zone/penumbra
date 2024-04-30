@@ -17,7 +17,7 @@ use crate::{
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},
-    Arbitrage, PositionManager, ValueCircuitBreaker,
+    Arbitrage, PositionManager, PositionRead as _, ValueCircuitBreaker,
 };
 
 pub struct Dex {}
@@ -83,12 +83,22 @@ impl Component for Dex {
         // For arbitrage, we extend the path search by 2 hops to allow a path out of the
         // staking token and back.
 
-        // TODO: Build an extended candidate set with:
-        // - both ends of all trading pairs for which there were swaps in the block
-        // - both ends of all trading pairs for which positions were opened
+        // Extend the fixed candidate set to include recently accessed assets, to have
+        // more arbitrage execution against newly opened positions.
+        let fixed_candidates = Arc::new(
+            routing_params
+                .fixed_candidates
+                .iter()
+                .cloned()
+                // Limit the inclusion of recently accessed assets to 10 to avoid
+                // potentially blowing up routing time.
+                .chain(state.recently_accessed_assets().iter().take(10).cloned())
+                .collect::<Vec<_>>(),
+        );
+
         let arb_routing_params = RoutingParams {
             max_hops: routing_params.max_hops + 2,
-            fixed_candidates: routing_params.fixed_candidates.clone(),
+            fixed_candidates,
             price_limit: Some(1u64.into()),
         };
 

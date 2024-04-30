@@ -7,7 +7,9 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
-    component::{metrics, StateReadExt, StateWriteExt, SwapManager},
+    component::{
+        metrics, position_manager::PositionManager as _, StateReadExt, StateWriteExt, SwapManager,
+    },
     event,
     swap::{proof::SwapProofPublic, Swap},
 };
@@ -64,6 +66,10 @@ impl ActionHandler for Swap {
         state
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
+
+        // Mark the assets for the swap's trading pair as accessed during this block.
+        state.add_recently_accessed_asset(swap.body.trading_pair.asset_1());
+        state.add_recently_accessed_asset(swap.body.trading_pair.asset_2());
 
         metrics::histogram!(crate::component::metrics::DEX_SWAP_DURATION)
             .record(swap_start.elapsed());

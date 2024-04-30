@@ -67,6 +67,10 @@ pub fn pending_position_closures() -> &'static str {
     "dex/pending_position_closures"
 }
 
+pub fn recently_accessed_assets() -> &'static str {
+    "dex/recently_accessed_assets"
+}
+
 pub fn pending_payloads() -> &'static str {
     "dex/pending_payloads"
 }

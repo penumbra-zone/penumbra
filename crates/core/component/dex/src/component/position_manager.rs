@@ -142,6 +142,12 @@ pub trait PositionRead: StateRead {
             })
             .boxed()
     }
+
+    /// Fetch the list of assets interacted with during this block.
+    fn recently_accessed_assets(&self) -> im::Vector<asset::Id> {
+        self.object_get(state_key::recently_accessed_assets())
+            .unwrap_or_default()
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
@@ -244,11 +250,28 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.vcb_credit(position.reserves_1()).await?;
         self.vcb_credit(position.reserves_2()).await?;
 
+        // Add the asset IDs from the new position's trading pair
+        // to the candidate set for this block.
+        self.add_recently_accessed_asset(position.phi.pair.asset_1());
+        self.add_recently_accessed_asset(position.phi.pair.asset_2());
+
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
         self.update_position(None, position).await?;
 
         Ok(())
+    }
+
+    /// Adds an asset ID to the list of recently accessed assets,
+    /// making it a candidate for the current block's arbitrage routing.
+    ///
+    /// This ensures that assets associated with recently active positions
+    /// will be eligible for arbitrage if mispriced positions are opened.
+    #[tracing::instrument(level = "debug", skip_all)]
+    fn add_recently_accessed_asset(&mut self, asset_id: asset::Id) {
+        let mut assets = self.recently_accessed_assets();
+        assets.push_back(asset_id);
+        self.object_put(state_key::recently_accessed_assets(), assets);
     }
 
     /// Record execution against an opened position.
