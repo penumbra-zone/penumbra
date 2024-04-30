@@ -156,7 +156,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         for value in self.calculate_balance().provided() {
             self.change_outputs.insert(
                 value.asset_id,
-                OutputPlan::new(&mut OsRng, value, change_address),
+                OutputPlan::new(&mut OsRng, value, change_address.clone()),
             );
         }
 
@@ -976,7 +976,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         /// TODO: is this neccessary?
         while let Some(required) = self.calculate_balance().provided().next() {
             // Recompute the change outputs, without accounting for fees.
-            self.refresh_change(change_address);
+            self.refresh_change(change_address.clone());
 
             // Now re-estimate the fee of the updated transaction and adjust the change if possible.
             fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
@@ -1120,7 +1120,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // self.push(SpendPlan::new(&mut OsRng, note_fee[0].clone().note, note_fee[0].clone().position).into());
 
             // Recompute the change outputs, without accounting for fees.
-            self.refresh_change(change_address);
+            self.refresh_change(change_address.clone());
 
             // Now re-estimate the fee of the updated transaction and adjust the change if possible.
             fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
