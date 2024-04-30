@@ -9,3 +9,5 @@ pub use withdraw::ActionDutchAuctionWithdraw;
 
 pub mod plan;
 pub use plan::ActionDutchAuctionWithdrawPlan;
+
+pub mod view;
