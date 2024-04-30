@@ -862,7 +862,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             notes_by_asset_id.push(new_map);
         }
 
-        if !is_swap_claim {
+        // if !is_swap_claim {
             // we need to NOW check if we added any of the staking token notes in order to have funds to pay for fees
             // 100% need this or everything will fail
             for notes in notes_by_asset_id.clone() {
@@ -940,7 +940,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 // Now append this map to the vector
                 notes_by_asset_id.push(new_map);
             }
-        }
+        // }
 
         println!("notes_by_asset_id: {:?}", notes_by_asset_id);
 
