@@ -12,7 +12,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 // use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 // use penumbra_auction::auction::dutch::DutchAuctionDescription;
 // use penumbra_auction::auction::{
@@ -717,6 +717,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             let notes = view.notes_for_voting(request).await?;
             voting_notes.push(notes);
         }
+        // TODO: remove spendable notes
         for request in spendable_requests {
             let notes = view.notes(request).await?;
             spendable_notes.extend(notes);
@@ -793,32 +794,39 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         //     }
         // }
 
+        // Check enum for voting-based action
+        let mut is_swap_claim = false;
+        for action in self.actions.iter() {
+            if matches!(action, ActionPlan::SwapClaim(_)) {
+                is_swap_claim = true;
+            }
+        }
+
         println!("self.calculate_balance(): {:?}", self.calculate_balance());
 
         // new data structure that needs to be explained.
         let mut notes_by_asset_id: Vec<BTreeMap<asset::Id, Vec<SpendableNoteRecord>>> = Vec::new();
 
         // Cache the balance calculations to avoid multiple calls
-        let balance = self.calculate_balance();
-        let mut required_iter = balance.required().peekable();
-        let mut provided_iter = balance.provided().peekable();
+        // let balance = self.calculate_balance();
+        // let mut required_iter = balance.required().peekable();
+        // let mut provided_iter = balance.provided().peekable();
 
-        // Determine which iterator to use based on the presence of elements
-        let balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
-            if required_iter.peek().is_some() {
-                println!("+++++++++++++++++++++++++++++++++++++++++++");
-                Box::new(required_iter)
-            } else if provided_iter.peek().is_some() {
-                println!("???????????????????????????????");
-                Box::new(provided_iter)
-            } else {
-                // Handle the case where neither iterator has elements
-                println!("------------------------------------");
-                Box::new(std::iter::empty::<penumbra_asset::Value>())
-                    as Box<dyn Iterator<Item = _> + Send>
-            };
+        // // Determine which iterator to use based on the presence of elements
+        // let balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
+        // if required_iter.peek().is_some() {
+        //     println!("+++++++++++++++++++++++++++++++++++++++++++");
+        //     Box::new(required_iter)
+        // } else if provided_iter.peek().is_some() {
+        //     println!("???????????????????????????????");
+        //     Box::new(provided_iter)
+        // } else {
+        //     // Handle the case where neither iterator has elements
+        //     println!("------------------------------------");
+        //     Box::new(std::iter::empty::<penumbra_asset::Value>()) as Box<dyn Iterator<Item = _> + Send>
+        // };
 
-        for (i, required) in balance_iter.enumerate() {
+        for required in self.calculate_balance().required().next() {
             println!("iter 1 is: {:?}", required);
             // create new BTreeMap
             let mut new_map = BTreeMap::new();
@@ -854,10 +862,87 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             notes_by_asset_id.push(new_map);
         }
 
-        println!(
-            "check notes inside notes_by_asset_id: {:?}",
-            notes_by_asset_id[0]
-        );
+        if !is_swap_claim {
+            // we need to NOW check if we added any of the staking token notes in order to have funds to pay for fees
+            // 100% need this or everything will fail
+            for notes in notes_by_asset_id.clone() {
+                if !notes.contains_key(&*STAKING_TOKEN_ASSET_ID) {
+                    println!("does not contain STAKING_TOKEN_ASSET_ID!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    // create new BTreeMap
+                    let mut new_map = BTreeMap::new();
+
+                    // Find all the notes of this asset in the source account.
+                    let records: Vec<SpendableNoteRecord> = view
+                        .notes(NotesRequest {
+                            include_spent: false,
+                            asset_id: Some(STAKING_TOKEN_DENOM.id().into()),
+                            address_index: Some(source.into()),
+                            amount_to_spend: None,
+                        })
+                        .await?;
+
+                    println!("records is: {:?}", records);
+
+                    for record in &records {
+                        println!(
+                            "record.note.value().amount: {:?}",
+                            record.note.value().amount
+                        );
+                        // if record.note.value().amount == 0 {
+                        //     println!("zero note detected ======================================================================================================");
+                        // }
+                    }
+
+                    new_map.insert(
+                        STAKING_TOKEN_DENOM.id().into(),
+                        Self::prioritize_and_filter_spendable_notes(records),
+                    );
+
+                    // Now append this map to the vector
+                    notes_by_asset_id.push(new_map);
+                }
+            }
+
+            if notes_by_asset_id.is_empty() {
+                println!(
+                    "does not contain STAKING_TOKEN_ASSET_ID!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                );
+                // create new BTreeMap
+                let mut new_map = BTreeMap::new();
+
+                // Find all the notes of this asset in the source account.
+                let records: Vec<SpendableNoteRecord> = view
+                    .notes(NotesRequest {
+                        include_spent: false,
+                        asset_id: Some(STAKING_TOKEN_DENOM.id().into()),
+                        address_index: Some(source.into()),
+                        amount_to_spend: None,
+                    })
+                    .await?;
+
+                println!("records is: {:?}", records);
+
+                for record in &records {
+                    println!(
+                        "record.note.value().amount: {:?}",
+                        record.note.value().amount
+                    );
+                    // if record.note.value().amount == 0 {
+                    //     println!("zero note detected ======================================================================================================");
+                    // }
+                }
+
+                new_map.insert(
+                    STAKING_TOKEN_DENOM.id().into(),
+                    Self::prioritize_and_filter_spendable_notes(records),
+                );
+
+                // Now append this map to the vector
+                notes_by_asset_id.push(new_map);
+            }
+        }
+
+        println!("notes_by_asset_id: {:?}", notes_by_asset_id);
 
         // Calculate initial transaction fees.
         // let mut fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
@@ -886,30 +971,34 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.calculate_balance_with_fees(fee)
         );
 
-        let mut required_iter = balance.required().peekable();
-        let mut provided_iter = balance.provided().peekable();
+        // TODO: fix this damn iterator!
+        // let mut required_iter = balance.required().peekable();
+        // let mut provided_iter = balance.provided().peekable();
 
-        // Determine which iterator to use based on the presence of elements
-        let mut balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
-            if required_iter.peek().is_some() {
-                Box::new(required_iter)
-            } else if provided_iter.peek().is_some() {
-                Box::new(provided_iter)
-            } else {
-                // Handle the case where neither iterator has elements with empty iterator
-                Box::new(std::iter::empty::<penumbra_asset::Value>())
-                    as Box<dyn Iterator<Item = _> + Send>
-            };
+        // // Determine which iterator to use based on the presence of elements
+        // let mut balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
+        // if required_iter.peek().is_some() {
+        //     println!("***********************************************");
+        //     Box::new(required_iter)
+        // } else if provided_iter.peek().is_some() {
+        //     println!("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+        //     Box::new(provided_iter)
+        // } else {
+        //     println!("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+        //     // Handle the case where neither iterator has elements with empty iterator
+        //     Box::new(std::iter::empty::<penumbra_asset::Value>())
+        //         as Box<dyn Iterator<Item = _> + Send>
+        // };
 
         // Add spends and change outputs as required to balance the transaction, using the spendable
         // notes provided. It is the caller's responsibility to ensure that the notes are the result of
         // collected responses to the requests generated by an immediately preceding call to
         // [`Planner::note_requests`].
         let mut iterations = 0usize;
-        let mut index = 0;
-        while let Some(required) = balance_iter.next() {
+        let mut index: usize = 0;
+        while let Some(required) = self.calculate_balance_with_fees(fee).required().next() {
             println!("self.actions 1: {:?}", self.actions);
-            println!("iter 2 is: {:?}", required);
+            println!("required is: {:?}", required);
             println!(
                 "1 self.calculate_balance_with_fees(fee): {:?}",
                 self.calculate_balance_with_fees(fee)
@@ -993,6 +1082,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
             // }
 
+            println!("self.actions 1.5: {:?}", self.actions);
+
             // self.push(SpendPlan::new(&mut OsRng, note_fee[0].clone().note, note_fee[0].clone().position).into());
 
             // Recompute the change outputs, without accounting for fees.
@@ -1008,33 +1099,23 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.balance = self.calculate_balance_with_fees(fee);
             // self.balance = self.calculate_balance();
 
-            println!("self.actions: {:?}", self.actions);
+            println!("self.actions 2: {:?}", self.actions);
 
             println!(
                 "2 self.calculate_balance_with_fees(fee): {:?}",
                 self.calculate_balance_with_fees(fee)
             );
 
+            let dimension: usize = self.calculate_balance_with_fees(fee).dimension();
+            println!("dimension is: {:?}", dimension);
+            println!(
+                "otes_by_asset_id_size - 1 is: {:?}",
+                notes_by_asset_id_size - 1
+            );
+
             // this means we've handled one iteration successfully
             // don't consume the iterator
-            println!(
-                "self.calculate_balance_with_fees(fee).required().peekable().peek().len(): {:?}",
-                self.calculate_balance_with_fees(fee)
-                    .required()
-                    .peekable()
-                    .peek()
-                    .len()
-                    + 1
-            );
-            if notes_by_asset_id_size
-                != self
-                    .calculate_balance_with_fees(fee)
-                    .required()
-                    .peekable()
-                    .peek()
-                    .len()
-                    + 1
-            {
+            if notes_by_asset_id_size - 1 == dimension {
                 println!("need to iterate!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 index += 1;
             }
@@ -1045,6 +1126,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // if self.balance.provided().next().unwrap().amount == 0u64.into() {
             //     break;
             // }
+            println!("required end is: {:?}", required);
+
             if self.balance.is_zero() {
                 println!("self.balance is zero!");
                 break;
@@ -1056,9 +1139,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
+        // TODO: verify the provided case
+
+        // TODO: For any remaining provided balance, make a single change note for each
+        // for value in self.balance.provided().collect::<Vec<_>>() {
+        //     self.push(OutputPlan::new(&mut OsRng, value, change_address).into());
+        // }
+
         println!("continue hell!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
         println!("we've balanced the fees!");
+
+        // TODO: check if swap claims need to enter the loop and pay fees?
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // everything here is great
