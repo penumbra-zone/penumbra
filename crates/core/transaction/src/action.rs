@@ -184,13 +184,9 @@ impl IsAction for Action {
             Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
-            Action::ActionDutchAuctionSchedule(x) => {
-                ActionView::ActionDutchAuctionSchedule(x.to_owned())
-            }
-            Action::ActionDutchAuctionEnd(x) => ActionView::ActionDutchAuctionEnd(x.to_owned()),
-            Action::ActionDutchAuctionWithdraw(x) => {
-                ActionView::ActionDutchAuctionWithdraw(x.to_owned())
-            }
+            Action::ActionDutchAuctionSchedule(x) => x.view_from_perspective(txp),
+            Action::ActionDutchAuctionEnd(x) => x.view_from_perspective(txp),
+            Action::ActionDutchAuctionWithdraw(x) => x.view_from_perspective(txp),
         }
     }
 }

@@ -1,5 +1,6 @@
 use penumbra_auction::auction::dutch::{
-    ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
+    actions::view::{ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView},
+    ActionDutchAuctionEnd,
 };
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
@@ -47,9 +48,9 @@ pub enum ActionView {
     CommunityPoolDeposit(CommunityPoolDeposit),
     CommunityPoolSpend(CommunityPoolSpend),
     CommunityPoolOutput(CommunityPoolOutput),
-    ActionDutchAuctionSchedule(ActionDutchAuctionSchedule),
+    ActionDutchAuctionSchedule(ActionDutchAuctionScheduleView),
     ActionDutchAuctionEnd(ActionDutchAuctionEnd),
-    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdraw),
+    ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView),
 }
 
 impl DomainType for ActionView {
@@ -166,9 +167,13 @@ impl From<ActionView> for Action {
             ActionView::CommunityPoolDeposit(x) => Action::CommunityPoolDeposit(x),
             ActionView::CommunityPoolSpend(x) => Action::CommunityPoolSpend(x),
             ActionView::CommunityPoolOutput(x) => Action::CommunityPoolOutput(x),
-            ActionView::ActionDutchAuctionSchedule(x) => Action::ActionDutchAuctionSchedule(x),
+            ActionView::ActionDutchAuctionSchedule(x) => {
+                Action::ActionDutchAuctionSchedule(x.into())
+            }
             ActionView::ActionDutchAuctionEnd(x) => Action::ActionDutchAuctionEnd(x),
-            ActionView::ActionDutchAuctionWithdraw(x) => Action::ActionDutchAuctionWithdraw(x),
+            ActionView::ActionDutchAuctionWithdraw(x) => {
+                Action::ActionDutchAuctionWithdraw(x.into())
+            }
         }
     }
 }

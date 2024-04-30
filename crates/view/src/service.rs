@@ -10,6 +10,7 @@ use async_stream::try_stream;
 use camino::Utf8Path;
 use decaf377::Fq;
 use futures::stream::{self, StreamExt, TryStreamExt};
+use penumbra_auction::auction::dutch::actions::view::ActionDutchAuctionWithdrawView;
 use rand::Rng;
 use rand_core::OsRng;
 use tokio::sync::{watch, RwLock};
@@ -959,6 +960,11 @@ impl ViewService for ViewServer {
                     let address = note.address();
                     address_views.insert(address.clone(), fvk.view_address(address));
                     asset_ids.insert(note.asset_id());
+                }
+                ActionView::ActionDutchAuctionWithdraw(ActionDutchAuctionWithdrawView {
+                    action: _,
+                    reserves: _,
+                }) => { /* no-op for now - i'm not totally sure we have all the necessary data to attribute specific note openings to this view */
                 }
                 _ => {}
             }

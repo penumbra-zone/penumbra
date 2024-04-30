@@ -19,8 +19,8 @@ use serde::{Deserialize, Serialize};
 pub struct ActionDutchAuctionScheduleView {
     pub action: ActionDutchAuctionSchedule,
     pub auction_id: AuctionId,
-    pub input_metadata: Metadata,
-    pub output_metadata: Metadata,
+    pub input_metadata: Option<Metadata>,
+    pub output_metadata: Option<Metadata>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,6 +35,20 @@ pub struct ActionDutchAuctionWithdrawView {
     pub reserves: Vec<ValueView>,
 }
 
+/* Conversion back to an action */
+
+impl From<ActionDutchAuctionScheduleView> for ActionDutchAuctionSchedule {
+    fn from(value: ActionDutchAuctionScheduleView) -> Self {
+        value.action
+    }
+}
+
+impl From<ActionDutchAuctionWithdrawView> for ActionDutchAuctionWithdraw {
+    fn from(value: ActionDutchAuctionWithdrawView) -> Self {
+        value.action
+    }
+}
+
 /* Protobuf impls */
 impl DomainType for ActionDutchAuctionScheduleView {
     type Proto = pb::ActionDutchAuctionScheduleView;
@@ -45,8 +59,8 @@ impl From<ActionDutchAuctionScheduleView> for pb::ActionDutchAuctionScheduleView
         pb::ActionDutchAuctionScheduleView {
             action: Some(domain.action.into()),
             auction_id: Some(domain.auction_id.into()),
-            input_metadata: Some(domain.input_metadata.into()),
-            output_metadata: Some(domain.output_metadata.into()),
+            input_metadata: domain.input_metadata.map(Into::into),
+            output_metadata: domain.output_metadata.map(Into::into),
         }
     }
 }
@@ -70,16 +84,12 @@ impl TryFrom<pb::ActionDutchAuctionScheduleView> for ActionDutchAuctionScheduleV
                 .try_into()?,
             input_metadata: msg
                 .input_metadata
-                .ok_or_else(|| {
-                    anyhow!("ActionDutchAuctionScheduleView message is missing an input_metadata")
-                })?
-                .try_into()?,
+                .map(|input| input.try_into())
+                .transpose()?,
             output_metadata: msg
                 .output_metadata
-                .ok_or_else(|| {
-                    anyhow!("ActionDutchAuctionScheduleView message is missing an output_metadata")
-                })?
-                .try_into()?,
+                .map(|output| output.try_into())
+                .transpose()?,
         })
     }
 }
