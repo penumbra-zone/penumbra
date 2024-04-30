@@ -653,6 +653,11 @@ message EventPositionClose {
   PositionId position_id = 1;
 }
 
+message EventQueuePositionClose {
+  // The ID of the position queued that is closed for closure.
+  PositionId position_id = 1;
+}
+
 message EventPositionWithdraw {
   // The ID of the withdrawn position.
   PositionId position_id = 1;
