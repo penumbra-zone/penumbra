@@ -400,7 +400,7 @@ impl ::prost::Name for TransactionBodyView {
 pub struct ActionView {
     #[prost(
         oneof = "action_view::ActionView",
-        tags = "1, 2, 3, 4, 16, 17, 18, 19, 20, 21, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 200"
+        tags = "1, 2, 3, 4, 21, 16, 17, 18, 19, 20, 22, 30, 31, 32, 34, 41, 42, 50, 51, 52, 53, 54, 55, 43, 200"
     )]
     pub action_view: ::core::option::Option<action_view::ActionView>,
 }
@@ -418,6 +418,8 @@ pub mod action_view {
         Swap(super::super::super::component::dex::v1::SwapView),
         #[prost(message, tag = "4")]
         SwapClaim(super::super::super::component::dex::v1::SwapClaimView),
+        #[prost(message, tag = "21")]
+        DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
         /// Action types without visible/opaque variants
         #[prost(message, tag = "16")]
         ValidatorDefinition(
@@ -434,8 +436,6 @@ pub mod action_view {
         ),
         #[prost(message, tag = "20")]
         ValidatorVote(super::super::super::component::governance::v1::ValidatorVote),
-        #[prost(message, tag = "21")]
-        DelegatorVote(super::super::super::component::governance::v1::DelegatorVoteView),
         #[prost(message, tag = "22")]
         ProposalDepositClaim(
             super::super::super::component::governance::v1::ProposalDepositClaim,

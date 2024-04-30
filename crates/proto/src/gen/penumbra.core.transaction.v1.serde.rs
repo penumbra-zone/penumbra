@@ -888,6 +888,9 @@ impl serde::Serialize for ActionView {
                 action_view::ActionView::SwapClaim(v) => {
                     struct_ser.serialize_field("swapClaim", v)?;
                 }
+                action_view::ActionView::DelegatorVote(v) => {
+                    struct_ser.serialize_field("delegatorVote", v)?;
+                }
                 action_view::ActionView::ValidatorDefinition(v) => {
                     struct_ser.serialize_field("validatorDefinition", v)?;
                 }
@@ -902,9 +905,6 @@ impl serde::Serialize for ActionView {
                 }
                 action_view::ActionView::ValidatorVote(v) => {
                     struct_ser.serialize_field("validatorVote", v)?;
-                }
-                action_view::ActionView::DelegatorVote(v) => {
-                    struct_ser.serialize_field("delegatorVote", v)?;
                 }
                 action_view::ActionView::ProposalDepositClaim(v) => {
                     struct_ser.serialize_field("proposalDepositClaim", v)?;
@@ -968,6 +968,8 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "swap",
             "swap_claim",
             "swapClaim",
+            "delegator_vote",
+            "delegatorVote",
             "validator_definition",
             "validatorDefinition",
             "ibc_relay_action",
@@ -978,8 +980,6 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             "proposalWithdraw",
             "validator_vote",
             "validatorVote",
-            "delegator_vote",
-            "delegatorVote",
             "proposal_deposit_claim",
             "proposalDepositClaim",
             "position_open",
@@ -1016,12 +1016,12 @@ impl<'de> serde::Deserialize<'de> for ActionView {
             Output,
             Swap,
             SwapClaim,
+            DelegatorVote,
             ValidatorDefinition,
             IbcRelayAction,
             ProposalSubmit,
             ProposalWithdraw,
             ValidatorVote,
-            DelegatorVote,
             ProposalDepositClaim,
             PositionOpen,
             PositionClose,
@@ -1063,12 +1063,12 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             "output" => Ok(GeneratedField::Output),
                             "swap" => Ok(GeneratedField::Swap),
                             "swapClaim" | "swap_claim" => Ok(GeneratedField::SwapClaim),
+                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "validatorDefinition" | "validator_definition" => Ok(GeneratedField::ValidatorDefinition),
                             "ibcRelayAction" | "ibc_relay_action" => Ok(GeneratedField::IbcRelayAction),
                             "proposalSubmit" | "proposal_submit" => Ok(GeneratedField::ProposalSubmit),
                             "proposalWithdraw" | "proposal_withdraw" => Ok(GeneratedField::ProposalWithdraw),
                             "validatorVote" | "validator_vote" => Ok(GeneratedField::ValidatorVote),
-                            "delegatorVote" | "delegator_vote" => Ok(GeneratedField::DelegatorVote),
                             "proposalDepositClaim" | "proposal_deposit_claim" => Ok(GeneratedField::ProposalDepositClaim),
                             "positionOpen" | "position_open" => Ok(GeneratedField::PositionOpen),
                             "positionClose" | "position_close" => Ok(GeneratedField::PositionClose),
@@ -1134,6 +1134,13 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::SwapClaim)
 ;
                         }
+                        GeneratedField::DelegatorVote => {
+                            if action_view__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
+                            }
+                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DelegatorVote)
+;
+                        }
                         GeneratedField::ValidatorDefinition => {
                             if action_view__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("validatorDefinition"));
@@ -1167,13 +1174,6 @@ impl<'de> serde::Deserialize<'de> for ActionView {
                                 return Err(serde::de::Error::duplicate_field("validatorVote"));
                             }
                             action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::ValidatorVote)
-;
-                        }
-                        GeneratedField::DelegatorVote => {
-                            if action_view__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("delegatorVote"));
-                            }
-                            action_view__ = map_.next_value::<::std::option::Option<_>>()?.map(action_view::ActionView::DelegatorVote)
 ;
                         }
                         GeneratedField::ProposalDepositClaim => {
