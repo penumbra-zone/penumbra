@@ -707,7 +707,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.actions = self.plan.actions.clone();
 
         // Change address represents the sender's address.
-        let change_address = view.address_by_index(source).await?;
+        let change_address = view.address_by_index(source).await?.clone();
 
         // Query voting notes.
         let mut voting_notes = Vec::new();
@@ -970,6 +970,39 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             "check self.calculate_balance_with_fees(fee): {:?}",
             self.calculate_balance_with_fees(fee)
         );
+
+        ////////////////////////////////////
+        /// provided
+        /// TODO: is this neccessary?
+        while let Some(required) = self.calculate_balance().provided().next() {
+            // Recompute the change outputs, without accounting for fees.
+            self.refresh_change(change_address);
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
+            println!("fee estimate: {:?}", fee);
+
+            // self.adjust_change_for_fee(fee);
+
+            // Need to account to balance after applying fees.
+            self.balance = self.calculate_balance_with_fees(fee);
+            // self.balance = self.calculate_balance();
+
+            // let dimension: usize = self.calculate_balance().dimension();
+            // println!("dimension is: {:?}", dimension);
+            // println!(
+            //     "otes_by_asset_id_size - 1 is: {:?}",
+            //     notes_by_asset_id_size - 1
+            // );
+
+            // // this means we've handled one iteration successfully
+            // // don't consume the iterator
+            // if notes_by_asset_id_size - 1 == dimension {
+            //     println!("need to iterate!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            //     index += 1;
+            // }
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // TODO: fix this damn iterator!
         // let mut required_iter = balance.required().peekable();
