@@ -495,10 +495,16 @@ impl<S: StateRead + StateWrite> Frontier<S> {
             start: self.pairs.first().expect("pairs is nonempty").start,
             end: self.pairs.last().expect("pairs is nonempty").end,
         };
-        self.state
+        let updated_position = self
+            .state
             .position_execution(self.positions[index].clone(), context)
             .await
             .expect("writing to storage should not fail");
+
+        // We update the frontier cache with the updated state of the position we
+        // want to discard. This protects us from cache incoherency in case we do not
+        // find a suitable replacement for that position.
+        self.positions[index] = updated_position;
 
         loop {
             let pair = &self.pairs[index];

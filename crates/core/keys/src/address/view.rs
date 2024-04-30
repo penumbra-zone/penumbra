@@ -11,7 +11,7 @@ use super::Address;
 ///
 /// This type allows working with addresses and address indexes without knowing
 /// the corresponding FVK.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::AddressView", into = "pb::AddressView")]
 pub enum AddressView {
     Opaque {
@@ -27,8 +27,8 @@ pub enum AddressView {
 impl AddressView {
     pub fn address(&self) -> Address {
         match self {
-            AddressView::Opaque { address } => *address,
-            AddressView::Decoded { address, .. } => *address,
+            AddressView::Opaque { address } => address.clone(),
+            AddressView::Decoded { address, .. } => address.clone(),
         }
     }
 }
@@ -121,49 +121,57 @@ mod tests {
         let addr2_1 = fvk2.payment_address(1.into()).0;
 
         assert_eq!(
-            fvk1.view_address(addr1_0),
+            fvk1.view_address(addr1_0.clone()),
             AddressView::Decoded {
-                address: addr1_0,
+                address: addr1_0.clone(),
                 index: 0.into(),
                 wallet_id: fvk1.wallet_id(),
             }
         );
         assert_eq!(
-            fvk2.view_address(addr1_0),
-            AddressView::Opaque { address: addr1_0 }
+            fvk2.view_address(addr1_0.clone()),
+            AddressView::Opaque {
+                address: addr1_0.clone()
+            }
         );
         assert_eq!(
-            fvk1.view_address(addr1_1),
+            fvk1.view_address(addr1_1.clone()),
             AddressView::Decoded {
-                address: addr1_1,
+                address: addr1_1.clone(),
                 index: 1.into(),
                 wallet_id: fvk1.wallet_id(),
             }
         );
         assert_eq!(
-            fvk2.view_address(addr1_1),
-            AddressView::Opaque { address: addr1_1 }
+            fvk2.view_address(addr1_1.clone()),
+            AddressView::Opaque {
+                address: addr1_1.clone()
+            }
         );
         assert_eq!(
-            fvk1.view_address(addr2_0),
-            AddressView::Opaque { address: addr2_0 }
+            fvk1.view_address(addr2_0.clone()),
+            AddressView::Opaque {
+                address: addr2_0.clone()
+            }
         );
         assert_eq!(
-            fvk2.view_address(addr2_0),
+            fvk2.view_address(addr2_0.clone()),
             AddressView::Decoded {
-                address: addr2_0,
+                address: addr2_0.clone(),
                 index: 0.into(),
                 wallet_id: fvk2.wallet_id(),
             }
         );
         assert_eq!(
-            fvk1.view_address(addr2_1),
-            AddressView::Opaque { address: addr2_1 }
+            fvk1.view_address(addr2_1.clone()),
+            AddressView::Opaque {
+                address: addr2_1.clone()
+            }
         );
         assert_eq!(
-            fvk2.view_address(addr2_1),
+            fvk2.view_address(addr2_1.clone()),
             AddressView::Decoded {
-                address: addr2_1,
+                address: addr2_1.clone(),
                 index: 1.into(),
                 wallet_id: fvk2.wallet_id(),
             }

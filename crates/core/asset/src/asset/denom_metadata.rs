@@ -545,6 +545,8 @@ impl Display for Unit {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     #[test]
     fn can_parse_metadata_from_chain_registry() {
         const SOME_COSMOS_JSON: &str = r#"
@@ -589,5 +591,32 @@ mod tests {
         // uncomment to see what our subset looks like
         //let json2 = serde_json::to_string_pretty(&_metadata).unwrap();
         //println!("{}", json2);
+    }
+
+    #[test]
+    fn encoding_round_trip_succeeds() {
+        let metadata = super::Metadata::try_from("upenumbra").unwrap();
+
+        let proto = super::pb::Metadata::from(metadata.clone());
+
+        let metadata_2 = super::Metadata::try_from(proto).unwrap();
+
+        assert_eq!(metadata, metadata_2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn changing_asset_id_without_changing_denom_fails_decoding() {
+        let mut metadata = super::Metadata::try_from("upenumbra").unwrap();
+
+        let inner = Arc::get_mut(&mut metadata.inner).unwrap();
+
+        inner.id = super::Id::from_raw_denom("uusd");
+
+        let proto = super::pb::Metadata::from(metadata);
+
+        // This should throw an error, because the asset ID and denom are now inconsistent.
+
+        let _domain_type = super::Metadata::try_from(proto).unwrap();
     }
 }

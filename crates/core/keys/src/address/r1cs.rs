@@ -36,7 +36,7 @@ impl AllocVar<Address, Fq> for AddressVar {
     ) -> Result<Self, SynthesisError> {
         let ns = cs.into();
         let cs = ns.cs();
-        let address: Address = *f()?.borrow();
+        let address: Address = f()?.borrow().to_owned();
 
         let diversified_generator: ElementVar = AllocVar::<Element, Fq>::new_variable(
             cs.clone(),

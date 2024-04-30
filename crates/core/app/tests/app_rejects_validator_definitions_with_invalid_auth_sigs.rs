@@ -1,5 +1,5 @@
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, ValidatorDataReadExt},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{genesis::AppState, server::consensus::Consensus},
@@ -7,10 +7,7 @@ use {
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
     penumbra_proto::DomainType,
-    penumbra_stake::{
-        component::validator_handler::ValidatorDataRead as _, validator::Validator, FundingStreams,
-        GovernanceKey, IdentityKey,
-    },
+    penumbra_stake::{validator::Validator, FundingStreams, GovernanceKey, IdentityKey},
     rand_core::OsRng,
     tap::Tap,
     tracing::{error_span, info, Instrument},

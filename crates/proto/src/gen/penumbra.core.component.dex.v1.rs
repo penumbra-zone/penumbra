@@ -508,8 +508,12 @@ pub struct BatchSwapOutputData {
     #[prost(message, optional, tag = "8")]
     pub trading_pair: ::core::option::Option<TradingPair>,
     /// The starting block height of the epoch for which the batch swap data is valid.
+    #[deprecated]
     #[prost(uint64, tag = "9")]
     pub epoch_starting_height: u64,
+    /// The prefix (epoch, block) of the position where this batch swap occurred.
+    #[prost(uint64, tag = "10")]
+    pub sct_position_prefix: u64,
 }
 impl ::prost::Name for BatchSwapOutputData {
     const NAME: &'static str = "BatchSwapOutputData";
@@ -1168,6 +1172,8 @@ impl ::prost::Name for LiquidityPositionsByPriceRequest {
 pub struct LiquidityPositionsByPriceResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+    #[prost(message, optional, tag = "2")]
+    pub id: ::core::option::Option<PositionId>,
 }
 impl ::prost::Name for LiquidityPositionsByPriceResponse {
     const NAME: &'static str = "LiquidityPositionsByPriceResponse";
@@ -1388,6 +1394,20 @@ pub struct EventPositionClose {
 }
 impl ::prost::Name for EventPositionClose {
     const NAME: &'static str = "EventPositionClose";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventQueuePositionClose {
+    /// The ID of the position queued that is closed for closure.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+}
+impl ::prost::Name for EventQueuePositionClose {
+    const NAME: &'static str = "EventQueuePositionClose";
     const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)

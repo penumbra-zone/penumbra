@@ -25,6 +25,22 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
     /// - An auxilliary index that maps a directed trading pair `A -> B`
     ///   to the aggregate liquidity for B -> A (used in the primary composite key)
     ///
+    /// If we want liquidity rankings for assets adjacent to A, the ranking has to be
+    /// denominated in asset A, since that’s the only way to get commensurability when
+    /// ranking B C D E etc.
+    ///
+    /// There are then two possible amounts to consider for an asset B: amount of A that
+    /// can be sold for B and amount of A that can be bought with B
+    ///
+    /// (1), amount that can be sold (“outbound”) is the wrong thing to use
+    /// (2), amount that can be bought, is intuitively the “opposite” of what we want,
+    ///      since it’s the reverse direction, but is actually the right thing to use as
+    ///      a rough proxy for liquidity
+    ///
+    /// The reason is that (1) can be easily manipulated without any skin in the game, by
+    /// offering to sell a tiny amount of B for A at an outrageous/infinite price.
+    ///
+    ///
     /// # Diagram
     ///                                                                     
     ///    Liquidity index:                                                 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// A destination for a portion of a validator's commission of staking rewards.
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 #[serde(try_from = "pb::FundingStream", into = "pb::FundingStream")]
 pub enum FundingStream {
     ToAddress {
@@ -25,7 +25,7 @@ pub enum FundingStream {
 }
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Recipient {
     Address(Address),
     CommunityPool,
@@ -41,7 +41,7 @@ impl FundingStream {
 
     pub fn recipient(&self) -> Recipient {
         match self {
-            FundingStream::ToAddress { address, .. } => Recipient::Address(*address),
+            FundingStream::ToAddress { address, .. } => Recipient::Address(address.clone()),
             FundingStream::ToCommunityPool { .. } => Recipient::CommunityPool,
         }
     }

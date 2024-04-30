@@ -1,4 +1,5 @@
 use {
+    self::common::ValidatorDataReadExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
     decaf377_rdsa::VerificationKey,
@@ -26,13 +27,13 @@ use {
         DomainType,
     },
     penumbra_shielded_pool::{genesis::Allocation, OutputPlan, SpendPlan},
-    penumbra_stake::{component::validator_handler::ValidatorDataRead, DelegationToken},
+    penumbra_stake::DelegationToken,
     penumbra_transaction::{
         memo::MemoPlaintext, plan::MemoPlan, ActionPlan, TransactionParameters, TransactionPlan,
     },
     rand::Rng,
     rand_core::OsRng,
-    std::collections::BTreeMap,
+    std::{collections::BTreeMap, ops::Deref},
     tap::{Tap, TapFallible},
     tracing::{error_span, info, Instrument},
 };
@@ -203,7 +204,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                 CommunityPoolSpend { value }.into(),
                 CommunityPoolOutput {
                     value,
-                    address: *test_keys::ADDRESS_0,
+                    address: test_keys::ADDRESS_0.deref().clone(),
                 }
                 .into(),
             ],
@@ -232,12 +233,17 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
             actions: vec![
                 proposal,
                 // Next, create a new output of the exact same amount.
-                OutputPlan::new(&mut OsRng, proposal_nft_value, *test_keys::ADDRESS_0).into(),
+                OutputPlan::new(
+                    &mut OsRng,
+                    proposal_nft_value,
+                    test_keys::ADDRESS_0.deref().clone(),
+                )
+                .into(),
             ],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
                 &mut OsRng,
-                MemoPlaintext::blank_memo(*test_keys::ADDRESS_0),
+                MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
             )?),
             detection_data: None,
             transaction_parameters: TransactionParameters {

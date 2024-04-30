@@ -97,7 +97,7 @@ impl server::CeremonyCoordinatorService for CoordinatorService {
             }
         };
         tracing::info!(?amount, ?address, "bid");
-        let (participant, response_rx) = Participant::new(address, streaming);
+        let (participant, response_rx) = Participant::new(address.clone(), streaming);
         self.queue.push(participant, amount).await;
         self.queue
             .inform_one(address)
