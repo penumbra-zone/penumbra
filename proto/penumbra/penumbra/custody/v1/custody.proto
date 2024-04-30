@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package penumbra.custody.v1;
 
+import "penumbra/core/component/governance/v1/governance.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/transaction/v1/transaction.proto";
-import "penumbra/core/component/stake/v1/stake.proto";
-import "penumbra/core/component/governance/v1/governance.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 
 // The custody protocol is used by a wallet client to request authorization for
