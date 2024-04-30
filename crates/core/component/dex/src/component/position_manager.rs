@@ -11,9 +11,12 @@ use penumbra_asset::{asset, Balance};
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::component::position_manager::{
-    base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
-    price_index::PositionByPriceIndex,
+use crate::component::{
+    dex::StateReadExt as _,
+    position_manager::{
+        base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
+        price_index::PositionByPriceIndex,
+    },
 };
 use crate::lp::Reserves;
 use crate::{
@@ -253,8 +256,15 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Add the asset IDs from the new position's trading pair
         // to the candidate set for this block.
-        self.add_recently_accessed_asset(position.phi.pair.asset_1());
-        self.add_recently_accessed_asset(position.phi.pair.asset_2());
+        let routing_params = self.routing_params().await?;
+        self.add_recently_accessed_asset(
+            position.phi.pair.asset_1(),
+            routing_params.fixed_candidates.clone(),
+        );
+        self.add_recently_accessed_asset(
+            position.phi.pair.asset_2(),
+            routing_params.fixed_candidates,
+        );
 
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
@@ -269,12 +279,21 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// This ensures that assets associated with recently active positions
     /// will be eligible for arbitrage if mispriced positions are opened.
     #[tracing::instrument(level = "debug", skip_all)]
-    fn add_recently_accessed_asset(&mut self, asset_id: asset::Id) {
+    fn add_recently_accessed_asset(
+        &mut self,
+        asset_id: asset::Id,
+        fixed_candidates: Arc<Vec<asset::Id>>,
+    ) {
         let mut assets = self.recently_accessed_assets();
 
         // Limit the number of recently accessed assets to prevent blowing
         // up routing time.
         if assets.len() >= RECENTLY_ACCESSED_ASSET_LIMIT {
+            return;
+        }
+
+        // If the asset is already in the fixed candidate list, don't insert it.
+        if fixed_candidates.contains(&asset_id) {
             return;
         }
 

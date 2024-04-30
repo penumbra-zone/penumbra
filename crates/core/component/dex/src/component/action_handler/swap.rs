@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
@@ -68,8 +70,12 @@ impl ActionHandler for Swap {
             .await;
 
         // Mark the assets for the swap's trading pair as accessed during this block.
-        state.add_recently_accessed_asset(swap.body.trading_pair.asset_1());
-        state.add_recently_accessed_asset(swap.body.trading_pair.asset_2());
+        let fixed_candidates = Arc::new(dex_params.fixed_candidates.clone());
+        state.add_recently_accessed_asset(
+            swap.body.trading_pair.asset_1(),
+            fixed_candidates.clone(),
+        );
+        state.add_recently_accessed_asset(swap.body.trading_pair.asset_2(), fixed_candidates);
 
         metrics::histogram!(crate::component::metrics::DEX_SWAP_DURATION)
             .record(swap_start.elapsed());
