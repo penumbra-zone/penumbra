@@ -72,7 +72,6 @@ tendermint = {workspace = true}
 thiserror = {workspace = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
-tokio = {workspace = true}
 
 [dev-dependencies]
 proptest = {workspace = true}
