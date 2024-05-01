@@ -152,7 +152,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         for value in self.calculate_balance().provided() {
             self.change_outputs.insert(
                 value.asset_id,
-                OutputPlan::new(&mut OsRng, value, change_address),
+                OutputPlan::new(&mut OsRng, value, change_address.clone()),
             );
         }
     }
@@ -699,6 +699,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         view: &mut V,
         source: AddressIndex,
     ) -> anyhow::Result<TransactionPlan> {
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 0. Initialize and Fetch Basic Parameters
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+
         // Gather all the information needed from the view service.
         let app_params = view.app_params().await?;
         let chain_id = app_params.chain_id.clone();
@@ -710,7 +714,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Change address represents the sender's address.
         let change_address = view.address_by_index(source).await?.clone();
 
-        // Query voting notes.
+        // Collect all available notes that can be used for voting in governance decisions,
+        // by quering the view service.
         let mut voting_notes = Vec::new();
         let (_spendable_requests, voting_requests) = self.notes_requests(source);
         for request in voting_requests {
@@ -718,13 +723,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             voting_notes.push(notes);
         }
 
-        // Process the voting notes to add the required votes to the planner.
+        // Process the voting notes to be added to the planner.
         let _ = self.add_votes(voting_notes);
 
-        // Initialize a structure to hold notes sorted by asset ID.
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 1. Query spendable notes based on `required` balances
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        // Initialize a structure to relevant hold notes sorted by asset ID.
         let mut notes_by_asset_id: Vec<BTreeMap<asset::Id, Vec<SpendableNoteRecord>>> = Vec::new();
 
-        // Calculate the current balance and create an iterator over required items.
+        // 1.1 Calculate the current balance and create an iterator over required items.
         let balance = self.calculate_balance();
         let mut required_iterator = balance.required();
         while let Some(required) = required_iterator.next() {
@@ -744,7 +753,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             notes_by_asset_id.push(new_map);
         }
 
-        // Check if any staking token notes need to be added for fees, and add them if necessary.
+        // 1.2 Check if any staking token notes need to be added for fees, and add them if necessary.
         for notes in notes_by_asset_id.clone() {
             if !notes.contains_key(&*STAKING_TOKEN_ASSET_ID) {
                 let mut new_map = BTreeMap::new();
@@ -765,7 +774,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
-        // Handle cases where no staking token notes were found at all.
+        // 1.3 Handle cases where no staking token notes were found at all.
         if notes_by_asset_id.is_empty() {
             let mut new_map = BTreeMap::new();
             let records: Vec<SpendableNoteRecord> = view
@@ -783,6 +792,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             notes_by_asset_id.push(new_map);
         }
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 2. Process `provided` balances
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+
         // Calculate initial transaction fees.
         // TODO(Tal): check that fees are NOT zero!
         let mut fee: Fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
@@ -798,6 +811,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // Need to account to balance after applying fees.
             self.balance = self.calculate_balance_with_fees(fee);
         }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 3. Process `required` balances
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Save the original dimension of the number of required items that need to be proccessed.
         let mut original_dimension = self.calculate_balance_with_fees(fee).dimension();
@@ -856,6 +873,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 4. Assemble the `Transaction`
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+
         // Estimate the final fee to be added to the planner.
         let fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
 
@@ -888,6 +909,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.plan
             .populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 5. Balancing sanity checks
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction.
         if self.actions.is_empty() {
@@ -903,6 +928,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         }
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 6. Reset planner
+        /////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Clear the contents of the planner, which can be re-used.
         self.balance = Balance::zero();
@@ -983,7 +1012,7 @@ mod tests {
             );
 
             // Recompute the change outputs, without accounting for fees.
-            planner.refresh_change(sender);
+            planner.refresh_change(sender.clone());
 
             // Now re-estimate the fee of the updated transaction and adjust the change if possible.
             fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
@@ -1070,7 +1099,7 @@ mod tests {
             );
 
             // Recompute the change outputs, without accounting for fees.
-            planner.refresh_change(sender);
+            planner.refresh_change(sender.clone());
 
             // Now re-estimate the fee of the updated transaction and adjust the change if possible.
             fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
