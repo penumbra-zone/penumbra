@@ -1,6 +1,6 @@
-# N.B. the RUST_VERSION should match MSRV in crates/bin/pd/Cargo.toml
-ARG RUST_VERSION=1.75.0
-FROM docker.io/rust:${RUST_VERSION}-slim-bookworm AS build-env
+# We use the latest stable version of the official Rust container,
+# delegating to the `rust-toolchain.toml` file to pick a specific Rust toolchain.
+FROM docker.io/rust:1-slim-bookworm AS build-env
 
 # Install build dependencies. These packages should match what's recommended on
 # https://guide.penumbra.zone/main/pcli/install.html
@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/penumbra
 # Add rust dependency lockfiles first, to cache downloads.
-COPY Cargo.lock Cargo.toml .
+COPY Cargo.lock Cargo.toml rust-toolchain.toml .
+
 # If any rust code changed, the cache will break on copying `crates/`.
 # Ideally we'd copy in all Cargo.toml files first, fetch, then copy crates.
 COPY crates ./crates
@@ -21,9 +22,10 @@ COPY crates ./crates
 COPY assets ./assets
 # Copy in summonerd contribution orchestrator.
 COPY tools ./tools
+# Download all workspace dependencies specified in Cargo.toml
 RUN cargo fetch
-COPY . .
 # Build Penumbra binaries
+COPY . .
 RUN cargo build --release
 
 # Runtime image.

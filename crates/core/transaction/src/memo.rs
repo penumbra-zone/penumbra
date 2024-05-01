@@ -66,7 +66,7 @@ impl MemoPlaintext {
     }
 
     pub fn return_address(&self) -> Address {
-        self.return_address
+        self.return_address.clone()
     }
 
     pub fn text(&self) -> &str {
@@ -284,7 +284,7 @@ mod tests {
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
         let memo = MemoPlaintext {
-            return_address: dest,
+            return_address: dest.clone(),
             text: String::from("Hi"),
         };
         let memo_key = PayloadKey::random_key(&mut OsRng);
@@ -331,7 +331,7 @@ mod tests {
 
         // On the sender side, we have to encrypt the memo to put into the transaction-level,
         // and also the memo key to put on the action-level (output).
-        let memo = MemoPlaintext::new(dest, "Hello, friend".into())?;
+        let memo = MemoPlaintext::new(dest.clone(), "Hello, friend".into())?;
         let memo_key = PayloadKey::random_key(&mut OsRng);
         let ciphertext =
             MemoCiphertext::encrypt(memo_key.clone(), &memo).expect("can encrypt memo");

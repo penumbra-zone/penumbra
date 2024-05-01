@@ -129,8 +129,9 @@ pub(crate) mod engine {
         pub(crate) fn key(from: &asset::Id, a_from_b: Amount) -> [u8; 55] {
             let mut key = [0u8; 55];
             key[0..7].copy_from_slice(b"dex/ra/");
-            key[7..39].copy_from_slice(&from.to_bytes());
-            key[39..55].copy_from_slice(&a_from_b.to_be_bytes());
+            key[7..32 + 7].copy_from_slice(&from.to_bytes());
+            // Use the complement of the amount to ensure that the keys are ordered in descending order.
+            key[32 + 7..32 + 7 + 16].copy_from_slice(&(!a_from_b).to_be_bytes());
             key
         }
 

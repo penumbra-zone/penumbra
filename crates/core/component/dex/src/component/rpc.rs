@@ -362,8 +362,12 @@ impl QueryService for Server {
                     anyhow::Ok(position)
                 }
             })
-            .map_ok(|position| LiquidityPositionsByPriceResponse {
-                data: Some(position.into()),
+            .map_ok(|position| {
+                let id = position.id();
+                LiquidityPositionsByPriceResponse {
+                    data: Some(position.into()),
+                    id: Some(id.into()),
+                }
             })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::internal(format!("error retrieving positions: {:#}", e))

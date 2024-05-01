@@ -123,11 +123,16 @@ fn check_satisfaction(
         anyhow::bail!("claim fee did not match public input");
     }
 
-    let block: u64 = private.state_commitment_proof.position().block().into();
-    let note_commitment_block_height: u64 = public.output_data.epoch_starting_height + block;
-    if note_commitment_block_height != public.output_data.height {
-        anyhow::bail!("swap commitment height did not match public input");
-    }
+    anyhow::ensure!(
+        private.state_commitment_proof.position().block()
+            == public.output_data.sct_position_prefix.block(),
+        "scm block did not match batch swap"
+    );
+    anyhow::ensure!(
+        private.state_commitment_proof.position().epoch()
+            == public.output_data.sct_position_prefix.epoch(),
+        "scm epoch did not match batch swap"
+    );
 
     if private.swap_plaintext.trading_pair != public.output_data.trading_pair {
         anyhow::bail!("trading pair did not match public input");
@@ -255,12 +260,12 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
 
         // Validate the swap commitment's height matches the output data's height (i.e. the clearing price height).
-        let block = position_var.block()?;
-        let note_commitment_block_height_var =
-            output_data_var.epoch_starting_height.clone() + block;
         output_data_var
-            .height
-            .enforce_equal(&note_commitment_block_height_var)?;
+            .block_within_epoch
+            .enforce_equal(&position_var.block()?)?;
+        output_data_var
+            .epoch
+            .enforce_equal(&position_var.epoch()?)?;
 
         // Validate that the output data's trading pair matches the note commitment's trading pair.
         output_data_var
@@ -359,7 +364,7 @@ impl DummyWitness for SwapClaimCircuit {
             unfilled_2: Amount::from(10u64),
             height: 0,
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: 0,
+            sct_position_prefix: Default::default(),
         };
         let note_blinding_1 = Fq::from(1);
         let note_blinding_2 = Fq::from(1);
@@ -642,7 +647,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+            sct_position_prefix: Default::default(),
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -774,7 +779,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * position.epoch()).into(),
+            sct_position_prefix: Default::default()
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 
@@ -874,7 +879,7 @@ mod tests {
             unfilled_2: test_bsod.unfilled_2,
             height: height.into(),
             trading_pair: swap_plaintext.trading_pair,
-            epoch_starting_height: (epoch_duration * dummy_position.epoch()).into(),
+            sct_position_prefix: Default::default()
         };
         let (lambda_1, lambda_2) = output_data.pro_rata_outputs((delta_1_i, delta_2_i));
 

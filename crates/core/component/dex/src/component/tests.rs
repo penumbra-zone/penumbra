@@ -632,7 +632,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0, 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0, routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -740,7 +740,7 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
         .unwrap();
     let routing_params = state.routing_params().await.unwrap();
     state
-        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), 0, routing_params)
+        .handle_batch_swaps(trading_pair, swap_flow, 0u32.into(), routing_params)
         .await
         .expect("unable to process batch swaps");
 
@@ -756,8 +756,8 @@ async fn swap_execution_tests() -> anyhow::Result<()> {
             unfilled_1: 0u32.into(),
             unfilled_2: 0u32.into(),
             height: 0,
-            epoch_starting_height: 0,
             trading_pair,
+            sct_position_prefix: Default::default(),
         }
     );
 
@@ -866,6 +866,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 /// The issue was that we did not treat the spill price as a strict
 /// upper bound, which is necessary to ensure that the arbitrage logic
 /// terminates.
+///
+/// This test also ensures that the created `SwapExecution` has the
+///
+/// *Arbitrage execution record bug:*
+/// This test also ensures that the created `SwapExecution` has the
+/// correct data. (See #3790).
 async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
@@ -953,5 +959,187 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     tracing::info!(?arb_execution, "fetched arb execution!");
+
+    // Validate that the arb execution has the correct data:
+    // Validate the traces.
+    assert_eq!(
+        arb_execution.traces,
+        vec![
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(110u32.into()),
+                Value {
+                    amount: 1099999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ],
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(100u32.into()),
+                Value {
+                    amount: 999999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ]
+        ]
+    );
+
+    // Validate the input/output of the arb execution:
+    assert_eq!(
+        arb_execution.input,
+        Value {
+            amount: 2000000u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+    assert_eq!(
+        arb_execution.output,
+        Value {
+            amount: 2099998u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+/// Confirms the ordering of routable assets returns the assets
+/// with the most liquidity first, as discovered in https://github.com/penumbra-zone/penumbra/issues/4189
+/// For the purposes of this test, it is important to remember
+/// that for a trade routing from A -> *, candidate liquidity is
+/// the amount of A purchaseable with the candidate assets, i.e. the amount of
+/// A in the reserves for any A <-> * positions.
+async fn check_routable_asset_ordering() -> anyhow::Result<()> {
+    let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
+    let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+    let mut state_tx = state.try_begin_transaction().unwrap();
+
+    let penumbra = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+    let test_usd = asset::Cache::with_known_assets()
+        .get_unit("test_usd")
+        .unwrap();
+    let test_btc = asset::Cache::with_known_assets()
+        .get_unit("test_btc")
+        .unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+    let penumbra_usd = DirectedTradingPair::new(penumbra.id(), test_usd.id());
+
+    let reserves_1 = Reserves {
+        // 0 penumbra
+        r1: 0u64.into(),
+        // 120,000 test_usd
+        r2: 120_000u64.into(),
+    };
+
+    let position_1 = Position::new(
+        OsRng,
+        penumbra_usd,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_1,
+    );
+
+    state_tx.open_position(position_1).await.unwrap();
+
+    let penumbra_gn = DirectedTradingPair::new(penumbra.id(), gn.id());
+
+    let reserves_2 = Reserves {
+        // 130,000 penumbra
+        r1: 130_000u64.into(),
+        // 0 gn
+        r2: 0u64.into(),
+    };
+
+    let position_2 = Position::new(
+        OsRng,
+        penumbra_gn,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_2,
+    );
+
+    state_tx.open_position(position_2).await.unwrap();
+
+    let penumbra_btc = DirectedTradingPair::new(penumbra.id(), test_btc.id());
+
+    let reserves_3 = Reserves {
+        // 100,000 penumbra
+        r1: 100_000u64.into(),
+        // 50,000 test_btc
+        r2: 50_000u64.into(),
+    };
+
+    let position_3 = Position::new(
+        OsRng,
+        penumbra_btc,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_3,
+    );
+
+    state_tx.open_position(position_3).await.unwrap();
+
+    let btc_gm = DirectedTradingPair::new(test_btc.id(), gm.id());
+
+    let reserves_4 = Reserves {
+        // 100,000 test_btc
+        r1: 100_000u64.into(),
+        // 100,000 gm
+        r2: 100_000u64.into(),
+    };
+
+    let position_4 = Position::new(
+        OsRng,
+        btc_gm,
+        0u32,
+        1_200_000u64.into(),
+        1_000_000u64.into(),
+        reserves_4,
+    );
+
+    state_tx.open_position(position_4).await.unwrap();
+    state_tx.apply();
+
+    // Expected: GN reserves > BTC reserves, and USD/gm should not appear
+
+    // Find routable assets starting at the Penumbra asset.
+    let routable_assets: Vec<_> = state
+        .ordered_routable_assets(&penumbra.id())
+        .collect::<Vec<_>>()
+        .await;
+    let routable_assets = routable_assets
+        .into_iter()
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    assert!(
+        routable_assets.len() == 2,
+        "expected 2 routable assets, got {}",
+        routable_assets.len()
+    );
+
+    let first = routable_assets[0];
+    let second = routable_assets[1];
+    assert!(
+        first == gn.id(),
+        "expected GN ({}) to be the first routable asset, got {}",
+        gn.id(),
+        first.clone()
+    );
+
+    assert!(
+        second == test_btc.id(),
+        "expected BTC ({}) to be the second routable asset, got {}",
+        test_btc.id(),
+        second.clone()
+    );
+
     Ok(())
 }

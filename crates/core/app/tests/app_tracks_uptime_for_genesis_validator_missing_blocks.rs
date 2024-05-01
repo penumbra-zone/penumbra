@@ -1,7 +1,5 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::Context,
     cnidarium::TempStorage,
     penumbra_app::{genesis::AppState, server::consensus::Consensus},
@@ -10,6 +8,8 @@ use {
     tap::Tap,
     tracing::{error_span, trace, Instrument},
 };
+
+mod common;
 
 #[tokio::test]
 async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Result<()> {

@@ -139,7 +139,7 @@ impl CeremonyCmd {
                     bid, address
                 );
 
-                handle_bid(app, *coordinator_address, index, bid).await?;
+                handle_bid(app, coordinator_address.clone(), index, bid).await?;
 
                 println!("connecting to coordinator...");
                 // After we bid, we need to wait a couple of seconds just for the transaction to be

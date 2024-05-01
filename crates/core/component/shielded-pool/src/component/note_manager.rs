@@ -52,7 +52,7 @@ pub trait NoteManager: StateWrite {
             .as_bytes()[0..32]
             .try_into()?;
 
-        let note = Note::from_parts(*address, value, Rseed(rseed_bytes))?;
+        let note = Note::from_parts(address.clone(), value, Rseed(rseed_bytes))?;
         self.add_note_payload(note.payload(), source).await;
 
         Ok(())

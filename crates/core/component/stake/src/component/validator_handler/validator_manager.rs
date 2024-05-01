@@ -8,9 +8,15 @@ use {
             },
             StateReadExt as _, StateWriteExt as _,
         },
+        event,
         rate::{BaseRateData, RateData},
         state_key,
-        validator::{self, BondingState::*, State, State::*, Validator},
+        validator::{
+            self,
+            BondingState::*,
+            State::{self, *},
+            Validator,
+        },
         DelegationToken, IdentityKey, Penalty, Uptime,
     },
     anyhow::{ensure, Result},
@@ -19,8 +25,10 @@ use {
     penumbra_asset::asset,
     penumbra_num::Amount,
     penumbra_proto::StateWriteProto,
-    penumbra_sct::component::clock::{EpochManager, EpochRead},
-    penumbra_sct::component::StateReadExt as _,
+    penumbra_sct::component::{
+        clock::{EpochManager, EpochRead},
+        StateReadExt as _,
+    },
     penumbra_shielded_pool::component::AssetRegistry,
     std::collections::BTreeMap,
     tendermint::abci::types::Misbehavior,
@@ -83,6 +91,8 @@ pub trait ValidatorManager: StateWrite {
     /// Execute a legal state transition, updating the validator records and
     /// implementing the necessary side effects.
     ///
+    /// Returns a `(old_state, new_state)` tuple, corresponding to the executed transition.
+    ///
     /// # Errors
     /// This method errors on illegal state transitions, but will otherwise try to do what
     /// you ask it to do. It is the caller's responsibility to ensure that the state transitions
@@ -94,7 +104,7 @@ pub trait ValidatorManager: StateWrite {
         &mut self,
         identity_key: &IdentityKey,
         new_state: validator::State,
-    ) -> Result<()> {
+    ) -> Result<(State, State)> {
         let old_state = self
             .get_validator_state(identity_key)
             .await?
@@ -118,7 +128,7 @@ pub trait ValidatorManager: StateWrite {
         identity_key: &IdentityKey,
         old_state: validator::State,
         new_state: validator::State,
-    ) -> Result<()> {
+    ) -> Result<(State, State)> {
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
         let current_height = self.get_block_height().await?;
@@ -294,7 +304,7 @@ pub trait ValidatorManager: StateWrite {
 
         Self::state_machine_metrics(old_state, new_state);
 
-        Ok(())
+        Ok((old_state, new_state))
     }
 
     #[instrument(skip(self))]
@@ -649,8 +659,20 @@ pub trait ValidatorManager: StateWrite {
                 )
             })?;
 
-        self.set_validator_state(&validator.identity_key, validator::State::Tombstoned)
-            .await
+        let (old_state, new_state) = self
+            .set_validator_state(&validator.identity_key, validator::State::Tombstoned)
+            .await?;
+
+        if let (Inactive | Jailed | Active, Tombstoned) = (old_state, new_state) {
+            let current_height = self.get_block_height().await?;
+            self.record_proto(event::tombstone_validator(
+                current_height,
+                validator.identity_key.clone(),
+                evidence,
+            ));
+        }
+
+        Ok(())
     }
 
     fn state_machine_metrics(old_state: validator::State, new_state: validator::State) {

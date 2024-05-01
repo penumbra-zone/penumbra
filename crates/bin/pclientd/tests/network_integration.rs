@@ -6,7 +6,7 @@
 //! where no tokens have been delegated, and the address with index 0
 //! was distributedp 1cube.
 
-use std::process::Command as StdCommand;
+use std::{ops::Deref, process::Command as StdCommand};
 
 use anyhow::Context;
 use assert_cmd::cargo::CommandCargoExt;
@@ -120,7 +120,7 @@ async fn transaction_send_flow() -> anyhow::Result<()> {
     let plan = view_client
         .transaction_planner(TransactionPlannerRequest {
             outputs: vec![tpr::Output {
-                address: Some((*test_keys::ADDRESS_1).into()),
+                address: Some(test_keys::ADDRESS_1.deref().clone().into()),
                 value: Some(
                     Value {
                         amount: 1_000_000u64.into(),
@@ -304,7 +304,7 @@ async fn swap_claim_flow() -> anyhow::Result<()> {
                     amount: Some(num::Amount { lo: 0, hi: 0 }),
                     asset_id: None,
                 }),
-                claim_address: Some((*test_keys::ADDRESS_1).into()),
+                claim_address: Some(test_keys::ADDRESS_1.deref().clone().into()),
             }],
             ..Default::default()
         })

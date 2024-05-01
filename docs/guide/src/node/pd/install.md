@@ -4,18 +4,19 @@ Download prebuilt binaries from the [Penumbra releases page on Github](https://g
 Make sure to use the most recent version available, as the version of `pd` must
 match the software currently running on the network.
 
-Make sure to choose the correct platform for your machine. After downloading the `.tar.xz` file,
+Make sure to choose the correct platform for your machine. After downloading the `.tar.gz` file,
 extract it, and copy its contents to your `$PATH`. For example:
 
 ```
-curl -sSfL -O https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../../penumbra_version.md }}/pd-x86_64-unknown-linux-gnu.tar.xz
-unxz pd-x86_64-unknown-linux-gnu.tar.xz
-tar -xf pd-x86_64-unknown-linux-gnu.tar
+curl -sSfL -O https://github.com/penumbra-zone/penumbra/releases/download/{{ #include ../../penumbra_version.md }}/pd-x86_64-unknown-linux-gnu.tar.gz
+tar -xf pd-x86_64-unknown-linux-gnu.tar.gz
 sudo mv pd-x86_64-unknown-linux-gnu/pd /usr/local/bin/
 
 # confirm the pd binary is installed by running:
 pd --version
 ```
+
+There's also a one-liner install script available on the release page, which will install `pd` to `$HOME/.cargo/bin/`.
 As of v0.64.1 (released 2023-12-12), we build Linux binaries on Ubuntu 22.04. If these binaries don't work for you out of the box,
 you'll need to [build from source](../../dev/build.md), or use the container images.
 

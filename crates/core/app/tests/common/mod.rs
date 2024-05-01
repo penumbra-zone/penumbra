@@ -5,7 +5,7 @@
 pub use {
     self::{
         temp_storage_ext::TempStorageExt, test_node_builder_ext::BuilderExt,
-        test_node_ext::TestNodeExt,
+        test_node_ext::TestNodeExt, validator_read_ext::ValidatorDataReadExt,
     },
     penumbra_test_subscriber::set_tracing_subscriber,
 };
@@ -22,3 +22,9 @@ mod temp_storage_ext;
 ///
 /// See [`TestNodeExt`].
 mod test_node_ext;
+
+/// Helpful additions for reading validator information.
+///
+/// See [`ValidatorDataRead`][penumbra_stake::component::validator_handler::ValidatorDataRead],
+/// and [`ValidatorDataReadExt`].
+mod validator_read_ext;
