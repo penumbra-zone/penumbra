@@ -1,17 +1,14 @@
-//! Contains functions related to the migration script of Testnet72
+//! Contains functions related to the migration script of Testnet74
 
 use anyhow;
 use cnidarium::{EscapedByteSlice, Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use futures::StreamExt as _;
 use jmt::RootHash;
-use penumbra_app::app::StateReadExt as _;
-use penumbra_app::SUBSTORE_PREFIXES;
+use penumbra_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
 use penumbra_dex::SwapExecution;
 use penumbra_num::Amount;
-use penumbra_proto::penumbra::core::component as pb;
-use penumbra_proto::StateWriteProto;
+use penumbra_proto::{penumbra::core::component as pb, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
-use prost::Message;
 use std::path::PathBuf;
 
 use crate::testnet::generate::TestnetConfig;
@@ -19,11 +16,10 @@ use crate::testnet::generate::TestnetConfig;
 /// Updates arb execution output amounts to include the input amount instead
 /// of reporting only profit (see #3790).
 async fn fix_arb_execution_outputs(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
-    let mut stream = delta.prefix_raw("dex/arb_execution/");
+    let mut stream = delta.prefix_proto("dex/arb_execution/");
     while let Some(r) = stream.next().await {
-        let (key, swap_ex_bytes) = r?;
-        let mut swap_ex: SwapExecution =
-            pb::dex::v1::SwapExecution::decode(swap_ex_bytes.as_slice())?.try_into()?;
+        let (key, swap_ex_proto): (String, pb::dex::v1::SwapExecution) = r?;
+        let mut swap_ex: SwapExecution = swap_ex_proto.try_into()?;
         swap_ex.output = swap_ex
             .input
             .asset_id
@@ -34,6 +30,11 @@ async fn fix_arb_execution_outputs(delta: &mut StateDelta<Snapshot>) -> anyhow::
 }
 
 /// Update the ordering of liquidity position indices to return in descending order (see #4189)
+///
+/// Lookups for liquidity positions based on starting asset were ordered backwards
+/// and returning the positions with the least liquidity first. This migration
+/// needs to modify the keys stored under the JMT `dex/ra/` prefix key to reverse
+/// the ordering of the existing data.
 async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     let prefix_key = "dex/ra/".as_bytes();
     tracing::trace!(prefix_key = ?EscapedByteSlice(&prefix_key), "updating liquidity position indices");
@@ -68,15 +69,20 @@ async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
 }
 
 /// Run the full migration, given an export path and a start time for genesis.
+///
+/// This migration script is responsible for:
+///
+/// - Updating the ordering of liquidity position indices to return in descending order (see #4189)
+/// - Updating arb execution output amounts to include the input amount instead of reporting only profit (see #3790)
+///
+/// Affected JMT key prefixes:
+///
+/// - `dex/ra/`
+/// - `dex/arb_execution/`
 pub async fn migrate(
     path_to_export: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
-    // Lookups for liquidity positions based on starting asset were ordered backwards
-    // and returning the positions with the least liquidity first. This migration
-    // needs to modify the keys stored under the JMT `dex/ra/` prefix key to reverse
-    // the ordering of the existing data.
-
     // Setup:
     let rocksdb_dir = path_to_export.join("rocksdb");
     let storage = Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
