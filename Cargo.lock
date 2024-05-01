@@ -5506,7 +5506,6 @@ dependencies = [
  "tap",
  "tendermint",
  "thiserror",
- "tokio",
  "tonic",
  "tracing",
 ]
