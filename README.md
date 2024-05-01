@@ -41,7 +41,13 @@ For a high-level view of current work-in-progress and future items, check out ou
 [protobuf]: https://buf.build/penumbra-zone/penumbra
 [tm-install]: https://github.com/tendermint/tendermint/blob/master/docs/introduction/install.md#from-source
 
-# License
+
+## Security
+If you believe you've found a security-related issue with Penumbra,
+please disclose responsibly by contacting the Penumbra Labs team at
+security@penumbralabs.xyz.
+
+## License
 
 By contributing to penumbra you agree that your contributions will be licensed
 under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
@@ -50,4 +56,3 @@ under the terms of both the [LICENSE-Apache-2.0](LICENSE-Apache-2.0) and the
 If you're using penumbra you are free to choose one of the provided licenses:
 
 `SPDX-License-Identifier: MIT OR Apache-2.0`
-
