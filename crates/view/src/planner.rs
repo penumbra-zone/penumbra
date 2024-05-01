@@ -11,7 +11,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use penumbra_asset::{asset, Balance, Value};
+use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID, STAKING_TOKEN_DENOM};
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
 use penumbra_auction::auction::{
@@ -554,6 +554,77 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Add votes to the planner.
+    #[instrument(skip(self, voting_notes))]
+    pub fn add_votes(
+        &mut self,
+        voting_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+    ) -> Result<()> {
+        for (
+            records,
+            (
+                proposal,
+                VoteIntent {
+                    start_position,
+                    vote,
+                    rate_data,
+                    ..
+                },
+            ),
+        ) in voting_notes
+            .into_iter()
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .zip(mem::take(&mut self.vote_intents).into_iter())
+        {
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
+
+            for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                    continue;
+                };
+                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.push(
+                        SpendPlan::new(&mut OsRng, record.note.clone(), record.position).into(),
+                    );
+                }
+
+                self.delegator_vote_precise(
+                    proposal,
+                    start_position,
+                    vote,
+                    record.note,
+                    record.position,
+                    unbonded_amount,
+                );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                anyhow::bail!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                );
+            }
+        }
+
+        Ok(())
+    }
+
     /// Initiates a Dutch auction using protocol-controlled liquidity.
     #[instrument(skip(self))]
     pub fn dutch_auction_schedule(
@@ -637,7 +708,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.actions = self.plan.actions.clone();
 
         // Change address represents the sender's address.
-        let change_address = view.address_by_index(source).await?;
+        let change_address = view.address_by_index(source).await?.clone();
 
         // Query voting notes.
         let mut voting_notes = Vec::new();
@@ -647,106 +718,17 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             voting_notes.push(notes);
         }
 
-        // Add the required votes to the planner
-        for (
-            records,
-            (
-                proposal,
-                VoteIntent {
-                    start_position,
-                    vote,
-                    rate_data,
-                    ..
-                },
-            ),
-        ) in voting_notes
-            .into_iter()
-            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
-            .zip(mem::take(&mut self.vote_intents).into_iter())
-        {
-            // Keep track of whether we successfully could vote on this proposal
-            let mut voted = false;
+        // Process the voting notes to add the required votes to the planner.
+        let _ = self.add_votes(voting_notes);
 
-            for (record, identity_key) in records {
-                // Vote with precisely this note on the proposal, computing the correct exchange
-                // rate for self-minted vote receipt tokens using the exchange rate of the validator
-                // at voting start time. If the validator was not active at the start of the
-                // proposal, the vote will be rejected by stateful verification, so skip the note
-                // and continue to the next one.
-                let Some(rate_data) = rate_data.get(&identity_key) else {
-                    continue;
-                };
-                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
+        // Initialize a structure to hold notes sorted by asset ID.
+        let mut notes_by_asset_id: Vec<BTreeMap<asset::Id, Vec<SpendableNoteRecord>>> = Vec::new();
 
-                // If the delegation token is unspent, "roll it over" by spending it (this will
-                // result in change sent back to us). This unlinks nullifiers used for voting on
-                // multiple non-overlapping proposals, increasing privacy.
-                if record.height_spent.is_none() {
-                    self.push(
-                        SpendPlan::new(&mut OsRng, record.note.clone(), record.position).into(),
-                    );
-                }
-
-                self.delegator_vote_precise(
-                    proposal,
-                    start_position,
-                    vote,
-                    record.note,
-                    record.position,
-                    unbonded_amount,
-                );
-
-                voted = true;
-            }
-
-            if !voted {
-                // If there are no notes to vote with, return an error, because otherwise the user
-                // would compose a transaction that would not satisfy their intention, and would
-                // silently eat the fee.
-                anyhow::bail!(
-                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
-                    proposal
-                );
-            }
-        }
-
-        // Check enum for voting-based action
-        let mut is_voting = false;
-        for action in self.actions.iter() {
-            if matches!(action, ActionPlan::Spend(_)) {
-                is_voting = true;
-            }
-        }
-
-        // Check enum for swap-claim based action
-        let mut is_swap_claim = false;
-        for action in self.actions.iter() {
-            if matches!(action, ActionPlan::SwapClaim(_)) {
-                is_swap_claim = true;
-            }
-        }
-
-        let mut notes_by_asset_id = BTreeMap::new();
-
-        // Cache the balance calculations to avoid multiple calls
+        // Calculate the current balance and create an iterator over required items.
         let balance = self.calculate_balance();
-        let mut required_iter = balance.required().peekable();
-        let mut provided_iter = balance.provided().peekable();
-
-        // Determine which iterator to use based on the presence of elements
-        let balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
-            if required_iter.peek().is_some() {
-                Box::new(required_iter)
-            } else if provided_iter.peek().is_some() {
-                Box::new(provided_iter)
-            } else {
-                // Handle the case where neither iterator has elements with empty iterator
-                Box::new(std::iter::empty::<penumbra_asset::Value>())
-                    as Box<dyn Iterator<Item = _> + Send>
-            };
-
-        for required in balance_iter {
-            // Find all the notes of this asset in the source account.
+        let mut required_iterator = balance.required();
+        while let Some(required) = required_iterator.next() {
+            let mut new_map = BTreeMap::new();
             let records: Vec<SpendableNoteRecord> = view
                 .notes(NotesRequest {
                     include_spent: false,
@@ -755,62 +737,82 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                     amount_to_spend: None,
                 })
                 .await?;
-
-            notes_by_asset_id.insert(
+            new_map.insert(
                 required.asset_id,
                 Self::prioritize_and_filter_spendable_notes(records),
             );
+            notes_by_asset_id.push(new_map);
+        }
+
+        // Check if any staking token notes need to be added for fees, and add them if necessary.
+        for notes in notes_by_asset_id.clone() {
+            if !notes.contains_key(&*STAKING_TOKEN_ASSET_ID) {
+                let mut new_map = BTreeMap::new();
+                let records: Vec<SpendableNoteRecord> = view
+                    .notes(NotesRequest {
+                        include_spent: false,
+                        asset_id: Some(STAKING_TOKEN_DENOM.id().into()),
+                        address_index: Some(source.into()),
+                        amount_to_spend: None,
+                    })
+                    .await?;
+                new_map.insert(
+                    STAKING_TOKEN_DENOM.id().into(),
+                    Self::prioritize_and_filter_spendable_notes(records),
+                );
+                notes_by_asset_id.push(new_map);
+                break;
+            }
+        }
+
+        // Handle cases where no staking token notes were found at all.
+        if notes_by_asset_id.is_empty() {
+            let mut new_map = BTreeMap::new();
+            let records: Vec<SpendableNoteRecord> = view
+                .notes(NotesRequest {
+                    include_spent: false,
+                    asset_id: Some(STAKING_TOKEN_DENOM.id().into()),
+                    address_index: Some(source.into()),
+                    amount_to_spend: None,
+                })
+                .await?;
+            new_map.insert(
+                STAKING_TOKEN_DENOM.id().into(),
+                Self::prioritize_and_filter_spendable_notes(records),
+            );
+            notes_by_asset_id.push(new_map);
         }
 
         // Calculate initial transaction fees.
-        let mut fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
+        // TODO(Tal): check that fees are NOT zero!
+        let mut fee: Fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
+
+        // Add output notes to the planner.
+        while let Some(_required) = self.calculate_balance().provided().next() {
+            // Recompute the change outputs, without accounting for fees.
+            self.refresh_change(change_address.clone());
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
+
+            // Need to account to balance after applying fees.
+            self.balance = self.calculate_balance_with_fees(fee);
+        }
+
+        // Save the original dimension of the number of required items that need to be proccessed.
+        let mut original_dimension = self.calculate_balance_with_fees(fee).dimension();
 
         // Add spends and change outputs as required to balance the transaction, using the spendable
         // notes provided. It is the caller's responsibility to ensure that the notes are the result of
         // collected responses to the requests generated by an immediately preceding call to
         // [`Planner::note_requests`].
         let mut iterations = 0usize;
-
-        // Cache the balance calculations to avoid multiple calls
-        let balance = self.calculate_balance_with_fees(fee);
-        let mut required_iter = balance.required().peekable();
-        let mut provided_iter = balance.provided().peekable();
-
-        // Determine which iterator to use based on the presence of elements
-        let mut balance_iter: Box<dyn Iterator<Item = penumbra_asset::Value> + Send> =
-            if required_iter.peek().is_some() {
-                Box::new(required_iter)
-            } else if provided_iter.peek().is_some() {
-                Box::new(provided_iter)
-            } else {
-                // Handle the case where neither iterator has elements with empty iterator
-                Box::new(std::iter::empty::<penumbra_asset::Value>())
-                    as Box<dyn Iterator<Item = _> + Send>
-            };
-
-        while let Some(required) = balance_iter.next() {
-            // If it's a swap claim, handle it differently
-            if is_swap_claim {
-                let records: Vec<SpendableNoteRecord> = view
-                    .notes(NotesRequest {
-                        include_spent: false,
-                        asset_id: Some(required.asset_id.into()),
-                        address_index: Some(source.into()),
-                        amount_to_spend: None,
-                    })
-                    .await?;
-
-                println!("records is: {:?}", records);
-
-                notes_by_asset_id.insert(
-                    required.asset_id,
-                    Self::prioritize_and_filter_spendable_notes(records),
-                );
-            }
-
+        let mut index: usize = 0;
+        while let Some(required) = self.calculate_balance_with_fees(fee).required().next() {
             // Spend a single note towards the required balance, if possible.
             // This adds the required spends to the planner.
-            let Some(note) = notes_by_asset_id
+            // TODO(Tal): `get_mut` does not retrieve the largest note.
+            let Some(note) = notes_by_asset_id[index]
                 .get_mut(&required.asset_id)
                 .expect("we already queried")
                 .pop()
@@ -823,25 +825,27 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .into());
             };
 
-            // Add the required spends to the planner. If it's a voting action, avoid adding the spend
-            // to the planner since we already added it, otherwise it will double spend the nullifier.
-            if !is_voting {
-                self.push(
-                    SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into(),
-                );
-            }
+            // Add the required spends to the planner.
+            self.push(SpendPlan::new(&mut OsRng, note.clone().note, note.clone().position).into());
 
             // Recompute the change outputs, without accounting for fees.
-            self.refresh_change(change_address);
+            self.refresh_change(change_address.clone());
 
             // Now re-estimate the fee of the updated transaction and adjust the change if possible.
             fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
+
             self.adjust_change_for_fee(fee);
 
             // Need to account to balance after applying fees.
             self.balance = self.calculate_balance_with_fees(fee);
 
-            // We've successfully balanced the equation.
+            let dimension: usize = self.balance.dimension();
+            if original_dimension - 1 == dimension {
+                index += 1;
+                original_dimension -= 1
+            }
+
+            // Successfully balanced the planner
             if self.balance.is_zero() {
                 break;
             }
@@ -852,6 +856,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             }
         }
 
+        // Estimate the final fee to be added to the planner.
         let fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
 
         // Assemble the fully-formed transaction plan.
@@ -864,7 +869,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .collect(),
             transaction_parameters: TransactionParameters {
                 expiry_height: self.plan.transaction_parameters.expiry_height,
-                chain_id: chain_id,
+                chain_id: chain_id.clone(),
                 fee: fee,
             },
             detection_data: None,
@@ -885,7 +890,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction.
-        if self.plan.actions.is_empty() {
+        if self.actions.is_empty() {
             anyhow::bail!("planned transaction would be empty, so should not be submitted");
         }
 
