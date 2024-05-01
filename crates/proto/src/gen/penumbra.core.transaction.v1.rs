@@ -470,7 +470,7 @@ pub mod action_view {
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionScheduleView,
         ),
         #[prost(message, tag = "54")]
         ActionDutchAuctionEnd(
@@ -478,7 +478,7 @@ pub mod action_view {
         ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
+            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdrawView,
         ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest

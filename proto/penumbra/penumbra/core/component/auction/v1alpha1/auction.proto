@@ -1,10 +1,10 @@
 syntax = "proto3";
 package penumbra.core.component.auction.v1alpha1;
 
+import "google/protobuf/any.proto";
 import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/num/v1/num.proto";
-import "google/protobuf/any.proto";
 
 // The configuration parameters for the auction component.
 message AuctionParameters {}
@@ -24,16 +24,16 @@ service QueryService {
 }
 
 message AuctionStateByIdRequest {
-    AuctionId id = 1;
+  AuctionId id = 1;
 }
 
 message AuctionStateByIdResponse {
-    // If present, the state of the auction. If not present, no such auction is known.
-    google.protobuf.Any auction = 2;
-    // The state of any DEX positions relevant to the returned auction.
-    //
-    // Could be empty, depending on the auction state.
-    repeated core.component.dex.v1.Position positions = 3;
+  // If present, the state of the auction. If not present, no such auction is known.
+  google.protobuf.Any auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
 }
 
 message AuctionStateByIdsRequest {
@@ -150,12 +150,12 @@ message ActionDutchAuctionWithdraw {
   asset.v1.BalanceCommitment reserves_commitment = 3;
 }
 
-// An `ActionDutchAuctionWithdraw` augmented with additional metadata.
-message ActionDutchAuctionWithdrawView {
-  ActionDutchAuctionWithdraw action = 1;
-  // A sequence of values that sum together to the provided
-  // reserves commitment.
-  repeated asset.v1.ValueView reserves = 2;
+// A plan to a `ActionDutchAuctionWithdraw` which contains both private and public data.
+message ActionDutchAuctionWithdrawPlan {
+  AuctionId auction_id = 1;
+  uint64 seq = 2;
+  asset.v1.Value reserves_input = 3;
+  asset.v1.Value reserves_output = 4;
 }
 
 // An `ActionDutchAuctionSchedule` augmented with additional metadata.
@@ -166,10 +166,10 @@ message ActionDutchAuctionScheduleView {
   asset.v1.Metadata output_metadata = 4;
 }
 
-// A plan to a `ActionDutchAuctionWithdraw` which contains both private and public data.
-message ActionDutchAuctionWithdrawPlan {
-  AuctionId auction_id = 1;
-  uint64 seq = 2;
-  asset.v1.Value reserves_input = 3;
-  asset.v1.Value reserves_output = 4;
+// An `ActionDutchAuctionWithdraw` augmented with additional metadata.
+message ActionDutchAuctionWithdrawView {
+  ActionDutchAuctionWithdraw action = 1;
+  // A sequence of values that sum together to the provided
+  // reserves commitment.
+  repeated asset.v1.ValueView reserves = 2;
 }

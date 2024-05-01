@@ -2,6 +2,7 @@ use ark_ff::Zero;
 use decaf377::Fr;
 use penumbra_asset::{balance, Value};
 use penumbra_auction::auction::dutch::actions::{
+    view::{ActionDutchAuctionScheduleView, ActionDutchAuctionWithdrawView},
     ActionDutchAuctionEnd, ActionDutchAuctionSchedule, ActionDutchAuctionWithdraw,
 };
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
@@ -467,8 +468,14 @@ impl IsAction for ActionDutchAuctionSchedule {
         self.balance().commit(Fr::zero())
     }
 
-    fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ActionDutchAuctionSchedule(self.to_owned())
+    fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
+        let view = ActionDutchAuctionScheduleView {
+            action: self.to_owned(),
+            auction_id: self.description.id(),
+            input_metadata: txp.denoms.get_by_id(self.description.input.asset_id),
+            output_metadata: txp.denoms.get_by_id(self.description.output_id),
+        };
+        ActionView::ActionDutchAuctionSchedule(view)
     }
 }
 
@@ -488,6 +495,10 @@ impl IsAction for ActionDutchAuctionWithdraw {
     }
 
     fn view_from_perspective(&self, _txp: &TransactionPerspective) -> ActionView {
-        ActionView::ActionDutchAuctionWithdraw(self.to_owned())
+        let view = ActionDutchAuctionWithdrawView {
+            action: self.to_owned(),
+            reserves: vec![],
+        };
+        ActionView::ActionDutchAuctionWithdraw(view)
     }
 }

@@ -155,7 +155,6 @@ impl IsAction for Action {
             // value balance unchanged.
             Action::IbcRelay(x) => x.balance_commitment(),
             Action::ValidatorDefinition(_) => balance::Commitment::default(),
-            // TODO: fill in skeleton
             Action::ActionDutchAuctionSchedule(action) => action.balance_commitment(),
             Action::ActionDutchAuctionEnd(action) => action.balance_commitment(),
             Action::ActionDutchAuctionWithdraw(action) => action.balance_commitment(),
@@ -185,9 +184,9 @@ impl IsAction for Action {
             Action::CommunityPoolDeposit(x) => x.view_from_perspective(txp),
             Action::ValidatorDefinition(x) => ActionView::ValidatorDefinition(x.to_owned()),
             Action::IbcRelay(x) => ActionView::IbcRelay(x.to_owned()),
-            Action::ActionDutchAuctionSchedule(_) => todo!(),
-            Action::ActionDutchAuctionEnd(_) => todo!(),
-            Action::ActionDutchAuctionWithdraw(_) => todo!(),
+            Action::ActionDutchAuctionSchedule(x) => x.view_from_perspective(txp),
+            Action::ActionDutchAuctionEnd(x) => x.view_from_perspective(txp),
+            Action::ActionDutchAuctionWithdraw(x) => x.view_from_perspective(txp),
         }
     }
 }

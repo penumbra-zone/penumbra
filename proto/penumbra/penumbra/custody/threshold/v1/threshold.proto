@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package penumbra.custody.threshold.v1;
 
-import "penumbra/core/transaction/v1/transaction.proto";
-import "penumbra/core/component/stake/v1/stake.proto";
 import "penumbra/core/component/governance/v1/governance.proto";
+import "penumbra/core/component/stake/v1/stake.proto";
+import "penumbra/core/transaction/v1/transaction.proto";
 import "penumbra/crypto/decaf377_frost/v1/decaf377_frost.proto";
 
 // A key one can use to verify signatures.
