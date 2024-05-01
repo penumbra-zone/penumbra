@@ -114,7 +114,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 amount: filled_input,
             },
             output: Value {
-                amount: arb_profit,
+                amount: filled_input + arb_profit,
                 asset_id: arb_token,
             },
         };

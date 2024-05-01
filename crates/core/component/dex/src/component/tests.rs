@@ -866,6 +866,12 @@ async fn basic_cycle_arb() -> anyhow::Result<()> {
 /// The issue was that we did not treat the spill price as a strict
 /// upper bound, which is necessary to ensure that the arbitrage logic
 /// terminates.
+///
+/// This test also ensures that the created `SwapExecution` has the
+///
+/// *Arbitrage execution record bug:*
+/// This test also ensures that the created `SwapExecution` has the
+/// correct data. (See #3790).
 async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     let _ = tracing_subscriber::fmt::try_init();
     let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
@@ -953,6 +959,47 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
     tracing::info!(?arb_execution, "fetched arb execution!");
+
+    // Validate that the arb execution has the correct data:
+    // Validate the traces.
+    assert_eq!(
+        arb_execution.traces,
+        vec![
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(110u32.into()),
+                Value {
+                    amount: 1099999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ],
+            vec![
+                penumbra.value(1u32.into()),
+                test_usd.value(100u32.into()),
+                Value {
+                    amount: 999999u64.into(),
+                    asset_id: penumbra.id()
+                }
+            ]
+        ]
+    );
+
+    // Validate the input/output of the arb execution:
+    assert_eq!(
+        arb_execution.input,
+        Value {
+            amount: 2000000u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+    assert_eq!(
+        arb_execution.output,
+        Value {
+            amount: 2099998u64.into(),
+            asset_id: penumbra.id(),
+        }
+    );
+
     Ok(())
 }
 
