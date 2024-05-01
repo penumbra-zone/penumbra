@@ -80,7 +80,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
         }))
     }
 
-    /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
+    /// Retrieve all values for keys matching a prefix from nonverifiable storage, as domain types.
     #[allow(clippy::type_complexity)]
     fn nonverifiable_prefix<'a, D>(
         &'a self,
@@ -119,7 +119,7 @@ pub trait StateReadProto: StateRead + Send + Sync {
         Box::pin(o)
     }
 
-    /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
+    /// Retrieve all values for keys matching a prefix from the nonverifiable key-value store, as proto types.
     #[allow(clippy::type_complexity)]
     fn nonverifiable_prefix_proto<'a, P>(
         &'a self,
