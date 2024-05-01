@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 
-mod auction;
+pub(crate) mod auction;
 mod chain;
 mod community_pool;
 mod dex;
