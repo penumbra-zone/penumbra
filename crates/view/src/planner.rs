@@ -643,7 +643,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             unbonded_amount,
         )
         .into();
-        self.action(vote);
+        self.push(vote);
         self
     }
 
@@ -698,6 +698,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Change address represents the sender's address.
         let change_address = view.address_by_index(source).await?.clone();
+
+        // Collect all available notes that can be used for voting in governance decisions,
+        // by quering the view service.
+        let mut voting_notes = Vec::new();
+        let (_spendable_requests, voting_requests) = self.notes_requests(source);
+        for request in voting_requests {
+            let notes = view.notes_for_voting(request).await?;
+            voting_notes.push(notes);
+        }
+
+        // Process the voting notes to be added to the planner.
+        let _ = self.add_votes(voting_notes);
 
         // It's possible that adding spends could increase the gas, increasing the fee
         // amount, and so on, so we add spends iteratively.
