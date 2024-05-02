@@ -10,7 +10,7 @@ use rand::{CryptoRng, RngCore};
 use rand_core::OsRng;
 use tracing::instrument;
 
-use penumbra_asset::{asset, Balance, Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_asset::{asset, Balance, Value};
 // use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 // use penumbra_auction::auction::dutch::DutchAuctionDescription;
 // use penumbra_auction::auction::{
@@ -39,7 +39,7 @@ use penumbra_ibc::IbcRelay;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
-use penumbra_shielded_pool::{fmd, Ics20Withdrawal, Note, OutputPlan, SpendPlan};
+use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
 use penumbra_transaction::{
@@ -112,6 +112,75 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
     fn push(&mut self, action: ActionPlan) {
         self.actions.push(action);
+    }
+
+    pub fn add_votes(
+        &mut self,
+        voting_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
+    ) -> Result<()> {
+        for (
+            records,
+            (
+                proposal,
+                VoteIntent {
+                    start_position,
+                    vote,
+                    rate_data,
+                    ..
+                },
+            ),
+        ) in voting_notes
+            .into_iter()
+            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
+            .zip(mem::take(&mut self.vote_intents).into_iter())
+        {
+            // Keep track of whether we successfully could vote on this proposal
+            let mut voted = false;
+
+            for (record, identity_key) in records {
+                // Vote with precisely this note on the proposal, computing the correct exchange
+                // rate for self-minted vote receipt tokens using the exchange rate of the validator
+                // at voting start time. If the validator was not active at the start of the
+                // proposal, the vote will be rejected by stateful verification, so skip the note
+                // and continue to the next one.
+                let Some(rate_data) = rate_data.get(&identity_key) else {
+                    continue;
+                };
+                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
+
+                // If the delegation token is unspent, "roll it over" by spending it (this will
+                // result in change sent back to us). This unlinks nullifiers used for voting on
+                // multiple non-overlapping proposals, increasing privacy.
+                if record.height_spent.is_none() {
+                    self.push(
+                        SpendPlan::new(&mut OsRng, record.note.clone(), record.position).into(),
+                    );
+                }
+
+                self.delegator_vote_precise(
+                    proposal,
+                    start_position,
+                    vote,
+                    record.note,
+                    record.position,
+                    unbonded_amount,
+                );
+
+                voted = true;
+            }
+
+            if !voted {
+                // If there are no notes to vote with, return an error, because otherwise the user
+                // would compose a transaction that would not satisfy their intention, and would
+                // silently eat the fee.
+                anyhow::bail!(
+                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
+                    proposal
+                );
+            }
+        }
+
+        Ok(())
     }
 
     fn gas_estimate(&self) -> Gas {
@@ -577,62 +646,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self.action(vote);
         self
     }
-
-    // /// Initiates a Dutch auction using protocol-controlled liquidity.
-    // #[instrument(skip(self))]
-    // pub fn dutch_auction_schedule(
-    //     &mut self,
-    //     input: Value,
-    //     output_id: asset::Id,
-    //     max_output: Amount,
-    //     min_output: Amount,
-    //     start_height: u64,
-    //     end_height: u64,
-    //     step_count: u64,
-    //     nonce: [u8; 32],
-    // ) -> &mut Self {
-    //     self.action(ActionPlan::ActionDutchAuctionSchedule(
-    //         ActionDutchAuctionSchedule {
-    //             description: DutchAuctionDescription {
-    //                 input,
-    //                 output_id,
-    //                 max_output,
-    //                 min_output,
-    //                 start_height,
-    //                 end_height,
-    //                 step_count,
-    //                 nonce,
-    //             },
-    //         },
-    //     ))
-    // }
-
-    // /// Ends a Dutch auction using protocol-controlled liquidity.
-    // #[instrument(skip(self))]
-    // pub fn dutch_auction_end(&mut self, auction_id: AuctionId) -> &mut Self {
-    //     self.action(ActionPlan::ActionDutchAuctionEnd(ActionDutchAuctionEnd {
-    //         auction_id,
-    //     }))
-    // }
-
-    // /// Withdraws the reserves of the Dutch auction.
-    // #[instrument(skip(self))]
-    // pub fn dutch_auction_withdraw(
-    //     &mut self,
-    //     auction_id: AuctionId,
-    //     seq: u64,
-    //     reserves_input: Value,
-    //     reserves_output: Value,
-    // ) -> &mut Self {
-    //     self.action(ActionPlan::ActionDutchAuctionWithdraw(
-    //         ActionDutchAuctionWithdrawPlan {
-    //             auction_id,
-    //             seq,
-    //             reserves_input,
-    //             reserves_output,
-    //         },
-    //     ))
-    // }
 
     fn action(&mut self, action: ActionPlan) -> &mut Self {
         // Track the contribution of the action to the transaction's balance
