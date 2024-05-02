@@ -845,3 +845,186 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         Ok(plan)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use penumbra_asset::STAKING_TOKEN_ASSET_ID;
+    use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
+    use rand_core::OsRng;
+
+    #[test]
+    fn test_sufficient_funds_for_non_zero_fees_in_transaction() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let (sender, _dtk) = fvk.incoming().payment_address(0u32.into());
+
+        let seed_phrase_2 = SeedPhrase::generate(rng);
+        let sk_2 = SpendKey::from_seed_phrase_bip44(seed_phrase_2, &Bip44Path::new(0));
+        let fvk_2 = sk_2.full_viewing_key();
+        let (reciever, _dtk_2) = fvk_2.incoming().payment_address(0u32.into());
+
+        let note0 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 3u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+        let note1 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 5u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+
+        let mut spendable_notes: Vec<Note> = Vec::new();
+        spendable_notes.push(note0);
+        spendable_notes.push(note1);
+
+        let mut planner = Planner::new(OsRng);
+
+        // Set non-zero gas price.
+        let mut gas_price = GasPrices::default();
+        gas_price.block_space_price = 1u64;
+        let fee_tier = FeeTier::Low;
+
+        planner.set_gas_prices(gas_price).set_fee_tier(fee_tier);
+
+        let amount = Value {
+            amount: 5u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        planner.output(amount, reciever);
+        planner.actions = planner.plan.actions.clone();
+
+        let mut iterations = 0usize;
+        while let Some(_required) = planner
+            .balance_with_fee_estimate(&planner.gas_prices, &planner.fee_tier)
+            .required()
+            .next()
+        {
+            // Spend a single note towards the required balance, if possible.
+            planner.push(
+                SpendPlan::new(&mut OsRng, spendable_notes[iterations].clone(), 0u64.into()).into(),
+            );
+
+            // Recompute the change outputs, without accounting for fees.
+            planner.refresh_change(sender.clone());
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            let fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+            planner.adjust_change_for_fee(fee);
+
+            // Need to account to balance after applying fees.
+            planner.balance =
+                planner.balance_with_fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+            if planner.balance.is_zero() {
+                break;
+            }
+
+            iterations += 1;
+        }
+
+        assert!(planner.balance.is_zero());
+    }
+
+    #[test]
+    fn test_insufficient_funds_for_non_zero_fees_in_transaction() {
+        let rng = OsRng;
+        let seed_phrase = SeedPhrase::generate(rng);
+        let sk = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
+        let fvk = sk.full_viewing_key();
+        let (sender, _dtk) = fvk.incoming().payment_address(0u32.into());
+
+        let seed_phrase_2 = SeedPhrase::generate(rng);
+        let sk_2 = SpendKey::from_seed_phrase_bip44(seed_phrase_2, &Bip44Path::new(0));
+        let fvk_2 = sk_2.full_viewing_key();
+        let (reciever, _dtk_2) = fvk_2.incoming().payment_address(0u32.into());
+
+        let note0 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 4u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+        let note1 = Note::generate(
+            &mut OsRng,
+            &sender,
+            Value {
+                amount: 3u64.into(),
+                asset_id: *STAKING_TOKEN_ASSET_ID,
+            },
+        );
+
+        let mut spendable_notes: Vec<Note> = Vec::new();
+        spendable_notes.push(note0);
+        spendable_notes.push(note1);
+
+        let mut planner = Planner::new(OsRng);
+
+        // Set non-zero gas price.
+        let mut gas_price = GasPrices::default();
+        gas_price.block_space_price = 2u64;
+        let fee_tier = FeeTier::Low;
+
+        planner.set_gas_prices(gas_price).set_fee_tier(fee_tier);
+
+        let amount = Value {
+            amount: 5u64.into(),
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        };
+
+        planner.output(amount, reciever);
+        planner.actions = planner.plan.actions.clone();
+
+        let mut iterations = 0usize;
+        let mut has_insufficient_funds = false;
+        while let Some(_required) = planner
+            .balance_with_fee_estimate(&planner.gas_prices, &planner.fee_tier)
+            .required()
+            .next()
+        {
+            if iterations >= spendable_notes.len() {
+                has_insufficient_funds = true;
+                break;
+            }
+
+            // Spend a single note towards the required balance, if possible.
+            planner.push(
+                SpendPlan::new(&mut OsRng, spendable_notes[iterations].clone(), 0u64.into()).into(),
+            );
+
+            // Recompute the change outputs, without accounting for fees.
+            planner.refresh_change(sender.clone());
+
+            // Now re-estimate the fee of the updated transaction and adjust the change if possible.
+            let fee = planner.fee_estimate(&planner.gas_prices, &planner.fee_tier);
+            planner.adjust_change_for_fee(fee);
+
+            // Need to account to balance after applying fees.
+            planner.balance =
+                planner.balance_with_fee_estimate(&planner.gas_prices, &planner.fee_tier);
+
+            if planner.balance.is_zero() {
+                break;
+            }
+
+            iterations += 1;
+        }
+
+        assert!(
+            has_insufficient_funds && !planner.balance.is_zero(),
+            "The planner should identify insufficient funds and have a non-zero balance."
+        );
+    }
+}
