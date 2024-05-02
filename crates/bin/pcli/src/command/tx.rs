@@ -25,7 +25,6 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use rand_core::OsRng;
 use regex::Regex;
 
-use auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -64,7 +63,6 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
-mod auction;
 mod liquidity_position;
 mod proposal;
 mod replicate;
@@ -224,9 +222,6 @@ pub enum TxCmd {
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Auction related commands.
-    #[clap(display_order = 600, subcommand)]
-    Auction(AuctionCmd),
 }
 
 // A fee tier enum suitable for use with clap.
@@ -316,7 +311,6 @@ impl TxCmd {
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
-            TxCmd::Auction(_) => false,
         }
     }
 
@@ -1280,9 +1274,6 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
-            }
-            TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
-                auction_cmd.exec(app).await?;
             }
         }
         Ok(())
