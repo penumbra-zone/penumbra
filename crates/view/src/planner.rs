@@ -716,6 +716,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             let fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
             self.adjust_change_for_fee(fee);
 
+            // Need to account to balance after applying fees.
+            self.balance = self.balance_with_fee_estimate(&self.gas_prices, &self.fee_tier);
+
             iterations = iterations + 1;
             if iterations > 100 {
                 return Err(anyhow!("failed to plan transaction after 100 iterations").into());
@@ -741,19 +744,19 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo: self.plan.memo.clone(),
         };
 
-        // // All actions have now been added, so check to make sure that you don't build and submit an
-        // // empty transaction
-        // if self.plan.actions.is_empty() {
-        //     anyhow::bail!("planned transaction would be empty, so should not be submitted");
-        // }
+        // All actions have now been added, so check to make sure that you don't build and submit an
+        // empty transaction
+        if self.plan.actions.is_empty() {
+            anyhow::bail!("planned transaction would be empty, so should not be submitted");
+        }
 
-        // // Now the transaction should be fully balanced, unless we didn't have enough to spend
-        // if !self.balance.is_zero() {
-        //     anyhow::bail!(
-        //         "balance is non-zero after attempting to balance transaction: {:?}",
-        //         self.balance
-        //     );
-        // }
+        // Now the transaction should be fully balanced, unless we didn't have enough to spend
+        if !self.balance.is_zero() {
+            anyhow::bail!(
+                "balance is non-zero after attempting to balance transaction: {:?}",
+                self.balance
+            );
+        }
 
         // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
         if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
