@@ -656,6 +656,29 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Collect value balance surplus into a map of asset_id to amount.
+    /// If an asset is in deficit, its entry will be zero.
+    // TODO(tal): this code is somewhat hazardous, we should refactor it to have safer handling
+    // of surplus balance so that we don't burn user funds.
+    fn collect_surplus(&self) -> BTreeMap<asset::Id, Amount> {
+        let mut surplus = BTreeMap::new();
+        self.balance.provided().for_each(|value| {
+            surplus
+                .entry(value.asset_id)
+                .and_modify(|e| *e += value.amount)
+                .or_insert(value.amount);
+        });
+
+        self.balance.required().for_each(|value| {
+            surplus
+                .entry(value.asset_id)
+                .and_modify(|e| *e -= value.amount)
+                .or_insert(Amount::zero());
+        });
+
+        surplus
+    }
+
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     ///
@@ -740,8 +763,32 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let fee = self.fee_estimate(&self.gas_prices, &self.fee_tier);
 
-        // Assemble the fully-formed transaction plan.
-        self.plan = TransactionPlan {
+        // At this point, we should have a fully balanced transaction, unless:
+        // - We lack enough notes to cover the required balance
+        // - We have surplus value that we need to shed (or capture)
+        //
+        // The latter can happen with swap claims, for example, since they are equipped
+        // with a pre-paid fee. If we detect a surplus, we have to decide what to do with it.
+        // One option would be to a new note with the surplus value, but that could potentially
+        // increase the fee, ahead of the prepaid surplus available. This thing is a proper
+        // state machine, and since I want to go bed, we'll just release it into the transaction
+        // fee directly.
+        let surplus = self.collect_surplus();
+
+        let surplus_fee = if surplus.len() == 1 {
+            let (_, amount) = surplus.into_iter().next().unwrap();
+            Fee::from_staking_token_amount(amount)
+        } else {
+            Fee::from_staking_token_amount(Amount::zero())
+        };
+
+        let fee = Fee::from_staking_token_amount(fee.0.amount.max(surplus_fee.0.amount));
+
+        self.balance -= surplus_fee.0;
+
+        let expiry_height = self.plan.transaction_parameters.expiry_height;
+
+        let plan = TransactionPlan {
             actions: self
                 .actions
                 .clone()
@@ -749,13 +796,15 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .chain(self.change_outputs.clone().into_values().map(Into::into))
                 .collect(),
             transaction_parameters: TransactionParameters {
-                expiry_height: self.plan.transaction_parameters.expiry_height,
-                chain_id: chain_id.clone(),
-                fee: fee,
+                expiry_height: expiry_height,
+                chain_id,
+                fee,
             },
             detection_data: None,
-            memo: self.plan.memo.clone(),
+            memo: None,
         };
+
+        self.plan = plan;
 
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction
