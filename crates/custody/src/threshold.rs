@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use tonic::{async_trait, Request, Response, Status};
@@ -10,11 +11,29 @@ use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeVali
 
 pub use self::config::Config;
 use self::sign::no_signature_response;
-pub use self::sign::{SigningRequest, SigningResponse};
+pub use crate::terminal::{SigningRequest, Terminal};
 
 mod config;
 mod dkg;
 mod sign;
+
+/// Authorization data returned in response to some signing request, which may be a request to
+/// authorize a transaction, a validator definition, or a validator vote.
+#[derive(Clone, Debug)]
+pub enum SigningResponse {
+    /// Authorization data for a transaction.
+    Transaction(AuthorizationData),
+    /// Authorization signature for a validator definition.
+    ValidatorDefinition(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+    /// Authorization signature for a validator vote.
+    ValidatorVote(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+}
+
+impl From<AuthorizationData> for SigningResponse {
+    fn from(msg: AuthorizationData) -> Self {
+        Self::Transaction(msg)
+    }
+}
 
 fn to_json<T>(data: &T) -> Result<String>
 where
@@ -32,37 +51,6 @@ where
     <T as DomainType>::Proto: Deserialize<'a>,
 {
     Ok(serde_json::from_str::<<T as DomainType>::Proto>(data)?.try_into()?)
-}
-
-/// A trait abstracting over the kind of terminal interface we expect.
-///
-/// This is mainly used to accommodate the kind of interaction we have with the CLI
-/// interface, but it can also be plugged in with more general backends.
-#[async_trait]
-pub trait Terminal {
-    /// Have a user confirm that they want to sign this transaction or other data (e.g. validator
-    /// definition, validator vote).
-    ///
-    /// In an actual terminal, this should display the data to be signed in a human readable
-    /// form, and then get feedback from the user.
-    async fn confirm_request(&self, request: &SigningRequest) -> Result<bool>;
-
-    /// Push an explanatory message to the terminal.
-    ///
-    /// This message has no relation to the actual protocol, it just allows explaining
-    /// what subsequent data means, and what the user needs to do.
-    ///
-    /// Backends can replace this with a no-op.
-    async fn explain(&self, msg: &str) -> Result<()>;
-
-    /// Broadcast a message to other users.
-    async fn broadcast(&self, data: &str) -> Result<()>;
-
-    /// Wait for a response from *some* other user, it doesn't matter which.
-    ///
-    /// This function should not return None spuriously, when it does,
-    /// it should continue to return None until a message is broadcast.
-    async fn next_response(&self) -> Result<Option<String>>;
 }
 
 /// Act as a follower in the signing protocol.
