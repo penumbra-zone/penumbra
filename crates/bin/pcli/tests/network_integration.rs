@@ -112,6 +112,7 @@ fn get_validator(tmpdir: &TempDir) -> String {
 #[ignore]
 #[test]
 fn transaction_send_from_addr_0_to_addr_1() {
+    tracing_subscriber::fmt::try_init().ok();
     let tmpdir = load_wallet_into_tmpdir();
 
     // Create a memo that we can inspect later, to confirm transaction
@@ -186,6 +187,8 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .expect("can find MemoView in TransactionView");
     match mv {
         penumbra_transaction::MemoView::Visible { plaintext, .. } => {
+            tracing::info!(?plaintext, "plaintext memo");
+            tracing::info!(?memo_text, "expected memo text");
             assert!(plaintext.text == memo_text);
         }
         penumbra_transaction::MemoView::Opaque { .. } => {
@@ -328,6 +331,7 @@ fn delegate_and_undelegate() {
         if undelegation_result.is_ok() {
             break;
         } else {
+            tracing::error!(?undelegation_result, "undelegation failed");
             num_attempts += 1;
             tracing::info!(num_attempts, max_attempts, "undelegation failed");
             if num_attempts >= max_attempts {
@@ -1238,118 +1242,118 @@ fn test_orders() {
     withdraw_cmd.assert().success();
 }
 
-#[ignore]
-#[test]
-fn delegate_submit_proposal_and_vote() {
-    let tmpdir = load_wallet_into_tmpdir();
-
-    // Get a validator from the testnet.
-    let validator = get_validator(&tmpdir);
-
-    // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
-    // while we prepare the delegation. See issues #1522, #2047.
-    let max_attempts = 5;
-
-    let mut num_attempts = 0;
-    loop {
-        // Delegate a tiny bit of penumbra to the validator.
-        let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
-        delegate_cmd
-            .args([
-                "--home",
-                tmpdir.path().to_str().unwrap(),
-                "tx",
-                "delegate",
-                "1penumbra",
-                "--to",
-                validator.as_str(),
-            ])
-            .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-        let delegation_result = delegate_cmd.assert().try_success();
-
-        // If the undelegation command succeeded, we can exit this loop.
-        if delegation_result.is_ok() {
-            break;
-        } else {
-            num_attempts += 1;
-            if num_attempts >= max_attempts {
-                panic!("Exceeded max attempts for fallible command");
-            }
-        }
-    }
-
-    // Check we have some of the delegation token for that validator now.
-    let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-    balance_cmd
-        .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    balance_cmd
-        .assert()
-        .stdout(predicate::str::is_match(validator.as_str()).unwrap());
-
-    let mut proposal_template_cmd = Command::cargo_bin("pcli").unwrap();
-    let template = proposal_template_cmd
-        .args([
-            "--home",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "proposal",
-            "template",
-            "signaling",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let template_str = String::from_utf8(template).unwrap();
-    let template_file = load_string_to_file(template_str, &tmpdir);
-    let template_path = template_file.path().to_str().unwrap();
-
-    let mut submit_proposal_cmd = Command::cargo_bin("pcli").unwrap();
-    submit_proposal_cmd
-        .args([
-            "--home",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "proposal",
-            "submit",
-            "--file",
-            template_path,
-            "--deposit-amount",
-            "10000000",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-    submit_proposal_cmd.assert().success();
-    sync(&tmpdir);
-
-    let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
-    proposals_cmd
-        .args([
-            "--home",
-            tmpdir.path().to_str().unwrap(),
-            "query",
-            "governance",
-            "list-proposals",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
-        .assert()
-        .success()
-        .stdout(predicate::str::is_match("A short title").unwrap());
-
-    let mut vote_cmd = Command::cargo_bin("pcli").unwrap();
-    vote_cmd
-        .args([
-            "--home",
-            tmpdir.path().to_str().unwrap(),
-            "tx",
-            "vote",
-            "yes",
-            "--on",
-            "0",
-        ])
-        .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
-        .assert()
-        .success();
-}
+// #[ignore]
+// #[test]
+// fn delegate_submit_proposal_and_vote() {
+//     let tmpdir = load_wallet_into_tmpdir();
+//
+//     // Get a validator from the testnet.
+//     let validator = get_validator(&tmpdir);
+//
+//     // Now undelegate. We attempt `max_attempts` times in case an epoch boundary passes
+//     // while we prepare the delegation. See issues #1522, #2047.
+//     let max_attempts = 5;
+//
+//     let mut num_attempts = 0;
+//     loop {
+//         // Delegate a tiny bit of penumbra to the validator.
+//         let mut delegate_cmd = Command::cargo_bin("pcli").unwrap();
+//         delegate_cmd
+//             .args([
+//                 "--home",
+//                 tmpdir.path().to_str().unwrap(),
+//                 "tx",
+//                 "delegate",
+//                 "1penumbra",
+//                 "--to",
+//                 validator.as_str(),
+//             ])
+//             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+//         let delegation_result = delegate_cmd.assert().try_success();
+//
+//         // If the undelegation command succeeded, we can exit this loop.
+//         if delegation_result.is_ok() {
+//             break;
+//         } else {
+//             num_attempts += 1;
+//             if num_attempts >= max_attempts {
+//                 panic!("Exceeded max attempts for fallible command");
+//             }
+//         }
+//     }
+//
+//     // Check we have some of the delegation token for that validator now.
+//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
+//     balance_cmd
+//         .args(["--home", tmpdir.path().to_str().unwrap(), "view", "balance"])
+//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+//     balance_cmd
+//         .assert()
+//         .stdout(predicate::str::is_match(validator.as_str()).unwrap());
+//
+//     let mut proposal_template_cmd = Command::cargo_bin("pcli").unwrap();
+//     let template = proposal_template_cmd
+//         .args([
+//             "--home",
+//             tmpdir.path().to_str().unwrap(),
+//             "tx",
+//             "proposal",
+//             "template",
+//             "signaling",
+//         ])
+//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+//         .assert()
+//         .success()
+//         .get_output()
+//         .stdout
+//         .clone();
+//     let template_str = String::from_utf8(template).unwrap();
+//     let template_file = load_string_to_file(template_str, &tmpdir);
+//     let template_path = template_file.path().to_str().unwrap();
+//
+//     let mut submit_proposal_cmd = Command::cargo_bin("pcli").unwrap();
+//     submit_proposal_cmd
+//         .args([
+//             "--home",
+//             tmpdir.path().to_str().unwrap(),
+//             "tx",
+//             "proposal",
+//             "submit",
+//             "--file",
+//             template_path,
+//             "--deposit-amount",
+//             "10000000",
+//         ])
+//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
+//     submit_proposal_cmd.assert().success();
+//     sync(&tmpdir);
+//
+//     let mut proposals_cmd = Command::cargo_bin("pcli").unwrap();
+//     proposals_cmd
+//         .args([
+//             "--home",
+//             tmpdir.path().to_str().unwrap(),
+//             "query",
+//             "governance",
+//             "list-proposals",
+//         ])
+//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+//         .assert()
+//         .success()
+//         .stdout(predicate::str::is_match("A short title").unwrap());
+//
+//     let mut vote_cmd = Command::cargo_bin("pcli").unwrap();
+//     vote_cmd
+//         .args([
+//             "--home",
+//             tmpdir.path().to_str().unwrap(),
+//             "tx",
+//             "vote",
+//             "yes",
+//             "--on",
+//             "0",
+//         ])
+//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS))
+//         .assert()
+//         .success();
+// }

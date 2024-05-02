@@ -788,7 +788,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let expiry_height = self.plan.transaction_parameters.expiry_height;
 
-        let plan = TransactionPlan {
+        let mut plan = TransactionPlan {
             actions: self
                 .actions
                 .clone()
@@ -804,8 +804,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo: None,
         };
 
-        self.plan = plan;
-
         // All actions have now been added, so check to make sure that you don't build and submit an
         // empty transaction
         if self.plan.actions.is_empty() {
@@ -820,18 +818,20 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             );
         }
 
-        // If there are outputs, we check that a memo has been added. If not, we add a blank memo.
-        if self.plan.num_outputs() > 0 && self.plan.memo.is_none() {
-            self.memo(MemoPlaintext::blank_memo(change_address.clone()))
-                .expect("empty string is a valid memo");
-        } else if self.plan.num_outputs() == 0 && self.plan.memo.is_some() {
-            anyhow::bail!("if no outputs, no memo should be added");
+        if let Some(memo_plan) = self.plan.memo.clone() {
+            plan.memo = Some(MemoPlan::new(&mut OsRng, memo_plan.plaintext)?);
+        } else if plan.output_plans().next().is_some() {
+            // If a memo was not provided, but is required (because we have outputs),
+            // auto-create one with the change address.
+            plan.memo = Some(MemoPlan::new(
+                &mut OsRng,
+                MemoPlaintext::new(change_address, String::new())?,
+            )?);
         }
 
-        // Add clue plans for `Output`s.
-        let precision_bits = fmd_params.precision_bits;
-        self.plan
-            .populate_detection_data(&mut self.rng, precision_bits.into());
+        plan.populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
+
+        self.plan = plan;
 
         tracing::debug!(plan = ?self.plan, "finished balancing transaction");
 
