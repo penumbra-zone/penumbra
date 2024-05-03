@@ -13,7 +13,10 @@ use super::AppActionHandler;
 mod stateful;
 mod stateless;
 
-use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
+use self::stateful::{
+    chain_id_is_correct, claimed_anchor_is_valid, expiry_height_is_valid,
+    fee_greater_than_base_fee, fmd_parameters_valid,
+};
 use stateless::{
     check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
     valid_binding_signature,
@@ -58,6 +61,10 @@ impl AppActionHandler for Transaction {
 
         // TODO: these could be pushed into the action checks and run concurrently if needed
 
+        // SAFETY: chain ID never changes during a transaction execution.
+        chain_id_is_correct(state.clone(), self).await?;
+        // SAFETY: height never changes during a transaction execution.
+        expiry_height_is_valid(state.clone(), self).await?;
         // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
         // SAFETY: FMD parameters cannot change during transaction execution.

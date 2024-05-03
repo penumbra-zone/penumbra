@@ -8,7 +8,49 @@ use penumbra_shielded_pool::fmd;
 use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::Transaction;
 
+use crate::app::StateReadExt;
+
 const FMD_GRACE_PERIOD_BLOCKS: u64 = 10;
+
+pub async fn chain_id_is_correct<S: StateRead>(state: S, transaction: &Transaction) -> Result<()> {
+    let chain_id = state.get_chain_id().await?;
+    let tx_chain_id = &transaction.transaction_body.transaction_parameters.chain_id;
+
+    // The chain ID in the transaction must exactly match the current chain ID.
+    ensure!(
+        *tx_chain_id == chain_id,
+        "transaction chain ID '{}' must match the current chain ID '{}'",
+        tx_chain_id,
+        chain_id
+    );
+    Ok(())
+}
+
+pub async fn expiry_height_is_valid<S: StateRead>(
+    state: S,
+    transaction: &Transaction,
+) -> Result<()> {
+    let current_height = state.get_block_height().await?;
+    let expiry_height = transaction
+        .transaction_body
+        .transaction_parameters
+        .expiry_height;
+
+    // A zero expiry height means that the transaction is valid indefinitely.
+    if expiry_height == 0 {
+        return Ok(());
+    }
+
+    // Otherwise, the expiry height must be greater than or equal to the current block height.
+    ensure!(
+        expiry_height >= current_height,
+        "transaction expiry height '{}' must be greater than or equal to the current block height '{}'",
+        expiry_height,
+        current_height
+    );
+
+    Ok(())
+}
 
 pub async fn fmd_parameters_valid<S: StateRead>(state: S, transaction: &Transaction) -> Result<()> {
     let previous_fmd_parameters = state
