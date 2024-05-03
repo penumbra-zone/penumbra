@@ -7,7 +7,7 @@ use {
     tap::{Tap, TapFallible},
     tendermint::{
         abci::types::CommitInfo,
-        block::{Header, Round},
+        block::Header,
         v0_37::abci::{request, response, ConsensusRequest, ConsensusResponse},
     },
     tower::{BoxError, Service},
@@ -41,14 +41,12 @@ where
     pub async fn begin_block(
         &mut self,
         header: Header,
+        last_commit_info: CommitInfo,
     ) -> Result<response::BeginBlock, anyhow::Error> {
         let request = ConsensusRequest::BeginBlock(request::BeginBlock {
             hash: tendermint::Hash::None,
             header,
-            last_commit_info: CommitInfo {
-                round: Round::from(1_u8),
-                votes: Default::default(),
-            },
+            last_commit_info,
             byzantine_validators: Default::default(),
         });
         let service = self.service().await?;

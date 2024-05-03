@@ -1,5 +1,4 @@
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::TransactionPlan;
 use serde::{Deserialize, Serialize};
 
 /// A pre-authorization packet.  This allows a custodian to delegate (partial)
@@ -28,9 +27,9 @@ pub struct Ed25519 {
 
 impl Ed25519 {
     /// Verifies the provided `TransactionPlan`.
-    pub fn verify_plan(&self, plan: &TransactionPlan) -> anyhow::Result<()> {
-        let plan_bytes = plan.encode_to_vec();
-        self.vk.verify(&self.sig, &plan_bytes).map_err(Into::into)
+    pub fn verify(&self, message: impl AsRef<[u8]>) -> anyhow::Result<()> {
+        let bytes = message.as_ref();
+        self.vk.verify(&self.sig, &bytes).map_err(Into::into)
     }
 }
 

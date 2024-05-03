@@ -222,7 +222,7 @@ impl OutgoingCipherKey {
         // Note: Here we use the same nonce as note encryption, however the keys are different.
         // For note encryption we derive the `PayloadKey` symmetric key from the shared secret and epk.
         // However, for the outgoing cipher key, we derive a symmetric key from the
-        // sender's OVK, value commitment, note commitment, and the epk. Since the keys are
+        // sender's OVK, balance commitment, note commitment, and the epk. Since the keys are
         // different, it is safe to use the same nonce.
         //
         // References:

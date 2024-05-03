@@ -9,6 +9,7 @@ use crate::{
 use anyhow::{ensure, Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+use decaf377_rdsa::VerificationKey;
 use penumbra_proto::DomainType;
 
 #[async_trait]
@@ -34,12 +35,19 @@ impl ActionHandler for validator::Definition {
             anyhow::bail!("validators can declare at most 8 funding streams")
         }
 
+        // This prevents an attacker who compromises a validator identity signing key from locking
+        // the validator in an enabled state permanently, instead making it so that the original
+        // operator always has the option of disabling the validator permanently, regardless of what
+        // the attacker does. This reduces the incentive to steal compromise validator signing keys,
+        // because it reduces the expected payoff of such a compromise.
+        if self.validator.sequence_number == u32::MAX && self.validator.enabled {
+            anyhow::bail!("validators must be disabled when their lifetime is over")
+        }
+
         // Then, we check the signature:
         let definition_bytes = self.validator.encode_to_vec();
-        self.validator
-            .identity_key
-            .0
-            .verify(&definition_bytes, &self.auth_sig)
+        VerificationKey::try_from(self.validator.identity_key.0)
+            .and_then(|vk| vk.verify(&definition_bytes, &self.auth_sig))
             .context("validator definition signature failed to verify")?;
 
         let total_funding_bps = self
@@ -88,7 +96,7 @@ impl ActionHandler for validator::Definition {
         // Check if the consensus key is known, and if so, that it is by the
         // validator that declares it in this definition.
         if let Some(ck_owner) = state
-            .get_validator_by_consensus_key(&new_validator.consensus_key)
+            .get_validator_definition_by_consensus_key(&new_validator.consensus_key)
             .await?
         {
             // If we detect that the new definition tries to squat someone else's

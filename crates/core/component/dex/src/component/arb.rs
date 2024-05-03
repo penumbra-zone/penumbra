@@ -8,7 +8,7 @@ use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
-use crate::{event, ExecutionCircuitBreaker, SwapExecution};
+use crate::{component::ExecutionCircuitBreaker, event, SwapExecution};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
@@ -114,7 +114,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 amount: filled_input,
             },
             output: Value {
-                amount: arb_profit,
+                amount: filled_input + arb_profit,
                 asset_id: arb_token,
             },
         };

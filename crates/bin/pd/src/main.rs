@@ -4,7 +4,6 @@
 use std::error::Error;
 use std::io::IsTerminal as _;
 
-use console_subscriber::ConsoleLayer;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 
@@ -13,7 +12,7 @@ use cnidarium::{StateDelta, Storage};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    migrate::Migration::SimpleMigration,
+    migrate::Migration::Testnet74,
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
         generate::TestnetConfig,
@@ -32,7 +31,7 @@ use url::Url;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Validate options immediately.
-    let Opt { tokio_console, cmd } = <Opt as clap::Parser>::parse();
+    let Opt { cmd } = <Opt as clap::Parser>::parse();
 
     // Instantiate tracing layers.
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
@@ -44,19 +43,12 @@ async fn main() -> anyhow::Result<()> {
     // The `EnvFilter` layer is used to filter events based on `RUST_LOG`.
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    // Register the tracing subscribers, conditionally enabling tokio console support
+    // Register the tracing subscribers.
     let registry = tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
         .with(metrics_layer);
-    if tokio_console {
-        // The ConsoleLayer enables collection of data for `tokio-console`.
-        // The `spawn` call will panic if AddrInUse, so we only spawn if enabled.
-        let console_layer = ConsoleLayer::builder().with_default_env().spawn();
-        registry.with(console_layer).init();
-    } else {
-        registry.init();
-    }
+    registry.init();
 
     tracing::info!(?cmd, version = env!("CARGO_PKG_VERSION"), "running command");
     match cmd {
@@ -120,10 +112,9 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            let abci_server = tokio::task::Builder::new()
-                .name("abci_server")
-                .spawn(penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind))
-                .expect("failed to spawn abci server");
+            let abci_server = tokio::task::spawn(
+                penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
+            );
 
             let grpc_server =
                 penumbra_app::rpc::router(&storage, cometbft_addr, enable_expensive_rpc)?;
@@ -148,10 +139,7 @@ async fn main() -> anyhow::Result<()> {
             // resolver if auto-https has been enabled.
             macro_rules! spawn_grpc_server {
                 ($server:expr) => {
-                    tokio::task::Builder::new()
-                        .name("grpc_server")
-                        .spawn($server.serve(make_svc))
-                        .expect("failed to spawn grpc server")
+                    tokio::task::spawn($server.serve(make_svc))
                 };
             }
             let grpc_server = axum_server::bind(grpc_bind);
@@ -255,6 +243,7 @@ async fn main() -> anyhow::Result<()> {
             tn_cmd:
                 TestnetCommand::Join {
                     node,
+                    archive_url,
                     moniker,
                     external_address,
                     tendermint_rpc_bind,
@@ -290,7 +279,7 @@ async fn main() -> anyhow::Result<()> {
             // Join the target testnet, looking up network info and writing
             // local configs for pd and tendermint.
             testnet_join(
-                output_dir,
+                output_dir.clone(),
                 node,
                 &node_name,
                 external_address,
@@ -298,6 +287,11 @@ async fn main() -> anyhow::Result<()> {
                 tendermint_p2p_bind,
             )
             .await?;
+
+            // Download and extract archive URL, if set.
+            if let Some(archive_url) = archive_url {
+                pd::testnet::join::unpack_state_archive(archive_url, output_dir).await?;
+            }
         }
 
         RootCommand::Testnet {
@@ -311,6 +305,7 @@ async fn main() -> anyhow::Result<()> {
                     allocations_input_file,
                     validators_input_file,
                     chain_id,
+                    gas_price_simple,
                     preserve_chain_id,
                     external_addresses,
                     proposal_voting_blocks,
@@ -370,6 +365,7 @@ async fn main() -> anyhow::Result<()> {
                 epoch_duration,
                 unbonding_delay,
                 proposal_voting_blocks,
+                gas_price_simple,
             )?;
             tracing::info!(
                 n_validators = t.validators.len(),
@@ -379,44 +375,79 @@ async fn main() -> anyhow::Result<()> {
             t.write_configs()?;
         }
         RootCommand::Export {
-            mut home,
-            mut export_path,
+            home,
+            export_directory,
+            export_archive,
             prune,
         } => {
             use fs_extra;
 
-            tracing::info!("exporting state to {}", export_path.display());
+            // Export state as directory.
+            let src_rocksdb_dir = home.join("rocksdb");
+            tracing::info!(
+                "copying node state {} -> {}",
+                src_rocksdb_dir.display(),
+                export_directory.display()
+            );
+            std::fs::create_dir_all(&export_directory)?;
             let copy_opts = fs_extra::dir::CopyOptions::new();
-            home.push("rocksdb");
-            let from = [home.as_path()];
-            tracing::info!(?home, ?export_path, "copying from data dir to export dir",);
-            std::fs::create_dir_all(&export_path)?;
-            fs_extra::copy_items(&from, export_path.as_path(), &copy_opts)?;
+            fs_extra::copy_items(
+                &[src_rocksdb_dir.as_path()],
+                export_directory.as_path(),
+                &copy_opts,
+            )?;
+            tracing::info!("finished copying node state");
 
-            tracing::info!("done copying");
-            if !prune {
-                return Ok(());
+            let dst_rocksdb_dir = export_directory.join("rocksdb");
+            // If prune=true, then export-directory is required, because we must munge state prior
+            // to compressing. So we'll just mandate the presence of the --export-directory arg
+            // always.
+            if prune {
+                tracing::info!("pruning JMT tree");
+                let export = Storage::load(dst_rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
+                let _ = StateDelta::new(export.latest_snapshot());
+                // TODO:
+                // - add utilities in `cnidarium` to prune a tree
+                // - apply the delta to the exported storage
+                // - apply checks: root hash, size, etc.
+                todo!()
             }
 
-            tracing::info!("pruning JMT tree");
-            export_path.push("rocksdb");
-            let export = Storage::load(export_path, SUBSTORE_PREFIXES.to_vec()).await?;
-            let _ = StateDelta::new(export.latest_snapshot());
-            // TODO:
-            // - add utilities in `cnidarium` to prune a tree
-            // - apply the delta to the exported storage
-            // - apply checks: root hash, size, etc.
-            todo!()
+            // Compress to tarball if requested.
+            if let Some(archive_filepath) = export_archive {
+                pd::migrate::archive_directory(
+                    dst_rocksdb_dir.clone(),
+                    archive_filepath.clone(),
+                    Some("rocksdb".to_owned()),
+                )?;
+                tracing::info!("export complete: {}", archive_filepath.display());
+            } else {
+                // Provide friendly "OK" message that's still accurate without archiving.
+                tracing::info!("export complete: {}", export_directory.display());
+            }
         }
         RootCommand::Migrate {
-            target_dir,
+            target_directory,
             genesis_start,
+            migrate_archive,
         } => {
-            tracing::info!("migrating state from {}", target_dir.display());
-            SimpleMigration
-                .migrate(target_dir.clone(), genesis_start)
+            tracing::info!("migrating state in {}", target_directory.display());
+            Testnet74
+                .migrate(target_directory.clone(), genesis_start)
                 .await
                 .context("failed to upgrade state")?;
+            // Compress to tarball if requested.
+            if let Some(archive_filepath) = migrate_archive {
+                pd::migrate::archive_directory(
+                    target_directory.clone(),
+                    archive_filepath.clone(),
+                    None,
+                )?;
+                tracing::info!("migration complete: {}", archive_filepath.display());
+            } else {
+                // Provide friendly "OK" message that's still accurate without archiving.
+                tracing::info!("migration complete: {}", target_directory.display());
+            }
         }
     }
     Ok(())

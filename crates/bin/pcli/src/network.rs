@@ -1,11 +1,16 @@
 use anyhow::Context;
+use decaf377_rdsa::{Signature, SpendAuth};
 use futures::{FutureExt, TryStreamExt};
 use penumbra_fee::GasPrices;
+use penumbra_governance::ValidatorVoteBody;
 use penumbra_proto::{
+    custody::v1::{AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest},
     util::tendermint_proxy::v1::tendermint_proxy_service_client::TendermintProxyServiceClient,
     view::v1::broadcast_transaction_response::Status as BroadcastStatus,
-    view::v1::GasPricesRequest, DomainType,
+    view::v1::GasPricesRequest,
+    DomainType,
 };
+use penumbra_stake::validator::Validator;
 use penumbra_transaction::{gas::GasCost, txhash::TransactionId, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 use std::future::Future;
@@ -70,6 +75,43 @@ impl App {
             );
             Ok(tx)
         }
+    }
+
+    pub async fn sign_validator_definition(
+        &mut self,
+        validator_definition: Validator,
+    ) -> anyhow::Result<Signature<SpendAuth>> {
+        let request = AuthorizeValidatorDefinitionRequest {
+            validator_definition: Some(validator_definition.into()),
+            pre_authorizations: vec![],
+        };
+        self.custody
+            .authorize_validator_definition(request)
+            .await?
+            .into_inner()
+            .validator_definition_auth
+            .ok_or_else(|| anyhow::anyhow!("missing validator definition auth"))?
+            .try_into()
+    }
+
+    pub async fn sign_validator_vote(
+        &mut self,
+        validator_vote: ValidatorVoteBody,
+    ) -> anyhow::Result<Signature<SpendAuth>> {
+        let request = AuthorizeValidatorVoteRequest {
+            validator_vote: Some(validator_vote.into()),
+            pre_authorizations: vec![],
+        };
+        // Use the separate governance custody service, if one is configured, to sign the validator
+        // vote. This allows the governance custody service to have a different key than the main
+        // custody, which is useful for validators who want to have a separate key for voting.
+        self.governance_custody // VERY IMPORTANT: use governance custody here!
+            .authorize_validator_vote(request)
+            .await?
+            .into_inner()
+            .validator_vote_auth
+            .ok_or_else(|| anyhow::anyhow!("missing validator vote auth"))?
+            .try_into()
     }
 
     /// Submits a transaction to the network.

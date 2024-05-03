@@ -6,13 +6,12 @@ the Penumbra software is doing. Penumbra Labs runs Grafana instances for the pub
   * https://grafana.testnet.penumbra.zone
   * https://grafana.testnet-preview.penumbra.zone
 
-## Viewing Metrics
+There's a more comprehensive WIP dashboard, gated by basic auth for PL team:
 
-TODO: add details on how to use Grafana:
+  * https://metrics.penumbra.zone
 
-- [x] link to <https://grafana.testnet.penumbra.zone> for dashboard on current testnet;
-- [ ] instructions on how to run Grafana + Prometheus for local dev setup (ideally this could work without requiring that `pd` itself is Dockerized, since local development is often more convenient outside of docker);
-- [x] instructions on how to commit dashboards back to the repo.
+Check the usual place for credentials. Eventually those views should be exported
+as public references.
 
 ## Adding Metrics
 

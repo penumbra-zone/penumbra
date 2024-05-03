@@ -38,6 +38,8 @@ pub struct CompactBlock {
     pub app_parameters_updated: bool,
     /// Updated gas prices, if they have changed.
     pub gas_prices: Option<GasPrices>,
+    // The epoch index
+    pub epoch_index: u64,
     // **IMPORTANT NOTE FOR FUTURE HUMANS**: if you want to add new fields to the `CompactBlock`,
     // you must update `CompactBlock::requires_scanning` to check for the emptiness of those fields,
     // because the client will skip processing any compact block that is marked as not requiring
@@ -57,6 +59,7 @@ impl Default for CompactBlock {
             swap_outputs: BTreeMap::new(),
             app_parameters_updated: false,
             gas_prices: None,
+            epoch_index: 0,
         }
     }
 }
@@ -95,6 +98,7 @@ impl From<CompactBlock> for pb::CompactBlock {
             swap_outputs: cb.swap_outputs.into_values().map(Into::into).collect(),
             app_parameters_updated: cb.app_parameters_updated,
             gas_prices: cb.gas_prices.map(Into::into),
+            epoch_index: cb.epoch_index,
         }
     }
 }
@@ -132,6 +136,7 @@ impl TryFrom<pb::CompactBlock> for CompactBlock {
             proposal_started: value.proposal_started,
             app_parameters_updated: value.app_parameters_updated,
             gas_prices: value.gas_prices.map(TryInto::try_into).transpose()?,
+            epoch_index: value.epoch_index,
         })
     }
 }

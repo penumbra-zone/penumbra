@@ -18,8 +18,10 @@ decaf377-rdsa = {workspace = true}
 ed25519-consensus = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
+penumbra-governance = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = true}
 penumbra-proto = {workspace = true, features = ["rpc"], default-features = true}
+penumbra-stake = {workspace = true, default-features = false}
 penumbra-transaction = {workspace = true, default-features = true}
 penumbra-txhash = {workspace = true, default-features = true}
 prost = {workspace = true}

@@ -70,6 +70,10 @@ message RateData {
   keys.v1.IdentityKey identity_key = 1;
   uint64 epoch_index = 2 [deprecated = true];
   num.v1.Amount validator_reward_rate = 4;
+  // The validator exchange rate between delegation tokens and staking tokens.
+  // The rate is expressed in fixed-point representation with a scaling factor
+  // of 10^8. For example, a decimal rate of `1.234` will be represented as
+  // `123400000`
   num.v1.Amount validator_exchange_rate = 5;
 }
 
@@ -234,11 +238,24 @@ message Penalty {
 
 // Query operations for the staking component.
 service QueryService {
+  // Queries for information about a specific validator.
+  rpc GetValidatorInfo(GetValidatorInfoRequest) returns (GetValidatorInfoResponse);
   // Queries the current validator set, with filtering.
   rpc ValidatorInfo(ValidatorInfoRequest) returns (stream ValidatorInfoResponse);
   rpc ValidatorStatus(ValidatorStatusRequest) returns (ValidatorStatusResponse);
   rpc ValidatorPenalty(ValidatorPenaltyRequest) returns (ValidatorPenaltyResponse);
   rpc CurrentValidatorRate(CurrentValidatorRateRequest) returns (CurrentValidatorRateResponse);
+  rpc ValidatorUptime(ValidatorUptimeRequest) returns (ValidatorUptimeResponse);
+}
+
+// Requests information about a specific validator.
+message GetValidatorInfoRequest {
+  // The identity key of the validator.
+  core.keys.v1.IdentityKey identity_key = 2;
+}
+
+message GetValidatorInfoResponse {
+  core.component.stake.v1.ValidatorInfo validator_info = 1;
 }
 
 // Requests information on the chain's validators.
@@ -278,6 +295,14 @@ message CurrentValidatorRateResponse {
   core.component.stake.v1.RateData data = 1;
 }
 
+message ValidatorUptimeRequest {
+  core.keys.v1.IdentityKey identity_key = 2;
+}
+
+message ValidatorUptimeResponse {
+  Uptime uptime = 1;
+}
+
 // Staking configuration data.
 message StakeParameters {
   // The number of epochs an unbonding note for before being released.
@@ -306,4 +331,17 @@ message GenesisContent {
   StakeParameters stake_params = 1;
   // The list of validators present at genesis.
   repeated stake.v1.Validator validators = 2;
+}
+
+message EventTombstoneValidator {
+  // The height at which the offense occurred.
+  uint64 evidence_height = 1;
+  // The height at which the evidence was processed.
+  uint64 current_height = 2;
+  // The validator identity key.
+  keys.v1.IdentityKey identity_key = 4;
+  // The validator's Comet address.
+  bytes address = 5;
+  // The voting power for the validator.
+  uint64 voting_power = 6;
 }

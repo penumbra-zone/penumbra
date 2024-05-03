@@ -17,4 +17,4 @@ pub use route_and_fill::{HandleBatchSwaps, RouteAndFill};
 mod tests;
 
 #[cfg(test)]
-pub(crate) use tests::{limit_buy, limit_sell};
+pub(crate) use tests::{create_buy, create_sell};

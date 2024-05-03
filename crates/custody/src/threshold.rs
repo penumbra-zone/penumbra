@@ -5,11 +5,12 @@ use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_proto::{custody::v1 as pb, DomainType};
-use penumbra_transaction::{AuthorizationData, TransactionPlan};
 
-use crate::AuthorizeRequest;
+use crate::{AuthorizeRequest, AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest};
 
 pub use self::config::Config;
+use self::sign::no_signature_response;
+pub use self::sign::{SigningRequest, SigningResponse};
 
 mod config;
 mod dkg;
@@ -39,11 +40,12 @@ where
 /// interface, but it can also be plugged in with more general backends.
 #[async_trait]
 pub trait Terminal {
-    /// Have a user confirm that they want to sign this transaction.
+    /// Have a user confirm that they want to sign this transaction or other data (e.g. validator
+    /// definition, validator vote).
     ///
-    /// In an actual terminal, this should display the transaction in a human readable
+    /// In an actual terminal, this should display the data to be signed in a human readable
     /// form, and then get feedback from the user.
-    async fn confirm_transaction(&self, transaction: &TransactionPlan) -> Result<bool>;
+    async fn confirm_request(&self, request: &SigningRequest) -> Result<bool>;
 
     /// Push an explanatory message to the terminal.
     ///
@@ -67,7 +69,11 @@ pub trait Terminal {
 ///
 /// All this function does is produce side effects on the terminal, potentially returning
 /// early if the user on the other end did not want to sign the transaction.
-pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
+pub async fn follow(
+    config: Option<&Config>,
+    governance_config: Option<&Config>,
+    terminal: &impl Terminal,
+) -> Result<()> {
     // Round 1
     terminal
         .explain("Paste the coordinator's first message:")
@@ -79,7 +85,22 @@ pub async fn follow(config: &Config, terminal: &impl Terminal) -> Result<()> {
             .ok_or(anyhow!("expected message from coordinator"))?;
         from_json(&string)?
     };
-    if !terminal.confirm_transaction(&round1_message.plan()).await? {
+    // Pick the right config based on the message
+    let config = match round1_message.signing_request() {
+        SigningRequest::TransactionPlan(_) => config.ok_or(anyhow!(
+            "cannot threshold sign transaction using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorDefinition(_) => config.ok_or(anyhow!(
+            "cannot threshold sign validator definition using a non-threshold custody backend"
+        ))?,
+        SigningRequest::ValidatorVote(_) => governance_config.ok_or(anyhow!(
+            "cannot threshold sign validator vote using a non-threshold validator governance custody backend"
+        ))?,
+    };
+    if !terminal
+        .confirm_request(round1_message.signing_request())
+        .await?
+    {
         return Ok(());
     }
     let (round1_reply, round1_state) = sign::follower_round1(&mut OsRng, config, round1_message)?;
@@ -166,7 +187,7 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
     dkg::round3(&mut OsRng, state, round2_replies)
 }
 
-/// A custody backend using threshold signing.  
+/// A custody backend using threshold signing.
 ///
 /// This backend is initialized with a full viewing key, but only a share
 /// of the spend key, which is not enough to sign on its own. Instead,
@@ -185,11 +206,14 @@ impl<T> Threshold<T> {
 
 impl<T: Terminal> Threshold<T> {
     /// Try and create the necessary signatures to authorize the transaction plan.
-    async fn authorize(&self, request: AuthorizeRequest) -> Result<AuthorizationData> {
-        let plan = request.plan;
-
+    async fn authorize(&self, request: SigningRequest) -> Result<SigningResponse> {
+        // Some requests will have no signatures to gather, so there's no need
+        // to send around empty threshold signature requests.
+        if let Some(out) = no_signature_response(self.config.fvk(), &request)? {
+            return Ok(out);
+        }
         // Round 1
-        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, plan)?;
+        let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal
             .explain("Send this message to the other signers:")
             .await?;
@@ -197,7 +221,7 @@ impl<T: Terminal> Threshold<T> {
         self.terminal
             .explain(&format!(
                 "Now, gather at least {} replies from the other signers, and paste them below:",
-                self.config.threshold()
+                self.config.threshold() - 1
             ))
             .await?;
         let round1_replies = {
@@ -265,15 +289,80 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
         &self,
         request: Request<pb::AuthorizeRequest>,
     ) -> Result<Response<pb::AuthorizeResponse>, Status> {
-        let request = request
+        let request: AuthorizeRequest = request
             .into_inner()
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("{e}")))?;
-        let data = self.authorize(request).await.map_err(|e| {
-            Status::internal(format!("Failed to process authorization request: {e}"))
-        })?;
+        let data = self
+            .authorize(SigningRequest::TransactionPlan(request.plan))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process transaction authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::Transaction(data) = data else {
+            return Err(Status::internal(
+                "expected transaction authorization but custody service returned another kind of authorization data"
+                    .to_string()
+            ));
+        };
         Ok(Response::new(pb::AuthorizeResponse {
             data: Some(data.into()),
+        }))
+    }
+
+    async fn authorize_validator_definition(
+        &self,
+        request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        let request: AuthorizeValidatorDefinitionRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorDefinition(
+                request.validator_definition,
+            ))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator definition authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::ValidatorDefinition(validator_definition_auth) = data else {
+            return Err(Status::internal(
+                "expected validator definition authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
+        Ok(Response::new(pb::AuthorizeValidatorDefinitionResponse {
+            validator_definition_auth: Some(validator_definition_auth.into()),
+        }))
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        let request: AuthorizeValidatorVoteRequest = request
+            .into_inner()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{e}")))?;
+        let data = self
+            .authorize(SigningRequest::ValidatorVote(request.validator_vote))
+            .await
+            .map_err(|e| {
+                Status::internal(format!(
+                    "Failed to process validator vote authorization request: {e}"
+                ))
+            })?;
+        let SigningResponse::ValidatorVote(validator_vote_auth) = data else {
+            return Err(Status::internal(
+                "expected validator vote authorization but custody service returned another kind of authorization data".to_string()
+            ));
+        };
+        Ok(Response::new(pb::AuthorizeValidatorVoteResponse {
+            validator_vote_auth: Some(validator_vote_auth.into()),
         }))
     }
 
@@ -308,6 +397,8 @@ impl<T: Terminal + Sync + Send + 'static> pb::custody_service_server::CustodySer
 mod test {
     use std::collections::HashMap;
 
+    use penumbra_transaction::TransactionPlan;
+
     use tokio::sync;
 
     use super::*;
@@ -319,7 +410,7 @@ mod test {
 
     #[async_trait]
     impl Terminal for FollowerTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 
@@ -357,7 +448,7 @@ mod test {
 
     #[async_trait]
     impl Terminal for CoordinatorTerminal {
-        async fn confirm_transaction(&self, _transaction: &TransactionPlan) -> Result<bool> {
+        async fn confirm_request(&self, _request: &SigningRequest) -> Result<bool> {
             Ok(true)
         }
 
@@ -567,31 +658,31 @@ mod test {
             .into_iter()
             .zip(follower_terminals.into_iter())
         {
-            tokio::spawn(async move { follow(&config, &terminal).await });
+            tokio::spawn(async move { follow(Some(&config), Some(&config), &terminal).await });
         }
         let plan = serde_json::from_str::<TransactionPlan>(TEST_PLAN)?;
         let fvk = coordinator_config.fvk().clone();
         let authorization_data = Threshold::new(coordinator_config, coordinator_terminal)
-            .authorize(AuthorizeRequest {
-                plan: plan.clone(),
-                pre_authorizations: Vec::new(),
-            })
+            .authorize(SigningRequest::TransactionPlan(plan.clone()))
             .await?;
+        let tx_authorization_data = match authorization_data {
+            SigningResponse::Transaction(tx) => tx,
+            _ => panic!("expected transaction authorization data"),
+        };
         assert_eq!(
             plan.effect_hash(&fvk)?,
-            authorization_data
+            tx_authorization_data
                 .effect_hash
                 .expect("effect hash not present")
         );
         // The transaction plan only has spends
         for (randomizer, sig) in plan
             .spend_plans()
-            .into_iter()
             .map(|x| x.randomizer)
-            .zip(authorization_data.spend_auths)
+            .zip(tx_authorization_data.spend_auths)
         {
             fvk.spend_verification_key().randomize(&randomizer).verify(
-                authorization_data
+                tx_authorization_data
                     .effect_hash
                     .expect("effect hash not present")
                     .as_bytes(),

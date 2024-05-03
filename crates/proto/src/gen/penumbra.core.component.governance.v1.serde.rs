@@ -248,6 +248,9 @@ impl serde::Serialize for ChangedAppParameters {
         if self.dex_params.is_some() {
             len += 1;
         }
+        if self.auction_params.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.ChangedAppParameters", len)?;
         if let Some(v) = self.sct_params.as_ref() {
             struct_ser.serialize_field("sctParams", v)?;
@@ -279,6 +282,9 @@ impl serde::Serialize for ChangedAppParameters {
         if let Some(v) = self.dex_params.as_ref() {
             struct_ser.serialize_field("dexParams", v)?;
         }
+        if let Some(v) = self.auction_params.as_ref() {
+            struct_ser.serialize_field("auctionParams", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -309,6 +315,8 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             "shieldedPoolParams",
             "dex_params",
             "dexParams",
+            "auction_params",
+            "auctionParams",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -323,6 +331,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
             FundingParams,
             ShieldedPoolParams,
             DexParams,
+            AuctionParams,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -355,6 +364,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             "fundingParams" | "funding_params" => Ok(GeneratedField::FundingParams),
                             "shieldedPoolParams" | "shielded_pool_params" => Ok(GeneratedField::ShieldedPoolParams),
                             "dexParams" | "dex_params" => Ok(GeneratedField::DexParams),
+                            "auctionParams" | "auction_params" => Ok(GeneratedField::AuctionParams),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -384,6 +394,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                 let mut funding_params__ = None;
                 let mut shielded_pool_params__ = None;
                 let mut dex_params__ = None;
+                let mut auction_params__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SctParams => {
@@ -446,6 +457,12 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                             }
                             dex_params__ = map_.next_value()?;
                         }
+                        GeneratedField::AuctionParams => {
+                            if auction_params__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("auctionParams"));
+                            }
+                            auction_params__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -462,6 +479,7 @@ impl<'de> serde::Deserialize<'de> for ChangedAppParameters {
                     funding_params: funding_params__,
                     shielded_pool_params: shielded_pool_params__,
                     dex_params: dex_params__,
+                    auction_params: auction_params__,
                 })
             }
         }

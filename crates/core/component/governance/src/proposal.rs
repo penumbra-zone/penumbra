@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::params::GovernanceParameters;
+use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
 use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
@@ -436,6 +437,7 @@ impl ProposalPayload {
     into = "pb::ChangedAppParameters"
 )]
 pub struct ChangedAppParameters {
+    pub auction_params: Option<AuctionParameters>,
     pub community_pool_params: Option<CommunityPoolParameters>,
     pub distributions_params: Option<DistributionsParameters>,
     pub ibc_params: Option<IBCParameters>,
@@ -457,6 +459,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 
     fn try_from(msg: pb::ChangedAppParameters) -> anyhow::Result<Self> {
         Ok(ChangedAppParameters {
+            auction_params: msg.auction_params.map(TryInto::try_into).transpose()?,
             community_pool_params: msg
                 .community_pool_params
                 .map(TryInto::try_into)
@@ -483,6 +486,7 @@ impl TryFrom<pb::ChangedAppParameters> for ChangedAppParameters {
 impl From<ChangedAppParameters> for pb::ChangedAppParameters {
     fn from(params: ChangedAppParameters) -> Self {
         pb::ChangedAppParameters {
+            auction_params: params.auction_params.map(Into::into),
             community_pool_params: params.community_pool_params.map(Into::into),
             distributions_params: params.distributions_params.map(Into::into),
             fee_params: params.fee_params.map(Into::into),

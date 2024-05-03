@@ -258,6 +258,9 @@ impl Transaction {
                 | Action::CommunityPoolSpend(_)
                 | Action::CommunityPoolOutput(_)
                 | Action::CommunityPoolDeposit(_) => {}
+                Action::ActionDutchAuctionSchedule(_) => {}
+                Action::ActionDutchAuctionEnd(_) => {}
+                Action::ActionDutchAuctionWithdraw(_) => {}
             }
         }
 

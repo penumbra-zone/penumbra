@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use penumbra_asset::asset;
+use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use penumbra_proto::{
     penumbra::core::component::dex::v1 as pb, serializers::bech32str, DomainType,
@@ -19,7 +19,7 @@ pub const MAX_FEE_BPS: u32 = 5000;
 
 /// Encapsulates the immutable parts of the position (phi/nonce), along
 /// with the mutable parts (state/reserves).
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::Position", into = "pb::Position")]
 pub struct Position {
     pub state: State,
@@ -33,7 +33,7 @@ pub struct Position {
     /// sequence of stateful NFTs based on the [`Id`].
     pub nonce: [u8; 32],
     /// Set to `true` if a position is a limit-order, meaning that it will be closed after being
-    /// filled against. Note that this is not currently supported in the dex state machine.
+    /// filled against.
     pub close_on_fill: bool,
 }
 
@@ -99,6 +99,48 @@ impl Position {
         }
     }
 
+    /// Construct a new opened [Position] with a supplied random nonce.
+    pub fn new_with_nonce(
+        nonce: [u8; 32],
+        pair: DirectedTradingPair,
+        fee: u32,
+        p: Amount,
+        q: Amount,
+        reserves: Reserves,
+    ) -> Position {
+        // Internally mutable so we can swap the `p` and `q` values if necessary.
+        let mut p = p;
+        let mut q = q;
+        let mut reserves = reserves;
+
+        // The [`TradingFunction`] uses a canonical non-directed trading pair ([`TradingPair`]).
+        // This means that the `p` and `q` values may need to be swapped, depending on the canonical
+        // representation of the trading pair.
+        let canonical_tp: TradingPair = pair.into();
+
+        // The passed-in `p` value is associated with the start asset, as is `r1`.
+        if pair.start != canonical_tp.asset_1() {
+            // The canonical representation of the trading pair has the start asset as the second
+            // asset, so we need to swap the `p` and `q` values.
+            std::mem::swap(&mut p, &mut q);
+
+            // The ordering of the reserves should also be swapped.
+            reserves = Reserves {
+                r1: reserves.r2,
+                r2: reserves.r1,
+            };
+        }
+
+        let phi = TradingFunction::new(canonical_tp, fee, p, q);
+        Position {
+            phi,
+            nonce,
+            state: State::Opened,
+            reserves,
+            close_on_fill: false,
+        }
+    }
+
     /// Get the ID of this position.
     pub fn id(&self) -> Id {
         let mut state = blake2b_simd::Params::default()
@@ -154,6 +196,22 @@ impl Position {
             Some(self.reserves.r2)
         } else {
             None
+        }
+    }
+
+    /// Returns the amount of reserves for asset 1.
+    pub fn reserves_1(&self) -> Value {
+        Value {
+            amount: self.reserves.r1,
+            asset_id: self.phi.pair.asset_1(),
+        }
+    }
+
+    /// Returns the amount of reserves for asset 2.
+    pub fn reserves_2(&self) -> Value {
+        Value {
+            amount: self.reserves.r2,
+            asset_id: self.phi.pair.asset_2(),
         }
     }
 }

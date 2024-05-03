@@ -2,23 +2,16 @@
 
 On first [installation of `pcli`](./install.md), you will need to generate a fresh wallet to use with Penumbra.
 
-The `pcli init` command will generate a configuration file. To generate a new wallet, try:
-```bash
-$ pcli init soft-kms generate
-YOUR PRIVATE SEED PHRASE:
-[SEED PHRASE]
-Save this in a safe place!
-DO NOT SHARE WITH ANYONE!
-Writing generated config to [PATH TO PCLI DATA]
-```
-This uses the `soft-kms` backend, which saves the generated spend key in the config file.
+The `pcli init` command will generate a configuration file, depending on the
+custody backend used to store keys.
 
-Alternatively, to import an existing wallet, try
-```bash
-$ pcli init soft-kms import-phrase
-Enter seed phrase:
-Writing generated config to [PATH TO PCLI DATA]
-```
+There are currently three custody backends:
+
+1. The [`softkms` backend](./wallet/softkms.md) is a good default choice for low-security use cases.  It stores keys unencrypted in a local config file.
+2. The [threshold backend](./wallet/threshold.md) is a good choice for high-security use cases. It provides a shielded multisig, with key material sharded over multiple computers.
+3. The `view-only` backend has no custody at all and only has access to viewing keys.
+
+After running `pcli init` with one of the backends described above, `pcli` will be initialized.
 
 Penumbra's design automatically creates `2^32` (four billion) numbered accounts
 controlled by your wallet.
@@ -37,7 +30,7 @@ Address is viewable with this full viewing key. Account index is 0.
 Addresses are opaque and do not reveal account information. Only you, or someone
 who has your viewing key, can decrypt the account information from the address.
 
-### Getting testnet tokens on the [Discord] in the `#testnet-faucet` channel
+### Getting testnet tokens on Discord in the `#testnet-faucet` channel
 
 In order to use the testnet, it's first necessary for you to get some testnet tokens. The current
 way to do this is to join our [Discord](https://discord.gg/hKvkrqa3zC) and post your address in the `#testnet-faucet` channel.

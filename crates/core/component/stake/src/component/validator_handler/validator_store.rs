@@ -8,7 +8,7 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use futures::{Future, FutureExt, TryStreamExt};
+use futures::{Future, FutureExt};
 use penumbra_num::Amount;
 use penumbra_proto::{state::future::DomainFuture, DomainType, StateReadProto, StateWriteProto};
 use std::pin::Pin;
@@ -128,28 +128,38 @@ pub trait ValidatorDataRead: StateRead {
         self.nonverifiable_get(key.as_bytes())
     }
 
+    async fn lookup_identity_key_by_consensus_key(&self, ck: &PublicKey) -> Option<IdentityKey> {
+        self.get(&state_key::validators::lookup_by::consensus_key(ck))
+            .await
+            .expect("no deserialization error")
+    }
+
+    async fn lookup_consensus_key_by_comet_address(&self, address: &[u8; 20]) -> Option<PublicKey> {
+        self.get(&state_key::validators::lookup_by::cometbft_address(address))
+            .await
+            .expect("no deserialization error")
+    }
+
     // Tendermint validators are referenced to us by their Tendermint consensus key,
     // but we reference them by their Penumbra identity key.
-    async fn get_validator_by_consensus_key(&self, ck: &PublicKey) -> Result<Option<Validator>> {
-        if let Some(identity_key) = self
-            .get(&state_key::validators::lookup_by::consensus_key(ck))
-            .await?
-        {
+    async fn get_validator_definition_by_consensus_key(
+        &self,
+        ck: &PublicKey,
+    ) -> Result<Option<Validator>> {
+        if let Some(identity_key) = self.lookup_identity_key_by_consensus_key(ck).await {
             self.get_validator_definition(&identity_key).await
         } else {
             return Ok(None);
         }
     }
 
-    async fn get_validator_by_cometbft_address(
+    async fn get_validator_definition_by_cometbft_address(
         &self,
         address: &[u8; 20],
     ) -> Result<Option<Validator>> {
-        if let Some(consensus_key) = self
-            .get(&state_key::validators::lookup_by::cometbft_address(address))
-            .await?
-        {
-            self.get_validator_by_consensus_key(&consensus_key).await
+        if let Some(consensus_key) = self.lookup_consensus_key_by_comet_address(address).await {
+            self.get_validator_definition_by_consensus_key(&consensus_key)
+                .await
         } else {
             return Ok(None);
         }
@@ -216,14 +226,6 @@ pub trait ValidatorDataRead: StateRead {
         self.get(&state_key::validators::definitions::by_id(identity_key))
             .map_ok(|opt: Option<Validator>| opt.map(|v: Validator| v.consensus_key))
             .boxed()
-    }
-
-    /// Returns a list of **all** known validators metadata.
-    async fn validator_definitions(&self) -> Result<Vec<Validator>> {
-        self.prefix(state_key::validators::definitions::prefix())
-            .map_ok(|(_key, validator)| validator)
-            .try_collect()
-            .await
     }
 }
 

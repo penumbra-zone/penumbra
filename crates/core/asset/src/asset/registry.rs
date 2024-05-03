@@ -417,5 +417,13 @@ pub static REGISTRY: Lazy<Registry> = Lazy::new(|| {
                     },
                 ])
             }) as for<'r> fn(&'r str) -> _)
+            .add_asset(
+                "^auctionnft_(?P<data>[a-z_0-9]+_pauctid1[a-zA-HJ-NP-Z0-9]+)$",
+                &[ /* no display units - nft, unit 1 */ ],
+                (|data: &str| {
+                    assert!(!data.is_empty());
+                    denom_metadata::Inner::new(format!("auctionnft_{data}"), vec![])
+                }) as for<'r> fn(&'r str) -> _,
+            )
         .build()
 });

@@ -5,11 +5,18 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use ed25519_consensus::{Signature, SigningKey, VerificationKey};
+use penumbra_keys::FullViewingKey;
 use rand_core::CryptoRngCore;
 
 use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
+use penumbra_governance::ValidatorVoteBody;
+use penumbra_proto::core::component::{
+    governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
+    stake::v1::Validator as ProtoValidator,
+};
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
+use penumbra_stake::validator::Validator;
 use penumbra_transaction::{AuthorizationData, TransactionPlan};
 use penumbra_txhash::EffectHash;
 
@@ -20,22 +27,59 @@ use super::config::Config;
 /// This is nominally "round 1", even though it's the only message the coordinator ever sends.
 #[derive(Debug, Clone)]
 pub struct CoordinatorRound1 {
-    plan: TransactionPlan,
+    request: SigningRequest,
+}
+
+#[derive(Debug, Clone)]
+pub enum SigningRequest {
+    TransactionPlan(TransactionPlan),
+    ValidatorDefinition(Validator),
+    ValidatorVote(ValidatorVoteBody),
+}
+
+/// Authorization data returned in response to some signing request, which may be a request to
+/// authorize a transaction, a validator definition, or a validator vote.
+#[derive(Clone, Debug)]
+pub enum SigningResponse {
+    /// Authorization data for a transaction.
+    Transaction(AuthorizationData),
+    /// Authorization signature for a validator definition.
+    ValidatorDefinition(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+    /// Authorization signature for a validator vote.
+    ValidatorVote(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
+}
+
+impl From<AuthorizationData> for SigningResponse {
+    fn from(msg: AuthorizationData) -> Self {
+        Self::Transaction(msg)
+    }
 }
 
 impl CoordinatorRound1 {
     /// View the transaction plan associated with the first message.
     ///
     /// We need this method to be able to prompt users correctly.
-    pub fn plan(&self) -> &TransactionPlan {
-        &self.plan
+    pub fn signing_request(&self) -> &SigningRequest {
+        &self.request
     }
 }
 
 impl From<CoordinatorRound1> for pb::CoordinatorRound1 {
     fn from(value: CoordinatorRound1) -> Self {
-        Self {
-            plan: Some(value.plan.into()),
+        match value.request {
+            SigningRequest::TransactionPlan(plan) => Self {
+                request: Some(pb::coordinator_round1::Request::Plan(plan.into())),
+            },
+            SigningRequest::ValidatorDefinition(validator) => Self {
+                request: Some(pb::coordinator_round1::Request::ValidatorDefinition(
+                    ProtoValidator::from(validator).into(),
+                )),
+            },
+            SigningRequest::ValidatorVote(vote) => Self {
+                request: Some(pb::coordinator_round1::Request::ValidatorVote(
+                    ProtoValidatorVoteBody::from(vote).into(),
+                )),
+            },
         }
     }
 }
@@ -44,9 +88,20 @@ impl TryFrom<pb::CoordinatorRound1> for CoordinatorRound1 {
     type Error = anyhow::Error;
 
     fn try_from(value: pb::CoordinatorRound1) -> Result<Self, Self::Error> {
-        Ok(Self {
-            plan: value.plan.ok_or(anyhow!("missing plan"))?.try_into()?,
-        })
+        match value
+            .request
+            .ok_or_else(|| anyhow::anyhow!("missing request"))?
+        {
+            pb::coordinator_round1::Request::Plan(plan) => Ok(Self {
+                request: SigningRequest::TransactionPlan(plan.try_into()?),
+            }),
+            pb::coordinator_round1::Request::ValidatorDefinition(def) => Ok(Self {
+                request: SigningRequest::ValidatorDefinition(def.try_into()?),
+            }),
+            pb::coordinator_round1::Request::ValidatorVote(vote) => Ok(Self {
+                request: SigningRequest::ValidatorVote(vote.try_into()?),
+            }),
+        }
     }
 }
 
@@ -288,37 +343,95 @@ impl DomainType for FollowerRound2 {
 /// Calculate the number of required signatures for a plan.
 ///
 /// A plan can require more than one signature, hence the need for this method.
-fn required_signatures(plan: &TransactionPlan) -> usize {
-    plan.spend_plans().count() + plan.delegator_vote_plans().count()
+fn required_signatures(request: &SigningRequest) -> usize {
+    match request {
+        SigningRequest::TransactionPlan(plan) => {
+            plan.spend_plans().count() + plan.delegator_vote_plans().count()
+        }
+        SigningRequest::ValidatorDefinition(_) => 1,
+        SigningRequest::ValidatorVote(_) => 1,
+    }
+}
+
+/// Create a trivial signing response if no signatures are needed.
+pub fn no_signature_response(
+    fvk: &FullViewingKey,
+    request: &SigningRequest,
+) -> Result<Option<SigningResponse>> {
+    match request {
+        SigningRequest::TransactionPlan(plan) if required_signatures(request) <= 0 => {
+            Ok(Some(SigningResponse::Transaction(AuthorizationData {
+                effect_hash: Some(plan.effect_hash(fvk)?),
+                spend_auths: Vec::new(),
+                delegator_vote_auths: Vec::new(),
+            })))
+        }
+        _ => Ok(None),
+    }
 }
 
 pub struct CoordinatorState1 {
-    plan: TransactionPlan,
+    request: SigningRequest,
     my_round1_reply: FollowerRound1,
     my_round1_state: FollowerState,
 }
 
 pub struct CoordinatorState2 {
-    plan: TransactionPlan,
+    request: SigningRequest,
     my_round2_reply: FollowerRound2,
-    effect_hash: EffectHash,
+    to_be_signed: ToBeSigned,
     signing_packages: Vec<frost::SigningPackage>,
 }
 
+enum ToBeSigned {
+    EffectHash(EffectHash),
+    ValidatorDefinitionBytes(Vec<u8>),
+    ValidatorVoteBytes(Vec<u8>),
+}
+
+impl SigningRequest {
+    fn to_be_signed(&self, config: &Config) -> Result<ToBeSigned> {
+        let out = match self {
+            SigningRequest::TransactionPlan(plan) => {
+                ToBeSigned::EffectHash(plan.effect_hash(config.fvk())?)
+            }
+            SigningRequest::ValidatorDefinition(validator) => ToBeSigned::ValidatorDefinitionBytes(
+                ProtoValidator::from(validator.clone()).encode_to_vec(),
+            ),
+            SigningRequest::ValidatorVote(vote) => ToBeSigned::ValidatorVoteBytes(
+                ProtoValidatorVoteBody::from(vote.clone()).encode_to_vec(),
+            ),
+        };
+        Ok(out)
+    }
+}
+
+impl AsRef<[u8]> for ToBeSigned {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            ToBeSigned::EffectHash(x) => x.as_ref(),
+            ToBeSigned::ValidatorDefinitionBytes(x) => x.as_slice(),
+            ToBeSigned::ValidatorVoteBytes(x) => x.as_slice(),
+        }
+    }
+}
+
 pub struct FollowerState {
-    plan: TransactionPlan,
+    request: SigningRequest,
     nonces: Vec<frost::round1::SigningNonces>,
 }
 
 pub fn coordinator_round1(
     rng: &mut impl CryptoRngCore,
     config: &Config,
-    plan: TransactionPlan,
+    request: SigningRequest,
 ) -> Result<(CoordinatorRound1, CoordinatorState1)> {
-    let message = CoordinatorRound1 { plan: plan.clone() };
+    let message = CoordinatorRound1 {
+        request: request.clone(),
+    };
     let (my_round1_reply, my_round1_state) = follower_round1(rng, config, message.clone())?;
     let state = CoordinatorState1 {
-        plan,
+        request,
         my_round1_reply,
         my_round1_state,
     };
@@ -330,7 +443,7 @@ pub fn coordinator_round2(
     state: CoordinatorState1,
     follower_messages: &[FollowerRound1],
 ) -> Result<(CoordinatorRound2, CoordinatorState2)> {
-    let mut all_commitments = vec![BTreeMap::new(); required_signatures(&state.plan)];
+    let mut all_commitments = vec![BTreeMap::new(); required_signatures(&state.request)];
     for message in follower_messages
         .iter()
         .cloned()
@@ -349,18 +462,20 @@ pub fn coordinator_round2(
     let reply = CoordinatorRound2 { all_commitments };
 
     let my_round2_reply = follower_round2(config, state.my_round1_state, reply.clone())?;
-    let effect_hash = state.plan.effect_hash(config.fvk())?;
+
+    let to_be_signed = state.request.to_be_signed(&config)?;
+
     let signing_packages = {
         reply
             .all_commitments
             .iter()
-            .map(|tree| frost::SigningPackage::new(tree.clone(), effect_hash.as_ref()))
+            .map(|tree| frost::SigningPackage::new(tree.clone(), to_be_signed.as_ref()))
             .collect()
     };
     let state = CoordinatorState2 {
-        plan: state.plan,
+        request: state.request,
         my_round2_reply,
-        effect_hash,
+        to_be_signed,
         signing_packages,
     };
     Ok((reply, state))
@@ -370,9 +485,9 @@ pub fn coordinator_round3(
     config: &Config,
     state: CoordinatorState2,
     follower_messages: &[FollowerRound2],
-) -> Result<AuthorizationData> {
+) -> Result<SigningResponse> {
     let mut share_maps: Vec<HashMap<frost::Identifier, frost::round2::SignatureShare>> =
-        vec![HashMap::new(); required_signatures(&state.plan)];
+        vec![HashMap::new(); required_signatures(&state.request)];
     for message in follower_messages
         .iter()
         .cloned()
@@ -387,28 +502,63 @@ pub fn coordinator_round3(
             map_i.insert(identifier, share_i);
         }
     }
-    let mut spend_auths = state
-        .plan
-        .spend_plans()
-        .map(|x| x.randomizer)
-        .chain(state.plan.delegator_vote_plans().map(|x| x.randomizer))
-        .zip(share_maps.iter())
-        .zip(state.signing_packages.iter())
-        .map(|((randomizer, share_map), signing_package)| {
-            frost::aggregate_randomized(
-                signing_package,
-                &share_map,
+
+    match state.request {
+        SigningRequest::TransactionPlan(plan) => {
+            let mut spend_auths = plan
+                .spend_plans()
+                .map(|x| x.randomizer)
+                .chain(plan.delegator_vote_plans().map(|x| x.randomizer))
+                .zip(share_maps.iter())
+                .zip(state.signing_packages.iter())
+                .map(|((randomizer, share_map), signing_package)| {
+                    frost::aggregate_randomized(
+                        signing_package,
+                        &share_map,
+                        &config.public_key_package(),
+                        randomizer,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let delegator_vote_auths = spend_auths.split_off(plan.spend_plans().count());
+            Ok(SigningResponse::Transaction(AuthorizationData {
+                effect_hash: {
+                    let ToBeSigned::EffectHash(effect_hash) = state.to_be_signed else {
+                        unreachable!("transaction plan request has non-effect-hash to be signed");
+                    };
+                    Some(effect_hash)
+                },
+                spend_auths,
+                delegator_vote_auths,
+            }))
+        }
+        SigningRequest::ValidatorDefinition(_) => {
+            let validator_definition_auth = share_maps
+                .get(0)
+                .ok_or_else(|| anyhow!("missing signature for validator definition"))?;
+            Ok(SigningResponse::ValidatorDefinition(frost::aggregate(
+                &state
+                    .signing_packages
+                    .get(0)
+                    .expect("same number of signing packages as signatures"),
+                &validator_definition_auth,
                 &config.public_key_package(),
-                randomizer,
-            )
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let delegator_vote_auths = spend_auths.split_off(state.plan.spend_plans().count());
-    Ok(AuthorizationData {
-        effect_hash: Some(state.effect_hash),
-        spend_auths,
-        delegator_vote_auths,
-    })
+            )?))
+        }
+        SigningRequest::ValidatorVote(_) => {
+            let validator_vote_auth = share_maps
+                .get(0)
+                .ok_or_else(|| anyhow!("missing signature for validator vote"))?;
+            Ok(SigningResponse::ValidatorVote(frost::aggregate(
+                &state
+                    .signing_packages
+                    .get(0)
+                    .expect("same number of signing packages as signatures"),
+                &validator_vote_auth,
+                &config.public_key_package(),
+            )?))
+        }
+    }
 }
 
 pub fn follower_round1(
@@ -416,13 +566,13 @@ pub fn follower_round1(
     config: &Config,
     coordinator: CoordinatorRound1,
 ) -> Result<(FollowerRound1, FollowerState)> {
-    let required = required_signatures(&coordinator.plan);
+    let required = required_signatures(&coordinator.request);
     let (nonces, commitments) = (0..required)
         .map(|_| frost::round1::commit(&config.key_package().secret_share(), rng))
         .unzip();
     let reply = FollowerRound1::make(config.signing_key(), commitments);
     let state = FollowerState {
-        plan: coordinator.plan,
+        request: coordinator.request,
         nonces,
     };
     Ok((reply, state))
@@ -433,26 +583,39 @@ pub fn follower_round2(
     state: FollowerState,
     coordinator: CoordinatorRound2,
 ) -> Result<FollowerRound2> {
-    let effect_hash = state.plan.effect_hash(config.fvk())?;
+    let to_be_signed = state.request.to_be_signed(config)?;
     let signing_packages = coordinator
         .all_commitments
         .into_iter()
-        .map(|tree| frost::SigningPackage::new(tree, effect_hash.as_ref()));
-    let shares = state
-        .plan
-        .spend_plans()
-        .map(|x| x.randomizer)
-        .chain(state.plan.delegator_vote_plans().map(|x| x.randomizer))
-        .zip(signing_packages)
-        .zip(state.nonces.into_iter())
-        .map(|((randomizer, signing_package), signer_nonces)| {
-            frost::round2::sign_randomized(
-                &signing_package,
-                &signer_nonces,
-                &config.key_package(),
-                randomizer,
-            )
-        })
-        .collect::<Result<_, _>>()?;
-    Ok(FollowerRound2::make(config.signing_key(), shares))
+        .map(|tree| frost::SigningPackage::new(tree, to_be_signed.as_ref()));
+
+    match state.request {
+        SigningRequest::TransactionPlan(plan) => {
+            let shares = plan
+                .spend_plans()
+                .map(|x| x.randomizer)
+                .chain(plan.delegator_vote_plans().map(|x| x.randomizer))
+                .zip(signing_packages)
+                .zip(state.nonces.into_iter())
+                .map(|((randomizer, signing_package), signer_nonces)| {
+                    frost::round2::sign_randomized(
+                        &signing_package,
+                        &signer_nonces,
+                        &config.key_package(),
+                        randomizer,
+                    )
+                })
+                .collect::<Result<_, _>>()?;
+            Ok(FollowerRound2::make(config.signing_key(), shares))
+        }
+        SigningRequest::ValidatorDefinition(_) | SigningRequest::ValidatorVote(_) => {
+            let shares = signing_packages
+                .zip(state.nonces.into_iter())
+                .map(|(signing_package, signer_nonces)| {
+                    frost::round2::sign(&signing_package, &signer_nonces, &config.key_package())
+                })
+                .collect::<Result<_, _>>()?;
+            Ok(FollowerRound2::make(config.signing_key(), shares))
+        }
+    }
 }

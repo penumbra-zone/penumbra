@@ -14,6 +14,10 @@ image:
 # Consider using "preview" for bleeding edge, but make sure container tags match.
 penumbra_bootstrap_node_cometbft_rpc_url: "https://rpc.testnet.penumbra.zone"
 
+# Whether to fetch a remote archive for loading historical state,
+# e.g. post-upgrade.
+penumbra_bootstrap_archive_url: ""
+
 # Whether to preserve the LB service, in effect reserving the same IP
 # for subsequent deploys. This costs money! But sure is convenient.
 preserve_lb_svc: false

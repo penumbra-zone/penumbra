@@ -7,12 +7,14 @@ consider using [WSL] instead.
 
 ### Installing the Rust toolchain
 
-This requires that you install a recent (>= 1.73) stable version
+This requires that you install a recent (>= 1.75) stable version
 of the Rust compiler, installation instructions for which you can find
 [here](https://www.rust-lang.org/learn/get-started). Don't forget to reload your shell so that
 `cargo` is available in your `$PATH`!
 
-You can verify the rust compiler version by running `rustc --version` which should indicate version 1.73 or later.
+You can verify the rust compiler version by running `rustc --version` which should indicate version 1.75 or later.
+The project uses a `rust-toolchain.toml` file, which will ensure that your version of rust stays current enough
+to build the project from source.
 
 ### Installing build prerequisites
 

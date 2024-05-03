@@ -420,7 +420,7 @@ pub struct OutputBody {
     #[prost(bytes = "vec", tag = "3")]
     pub wrapped_memo_key: ::prost::alloc::vec::Vec<u8>,
     /// The key material used for note encryption, wrapped in encryption to the
-    /// sender's outgoing viewing key. 80 bytes.
+    /// sender's outgoing viewing key. 48 bytes.
     #[prost(bytes = "vec", tag = "4")]
     pub ovk_wrapped_key: ::prost::alloc::vec::Vec<u8>,
 }
@@ -561,6 +561,40 @@ impl ::prost::Name for AssetMetadataByIdResponse {
         )
     }
 }
+/// Requests information on an asset by multiple asset ids
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetMetadataByIdsRequest {
+    /// The asset IDs to request information on. Note that node is neither required
+    /// nor expected to stream responses in the same order as this array.
+    #[prost(message, repeated, tag = "1")]
+    pub asset_id: ::prost::alloc::vec::Vec<super::super::super::asset::v1::AssetId>,
+}
+impl ::prost::Name for AssetMetadataByIdsRequest {
+    const NAME: &'static str = "AssetMetadataByIdsRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AssetMetadataByIdsResponse {
+    /// A single asset metadata streamed from the node.
+    #[prost(message, optional, tag = "1")]
+    pub denom_metadata: ::core::option::Option<super::super::super::asset::v1::Metadata>,
+}
+impl ::prost::Name for AssetMetadataByIdsResponse {
+    const NAME: &'static str = "AssetMetadataByIdsResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -678,6 +712,41 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Requests a stream of asset metadata, given an array of asset IDs. Responses
+        /// may be streamed in a different order from that of the asset IDs in the
+        /// request, and asset IDs unknown to the node will not receive any response
+        /// objects -- that is, the number of responses may be smaller than the length
+        /// of the asset IDs array.
+        pub async fn asset_metadata_by_ids(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AssetMetadataByIdsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::AssetMetadataByIdsResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataByIds",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.shielded_pool.v1.QueryService",
+                        "AssetMetadataByIds",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -693,6 +762,27 @@ pub mod query_service_server {
             request: tonic::Request<super::AssetMetadataByIdRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AssetMetadataByIdResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the AssetMetadataByIds method.
+        type AssetMetadataByIdsStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::AssetMetadataByIdsResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Requests a stream of asset metadata, given an array of asset IDs. Responses
+        /// may be streamed in a different order from that of the asset IDs in the
+        /// request, and asset IDs unknown to the node will not receive any response
+        /// objects -- that is, the number of responses may be smaller than the length
+        /// of the asset IDs array.
+        async fn asset_metadata_by_ids(
+            &self,
+            request: tonic::Request<super::AssetMetadataByIdsRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::AssetMetadataByIdsStream>,
             tonic::Status,
         >;
     }
@@ -819,6 +909,55 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.shielded_pool.v1.QueryService/AssetMetadataByIds" => {
+                    #[allow(non_camel_case_types)]
+                    struct AssetMetadataByIdsSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::AssetMetadataByIdsRequest,
+                    > for AssetMetadataByIdsSvc<T> {
+                        type Response = super::AssetMetadataByIdsResponse;
+                        type ResponseStream = T::AssetMetadataByIdsStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AssetMetadataByIdsRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::asset_metadata_by_ids(&inner, request)
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AssetMetadataByIdsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

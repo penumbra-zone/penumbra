@@ -305,6 +305,41 @@ pub mod swap_view {
     pub struct Opaque {
         #[prost(message, optional, tag = "1")]
         pub swap: ::core::option::Option<super::Swap>,
+        /// Optionally, if the swap has been confirmed, the batch price it received.
+        ///
+        /// As soon as the swap is detected, the view server can in principle record
+        /// the relevant BSOD and provide it as part of the view.  This allows providing
+        /// info about the execution of the swap.
+        #[prost(message, optional, tag = "20")]
+        pub batch_swap_output_data: ::core::option::Option<super::BatchSwapOutputData>,
+        /// Optionally, if the swap has been confirmed, the output value of asset 1.
+        ///
+        /// This is the value of the note that will be minted by the SwapClaim action.
+        /// Note that unlike the `Visible` variant, this is only a `ValueView` since
+        /// the details of the note (in particular the claim address) are not publicly known.
+        #[prost(message, optional, tag = "30")]
+        pub output_1_value: ::core::option::Option<
+            super::super::super::super::asset::v1::ValueView,
+        >,
+        /// Optionally, if the swap has been confirmed, the output value of asset 2.
+        ///
+        /// This is the note that will be minted by the SwapClaim action.
+        /// Note that unlike the `Visible` variant, this is only a `ValueView` since
+        /// the details of the note (in particular the claim address) are not publicly known.
+        #[prost(message, optional, tag = "31")]
+        pub output_2_value: ::core::option::Option<
+            super::super::super::super::asset::v1::ValueView,
+        >,
+        /// Optionally, metadata about asset 1 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "40")]
+        pub asset_1_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
+        /// Optionally, metadata about asset 2 in the `swap`'s trading pair.
+        #[prost(message, optional, tag = "41")]
+        pub asset_2_metadata: ::core::option::Option<
+            super::super::super::super::asset::v1::Metadata,
+        >,
     }
     impl ::prost::Name for Opaque {
         const NAME: &'static str = "Opaque";
@@ -473,8 +508,12 @@ pub struct BatchSwapOutputData {
     #[prost(message, optional, tag = "8")]
     pub trading_pair: ::core::option::Option<TradingPair>,
     /// The starting block height of the epoch for which the batch swap data is valid.
+    #[deprecated]
     #[prost(uint64, tag = "9")]
     pub epoch_starting_height: u64,
+    /// The prefix (epoch, block) of the position where this batch swap occurred.
+    #[prost(uint64, tag = "10")]
+    pub sct_position_prefix: u64,
 }
 impl ::prost::Name for BatchSwapOutputData {
     const NAME: &'static str = "BatchSwapOutputData";
@@ -1133,6 +1172,8 @@ impl ::prost::Name for LiquidityPositionsByPriceRequest {
 pub struct LiquidityPositionsByPriceResponse {
     #[prost(message, optional, tag = "1")]
     pub data: ::core::option::Option<Position>,
+    #[prost(message, optional, tag = "2")]
+    pub id: ::core::option::Option<PositionId>,
 }
 impl ::prost::Name for LiquidityPositionsByPriceResponse {
     const NAME: &'static str = "LiquidityPositionsByPriceResponse";
@@ -1360,6 +1401,20 @@ impl ::prost::Name for EventPositionClose {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventQueuePositionClose {
+    /// The ID of the position queued that is closed for closure.
+    #[prost(message, optional, tag = "1")]
+    pub position_id: ::core::option::Option<PositionId>,
+}
+impl ::prost::Name for EventQueuePositionClose {
+    const NAME: &'static str = "EventQueuePositionClose";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventPositionWithdraw {
     /// The ID of the withdrawn position.
     #[prost(message, optional, tag = "1")]
@@ -1399,6 +1454,15 @@ pub struct EventPositionExecution {
     /// The reserves of asset 2 of the position after execution.
     #[prost(message, optional, tag = "4")]
     pub reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 1 of the position before execution.
+    #[prost(message, optional, tag = "5")]
+    pub prev_reserves_1: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The reserves of asset 2 of the position before execution.
+    #[prost(message, optional, tag = "6")]
+    pub prev_reserves_2: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// Context: the end-to-end route that was being traversed during execution.
+    #[prost(message, optional, tag = "7")]
+    pub context: ::core::option::Option<DirectedTradingPair>,
 }
 impl ::prost::Name for EventPositionExecution {
     const NAME: &'static str = "EventPositionExecution";
@@ -1444,6 +1508,48 @@ impl ::prost::Name for EventArbExecution {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+/// Indicates that value was added to the DEX.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerCredit {
+    /// The asset ID being deposited into the DEX.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the DEX.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the DEX.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerCredit {
+    const NAME: &'static str = "EventValueCircuitBreakerCredit";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+/// Indicates that value is leaving the DEX.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerDebit {
+    /// The asset ID being deposited into the DEX.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the DEX.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the DEX.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerDebit {
+    const NAME: &'static str = "EventValueCircuitBreakerDebit";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DexParameters {
@@ -1458,6 +1564,11 @@ pub struct DexParameters {
     /// The number of hops to traverse while routing from A to B.
     #[prost(uint32, tag = "3")]
     pub max_hops: u32,
+    /// The maximum number of positions per trading pair.
+    /// If this number is exceeded, positions with the least
+    /// inventory get evicted from the DEX.
+    #[prost(uint32, tag = "4")]
+    pub max_positions_per_pair: u32,
 }
 impl ::prost::Name for DexParameters {
     const NAME: &'static str = "DexParameters";

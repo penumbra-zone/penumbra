@@ -325,7 +325,9 @@ impl TransactionPlan {
 
     /// Convenience method to get all the destination addresses for each `OutputPlan`s.
     pub fn dest_addresses(&self) -> Vec<Address> {
-        self.output_plans().map(|plan| plan.dest_address).collect()
+        self.output_plans()
+            .map(|plan| plan.dest_address.clone())
+            .collect()
     }
 
     /// Convenience method to get the number of `OutputPlan`s in this transaction.
@@ -499,7 +501,7 @@ mod tests {
                     .unwrap()
                     .id(),
             }),
-            addr,
+            addr.clone(),
         );
 
         let mut rng = OsRng;

@@ -2,8 +2,10 @@ syntax = "proto3";
 
 package penumbra.view.v1;
 
+import "google/protobuf/any.proto";
 import "penumbra/core/app/v1/app.proto";
 import "penumbra/core/asset/v1/asset.proto";
+import "penumbra/core/component/auction/v1alpha1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
@@ -136,6 +138,38 @@ service ViewService {
   // that token. Each `ValueView`'s `extended_metadata` field will contain the
   // `ValidatorInfo` of the delegated validator.
   rpc DelegationsByAddressIndex(DelegationsByAddressIndexRequest) returns (stream DelegationsByAddressIndexResponse);
+
+  // Get unbonding tokens for the given address index, optionally filtered by
+  // whether the tokens are currently claimable.
+  rpc UnbondingTokensByAddressIndex(UnbondingTokensByAddressIndexRequest) returns (stream UnbondingTokensByAddressIndexResponse);
+
+  // Gets the auctions controlled by the user's wallet.
+  rpc Auctions(AuctionsRequest) returns (stream AuctionsResponse);
+}
+
+message AuctionsRequest {
+  // If present, filter balances to only include the account specified by the `AddressIndex`.
+  core.keys.v1.AddressIndex account_filter = 1;
+  // If present, include inactive auctions as well as active ones.
+  bool include_inactive = 2;
+  // If set, query a fullnode for the current state of the auctions.
+  bool query_latest_state = 3;
+}
+
+message AuctionsResponse {
+  core.component.auction.v1alpha1.AuctionId id = 1;
+  // The note recording the auction NFT.
+  SpendableNoteRecord note_record = 4;
+
+  // The state of the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  google.protobuf.Any auction = 2;
+  // The state of any DEX positions relevant to the returned auction.
+  //
+  // Only present when `query_latest_state` was provided.
+  // Could be empty, depending on the auction state.
+  repeated core.component.dex.v1.Position positions = 3;
 }
 
 message AuthorizeAndBuildRequest {
@@ -210,6 +244,9 @@ message TransactionPlannerRequest {
   repeated PositionOpen position_opens = 70;
   repeated PositionClose position_closes = 71;
   repeated PositionWithdraw position_withdraws = 72;
+  repeated ActionDutchAuctionSchedule dutch_auction_schedule_actions = 73;
+  repeated ActionDutchAuctionEnd dutch_auction_end_actions = 74;
+  repeated ActionDutchAuctionWithdraw dutch_auction_withdraw_actions = 75;
 
   // Specifies either that the planner should compute fees automatically or that it should use a fixed fee amount.
   oneof fee_mode {
@@ -260,13 +297,15 @@ message TransactionPlannerRequest {
     // The identity key of the validator to finish undelegating from.
     core.keys.v1.IdentityKey validator_identity = 1;
     // The epoch in which unbonding began, used to verify the penalty.
-    uint64 start_epoch_index = 2;
+    uint64 start_epoch_index = 2 [deprecated = true];
     // The penalty applied to undelegation, in bps^2 (10e-8).
     // In the happy path (no slashing), this is 0.
     core.component.stake.v1.Penalty penalty = 3;
     // The amount of unbonding tokens to claim.
     // This is a bare number because its denom is determined by the preceding data.
     core.num.v1.Amount unbonding_amount = 4;
+    // The height at which unbonding began.
+    uint64 unbonding_start_height = 5;
   }
   message PositionOpen {
     // Contains the data defining the position, sufficient to compute its `PositionId`.
@@ -286,6 +325,23 @@ message TransactionPlannerRequest {
     core.component.dex.v1.Reserves reserves = 2;
     // The trading pair of the position.
     core.component.dex.v1.TradingPair trading_pair = 3;
+  }
+
+  message ActionDutchAuctionSchedule {
+    // The description of the auction to schedule.
+    core.component.auction.v1alpha1.DutchAuctionDescription description = 1;
+  }
+
+  message ActionDutchAuctionEnd {
+    // The unique id of the auction to close.
+    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+  }
+
+  message ActionDutchAuctionWithdraw {
+    // The auction to withdraw funds from.
+    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+    // The sequence number of the withdrawal.
+    uint64 seq = 2;
   }
 }
 
@@ -641,4 +697,40 @@ message DelegationsByAddressIndexRequest {
 // cits `extended_metadata` field.
 message DelegationsByAddressIndexResponse {
   core.asset.v1.ValueView value_view = 1;
+}
+
+// Requests unbonding tokens for a given address index, with optional filtering
+// for whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexRequest {
+  enum Filter {
+    // Return all unbonding tokens, regardless of whether they're claimable
+    // right now.
+    FILTER_UNSPECIFIED = 0;
+
+    // Return all unbonding tokens that are currently claimable. This includes:
+    // - tokens that have passed the `unbonding_delay` (from `StakeParameters`)
+    // - tokens for unbonded validators
+    FILTER_CLAIMABLE = 1;
+
+    // Return all unbonding tokens that are not yet claimable, because they are
+    // still in the `unbonding_delay` (from `StakeParameters`) period.
+    FILTER_NOT_YET_CLAIMABLE = 2;
+  }
+
+  Filter filter = 1;
+
+  // The address index to fetch unbonding tokens for.
+  core.keys.v1.AddressIndex address_index = 2;
+}
+
+// Returns unbonding tokens for the given address index, optionally filtered by
+// whether the tokens are currently claimable.
+message UnbondingTokensByAddressIndexResponse {
+  // A `ValueView` representing the amount of the given unbonding token.
+  core.asset.v1.ValueView value_view = 1;
+
+  // Whether the unbonding token is currently claimable. This will only be
+  // `true` if the `unbonding_delay` (from `StakeParameters`) has passed or the
+  // validator has unbonded.
+  bool claimable = 2;
 }

@@ -101,7 +101,7 @@ impl TryFrom<pb::SpendBody> for Body {
     fn try_from(proto: pb::SpendBody) -> anyhow::Result<Self, Self::Error> {
         let balance_commitment: balance::Commitment = proto
             .balance_commitment
-            .ok_or_else(|| anyhow::anyhow!("missing value commitment"))?
+            .ok_or_else(|| anyhow::anyhow!("missing balance commitment"))?
             .try_into()
             .context("malformed balance commitment")?;
 

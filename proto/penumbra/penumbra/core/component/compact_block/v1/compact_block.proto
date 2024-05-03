@@ -28,6 +28,8 @@ message CompactBlock {
   bool app_parameters_updated = 9;
   // Updated gas prices, if they have changed.
   fee.v1.GasPrices gas_prices = 10;
+  // The epoch index
+  uint64 epoch_index = 11;
 }
 
 // An encrypted payload, corresponding to a single commitment in the state commitment tree.

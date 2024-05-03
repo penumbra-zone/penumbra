@@ -254,7 +254,7 @@ impl TransactionViewExt for TransactionView {
 
                             ["Swap", &action]
                         }
-                        SwapView::Opaque { swap } => {
+                        SwapView::Opaque { swap, .. } => {
                             action = format!(
                                 "Opaque swap for trading pair: {} <=> {}",
                                 format_asset_id(&swap.body.trading_pair.asset_1()),
@@ -378,6 +378,13 @@ impl TransactionViewExt for TransactionView {
                 penumbra_transaction::ActionView::Delegate(_) => ["Delegation", ""],
                 penumbra_transaction::ActionView::Undelegate(_) => ["Undelegation", ""],
                 penumbra_transaction::ActionView::UndelegateClaim(_) => ["Undelegation Claim", ""],
+                penumbra_transaction::ActionView::ActionDutchAuctionSchedule(_) => todo!(),
+                penumbra_transaction::ActionView::ActionDutchAuctionEnd(_) => {
+                    todo!()
+                }
+                penumbra_transaction::ActionView::ActionDutchAuctionWithdraw(_) => {
+                    todo!()
+                }
             };
 
             actions_table.add_row(row);

@@ -8,7 +8,7 @@ context.
 
 ## Asset types and asset IDs
 
-To be precise, we define: 
+To be precise, we define:
 
 - an *amount* to be an untyped `u128` quantity of some asset;
 - an *asset ID* to be an $\mathbb F_q$ element;
@@ -58,7 +58,7 @@ rate-1 Poseidon hashing with domain separator
 `from_le_bytes(b"penumbra.value.generator")` and then the `decaf377` CDH
 map-to-group method.
 
-## Homomorphic Value Commitments
+## Homomorphic Balance Commitments
 
 We use the value generator associated to an asset ID to construct homomorphic
 commitments to (typed) value.  To do this, we first define the *blinding
@@ -77,7 +77,7 @@ These commitments are homomorphic, even for different asset types, say values
 $(x, \mathsf a)$ and $(y, \mathsf b)$:
 $$
 ([x]V_{\mathsf a} + [\widetilde{x}]\widetilde{V}) + ([y] V_{\mathsf b} + [\widetilde{y}]\widetilde{V})
-= 
+=
 [x]V_{\mathsf a} + [y] V_{\mathsf b} + [\widetilde{x} + \widetilde{y}]\widetilde{V}.
 $$
 Alternatively, this can be thought of as a commitment to a (sparse) vector

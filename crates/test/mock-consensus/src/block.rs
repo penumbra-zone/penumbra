@@ -1,6 +1,6 @@
 //! [`Builder`] facilities for constructing [`Block`]s.
 //!
-//! Builders are acquired by calling [`TestNode::block()`].
+//! Builders are acquired by calling [`TestNode::block()`], see [`TestNode`] for more information.
 
 use {
     crate::TestNode,
@@ -16,27 +16,43 @@ use {
     tracing::{instrument, trace},
 };
 
-/// A builder, used to prepare and instantiate a new [`Block`].
+/// Interfaces for generating commit signatures.
+mod signature;
+
+/// A block builder.
 ///
-/// These are acquired by calling [`TestNode::block()`].
+/// A block builder can be used to prepare and instantiate a new [`Block`]. A block builder is
+/// acquired by calling [`TestNode::block()`]. This builder holds an exclusive reference to a
+/// [`TestNode`], so only one block may be built at once.
+///
+/// This builder can be consumed, executing the block against the [`TestNode`]'s consensus service,
+/// by calling [`Builder::execute()`].
 pub struct Builder<'e, C> {
     /// A unique reference to the test node.
     test_node: &'e mut TestNode<C>,
-
     /// Transaction data.
     data: Vec<Vec<u8>>,
-
     /// Evidence of malfeasance.
     evidence: evidence::List,
+    /// The list of signatures.
+    signatures: Vec<block::CommitSig>,
 }
+
+// === impl TestNode ===
 
 impl<C> TestNode<C> {
     /// Returns a new [`Builder`].
+    ///
+    /// By default, signatures for all of the validators currently within the keyring will be
+    /// included in the block. Use [`Builder::with_signatures()`] to set a different set of
+    /// validator signatures.
     pub fn block<'e>(&'e mut self) -> Builder<'e, C> {
+        let signatures = self.generate_signatures().collect();
         Builder {
             test_node: self,
             data: Default::default(),
             evidence: Default::default(),
+            signatures,
         }
     }
 }
@@ -46,6 +62,15 @@ impl<C> TestNode<C> {
 impl<'e, C> Builder<'e, C> {
     /// Sets the data for this block.
     pub fn with_data(self, data: Vec<Vec<u8>>) -> Self {
+        let Self { data: prev, .. } = self;
+
+        if !prev.is_empty() {
+            tracing::warn!(
+                count = %prev.len(),
+                "block builder overwriting transaction data, this may be a bug!"
+            );
+        }
+
         Self { data, ..self }
     }
 
@@ -60,8 +85,10 @@ impl<'e, C> Builder<'e, C> {
         Self { evidence, ..self }
     }
 
-    // TODO(kate): add more `with_` setters for fields in the header.
-    // TODO(kate): set some fields using state in the test node.
+    /// Sets the [`CommitSig`][block::CommitSig] commit signatures for this block.
+    pub fn with_signatures(self, signatures: Vec<block::CommitSig>) -> Self {
+        Self { signatures, ..self }
+    }
 }
 
 impl<'e, C> Builder<'e, C>
@@ -84,16 +111,17 @@ where
             header,
             data,
             evidence: _,
-            last_commit: _,
+            last_commit,
             ..
         } = block.tap(|block| {
             tracing::span::Span::current()
                 .record("height", block.header.height.value())
                 .record("time", block.header.time.unix_timestamp());
         });
+        let last_commit_info = Self::last_commit_info(last_commit);
 
         trace!("sending block");
-        test_node.begin_block(header).await?;
+        test_node.begin_block(header, last_commit_info).await?;
         for tx in data {
             let tx = tx.into();
             test_node.deliver_tx(tx).await?;
@@ -117,6 +145,7 @@ where
             data,
             evidence,
             test_node,
+            signatures,
         } = self;
 
         let height = {
@@ -135,7 +164,7 @@ where
                 height,
                 round: Round::default(),
                 block_id,
-                signatures: Vec::default(),
+                signatures,
             })
         } else {
             None // The first block has no previous commit to speak of.

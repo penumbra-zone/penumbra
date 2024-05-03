@@ -80,6 +80,25 @@ pub trait StateReadProto: StateRead + Send + Sync {
         }))
     }
 
+    /// Retrieve all values for keys matching a prefix from nonverifiable storage, as domain types.
+    #[allow(clippy::type_complexity)]
+    fn nonverifiable_prefix<'a, D>(
+        &'a self,
+        prefix: &[u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, D)>> + Send + 'static>>
+    where
+        D: DomainType,
+        anyhow::Error: From<<D as TryFrom<D::Proto>>::Error>,
+    {
+        Box::pin(self.nonverifiable_prefix_proto(prefix).map(|p| match p {
+            Ok(p) => match D::try_from(p.1) {
+                Ok(d) => Ok((p.0, d)),
+                Err(e) => Err(e.into()),
+            },
+            Err(e) => Err(e),
+        }))
+    }
+
     /// Retrieve all values for keys matching a prefix from the verifiable key-value store, as proto types.
     #[allow(clippy::type_complexity)]
     fn prefix_proto<'a, P>(
@@ -90,6 +109,26 @@ pub trait StateReadProto: StateRead + Send + Sync {
         P: Message + Default,
     {
         let o = self.prefix_raw(prefix).map(|r| {
+            r.and_then(|(key, bytes)| {
+                Ok((
+                    key,
+                    Message::decode(&*bytes).map_err(|e| anyhow::anyhow!(e))?,
+                ))
+            })
+        });
+        Box::pin(o)
+    }
+
+    /// Retrieve all values for keys matching a prefix from the nonverifiable key-value store, as proto types.
+    #[allow(clippy::type_complexity)]
+    fn nonverifiable_prefix_proto<'a, P>(
+        &'a self,
+        prefix: &'a [u8],
+    ) -> Pin<Box<dyn Stream<Item = Result<(Vec<u8>, P)>> + Send + 'static>>
+    where
+        P: Message + Default,
+    {
+        let o = self.nonverifiable_prefix_raw(prefix).map(|r| {
             r.and_then(|(key, bytes)| {
                 Ok((
                     key,

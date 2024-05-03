@@ -614,6 +614,9 @@ impl serde::Serialize for BatchSwapOutputData {
         if self.epoch_starting_height != 0 {
             len += 1;
         }
+        if self.sct_position_prefix != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.BatchSwapOutputData", len)?;
         if let Some(v) = self.delta_1.as_ref() {
             struct_ser.serialize_field("delta1", v)?;
@@ -644,6 +647,10 @@ impl serde::Serialize for BatchSwapOutputData {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("epochStartingHeight", ToString::to_string(&self.epoch_starting_height).as_str())?;
         }
+        if self.sct_position_prefix != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("sctPositionPrefix", ToString::to_string(&self.sct_position_prefix).as_str())?;
+        }
         struct_ser.end()
     }
 }
@@ -671,6 +678,8 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             "tradingPair",
             "epoch_starting_height",
             "epochStartingHeight",
+            "sct_position_prefix",
+            "sctPositionPrefix",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -684,6 +693,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
             Height,
             TradingPair,
             EpochStartingHeight,
+            SctPositionPrefix,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -715,6 +725,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                             "height" => Ok(GeneratedField::Height),
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "epochStartingHeight" | "epoch_starting_height" => Ok(GeneratedField::EpochStartingHeight),
+                            "sctPositionPrefix" | "sct_position_prefix" => Ok(GeneratedField::SctPositionPrefix),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -743,6 +754,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                 let mut height__ = None;
                 let mut trading_pair__ = None;
                 let mut epoch_starting_height__ = None;
+                let mut sct_position_prefix__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Delta1 => {
@@ -803,6 +815,14 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::SctPositionPrefix => {
+                            if sct_position_prefix__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sctPositionPrefix"));
+                            }
+                            sct_position_prefix__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -818,6 +838,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputData {
                     height: height__.unwrap_or_default(),
                     trading_pair: trading_pair__,
                     epoch_starting_height: epoch_starting_height__.unwrap_or_default(),
+                    sct_position_prefix: sct_position_prefix__.unwrap_or_default(),
                 })
             }
         }
@@ -1052,6 +1073,9 @@ impl serde::Serialize for DexParameters {
         if self.max_hops != 0 {
             len += 1;
         }
+        if self.max_positions_per_pair != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.DexParameters", len)?;
         if self.is_enabled {
             struct_ser.serialize_field("isEnabled", &self.is_enabled)?;
@@ -1061,6 +1085,9 @@ impl serde::Serialize for DexParameters {
         }
         if self.max_hops != 0 {
             struct_ser.serialize_field("maxHops", &self.max_hops)?;
+        }
+        if self.max_positions_per_pair != 0 {
+            struct_ser.serialize_field("maxPositionsPerPair", &self.max_positions_per_pair)?;
         }
         struct_ser.end()
     }
@@ -1078,6 +1105,8 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
             "fixedCandidates",
             "max_hops",
             "maxHops",
+            "max_positions_per_pair",
+            "maxPositionsPerPair",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1085,6 +1114,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
             IsEnabled,
             FixedCandidates,
             MaxHops,
+            MaxPositionsPerPair,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1110,6 +1140,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                             "isEnabled" | "is_enabled" => Ok(GeneratedField::IsEnabled),
                             "fixedCandidates" | "fixed_candidates" => Ok(GeneratedField::FixedCandidates),
                             "maxHops" | "max_hops" => Ok(GeneratedField::MaxHops),
+                            "maxPositionsPerPair" | "max_positions_per_pair" => Ok(GeneratedField::MaxPositionsPerPair),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1132,6 +1163,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                 let mut is_enabled__ = None;
                 let mut fixed_candidates__ = None;
                 let mut max_hops__ = None;
+                let mut max_positions_per_pair__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::IsEnabled => {
@@ -1154,6 +1186,14 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::MaxPositionsPerPair => {
+                            if max_positions_per_pair__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("maxPositionsPerPair"));
+                            }
+                            max_positions_per_pair__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1163,6 +1203,7 @@ impl<'de> serde::Deserialize<'de> for DexParameters {
                     is_enabled: is_enabled__.unwrap_or_default(),
                     fixed_candidates: fixed_candidates__.unwrap_or_default(),
                     max_hops: max_hops__.unwrap_or_default(),
+                    max_positions_per_pair: max_positions_per_pair__.unwrap_or_default(),
                 })
             }
         }
@@ -1645,6 +1686,15 @@ impl serde::Serialize for EventPositionExecution {
         if self.reserves_2.is_some() {
             len += 1;
         }
+        if self.prev_reserves_1.is_some() {
+            len += 1;
+        }
+        if self.prev_reserves_2.is_some() {
+            len += 1;
+        }
+        if self.context.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventPositionExecution", len)?;
         if let Some(v) = self.position_id.as_ref() {
             struct_ser.serialize_field("positionId", v)?;
@@ -1657,6 +1707,15 @@ impl serde::Serialize for EventPositionExecution {
         }
         if let Some(v) = self.reserves_2.as_ref() {
             struct_ser.serialize_field("reserves2", v)?;
+        }
+        if let Some(v) = self.prev_reserves_1.as_ref() {
+            struct_ser.serialize_field("prevReserves1", v)?;
+        }
+        if let Some(v) = self.prev_reserves_2.as_ref() {
+            struct_ser.serialize_field("prevReserves2", v)?;
+        }
+        if let Some(v) = self.context.as_ref() {
+            struct_ser.serialize_field("context", v)?;
         }
         struct_ser.end()
     }
@@ -1676,6 +1735,11 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
             "reserves1",
             "reserves_2",
             "reserves2",
+            "prev_reserves_1",
+            "prevReserves1",
+            "prev_reserves_2",
+            "prevReserves2",
+            "context",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1684,6 +1748,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
             TradingPair,
             Reserves1,
             Reserves2,
+            PrevReserves1,
+            PrevReserves2,
+            Context,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1710,6 +1777,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                             "tradingPair" | "trading_pair" => Ok(GeneratedField::TradingPair),
                             "reserves1" | "reserves_1" => Ok(GeneratedField::Reserves1),
                             "reserves2" | "reserves_2" => Ok(GeneratedField::Reserves2),
+                            "prevReserves1" | "prev_reserves_1" => Ok(GeneratedField::PrevReserves1),
+                            "prevReserves2" | "prev_reserves_2" => Ok(GeneratedField::PrevReserves2),
+                            "context" => Ok(GeneratedField::Context),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1733,6 +1803,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                 let mut trading_pair__ = None;
                 let mut reserves_1__ = None;
                 let mut reserves_2__ = None;
+                let mut prev_reserves_1__ = None;
+                let mut prev_reserves_2__ = None;
+                let mut context__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::PositionId => {
@@ -1759,6 +1832,24 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                             }
                             reserves_2__ = map_.next_value()?;
                         }
+                        GeneratedField::PrevReserves1 => {
+                            if prev_reserves_1__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("prevReserves1"));
+                            }
+                            prev_reserves_1__ = map_.next_value()?;
+                        }
+                        GeneratedField::PrevReserves2 => {
+                            if prev_reserves_2__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("prevReserves2"));
+                            }
+                            prev_reserves_2__ = map_.next_value()?;
+                        }
+                        GeneratedField::Context => {
+                            if context__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("context"));
+                            }
+                            context__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1769,6 +1860,9 @@ impl<'de> serde::Deserialize<'de> for EventPositionExecution {
                     trading_pair: trading_pair__,
                     reserves_1: reserves_1__,
                     reserves_2: reserves_2__,
+                    prev_reserves_1: prev_reserves_1__,
+                    prev_reserves_2: prev_reserves_2__,
+                    context: context__,
                 })
             }
         }
@@ -2115,6 +2209,102 @@ impl<'de> serde::Deserialize<'de> for EventPositionWithdraw {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventPositionWithdraw", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventQueuePositionClose {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.position_id.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventQueuePositionClose", len)?;
+        if let Some(v) = self.position_id.as_ref() {
+            struct_ser.serialize_field("positionId", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventQueuePositionClose {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "position_id",
+            "positionId",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            PositionId,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "positionId" | "position_id" => Ok(GeneratedField::PositionId),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventQueuePositionClose;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventQueuePositionClose")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventQueuePositionClose, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut position_id__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::PositionId => {
+                            if position_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("positionId"));
+                            }
+                            position_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventQueuePositionClose {
+                    position_id: position_id__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventQueuePositionClose", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventSwap {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -2412,6 +2602,270 @@ impl<'de> serde::Deserialize<'de> for EventSwapClaim {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventSwapClaim", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValueCircuitBreakerCredit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.previous_balance.is_some() {
+            len += 1;
+        }
+        if self.new_balance.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit", len)?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.previous_balance.as_ref() {
+            struct_ser.serialize_field("previousBalance", v)?;
+        }
+        if let Some(v) = self.new_balance.as_ref() {
+            struct_ser.serialize_field("newBalance", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValueCircuitBreakerCredit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "asset_id",
+            "assetId",
+            "previous_balance",
+            "previousBalance",
+            "new_balance",
+            "newBalance",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            PreviousBalance,
+            NewBalance,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "previousBalance" | "previous_balance" => Ok(GeneratedField::PreviousBalance),
+                            "newBalance" | "new_balance" => Ok(GeneratedField::NewBalance),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValueCircuitBreakerCredit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValueCircuitBreakerCredit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut previous_balance__ = None;
+                let mut new_balance__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreviousBalance => {
+                            if previous_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("previousBalance"));
+                            }
+                            previous_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::NewBalance => {
+                            if new_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newBalance"));
+                            }
+                            new_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValueCircuitBreakerCredit {
+                    asset_id: asset_id__,
+                    previous_balance: previous_balance__,
+                    new_balance: new_balance__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerCredit", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValueCircuitBreakerDebit {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.asset_id.is_some() {
+            len += 1;
+        }
+        if self.previous_balance.is_some() {
+            len += 1;
+        }
+        if self.new_balance.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit", len)?;
+        if let Some(v) = self.asset_id.as_ref() {
+            struct_ser.serialize_field("assetId", v)?;
+        }
+        if let Some(v) = self.previous_balance.as_ref() {
+            struct_ser.serialize_field("previousBalance", v)?;
+        }
+        if let Some(v) = self.new_balance.as_ref() {
+            struct_ser.serialize_field("newBalance", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValueCircuitBreakerDebit {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "asset_id",
+            "assetId",
+            "previous_balance",
+            "previousBalance",
+            "new_balance",
+            "newBalance",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            AssetId,
+            PreviousBalance,
+            NewBalance,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "assetId" | "asset_id" => Ok(GeneratedField::AssetId),
+                            "previousBalance" | "previous_balance" => Ok(GeneratedField::PreviousBalance),
+                            "newBalance" | "new_balance" => Ok(GeneratedField::NewBalance),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValueCircuitBreakerDebit;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValueCircuitBreakerDebit, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut asset_id__ = None;
+                let mut previous_balance__ = None;
+                let mut new_balance__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::AssetId => {
+                            if asset_id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("assetId"));
+                            }
+                            asset_id__ = map_.next_value()?;
+                        }
+                        GeneratedField::PreviousBalance => {
+                            if previous_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("previousBalance"));
+                            }
+                            previous_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::NewBalance => {
+                            if new_balance__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newBalance"));
+                            }
+                            new_balance__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValueCircuitBreakerDebit {
+                    asset_id: asset_id__,
+                    previous_balance: previous_balance__,
+                    new_balance: new_balance__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.EventValueCircuitBreakerDebit", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for GenesisContent {
@@ -3019,9 +3473,15 @@ impl serde::Serialize for LiquidityPositionsByPriceResponse {
         if self.data.is_some() {
             len += 1;
         }
+        if self.id.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.LiquidityPositionsByPriceResponse", len)?;
         if let Some(v) = self.data.as_ref() {
             struct_ser.serialize_field("data", v)?;
+        }
+        if let Some(v) = self.id.as_ref() {
+            struct_ser.serialize_field("id", v)?;
         }
         struct_ser.end()
     }
@@ -3034,11 +3494,13 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
     {
         const FIELDS: &[&str] = &[
             "data",
+            "id",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Data,
+            Id,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3062,6 +3524,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                     {
                         match value {
                             "data" => Ok(GeneratedField::Data),
+                            "id" => Ok(GeneratedField::Id),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3082,6 +3545,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut data__ = None;
+                let mut id__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Data => {
@@ -3090,6 +3554,12 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                             }
                             data__ = map_.next_value()?;
                         }
+                        GeneratedField::Id => {
+                            if id__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("id"));
+                            }
+                            id__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3097,6 +3567,7 @@ impl<'de> serde::Deserialize<'de> for LiquidityPositionsByPriceResponse {
                 }
                 Ok(LiquidityPositionsByPriceResponse {
                     data: data__,
+                    id: id__,
                 })
             }
         }
@@ -7878,9 +8349,39 @@ impl serde::Serialize for swap_view::Opaque {
         if self.swap.is_some() {
             len += 1;
         }
+        if self.batch_swap_output_data.is_some() {
+            len += 1;
+        }
+        if self.output_1_value.is_some() {
+            len += 1;
+        }
+        if self.output_2_value.is_some() {
+            len += 1;
+        }
+        if self.asset_1_metadata.is_some() {
+            len += 1;
+        }
+        if self.asset_2_metadata.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapView.Opaque", len)?;
         if let Some(v) = self.swap.as_ref() {
             struct_ser.serialize_field("swap", v)?;
+        }
+        if let Some(v) = self.batch_swap_output_data.as_ref() {
+            struct_ser.serialize_field("batchSwapOutputData", v)?;
+        }
+        if let Some(v) = self.output_1_value.as_ref() {
+            struct_ser.serialize_field("output1Value", v)?;
+        }
+        if let Some(v) = self.output_2_value.as_ref() {
+            struct_ser.serialize_field("output2Value", v)?;
+        }
+        if let Some(v) = self.asset_1_metadata.as_ref() {
+            struct_ser.serialize_field("asset1Metadata", v)?;
+        }
+        if let Some(v) = self.asset_2_metadata.as_ref() {
+            struct_ser.serialize_field("asset2Metadata", v)?;
         }
         struct_ser.end()
     }
@@ -7893,11 +8394,26 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
     {
         const FIELDS: &[&str] = &[
             "swap",
+            "batch_swap_output_data",
+            "batchSwapOutputData",
+            "output_1_value",
+            "output1Value",
+            "output_2_value",
+            "output2Value",
+            "asset_1_metadata",
+            "asset1Metadata",
+            "asset_2_metadata",
+            "asset2Metadata",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Swap,
+            BatchSwapOutputData,
+            Output1Value,
+            Output2Value,
+            Asset1Metadata,
+            Asset2Metadata,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -7921,6 +8437,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                     {
                         match value {
                             "swap" => Ok(GeneratedField::Swap),
+                            "batchSwapOutputData" | "batch_swap_output_data" => Ok(GeneratedField::BatchSwapOutputData),
+                            "output1Value" | "output_1_value" => Ok(GeneratedField::Output1Value),
+                            "output2Value" | "output_2_value" => Ok(GeneratedField::Output2Value),
+                            "asset1Metadata" | "asset_1_metadata" => Ok(GeneratedField::Asset1Metadata),
+                            "asset2Metadata" | "asset_2_metadata" => Ok(GeneratedField::Asset2Metadata),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -7941,6 +8462,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut swap__ = None;
+                let mut batch_swap_output_data__ = None;
+                let mut output_1_value__ = None;
+                let mut output_2_value__ = None;
+                let mut asset_1_metadata__ = None;
+                let mut asset_2_metadata__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::Swap => {
@@ -7949,6 +8475,36 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                             }
                             swap__ = map_.next_value()?;
                         }
+                        GeneratedField::BatchSwapOutputData => {
+                            if batch_swap_output_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("batchSwapOutputData"));
+                            }
+                            batch_swap_output_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output1Value => {
+                            if output_1_value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output1Value"));
+                            }
+                            output_1_value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Output2Value => {
+                            if output_2_value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("output2Value"));
+                            }
+                            output_2_value__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset1Metadata => {
+                            if asset_1_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset1Metadata"));
+                            }
+                            asset_1_metadata__ = map_.next_value()?;
+                        }
+                        GeneratedField::Asset2Metadata => {
+                            if asset_2_metadata__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("asset2Metadata"));
+                            }
+                            asset_2_metadata__ = map_.next_value()?;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -7956,6 +8512,11 @@ impl<'de> serde::Deserialize<'de> for swap_view::Opaque {
                 }
                 Ok(swap_view::Opaque {
                     swap: swap__,
+                    batch_swap_output_data: batch_swap_output_data__,
+                    output_1_value: output_1_value__,
+                    output_2_value: output_2_value__,
+                    asset_1_metadata: asset_1_metadata__,
+                    asset_2_metadata: asset_2_metadata__,
                 })
             }
         }

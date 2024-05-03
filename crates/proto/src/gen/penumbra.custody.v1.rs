@@ -37,6 +37,86 @@ impl ::prost::Name for AuthorizeResponse {
         ::prost::alloc::format!("penumbra.custody.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeValidatorDefinitionRequest {
+    /// The validator definition to authorize.
+    #[prost(message, optional, tag = "1")]
+    pub validator_definition: ::core::option::Option<
+        super::super::core::component::stake::v1::Validator,
+    >,
+    /// Optionally, pre-authorization data, if required by the custodian.
+    ///
+    /// Pre-authorization data is backend-specific, and backends are free to ignore it.
+    ///
+    /// Multiple `PreAuthorization` packets can be included in a single request,
+    /// to support multi-party pre-authorizations.
+    #[prost(message, repeated, tag = "3")]
+    pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
+}
+impl ::prost::Name for AuthorizeValidatorDefinitionRequest {
+    const NAME: &'static str = "AuthorizeValidatorDefinitionRequest";
+    const PACKAGE: &'static str = "penumbra.custody.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeValidatorDefinitionResponse {
+    /// The authorization signature for the validator definition.
+    #[prost(message, optional, tag = "1")]
+    pub validator_definition_auth: ::core::option::Option<
+        super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
+}
+impl ::prost::Name for AuthorizeValidatorDefinitionResponse {
+    const NAME: &'static str = "AuthorizeValidatorDefinitionResponse";
+    const PACKAGE: &'static str = "penumbra.custody.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeValidatorVoteRequest {
+    /// The validator vote to authorize.
+    #[prost(message, optional, tag = "1")]
+    pub validator_vote: ::core::option::Option<
+        super::super::core::component::governance::v1::ValidatorVoteBody,
+    >,
+    /// Optionally, pre-authorization data, if required by the custodian.
+    ///
+    /// Pre-authorization data is backend-specific, and backends are free to ignore it.
+    ///
+    /// Multiple `PreAuthorization` packets can be included in a single request,
+    /// to support multi-party pre-authorizations.
+    #[prost(message, repeated, tag = "3")]
+    pub pre_authorizations: ::prost::alloc::vec::Vec<PreAuthorization>,
+}
+impl ::prost::Name for AuthorizeValidatorVoteRequest {
+    const NAME: &'static str = "AuthorizeValidatorVoteRequest";
+    const PACKAGE: &'static str = "penumbra.custody.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AuthorizeValidatorVoteResponse {
+    /// The authorization signature for the validator vote.
+    #[prost(message, optional, tag = "1")]
+    pub validator_vote_auth: ::core::option::Option<
+        super::super::crypto::decaf377_rdsa::v1::SpendAuthSignature,
+    >,
+}
+impl ::prost::Name for AuthorizeValidatorVoteResponse {
+    const NAME: &'static str = "AuthorizeValidatorVoteResponse";
+    const PACKAGE: &'static str = "penumbra.custody.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.custody.v1.{}", Self::NAME)
+    }
+}
 /// A pre-authorization packet.  This allows a custodian to delegate (partial)
 /// signing authority to other authorization mechanisms.  Details of how a
 /// custodian manages those keys are out-of-scope for the custody protocol and
@@ -263,6 +343,68 @@ pub mod custody_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Requests authorization of the given validator definition update.
+        pub async fn authorize_validator_definition(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuthorizeValidatorDefinitionRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeValidatorDefinitionResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.custody.v1.CustodyService/AuthorizeValidatorDefinition",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.custody.v1.CustodyService",
+                        "AuthorizeValidatorDefinition",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Requests authorization of the given validator vote.
+        pub async fn authorize_validator_vote(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AuthorizeValidatorVoteRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeValidatorVoteResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.custody.v1.CustodyService/AuthorizeValidatorVote",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.custody.v1.CustodyService",
+                        "AuthorizeValidatorVote",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
         /// Requests the full viewing key from the custodian.
         ///
         /// Custody backends should decide whether to honor this request, and how to
@@ -349,6 +491,22 @@ pub mod custody_service_server {
             request: tonic::Request<super::AuthorizeRequest>,
         ) -> std::result::Result<
             tonic::Response<super::AuthorizeResponse>,
+            tonic::Status,
+        >;
+        /// Requests authorization of the given validator definition update.
+        async fn authorize_validator_definition(
+            &self,
+            request: tonic::Request<super::AuthorizeValidatorDefinitionRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeValidatorDefinitionResponse>,
+            tonic::Status,
+        >;
+        /// Requests authorization of the given validator vote.
+        async fn authorize_validator_vote(
+            &self,
+            request: tonic::Request<super::AuthorizeValidatorVoteRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::AuthorizeValidatorVoteResponse>,
             tonic::Status,
         >;
         /// Requests the full viewing key from the custodian.
@@ -497,6 +655,111 @@ pub mod custody_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AuthorizeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.custody.v1.CustodyService/AuthorizeValidatorDefinition" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuthorizeValidatorDefinitionSvc<T: CustodyService>(
+                        pub Arc<T>,
+                    );
+                    impl<
+                        T: CustodyService,
+                    > tonic::server::UnaryService<
+                        super::AuthorizeValidatorDefinitionRequest,
+                    > for AuthorizeValidatorDefinitionSvc<T> {
+                        type Response = super::AuthorizeValidatorDefinitionResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::AuthorizeValidatorDefinitionRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as CustodyService>::authorize_validator_definition(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuthorizeValidatorDefinitionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.custody.v1.CustodyService/AuthorizeValidatorVote" => {
+                    #[allow(non_camel_case_types)]
+                    struct AuthorizeValidatorVoteSvc<T: CustodyService>(pub Arc<T>);
+                    impl<
+                        T: CustodyService,
+                    > tonic::server::UnaryService<super::AuthorizeValidatorVoteRequest>
+                    for AuthorizeValidatorVoteSvc<T> {
+                        type Response = super::AuthorizeValidatorVoteResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AuthorizeValidatorVoteRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as CustodyService>::authorize_validator_vote(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AuthorizeValidatorVoteSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

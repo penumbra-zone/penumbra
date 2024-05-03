@@ -25,34 +25,6 @@ impl Cache {
         self.units.get(raw_denom).cloned()
     }
 
-    fn _try_populate(&mut self, _raw_denom: &str) -> anyhow::Result<Option<Metadata>> {
-        // First try to parse the raw denom string as a specific denom unit of some kind, to see if already present in the cache
-
-        // Ok(if let Some(unit) = self._get_unit(raw_denom) {
-        //     // If the raw denom returns an associated unit, the denom metadata should already be present in the cache as well, so retrieve that.
-        //     self._get_by_id(unit.id())
-        // } else {
-        //     // If the raw denom isn't present in the cache, what should we do here in the typical case? simply return None to indicate population failed?
-        //     // In some cases, there will be countless possible denoms of a specific type/in a specific denom family (i.e. all the possible DelegationTokens),
-        //     // so we can't reasonably populate the cache with all of them or necessarily provide all metadata for them, but we can & should still parse the raw denom
-        //     // to determine whether the newly-witnessed denom is of a type we are familiar with.
-
-        //     // TODO: Before returning None, attempt to parse the raw denom to determine whether it is of a known type.
-        //     // If so, return some kind of "empty" or default denom metadata for that type, which can be used to populate the cache with the raw denom as the base denom
-        //     // and with whatever useful information we may otherwise be able to interpolate.
-
-        //     // Types:
-        //     // - DelegationToken
-        //     // - IbcToken
-        //     // - UnbondingToken
-        //     // - whatever else?
-
-        //     None
-        // })
-
-        unimplemented!("try_populate")
-    }
-
     pub fn with_known_assets() -> Self {
         let mut cache = Cache::default();
 

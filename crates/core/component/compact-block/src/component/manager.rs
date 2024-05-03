@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
+#[cfg(feature = "component")]
 use penumbra_dex::component::{StateReadExt, SwapManager as _};
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
@@ -113,6 +114,13 @@ trait Inner: StateWrite {
         // Add all the pending nullifiers to the compact block
         let nullifiers = self.pending_nullifiers().into_iter().collect();
 
+        //Get the index of the current epoch
+        let epoch_index = self
+            .get_current_epoch()
+            .await
+            .expect("epoch is always set")
+            .index;
+
         let compact_block = CompactBlock {
             height,
             state_payloads,
@@ -124,6 +132,7 @@ trait Inner: StateWrite {
             fmd_parameters,
             app_parameters_updated,
             gas_prices,
+            epoch_index,
         };
 
         self.nonverifiable_put_raw(

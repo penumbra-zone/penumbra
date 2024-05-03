@@ -1,18 +1,15 @@
-mod common;
-
 use {
-    self::common::BuilderExt,
+    self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::Context,
     cnidarium::TempStorage,
-    penumbra_app::server::consensus::Consensus,
-    penumbra_genesis::AppState,
+    penumbra_app::{genesis::AppState, server::consensus::Consensus},
     penumbra_mock_consensus::TestNode,
-    penumbra_stake::{
-        component::validator_handler::validator_store::ValidatorDataRead, validator::Validator,
-    },
+    penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead,
     tap::Tap,
-    tracing::{error_span, info, Instrument},
+    tracing::{error_span, trace, Instrument},
 };
+
+mod common;
 
 #[tokio::test]
 async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Result<()> {
@@ -32,16 +29,12 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
     }?;
 
     // Retrieve the validator definition from the latest snapshot.
-    let Validator { identity_key, .. } = match storage
+    let [identity_key] = storage
         .latest_snapshot()
-        .validator_definitions()
-        .tap(|_| info!("getting validator definitions"))
+        .validator_identity_keys()
         .await?
-        .as_slice()
-    {
-        [v] => v.clone(),
-        unexpected => panic!("there should be one validator, got: {unexpected:?}"),
-    };
+        .try_into()
+        .map_err(|keys| anyhow::anyhow!("expected one key, got: {keys:?}"))?;
     let get_uptime = || async {
         storage
             .latest_snapshot()
@@ -60,10 +53,15 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
 
     // Jump ahead a few blocks.
     let height = 4;
-    node.fast_forward(height)
-        .instrument(error_span!("fast forwarding test node {height} blocks"))
-        .await
-        .context("fast forwarding {height} blocks")?;
+    for i in 1..=height {
+        node.block()
+            .with_signatures(Default::default())
+            .execute()
+            .tap(|_| trace!(%i, "executing block with no signatures"))
+            .instrument(error_span!("executing block with no signatures", %i))
+            .await
+            .context("executing block with no signatures")?;
+    }
 
     // Check the validator's uptime once more. We should have uptime data up to the fourth block,
     // and the validator should have missed all of the blocks between genesis and now.

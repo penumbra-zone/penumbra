@@ -92,6 +92,7 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/core/txhash/v1/txhash.proto",
                 "../../proto/penumbra/penumbra/core/component/compact_block/v1/compact_block.proto",
                 "../../proto/penumbra/penumbra/core/component/community_pool/v1/community_pool.proto",
+                "../../proto/penumbra/penumbra/core/component/auction/v1alpha1/auction.proto",
                 "../../proto/penumbra/penumbra/core/component/dex/v1/dex.proto",
                 "../../proto/penumbra/penumbra/core/component/distributions/v1/distributions.proto",
                 "../../proto/penumbra/penumbra/core/component/funding/v1/funding.proto",

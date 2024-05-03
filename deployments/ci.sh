@@ -54,9 +54,10 @@ function helm_install() {
 }
 
 function wait_for_pods_to_be_running() {
-    echo "Waiting for pods to be running..."
+    echo "Waiting for pods to be running ($(date))..."
     kubectl wait --for=condition=ready pods --timeout=5m \
         -l app.kubernetes.io/part-of="$HELM_RELEASE"
+    echo "Done waiting for pods to be running ($(date))"
 }
 
 # Deploy a fresh testnet, destroying all prior chain state with new genesis.

@@ -9,9 +9,6 @@ use {
 #[derive(Debug, Parser)]
 #[clap(name = "pd", about = "The Penumbra daemon.", version)]
 pub struct Opt {
-    /// Enable Tokio Console support.
-    #[clap(long)]
-    pub tokio_console: bool,
     /// Command to run.
     #[clap(subcommand)]
     pub cmd: RootCommand,
@@ -113,9 +110,13 @@ pub enum RootCommand {
         /// The home directory of the full node.
         #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
         home: PathBuf,
-        /// The directory that the exported state will be written to.
+        /// The directory where the exported node state will be written.
+        #[clap(long, display_order = 200, alias = "export-path")]
+        export_directory: PathBuf,
+        /// An optional filepath for a compressed archive containing the exported
+        /// node state, e.g. ~/pd-backup.tar.gz.
         #[clap(long, display_order = 200)]
-        export_path: PathBuf,
+        export_archive: Option<PathBuf>,
         /// Whether to prune the JMT tree.
         #[clap(long, display_order = 300)]
         prune: bool,
@@ -123,13 +124,18 @@ pub enum RootCommand {
     /// Run a migration on the exported storage state of the full node,
     /// and create a genesis file.
     Migrate {
-        /// The directory containing exported state to which the upgrade will be applied.
-        #[clap(long, display_order = 200)]
-        target_dir: PathBuf,
+        /// The directory containing exported state, created via `pd export`, to be modified
+        /// in-place. This should be a pd home directory, with a subdirectory called "rocksdb".
+        #[clap(long, display_order = 200, alias = "target-dir")]
+        target_directory: PathBuf,
         #[clap(long, display_order = 300)]
         /// Timestamp of the genesis file in RFC3339 format. If unset, defaults to the current time,
         /// unless the migration logic overrides it.
         genesis_start: Option<tendermint::time::Time>,
+        /// An optional filepath for a compressed archive containing the migrated node state,
+        /// e.g. ~/pd-state-post-upgrade.tar.gz.
+        #[clap(long, display_order = 400)]
+        migrate_archive: Option<PathBuf>,
     },
 }
 
@@ -166,6 +172,13 @@ pub enum TestnetCommand {
         /// can be voted on.
         #[clap(long)]
         proposal_voting_blocks: Option<u64>,
+        /// The fixed gas price for all transactions on the network.
+        /// Described as "simple" because the single value will be reused
+        /// for all gas price types: block space, compact block space, verification, and execution.
+        /// The numeric value is one-thousandths of the staking token,
+        /// so `--gas-price-simple=1000` means all transactions will have a cost of 1penumbra.
+        #[clap(long)]
+        gas_price_simple: Option<u64>,
         /// Base hostname for a validator's p2p service. If multiple validators
         /// exist in the genesis, e.g. via `--validators-input-file`, then
         /// numeric suffixes are automatically added, e.g. "-0", "-1", etc.
@@ -197,6 +210,13 @@ pub enum TestnetCommand {
             default_value = "https://rpc.testnet.penumbra.zone"
         )]
         node: Url,
+
+        /// Optional URL of archived node state in .tar.gz format. The archive will be
+        /// downloaded and extracted locally, allowing the node to join a network at a block height
+        /// higher than 0.
+        #[clap(long, env = "PENUMBRA_PD_ARCHIVE_URL")]
+        archive_url: Option<Url>,
+
         /// Human-readable name to identify node on network
         // Default: 'node-#'
         #[clap(long, env = "PENUMBRA_PD_TM_MONIKER")]

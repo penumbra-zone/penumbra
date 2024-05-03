@@ -25,12 +25,13 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use rand_core::OsRng;
 use regex::Regex;
 
+use auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
 use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
-use penumbra_keys::keys::AddressIndex;
+use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
 use penumbra_proto::{
     core::component::{
@@ -63,12 +64,16 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
+mod auction;
 mod liquidity_position;
 mod proposal;
 mod replicate;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
+    /// Auction related commands.
+    #[clap(display_order = 600, subcommand)]
+    Auction(AuctionCmd),
     /// Send funds to a Penumbra address.
     #[clap(display_order = 100)]
     Send {
@@ -197,16 +202,13 @@ pub enum TxCmd {
         /// chain will be discovered automatically, based on the `--channel` setting.
         #[clap(long)]
         to: String,
-
         /// The value to withdraw, eg "1000upenumbra"
         value: String,
-
         /// The IBC channel on the primary Penumbra chain to use for performing the withdrawal.
         /// This channel must already exist, as configured by a relayer client.
         /// You can search for channels via e.g. `pcli query ibc channel transfer 0`.
         #[clap(long)]
         channel: u64,
-
         /// Block height on the counterparty chain, after which the withdrawal will be considered
         /// invalid if not already relayed. Must be specified as a tuple of revision number and block
         /// height, e.g. `5-1000000` means "chain revision 5, block height of 1000000".
@@ -218,11 +220,9 @@ pub enum TxCmd {
         /// invalid if not already relayed.
         #[clap(long, default_value = "0", display_order = 150)]
         timeout_timestamp: u64,
-
         /// Only withdraw funds from the specified wallet id within Penumbra.
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
-
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
@@ -316,6 +316,7 @@ impl TxCmd {
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
+            TxCmd::Auction(_) => false,
         }
     }
 
@@ -345,7 +346,7 @@ impl TxCmd {
                     .map(|v| v.parse())
                     .collect::<Result<Vec<Value>, _>>()?;
                 let to = to
-                    .parse()
+                    .parse::<Address>()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
                 let return_address = app
@@ -363,7 +364,7 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 for value in values.iter().cloned() {
-                    planner.output(value, to);
+                    planner.output(value, to.clone());
                 }
                 let plan = planner
                     .memo(memo_plaintext)?
@@ -730,9 +731,6 @@ impl TxCmd {
                             .set_gas_prices(gas_prices.clone())
                             .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
-                        for note in notes {
-                            planner.spend(note.note, note.position);
-                        }
 
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
@@ -1052,7 +1050,7 @@ impl TxCmd {
                 };
 
                 // get the current time on the local machine
-                let current_time_u64_ms = SystemTime::now()
+                let current_time_ns = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_nanos() as u64;
@@ -1060,8 +1058,11 @@ impl TxCmd {
                 let mut timeout_timestamp = *timeout_timestamp;
                 if timeout_timestamp == 0u64 {
                     // add 2 days to current time
-                    timeout_timestamp = current_time_u64_ms + 1.728e14 as u64;
+                    timeout_timestamp = current_time_ns + 1.728e14 as u64;
                 }
+
+                // round to the nearest 10 minutes
+                timeout_timestamp += 600_000_000_000 - (timeout_timestamp % 600_000_000_000);
 
                 fn parse_denom_and_amount(value_str: &str) -> anyhow::Result<(Amount, Metadata)> {
                     let denom_re = Regex::new(r"^([0-9.]+)(.+)$").context("denom regex invalid")?;
@@ -1271,9 +1272,14 @@ impl TxCmd {
                     .await?;
                 app.build_and_submit_transaction(plan).await?;
             }
-            TxCmd::Position(PositionCmd::RewardClaim {}) => todo!(),
+            TxCmd::Position(PositionCmd::RewardClaim {}) => {
+                unimplemented!("deprecated, remove this")
+            }
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
+            }
+            TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
+                auction_cmd.exec(app).await?;
             }
         }
         Ok(())

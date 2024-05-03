@@ -537,7 +537,7 @@ mod test {
 
     proptest! {
         /// Checks to make sure that any possible expression made of negation, addition, and
-        /// subtraction is a homomorphism with regard to the resultant value commitment, which
+        /// subtraction is a homomorphism with regard to the resultant balance commitment, which
         /// should provide assurance that these operations are implemented correctly on the balance
         /// type itself.
         #[test]

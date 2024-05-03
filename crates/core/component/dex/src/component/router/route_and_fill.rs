@@ -5,17 +5,17 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
+use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{
-    circuit_breaker::ValueCircuitBreaker,
     component::{
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
-        PositionManager, StateWriteExt,
+        ExecutionCircuitBreaker, PositionManager, StateWriteExt,
     },
     lp::position::MAX_RESERVE_AMOUNT,
-    state_key, BatchSwapOutputData, ExecutionCircuitBreaker, SwapExecution, TradingPair,
+    BatchSwapOutputData, SwapExecution, TradingPair,
 };
 
 use super::fill_route::FillError;
@@ -24,21 +24,13 @@ use super::fill_route::FillError;
 /// a block's batch swap flows.
 #[async_trait]
 pub trait HandleBatchSwaps: StateWrite + Sized {
-    #[instrument(skip(
-        self,
-        trading_pair,
-        batch_data,
-        block_height,
-        epoch_starting_height,
-        params
-    ))]
+    #[instrument(skip(self, trading_pair, batch_data, block_height, params))]
     async fn handle_batch_swaps(
         self: &mut Arc<Self>,
         trading_pair: TradingPair,
         batch_data: SwapFlow,
-        // TODO: why not read these 2 from the state?
+        // This will be read from the ABCI request
         block_height: u64,
-        epoch_starting_height: u64,
         params: RoutingParams,
     ) -> Result<()>
     where
@@ -49,19 +41,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         tracing::debug!(?delta_1, ?delta_2, ?trading_pair, "decrypted batch swaps");
 
         let execution_circuit_breaker = ExecutionCircuitBreaker::default();
-        // Fetch the ValueCircuitBreaker prior to calling `route_and_fill`, so
-        // we know the total aggregate amount of each asset prior to executing and
-        // can ensure the total outflows don't exceed the total balances.
-        let value_circuit_breaker: ValueCircuitBreaker = match self
-            .nonverifiable_get_raw(state_key::aggregate_value().as_bytes())
-            .await
-            .expect("able to retrieve value circuit breaker from nonverifiable storage")
-        {
-            Some(bytes) => serde_json::from_slice(&bytes).expect(
-                "able to deserialize stored value circuit breaker from nonverifiable storage",
-            ),
-            None => ValueCircuitBreaker::default(),
-        };
 
         let swap_execution_1_for_2 = if delta_1.value() > 0 {
             Some(
@@ -109,9 +88,9 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             ),
             None => (0u64.into(), delta_2),
         };
+        let epoch = self.get_current_epoch().await.expect("epoch is set");
         let output_data = BatchSwapOutputData {
             height: block_height,
-            epoch_starting_height,
             trading_pair,
             delta_1,
             delta_2,
@@ -119,20 +98,16 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             lambda_2,
             unfilled_1,
             unfilled_2,
+            sct_position_prefix: (
+                u16::try_from(epoch.index).expect("epoch index should be small enough"),
+                // The block index is determined by looking at how many blocks have elapsed since
+                // the start of the epoch.
+                u16::try_from(block_height - epoch.start_height)
+                    .expect("block index should be small enough"),
+                0,
+            )
+                .into(),
         };
-
-        // Check that the output data doesn't exceed the ValueCircuitBreaker's quantities
-        // (i.e. we didn't outflow more value than existed within liquidity positions).
-        let available_asset_1 = value_circuit_breaker.available(trading_pair.asset_1());
-        let available_asset_2 = value_circuit_breaker.available(trading_pair.asset_2());
-        assert!(
-            output_data.lambda_1 <= available_asset_1.amount,
-            "asset 1 outflow exceeds available balance"
-        );
-        assert!(
-            output_data.lambda_2 <= available_asset_2.amount,
-            "asset 2 outflow exceeds available balance"
-        );
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
         tracing::debug!(
@@ -142,7 +117,8 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         );
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
-            .set_output_data(output_data, swap_execution_1_for_2, swap_execution_2_for_1);
+            .set_output_data(output_data, swap_execution_1_for_2, swap_execution_2_for_1)
+            .await?;
 
         Ok(())
     }

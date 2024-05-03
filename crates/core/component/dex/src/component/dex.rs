@@ -7,7 +7,6 @@ use cnidarium_component::Component;
 use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
-use penumbra_sct::component::clock::EpochRead;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -18,7 +17,7 @@ use crate::{
 
 use super::{
     router::{HandleBatchSwaps, RoutingParams},
-    Arbitrage, PositionManager,
+    Arbitrage, PositionManager, ValueCircuitBreaker,
 };
 
 pub struct Dex {}
@@ -56,7 +55,6 @@ impl Component for Dex {
 
         // 2. For each batch swap during the block, calculate clearing prices and set in the JMT.
 
-        let current_epoch = state.get_current_epoch().await.expect("epoch is set");
         let routing_params = state.routing_params().await.expect("dex params are set");
 
         for (trading_pair, swap_flows) in state.swap_flows() {
@@ -69,7 +67,6 @@ impl Component for Dex {
                         .height
                         .try_into()
                         .expect("height is part of the end block data"),
-                    current_epoch.start_height,
                     // Always include both ends of the target pair as fixed candidates.
                     routing_params
                         .clone()
@@ -126,7 +123,8 @@ impl Component for Dex {
         Arc::get_mut(state)
             .expect("state should be uniquely referenced after batch swaps complete")
             .close_queued_positions()
-            .await;
+            .await
+            .expect("closing queued positions should not fail");
     }
 
     #[instrument(name = "dex", skip(_state))]
@@ -152,7 +150,7 @@ pub trait StateReadExt: StateRead {
         height: u64,
         trading_pair: DirectedTradingPair,
     ) -> Result<Option<SwapExecution>> {
-        self.get(&state_key::swap_execution(height, trading_pair))
+        self.nonverifiable_get(state_key::swap_execution(height, trading_pair).as_bytes())
             .await
     }
 
@@ -209,12 +207,29 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.object_put(state_key::config::dex_params_updated(), ())
     }
 
-    fn set_output_data(
+    async fn set_output_data(
         &mut self,
         output_data: BatchSwapOutputData,
         swap_execution_1_for_2: Option<SwapExecution>,
         swap_execution_2_for_1: Option<SwapExecution>,
-    ) {
+    ) -> Result<()> {
+        // Debit the DEX for the swap outflows.
+        // Note that since we credited the DEX for _all_ inflows, we need to debit the
+        // unfilled amounts as well as the filled amounts.
+        //
+        // In the case of a value inflation bug, the debit call will return an underflow
+        // error, which will halt the chain.
+        self.vcb_debit(Value {
+            amount: output_data.unfilled_1 + output_data.lambda_1,
+            asset_id: output_data.trading_pair.asset_1,
+        })
+        .await?;
+        self.vcb_debit(Value {
+            amount: output_data.unfilled_2 + output_data.lambda_2,
+            asset_id: output_data.trading_pair.asset_2,
+        })
+        .await?;
+
         // Write the output data to the state under a known key, for querying, ...
         let height = output_data.height;
         let trading_pair = output_data.trading_pair;
@@ -223,17 +238,11 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         // Store the swap executions for both directions in the state as well.
         if let Some(swap_execution) = swap_execution_1_for_2.clone() {
             let tp_1_for_2 = DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2);
-            self.put(
-                state_key::swap_execution(height, tp_1_for_2),
-                swap_execution,
-            );
+            self.put_swap_execution_at_height(height, tp_1_for_2, swap_execution);
         }
         if let Some(swap_execution) = swap_execution_2_for_1.clone() {
             let tp_2_for_1 = DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1);
-            self.put(
-                state_key::swap_execution(height, tp_2_for_1),
-                swap_execution,
-            );
+            self.put_swap_execution_at_height(height, tp_2_for_1, swap_execution);
         }
 
         // ... and also add it to the set in the compact block to be pushed out to clients.
@@ -247,17 +256,50 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
             swap_execution_1_for_2,
             swap_execution_2_for_1,
         ));
+
+        Ok(())
     }
 
     fn set_arb_execution(&mut self, height: u64, execution: SwapExecution) {
         self.put(state_key::arb_execution(height), execution);
     }
 
-    fn put_swap_flow(&mut self, trading_pair: &TradingPair, swap_flow: SwapFlow) {
+    async fn put_swap_flow(
+        &mut self,
+        trading_pair: &TradingPair,
+        swap_flow: SwapFlow,
+    ) -> Result<()> {
+        // Credit the DEX for the swap inflows.
+        //
+        // Note that we credit the DEX for _all_ inflows, since we don't know
+        // how much will eventually be filled.
+        self.vcb_credit(Value {
+            amount: swap_flow.0,
+            asset_id: trading_pair.asset_1,
+        })
+        .await?;
+        self.vcb_credit(Value {
+            amount: swap_flow.1,
+            asset_id: trading_pair.asset_2,
+        })
+        .await?;
+
         // TODO: replace with IM struct later
         let mut swap_flows = self.swap_flows();
         swap_flows.insert(*trading_pair, swap_flow);
-        self.object_put(state_key::swap_flows(), swap_flows)
+        self.object_put(state_key::swap_flows(), swap_flows);
+
+        Ok(())
+    }
+
+    fn put_swap_execution_at_height(
+        &mut self,
+        height: u64,
+        pair: DirectedTradingPair,
+        swap_execution: SwapExecution,
+    ) {
+        let path = state_key::swap_execution(height, pair);
+        self.nonverifiable_put(path.as_bytes().to_vec(), swap_execution);
     }
 }
 

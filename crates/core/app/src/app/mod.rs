@@ -6,6 +6,7 @@ use cnidarium::{ArcStateDeltaExt, Snapshot, StateDelta, StateRead, StateWrite, S
 use cnidarium_component::Component;
 use ibc_types::core::connection::ChainId;
 use jmt::RootHash;
+use penumbra_auction::component::{Auction, StateReadExt as _, StateWriteExt as _};
 use penumbra_community_pool::component::{CommunityPool, StateWriteExt as _};
 use penumbra_community_pool::StateReadExt as _;
 use penumbra_compact_block::component::CompactBlockManager;
@@ -15,7 +16,6 @@ use penumbra_distributions::component::{Distributions, StateReadExt as _, StateW
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_genesis::AppState;
 use penumbra_governance::component::{Governance, StateReadExt as _};
 use penumbra_governance::StateWriteExt as _;
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
@@ -39,6 +39,7 @@ use tendermint::validator::Update;
 use tracing::Instrument;
 
 use crate::action_handler::AppActionHandler;
+use crate::genesis::AppState;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
@@ -118,6 +119,7 @@ impl App {
                 )
                 .await;
                 Ibc::init_chain(&mut state_tx, Some(&genesis.ibc_content)).await;
+                Auction::init_chain(&mut state_tx, Some(&genesis.auction_content)).await;
                 Dex::init_chain(&mut state_tx, Some(&genesis.dex_content)).await;
                 CommunityPool::init_chain(&mut state_tx, Some(&genesis.community_pool_content))
                     .await;
@@ -245,6 +247,9 @@ impl App {
             if let Some(dex_params) = app_params.new.dex_params {
                 state_tx.put_dex_params(dex_params);
             }
+            if let Some(auction_params) = app_params.new.auction_params {
+                state_tx.put_auction_params(auction_params);
+            }
         }
 
         // Run each of the begin block handlers for each component, in sequence:
@@ -257,6 +262,8 @@ impl App {
             begin_block,
         )
         .await;
+        Auction::begin_block(&mut arc_state_tx, begin_block).await;
+        Dex::begin_block(&mut arc_state_tx, begin_block).await;
         CommunityPool::begin_block(&mut arc_state_tx, begin_block).await;
         Governance::begin_block(&mut arc_state_tx, begin_block).await;
         Staking::begin_block(&mut arc_state_tx, begin_block).await;
@@ -382,9 +389,11 @@ impl App {
 
         tracing::debug!("running app components' `end_block` hooks");
         let mut arc_state_tx = Arc::new(state_tx);
+        Sct::end_block(&mut arc_state_tx, end_block).await;
         ShieldedPool::end_block(&mut arc_state_tx, end_block).await;
         Distributions::end_block(&mut arc_state_tx, end_block).await;
         Ibc::end_block(&mut arc_state_tx, end_block).await;
+        Auction::end_block(&mut arc_state_tx, end_block).await;
         Dex::end_block(&mut arc_state_tx, end_block).await;
         CommunityPool::end_block(&mut arc_state_tx, end_block).await;
         Governance::end_block(&mut arc_state_tx, end_block).await;
@@ -485,12 +494,18 @@ impl App {
 
             let mut arc_state_tx = Arc::new(state_tx);
 
+            Sct::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on Sct component");
             Distributions::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on Distributions component");
             Ibc::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on IBC component");
+            Auction::end_epoch(&mut arc_state_tx)
+                .await
+                .expect("able to call end_epoch on auction component");
             Dex::end_epoch(&mut arc_state_tx)
                 .await
                 .expect("able to call end_epoch on dex component");
@@ -619,7 +634,7 @@ impl App {
 ///
 /// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
 /// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 0;
+const TOTAL_HALT_COUNT: u64 = 2;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
@@ -686,9 +701,11 @@ pub trait StateReadExt: StateRead {
         let shielded_pool_params = self.get_shielded_pool_params().await?;
         let stake_params = self.get_stake_params().await?;
         let dex_params = self.get_dex_params().await?;
+        let auction_params = self.get_auction_params().await?;
 
         Ok(AppParameters {
             chain_id,
+            auction_params,
             community_pool_params,
             distributions_params,
             fee_params,

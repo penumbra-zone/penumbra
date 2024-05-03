@@ -7,7 +7,7 @@ use penumbra_proto::{
 };
 use serde::{Deserialize, Serialize};
 
-use decaf377_rdsa::{SpendAuth, VerificationKey};
+use decaf377_rdsa::{SpendAuth, VerificationKeyBytes};
 
 /// The root of a validator's identity.
 ///
@@ -20,7 +20,7 @@ use decaf377_rdsa::{SpendAuth, VerificationKey};
 /// designed for custodying funds to protect their identity.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "pb::IdentityKey", into = "pb::IdentityKey")]
-pub struct IdentityKey(pub VerificationKey<SpendAuth>);
+pub struct IdentityKey(pub VerificationKeyBytes<SpendAuth>);
 
 // IMPORTANT: Changing this implementation is state-breaking.
 impl std::str::FromStr for IdentityKey {
@@ -37,7 +37,7 @@ impl std::str::FromStr for IdentityKey {
 impl std::fmt::Display for IdentityKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&bech32str::encode(
-            &self.0.to_bytes(),
+            self.0.as_ref(),
             BECH32_PREFIX,
             bech32str::Bech32m,
         ))
@@ -57,7 +57,7 @@ impl DomainType for IdentityKey {
 impl From<IdentityKey> for pb::IdentityKey {
     fn from(ik: IdentityKey) -> Self {
         pb::IdentityKey {
-            ik: ik.0.to_bytes().to_vec(),
+            ik: ik.0.as_ref().to_vec(),
         }
     }
 }

@@ -123,7 +123,7 @@ impl std::hash::Hash for DelegationToken {
 
 #[cfg(test)]
 mod tests {
-    use decaf377_rdsa::{SigningKey, SpendAuth};
+    use decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey};
 
     use super::*;
 
@@ -131,7 +131,8 @@ mod tests {
     fn delegation_token_denomination_round_trip() {
         use rand_core::OsRng;
 
-        let ik = IdentityKey(SigningKey::<SpendAuth>::new(OsRng).into());
+        let vk = VerificationKey::from(SigningKey::<SpendAuth>::new(OsRng));
+        let ik = IdentityKey(vk.into());
 
         let token = DelegationToken::new(ik);
 

@@ -98,9 +98,9 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// When set, tags the position as being a limit-sell order.
+        /// When set, tags the position as an auto-closing buy.
         #[clap(long)]
-        limit_order: bool,
+        auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
@@ -115,9 +115,9 @@ pub enum OrderCmd {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// When set, tags the position as being a limit-sell order.
+        /// When set, tags the position as an auto-closing sell.
         #[clap(long)]
-        limit_order: bool,
+        auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
@@ -139,10 +139,10 @@ impl OrderCmd {
         }
     }
 
-    pub fn limit_order(&self) -> bool {
+    pub fn is_auto_closing(&self) -> bool {
         match self {
-            OrderCmd::Buy { limit_order, .. } => *limit_order,
-            OrderCmd::Sell { limit_order, .. } => *limit_order,
+            OrderCmd::Buy { auto_close, .. } => *auto_close,
+            OrderCmd::Sell { auto_close, .. } => *auto_close,
         }
     }
 
@@ -166,7 +166,7 @@ impl OrderCmd {
         };
         tracing::info!(?position);
 
-        if self.limit_order() {
+        if self.is_auto_closing() {
             position.close_on_fill = true;
         }
 

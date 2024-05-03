@@ -30,20 +30,29 @@ impl EffectingData for ProposalSubmit {
 impl ProposalSubmit {
     /// Compute a commitment to the value contributed to a transaction by this proposal submission.
     pub fn balance(&self) -> Balance {
-        let deposit = Value {
-            amount: self.deposit_amount,
-            asset_id: *STAKING_TOKEN_ASSET_ID,
-        };
-
-        let proposal_nft = Value {
-            amount: Amount::from(1u64),
-            asset_id: ProposalNft::deposit(self.proposal.id).denom().into(),
-        };
+        let deposit = self.deposit_value();
+        let proposal_nft = self.proposal_nft_value();
 
         // Proposal submissions *require* the deposit amount in order to be accepted, so they
         // contribute (-deposit) to the value balance of the transaction, and they contribute a
         // single proposal NFT to the value balance:
         Balance::from(proposal_nft) - Balance::from(deposit)
+    }
+
+    /// Returns the [`Value`] of this proposal submission's deposit.
+    fn deposit_value(&self) -> Value {
+        Value {
+            amount: self.deposit_amount,
+            asset_id: *STAKING_TOKEN_ASSET_ID,
+        }
+    }
+
+    /// Returns the [`Value`] of the proposal NFT.
+    pub fn proposal_nft_value(&self) -> Value {
+        Value {
+            amount: Amount::from(1u64),
+            asset_id: ProposalNft::deposit(self.proposal.id).denom().into(),
+        }
     }
 }
 

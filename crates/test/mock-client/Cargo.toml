@@ -10,6 +10,7 @@ license.workspace = true
 [dependencies]
 anyhow = {workspace = true}
 cnidarium = {workspace = true, default-features = true}
+penumbra-asset = {workspace = true}
 penumbra-compact-block = {workspace = true, default-features = true}
 penumbra-dex = {workspace = true, default-features = true}
 penumbra-keys = {workspace = true, default-features = true}

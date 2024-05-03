@@ -2,31 +2,36 @@ use {
     crate::{
         component::{
             metrics,
-            stake::{ConsensusIndexRead, ConsensusIndexWrite, RateDataWrite},
+            stake::{ConsensusIndexWrite, RateDataWrite},
             validator_handler::{
                 validator_store::ValidatorPoolTracker, ValidatorDataRead, ValidatorDataWrite,
             },
             StateReadExt as _, StateWriteExt as _,
         },
+        event,
         rate::{BaseRateData, RateData},
         state_key,
-        validator::{self, BondingState::*, State, State::*, Validator},
+        validator::{
+            self,
+            BondingState::*,
+            State::{self, *},
+            Validator,
+        },
         DelegationToken, IdentityKey, Penalty, Uptime,
     },
     anyhow::{ensure, Result},
     async_trait::async_trait,
     cnidarium::StateWrite,
-    futures::StreamExt as _,
     penumbra_asset::asset,
     penumbra_num::Amount,
     penumbra_proto::StateWriteProto,
-    penumbra_sct::component::clock::{EpochManager, EpochRead},
-    penumbra_sct::component::StateReadExt as _,
+    penumbra_sct::component::{
+        clock::{EpochManager, EpochRead},
+        StateReadExt as _,
+    },
     penumbra_shielded_pool::component::AssetRegistry,
-    sha2::{Digest as _, Sha256},
     std::collections::BTreeMap,
-    tendermint::abci::types::{CommitInfo, Misbehavior},
-    tokio::task::JoinSet,
+    tendermint::abci::types::Misbehavior,
     tracing::{instrument, Instrument},
 };
 
@@ -39,7 +44,6 @@ use {
 /// ## Validator management
 /// - Add validator definition via [`add_validator`].
 /// - Update validator definitions via [`update_validator_definition`].
-/// - Tracking a validator's uptime via [`track_uptime`].
 /// - Process byzantine behavior evidence via [`process_evidence`].
 ///
 /// ## State machine interface
@@ -82,11 +86,12 @@ use {
 /// [`update_validator_definition`]: Self::update_validator_definition
 /// [`set_validator_state`]: Self::set_validator_state
 /// [`try_precursor_transition`]: Self::try_precursor_transition
-/// [`track_uptime`]: Self::track_uptime
 /// [`process_evidence`]: Self::process_evidence
 pub trait ValidatorManager: StateWrite {
     /// Execute a legal state transition, updating the validator records and
     /// implementing the necessary side effects.
+    ///
+    /// Returns a `(old_state, new_state)` tuple, corresponding to the executed transition.
     ///
     /// # Errors
     /// This method errors on illegal state transitions, but will otherwise try to do what
@@ -99,7 +104,7 @@ pub trait ValidatorManager: StateWrite {
         &mut self,
         identity_key: &IdentityKey,
         new_state: validator::State,
-    ) -> Result<()> {
+    ) -> Result<(State, State)> {
         let old_state = self
             .get_validator_state(identity_key)
             .await?
@@ -123,7 +128,7 @@ pub trait ValidatorManager: StateWrite {
         identity_key: &IdentityKey,
         old_state: validator::State,
         new_state: validator::State,
-    ) -> Result<()> {
+    ) -> Result<(State, State)> {
         let validator_state_path = state_key::validators::state::by_id(identity_key);
 
         let current_height = self.get_block_height().await?;
@@ -299,7 +304,7 @@ pub trait ValidatorManager: StateWrite {
 
         Self::state_machine_metrics(old_state, new_state);
 
-        Ok(())
+        Ok((old_state, new_state))
     }
 
     #[instrument(skip(self))]
@@ -467,8 +472,7 @@ pub trait ValidatorManager: StateWrite {
         // Then, we create a mapping from the validator's consensus key to its
         // identity key, so we can look up the validator by its consensus key, and
         // vice-versa.
-        self.register_consensus_key(&validator_identity, &validator.consensus_key)
-            .await;
+        self.register_consensus_key(&validator_identity, &validator.consensus_key);
         // We register the validator's delegation token in the token registry...
         self.register_denom(&DelegationToken::from(&validator_identity).denom())
             .await;
@@ -594,8 +598,7 @@ pub trait ValidatorManager: StateWrite {
 
         // Update the consensus key lookup, in case the validator rotated their
         // consensus key.
-        self.register_consensus_key(&validator.identity_key, &validator.consensus_key)
-            .await;
+        self.register_consensus_key(&validator.identity_key, &validator.consensus_key);
 
         self.put(state_key::validators::definitions::by_id(id), validator);
 
@@ -637,96 +640,6 @@ pub trait ValidatorManager: StateWrite {
         Ok(())
     }
 
-    #[instrument(skip(self, last_commit_info))]
-    async fn track_uptime(&mut self, last_commit_info: &CommitInfo) -> Result<()> {
-        // Note: this probably isn't the correct height for the LastCommitInfo,
-        // which is about the *last* commit, but at least it'll be consistent,
-        // which is all we need to count signatures.
-        let height = self.get_block_height().await?;
-        let params = self.get_stake_params().await?;
-
-        // Build a mapping from addresses (20-byte truncated SHA256(pubkey)) to vote statuses.
-        let did_address_vote = last_commit_info
-            .votes
-            .iter()
-            .map(|vote| (vote.validator.address, vote.sig_info.is_signed()))
-            .collect::<BTreeMap<[u8; 20], bool>>();
-
-        // Since we don't have a lookup from "addresses" to identity keys,
-        // iterate over our app's validators, and match them up with the vote data.
-        // We can fetch all the data required for processing each validator concurrently:
-        let mut js = JoinSet::new();
-        let mut validator_identity_stream = self.consensus_set_stream()?;
-        while let Some(identity_key) = validator_identity_stream.next().await {
-            let identity_key = identity_key?;
-            let state = self.get_validator_state(&identity_key);
-            let uptime = self.get_validator_uptime(&identity_key);
-            let consensus_key = self.fetch_validator_consensus_key(&identity_key);
-            js.spawn(async move {
-                let state = state
-                    .await?
-                    .expect("every known validator must have a recorded state");
-
-                match state {
-                    validator::State::Active => {
-                        // If the validator is active, we need its consensus key and current uptime data:
-                        Ok(Some((
-                            identity_key,
-                            consensus_key
-                                .await?
-                                .expect("every known validator must have a recorded consensus key"),
-                            uptime
-                                .await?
-                                .expect("every known validator must have a recorded uptime"),
-                        )))
-                    }
-                    _ => {
-                        // Otherwise, we don't need to track its uptime, and there's no data to fetch.
-                        anyhow::Ok(None)
-                    }
-                }
-            });
-        }
-        // Now process the data we fetched concurrently.
-        // Note that this will process validator uptime changes in a random order, but because they are all
-        // independent, this doesn't introduce any nondeterminism into the complete state change.
-        while let Some(data) = js.join_next().await.transpose()? {
-            if let Some((identity_key, consensus_key, mut uptime)) = data? {
-                // for some reason last_commit_info has truncated sha256 hashes
-                let addr: [u8; 20] =
-                    Sha256::digest(&consensus_key.to_bytes()).as_slice()[0..20].try_into()?;
-
-                let voted = did_address_vote
-                    .get(&addr)
-                    .cloned()
-                    // If the height is `1`, then the `LastCommitInfo` refers to the genesis block,
-                    // which has no signers -- so we'll mark all validators as having signed.
-                    // https://github.com/penumbra-zone/penumbra/issues/1050
-                    .unwrap_or(height == 1);
-
-                tracing::debug!(
-                    ?voted,
-                    num_missed_blocks = ?uptime.num_missed_blocks(),
-                    ?identity_key,
-                    ?params.missed_blocks_maximum,
-                    "recorded vote info"
-                );
-                metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => identity_key.to_string())
-                    .increment(uptime.num_missed_blocks() as f64);
-
-                uptime.mark_height_as_signed(height, voted)?;
-                if uptime.num_missed_blocks() as u64 >= params.missed_blocks_maximum {
-                    self.set_validator_state(&identity_key, validator::State::Jailed)
-                        .await?;
-                } else {
-                    self.set_validator_uptime(&identity_key, uptime);
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     /// Process evidence of byzantine behavior from CometBFT.
     ///
     /// Evidence *MUST* be processed before `end_block` is called, because
@@ -737,7 +650,7 @@ pub trait ValidatorManager: StateWrite {
     /// Returns an error if the validator is not found in the JMT.
     async fn process_evidence(&mut self, evidence: &Misbehavior) -> Result<()> {
         let validator = self
-            .get_validator_by_cometbft_address(&evidence.validator.address)
+            .get_validator_definition_by_cometbft_address(&evidence.validator.address)
             .await?
             .ok_or_else(|| {
                 anyhow::anyhow!(
@@ -746,8 +659,20 @@ pub trait ValidatorManager: StateWrite {
                 )
             })?;
 
-        self.set_validator_state(&validator.identity_key, validator::State::Tombstoned)
-            .await
+        let (old_state, new_state) = self
+            .set_validator_state(&validator.identity_key, validator::State::Tombstoned)
+            .await?;
+
+        if let (Inactive | Jailed | Active, Tombstoned) = (old_state, new_state) {
+            let current_height = self.get_block_height().await?;
+            self.record_proto(event::tombstone_validator(
+                current_height,
+                validator.identity_key.clone(),
+                evidence,
+            ));
+        }
+
+        Ok(())
     }
 
     fn state_machine_metrics(old_state: validator::State, new_state: validator::State) {

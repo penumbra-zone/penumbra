@@ -99,21 +99,12 @@ impl AppActionHandler for ProposalSubmit {
                     match action {
                         Spend(_) | Output(_) | Swap(_) | SwapClaim(_) | DelegatorVote(_)
                         | UndelegateClaim(_) => {
-                            // These actions all require proving, so they are banned from Community Pool spend
-                            // proposals to prevent DoS attacks.
-                            anyhow::bail!(
-                                "invalid action in Community Pool spend proposal (would require proving)"
-                            )
+                            anyhow::bail!("invalid action in Community Pool spend proposal (would require proving)")
                         }
                         Delegate(_) | Undelegate(_) => {
-                            // Delegation and undelegation is disallowed due to Undelegateclaim requiring proving.
-                            anyhow::bail!(
-                                "invalid action in Community Pool spend proposal (can't claim outputs of undelegation)"
-                            )
+                            anyhow::bail!("invalid action in Community Pool spend proposal (can't claim outputs of undelegation)")
                         }
                         ProposalSubmit(_) | ProposalWithdraw(_) | ProposalDepositClaim(_) => {
-                            // These actions manipulate proposals, so they are banned from Community Pool spend
-                            // actions because they could cause recursion.
                             anyhow::bail!("invalid action in Community Pool spend proposal (not allowed to manipulate proposals from within proposals)")
                         }
                         ValidatorDefinition(_)
@@ -125,10 +116,10 @@ impl AppActionHandler for ProposalSubmit {
                         | CommunityPoolSpend(_)
                         | CommunityPoolOutput(_)
                         | Ics20Withdrawal(_)
-                        | CommunityPoolDeposit(_) => {
-                            // These actions are all valid for Community Pool spend proposals, because they
-                            // don't require proving, so they don't represent a DoS vector.
-                        }
+                        | CommunityPoolDeposit(_)
+                        | ActionDutchAuctionSchedule(_)
+                        | ActionDutchAuctionEnd(_)
+                        | ActionDutchAuctionWithdraw(_) => {}
                     }
                 }
             }

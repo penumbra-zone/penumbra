@@ -73,8 +73,9 @@ impl<S: StateRead + 'static> Path<S> {
         };
         // Deindex the position we "consumed" in this and all descendant state forks,
         // ensuring we don't double-count liquidity while traversing cycles.
-        use super::super::position_manager::Inner as _;
-        self.state.deindex_position_by_price(&best_price_position);
+        use crate::component::position_manager::price_index::PositionByPriceIndex;
+        self.state
+            .deindex_position_by_price(&best_price_position, &best_price_position.id());
 
         // Compute the effective price of a trade in the direction self.end()=>new_end
         let hop_price = best_price_position

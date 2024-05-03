@@ -1,4 +1,9 @@
-use std::io::{Cursor, Read, Write};
+//! [Payment address][Address] facilities.
+
+use std::{
+    io::{Cursor, Read, Write},
+    sync::OnceLock,
+};
 
 use anyhow::Context;
 use ark_serialize::CanonicalDeserialize;
@@ -16,27 +21,68 @@ pub use view::AddressView;
 
 use crate::{fmd, ka, keys::Diversifier};
 
+/// The length of an [`Address`] in bytes.
 pub const ADDRESS_LEN_BYTES: usize = 80;
+
 /// Number of bits in the address short form divided by the number of bits per Bech32m character
 pub const ADDRESS_NUM_CHARS_SHORT_FORM: usize = 24;
 
 /// A valid payment address.
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Eq, Serialize, Deserialize)]
 #[serde(try_from = "pb::Address", into = "pb::Address")]
 pub struct Address {
+    /// The address diversifier.
     d: Diversifier,
-    /// cached copy of the diversified base
-    g_d: decaf377::Element,
+    /// A cached copy of the diversified base.
+    g_d: OnceLock<decaf377::Element>,
 
+    /// The public key for this payment address.
+    ///
     /// extra invariant: the bytes in pk_d should be the canonical encoding of an
     /// s value (whether or not it is a valid decaf377 encoding)
     /// this ensures we can use a PaymentAddress to form a note commitment,
     /// which involves hashing s as a field element.
     pk_d: ka::Public,
-    /// transmission key s value
+    /// The transmission key s value.
     transmission_key_s: Fq,
 
+    /// The clue key for this payment address.
     ck_d: fmd::ClueKey,
+}
+
+impl std::cmp::PartialEq for Address {
+    fn eq(
+        &self,
+        rhs @ Self {
+            d: rhs_d,
+            g_d: rhs_g_d,
+            pk_d: rhs_pk_d,
+            transmission_key_s: rhs_transmission_key_s,
+            ck_d: rhs_ck_d,
+        }: &Self,
+    ) -> bool {
+        let lhs @ Self {
+            d: lhs_d,
+            g_d: lhs_g_d,
+            pk_d: lhs_pk_d,
+            transmission_key_s: lhs_transmission_key_s,
+            ck_d: lhs_ck_d,
+        } = self;
+
+        // When a `OnceLock<T>` value is compared, it will only call `get()`, refraining from
+        // initializing the value. To make sure that an address that *hasn't* yet accessed its
+        // diversified base is considered equal to an address that *has*, compute the base points
+        // if they have not already been generated.
+        lhs.diversified_generator();
+        rhs.diversified_generator();
+
+        // Compare all of the fields.
+        lhs_d.eq(rhs_d)
+            && lhs_g_d.eq(rhs_g_d)
+            && lhs_pk_d.eq(rhs_pk_d)
+            && lhs_transmission_key_s.eq(rhs_transmission_key_s)
+            && lhs_ck_d.eq(rhs_ck_d)
+    }
 }
 
 impl std::cmp::PartialOrd for Address {
@@ -69,7 +115,7 @@ impl Address {
             // don't need an error type here, caller will probably .expect anyways
             Some(Self {
                 d,
-                g_d: d.diversified_generator(),
+                g_d: OnceLock::new(),
                 pk_d,
                 ck_d,
                 transmission_key_s,
@@ -79,26 +125,36 @@ impl Address {
         }
     }
 
+    /// Returns a reference to the address diversifier.
     pub fn diversifier(&self) -> &Diversifier {
         &self.d
     }
 
+    /// Returns a reference to the diversified base.
+    ///
+    /// This method computes the diversified base if it has not been computed yet. This value is
+    /// cached after it has been computed once.
     pub fn diversified_generator(&self) -> &decaf377::Element {
-        &self.g_d
+        self.g_d
+            .get_or_init(|| self.diversifier().diversified_generator())
     }
 
+    /// Returns a reference to the transmission key.
     pub fn transmission_key(&self) -> &ka::Public {
         &self.pk_d
     }
 
+    /// Returns a reference to the clue key.
     pub fn clue_key(&self) -> &fmd::ClueKey {
         &self.ck_d
     }
 
+    /// Returns a reference to the transmission key `s` value.
     pub fn transmission_key_s(&self) -> &Fq {
         &self.transmission_key_s
     }
 
+    /// Converts this address to a vector of bytes.
     pub fn to_vec(&self) -> Vec<u8> {
         let mut bytes = std::io::Cursor::new(Vec::new());
         bytes
@@ -114,7 +170,7 @@ impl Address {
         f4jumble(bytes.get_ref()).expect("can jumble")
     }
 
-    /// A randomized dummy address.
+    /// Generates a randomized dummy address.
     pub fn dummy<R: CryptoRng + Rng>(rng: &mut R) -> Self {
         loop {
             let mut diversifier_bytes = [0u8; 16];
@@ -151,7 +207,7 @@ impl Address {
 
     /// Compat (bech32 non-m) address format
     pub fn compat_encoding(&self) -> String {
-        let proto_address = pb::Address::from(*self);
+        let proto_address = pb::Address::from(self);
         bech32str::encode(
             &proto_address.inner,
             bech32str::compat_address::BECH32_PREFIX,
@@ -166,6 +222,12 @@ impl DomainType for Address {
 
 impl From<Address> for pb::Address {
     fn from(a: Address) -> Self {
+        Self::from(&a)
+    }
+}
+
+impl From<&Address> for pb::Address {
+    fn from(a: &Address) -> Self {
         pb::Address {
             inner: a.to_vec(),
             // Always produce encodings without the alt format.
@@ -193,7 +255,7 @@ impl TryFrom<pb::Address> for Address {
 
 impl std::fmt::Display for Address {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let proto_address = pb::Address::from(*self);
+        let proto_address = pb::Address::from(self);
         f.write_str(&bech32str::encode(
             &proto_address.inner,
             bech32str::address::BECH32_PREFIX,
@@ -286,6 +348,18 @@ impl TryFrom<&[u8]> for Address {
     }
 }
 
+/// Assert the addresses are both [`Send`] and [`Sync`].
+//  NB: allow dead code, because this block only contains compile-time assertions.
+#[allow(dead_code)]
+mod assert_address_is_send_and_sync {
+    fn is_send<T: Send>() {}
+    fn is_sync<T: Sync>() {}
+    fn f() {
+        is_send::<super::Address>();
+        is_sync::<super::Address>();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -316,7 +390,7 @@ mod tests {
             alt_bech32m: bech32m_addr,
         }
         .encode_to_vec();
-        let proto_addr_direct: pb::Address = dest.into();
+        let proto_addr_direct: pb::Address = dest.clone().into();
         let addr_from_proto: Address = proto_addr_direct
             .try_into()
             .expect("can convert from proto back to address");
