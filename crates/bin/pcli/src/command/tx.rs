@@ -71,6 +71,9 @@ mod replicate;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
+    /// Auction related commands.
+    #[clap(display_order = 600, subcommand)]
+    Auction(AuctionCmd),
     /// Send funds to a Penumbra address.
     #[clap(display_order = 100)]
     Send {
@@ -224,9 +227,6 @@ pub enum TxCmd {
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Auction related commands.
-    #[clap(display_order = 600, subcommand)]
-    Auction(AuctionCmd),
 }
 
 // A fee tier enum suitable for use with clap.
@@ -731,9 +731,6 @@ impl TxCmd {
                             .set_gas_prices(gas_prices.clone())
                             .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
-                        for note in notes {
-                            planner.spend(note.note, note.position);
-                        }
 
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {

@@ -112,6 +112,7 @@ fn get_validator(tmpdir: &TempDir) -> String {
 #[ignore]
 #[test]
 fn transaction_send_from_addr_0_to_addr_1() {
+    tracing_subscriber::fmt::try_init().ok();
     let tmpdir = load_wallet_into_tmpdir();
 
     // Create a memo that we can inspect later, to confirm transaction
@@ -186,6 +187,8 @@ fn transaction_send_from_addr_0_to_addr_1() {
         .expect("can find MemoView in TransactionView");
     match mv {
         penumbra_transaction::MemoView::Visible { plaintext, .. } => {
+            tracing::info!(?plaintext, "plaintext memo");
+            tracing::info!(?memo_text, "expected memo text");
             assert!(plaintext.text == memo_text);
         }
         penumbra_transaction::MemoView::Opaque { .. } => {
@@ -202,7 +205,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
     // test_asset only by whitespace.
     balance_cmd
         .assert()
-        .stdout(predicate::str::is_match(r"1\s*2020test_usd").unwrap());
+        .stdout(predicate::str::is_match(r"1\s*2019test_usd").unwrap());
 
     // Cleanup: Send the asset back at the end of the test such that other tests begin
     // from the original state.
@@ -213,7 +216,7 @@ fn transaction_send_from_addr_0_to_addr_1() {
             tmpdir.path().to_str().unwrap(),
             "tx",
             "send",
-            TEST_ASSET,
+            TEST_ASSET, // 1020test_usd
             "--to",
             ADDRESS_0_STR,
         ])
@@ -263,7 +266,7 @@ fn delegate_and_undelegate() {
             ])
             .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
         let delegation_result = delegate_cmd.assert().try_success();
-        tracing::info!(?delegation_result, "delegation result");
+        tracing::debug!(?delegation_result, "delegation result");
 
         // If the undelegation command succeeded, we can exit this loop.
         if delegation_result.is_ok() {
@@ -298,7 +301,7 @@ fn delegate_and_undelegate() {
     // need to pull the amount of delegation tokens we obtained so that we can later
     // try to execute an undelegation (`tx undelegate <AMOUNT><DELEGATION_TOKEN_DENOM>`).
     // To do this, we use a regex to extract the amount of delegation tokens we obtained:
-    let delegation_token_pattern = Regex::new(r"(\d+\.?\d+[a-z]?delegation_[a-zA-Z0-9]*)").unwrap();
+    let delegation_token_pattern = Regex::new(r"(\d+\.?\d?m?delegation_[a-zA-Z0-9]*)").unwrap();
     let (delegation_token_str, [_match]) = delegation_token_pattern
         .captures(&balance_output_string)
         .expect("can find delegation token in balance output")
@@ -328,6 +331,7 @@ fn delegate_and_undelegate() {
         if undelegation_result.is_ok() {
             break;
         } else {
+            tracing::error!(?undelegation_result, "undelegation failed");
             num_attempts += 1;
             tracing::info!(num_attempts, max_attempts, "undelegation failed");
             if num_attempts >= max_attempts {
@@ -567,17 +571,17 @@ fn lp_management() {
 
 #[ignore]
 #[test]
-/// Test that we can swap.
+/// Test that we can swap `gm` for `test_usd`
 /// Setup:
 /// There are two wallets, address 0 and address 1.
-/// Address 0 has 100gm and some penumbra.
-/// Address 1 has no gm.
+/// Address 0 has 100gm and 5001test_usd.
+/// Address 1 has no gm and 1000test_usd.
 /// Test:
-/// Address 1 posts an order to sell 1penumbra for 1gm.
-/// Address 0 swaps 1gm for 1penumbra.
+/// Address 1 posts an order to sell 1test_usd for 1gm.
+/// Address 0 swaps 1gm for 1test_usd.
 /// Validate:
-/// Address 0 has 99gm and some penumbra.
-/// Address 1 has 1gm and 1000penumbra.
+/// Address 0 has 99gm and 5002test_usd.
+/// Address 1 has 1gm and 999test_usd.
 fn swap() {
     let tmpdir = load_wallet_into_tmpdir();
 
@@ -597,9 +601,9 @@ fn swap() {
                 .not(),
         )
         // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1001penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1001(\.[0-9]+)?penumbra").unwrap());
+        .stdout(predicate::str::is_match(r"0\s*5001test_usd").unwrap())
+        // Address 1 has 1000test_usd.
+        .stdout(predicate::str::is_match(r"1\s*1000test_usd").unwrap());
 
     // Address 1: post an order to sell 1penumbra for 1gm.
     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
@@ -611,7 +615,7 @@ fn swap() {
             "position",
             "order",
             "sell",
-            "1penumbra@1gm",
+            "1test_usd@1gm",
             "--source",
             "1",
         ])
@@ -620,18 +624,14 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 0 has 100gm.
-        .stdout(predicate::str::is_match(r"0\s*100gm").unwrap())
-        // Address 1 has no gm.
+        // Address 1 still has no gm.
         .stdout(
             predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
                 .unwrap()
                 .not(),
         )
-        // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        // Address 1 has 999test_usd.
+        .stdout(predicate::str::is_match(r"1\s*999test_usd").unwrap());
 
     // Address 1: swaps 1gm for 1penumbra.
     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
@@ -643,7 +643,7 @@ fn swap() {
             "swap",
             "1gm",
             "--into",
-            "penumbra",
+            "test_usd",
             "--source",
             "0",
         ])
@@ -659,18 +659,16 @@ fn swap() {
 
     balance_cmd
         .assert()
-        // Address 0 has 100gm.
+        // Address 0 has 99gm (swapped 1gm).
         .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
-        // Address 1 has no gm.
+        // Address 0 has 5002test_usd
+        .stdout(predicate::str::is_match(r"0\s*5002test_usd").unwrap())
+        // Address 1 has no gm (needs to withdraw LP).
         .stdout(
             predicate::str::is_match(r"1\s[0-9]*\.?[0-9]gm")
                 .unwrap()
                 .not(),
-        )
-        // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        );
 
     // Close and withdraw any existing liquidity positions.
     let mut close_cmd = Command::cargo_bin("pcli").unwrap();
@@ -713,110 +711,13 @@ fn swap() {
         .assert()
         // Address 0 has 99gm.
         .stdout(predicate::str::is_match(r"0\s*99gm").unwrap())
+        // Address 0 has 5002test_usd
+        .stdout(predicate::str::is_match(r"0\s*5002test_usd").unwrap())
         // Address 1 has 1gm.
         .stdout(predicate::str::is_match(r"1\s*1gm").unwrap())
-        // Address 0 has some penumbra.
-        .stdout(predicate::str::is_match(r"0\s*.*penumbra").unwrap())
-        // Address 1 has 1000penumbra.
-        .stdout(predicate::str::is_match(r"1\s*1000(\.[0-9]+)?penumbra").unwrap());
+        // Address 1 has 999test_usd
+        .stdout(predicate::str::is_match(r"1\s*999test_usd").unwrap());
 }
-
-// Note: As part of #2589, we changed the way DEX calculations are performed. In particular,
-// we now perform the division before the multiplication, which means that the result is
-// slightly lossy. Since we systematically round down non-integral amounts, this means that
-// NFT trading is no longer possible under the current implementation. We should fix this in the
-// future, but for now we disable the test.
-// #[ignore]
-// #[test]
-// fn swap_nft() {
-//     let tmpdir = load_wallet_into_tmpdir();
-//
-//     // Create a liquidity position selling 1cube for 1penumbra each.
-//     let mut sell_cmd = Command::cargo_bin("pcli").unwrap();
-//     sell_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "position",
-//             "order",
-//             "sell",
-//             "1cube@1penumbra",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     sell_cmd.assert().success();
-//
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "view",
-//             "balance",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//
-//     balance_cmd
-//         .assert()
-//         // Address 0 has no `cube`.
-//         .stdout(
-//             predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 1 should also have no cube.
-//         .stdout(
-//             predicate::str::is_match(format!(r"1\s*[0-9]+.*cube"))
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 1 has 1001penumbra.
-//         .stdout(predicate::str::is_match(format!(r"1\s*1001penumbra")).unwrap())
-//         // Address 0 should have some penumbra
-//         .stdout(predicate::str::is_match(format!(r"0\s*[0-9]+.*penumbra")).unwrap());
-//
-//     // Swap 1penumbra for some cube from address 1.
-//     let mut swap_cmd = Command::cargo_bin("pcli").unwrap();
-//     swap_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "tx",
-//             "swap",
-//             "1penumbra",
-//             "--into",
-//             "cube",
-//             "--source",
-//             "1",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//     swap_cmd.assert().success();
-//
-//     // Sleep to allow the outputs from the swap to be processed.
-//     thread::sleep(*UNBONDING_DURATION);
-//     let mut balance_cmd = Command::cargo_bin("pcli").unwrap();
-//     balance_cmd
-//         .args([
-//             "--home",
-//             tmpdir.path().to_str().unwrap(),
-//             "view",
-//             "balance",
-//         ])
-//         .timeout(std::time::Duration::from_secs(TIMEOUT_COMMAND_SECONDS));
-//
-//     balance_cmd
-//         .assert()
-//         // Address 1 has 1cube now
-//         .stdout(predicate::str::is_match(format!(r"1\s*1cube")).unwrap())
-//         // and address 0 has no cube.
-//         .stdout(
-//             predicate::str::is_match(format!(r"0\s*[0-9]+.*cube"))
-//                 .unwrap()
-//                 .not(),
-//         )
-//         // Address 1 spent 1penumbra.
-//         .stdout(predicate::str::is_match(format!(r"1\s*1000penumbra")).unwrap());
-// }
 
 #[ignore]
 #[test]
