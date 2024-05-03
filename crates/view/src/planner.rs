@@ -602,15 +602,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // It's possible that adding spends could increase the gas, increasing the fee
         // amount, and so on, so we add spends iteratively.
-
         let mut notes_by_asset_id = BTreeMap::new();
-
-        let basic_balance = self.balance();
-        tracing::error!(all_actions = ?self.plan.actions, "all actions");
-        tracing::error!(?basic_balance, "balance");
-
-        let full_balance = self.balance_with_fee_estimate(&self.gas_prices, &self.fee_tier);
-        tracing::error!(?full_balance, "full");
 
         for required in self
             .balance_with_fee_estimate(&self.gas_prices, &self.fee_tier)
@@ -712,30 +704,31 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 MemoPlaintext::new(change_address, String::new())?,
             )?);
         }
-
         plan.populate_detection_data(&mut OsRng, fmd_params.precision_bits.into());
-
         self.plan = plan;
 
-        tracing::info!(plan = ?self.plan, "finished balancing transaction");
-
-        // We add some early checks to return an informative error message, even if the transaction
-        // would fail anyway.
+        tracing::info!("finished balancing transaction");
+        /* Wrap-up planning, display stats, reset state */
+        // We add some fail-fast checks to give callers a helpful error message if the transaction
+        // does not balance.
         ensure!(
             !self.plan.actions.is_empty(),
-            "planned transaction should have actions"
+            "the transaction contains no actions"
         );
 
+        let final_balance = self.balance() - total_fee.0;
         ensure!(
-            self.balance_with_fee_estimate(&self.gas_prices, &self.fee_tier)
-                .is_zero(),
-            "transaction is not balanced: {:?}",
-            self.balance()
+            final_balance.is_zero(),
+            "the transaction is not balanced: {:?}",
+            final_balance
         );
 
+        // Reset the internal state
         self.vote_intents = BTreeMap::new();
         self.ibc_actions = Vec::new();
         self.gas_prices = GasPrices::zero();
+        self.change_outputs = BTreeMap::new();
+        self.actions = Vec::new();
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
