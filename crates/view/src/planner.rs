@@ -38,7 +38,7 @@ use penumbra_governance::{
 use penumbra_ibc::IbcRelay;
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
-use penumbra_proto::view::v1::NotesRequest;
+use penumbra_proto::view::v1::{NotesForVotingRequest, NotesRequest};
 use penumbra_shielded_pool::{Ics20Withdrawal, Note, OutputPlan, SpendPlan};
 use penumbra_stake::{rate::RateData, validator, IdentityKey, UndelegateClaimPlan};
 use penumbra_tct as tct;
@@ -66,6 +66,15 @@ pub struct Planner<R: RngCore + CryptoRng> {
     /// The set of IBC actions to include in the transaction.
     ibc_actions: Vec<IbcRelay>,
     vote_intents: BTreeMap<u64, VoteIntent>,
+}
+
+#[derive(Debug, Clone)]
+struct VoteIntent {
+    #[allow(dead_code)]
+    start_block_height: u64,
+    start_position: tct::Position,
+    rate_data: BTreeMap<IdentityKey, RateData>,
+    vote: Vote,
 }
 
 impl<R: RngCore + CryptoRng> Debug for Planner<R> {
@@ -443,7 +452,8 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             unbonded_amount,
         )
         .into();
-        self.action(vote);
+        self.push(vote);
+
         self
     }
 
@@ -580,6 +590,24 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         Fee::from_staking_token_amount(total)
     }
 
+    /// Get all the voting note requests necessary to fulfill the current [`Balance`].
+    pub fn voting_notes_requests(&self, source: AddressIndex) -> Vec<NotesForVotingRequest> {
+        self.vote_intents
+            .iter()
+            .map(
+                |(
+                    _proposal, // The request only cares about the start block height
+                    VoteIntent {
+                        start_block_height, ..
+                    },
+                )| NotesForVotingRequest {
+                    votable_at_height: *start_block_height,
+                    address_index: Some(source.into()),
+                },
+            )
+            .collect()
+    }
+
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     ///
@@ -599,6 +627,18 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Change address represents the sender's address.
         let change_address = view.address_by_index(source).await?.clone();
+
+        // Collect all available notes that can be used for voting in governance decisions,
+        // by quering the view service.
+        let mut voting_notes = Vec::new();
+        let voting_requests = self.voting_notes_requests(source);
+        for request in voting_requests {
+            let notes = view.notes_for_voting(request).await?;
+            voting_notes.push(notes);
+        }
+
+        // Process the voting notes to be added to the planner.
+        let _ = self.add_votes(voting_notes);
 
         // It's possible that adding spends could increase the gas, increasing the fee
         // amount, and so on, so we add spends iteratively.
@@ -802,13 +842,4 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         Ok(())
     }
-}
-
-#[derive(Debug, Clone)]
-struct VoteIntent {
-    #[allow(dead_code)]
-    start_block_height: u64,
-    start_position: tct::Position,
-    rate_data: BTreeMap<IdentityKey, RateData>,
-    vote: Vote,
 }
