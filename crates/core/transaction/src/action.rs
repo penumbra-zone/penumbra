@@ -152,6 +152,9 @@ impl Action {
             Action::CommunityPoolOutput(_) => 51,
             Action::CommunityPoolDeposit(_) => 52,
             Action::Ics20Withdrawal(_) => 200,
+            Action::ActionDutchAuctionSchedule(_) => 53,
+            Action::ActionDutchAuctionEnd(_) => 54,
+            Action::ActionDutchAuctionWithdraw(_) => 55,
         }
     }
 }

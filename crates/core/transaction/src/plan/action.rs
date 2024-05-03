@@ -192,6 +192,9 @@ impl ActionPlan {
             ActionPlan::CommunityPoolOutput(_) => 51,
             ActionPlan::CommunityPoolDeposit(_) => 52,
             ActionPlan::Ics20Withdrawal(_) => 200,
+            ActionPlan::ActionDutchAuctionSchedule(_) => 53,
+            ActionPlan::ActionDutchAuctionEnd(_) => 54,
+            ActionPlan::ActionDutchAuctionWithdraw(_) => 55,
         }
     }
 
