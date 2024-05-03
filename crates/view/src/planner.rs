@@ -496,9 +496,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     fn refresh_change(&mut self, change_address: Address) {
         self.change_outputs = BTreeMap::new();
         // For each "provided" balance component, create a change note.
-        tracing::error!(refresh_change_balance = ?self.balance(), " time to create some notes!");
         for value in self.balance().provided() {
-            tracing::warn!(value = ?value, address = ?change_address, "Creating change note to change address");
             self.change_outputs.insert(
                 value.asset_id,
                 OutputPlan::new(&mut OsRng, value, change_address.clone()),

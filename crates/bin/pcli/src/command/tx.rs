@@ -316,6 +316,7 @@ impl TxCmd {
             TxCmd::CommunityPoolDeposit { .. } => false,
             TxCmd::Position(lp_cmd) => lp_cmd.offline(),
             TxCmd::Withdraw { .. } => false,
+            TxCmd::Auction(_) => false,
         }
     }
 
@@ -1276,6 +1277,9 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Replicate(replicate_cmd)) => {
                 replicate_cmd.exec(app).await?;
+            }
+            TxCmd::Auction(AuctionCmd::Dutch(auction_cmd)) => {
+                auction_cmd.exec(app).await?;
             }
         }
         Ok(())
