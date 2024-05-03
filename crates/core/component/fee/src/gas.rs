@@ -1,4 +1,7 @@
-use std::{iter::Sum, ops::Add};
+use std::{
+    iter::Sum,
+    ops::{Add, AddAssign},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +40,12 @@ impl Add for Gas {
             verification: self.verification + rhs.verification,
             execution: self.execution + rhs.execution,
         }
+    }
+}
+
+impl AddAssign for Gas {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 
