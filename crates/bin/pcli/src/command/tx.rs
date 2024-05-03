@@ -25,6 +25,7 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use rand_core::OsRng;
 use regex::Regex;
 
+use auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -63,12 +64,16 @@ use proposal::ProposalCmd;
 
 use crate::App;
 
+mod auction;
 mod liquidity_position;
 mod proposal;
 mod replicate;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum TxCmd {
+    /// Auction related commands.
+    #[clap(display_order = 600, subcommand)]
+    Auction(AuctionCmd),
     /// Send funds to a Penumbra address.
     #[clap(display_order = 100)]
     Send {
