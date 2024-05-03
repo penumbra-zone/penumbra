@@ -725,9 +725,6 @@ impl TxCmd {
                             .set_gas_prices(gas_prices.clone())
                             .set_fee_tier((*fee_tier).into());
                         let unbonding_amount = notes.iter().map(|n| n.note.amount()).sum();
-                        for note in notes {
-                            planner.spend(note.note, note.position);
-                        }
 
                         let plan = planner
                             .undelegate_claim(UndelegateClaimPlan {
