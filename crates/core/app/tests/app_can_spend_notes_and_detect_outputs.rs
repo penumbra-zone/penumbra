@@ -2,7 +2,10 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -26,7 +29,9 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
     let mut test_node = {
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()

@@ -2,7 +2,10 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_asset::asset,
     penumbra_community_pool::{CommunityPoolDeposit, StateReadExt},
     penumbra_keys::test_keys,
@@ -29,7 +32,9 @@ async fn app_can_deposit_into_community_pool() -> anyhow::Result<()> {
 
     // Define our application state, and start the test node.
     let mut test_node = {
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()
