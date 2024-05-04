@@ -933,12 +933,15 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into())
                     .delegator_vote(
+                        app.view(),
+                        AddressIndex::new(*source),
                         proposal_id,
+                        vote,
                         start_block_height,
                         start_position,
                         start_rate_data,
-                        vote,
                     )
+                    .await?
                     .plan(
                         app.view
                             .as_mut()

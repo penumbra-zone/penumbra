@@ -65,21 +65,11 @@ pub struct Planner<R: RngCore + CryptoRng> {
     gas_prices: GasPrices,
     /// The set of IBC actions to include in the transaction.
     ibc_actions: Vec<IbcRelay>,
-    vote_intents: BTreeMap<u64, VoteIntent>,
-}
-
-#[derive(Debug, Clone)]
-struct VoteIntent {
-    #[allow(dead_code)]
-    start_block_height: u64,
-    start_position: tct::Position,
-    rate_data: BTreeMap<IdentityKey, RateData>,
-    vote: Vote,
 }
 
 impl<R: RngCore + CryptoRng> Debug for Planner<R> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Builder").field("plan", &self.plan).finish()
+        f.debug_struct("Planner").field("plan", &self.plan).finish()
     }
 }
 
@@ -88,7 +78,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     pub fn new(rng: R) -> Self {
         Self {
             rng,
-            vote_intents: BTreeMap::default(),
             plan: TransactionPlan::default(),
             ibc_actions: Vec::new(),
             gas_prices: GasPrices::zero(),
@@ -404,27 +393,67 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Vote with all possible vote weight on a given proposal.
-    ///
-    /// Voting twice on the same proposal in the same planner will overwrite the previous vote.
-    #[instrument(skip(self, start_position, start_rate_data))]
-    pub fn delegator_vote(
+    #[instrument(skip_all)]
+    pub async fn delegator_vote<V: ViewClient>(
+        // TODO this sucks, why isn't there a bundle of proposal data to use for voting
+        // how is that not the thing returned by the rpc? why do we have to query a bunch of shit
+        // independently and stitch it together?
         &mut self,
+        view: &mut V,
+        source: AddressIndex,
         proposal: u64,
+        vote: Vote,
         start_block_height: u64,
         start_position: tct::Position,
         start_rate_data: BTreeMap<IdentityKey, RateData>,
-        vote: Vote,
-    ) -> &mut Self {
-        self.vote_intents.insert(
-            proposal,
-            VoteIntent {
-                start_position,
-                start_block_height,
-                vote,
-                rate_data: start_rate_data,
-            },
+    ) -> Result<&mut Self, anyhow::Error> {
+        let voting_notes = view
+            .notes_for_voting(NotesForVotingRequest {
+                votable_at_height: start_block_height,
+                address_index: Some(source.into()),
+            })
+            .await?;
+
+        anyhow::ensure!(
+            !voting_notes.is_empty(),
+            "no notes were found for voting on proposal {}",
+            proposal
         );
-        self
+
+        // 1. Create a DelegatorVotePlan for each votable note.
+        for (record, ik) in &voting_notes {
+            let validator_start_rate_data = start_rate_data
+                .get(&ik)
+                .ok_or_else(|| anyhow!("missing rate data for votable note delegated to {}", ik))?;
+
+            let voting_power_at_vote_start =
+                validator_start_rate_data.unbonded_amount(record.note.amount());
+
+            // 1. Create a DelegatorVotePlan that votes with this note on the proposal.
+            let plan = DelegatorVotePlan::new(
+                &mut self.rng,
+                proposal,
+                start_position,
+                vote,
+                record.note.clone(),
+                record.position,
+                voting_power_at_vote_start,
+            );
+            self.delegator_vote_precise(plan);
+        }
+
+        // 2. Here, we could sweep any spendable notes with delegation tokens to
+        // a new output to try to unlink them from a future vote.  In practice
+        // this is meaningless because we don't have flow encryption, so
+        // delegator votes reveal the precise amount, and this amount will
+        // likely be unique to the delegator and enough to link their votes.
+        // Also, because we're in a single transaction, the pattern of
+        // delegations will also be revealed (vs creating distinct transactions
+        // for each validator).
+        //
+        // So instead, we do nothing.
+
+        Ok(self)
     }
 
     /// Vote with a specific positioned note in the transaction.
@@ -432,27 +461,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// If you don't use this method to specify votes, they will be filled in automatically from the
     /// implied voting intent by [`vote`](Planner::vote) when the plan is
     /// [`finish`](Planner::finish)ed.
-    #[instrument(skip(self, start_position))]
-    pub fn delegator_vote_precise(
-        &mut self,
-        proposal: u64,
-        start_position: tct::Position,
-        vote: Vote,
-        note: Note,
-        position: tct::Position,
-        unbonded_amount: Amount,
-    ) -> &mut Self {
-        let vote = DelegatorVotePlan::new(
-            &mut self.rng,
-            proposal,
-            start_position,
-            vote,
-            note,
-            position,
-            unbonded_amount,
-        )
-        .into();
-        self.push(vote);
+    #[instrument(skip(self, plan))]
+    pub fn delegator_vote_precise(&mut self, plan: DelegatorVotePlan) -> &mut Self {
+        self.push(plan.into());
 
         self
     }
@@ -590,24 +601,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         Fee::from_staking_token_amount(total)
     }
 
-    /// Get all the voting note requests necessary to fulfill the current [`Balance`].
-    pub fn voting_notes_requests(&self, source: AddressIndex) -> Vec<NotesForVotingRequest> {
-        self.vote_intents
-            .iter()
-            .map(
-                |(
-                    _proposal, // The request only cares about the start block height
-                    VoteIntent {
-                        start_block_height, ..
-                    },
-                )| NotesForVotingRequest {
-                    votable_at_height: *start_block_height,
-                    address_index: Some(source.into()),
-                },
-            )
-            .collect()
-    }
-
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     ///
@@ -627,18 +620,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // Change address represents the sender's address.
         let change_address = view.address_by_index(source).await?.clone();
-
-        // Collect all available notes that can be used for voting in governance decisions,
-        // by quering the view service.
-        let mut voting_notes = Vec::new();
-        let voting_requests = self.voting_notes_requests(source);
-        for request in voting_requests {
-            let notes = view.notes_for_voting(request).await?;
-            voting_notes.push(notes);
-        }
-
-        // Process the voting notes to be added to the planner.
-        let _ = self.add_votes(voting_notes);
 
         // It's possible that adding spends could increase the gas, increasing the fee
         // amount, and so on, so we add spends iteratively.
@@ -764,7 +745,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         );
 
         // Reset the internal state
-        self.vote_intents = BTreeMap::new();
         self.ibc_actions = Vec::new();
         self.gas_prices = GasPrices::zero();
         self.change_outputs = BTreeMap::new();
@@ -772,74 +752,5 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         let plan = mem::take(&mut self.plan);
 
         Ok(plan)
-    }
-
-    pub fn add_votes(
-        &mut self,
-        voting_notes: Vec<Vec<(SpendableNoteRecord, IdentityKey)>>,
-    ) -> Result<()> {
-        for (
-            records,
-            (
-                proposal,
-                VoteIntent {
-                    start_position,
-                    vote,
-                    rate_data,
-                    ..
-                },
-            ),
-        ) in voting_notes
-            .into_iter()
-            .chain(std::iter::repeat(vec![])) // Chain with infinite repeating no notes, so the zip doesn't stop early
-            .zip(mem::take(&mut self.vote_intents).into_iter())
-        {
-            // Keep track of whether we successfully could vote on this proposal
-            let mut voted = false;
-
-            for (record, identity_key) in records {
-                // Vote with precisely this note on the proposal, computing the correct exchange
-                // rate for self-minted vote receipt tokens using the exchange rate of the validator
-                // at voting start time. If the validator was not active at the start of the
-                // proposal, the vote will be rejected by stateful verification, so skip the note
-                // and continue to the next one.
-                let Some(rate_data) = rate_data.get(&identity_key) else {
-                    continue;
-                };
-                let unbonded_amount = rate_data.unbonded_amount(record.note.amount()).into();
-
-                // If the delegation token is unspent, "roll it over" by spending it (this will
-                // result in change sent back to us). This unlinks nullifiers used for voting on
-                // multiple non-overlapping proposals, increasing privacy.
-                if record.height_spent.is_none() {
-                    self.push(
-                        SpendPlan::new(&mut OsRng, record.note.clone(), record.position).into(),
-                    );
-                }
-
-                self.delegator_vote_precise(
-                    proposal,
-                    start_position,
-                    vote,
-                    record.note,
-                    record.position,
-                    unbonded_amount,
-                );
-
-                voted = true;
-            }
-
-            if !voted {
-                // If there are no notes to vote with, return an error, because otherwise the user
-                // would compose a transaction that would not satisfy their intention, and would
-                // silently eat the fee.
-                anyhow::bail!(
-                    "can't vote on proposal {} because no delegation notes were staked to an active validator when voting started",
-                    proposal
-                );
-            }
-        }
-
-        Ok(())
     }
 }
