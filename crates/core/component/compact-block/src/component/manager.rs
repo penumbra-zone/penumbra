@@ -16,15 +16,13 @@ use crate::{state_key, CompactBlock};
 #[async_trait]
 pub trait CompactBlockManager: StateWrite {
     /// Finish an SCT block and use the resulting roots to finalize the current `CompactBlock`.
-    async fn finish_block(&mut self, app_parameters_updated: bool) -> Result<()> {
-        self.finalize_compact_block(false, app_parameters_updated)
-            .await
+    async fn finish_block(&mut self) -> Result<()> {
+        self.finalize_compact_block(false).await
     }
 
     /// Finish an SCT block and epoch and use the resulting roots to finalize the current `CompactBlock`.
-    async fn finish_epoch(&mut self, app_parameters_updated: bool) -> Result<()> {
-        self.finalize_compact_block(true, app_parameters_updated)
-            .await
+    async fn finish_epoch(&mut self) -> Result<()> {
+        self.finalize_compact_block(true).await
     }
 }
 
@@ -33,11 +31,7 @@ impl<T: StateWrite + ?Sized> CompactBlockManager for T {}
 #[async_trait]
 trait Inner: StateWrite {
     #[instrument(skip_all)]
-    async fn finalize_compact_block(
-        &mut self,
-        end_epoch: bool,
-        mut app_parameters_updated: bool,
-    ) -> Result<()> {
+    async fn finalize_compact_block(&mut self, end_epoch: bool) -> Result<()> {
         use penumbra_shielded_pool::component::StateReadExt as _;
         // Find out what our block height is (this is set even during the genesis block)
         let height = self
@@ -46,6 +40,13 @@ trait Inner: StateWrite {
             .expect("height of block is always set");
         tracing::debug!(?height, ?end_epoch, "finishing compact block");
 
+        // This will report a "false positive" if parameters were scheduled to be changed but
+        // the update failed. We don't really care if a client re-fetches parameters in that case.
+        let mut app_parameters_updated = self
+            .param_changes_for_height(height)
+            .await
+            .expect("should be able to check for param changes")
+            .is_some();
         // Force app_parameters_updated to true for the genesis compactblock.
         app_parameters_updated = app_parameters_updated || height == 0;
 

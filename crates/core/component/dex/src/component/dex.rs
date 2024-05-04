@@ -180,12 +180,6 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow::anyhow!("Missing DexParameters"))
     }
 
-    /// Indicates if the DEX parameters have been updated in this block.
-    fn dex_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::config::dex_params_updated())
-            .is_some()
-    }
-
     /// Uses the DEX parameters to construct a `RoutingParams` for use in execution or simulation.
     async fn routing_params(&self) -> Result<RoutingParams> {
         let dex_params = self.get_dex_params().await?;
@@ -204,7 +198,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_dex_params(&mut self, params: DexParameters) {
         self.put(state_key::config::dex_params().to_string(), params);
-        self.object_put(state_key::config::dex_params_updated(), ())
     }
 
     async fn set_output_data(
@@ -303,4 +296,4 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

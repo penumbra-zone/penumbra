@@ -120,20 +120,14 @@ pub fn deliver_community_pool_transactions_at_height(block_height: u64) -> Strin
     format!("governance/deliver_community_pool_transactions/{block_height}/")
 }
 
-// This is in the app's JMT namespace, but governance needs to access
-// it to enact param change proposals.
-pub fn change_app_params_at_height(block_height: u64) -> String {
-    format!("app/change_app_params/{block_height}/")
+pub fn param_changes_for_height(block_height: u64) -> String {
+    format!("governance/param_changes/{block_height}/")
 }
 
 // Used for object store:
 
 pub fn proposal_started() -> &'static str {
     "governance/proposal_started"
-}
-
-pub fn governance_params_updated() -> &'static str {
-    "governance/governance_params_updated"
 }
 
 pub mod upgrades {

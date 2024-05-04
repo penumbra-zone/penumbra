@@ -6,7 +6,3 @@ pub fn staking_token_issuance_for_epoch() -> &'static str {
 pub fn distributions_parameters() -> &'static str {
     "distributions/parameters"
 }
-
-pub fn distributions_parameters_updated() -> &'static str {
-    "distributions/parameters_updated"
-}

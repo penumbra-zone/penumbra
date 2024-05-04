@@ -214,13 +214,6 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("Missing StakeParameters"))
     }
 
-    /// Indicates if the stake parameters have been updated in this block.
-    #[instrument(skip(self), level = "trace")]
-    fn stake_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::parameters::updated_flag())
-            .is_some()
-    }
-
     #[instrument(skip(self), level = "trace")]
     async fn signed_blocks_window_len(&self) -> Result<u64> {
         self.get_stake_params()
@@ -282,9 +275,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided stake parameters to the JMT.
     fn put_stake_params(&mut self, params: StakeParameters) {
-        // Note that the stake params have been updated:
-        self.object_put(state_key::parameters::updated_flag(), ());
-
         // Change the stake parameters:
         self.put(state_key::parameters::key().into(), params)
     }

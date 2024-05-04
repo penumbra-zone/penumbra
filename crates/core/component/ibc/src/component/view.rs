@@ -11,24 +11,14 @@ use super::state_key;
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided IBC parameters to the JMT.
     fn put_ibc_params(&mut self, params: IBCParameters) {
-        // Note that the IBC params have been updated:
-        self.object_put(state_key::ibc_params_updated(), ());
-
-        // Change the IBC parameters:
         self.put(state_key::ibc_params().into(), params)
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the IBC parameters have been updated in this block.
-    fn ibc_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::ibc_params_updated())
-            .is_some()
-    }
-
     /// Gets the IBC parameters from the JMT.
     async fn get_ibc_params(&self) -> Result<IBCParameters> {
         self.get(state_key::ibc_params())

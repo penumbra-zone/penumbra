@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use anyhow::Context;
 use anyhow::Result;
 use penumbra_auction::params::AuctionParameters;
 use penumbra_community_pool::params::CommunityPoolParameters;
@@ -7,15 +8,46 @@ use penumbra_dex::DexParameters;
 use penumbra_distributions::params::DistributionsParameters;
 use penumbra_fee::FeeParameters;
 use penumbra_funding::params::FundingParameters;
-use penumbra_governance::{
-    params::GovernanceParameters, proposal::ChangedAppParameters, tally::Ratio,
-};
+use penumbra_governance::change::ParameterChange;
+use penumbra_governance::{params::GovernanceParameters, tally::Ratio};
 use penumbra_ibc::params::IBCParameters;
 use penumbra_sct::params::SctParameters;
 use penumbra_shielded_pool::params::ShieldedPoolParameters;
 use penumbra_stake::params::StakeParameters;
 
 use super::AppParameters;
+
+pub trait ParameterChangeExt {
+    fn apply_changes(&self, app_parameters: AppParameters) -> Result<AppParameters, anyhow::Error>;
+}
+
+impl ParameterChangeExt for ParameterChange {
+    fn apply_changes(&self, app_parameters: AppParameters) -> Result<AppParameters, anyhow::Error> {
+        // Check the changes against the denylist of banned parameters
+        for _change in &self.changes {
+            // TODO: implement denylist. each component should have a list of &'static str denied fields
+        }
+
+        let app_parameters_raw = serde_json::value::to_value(app_parameters.clone())
+            .context("could not encode app parameters to json value")?;
+        let new_app_parameters_raw = self
+            .apply_changes_raw(app_parameters_raw)
+            .context("error applying parameter changes")?;
+
+        let new_app_parameters = serde_json::value::from_value(new_app_parameters_raw)
+            .context("error parsing changed app parameters")?;
+
+        // TODO: validation should be done in the components themselves,
+        // in the domain type conversions (#3593).
+        // Rather than checking against old parameters we should use a denylist
+        // of fields that can't be changed.
+        app_parameters
+            .check_valid_update(&new_app_parameters)
+            .context("parameter change was invalid")?;
+
+        Ok(new_app_parameters)
+    }
+}
 
 // The checks below validate that a parameter change is valid, since some parameter settings or
 // combinations are nonsensical and should be rejected outright, regardless of governance.
@@ -250,113 +282,6 @@ impl AppParameters {
             ),
             // TODO(erwan): add a `max_positions_per_pair` check
         ])
-    }
-
-    /// Converts an `AppParameters` instance to a complete `ChangedAppParameters`.
-    pub fn as_changed_params(&self) -> ChangedAppParameters {
-        ChangedAppParameters {
-            auction_params: Some(self.auction_params.clone()),
-            community_pool_params: Some(self.community_pool_params.clone()),
-            distributions_params: Some(self.distributions_params.clone()),
-            fee_params: Some(self.fee_params.clone()),
-            funding_params: Some(self.funding_params.clone()),
-            governance_params: Some(self.governance_params.clone()),
-            ibc_params: Some(self.ibc_params.clone()),
-            shielded_pool_params: Some(self.shielded_pool_params.clone()),
-            sct_params: Some(self.sct_params.clone()),
-            stake_params: Some(self.stake_params.clone()),
-            dex_params: Some(self.dex_params.clone()),
-        }
-    }
-
-    /// Converts a sparse ChangedAppParameters into a complete AppParameters, filling
-    /// in any `None` values from the old parameters.
-    ///
-    /// Throws an error if `old` is `None` and any of the component parameters in `new` are
-    /// `None`, i.e. all fields in `new` must be `Some` if `old` is not provided.
-    pub fn from_changed_params(
-        new: &ChangedAppParameters,
-        old: Option<&AppParameters>,
-    ) -> Result<AppParameters> {
-        if old.is_none()
-            && (new.community_pool_params.is_none()
-                || new.distributions_params.is_none()
-                || new.fee_params.is_none()
-                || new.funding_params.is_none()
-                || new.governance_params.is_none()
-                || new.ibc_params.is_none()
-                || new.sct_params.is_none()
-                || new.shielded_pool_params.is_none()
-                || new.stake_params.is_none()
-                || new.auction_params.is_none())
-        {
-            anyhow::bail!("all parameters must be specified if no old parameters are provided");
-        }
-
-        Ok(AppParameters {
-            // TODO(erwan): we are momentarily not supporting chain_id changes
-            // until the IBC host chain changes land.
-            // See: https://github.com/penumbra-zone/penumbra/issues/3617#issuecomment-1917708221
-            chain_id: old
-                .expect("old should be set if new has any None values")
-                .chain_id
-                .clone(),
-            auction_params: new.auction_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .auction_params
-                    .clone()
-            }),
-            community_pool_params: new.community_pool_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .community_pool_params
-                    .clone()
-            }),
-            distributions_params: new.distributions_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .distributions_params
-                    .clone()
-            }),
-            fee_params: new.fee_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .fee_params
-                    .clone()
-            }),
-            funding_params: new.funding_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .funding_params
-                    .clone()
-            }),
-            governance_params: new.governance_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .governance_params
-                    .clone()
-            }),
-            ibc_params: new.ibc_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .ibc_params
-                    .clone()
-            }),
-            sct_params: new.sct_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .sct_params
-                    .clone()
-            }),
-            shielded_pool_params: new.shielded_pool_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .shielded_pool_params
-                    .clone()
-            }),
-            stake_params: new.stake_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .stake_params
-                    .clone()
-            }),
-            dex_params: new.dex_params.clone().unwrap_or_else(|| {
-                old.expect("old should be set if new has any None values")
-                    .dex_params
-                    .clone()
-            }),
-        })
     }
 }
 

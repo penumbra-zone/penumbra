@@ -86,7 +86,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
+    state_tx.finish_block().await.unwrap();
 
     state_tx.apply();
 
@@ -323,7 +323,7 @@ async fn swap_with_nonzero_fee() -> anyhow::Result<()> {
 
     let mut state_tx = state.try_begin_transaction().unwrap();
     // ... and for the App, call `finish_block` to correctly write out the SCT with the data we'll use next.
-    state_tx.finish_block(false).await.unwrap();
+    state_tx.finish_block().await.unwrap();
 
     state_tx.apply();
 

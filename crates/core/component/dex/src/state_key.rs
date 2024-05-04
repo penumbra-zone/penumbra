@@ -8,10 +8,6 @@ pub mod config {
     pub fn dex_params() -> &'static str {
         "dex/config/dex_params"
     }
-
-    pub fn dex_params_updated() -> &'static str {
-        "dex/config/dex_params_updated"
-    }
 }
 
 pub fn value_balance(asset_id: &asset::Id) -> String {

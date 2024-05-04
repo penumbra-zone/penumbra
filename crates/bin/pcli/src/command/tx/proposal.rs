@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 
 use penumbra_app::params::AppParameters;
-use penumbra_governance::{proposal::ChangedAppParameters, Proposal, ProposalPayload};
+use penumbra_governance::{change::ParameterChange, Proposal, ProposalPayload};
 use penumbra_proto::DomainType;
 use penumbra_transaction::TransactionPlan;
 
@@ -94,22 +94,11 @@ impl ProposalKindCmd {
         let payload = match self {
             ProposalKindCmd::Signaling => ProposalPayload::Signaling { commit: None },
             ProposalKindCmd::Emergency => ProposalPayload::Emergency { halt_chain: false },
-            ProposalKindCmd::ParameterChange => ProposalPayload::ParameterChange {
-                old: Box::new(app_params.as_changed_params()),
-                new: Box::new(ChangedAppParameters {
-                    auction_params: None,
-                    community_pool_params: None,
-                    distributions_params: None,
-                    ibc_params: None,
-                    fee_params: None,
-                    funding_params: None,
-                    governance_params: None,
-                    sct_params: None,
-                    shielded_pool_params: None,
-                    stake_params: None,
-                    dex_params: None,
-                }),
-            },
+            ProposalKindCmd::ParameterChange => {
+                ProposalPayload::ParameterChange(ParameterChange::encode_parameters(
+                    serde_json::value::to_value(app_params.clone())?,
+                ))
+            }
             ProposalKindCmd::CommunityPoolSpend { transaction_plan } => {
                 if let Some(file) = transaction_plan {
                     ProposalPayload::CommunityPoolSpend {

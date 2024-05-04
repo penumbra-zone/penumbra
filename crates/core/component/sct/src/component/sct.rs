@@ -79,12 +79,6 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("Missing SctParameters"))
     }
 
-    /// Indicates if the sct parameters have been updated in this block.
-    fn sct_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::config::sct_params_updated())
-            .is_some()
-    }
-
     /// Fetch the epoch duration parameter (measured in blocks).
     ///
     /// # Errors
@@ -103,7 +97,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     fn put_sct_params(&mut self, params: SctParameters) {
         self.put(state_key::config::sct_params().to_string(), params);
-        self.object_put(state_key::config::sct_params_updated(), ())
     }
 }
 
