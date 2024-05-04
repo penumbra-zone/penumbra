@@ -28,7 +28,7 @@ impl TransactionPlan {
         let detection_data = self.detection_data.as_ref().map(|x| x.detection_data());
 
         // Implement canonical ordering to the actions to reduce client distinguishability.
-        actions = TransactionPlan::sort_actions(actions);
+        actions = self.sort_actions(actions);
 
         let transaction_body = TransactionBody {
             actions,
