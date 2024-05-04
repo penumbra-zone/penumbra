@@ -13,12 +13,6 @@ use crate::{params::FeeParameters, state_key, GasPrices};
 //#[async_trait(?Send)]
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the fee parameters have been updated in this block.
-    fn fee_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::fee_params_updated())
-            .is_some()
-    }
-
     /// Gets the fee parameters from the JMT.
     async fn get_fee_params(&self) -> Result<FeeParameters> {
         self.get(state_key::fee_params())
@@ -52,10 +46,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided fee parameters to the JMT.
     fn put_fee_params(&mut self, params: FeeParameters) {
-        // Note that the fee params have been updated:
-        self.object_put(state_key::fee_params_updated(), ());
-
-        // Change the fee parameters:
         self.put(state_key::fee_params().into(), params)
     }
 

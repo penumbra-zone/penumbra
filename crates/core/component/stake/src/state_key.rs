@@ -2,10 +2,6 @@ pub mod parameters {
     pub fn key() -> &'static str {
         "staking/parameters"
     }
-
-    pub fn updated_flag() -> &'static str {
-        "staking/parameters/updated"
-    }
 }
 
 pub mod validators {

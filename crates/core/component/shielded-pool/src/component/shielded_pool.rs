@@ -94,11 +94,6 @@ pub trait StateReadExt: StateRead {
             .await?
             .ok_or_else(|| anyhow!("Missing ShieldedPoolParameters"))
     }
-
-    fn shielded_pool_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::shielded_pool_params_updated())
-            .is_some()
-    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -107,7 +102,6 @@ impl<T: StateRead + ?Sized> StateReadExt for T {}
 #[async_trait]
 pub trait StateWriteExt: StateWrite + StateReadExt {
     fn put_shielded_pool_params(&mut self, params: ShieldedPoolParameters) {
-        self.object_put(crate::state_key::shielded_pool_params_updated(), ());
         self.put(crate::state_key::shielded_pool_params().into(), params)
     }
 
@@ -122,4 +116,4 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}

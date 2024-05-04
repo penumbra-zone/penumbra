@@ -57,3 +57,5 @@ pub use vote::Vote;
 
 pub mod genesis;
 pub mod params;
+
+pub mod change;
