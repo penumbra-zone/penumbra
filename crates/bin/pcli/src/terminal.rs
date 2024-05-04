@@ -1,7 +1,8 @@
-use std::io::{Read, Write};
+use std::io::{IsTerminal, Read, Write};
 
 use anyhow::Result;
 use penumbra_custody::threshold::{SigningRequest, Terminal};
+use termion::input::TermRead;
 use tonic::async_trait;
 
 /// For threshold custody, we need to implement this weird terminal abstraction.
@@ -77,5 +78,24 @@ impl Terminal for ActualTerminal {
             return Ok(None);
         }
         Ok(Some(line))
+    }
+
+    async fn get_password(&self) -> Result<String> {
+        fn get_possibly_empty_string() -> Result<String> {
+            // The `rpassword` crate doesn't support reading from stdin, so we check
+            // for an interactive session. We must support non-interactive use cases,
+            // for integration with other tooling.
+            if std::io::stdin().is_terminal() {
+                Ok(rpassword::prompt_password("Enter password:")?)
+            } else {
+                Ok(std::io::stdin().lock().read_line()?.unwrap_or_default())
+            }
+        }
+
+        let mut string: String = Default::default();
+        while string.is_empty() {
+            string = get_possibly_empty_string()?;
+        }
+        Ok(string)
     }
 }

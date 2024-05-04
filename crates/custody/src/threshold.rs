@@ -414,6 +414,10 @@ mod test {
         async fn next_response(&self) -> Result<Option<String>> {
             Ok(self.incoming.lock().await.recv().await)
         }
+
+        async fn get_password(&self) -> Result<String> {
+            Ok(Default::default())
+        }
     }
 
     struct CoordinatorTerminalInner {
@@ -453,6 +457,10 @@ mod test {
 
         async fn next_response(&self) -> Result<Option<String>> {
             Ok(self.incoming.lock().await.recv().await)
+        }
+
+        async fn get_password(&self) -> Result<String> {
+            Ok(Default::default())
         }
     }
 

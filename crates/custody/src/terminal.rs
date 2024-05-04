@@ -39,4 +39,7 @@ pub trait Terminal {
     /// This function should not return None spuriously, when it does,
     /// it should continue to return None until a message is broadcast.
     async fn next_response(&self) -> Result<Option<String>>;
+
+    /// Wait for the user to supply a password.
+    async fn get_password(&self) -> Result<String>;
 }

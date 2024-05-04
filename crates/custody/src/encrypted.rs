@@ -1,8 +1,10 @@
+use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::{formats::Uppercase, hex::Hex};
+use tonic::{async_trait, Request, Response, Status};
 
-use crate::{soft_kms, threshold};
+use crate::{soft_kms, terminal::Terminal, threshold};
 
 mod encryption {
     use anyhow::anyhow;
@@ -156,15 +158,78 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn encrypt(password: &str, inner: InnerConfig) -> anyhow::Result<Self> {
+    /// Create a config from an inner config, with the actual params, and an encryption password.
+    pub fn create(password: &str, inner: InnerConfig) -> anyhow::Result<Self> {
         let password = password.try_into()?;
         Ok(Self {
             data: encrypt(&mut OsRng, password, &inner.to_bytes()?),
         })
     }
 
-    pub fn decrypt(self, password: &str) -> anyhow::Result<InnerConfig> {
+    fn decrypt(self, password: &str) -> anyhow::Result<InnerConfig> {
         let decrypted_data = decrypt(password.try_into()?, &self.data)?;
         Ok(InnerConfig::from_bytes(&decrypted_data)?)
+    }
+}
+
+/// Represents a custody service that uses an encrypted configuration.
+///
+/// This service wraps either the threshold or solo custody service.
+pub struct Encrypted {
+    inner: Box<dyn pb::custody_service_server::CustodyService>,
+}
+
+impl Encrypted {
+    /// Create a new encrypted config, using the terminal to ask for a password
+    pub async fn new<T: Terminal + Send + Sync + 'static>(
+        config: Config,
+        terminal: T,
+    ) -> anyhow::Result<Self> {
+        let password = terminal.get_password().await?;
+
+        let inner = config.decrypt(&password)?;
+        let inner: Box<dyn pb::custody_service_server::CustodyService> = match inner {
+            InnerConfig::SoftKms(c) => Box::new(soft_kms::SoftKms::new(c)),
+            InnerConfig::Threshold(c) => Box::new(threshold::Threshold::new(c, terminal)),
+        };
+        Ok(Self { inner })
+    }
+}
+
+#[async_trait]
+impl pb::custody_service_server::CustodyService for Encrypted {
+    async fn authorize(
+        &self,
+        request: Request<pb::AuthorizeRequest>,
+    ) -> Result<Response<AuthorizeResponse>, Status> {
+        self.inner.authorize(request).await
+    }
+
+    async fn authorize_validator_definition(
+        &self,
+        request: Request<pb::AuthorizeValidatorDefinitionRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
+        self.inner.authorize_validator_definition(request).await
+    }
+
+    async fn authorize_validator_vote(
+        &self,
+        request: Request<pb::AuthorizeValidatorVoteRequest>,
+    ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
+        self.inner.authorize_validator_vote(request).await
+    }
+
+    async fn export_full_viewing_key(
+        &self,
+        request: Request<pb::ExportFullViewingKeyRequest>,
+    ) -> Result<Response<pb::ExportFullViewingKeyResponse>, Status> {
+        self.inner.export_full_viewing_key(request).await
+    }
+
+    async fn confirm_address(
+        &self,
+        request: Request<pb::ConfirmAddressRequest>,
+    ) -> Result<Response<pb::ConfirmAddressResponse>, Status> {
+        self.inner.confirm_address(request).await
     }
 }
