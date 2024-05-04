@@ -151,7 +151,7 @@ impl InnerConfig {
 ///
 /// This holds a blob of encrypted data that needs to be further deserialized into another config.
 #[serde_as]
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Config {
     #[serde_as(as = "Hex<Uppercase>")]
     data: Vec<u8>,

@@ -76,6 +76,13 @@ impl Opt {
                 let custody_svc = CustodyServiceServer::new(threshold_kms);
                 CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
             }
+            CustodyConfig::Encrypted(config) => {
+                tracing::info!("using encrypted custody service");
+                let encrypted_kms =
+                    penumbra_custody::encrypted::Encrypted::new(config.clone(), ActualTerminal).await?;
+                let custody_svc = CustodyServiceServer::new(encrypted_kms);
+                CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
+            }
         };
 
         // Build the governance custody service...

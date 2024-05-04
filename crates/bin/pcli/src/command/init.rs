@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use camino::Utf8PathBuf;
-use penumbra_custody::threshold;
+use penumbra_custody::threshold::{self, Terminal};
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
 use url::Url;
@@ -31,6 +31,11 @@ pub struct InitCmd {
             parse(try_from_str = Url::parse),
         )]
     grpc_url: Url,
+    /// For configs with spend authority, this will enable password encryption.
+    ///
+    /// This has no effect on a view only service.
+    #[clap(long, action)]
+    encrypted: bool,
 }
 
 #[derive(Debug, Clone, clap::Subcommand)]
@@ -296,7 +301,15 @@ impl InitCmd {
                 let spend_key = cmd.spend_key(init_type)?;
                 (
                     spend_key.full_viewing_key().clone(),
-                    CustodyConfig::SoftKms(spend_key.into()),
+                    if self.encrypted {
+                        let password = ActualTerminal.get_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                        )?)
+                    } else {
+                        CustodyConfig::SoftKms(spend_key.into())
+                    },
                 )
             }
             (
@@ -307,7 +320,17 @@ impl InitCmd {
                 }),
             ) => {
                 let config = threshold::dkg(*threshold, *num_participants, &ActualTerminal).await?;
-                (config.fvk().clone(), CustodyConfig::Threshold(config))
+                let fvk = config.fvk().clone();
+                let custody_config = if self.encrypted {
+                    let password = ActualTerminal.get_password().await?;
+                    CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        &password,
+                        penumbra_custody::encrypted::InnerConfig::Threshold(config),
+                    )?)
+                } else {
+                    CustodyConfig::Threshold(config)
+                };
+                (fvk, custody_config)
             }
             (_, InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. })) => {
                 unreachable!("this should already have been handled above")

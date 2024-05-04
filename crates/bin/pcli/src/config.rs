@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use url::Url;
 
-use penumbra_custody::{soft_kms::Config as SoftKmsConfig, threshold::Config as ThresholdConfig};
+use penumbra_custody::{
+    encrypted::Config as EncryptedConfig, soft_kms::Config as SoftKmsConfig,
+    threshold::Config as ThresholdConfig,
+};
 use penumbra_keys::FullViewingKey;
 
 /// Configuration data for `pcli`.
@@ -67,6 +70,8 @@ pub enum CustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted(EncryptedConfig),
 }
 
 /// The governance custody backend to use.
