@@ -3,7 +3,6 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
-use penumbra_ibc::component::StateReadExt as _;
 use penumbra_shielded_pool::component::Ics20Transfer;
 use penumbra_transaction::Action;
 use penumbra_txhash::TransactionContext;
@@ -73,25 +72,13 @@ impl AppActionHandler for Action {
             Action::Spend(action) => action.check_historical(state).await,
             Action::Output(action) => action.check_historical(state).await,
             Action::IbcRelay(action) => {
-                if !state.get_ibc_params().await?.ibc_enabled {
-                    anyhow::bail!("transaction contains IBC actions, but IBC is not enabled");
-                }
                 action
                     .clone()
                     .with_handler::<Ics20Transfer, PenumbraHost>()
-                    .check_stateful(state)
+                    .check_historical(state)
                     .await
             }
-            Action::Ics20Withdrawal(action) => {
-                if !state
-                    .get_ibc_params()
-                    .await?
-                    .outbound_ics20_transfers_enabled
-                {
-                    anyhow::bail!("transaction an ICS20 withdrawal, but outbound ICS20 withdrawals are not enabled");
-                }
-                action.check_historical(state).await
-            }
+            Action::Ics20Withdrawal(action) => action.check_historical(state).await,
             Action::CommunityPoolSpend(action) => action.check_historical(state).await,
             Action::CommunityPoolOutput(action) => action.check_historical(state).await,
             Action::CommunityPoolDeposit(action) => action.check_historical(state).await,
@@ -123,7 +110,7 @@ impl AppActionHandler for Action {
                 action
                     .clone()
                     .with_handler::<Ics20Transfer, PenumbraHost>()
-                    .execute(state)
+                    .check_and_execute(state)
                     .await
             }
             Action::Ics20Withdrawal(action) => action.check_and_execute(state).await,

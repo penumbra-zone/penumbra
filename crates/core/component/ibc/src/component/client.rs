@@ -558,9 +558,11 @@ mod tests {
         );
 
         create_client_action.check_stateless(()).await?;
-        create_client_action.check_stateful(state.clone()).await?;
+        create_client_action.check_historical(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        create_client_action.execute(&mut state_tx).await?;
+        create_client_action
+            .check_and_execute(&mut state_tx)
+            .await?;
         state_tx.apply();
 
         // Check that state reflects +1 client apps registered.
@@ -568,9 +570,11 @@ mod tests {
 
         // Now we update the client and confirm that the update landed in state.
         update_client_action.check_stateless(()).await?;
-        update_client_action.check_stateful(state.clone()).await?;
+        update_client_action.check_historical(state.clone()).await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        update_client_action.execute(&mut state_tx).await?;
+        update_client_action
+            .check_and_execute(&mut state_tx)
+            .await?;
         state_tx.apply();
 
         // We've had one client update, yes. What about second client update?
@@ -587,10 +591,12 @@ mod tests {
 
         second_update_client_action.check_stateless(()).await?;
         second_update_client_action
-            .check_stateful(state.clone())
+            .check_historical(state.clone())
             .await?;
         let mut state_tx = state.try_begin_transaction().unwrap();
-        second_update_client_action.execute(&mut state_tx).await?;
+        second_update_client_action
+            .check_and_execute(&mut state_tx)
+            .await?;
         state_tx.apply();
 
         Ok(())

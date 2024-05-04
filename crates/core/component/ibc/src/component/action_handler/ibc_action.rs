@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use cnidarium::{StateRead, StateWrite};
 
 use crate::{
     component::{app_handler::AppHandler, HostInterface, MsgHandler as _},
-    IbcRelay, IbcRelayWithHandlers,
+    IbcRelay, IbcRelayWithHandlers, StateReadExt as _,
 };
 
 impl<AH: AppHandler, HI: HostInterface> IbcRelayWithHandlers<AH, HI> {
@@ -37,12 +37,17 @@ impl<AH: AppHandler, HI: HostInterface> IbcRelayWithHandlers<AH, HI> {
         Ok(())
     }
 
-    pub async fn check_stateful<S: StateRead + 'static>(&self, _state: Arc<S>) -> Result<()> {
-        // No-op: IBC actions merge check_stateful and execute.
+    pub async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
+        // SAFETY: this is safe to check here because ibc component parameters cannot change
+        // during transaction processing.
+        ensure!(
+            state.get_ibc_params().await?.ibc_enabled,
+            "transaction contains IBC actions, but IBC is not enabled"
+        );
         Ok(())
     }
 
-    pub async fn execute<S: StateWrite>(&self, state: S) -> Result<()> {
+    pub async fn check_and_execute<S: StateWrite>(&self, state: S) -> Result<()> {
         let action = self.action();
         match action {
             IbcRelay::CreateClient(msg) => msg
