@@ -175,8 +175,8 @@ pub enum TestnetCommand {
         /// The fixed gas price for all transactions on the network.
         /// Described as "simple" because the single value will be reused
         /// for all gas price types: block space, compact block space, verification, and execution.
-        /// The numeric value is one-thousandths of the staking token,
-        /// so `--gas-price-simple=1000` means all transactions will have a cost of 1penumbra.
+        /// The numeric value is one-thousandths of the base unit of the fee token,
+        /// so `--gas-price-simple=1000` means all resources will have a cost of 1upenumbra.
         #[clap(long)]
         gas_price_simple: Option<u64>,
         /// Base hostname for a validator's p2p service. If multiple validators
