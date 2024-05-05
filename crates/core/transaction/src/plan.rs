@@ -439,7 +439,7 @@ mod tests {
     use crate::{
         memo::MemoPlaintext,
         plan::{CluePlan, DetectionDataPlan, MemoPlan, TransactionPlan},
-        ActionPlan, TransactionParameters, WitnessData,
+        TransactionParameters, WitnessData,
     };
 
     /// This isn't an exhaustive test, but we don't currently have a
