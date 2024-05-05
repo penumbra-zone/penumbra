@@ -15,7 +15,7 @@ impl TransactionPlan {
     /// [`ActionPlan`]s in the TransactionPlan.
     pub fn build_unauth_with_actions(
         self,
-        mut actions: Vec<Action>,
+        actions: Vec<Action>,
         witness_data: &WitnessData,
     ) -> Result<Transaction> {
         // Add the memo if it is planned.
@@ -26,9 +26,6 @@ impl TransactionPlan {
             .transpose()?;
 
         let detection_data = self.detection_data.as_ref().map(|x| x.detection_data());
-
-        // Implement canonical ordering to the actions to reduce client distinguishability.
-        actions = self.sort_actions(actions);
 
         let transaction_body = TransactionBody {
             actions,
@@ -122,7 +119,6 @@ impl TransactionPlan {
         witness_data: &WitnessData,
         auth_data: &AuthorizationData,
     ) -> Result<Transaction> {
-        // TODO: stream progress updates
         // 1. Build each action.
         let actions = self
             .actions

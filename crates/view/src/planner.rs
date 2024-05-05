@@ -734,6 +734,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo: None,
         };
 
+        // Implement a canonical ordering to the actions within the transaction
+        // plan to reduce client distinguishability.
+        plan.sort_actions();
+
         if let Some(memo_plan) = self.plan.memo.clone() {
             plan.memo = Some(MemoPlan::new(&mut OsRng, memo_plan.plaintext)?);
         } else if plan.output_plans().next().is_some() {
