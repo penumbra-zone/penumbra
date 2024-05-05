@@ -585,7 +585,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             self.transaction_parameters.clone(),
             memo_plan,
         )?;
-      
+
         // Implement a canonical ordering to the actions within the transaction
         // plan to reduce client distinguishability.
         plan.sort_actions();
