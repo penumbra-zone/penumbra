@@ -3,7 +3,7 @@
 
 #### Invariants
 
-1. Value cannot be created or destroyed after genesis or via IBC. Value cannot be created by the DEX.
+1. Value cannot be created or destroyed after genesis or via IBC except staking (creates value), and DEX arbitrage execution (destroys value). The DEX cannot create value.
 
     1.1. Each action may create or destroy value, but commits to this imbalance, which when summed over a transaction, will not violate this rule.
 
