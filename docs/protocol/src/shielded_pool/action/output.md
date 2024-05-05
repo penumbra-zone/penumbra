@@ -27,7 +27,7 @@ The invariants that the Output upholds are described below.
 
     2.1 The output data included in a transaction preserves this property.
 
-    2.2 The integrity checks as described above are done privately.
+    2.2 The [note commitment integrity check](#note-commitment-integrity) and the [balance commitment integrity check](#balance-commitment-integrity) are done in zero-knowledge.
 
 3. The balance contribution of the value of the note is private.
 
@@ -41,7 +41,7 @@ The invariants that the Output upholds are described below.
 
 2. The privacy of the note data is enforced via:
 
-    2.1 The output note, which includes the amount, asset, and address of the recipient, is symmetrically encrypted to a key that only the recipient and sender can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender address can *optionally* be included in the symmetrically encrypted memo field of the transaction, which can be decrypted by any output in that transaction as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender or recipient can authorize other parties to view the contents of the note by disclosure of these symmetric keys.
+    2.1 The output note, which includes the amount, asset, and address of the recipient, is symmetrically encrypted to a key that only the recipient and sender can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The return (sender) address can *optionally* be included in the symmetrically encrypted memo field of the transaction, which can be decrypted by any output in that transaction as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender or recipient can authorize other parties to view the contents of the note by disclosure of these symmetric keys.
 
     2.2 The note commitment scheme used for property 1 preserves privacy via the hiding property of the note commitment scheme. The sender demonstrates knowledge of the opening of the [note commitment in zero-knowledge](#note-commitment-integrity).
 
