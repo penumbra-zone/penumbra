@@ -225,7 +225,7 @@ impl App {
                 .expect("must be able to read app params");
             match change.apply_changes(old_params) {
                 Ok(new_params) => {
-                    tracing::info!(?change, ?new_params, "applied app parameter change");
+                    tracing::info!(?change, "applied app parameter change");
                     state_tx.put_app_params(new_params);
                 }
                 Err(e) => {
