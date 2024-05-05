@@ -321,6 +321,13 @@ pub trait ViewClient {
         address_index: AddressIndex,
     ) -> Pin<Box<dyn Future<Output = Result<Address>> + Send + 'static>>;
 
+    /// Queries for the index of a provided address, returning `None` if not
+    /// controlled by the view service's FVK.
+    fn index_by_address(
+        &mut self,
+        address: Address,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>>;
+
     /// Queries for unclaimed Swaps.
     fn unclaimed_swaps(
         &mut self,
@@ -859,6 +866,26 @@ where
                 .ok_or_else(|| anyhow::anyhow!("No address available for this address index"))?
                 .try_into()?;
             Ok(address)
+        }
+        .boxed()
+    }
+
+    fn index_by_address(
+        &mut self,
+        address: Address,
+    ) -> Pin<Box<dyn Future<Output = Result<Option<AddressIndex>>> + Send + 'static>> {
+        let mut self2 = self.clone();
+        async move {
+            let index = self2.index_by_address(tonic::Request::new(pb::IndexByAddressRequest {
+                address: Some(address.into()),
+            }));
+            let index = index
+                .await?
+                .into_inner()
+                .address_index
+                .map(|index| index.try_into())
+                .transpose()?;
+            Ok(index)
         }
         .boxed()
     }

@@ -238,7 +238,7 @@ async fn app_can_propose_community_pool_spends() -> anyhow::Result<()> {
             memo: Some(MemoPlan::new(
                 &mut OsRng,
                 MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
-            )?),
+            )),
             detection_data: None,
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),

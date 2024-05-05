@@ -57,7 +57,7 @@ use penumbra_proto::{
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
+use penumbra_transaction::gas::swap_claim_gas_cost;
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
@@ -349,15 +349,6 @@ impl TxCmd {
                     .parse::<Address>()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let return_address = app
-                    .config
-                    .full_viewing_key
-                    .payment_address((*from).into())
-                    .0;
-
-                let memo_plaintext =
-                    MemoPlaintext::new(return_address, memo.clone().unwrap_or_default())?;
-
                 let mut planner = Planner::new(OsRng);
 
                 planner
@@ -367,7 +358,7 @@ impl TxCmd {
                     planner.output(value, to.clone());
                 }
                 let plan = planner
-                    .memo(memo_plaintext)?
+                    .memo(memo.clone().unwrap_or_default())
                     .plan(
                         app.view
                             .as_mut()

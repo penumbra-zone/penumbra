@@ -14,12 +14,9 @@ pub struct MemoPlan {
 
 impl MemoPlan {
     /// Create a new [`MemoPlan`].
-    pub fn new<R: CryptoRng + RngCore>(
-        rng: &mut R,
-        plaintext: MemoPlaintext,
-    ) -> anyhow::Result<MemoPlan> {
+    pub fn new<R: CryptoRng + RngCore>(rng: &mut R, plaintext: MemoPlaintext) -> MemoPlan {
         let key = PayloadKey::random_key(rng);
-        Ok(MemoPlan { plaintext, key })
+        MemoPlan { plaintext, key }
     }
 
     /// Create a [`MemoCiphertext`] from the [`MemoPlan`].
