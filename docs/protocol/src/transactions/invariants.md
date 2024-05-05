@@ -13,6 +13,8 @@
 
 1.1. We check that the summed balance commitment of a transaction commits to 0.
 
+2. The transaction binding signature is computed over the `AuthHash`, calculated from the proto-encoding of the entire `TransactionBody`. A valid binding signature can only be generated with knowledge of the opening of the balance commitments for each action in the transaction.
+
 ## Action-Level
 
 * [Output Invariants](../shielded_pool/action/output.md)
