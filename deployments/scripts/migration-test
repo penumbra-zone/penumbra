@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# CI script to test migration compatibility. Orchestrates the following:
+#
+#   * [x] checks out prior tag and builds its binaries and tests
+#   * [x] creates local devnet via that target version
+#   * [x] make sure devnet has very fast voting
+#   * [x] runs smoke tests against devnet, to generate txs
+#   * [x] initialize smoke-test pcli wallet locally
+#   * [x] submit governance proposal for chain halt
+#   * [x] vote for proposal to pass
+#   * [x] wait for halt
+#   * [x] stops devnet ~ ends phase 1
+#   * [x] migrates devnet via latest (i.e. HEAD) pd version ~ begins phase 2
+#   * [x] restarts devnet
+#   * [ ] re-runs smoke tests, from latest version, to validate
+#   * [x] prepares migration archive for joiners
+#   * [ ] validates that new nodes can join post-upgrade, via archive
+#
+# After all that's done, we only know that the migration didn't badly
+# break things. We should also have dedicated integration tests
+# for pre- and post-migration checks.
+
+set -euo pipefail
+
+# Ideally we'd look up the most recently released version of `pd` and use that to test against.
+# The current test framework has a lot of versions hardcoded throughout, though, so let's
+# mandate explicit versions for now.
+target_version="${1:-}"
+if [[ -z "$target_version" ]] ; then
+    >&2 echo "ERROR: no version specified for initial network"
+    >&2 echo "Usage: $0 <initial_network_version>"
+
+fi
+shift 1
+>&2 echo "Beginning migration test from '$target_version' -> '$(git rev-parse HEAD) (HEAD)'"
+
+# Check for interactive terminal session, enable TUI if yes.
+if [[ -t 1 ]] ; then
+    use_tui="true"
+else
+    use_tui="false"
+fi
+
+set -x
+
+# Look up some git facts for logging and preparing work trees.
+repo_root="$(git rev-parse --show-toplevel)"
+worktree_dir="${repo_root}/deployments/worktrees/${target_version}"
+logs_dir="${repo_root}/deployments/logs"
+mkdir -p "$logs_dir"
+find "$logs_dir" -type f -iname 'migration*.log' -exec rm -vf {} +
+
+# Create a local git-worktree so that we can check out a prior
+# tag and build its version of tests and suchwhat.
+prepare_local_worktree() {
+    if [[ ! -d "$worktree_dir" ]] ; then
+        >&2 echo "Creating new git worktree: $worktree_dir"
+        git worktree add "$worktree_dir" "$target_version"
+    fi
+    git -C "$worktree_dir" checkout "$target_version"
+}
+
+# Run phase 1 of the migration test: create devnet on target version tag,
+# run smoke tests against it from that checkout, then exit.
+function run_migration_test_phase_1() {
+    >&2 echo "Running smoke-tests against pre-migration devnet, phase 1..."
+    tree deployments/compose/ deployments/scripts/
+    # Override the pc API port 8080 -> 9191, to avoid conflict with pd.
+    if ! process-compose \
+        --config deployments/compose/process-compose-smoke-test.yml \
+        --config deployments/compose/process-compose-migration-test-1.yml \
+        --port 9191  \
+        -t="$use_tui" \
+        ; then
+        >&2 echo "ERROR: migration tests phase 1 failed"
+        >&2 echo "Review logs in: deployments/logs/migration-test-1*.log"
+        find "${repo_root}/deployments/logs/migration-test-1"*".log" | sort >&2
+        exit 1
+    else
+        echo "SUCCESS! Migration test phase 1 complete."
+    fi
+}
+
+# Propose upgrade plan, vote, halt.
+function run_migration_test_phase_2() {
+    >&2 echo "Running smoke-tests against post-migration devnet, phase 2..."
+    if ! process-compose \
+        --config deployments/compose/process-compose-smoke-test.yml \
+        --config deployments/compose/process-compose-migration-test-2.yml \
+        --port 9191  \
+        -t="$use_tui" \
+        ; then
+        >&2 echo "ERROR: migration tests phase 2 failed"
+        >&2 echo "Review logs in: deployments/logs/migration-test-2*.log"
+        find "${repo_root}/deployments/logs/migration-test-2"*".log" | sort >&2
+        exit 1
+    else
+        echo "SUCCESS! Migration test phase 2 complete."
+    fi
+}
+
+# Perform most recent migration against local state, according to steps in
+# https://guide.penumbra.zone/main/node/pd/chain-upgrade.html
+function perform_migration() {
+    node0_dir="${HOME}/.penumbra/testnet_data/node0"
+
+    # TEMPORARY: backup entire state during development so it's easy to recover
+    tarball_backup="${node0_dir}/../node0-state-backup.tar"
+    if [[ ! -e "$tarball_backup" ]] ; then
+        tar -cf "$tarball_backup" "$node0_dir"
+    fi
+    # Ensure tar changes are synced to disk. This shouldn't be necessary,
+    # but this script will run in a lot of contexts, so better to be sure.
+    sync
+    # N.B. the `--force` flag is necessary specifically for 0.75.x -> 0.76.x
+    RUST_LOG="info,pd=debug,penumbra=debug" \
+        cargo run --quiet --release --bin pd -- migrate --force
+}
+
+# Create a post-migration tarball of the migrated state, entailing:
+#
+#   * rocksdb dir
+#   * genesis.json
+#   * priv_validator_state.json
+#
+# Crucially, these files must reside in the top-level of the archive,
+# for compatibility with `pd testnet join --archive-url`. Thus the gnarly
+# sed transform to strip parent directories.
+function create_migration_archive() {
+    pd_version="$(cargo run --quiet --release --bin pd -- --version | perl -nE '/^pd\s+(.+)$/ and say $1')"
+    testnet_dir="${HOME}/.penumbra/testnet_data"
+    migration_archive="${testnet_dir}/node0-migration-archive-v${pd_version}.tar.gz"
+    tar -C "$testnet_dir" \
+        --transform='s#node0/pd/##;s#node0/cometbft/config/##;s#node0/cometbft/data/##' \
+        -czf "$migration_archive" \
+        node0/pd/rocksdb \
+        node0/cometbft/config/genesis.json \
+        node0/cometbft/data/priv_validator_state.json
+    >&2 echo "Created migration archive: $migration_archive"
+}
+
+# The whole shebang, soup to nuts.
+function main() {
+    prepare_local_worktree
+    run_migration_test_phase_1
+    run_migration_test_phase_2
+
+    >&2 echo '===================='
+    >&2 echo 'PERFORMING MIGRATION'
+    >&2 echo '===================='
+    perform_migration
+    >&2 echo '===================='
+    >&2 echo 'MIGRATION COMPLETE'
+    >&2 echo '===================='
+
+    create_migration_archive
+
+    >&2 echo "Consider running 'just dev' to rerun the network"
+    >&2 cat <<EOF
+Other things to test manually:
+
+  * sync balances against local devnet
+  * run smoke tests
+  * open LPs
+  * join devnet as new node (requires archive)
+EOF
+}
+
+main

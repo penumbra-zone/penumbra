@@ -1,0 +1,55 @@
+---
+# A process-compose configuration for running penumbra migration-tests.
+# This series of commands handles voting for an upgrade-plan and halting
+# the network, in preparation for the actual migration.
+
+# Interleave logs from all services in single file, so it's greppable.
+log_location: deployments/logs/migration-test-2-combined.log
+is_strict: true
+
+# We use 'vars' to provide a single point of update for bumping versions.
+vars:
+  # WORKING_DIR: .
+  WORKING_DIR: deployments/worktrees/v0.76.0
+
+processes:
+  # Don't generate, since we already did that on the old tag.
+  network-generate:
+    command: echo "skipping network generation, deferring to migration..."
+    working_dir: "{{ .WORKING_DIR }}"
+
+  pd:
+    working_dir: "{{ .WORKING_DIR }}"
+
+  test-pclientd:
+    command: echo "skipping pclientd tests, preparing migration..."
+  test-pcli:
+    command: echo "skipping pcli tests, preparing migration..."
+  test-pd:
+    command: echo "skipping pd tests, preparing migration..."
+
+  vote-for-halt:
+    command: >-
+      cargo test --release --package migration-test --features migration-test -- --test-threads 1 --nocapture
+    environment:
+      - "TEST_PCLI_PATH=deployments/worktrees/v0.76.0/target/release/pcli"
+    log_location: deployments/logs/migration-test-2-vote.log
+    working_dir: .
+    depends_on:
+      pd:
+        condition: process_healthy
+      cometbft:
+        condition: process_started
+      test-pcli:
+        condition: process_completed_successfully
+    availability:
+      restart: exit_on_failure
+
+  summary:
+    command: echo "migration tests phase 2 finished"
+    depends_on:
+      # The vote-for-halt suite will check that network is halted, so OK to exit after.
+      vote-for-halt:
+        condition: process_completed_successfully
+    availability:
+      exit_on_end: false

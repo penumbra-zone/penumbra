@@ -18,8 +18,21 @@ relayer-local-devnet:
 rustdocs:
     ./deployments/scripts/rust-docs
 
-# Run smoke test suite, via process-compose config.
+# Spin up a local dev environment of pd and cometbft
+dev:
+    process-compose up --port 9191 --config ./deployments/compose/process-compose.yml --keep-tui
+
+# Perform a chain upgrade on a local devnet
+migration-test:
+    ./deployments/scripts/warn-about-pd-state
+    ./deployments/scripts/migration-test v0.76.0
+
+# Run the smoke test suite, integration tests for client binaries
 smoke:
-    # resetting network state
-    cargo run --release --bin pd -- testnet unsafe-reset-all || true
+    ./deployments/scripts/warn-about-pd-state
     ./deployments/scripts/smoke-test.sh
+
+# Add a new local node to an already-running devnet
+add-node:
+    process-compose up --no-server \
+        --config ./deployments/compose/process-compose-bootstrap-local-node.yml --keep-tui

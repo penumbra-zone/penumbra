@@ -1,0 +1,35 @@
+[package]
+name = "migration-test"
+description = "Integration test runner for evaluating Penumbra upgrades"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# By default, don't enable migration-tests: require explicit opt-in via
+# `--features migration-test`.
+default = []
+migration-test = []
+
+[dependencies]
+anyhow = {workspace = true}
+directories = {workspace = true}
+once_cell = {workspace = true}
+penumbra-keys = {workspace = true, default-features = false}
+serde = {workspace = true, features = ["derive"]}
+serde_json = {workspace = true}
+serde_with = {workspace = true, features = ["hex"]}
+toml = {workspace = true, features = ["preserve_order"]}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true, features = ["env-filter", "ansi"]}
+
+[dev-dependencies]
+assert_cmd = {workspace = true}
+predicates = "2.1"
+regex = {workspace = true}
+tempfile = {workspace = true}

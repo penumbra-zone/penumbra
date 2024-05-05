@@ -1,0 +1,66 @@
+---
+# A process-compose configuration for running penumbra migration-tests.
+
+# Interleave logs from all services in single file, so it's greppable.
+log_location: deployments/logs/migration-test-1-combined.log
+is_strict: true
+
+# We use 'vars' to provide a single point of update for bumping versions.
+vars:
+  # WORKING_DIR: .
+  WORKING_DIR: deployments/worktrees/v0.76.0
+
+processes:
+  build-code:
+    working_dir: "{{ .WORKING_DIR }}"
+
+  # Create network configuration, for running a pd validator locally.
+  # We override the allocations bump up staking tokens for the smoke-test account,
+  # so it can delegate enough wait to vote for a halt.
+  network-generate:
+    working_dir: "{{ .WORKING_DIR }}"
+    command: >
+      cargo run --quiet --release --bin pd -- testnet generate
+      --unbonding-delay 50
+      --epoch-duration 50
+      --proposal-voting-blocks 50
+      --timeout-commit 500ms
+      --allocations-input-file ../../../crates/test/migration-test/files/migration-allocations.csv
+
+  # Run pd validator based on generated network.
+  pd:
+    working_dir: "{{ .WORKING_DIR }}"
+
+  # Run `pclientd` integration tests.
+  test-pclientd:
+    working_dir: "{{ .WORKING_DIR }}"
+    log_location: deployments/logs/migration-test-1-pclientd.log
+
+  # Run `pcli` integration tests.
+  test-pcli:
+    working_dir: "{{ .WORKING_DIR }}"
+    log_location: deployments/logs/migration-test-1-pcli.log
+    depends_on:
+      pd:
+        condition: process_healthy
+      cometbft:
+        condition: process_started
+      test-pclientd:
+        condition: process_completed
+    availability:
+      restart: exit_on_failure
+
+  test-pd:
+    working_dir: "{{ .WORKING_DIR }}"
+    # We add `--skip check_grpc_server_reflection` because the across the 75/76 boundary,
+    # we changed the gRPC server reflection API.
+    command: >-
+      cargo test --release --package pd -- --ignored --test-threads 1 --nocapture
+      --skip check_grpc_server_reflection
+
+  # Finalizer task, which will wait until all test suites have finished.
+  # This allows us to ensure that.
+  summary:
+    # The `command` only runs if all tests were succesful,
+    # otherwise the process exits due to dep failure.
+    command: echo "migration tests phase 1 finished"

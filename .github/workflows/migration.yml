@@ -1,0 +1,45 @@
+---
+# Test suite to verify that migrations apply cleanly.
+# References to the previous stable release's tag, e.g. `v0.76.0`,
+# must be updated manually.
+name: Migration test
+on:
+  # For now, we'll run this on every PR, but it's slow (>20m).
+  pull_request:
+  # Run periodically to check for breakage.
+  schedule:
+    # 16:10 UTC is 9AM PT / 12PM ET.
+    - cron: "10 16 * * *"
+jobs:
+  migration_test:
+    runs-on: buildjet-32vcpu-ubuntu-2204
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: Load rust cache
+        uses: astriaorg/buildjet-rust-cache@v2.5.1
+        with:
+          # Cache the git worktree for faster builds
+          workspaces: |
+            . -> ./target
+            ./deployments/worktrees/v0.76.0 -> ./deployments/worktrees/v0.76.0/target
+
+      - name: Install cometbft binary
+        run: ./deployments/scripts/install-cometbft
+
+      - name: Install process-compose
+        run: >-
+          sh -c "$(curl --location https://raw.githubusercontent.com/F1bonacc1/process-compose/main/scripts/get-pc.sh)" --
+          -d -b ~/bin
+
+      - name: Run migration test
+        run: |
+          export PATH="$HOME/bin:$PATH"
+          ./deployments/scripts/migration-test v0.76.0

@@ -1,0 +1,70 @@
+---
+# A process-compose configuration for running a local Penumbra devnet.
+# This isn't used in scripts anywhere (yet?) but serves as a reference point.
+# Potentially could be integrated with e.g. https://www.jetify.com/devbox later on.
+#
+version: "0.5"
+
+# Env vars set here will be accessible to all processes.
+environment:
+  - "RUST_LOG=info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
+
+log_level: info
+is_strict: true
+# Interleave logs from all services in single file, so it's greppable.
+log_location: deployments/logs/dev-env-combined.log
+
+# By default, build pd from the workspace. Support overriding via a deeper git-worktree,
+# so that an older version of pd can be built and run. This helps when running older
+# networks locally, to debug migrations.
+vars:
+  WORKING_DIR: .
+  # WORKING_DIR: deployments/worktrees/v0.73.1
+
+processes:
+  # Build latest version of local code. We do this once, up front,
+  # so that each test suite runs immediately when ready, without iterative building.
+  build-code:
+    working_dir: "{{ .WORKING_DIR }}"
+    command: |-
+      echo "Building source code..."
+      cargo --quiet build --release --all-targets
+
+  # Generate network from latest code, only if network does not already exist.
+  generate-network-nice:
+    working_dir: "{{ .WORKING_DIR }}"
+    command: |-
+      if [[ -d ~/.penumbra/testnet_data/node0 ]] ; then
+          >&2 echo "Testnet data exists locally, reusing it"
+      else
+        cargo run --quiet --release --bin pd -- testnet generate \
+          --unbonding-delay 50 \
+          --epoch-duration 50 \
+          --proposal-voting-blocks 50 \
+          --timeout-commit 500ms
+      fi
+    depends_on:
+      build-code:
+        condition: process_completed_successfully
+
+  # Run pd validator based on generated network.
+  pd:
+    command: "cargo run --release --bin pd -- start"
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 8080
+      period_seconds: 5
+    working_dir: "{{ .WORKING_DIR }}"
+    depends_on:
+      generate-network-nice:
+        condition: process_completed_successfully
+
+  # Run CometBFT for pd p2p.
+  cometbft:
+    command: "cometbft --home ~/.penumbra/testnet_data/node0/cometbft start"
+    depends_on:
+      pd:
+        condition: process_healthy

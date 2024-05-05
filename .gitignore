@@ -52,8 +52,11 @@ deployments/relayer/configs/penumbra-local.json
 
 # Logs, and other files from smoke tests
 deployments/logs/
+deployments/worktrees/
+deployments/bin/
 crates/bin/pcli/proposal.toml
 phase1.bin
+crates/test/migration-test/proposal.toml
 
 # Memory profiler, via bytehound or otherwise
 *.dat

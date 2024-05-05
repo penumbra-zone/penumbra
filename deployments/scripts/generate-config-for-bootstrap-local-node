@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Helper script to configure a new Penumbra node locally.
+# Useful in automated test suites.
+set -euo pipefail
+
+
+# Set default values for common pd args, nudging them up 100 ports.
+# This is to avoid the standard defaults, so that we can run multiple
+# nodes on localhost at the same time.
+PENUMBRA_PD_GRPC_BIND="${PENUMBRA_PD_GRPC_BIND:-127.0.0.1:8180}"
+PENUMBRA_PD_ABCI_BIND="${PENUMBRA_PD_ABCI_BIND:-127.0.0.1:26758}"
+PENUMBRA_PD_TM_RPC_BIND="${PENUMBRA_PD_TM_RPC_BIND:-127.0.0.1:26757}"
+PENUMBRA_PD_TM_P2P_BIND="${PENUMBRA_PD_TM_P2P_BIND:-127.0.0.1:26756}"
+PENUMBRA_PD_METRICS_BIND="${PENUMBRA_PD_METRICS_BIND:-127.0.0.1:9100}"
+PENUMBRA_TESTNET_DIR="${PENUMBRA_TESTNET_DIR:-/tmp/penumbra-bootstrap-local-node}"
+
+>&2 echo "Configuring node in ${PENUMBRA_TESTNET_DIR} ..."
+rm -rf "${PENUMBRA_TESTNET_DIR}"
+cargo run --release --bin pd -- testnet \
+    --testnet-dir "${PENUMBRA_TESTNET_DIR}" join \
+    --tendermint-rpc-bind "${PENUMBRA_PD_TM_RPC_BIND}" \
+    --tendermint-p2p-bind "${PENUMBRA_PD_TM_P2P_BIND}" \
+    --archive-url "http://localhost:8000/${PENUMBRA_MIGRATION_TARBALL}" \
+    "http://localhost:26657"
+
+# All these sed hacks should be handled as `pd testnet join` args, for flexibility.
+>&2 echo "Customizing CometBFT config..."
+# We want to peer over localhost, which isn't allowed with strict=true.
+sed -i -e 's/^addr_book_strict.*/addr_book_strict = false/' "${PENUMBRA_TESTNET_DIR}/node0/cometbft/config/config.toml"
+# Hack to customize pd's gRPC URL. This should be an option on `pd testnet join`!
+sed -i -e "s#^proxy_app.*#proxy_app = \"tcp://${PENUMBRA_PD_ABCI_BIND}\"#" "${PENUMBRA_TESTNET_DIR}/node0/cometbft/config/config.toml"
+# Hack to force inclusion of RFC1918 address for peer.
+bootstrap_node_id="$(curl -s http://localhost:26657/status | jq -r .result.node_info.id)"
+# Use the standard default for the CometBFT RPC port, since this is the bootstrap node we're targeting.
+bootstrap_node_p2p_url="tcp://${bootstrap_node_id}@127.0.0.1:26656"
+sed -i -e "s#^seeds.*#seeds = \"${bootstrap_node_p2p_url}\"#" "${PENUMBRA_TESTNET_DIR}/node0/cometbft/config/config.toml"
+>&2 echo "Checking seeds..."
+grep ^seeds "${PENUMBRA_TESTNET_DIR}/node0/cometbft/config/config.toml"

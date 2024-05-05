@@ -35,11 +35,16 @@ processes:
         --ignored --test-threads 1 --nocapture
 
   # Create network configuration, for running a pd validator locally.
+  # We override the allocations bump up staking tokens for the smoke-test account,
+  # so it can delegate enough wait to vote for a halt.
   network-generate:
     command: >
-      cargo run --quiet --release --bin pd -- 
-      testnet generate --unbonding-delay 50
-      --epoch-duration 50 --timeout-commit 500ms --gas-price-simple 1000
+      cargo run --quiet --release --bin pd -- testnet generate
+      --unbonding-delay 50
+      --epoch-duration 50
+      --proposal-voting-blocks 50
+      --timeout-commit 500ms
+      --allocations-input-file crates/test/migration-test/files/migration-allocations.csv
     depends_on:
       build-code:
         condition: process_completed_successfully

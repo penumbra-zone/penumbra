@@ -3907,6 +3907,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "migration-test"
+version = "0.76.0"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "directories",
+ "once_cell",
+ "penumbra-keys",
+ "predicates 2.1.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "tempfile",
+ "toml 0.7.8",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,104 @@
+---
+# A process-compose configuration for generating a secondary local node,
+# that is joined to an already-running devnet with default settings.
+# Designed to be used specifically with migration-testing.
+version: "0.5"
+
+# Env vars set here will be accessible to all processes.
+environment:
+  - "RUST_LOG=info,network_integration=debug,pclientd=debug,pcli=info,pd=info,penumbra=info"
+
+log_level: info
+is_strict: true
+# Interleave logs from all services in single file, so it's greppable.
+log_location: deployments/logs/bootstrap-node-combined.log
+
+vars:
+  WORKING_DIR: .
+
+  # Unfortunate to use a hardcoded dir, rather than a tmpdir, but hardcoding it
+  # allows us to reuse it in several places where it's not injectable.
+  PENUMBRA_TESTNET_DIR: /tmp/penumbra-bootstrap-local-node
+
+  PENUMBRA_MIGRATION_DOCROOT: "/tmp/penumbra-bootstrap-node-archive-dir"
+  # TODO: make version string in tarball dynamically discoverable.
+  PENUMBRA_MIGRATION_TARBALL: "node0-migration-archive-v0.76.0-alpha.1.tar.gz"
+  # These are env vars, but declaring them as "vars" so that they can be supplied
+  # as literal CLI args in certain commands.
+  PENUMBRA_PD_GRPC_BIND: "127.0.0.1:8180"
+  PENUMBRA_PD_ABCI_BIND: "127.0.0.1:26758"
+  PENUMBRA_PD_TM_RPC_BIND: "127.0.0.1:26757"
+  PENUMBRA_PD_TM_P2P_BIND: "127.0.0.1:26756"
+  PENUMBRA_PD_METRICS_BIND: "127.0.0.1:9100"
+
+environment:
+  # Duplicating several vars as env vars so that subscripts can consume them.
+  - "PENUMBRA_PD_GRPC_BIND=127.0.0.1:8180"
+  - "PENUMBRA_PD_ABCI_BIND=127.0.0.1:26758"
+  - "PENUMBRA_PD_TM_RPC_BIND=127.0.0.1:26757"
+  - "PENUMBRA_PD_TM_P2P_BIND=127.0.0.1:26756"
+  - "PENUMBRA_PD_METRICS_BIND=127.0.0.1:9100"
+  - "PENUMBRA_TESTNET_DIR=/tmp/penumbra-bootstrap-local-node"
+  - "PENUMBRA_MIGRATION_TARBALL=node0-migration-archive-v0.76.0-alpha.1.tar.gz"
+processes:
+  build-code:
+    working_dir: "{{ .WORKING_DIR }}"
+    command: |-
+      echo "Building source code..."
+      cargo --quiet build --release --all-targets
+
+  host-migration-archive:
+    command: |-
+      set -euo pipefail
+      rm -rf "{{ .PENUMBRA_MIGRATION_DOCROOT }}"
+      mkdir -p "{{ .PENUMBRA_MIGRATION_DOCROOT }}"
+      cp -v ~/.penumbra/testnet_data/{{ .PENUMBRA_MIGRATION_TARBALL }} "{{ .PENUMBRA_MIGRATION_DOCROOT }}"
+      >&2 echo "Serving migration archive locally..."
+      python3 -m http.server --directory "{{ .PENUMBRA_MIGRATION_DOCROOT }}"
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 8000
+      period_seconds: 5
+
+  generate-config:
+    working_dir: "{{ .WORKING_DIR }}"
+    # delegate to subscript so that we can consume env vars
+    command: ./deployments/scripts/generate-config-for-bootstrap-local-node
+    depends_on:
+      build-code:
+        condition: process_completed_successfully
+      host-migration-archive:
+        condition: process_healthy
+
+  # Run pd validator based on generated network.
+  pd:
+    command: |-
+      cargo run --release --bin pd -- start \
+        --home "{{ .PENUMBRA_TESTNET_DIR }}/node0/pd" \
+        --grpc-bind "{{ .PENUMBRA_PD_GRPC_BIND }}" \
+        --metrics-bind "{{ .PENUMBRA_PD_METRICS_BIND }}" \
+        --abci-bind "{{ .PENUMBRA_PD_ABCI_BIND }}" \
+        --cometbft-addr "http://{{ .PENUMBRA_PD_TM_RPC_BIND }}"
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        scheme: http
+        path: "/"
+        port: 8180
+      period_seconds: 5
+    working_dir: "{{ .WORKING_DIR }}"
+    depends_on:
+      generate-config:
+        condition: process_completed_successfully
+      host-migration-archive:
+        condition: process_healthy
+
+  # Run CometBFT for pd p2p.
+  cometbft:
+    command: cometbft --home "{{ .PENUMBRA_TESTNET_DIR }}/node0/cometbft" start
+    depends_on:
+      pd:
+        condition: process_healthy
