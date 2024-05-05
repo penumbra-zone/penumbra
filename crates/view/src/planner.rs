@@ -579,7 +579,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // (This really should have been considered witness data. Oh well.)
         let fmd_params = view.fmd_parameters().await?;
 
-        let plan = mem::take(&mut self.action_list).into_plan(
+        let mut plan = mem::take(&mut self.action_list).into_plan(
             &mut self.rng,
             &fmd_params,
             self.transaction_parameters.clone(),
