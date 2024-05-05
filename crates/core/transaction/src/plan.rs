@@ -534,9 +534,8 @@ mod tests {
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
         };
 
-        // Implement canonical ordering to the action plans to reduce client distinguishability.
-        plan.actions
-            .sort_by_key(|action: &ActionPlan| action.variant_index());
+        // Sort actions within the transaction plan.
+        plan.sort_actions();
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
