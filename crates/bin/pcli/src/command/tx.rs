@@ -6,7 +6,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use ibc_proto::ibc::core::client::v1::{
@@ -761,12 +761,18 @@ impl TxCmd {
                     .try_into()
                     .context("can't parse proposal file")?;
 
+                let deposit_amount: Value = deposit_amount.parse()?;
+                ensure!(
+                    deposit_amount.asset_id == *STAKING_TOKEN_ASSET_ID,
+                    "deposit amount must be in staking token"
+                );
+
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .proposal_submit(proposal, Amount::from(*deposit_amount))
+                    .proposal_submit(proposal, deposit_amount.amount)
                     .plan(
                         app.view
                             .as_mut()

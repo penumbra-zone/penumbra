@@ -27,8 +27,8 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "0")]
         source: u32,
         /// The amount of the staking token to deposit alongside the proposal.
-        #[clap(long)]
-        deposit_amount: u64,
+        #[clap(long, default_value = "")]
+        deposit_amount: String,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
