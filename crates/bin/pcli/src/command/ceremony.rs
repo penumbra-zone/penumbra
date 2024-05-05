@@ -21,7 +21,6 @@ use penumbra_proto::{
     },
     view::v1::GasPricesRequest,
 };
-use penumbra_transaction::memo::MemoPlaintext;
 use penumbra_view::Planner;
 
 use crate::App;
@@ -54,16 +53,11 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
         return Ok(());
     }
 
-    let memo_plaintext = MemoPlaintext::new(
-        app.config.full_viewing_key.payment_address(from).0,
-        "E PLURIBUS UNUM".into(),
-    )?;
-
     let mut planner = Planner::new(OsRng);
     planner.set_gas_prices(gas_prices);
     planner.output(value, to);
     let plan = planner
-        .memo(memo_plaintext)?
+        .memo("E PLURIBUS UNUM".into())
         .plan(
             app.view
                 .as_mut()

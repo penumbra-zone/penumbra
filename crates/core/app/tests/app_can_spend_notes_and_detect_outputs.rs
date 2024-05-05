@@ -75,7 +75,7 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
         memo: Some(MemoPlan::new(
             &mut OsRng,
             MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
-        )?),
+        )),
         detection_data: None, // We'll set this automatically below
         transaction_parameters: TransactionParameters {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),

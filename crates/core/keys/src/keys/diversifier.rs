@@ -177,6 +177,15 @@ impl From<u32> for AddressIndex {
     }
 }
 
+impl<'a> From<&'a u32> for AddressIndex {
+    fn from(x: &'a u32) -> Self {
+        Self {
+            account: *x,
+            randomizer: [0; 12],
+        }
+    }
+}
+
 // TODO: add support for ephemeral addresses to FromStr impl.
 impl FromStr for AddressIndex {
     type Err = anyhow::Error;

@@ -525,7 +525,7 @@ mod tests {
             detection_data: Some(DetectionDataPlan {
                 clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
             }),
-            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone()).unwrap()),
+            memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
         };
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());

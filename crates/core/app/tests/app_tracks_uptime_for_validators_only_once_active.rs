@@ -197,11 +197,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
         let mut plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), delegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
-            memo: MemoPlan::new(
+            memo: Some(MemoPlan::new(
                 &mut OsRng,
                 MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
-            )
-            .map(Some)?,
+            )),
             detection_data: None, // We'll set this automatically below
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
@@ -322,11 +321,10 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
         let mut plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), undelegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
-            memo: MemoPlan::new(
+            memo: Some(MemoPlan::new(
                 &mut OsRng,
                 MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
-            )
-            .map(Some)?,
+            )),
             detection_data: None, // We'll set this automatically below
             transaction_parameters: TransactionParameters {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
