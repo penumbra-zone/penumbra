@@ -30,6 +30,7 @@ impl QueryService for Server {
 
         Ok(tonic::Response::new(pb::CurrentGasPricesResponse {
             gas_prices: Some(gas_prices.into()),
+            alt_gas_prices: Vec::new(),
         }))
     }
 }

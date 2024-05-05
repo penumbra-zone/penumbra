@@ -28,6 +28,8 @@ message CompactBlock {
   bool app_parameters_updated = 9;
   // Updated gas prices, if they have changed.
   fee.v1.GasPrices gas_prices = 10;
+  // Updated gas prices for alternative fee tokens, if they have changed.
+  repeated fee.v1.GasPrices alt_gas_prices = 100;
   // The epoch index
   uint64 epoch_index = 11;
 }

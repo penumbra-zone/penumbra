@@ -523,7 +523,10 @@ message AppParametersResponse {
 message GasPricesRequest {}
 
 message GasPricesResponse {
+  // The current gas prices, in the preferred (native) token.
   core.component.fee.v1.GasPrices gas_prices = 1;
+  // Other gas prices for other accepted tokens.
+  repeated core.component.fee.v1.GasPrices alt_gas_prices = 2;
 }
 
 // Requests the current FMD parameters from the view service.

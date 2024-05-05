@@ -1,17 +1,15 @@
 use anyhow::Context;
 use decaf377_rdsa::{Signature, SpendAuth};
 use futures::{FutureExt, TryStreamExt};
-use penumbra_fee::GasPrices;
 use penumbra_governance::ValidatorVoteBody;
 use penumbra_proto::{
     custody::v1::{AuthorizeValidatorDefinitionRequest, AuthorizeValidatorVoteRequest},
     util::tendermint_proxy::v1::tendermint_proxy_service_client::TendermintProxyServiceClient,
     view::v1::broadcast_transaction_response::Status as BroadcastStatus,
-    view::v1::GasPricesRequest,
     DomainType,
 };
 use penumbra_stake::validator::Validator;
-use penumbra_transaction::{gas::GasCost, txhash::TransactionId, Transaction, TransactionPlan};
+use penumbra_transaction::{txhash::TransactionId, Transaction, TransactionPlan};
 use penumbra_view::ViewClient;
 use std::future::Future;
 use tonic::transport::{Channel, ClientTlsConfig};
@@ -24,25 +22,7 @@ impl App {
         &mut self,
         plan: TransactionPlan,
     ) -> anyhow::Result<TransactionId> {
-        let gas_prices: GasPrices = self
-            .view
-            .as_mut()
-            .context("view service must be initialized")?
-            .gas_prices(GasPricesRequest {})
-            .await?
-            .into_inner()
-            .gas_prices
-            .expect("gas prices must be available")
-            .try_into()?;
         let transaction = self.build_transaction(plan).await?;
-        let gas_cost = transaction.gas_cost();
-        let fee = gas_prices.fee(&gas_cost);
-        assert!(
-            transaction.transaction_parameters().fee.amount() >= fee,
-            "paid fee {} must be greater than minimum fee {}",
-            transaction.transaction_parameters().fee.amount(),
-            fee
-        );
         self.submit_transaction(transaction).await
     }
 

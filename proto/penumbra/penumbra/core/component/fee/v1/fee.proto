@@ -14,6 +14,11 @@ message Fee {
 }
 
 message GasPrices {
+  // The asset ID of the fee token these prices are for.
+  //
+  // If absent, specifies the staking token implicitly.
+  asset.v1.AssetId asset_id = 15;
+
   // The price per unit block space in terms of the staking token, with an implicit 1,000 denominator.
   uint64 block_space_price = 1;
   // The price per unit compact block space in terms of the staking token, with an implicit 1,000 denominator.
@@ -39,10 +44,22 @@ message FeeTier {
 
 // Fee component configuration data.
 message FeeParameters {
-  // Fixed gas prices used to compute transactions' base fees.
+  // Fixed gas prices in the native token used to compute transactions' base
+  // fees.
   //
-  // In the future, this should be removed and replaced with parameters for dynamic gas pricing.
+  // In the future, this should be removed and replaced with parameters for
+  // dynamic gas pricing.
   GasPrices fixed_gas_prices = 1;
+
+  // Fixed gas prices in other tokens used to compute transactions' base fees.
+  //
+  // In the future, this should be removed and replaced with fixed multiples of
+  // the native token's price (so that there is one set of dynamically
+  // determined gas prices in the native token, and derived gas prices in other
+  // alternative tokens).
+  //
+  // If this is empty, no other tokens are accepted for gas.
+  repeated GasPrices fixed_alt_gas_prices = 2;
 }
 
 // Fee-specific genesis content.
@@ -60,6 +77,8 @@ service QueryService {
 message CurrentGasPricesRequest {}
 
 message CurrentGasPricesResponse {
-  // The current gas prices.
+  // The current gas prices, in the preferred (native) token.
   GasPrices gas_prices = 1;
+  // Other gas prices for other accepted tokens.
+  repeated GasPrices alt_gas_prices = 2;
 }

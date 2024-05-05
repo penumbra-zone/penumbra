@@ -69,9 +69,11 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                 },
-            fee_params: FeeParameters {
-                fixed_gas_prices: _,
-            },
+            fee_params:
+                FeeParameters {
+                    fixed_gas_prices: _,
+                    fixed_alt_gas_prices: _,
+                },
             funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
@@ -165,9 +167,11 @@ impl AppParameters {
                 DistributionsParameters {
                     staking_issuance_per_block: _,
                 },
-            fee_params: FeeParameters {
-                fixed_gas_prices: _,
-            },
+            fee_params:
+                FeeParameters {
+                    fixed_gas_prices: _,
+                    fixed_alt_gas_prices: _,
+                },
             funding_params: FundingParameters {},
             governance_params:
                 GovernanceParameters {
