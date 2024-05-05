@@ -66,8 +66,7 @@ impl Default for DexParameters {
                 cache.get_unit("test_btc").unwrap().id(),
             ],
             max_hops: 4,
-            // TODO(erwan): setting this to 10 for testing.
-            max_positions_per_pair: 10,
+            max_positions_per_pair: 1_000,
         }
     }
 }
