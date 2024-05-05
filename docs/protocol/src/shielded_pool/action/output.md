@@ -57,6 +57,16 @@ Clients using the ephemeral public key $epk$ provided in an output body to decry
 
 $epk = [esk] B_d$
 
+This check exists to mitigate a potential attack wherein an attacker attempts to
+link together a target's addresses. Given that the attacker knows the address of
+the target, an attacker can send a note encrypted using the $B_d$ of a second
+address they suspect the target controls. If the target _does_ control both
+addresses, then the target will be able to decrypt this note. If the target responds to
+the attacker out of band confirming the payment was received, the attacker has
+learned the target does control both addresses. To avoid this, client software checks the
+_correct_ diversified basepoint is used during note decryption. See
+[ZIP 212](https://zips.z.cash/zip-0212) for further details.
+
 ## Output zk-SNARK Statements
 
 The output proof demonstrates the properties enumerated below for the private witnesses known by the prover:
