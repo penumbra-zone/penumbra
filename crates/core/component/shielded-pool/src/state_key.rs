@@ -18,7 +18,3 @@ pub fn pending_rolled_up_payloads() -> &'static str {
 pub fn shielded_pool_params() -> &'static str {
     "shielded_pool/params"
 }
-
-pub fn shielded_pool_params_updated() -> &'static str {
-    "shielded_pool/params_updated"
-}

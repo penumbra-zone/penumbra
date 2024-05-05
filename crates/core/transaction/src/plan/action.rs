@@ -409,6 +409,36 @@ impl From<Ics20Withdrawal> for ActionPlan {
     }
 }
 
+impl From<ActionDutchAuctionSchedule> for ActionPlan {
+    fn from(inner: ActionDutchAuctionSchedule) -> ActionPlan {
+        ActionPlan::ActionDutchAuctionSchedule(inner)
+    }
+}
+
+impl From<ActionDutchAuctionEnd> for ActionPlan {
+    fn from(inner: ActionDutchAuctionEnd) -> ActionPlan {
+        ActionPlan::ActionDutchAuctionEnd(inner)
+    }
+}
+
+impl From<ActionDutchAuctionWithdrawPlan> for ActionPlan {
+    fn from(inner: ActionDutchAuctionWithdrawPlan) -> ActionPlan {
+        ActionPlan::ActionDutchAuctionWithdraw(inner)
+    }
+}
+
+impl From<ProposalWithdraw> for ActionPlan {
+    fn from(inner: ProposalWithdraw) -> ActionPlan {
+        ActionPlan::ProposalWithdraw(inner)
+    }
+}
+
+impl From<ProposalDepositClaim> for ActionPlan {
+    fn from(inner: ProposalDepositClaim) -> ActionPlan {
+        ActionPlan::ProposalDepositClaim(inner)
+    }
+}
+
 impl DomainType for ActionPlan {
     type Proto = pb_t::ActionPlan;
 }

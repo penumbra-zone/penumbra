@@ -60,7 +60,7 @@ pub trait StateWriteExt: StateWrite {
     }
 }
 
-impl<T: StateWrite> StateWriteExt for T {}
+impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
 pub trait StateReadExt: StateRead {

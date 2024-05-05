@@ -26,9 +26,9 @@ use penumbra_sct::component::tree::SctRead;
 use penumbra_shielded_pool::component::AssetRegistry;
 use penumbra_transaction::{AuthorizationData, Transaction, TransactionPlan, WitnessData};
 
-use crate::action_handler::AppActionHandler;
+use crate::app::StateReadExt;
 use crate::community_pool_ext::CommunityPoolStateWriteExt;
-use crate::params::AppParameters;
+use crate::{action_handler::AppActionHandler, params::change::ParameterChangeExt as _};
 
 // IMPORTANT: these length limits are enforced by consensus! Changing them will change which
 // transactions are accepted by the network, and so they *cannot* be changed without a network
@@ -72,21 +72,7 @@ impl AppActionHandler for ProposalSubmit {
         match payload {
             Signaling { commit: _ } => { /* all signaling proposals are valid */ }
             Emergency { halt_chain: _ } => { /* all emergency proposals are valid */ }
-            ParameterChange { old, new } => {
-                // Since the changed app parameters is a differential, we need to construct
-                // a complete AppParameters:
-                //
-                // `old_app_params` should be complete and represent the state of all app parameters
-                // at the time the proposal was created.
-                let old_app_params = AppParameters::from_changed_params(old, None)?;
-                // `new_app_params` should be sparse and only the components whose parameters were changed
-                // by the proposal should be `Some`.
-                let new_app_params =
-                    AppParameters::from_changed_params(new, Some(&old_app_params))?;
-                old_app_params
-                    .check_valid_update(&new_app_params)
-                    .context("invalid change to app parameters")?;
-            }
+            ParameterChange(_change) => { /* no stateless checks -- see check-and-execute below */ }
             CommunityPoolSpend { transaction_plan } => {
                 // Check to make sure that the transaction plan contains only valid actions for the
                 // Community Pool (none of them should require proving to build):
@@ -172,8 +158,14 @@ impl AppActionHandler for ProposalSubmit {
         match &proposal.payload {
             ProposalPayload::Signaling { .. } => { /* no stateful checks for signaling */ }
             ProposalPayload::Emergency { .. } => { /* no stateful checks for emergency */ }
-            ProposalPayload::ParameterChange { .. } => {
-                /* no stateful checks for parameter change (checks are applied when proposal finishes) */
+            ProposalPayload::ParameterChange(change) => {
+                // Check that the parameter change is valid and could be applied to the current
+                // parameters. This doesn't guarantee that it will be valid when/if it passes but
+                // ensures that clearly malformed proposals are rejected upfront.
+                let current_parameters = state.get_app_params().await?;
+                change
+                    .apply_changes(current_parameters)
+                    .context("proposed parameter changes do not apply to current parameters")?;
             }
             ProposalPayload::CommunityPoolSpend { transaction_plan } => {
                 // If Community Pool spend proposals aren't enabled, then we can't allow them to be submitted

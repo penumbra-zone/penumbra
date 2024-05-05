@@ -6,21 +6,19 @@ use std::{
 use anyhow::{Context, Result};
 use base64::{engine::general_purpose::URL_SAFE, Engine as _};
 use decaf377_rdsa::{Signature, SpendAuth};
+use penumbra_view::Planner;
 use rand_core::OsRng;
 use serde_json::Value;
 
-use penumbra_fee::Fee;
 use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
-use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::DomainType;
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
     FundingStream, FundingStreams, IdentityKey,
 };
-use penumbra_wallet::plan;
 
 use crate::App;
 
@@ -51,9 +49,6 @@ pub enum VoteCmd {
     /// Cast a vote on a proposal in your capacity as a validator (see also: `pcli tx vote` for
     /// delegator voting).
     Cast {
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0", global = true, display_order = 200)]
-        fee: u64,
         /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0", global = true, display_order = 300)]
         source: u32,
@@ -91,9 +86,6 @@ pub enum DefinitionCmd {
         /// The TOML file containing the ValidatorDefinition to upload.
         #[clap(long)]
         file: String,
-        /// The transaction fee (paid in upenumbra).
-        #[clap(long, default_value = "0")]
-        fee: u64,
         /// Optional. Only spend funds originally received by the given account.
         #[clap(long, default_value = "0")]
         source: u32,
@@ -223,12 +215,10 @@ impl ValidatorCmd {
             }
             ValidatorCmd::Definition(DefinitionCmd::Upload {
                 file,
-                fee,
                 source,
                 signature,
             }) => {
                 let new_validator = read_validator_toml(file)?;
-                let fee = Fee::from_staking_token_amount((*fee).into());
 
                 // Sign the validator definition with the wallet's spend key, or instead attach the
                 // provided signature if present.
@@ -255,16 +245,11 @@ impl ValidatorCmd {
                 };
                 // Construct a new transaction and include the validator definition.
 
-                let plan = plan::validator_definition(
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    vd,
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
+                let plan = Planner::new(OsRng)
+                    .validator_definition(vd)
+                    .plan(app.view(), source.into())
+                    .await?;
+
                 app.build_and_submit_transaction(plan).await?;
                 // Only commit the state if the transaction was submitted
                 // successfully, so that we don't store pending notes that will
@@ -317,7 +302,6 @@ impl ValidatorCmd {
                 }
             }
             ValidatorCmd::Vote(VoteCmd::Cast {
-                fee,
                 source,
                 vote,
                 reason,
@@ -364,18 +348,11 @@ impl ValidatorCmd {
                 let vote = ValidatorVote { body, auth_sig };
 
                 // Construct a new transaction and include the validator definition.
-                let fee = Fee::from_staking_token_amount((*fee).into());
+                let plan = Planner::new(OsRng)
+                    .validator_vote(vote)
+                    .plan(app.view(), source.into())
+                    .await?;
 
-                let plan = plan::validator_vote(
-                    app.view
-                        .as_mut()
-                        .context("view service must be initialized")?,
-                    OsRng,
-                    vote,
-                    fee,
-                    AddressIndex::new(*source),
-                )
-                .await?;
                 app.build_and_submit_transaction(plan).await?;
 
                 println!("Cast validator vote");

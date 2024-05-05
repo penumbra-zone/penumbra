@@ -6,7 +6,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use ark_ff::UniformRand;
 use decaf377::{Fq, Fr};
 use ibc_proto::ibc::core::client::v1::{
@@ -57,7 +57,7 @@ use penumbra_proto::{
 use penumbra_shielded_pool::Ics20Withdrawal;
 use penumbra_stake::rate::RateData;
 use penumbra_stake::{DelegationToken, IdentityKey, Penalty, UnbondingToken, UndelegateClaimPlan};
-use penumbra_transaction::{gas::swap_claim_gas_cost, memo::MemoPlaintext};
+use penumbra_transaction::gas::swap_claim_gas_cost;
 use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
@@ -349,15 +349,6 @@ impl TxCmd {
                     .parse::<Address>()
                     .map_err(|_| anyhow::anyhow!("address is invalid"))?;
 
-                let return_address = app
-                    .config
-                    .full_viewing_key
-                    .payment_address((*from).into())
-                    .0;
-
-                let memo_plaintext =
-                    MemoPlaintext::new(return_address, memo.clone().unwrap_or_default())?;
-
                 let mut planner = Planner::new(OsRng);
 
                 planner
@@ -367,7 +358,7 @@ impl TxCmd {
                     planner.output(value, to.clone());
                 }
                 let plan = planner
-                    .memo(memo_plaintext)?
+                    .memo(memo.clone().unwrap_or_default())
                     .plan(
                         app.view
                             .as_mut()
@@ -770,12 +761,18 @@ impl TxCmd {
                     .try_into()
                     .context("can't parse proposal file")?;
 
+                let deposit_amount: Value = deposit_amount.parse()?;
+                ensure!(
+                    deposit_amount.asset_id == *STAKING_TOKEN_ASSET_ID,
+                    "deposit amount must be in staking token"
+                );
+
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into());
                 let plan = planner
-                    .proposal_submit(proposal, Amount::from(*deposit_amount))
+                    .proposal_submit(proposal, deposit_amount.amount)
                     .plan(
                         app.view
                             .as_mut()
@@ -933,12 +930,15 @@ impl TxCmd {
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into())
                     .delegator_vote(
+                        app.view(),
+                        AddressIndex::new(*source),
                         proposal_id,
+                        vote,
                         start_block_height,
                         start_position,
                         start_rate_data,
-                        vote,
                     )
+                    .await?
                     .plan(
                         app.view
                             .as_mut()

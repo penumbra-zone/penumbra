@@ -15,12 +15,6 @@ use super::state_key;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the Community Pool parameters have been updated in this block.
-    fn community_pool_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::community_pool_params_updated())
-            .is_some()
-    }
-
     /// Gets the Community Pool parameters from the JMT.
     async fn get_community_pool_params(&self) -> Result<CommunityPoolParameters> {
         self.get(state_key::community_pool_params())
@@ -55,10 +49,6 @@ impl<T> StateReadExt for T where T: StateRead + ?Sized {}
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided Community Pool parameters to the JMT.
     fn put_community_pool_params(&mut self, params: CommunityPoolParameters) {
-        // Note that the Community Pool params have been updated:
-        self.object_put(state_key::community_pool_params_updated(), ());
-
-        // Change the Community Pool parameters:
         self.put(state_key::community_pool_params().into(), params)
     }
 

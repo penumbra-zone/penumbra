@@ -16,8 +16,7 @@ use penumbra_distributions::component::{Distributions, StateReadExt as _, StateW
 use penumbra_fee::component::{Fee, StateReadExt as _, StateWriteExt as _};
 use penumbra_funding::component::Funding;
 use penumbra_funding::component::{StateReadExt as _, StateWriteExt as _};
-use penumbra_governance::component::{Governance, StateReadExt as _};
-use penumbra_governance::StateWriteExt as _;
+use penumbra_governance::component::{Governance, StateReadExt as _, StateWriteExt as _};
 use penumbra_ibc::component::{Ibc, StateWriteExt as _};
 use penumbra_ibc::StateReadExt as _;
 use penumbra_proto::core::app::v1::TransactionsByHeightResponse;
@@ -40,6 +39,7 @@ use tracing::Instrument;
 
 use crate::action_handler::AppActionHandler;
 use crate::genesis::AppState;
+use crate::params::change::ParameterChangeExt as _;
 use crate::params::AppParameters;
 use crate::{CommunityPoolStateReadExt, PenumbraHost};
 
@@ -128,7 +128,7 @@ impl App {
                 Funding::init_chain(&mut state_tx, Some(&genesis.funding_content)).await;
 
                 state_tx
-                    .finish_block(state_tx.app_params_updated())
+                    .finish_block()
                     .await
                     .expect("must be able to finish compact block");
             }
@@ -206,49 +206,34 @@ impl App {
     pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
 
-        // If a app parameter change is scheduled for this block, apply it here, before any other
-        // component has executed. This ensures that app parameter changes are consistently
-        // applied precisely at the boundary between blocks:
-        if let Some(app_params) = state_tx
-            .pending_app_parameters()
+        // If a app parameter change is scheduled for this block, apply it here,
+        // before any other component has executed. This ensures that app
+        // parameter changes are consistently applied precisely at the boundary
+        // between blocks.
+        //
+        // Note that because _nothing_ has executed yet, we need to get the
+        // current height from the begin_block request, rather than from the
+        // state (it will be set by the SCT component, which executes first).
+        if let Some(change) = state_tx
+            .param_changes_for_height(begin_block.header.height.into())
             .await
-            .expect("app params should always be readable")
+            .expect("param changes should always be readable, even if unset")
         {
-            tracing::info!(?app_params, "applying pending app parameters");
-            // The app parameters are sparse so only those which are `Some` need
-            // updating here
-            if let Some(community_pool_params) = app_params.new.community_pool_params {
-                state_tx.put_community_pool_params(community_pool_params);
-            }
-            if let Some(distributions_params) = app_params.new.distributions_params {
-                state_tx.put_distributions_params(distributions_params);
-            }
-            if let Some(fee_params) = app_params.new.fee_params {
-                state_tx.put_fee_params(fee_params);
-            }
-            if let Some(funding_params) = app_params.new.funding_params {
-                state_tx.put_funding_params(funding_params);
-            }
-            if let Some(governance_params) = app_params.new.governance_params {
-                state_tx.put_governance_params(governance_params);
-            }
-            if let Some(ibc_params) = app_params.new.ibc_params {
-                state_tx.put_ibc_params(ibc_params);
-            }
-            if let Some(shielded_pool_params) = app_params.new.shielded_pool_params {
-                state_tx.put_shielded_pool_params(shielded_pool_params);
-            }
-            if let Some(sct_params) = app_params.new.sct_params {
-                state_tx.put_sct_params(sct_params);
-            }
-            if let Some(stake_params) = app_params.new.stake_params {
-                state_tx.put_stake_params(stake_params);
-            }
-            if let Some(dex_params) = app_params.new.dex_params {
-                state_tx.put_dex_params(dex_params);
-            }
-            if let Some(auction_params) = app_params.new.auction_params {
-                state_tx.put_auction_params(auction_params);
+            let old_params = state_tx
+                .get_app_params()
+                .await
+                .expect("must be able to read app params");
+            match change.apply_changes(old_params) {
+                Ok(new_params) => {
+                    tracing::info!(?change, "applied app parameter change");
+                    state_tx.put_app_params(new_params);
+                }
+                Err(e) => {
+                    // N.B. this is an "info" rather than "warn" because it does not report
+                    // a problem with _this instance of the application_, but rather is an expected
+                    // behavior.
+                    tracing::info!(?change, ?e, "failed to apply approved app parameter change");
+                }
             }
         }
 
@@ -404,67 +389,6 @@ impl App {
             .expect("components did not retain copies of shared state");
         tracing::debug!("finished app components' `end_block` hooks");
 
-        // Validate governance proposals here. We must do this here because proposals can affect
-        // the entirety of application state, and the governance component does not have access to
-        // the types defined in this crate.
-        //
-        // If a proposal was passed in this block, then `schedule_app_param_update` was called
-        // which will set `next_block_pending_app_parameters`.
-        //
-        // If any validation here fails, the `next_block_pending_app_parameters` will be cleared,
-        // and no change will be enacted during the next block's `begin_block`.
-        if let Some(params) = self
-            .state
-            .next_block_pending_app_parameters()
-            .await
-            .expect("should be able to read next block pending app parameters")
-        {
-            // If there has been a chain upgrade while the proposal was pending, the stateless
-            // verification criteria for the parameter change proposal could have changed, so we
-            // should check them again here, just to be sure:
-            // `old_app_params` should be complete and represent the state of all app parameters
-            // at the time the proposal was created.
-            let old_app_params = AppParameters::from_changed_params(&params.old, None)
-                .expect("should be able to parse old app params");
-            // `new_app_params` should be sparse and only the components whose parameters were
-            // changed by the proposal should be `Some`.
-            let new_app_params =
-                AppParameters::from_changed_params(&params.new, Some(&old_app_params))
-                    .expect("should be able to parse new app params");
-            if old_app_params.check_valid_update(&new_app_params).is_err() {
-                // An error occurred validating the parameter change, we do not want to enact it.
-                // Wipe the next block pending app parameters so the change doesn't get applied.
-                tracing::warn!(
-                    ?new_app_params,
-                    "parameter change proposal failed validation, wiping pending parameters"
-                );
-                state_tx
-                    .cancel_next_block_pending_app_parameters()
-                    .await
-                    .expect("able to cancel next block pending app parameters");
-            } else {
-                // This was a valid change.
-                //
-                // Check that the old parameters are an exact match for the current parameters, or
-                // else abort the update.
-                let current = self
-                    .state
-                    .get_app_params()
-                    .await
-                    .expect("able to fetch app params");
-
-                // The current parameters have to match the old parameters specified in the
-                // proposal, exactly. This prevents updates from clashing.
-                if old_app_params != current {
-                    tracing::warn!("current chain parameters do not match the old parameters in the proposal, canceling proposal enactment");
-                    state_tx
-                        .cancel_next_block_pending_app_parameters()
-                        .await
-                        .expect("able to cancel next block pending app parameters");
-                }
-            }
-        }
-
         let current_height = state_tx
             .get_block_height()
             .await
@@ -532,7 +456,7 @@ impl App {
                 .expect("components did not retain copies of shared state");
 
             state_tx
-                .finish_epoch(state_tx.app_params_updated())
+                .finish_epoch()
                 .await
                 .expect("must be able to finish compact block");
 
@@ -556,7 +480,7 @@ impl App {
             );
 
             state_tx
-                .finish_block(state_tx.app_params_updated())
+                .finish_block()
                 .await
                 .expect("must be able to finish compact block");
 
@@ -638,19 +562,6 @@ const TOTAL_HALT_COUNT: u64 = 2;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Returns true if the app parameters have been changed in this block.
-    fn app_params_updated(&self) -> bool {
-        self.community_pool_params_updated()
-            || self.distributions_params_updated()
-            || self.ibc_params_updated()
-            || self.fee_params_updated()
-            || self.funding_params_updated()
-            || self.governance_params_updated()
-            || self.sct_params_updated()
-            || self.shielded_pool_params_updated()
-            || self.stake_params_updated()
-    }
-
     async fn get_chain_id(&self) -> Result<String> {
         let raw_chain_id = self
             .get_raw(state_key::data::chain_id())
@@ -784,6 +695,46 @@ pub trait StateWriteExt: StateWrite {
             transactions_response.encode_to_vec(),
         );
         Ok(())
+    }
+
+    /// Writes the app parameters to the state.
+    ///
+    /// Each component stores its own parameters separately, so this method
+    /// splits up the provided parameters structure and writes it out to each component.
+    fn put_app_params(&mut self, params: AppParameters) {
+        // To make sure we don't forget to write any parts, destructure the entire params
+        let AppParameters {
+            chain_id,
+            auction_params,
+            community_pool_params,
+            distributions_params,
+            fee_params,
+            funding_params,
+            governance_params,
+            ibc_params,
+            sct_params,
+            shielded_pool_params,
+            stake_params,
+            dex_params,
+        } = params;
+
+        // Ignore writes to the chain_id
+        // TODO(erwan): we are momentarily not supporting chain_id changes
+        // until the IBC host chain changes land.
+        // See: https://github.com/penumbra-zone/penumbra/issues/3617#issuecomment-1917708221
+        std::mem::drop(chain_id);
+
+        self.put_auction_params(auction_params);
+        self.put_community_pool_params(community_pool_params);
+        self.put_distributions_params(distributions_params);
+        self.put_fee_params(fee_params);
+        self.put_funding_params(funding_params);
+        self.put_governance_params(governance_params);
+        self.put_ibc_params(ibc_params);
+        self.put_sct_params(sct_params);
+        self.put_shielded_pool_params(shielded_pool_params);
+        self.put_stake_params(stake_params);
+        self.put_dex_params(dex_params);
     }
 }
 

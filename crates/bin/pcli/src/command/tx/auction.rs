@@ -1,9 +1,12 @@
 use super::FeeTier;
 use crate::App;
-use anyhow::{anyhow, bail, Context};
+use anyhow::{anyhow, bail, ensure, Context};
 use clap::Subcommand;
 use penumbra_asset::Value;
-use penumbra_auction::auction::{dutch::DutchAuction, AuctionId};
+use penumbra_auction::auction::{
+    dutch::{actions::ActionDutchAuctionWithdrawPlan, DutchAuction, DutchAuctionDescription},
+    AuctionId,
+};
 use penumbra_dex::lp::position::Position;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_proto::{view::v1::GasPricesRequest, DomainType, Name};
@@ -136,20 +139,24 @@ impl DutchCmd {
                 let max_output = max_output.parse::<Value>()?;
                 let min_output = min_output.parse::<Value>()?;
                 let output_id = max_output.asset_id;
+                ensure!(
+                    min_output.asset_id == output_id,
+                    "min and max output must be the same asset"
+                );
 
                 let plan = Planner::new(OsRng)
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into())
-                    .dutch_auction_schedule(
+                    .dutch_auction_schedule(DutchAuctionDescription {
                         input,
                         output_id,
-                        max_output.amount,
-                        min_output.amount,
-                        *start_height,
-                        *end_height,
-                        *step_count,
+                        max_output: max_output.amount,
+                        min_output: min_output.amount,
+                        start_height: *start_height,
+                        end_height: *end_height,
+                        step_count: *step_count,
                         nonce,
-                    )
+                    })
                     .plan(
                         app.view
                             .as_mut()
@@ -233,13 +240,13 @@ impl DutchCmd {
                 let plan = planner
                     .set_gas_prices(gas_prices)
                     .set_fee_tier((*fee_tier).into())
-                    .dutch_auction_withdraw(auction_id, seq, reserves_input, reserves_output)
-                    .plan(
-                        app.view
-                            .as_mut()
-                            .context("view service must be initialized")?,
-                        AddressIndex::new(*source),
-                    )
+                    .dutch_auction_withdraw(ActionDutchAuctionWithdrawPlan {
+                        auction_id,
+                        seq,
+                        reserves_input,
+                        reserves_output,
+                    })
+                    .plan(app.view(), source.into())
                     .await
                     .context("can't build send transaction")?;
                 app.build_and_submit_transaction(plan).await?;

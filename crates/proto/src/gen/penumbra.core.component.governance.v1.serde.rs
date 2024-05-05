@@ -1812,6 +1812,135 @@ impl<'de> serde::Deserialize<'de> for delegator_vote_view::Visible {
         deserializer.deserialize_struct("penumbra.core.component.governance.v1.DelegatorVoteView.Visible", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EncodedParameter {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.component.is_empty() {
+            len += 1;
+        }
+        if !self.key.is_empty() {
+            len += 1;
+        }
+        if !self.value.is_empty() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.EncodedParameter", len)?;
+        if !self.component.is_empty() {
+            struct_ser.serialize_field("component", &self.component)?;
+        }
+        if !self.key.is_empty() {
+            struct_ser.serialize_field("key", &self.key)?;
+        }
+        if !self.value.is_empty() {
+            struct_ser.serialize_field("value", &self.value)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EncodedParameter {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "component",
+            "key",
+            "value",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Component,
+            Key,
+            Value,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "component" => Ok(GeneratedField::Component),
+                            "key" => Ok(GeneratedField::Key),
+                            "value" => Ok(GeneratedField::Value),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EncodedParameter;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.governance.v1.EncodedParameter")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EncodedParameter, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut component__ = None;
+                let mut key__ = None;
+                let mut value__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Component => {
+                            if component__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("component"));
+                            }
+                            component__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Key => {
+                            if key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("key"));
+                            }
+                            key__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Value => {
+                            if value__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("value"));
+                            }
+                            value__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EncodedParameter {
+                    component: component__.unwrap_or_default(),
+                    key: key__.unwrap_or_default(),
+                    value: value__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.governance.v1.EncodedParameter", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventDelegatorVote {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -3550,12 +3679,24 @@ impl serde::Serialize for proposal::ParameterChange {
         if self.new_parameters.is_some() {
             len += 1;
         }
+        if !self.preconditions.is_empty() {
+            len += 1;
+        }
+        if !self.changes.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.governance.v1.Proposal.ParameterChange", len)?;
         if let Some(v) = self.old_parameters.as_ref() {
             struct_ser.serialize_field("oldParameters", v)?;
         }
         if let Some(v) = self.new_parameters.as_ref() {
             struct_ser.serialize_field("newParameters", v)?;
+        }
+        if !self.preconditions.is_empty() {
+            struct_ser.serialize_field("preconditions", &self.preconditions)?;
+        }
+        if !self.changes.is_empty() {
+            struct_ser.serialize_field("changes", &self.changes)?;
         }
         struct_ser.end()
     }
@@ -3571,12 +3712,16 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
             "oldParameters",
             "new_parameters",
             "newParameters",
+            "preconditions",
+            "changes",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             OldParameters,
             NewParameters,
+            Preconditions,
+            Changes,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -3601,6 +3746,8 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                         match value {
                             "oldParameters" | "old_parameters" => Ok(GeneratedField::OldParameters),
                             "newParameters" | "new_parameters" => Ok(GeneratedField::NewParameters),
+                            "preconditions" => Ok(GeneratedField::Preconditions),
+                            "changes" => Ok(GeneratedField::Changes),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -3622,6 +3769,8 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
             {
                 let mut old_parameters__ = None;
                 let mut new_parameters__ = None;
+                let mut preconditions__ = None;
+                let mut changes__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::OldParameters => {
@@ -3636,6 +3785,18 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                             }
                             new_parameters__ = map_.next_value()?;
                         }
+                        GeneratedField::Preconditions => {
+                            if preconditions__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("preconditions"));
+                            }
+                            preconditions__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Changes => {
+                            if changes__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("changes"));
+                            }
+                            changes__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -3644,6 +3805,8 @@ impl<'de> serde::Deserialize<'de> for proposal::ParameterChange {
                 Ok(proposal::ParameterChange {
                     old_parameters: old_parameters__,
                     new_parameters: new_parameters__,
+                    preconditions: preconditions__.unwrap_or_default(),
+                    changes: changes__.unwrap_or_default(),
                 })
             }
         }

@@ -8,12 +8,6 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 
 #[async_trait]
 pub trait StateReadExt: StateRead {
-    /// Indicates if the Distributions parameters have been updated in this block.
-    fn distributions_params_updated(&self) -> bool {
-        self.object_get::<()>(state_key::distributions_parameters_updated())
-            .is_some()
-    }
-
     /// Gets the distributions module chain parameters from the JMT.
     async fn get_distributions_params(&self) -> Result<DistributionsParameters> {
         self.get(state_key::distributions_parameters())
@@ -37,8 +31,6 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 
     /// Set the Distributions parameters in the JMT.
     fn put_distributions_params(&mut self, params: DistributionsParameters) {
-        // Note that the fee params have been updated:
-        self.object_put(state_key::distributions_parameters_updated(), ());
         self.put(state_key::distributions_parameters().into(), params)
     }
 }

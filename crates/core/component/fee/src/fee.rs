@@ -35,6 +35,10 @@ impl Fee {
         self.0.asset_id
     }
 
+    pub fn asset_matches(&self, other: &Fee) -> bool {
+        self.asset_id() == other.asset_id()
+    }
+
     pub fn balance(&self) -> balance::Balance {
         -Balance::from(self.0)
     }
