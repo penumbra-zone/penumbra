@@ -1606,6 +1606,7 @@ impl ViewService for ViewServer {
 
         let response = GasPricesResponse {
             gas_prices: Some(gas_prices.into()),
+            alt_gas_prices: Vec::new(),
         };
 
         Ok(tonic::Response::new(response))
