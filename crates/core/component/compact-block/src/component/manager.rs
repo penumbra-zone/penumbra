@@ -52,14 +52,19 @@ trait Inner: StateWrite {
 
         // Check to see if the gas prices have changed, and include them in the compact block
         // if they have (this is signaled by `penumbra_fee::StateWriteExt::put_gas_prices`):
-        let gas_prices = if self.gas_prices_changed() || height == 0 {
-            Some(
-                self.get_gas_prices()
+        let (gas_prices, alt_gas_prices) = if self.gas_prices_changed() || height == 0 {
+            (
+                Some(
+                    self.get_gas_prices()
+                        .await
+                        .context("could not get gas prices")?,
+                ),
+                self.get_alt_gas_prices()
                     .await
-                    .context("could not get gas prices")?,
+                    .context("could not get alt gas prices")?,
             )
         } else {
-            None
+            (None, Vec::new())
         };
 
         let fmd_parameters = if height == 0 {
@@ -133,6 +138,7 @@ trait Inner: StateWrite {
             fmd_parameters,
             app_parameters_updated,
             gas_prices,
+            alt_gas_prices,
             epoch_index,
         };
 

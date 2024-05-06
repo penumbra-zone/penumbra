@@ -35,8 +35,11 @@ async fn app_tracks_uptime_for_validators_only_once_active() -> anyhow::Result<(
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state =
-        AppState::Content(genesis::Content::default().with_epoch_duration(EPOCH_DURATION));
+    let app_state = AppState::Content(
+        genesis::Content::default()
+            .with_epoch_duration(EPOCH_DURATION)
+            .with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+    );
 
     // Start the test node.
     let mut node = {

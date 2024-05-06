@@ -36,14 +36,16 @@ const TEST_ASSET: &str = "1020test_usd";
 const TIMEOUT_COMMAND_SECONDS: u64 = 20;
 
 // The time to wait before attempting to perform an undelegation claim.
-// By default the epoch duration is 100 blocks, the block time is ~500 ms,
-// and the number of unbonding epochs is 2.
+// The "unbonding_delay" value is specified in blocks, and in the smoke tests,
+// block time is set to ~500ms, so we'll take the total number of blocks
+// that must elapse and sleep half that many seconds.
 static UNBONDING_DURATION: Lazy<Duration> = Lazy::new(|| {
-    let blocks: f64 = std::env::var("EPOCH_DURATION")
+    let blocks: f64 = std::env::var("UNBONDING_DELAY")
         .unwrap_or("100".to_string())
         .parse()
         .unwrap();
-    Duration::from_secs((1.5 * blocks) as u64)
+    // 0.5 -> 0.6 for comfort, since 500ms is only an estimate.
+    Duration::from_secs((0.6 * blocks) as u64)
 });
 
 /// Import the wallet from seed phrase into a temporary directory.

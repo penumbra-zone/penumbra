@@ -2,7 +2,10 @@ use {
     self::common::{BuilderExt, ValidatorDataReadExt},
     cnidarium::TempStorage,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_keys::test_keys,
     penumbra_mock_client::MockClient,
     penumbra_mock_consensus::TestNode,
@@ -25,7 +28,9 @@ async fn app_rejects_validator_definitions_with_invalid_auth_sigs() -> anyhow::R
     // Start the test node.
     let mut node = {
         let consensus = Consensus::new(storage.as_ref().clone());
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         TestNode::builder()
             .single_validator()
             .with_penumbra_auto_app_state(app_state)?

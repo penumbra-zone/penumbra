@@ -4,6 +4,7 @@
 use crate::testnet::config::{get_testnet_dir, TestnetTendermintConfig, ValidatorKeys};
 use anyhow::{Context, Result};
 use penumbra_app::params::AppParameters;
+use penumbra_asset::{asset, STAKING_TOKEN_ASSET_ID};
 use penumbra_fee::genesis::Content as FeeContent;
 use penumbra_governance::genesis::Content as GovernanceContent;
 use penumbra_keys::{keys::SpendKey, Address};
@@ -223,7 +224,24 @@ impl TestnetConfig {
                         compact_block_space_price: gas_price_simple,
                         verification_price: gas_price_simple,
                         execution_price: gas_price_simple,
+                        asset_id: *STAKING_TOKEN_ASSET_ID,
                     },
+                    fixed_alt_gas_prices: vec![
+                        penumbra_fee::GasPrices {
+                            block_space_price: 10 * gas_price_simple,
+                            compact_block_space_price: 10 * gas_price_simple,
+                            verification_price: 10 * gas_price_simple,
+                            execution_price: 10 * gas_price_simple,
+                            asset_id: asset::REGISTRY.parse_unit("gm").id(),
+                        },
+                        penumbra_fee::GasPrices {
+                            block_space_price: 10 * gas_price_simple,
+                            compact_block_space_price: 10 * gas_price_simple,
+                            verification_price: 10 * gas_price_simple,
+                            execution_price: 10 * gas_price_simple,
+                            asset_id: asset::REGISTRY.parse_unit("gn").id(),
+                        },
+                    ],
                 },
             },
             governance_content: GovernanceContent {

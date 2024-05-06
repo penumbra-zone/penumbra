@@ -1062,8 +1062,14 @@ impl ::prost::Name for GasPricesRequest {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPricesResponse {
+    /// The current gas prices, in the preferred (native) token.
     #[prost(message, optional, tag = "1")]
     pub gas_prices: ::core::option::Option<
+        super::super::core::component::fee::v1::GasPrices,
+    >,
+    /// Other gas prices for other accepted tokens.
+    #[prost(message, repeated, tag = "2")]
+    pub alt_gas_prices: ::prost::alloc::vec::Vec<
         super::super::core::component::fee::v1::GasPrices,
     >,
 }

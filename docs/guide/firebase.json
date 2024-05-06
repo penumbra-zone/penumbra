@@ -1,16 +1,26 @@
 {
   "hosting": {
-    "public": "firebase-tmp",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "public": "book/html",
     "redirects": [
       {
-        "source": "/",
-        "destination": "/main/index.html",
-        "type": 301
+        "source": "/main/index.html",
+        "destination": "/",
+        "type": 302
+      },
+      {
+        "regex": "/main/pd(?P<page>.*)",
+        "destination": "/node/pd:page",
+        "type": 302
+      },
+      {
+        "regex": "/main/pclientd(?P<page>.*)",
+        "destination": "/node/pclientd:page",
+        "type": 302
+      },
+      {
+        "regex": "/main/(?P<page>.*)",
+        "destination": "/:page",
+        "type": 302
       }
     ]
   }

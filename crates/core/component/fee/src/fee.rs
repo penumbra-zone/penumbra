@@ -57,15 +57,24 @@ impl Fee {
         match fee_tier {
             FeeTier::Low => {
                 let amount = (self.amount() * FEE_TIER_LOW_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
             FeeTier::Medium => {
                 let amount = (self.amount() * FEE_TIER_MEDIUM_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
             FeeTier::High => {
                 let amount = (self.amount() * FEE_TIER_HIGH_MULTIPLIER.into()) / 100u32.into();
-                Self::from_staking_token_amount(amount)
+                Self(Value {
+                    amount,
+                    asset_id: self.0.asset_id,
+                })
             }
         }
     }

@@ -1,7 +1,10 @@
 use {
     self::common::BuilderExt,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_mock_consensus::TestNode,
     penumbra_sct::component::clock::EpochRead as _,
     tap::TapFallible,
@@ -17,7 +20,9 @@ async fn mock_consensus_can_send_a_sequence_of_empty_blocks() -> anyhow::Result<
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
     let mut test_node = {
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()

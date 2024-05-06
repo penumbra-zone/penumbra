@@ -123,7 +123,7 @@ impl ActionList {
     /// estimated, because the actual base fee paid by the transaction will
     /// depend on the gas prices at the time it's accepted on-chain.
     fn compute_fee_estimate(&self, gas_prices: &GasPrices, fee_tier: &FeeTier) -> Fee {
-        let base_fee = Fee::from_staking_token_amount(gas_prices.fee(&self.gas_cost()));
+        let base_fee = gas_prices.fee(&self.gas_cost());
         base_fee.apply_tier(*fee_tier)
     }
 

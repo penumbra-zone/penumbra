@@ -35,8 +35,11 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
     let storage = TempStorage::new().await?;
 
     // Configure an AppState with slightly shorter epochs than usual.
-    let app_state =
-        AppState::Content(genesis::Content::default().with_epoch_duration(EPOCH_DURATION));
+    let app_state = AppState::Content(
+        genesis::Content::default()
+            .with_epoch_duration(EPOCH_DURATION)
+            .with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+    );
 
     // Start the test node.
     let mut node = {

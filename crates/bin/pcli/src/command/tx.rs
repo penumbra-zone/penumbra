@@ -29,7 +29,6 @@ use auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
-use penumbra_fee::Fee;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
@@ -321,6 +320,9 @@ impl TxCmd {
     }
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
+        // TODO: use a command line flag to determine the fee token,
+        // and pull the appropriate GasPrices out of this rpc response,
+        // the rest should follow
         let gas_prices = app
             .view
             .as_mut()
@@ -423,6 +425,7 @@ impl TxCmd {
             } => {
                 let input = input.parse::<Value>()?;
                 let into = asset::REGISTRY.parse_unit(into.as_str()).base();
+                let fee_tier: FeeTier = (*fee_tier).into();
 
                 let fvk = app.config.full_viewing_key.clone();
 
@@ -434,20 +437,14 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices.clone())
-                    .set_fee_tier((*fee_tier).into());
-                // The swap claim requires a pre-paid fee, however gas costs might change in the meantime.
-                // This shouldn't be an issue, since the planner will account for the difference and add additional
-                // spends alongside the swap claim transaction as necessary.
-                //
-                // Regardless, we apply a gas adjustment factor of 2.0 up-front to reduce the likelihood of
-                // requiring an additional spend at the time of claim.
-                //
-                // Since the swap claim fee needs to be passed in to the planner to build the swap (it is
-                // part of the `SwapPlaintext`), we can't use the planner to estimate the fee and need to
-                // call the helper method directly.
-                let estimated_claim_fee = Fee::from_staking_token_amount(
-                    Amount::from(2u32) * gas_prices.fee(&swap_claim_gas_cost()),
-                );
+                    .set_fee_tier(fee_tier.into());
+
+                // We don't expect much of a drift in gas prices in a few blocks, and the fee tier
+                // adjustments should be enough to cover it.
+                let estimated_claim_fee = gas_prices
+                    .fee(&swap_claim_gas_cost())
+                    .apply_tier(fee_tier.into());
+
                 planner.swap(input, into.id(), estimated_claim_fee, claim_address)?;
 
                 let plan = planner
@@ -503,7 +500,7 @@ impl TxCmd {
                 let mut planner = Planner::new(OsRng);
                 planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into());
+                    .set_fee_tier(fee_tier.into());
                 let plan = planner
                     .swap_claim(SwapClaimPlan {
                         swap_plaintext,
