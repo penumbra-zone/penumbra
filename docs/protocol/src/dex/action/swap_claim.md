@@ -179,3 +179,7 @@ $cm_2 = hash_6(ds, (rcm_2, \Lambda_{2i}, ID_2, B_d, pk_d, ck_d))$
 using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.notecommit")) mod q`
+
+### Diversified Base is not Identity
+
+The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the address on the note is not identity.
