@@ -127,6 +127,36 @@ impl Action {
             }
         }
     }
+
+    /// Canonical action ordering according to protobuf definitions
+    pub fn variant_index(&self) -> usize {
+        match self {
+            Action::Spend(_) => 1,
+            Action::Output(_) => 2,
+            Action::Swap(_) => 3,
+            Action::SwapClaim(_) => 4,
+            Action::ValidatorDefinition(_) => 16,
+            Action::IbcRelay(_) => 17,
+            Action::ProposalSubmit(_) => 18,
+            Action::ProposalWithdraw(_) => 19,
+            Action::ValidatorVote(_) => 20,
+            Action::DelegatorVote(_) => 21,
+            Action::ProposalDepositClaim(_) => 22,
+            Action::PositionOpen(_) => 30,
+            Action::PositionClose(_) => 31,
+            Action::PositionWithdraw(_) => 32,
+            Action::Delegate(_) => 40,
+            Action::Undelegate(_) => 41,
+            Action::UndelegateClaim(_) => 42,
+            Action::CommunityPoolSpend(_) => 50,
+            Action::CommunityPoolOutput(_) => 51,
+            Action::CommunityPoolDeposit(_) => 52,
+            Action::Ics20Withdrawal(_) => 200,
+            Action::ActionDutchAuctionSchedule(_) => 53,
+            Action::ActionDutchAuctionEnd(_) => 54,
+            Action::ActionDutchAuctionWithdraw(_) => 55,
+        }
+    }
 }
 
 impl IsAction for Action {

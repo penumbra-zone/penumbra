@@ -48,6 +48,12 @@ pub struct TransactionPlan {
 }
 
 impl TransactionPlan {
+    /// Sort the actions in [`TransactionPlan`] by type, using the protobuf field number in the [`ActionPlan`].
+    pub fn sort_actions(&mut self) {
+        self.actions
+            .sort_by_key(|action: &ActionPlan| action.variant_index());
+    }
+
     /// Computes the [`EffectHash`] for the [`Transaction`] described by this
     /// [`TransactionPlan`].
     ///
@@ -500,7 +506,7 @@ mod tests {
         let mut rng = OsRng;
 
         let memo_plaintext = MemoPlaintext::new(Address::dummy(&mut rng), "".to_string()).unwrap();
-        let plan = TransactionPlan {
+        let mut plan: TransactionPlan = TransactionPlan {
             // Put outputs first to check that the auth hash
             // computation is not affected by plan ordering.
             actions: vec![
@@ -527,6 +533,9 @@ mod tests {
             }),
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
         };
+
+        // Sort actions within the transaction plan.
+        plan.sort_actions();
 
         println!("{}", serde_json::to_string_pretty(&plan).unwrap());
 
