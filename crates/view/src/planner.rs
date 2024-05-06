@@ -586,10 +586,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             memo_plan,
         )?;
 
-        // Implement a canonical ordering to the actions within the transaction
-        // plan to reduce client distinguishability.
-        plan.sort_actions();
-
         // Reset the planner in case it were reused. We don't want people to do that
         // but otherwise we can't do builder method chaining with &mut self, and forcing
         // the builder to move between calls is annoying for callers who are building up

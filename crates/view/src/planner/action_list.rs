@@ -64,6 +64,10 @@ impl ActionList {
         };
         plan.populate_detection_data(rng, fmd_params.precision_bits.into());
 
+        // Implement a canonical ordering to the actions within the transaction
+        // plan to reduce client distinguishability.
+        plan.sort_actions();
+
         Ok(plan)
     }
 
