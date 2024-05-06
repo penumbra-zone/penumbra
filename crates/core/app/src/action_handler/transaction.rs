@@ -13,7 +13,9 @@ use super::AppActionHandler;
 mod stateful;
 mod stateless;
 
-use self::stateful::{claimed_anchor_is_valid, fee_greater_than_base_fee, fmd_parameters_valid};
+use self::stateful::{
+    claimed_anchor_is_valid, fmd_parameters_valid, tx_parameters_historical_check,
+};
 use stateless::{
     check_memo_exists_if_outputs_absent_if_not, num_clues_equal_to_num_outputs,
     valid_binding_signature,
@@ -56,14 +58,13 @@ impl AppActionHandler for Transaction {
     async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let mut action_checks = JoinSet::new();
 
-        // TODO: these could be pushed into the action checks and run concurrently if needed
-
+        // SAFETY: Transaction parameters (chain id, expiry height, fee) against chain state
+        // that cannot change during transaction execution.
+        tx_parameters_historical_check(state.clone(), self).await?;
         // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
         // SAFETY: FMD parameters cannot change during transaction execution.
         fmd_parameters_valid(state.clone(), self).await?;
-        // SAFETY: gas prices cannot change during transaction execution.
-        fee_greater_than_base_fee(state.clone(), self).await?;
 
         // Currently, we need to clone the component actions so that the spawned
         // futures can have 'static lifetimes. In the future, we could try to

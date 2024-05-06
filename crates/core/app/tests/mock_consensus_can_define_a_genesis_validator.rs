@@ -2,7 +2,10 @@ use {
     self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_mock_consensus::TestNode,
     penumbra_stake::component::validator_handler::ValidatorDataRead as _,
     tap::{Tap, TapFallible},
@@ -18,7 +21,9 @@ async fn mock_consensus_can_define_a_genesis_validator() -> anyhow::Result<()> {
     let guard = common::set_tracing_subscriber();
     let storage = TempStorage::new().await?;
     let test_node = {
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()

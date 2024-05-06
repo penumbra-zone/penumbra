@@ -2,7 +2,10 @@ use {
     self::common::{BuilderExt, ValidatorDataReadExt},
     anyhow::Context,
     cnidarium::TempStorage,
-    penumbra_app::{genesis::AppState, server::consensus::Consensus},
+    penumbra_app::{
+        genesis::{self, AppState},
+        server::consensus::Consensus,
+    },
     penumbra_mock_consensus::TestNode,
     penumbra_stake::component::validator_handler::validator_store::ValidatorDataRead,
     tap::Tap,
@@ -19,7 +22,9 @@ async fn app_tracks_uptime_for_genesis_validator_missing_blocks() -> anyhow::Res
 
     // Start the test node.
     let mut node = {
-        let app_state = AppState::default();
+        let app_state = AppState::Content(
+            genesis::Content::default().with_chain_id(TestNode::<()>::CHAIN_ID.to_string()),
+        );
         let consensus = Consensus::new(storage.as_ref().clone());
         TestNode::builder()
             .single_validator()

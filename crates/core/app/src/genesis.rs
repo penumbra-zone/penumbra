@@ -173,6 +173,10 @@ impl DomainType for AppState {
 }
 
 impl Content {
+    pub fn with_chain_id(self, chain_id: String) -> Self {
+        Self { chain_id, ..self }
+    }
+
     pub fn with_epoch_duration(self, epoch_duration: u64) -> Self {
         Self {
             sct_content: penumbra_sct::genesis::Content {

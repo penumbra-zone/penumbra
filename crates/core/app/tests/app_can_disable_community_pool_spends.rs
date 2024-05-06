@@ -111,6 +111,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     // Define our application state, and start the test node.
     let mut test_node = {
         let mut content = Content {
+            chain_id: TestNode::<()>::CHAIN_ID.to_string(),
             governance_content: penumbra_governance::genesis::Content {
                 governance_params: penumbra_governance::params::GovernanceParameters {
                     proposal_deposit_amount: 0_u32.into(),

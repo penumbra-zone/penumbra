@@ -60,6 +60,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
     // Configure an AppState with slightly shorter epochs than usual.
     let app_state = AppState::Content(
         genesis::Content::default()
+            .with_chain_id(TestNode::<()>::CHAIN_ID.to_string())
             .with_epoch_duration(EPOCH_DURATION)
             .with_unbonding_delay(UNBONDING_DELAY),
     );
