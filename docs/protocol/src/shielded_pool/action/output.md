@@ -103,6 +103,8 @@ where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific
 generator point derived in-circuit as described in [Assets and
 Values](../../assets.md).
 
+The asset-specific generator is derived in-circuit instead of witnessed to avoid a malicious prover witnessing the negation of a targeted asset-specific generator. See [Section 0.3 of the MASP specification for more details of this attack](https://github.com/anoma/masp/blob/main/docs/multi-asset-shielded-pool.pdf).
+
 ### Diversified Base is not Identity
 
 The zk-SNARK certifies that the diversified basepoint $B_d$ is not identity.
