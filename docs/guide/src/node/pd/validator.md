@@ -19,6 +19,12 @@ reuses the spend authorization key in whatever wallet is active as the
 validator's identity key. This key is used to sign validator definitions that
 update the configuration for a validator.
 
+**IMPORTANT:** The validator identity _cannot be changed, ever!_ This means that if you are running
+a production validator, you _definitely_ should use a secure custody setup for the wallet which
+backs the identity key. Strongly consider using the `threshold` backend of `pcli` for this purpose.
+More details about validator custody can be found under the [validator
+custody](../../pcli/wallet.md#validator-custody) section of the `pcli` guide.
+
 #### Creating a template definition
 
 First, make sure you've [installed `pcli`](../../pcli/install.md).
