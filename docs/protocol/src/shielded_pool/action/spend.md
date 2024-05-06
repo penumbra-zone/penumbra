@@ -30,7 +30,7 @@ The invariants that the Spend upholds are described below.
 
 #### Local Justification
 
-1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
+1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority via the `ivk` and `B_d` in the [Diversified Address Integrity](#diversified-address-integrity) check.
 
 2. The following checks prevent spending a positioned note twice:
 
@@ -44,7 +44,7 @@ The invariants that the Spend upholds are described below.
 
     4.1 The nullifier appears in public, but the nullifier does not reveal anything about the note commitment it nullifies. The spender demonstrates [knowledge of the pre-image of the hash used for nullifier derivation in zero-knowledge](#nullifier-integrity).
 
-    4.2 Merkle path verification, and all other integrity checks involving private data about the note (address, amount, asset type) are done in zero-knowledge.
+    4.2 [Merkle path verification](#merkle-auth-path-verification), [Note Commitment Integrity](#note-commitment-integrity), [Diversified Address Integrity](#diversified-address-integrity), [Nullifier Integrity](#nullifier-integrity), and [Balance Commitment Integrity](#balance-commitment-integrity) which all involve private data about the note (address, amount, asset type) are done in zero-knowledge.
 
     4.3 A randomized verification key (provided on each spend) is used to prevent linkability of spends. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#randomized-verification-key-integrity). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being spent](#diversified-address-integrity).
 
