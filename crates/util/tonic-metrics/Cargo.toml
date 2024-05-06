@@ -1,0 +1,21 @@
+[package]
+name = "tonic-metrics"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tower = {workspace = true}
+http = { workspace = true}
+metrics = { workspace = true }
+pin-project = { workspace = true }
+penumbra-proto = { workspace = true, features = ["rpc"]}
+anyhow.workspace = true
+tracing.workspace = true
+protobuf = "3.4.0"
+prost-reflect = "0.13.1"

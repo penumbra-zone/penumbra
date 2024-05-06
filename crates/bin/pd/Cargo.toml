@@ -54,6 +54,7 @@ fs_extra                         = "1.3.0"
 futures                          = { workspace = true }
 hex                              = { workspace = true }
 http                             = { workspace = true }
+hyper = "1.2.0"
 ibc-proto                        = { workspace = true, default-features = false, features = ["server"] }
 ibc-types                        = { workspace = true, default-features = true }
 ics23                            = { workspace = true }
@@ -111,6 +112,7 @@ tokio-stream = { workspace = true }
 tokio-util = { workspace = true, features = ["compat"] }
 toml = { workspace = true }
 tonic = { workspace = true }
+tonic-metrics = { path = "../../util/tonic-metrics" }
 tonic-reflection = { workspace = true }
 tonic-web = { workspace = true }
 tower = { workspace = true, features = ["full"] }

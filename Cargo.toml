@@ -49,6 +49,7 @@ members = [
   "crates/test/tracing-subscriber",
   "crates/util/auto-https",
   "crates/util/tendermint-proxy",
+  "crates/util/tonic-metrics",
   "crates/util/tower-trace",
   "crates/view",
   "crates/wallet",

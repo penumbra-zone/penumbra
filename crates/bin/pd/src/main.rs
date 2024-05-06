@@ -36,6 +36,8 @@ async fn main() -> anyhow::Result<()> {
     // Instantiate tracing layers.
     // The MetricsLayer handles enriching metrics output with labels from tracing spans.
     let metrics_layer = MetricsLayer::new();
+    // TonicMetricsLayer records request info for the gRPC service methods.
+    let tonic_metrics_layer = tonic_metrics::TonicMetricsLayer::new();
     // The `FmtLayer` is used to print to the console.
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(std::io::stdout().is_terminal())
@@ -126,6 +128,7 @@ async fn main() -> anyhow::Result<()> {
             // Now we drop down a layer of abstraction, from tonic to axum, and merge handlers.
             let router = grpc_server
                 .into_router()
+                .layer(tonic_metrics_layer)
                 .merge(frontend)
                 .merge(node_status)
                 // Set rather permissive CORS headers for pd's gRPC: the service
