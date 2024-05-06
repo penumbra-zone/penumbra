@@ -376,7 +376,7 @@ mod tests {
 
     use crate::component::ibc_action_with_handler::IbcRelayWithHandlers;
     use crate::component::ClientStateReadExt;
-    use crate::IbcRelay;
+    use crate::{IbcRelay, StateWriteExt};
 
     use crate::component::app_handler::{AppHandler, AppHandlerCheck, AppHandlerExecute};
     use ibc_types::core::channel::msgs::{
@@ -522,6 +522,11 @@ mod tests {
         let mut state_tx = state.try_begin_transaction().unwrap();
         state_tx.put_block_timestamp(timestamp);
         state_tx.put_block_height(1);
+        state_tx.put_ibc_params(crate::params::IBCParameters {
+            ibc_enabled: true,
+            inbound_ics20_transfers_enabled: true,
+            outbound_ics20_transfers_enabled: true,
+        });
         state_tx.put_epoch_by_height(
             1,
             Epoch {
@@ -598,6 +603,37 @@ mod tests {
             .check_and_execute(&mut state_tx)
             .await?;
         state_tx.apply();
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    /// Check that we're not able to create a client if the IBC component is disabled.
+    async fn test_disabled_ibc_component() -> anyhow::Result<()> {
+        let mut state = Arc::new(StateDelta::new(()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        state_tx.put_ibc_params(crate::params::IBCParameters {
+            ibc_enabled: false,
+            inbound_ics20_transfers_enabled: true,
+            outbound_ics20_transfers_enabled: true,
+        });
+
+        let msg_create_client_stargaze_raw = BASE64_STANDARD
+            .decode(include_str!("./test/create_client.msg").replace('\n', ""))
+            .unwrap();
+        let msg_create_stargaze_client =
+            MsgCreateClient::decode(msg_create_client_stargaze_raw.as_slice()).unwrap();
+
+        let create_client_action = IbcRelayWithHandlers::<MockAppHandler, MockHost>::new(
+            IbcRelay::CreateClient(msg_create_stargaze_client),
+        );
+        state_tx.apply();
+
+        create_client_action.check_stateless(()).await?;
+        create_client_action
+            .check_historical(state.clone())
+            .await
+            .expect_err("should not be able to create a client");
 
         Ok(())
     }
