@@ -16,7 +16,7 @@ The invariants that the Spend upholds are described below.
 
     2.2. No two spends on the ledger, even in the same transaction, can have the same nullifier.
 
-3. You can't spend a note that has not been created, unless the amount of that note is 0.
+3. You can't spend a note that has not been created, unless the amount of that note is 0. Notes with amount 0 are considered dummy spends and are allowed in the protocol.
 
 4. The spend does not reveal the amount, asset type, sender identity, or recipient identity.
 
