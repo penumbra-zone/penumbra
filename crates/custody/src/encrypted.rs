@@ -45,7 +45,13 @@ mod encryption {
         // The only reason this function should fail is because of incorrect static parameters
         // we've chosen, since we've validated the length of the password.
         argon2::Argon2::hash_password_into(
-            &Default::default(),
+            // Default from the crate, but hardcoded so it doesn't change under us, and following https://datatracker.ietf.org/doc/html/rfc9106.
+            &argon2::Argon2::new(
+                argon2::Algorithm::Argon2id,
+                argon2::Version::V0x13,
+                argon2::Params::new(1 << 21, 1, 4, Some(KEY_SIZE))
+                    .expect("the parameters should be valid"),
+            ),
             password.0.as_bytes(),
             salt,
             &mut key,
