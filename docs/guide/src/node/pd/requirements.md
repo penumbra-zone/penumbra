@@ -31,7 +31,12 @@ The relevant network endpoints for running Penumbra are:
 You can opt in to HTTPS support for Penumbra's gRPC service by setting
 the `--grpc-auto-https <DOMAIN>` option. See `pd start --help` for more info.
 
-# Deployment strategies
+## Custody considerations
+
+Validators should review the [pcli key custody](../../pcli/wallet.md#validator-custody) recommendations
+for protecting the validator identity.
+
+## Deployment strategies
 
 We expect node operators to manage the lifecycle of their Penumbra deployments.
 Some example configs for systemd, docker compose, and kubernetes helm charts
