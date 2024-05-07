@@ -129,6 +129,7 @@ pub async fn migrate(
     storage.release().await;
     let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
     let migrated_state = storage.latest_snapshot();
+    storage.release().await;
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
