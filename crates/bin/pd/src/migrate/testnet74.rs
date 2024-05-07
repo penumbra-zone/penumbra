@@ -5,6 +5,7 @@ use cnidarium::{EscapedByteSlice, Snapshot, StateDelta, StateRead, StateWrite, S
 use futures::StreamExt as _;
 use jmt::RootHash;
 use penumbra_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
+use penumbra_auction::{params::AuctionParameters, StateWriteExt};
 use penumbra_dex::SwapExecution;
 use penumbra_num::Amount;
 use penumbra_proto::{penumbra::core::component as pb, StateReadProto, StateWriteProto};
@@ -12,6 +13,13 @@ use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use std::path::PathBuf;
 
 use crate::testnet::generate::TestnetConfig;
+
+/// Writes the auction parameters to the chain state.
+async fn write_auction_parameters(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    let params = AuctionParameters {};
+    delta.put_auction_params(params);
+    Ok(())
+}
 
 /// Updates arb execution output amounts to include the input amount instead
 /// of reporting only profit (see #3790).
@@ -73,12 +81,11 @@ async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
 /// This migration script is responsible for:
 ///
 /// - Updating the ordering of liquidity position indices to return in descending order (see #4189)
+///     * JMT: `dex/ra/`
 /// - Updating arb execution output amounts to include the input amount instead of reporting only profit (see #3790)
-///
-/// Affected JMT key prefixes:
-///
-/// - `dex/ra/`
-/// - `dex/arb_execution/`
+///     * JMT: `dex/arb_execution/`
+/// - Add `AuctionParameters` to the chain state
+///     * JMT: `dex/auction_parameters`
 pub async fn migrate(
     path_to_export: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
@@ -106,6 +113,9 @@ pub async fn migrate(
 
         // Fix the arb execution output amounts.
         fix_arb_execution_outputs(&mut delta).await?;
+
+        // Write auction parameters
+        write_auction_parameters(&mut delta).await?;
 
         delta.put_block_height(0u64);
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
