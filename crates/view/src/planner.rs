@@ -46,10 +46,8 @@ use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
     TransactionParameters,
+    ActionList
 };
-
-mod action_list;
-use action_list::ActionList;
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
 /// finalization to make a transaction balance.
@@ -455,6 +453,50 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         self
     }
 
+    /// Prioritize notes to spend to release value of a specific transaction.
+    ///
+    /// Various logic is possible for note selection. Currently, this method
+    /// prioritizes notes sent to a one-time address, then notes with the largest
+    /// value:
+    ///
+    /// - Prioritizing notes sent to one-time addresses optimizes for a future in
+    /// which we implement DAGSync keyed by fuzzy message detection (which will not
+    /// be able to detect notes sent to one-time addresses). Spending these notes
+    /// immediately converts them into change notes, sent to the default address for
+    /// the users' account, which are detectable.
+    ///
+    /// - Prioritizing notes with the largest value optimizes for gas used by the
+    /// transaction.
+    ///
+    /// We may want to make note prioritization configurable in the future. For
+    /// instance, a user might prefer a note prioritization strategy that harvested
+    /// capital losses when possible, using cost basis information retained by the
+    /// view server.
+    pub fn prioritize_and_filter_spendable_notes(
+        &mut self,
+        records: Vec<SpendableNoteRecord>,
+    ) -> Vec<SpendableNoteRecord> {
+        let mut filtered = records
+            .into_iter()
+            .filter(|record| record.note.amount() > Amount::zero())
+            .collect::<Vec<_>>();
+
+        filtered.sort_by(|a, b| {
+            // Sort by whether the note was sent to an ephemeral address...
+            match (
+                a.address_index.is_ephemeral(),
+                b.address_index.is_ephemeral(),
+            ) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                // ... then by largest amount.
+                _ => b.note.amount().cmp(&a.note.amount()),
+            }
+        });
+
+        filtered
+    }
+
     /// Add spends and change outputs as required to balance the transaction, using the view service
     /// provided to supply the notes and other information.
     pub async fn plan<V: ViewClient>(
@@ -507,7 +549,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 required.asset_id,
                 // TODO: reorganize later, the important thing here is that this
                 // is separate from the Planner logic (will never be commonized)
-                action_list::prioritize_and_filter_spendable_notes(records),
+                self.prioritize_and_filter_spendable_notes(records),
             );
         }
 
