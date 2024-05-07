@@ -62,6 +62,8 @@ jobs:
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Load rust cache
         uses: astriaorg/buildjet-rust-cache@v2.5.1
       - name: install cargo-hack
