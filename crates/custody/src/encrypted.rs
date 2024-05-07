@@ -2,6 +2,7 @@ use penumbra_proto::custody::v1::{self as pb, AuthorizeResponse};
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::{formats::Uppercase, hex::Hex};
+use tokio::sync::OnceCell;
 use tonic::{async_trait, Request, Response, Status};
 
 use crate::{soft_kms, terminal::Terminal, threshold};
@@ -175,61 +176,89 @@ impl Config {
 /// Represents a custody service that uses an encrypted configuration.
 ///
 /// This service wraps either the threshold or solo custody service.
-pub struct Encrypted {
-    inner: Box<dyn pb::custody_service_server::CustodyService>,
+pub struct Encrypted<T> {
+    config: Config,
+    terminal: T,
+    inner: OnceCell<anyhow::Result<Box<dyn pb::custody_service_server::CustodyService>>>,
 }
 
-impl Encrypted {
+impl<T: Terminal + Clone + Send + Sync + 'static> Encrypted<T> {
     /// Create a new encrypted config, using the terminal to ask for a password
-    pub async fn new<T: Terminal + Send + Sync + 'static>(
-        config: Config,
-        terminal: T,
-    ) -> anyhow::Result<Self> {
-        let password = terminal.get_password().await?;
+    pub async fn new(config: Config, terminal: T) -> anyhow::Result<Self> {
+        Ok(Self {
+            config,
+            terminal,
+            inner: Default::default(),
+        })
+    }
 
-        let inner = config.decrypt(&password)?;
-        let inner: Box<dyn pb::custody_service_server::CustodyService> = match inner {
-            InnerConfig::SoftKms(c) => Box::new(soft_kms::SoftKms::new(c)),
-            InnerConfig::Threshold(c) => Box::new(threshold::Threshold::new(c, terminal)),
-        };
-        Ok(Self { inner })
+    async fn get_inner(&self) -> Result<&dyn pb::custody_service_server::CustodyService, Status> {
+        Ok(self
+            .inner
+            .get_or_init(|| async {
+                let password = self.terminal.get_password().await?;
+
+                let inner = self.config.clone().decrypt(&password)?;
+                let out: Box<dyn pb::custody_service_server::CustodyService> = match inner {
+                    InnerConfig::SoftKms(c) => Box::new(soft_kms::SoftKms::new(c)),
+                    InnerConfig::Threshold(c) => {
+                        Box::new(threshold::Threshold::new(c, self.terminal.clone()))
+                    }
+                };
+                Ok(out)
+            })
+            .await
+            .as_ref()
+            .map_err(|e| Status::unauthenticated(format!("failed to initialize custody {e}")))?
+            .as_ref())
     }
 }
 
 #[async_trait]
-impl pb::custody_service_server::CustodyService for Encrypted {
+impl<T: Terminal + Clone + Send + Sync + 'static> pb::custody_service_server::CustodyService
+    for Encrypted<T>
+{
     async fn authorize(
         &self,
         request: Request<pb::AuthorizeRequest>,
     ) -> Result<Response<AuthorizeResponse>, Status> {
-        self.inner.authorize(request).await
+        self.get_inner().await?.authorize(request).await
     }
 
     async fn authorize_validator_definition(
         &self,
         request: Request<pb::AuthorizeValidatorDefinitionRequest>,
     ) -> Result<Response<pb::AuthorizeValidatorDefinitionResponse>, Status> {
-        self.inner.authorize_validator_definition(request).await
+        self.get_inner()
+            .await?
+            .authorize_validator_definition(request)
+            .await
     }
 
     async fn authorize_validator_vote(
         &self,
         request: Request<pb::AuthorizeValidatorVoteRequest>,
     ) -> Result<Response<pb::AuthorizeValidatorVoteResponse>, Status> {
-        self.inner.authorize_validator_vote(request).await
+        self.get_inner()
+            .await?
+            .authorize_validator_vote(request)
+            .await
     }
 
     async fn export_full_viewing_key(
         &self,
         request: Request<pb::ExportFullViewingKeyRequest>,
     ) -> Result<Response<pb::ExportFullViewingKeyResponse>, Status> {
-        self.inner.export_full_viewing_key(request).await
+        self.get_inner()
+            .await?
+            .export_full_viewing_key(request)
+            .await
     }
 
     async fn confirm_address(
         &self,
         request: Request<pb::ConfirmAddressRequest>,
     ) -> Result<Response<pb::ConfirmAddressResponse>, Status> {
-        self.inner.confirm_address(request).await
+        self.get_inner().await?.confirm_address(request).await
     }
 }

@@ -27,6 +27,7 @@ async fn read_password(prompt: &str) -> Result<String> {
 /// For threshold custody, we need to implement this weird terminal abstraction.
 ///
 /// This actually does stuff to stdin and stdout.
+#[derive(Clone)]
 pub struct ActualTerminal;
 
 #[async_trait]
