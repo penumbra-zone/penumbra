@@ -302,7 +302,7 @@ impl InitCmd {
                 (
                     spend_key.full_viewing_key().clone(),
                     if self.encrypted {
-                        let password = ActualTerminal.get_password().await?;
+                        let password = ActualTerminal.get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
                             penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
@@ -322,7 +322,7 @@ impl InitCmd {
                 let config = threshold::dkg(*threshold, *num_participants, &ActualTerminal).await?;
                 let fvk = config.fvk().clone();
                 let custody_config = if self.encrypted {
-                    let password = ActualTerminal.get_password().await?;
+                    let password = ActualTerminal.get_confirmed_password().await?;
                     CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                         &password,
                         penumbra_custody::encrypted::InnerConfig::Threshold(config),
