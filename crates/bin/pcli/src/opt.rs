@@ -105,6 +105,13 @@ impl Opt {
                     let custody_svc = CustodyServiceServer::new(threshold_kms);
                     CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
                 }
+                GovernanceCustodyConfig::Encrypted { config, .. } => {
+                    tracing::info!("using separate encrypted custody service for validator voting");
+                    let encrypted_kms =
+                        penumbra_custody::encrypted::Encrypted::new(config.clone(), ActualTerminal);
+                    let custody_svc = CustodyServiceServer::new(encrypted_kms);
+                    CustodyServiceClient::new(box_grpc_svc::local(custody_svc))
+                }
             },
             None => custody.clone(), // If no separate custody for validator voting, use the same one
         };

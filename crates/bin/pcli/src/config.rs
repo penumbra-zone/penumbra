@@ -53,6 +53,7 @@ impl PcliConfig {
                 spend_key.full_viewing_key()
             }
             Some(GovernanceCustodyConfig::Threshold(threshold_config)) => threshold_config.fvk(),
+            Some(GovernanceCustodyConfig::Encrypted { fvk, .. }) => fvk,
             None => &self.full_viewing_key,
         };
         GovernanceKey(fvk.spend_verification_key().clone())
@@ -83,6 +84,11 @@ pub enum GovernanceCustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted {
+        fvk: FullViewingKey,
+        config: EncryptedConfig,
+    },
 }
 
 impl Default for CustodyConfig {
