@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use camino::Utf8PathBuf;
-use penumbra_custody::threshold::{self, Terminal};
+use penumbra_custody::threshold;
 use penumbra_keys::keys::{Bip44Path, SeedPhrase, SpendKey};
 use rand_core::OsRng;
 use url::Url;
@@ -52,6 +52,9 @@ pub enum InitTopSubCmd {
     /// option is only meaningful for validators).
     #[clap(subcommand, display_order = 300)]
     ValidatorGovernanceSubkey(InitSubCmd),
+    /// If relevant, change the current config to an encrypted config, with a password.
+    #[clap(display_order = 800)]
+    ReEncrypt,
     /// Wipe all `pcli` configuration and data, INCLUDING KEYS.
     #[clap(display_order = 900)]
     UnsafeWipe {},
@@ -258,6 +261,30 @@ impl InitCmd {
             InitTopSubCmd::UnsafeWipe {} => {
                 println!("Deleting all data in {}...", home_dir.as_ref());
                 std::fs::remove_dir_all(home_dir.as_ref())?;
+                return Ok(());
+            }
+            InitTopSubCmd::ReEncrypt => {
+                let path = home_dir.as_ref().join(crate::CONFIG_FILE_NAME);
+                let mut config = PcliConfig::load(path.clone())?;
+                config.custody = match config.custody.clone() {
+                    x @ CustodyConfig::ViewOnly => x,
+                    x @ CustodyConfig::Encrypted(_) => x,
+                    CustodyConfig::SoftKms(spend_key) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                        )?)
+                    }
+                    CustodyConfig::Threshold(c) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::Threshold(c),
+                        )?)
+                    }
+                };
+                config.save(path)?;
                 return Ok(());
             }
         };

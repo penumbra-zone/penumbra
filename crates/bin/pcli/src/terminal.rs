@@ -107,8 +107,8 @@ impl Terminal for ActualTerminal {
 impl ActualTerminal {
     pub async fn get_confirmed_password(&self) -> Result<String> {
         loop {
-            let password = read_password("Enter Password:\t").await?;
-            let confirmed = read_password("Confirm Password:\t").await?;
+            let password = read_password("Enter Password: ").await?;
+            let confirmed = read_password("Confirm Password: ").await?;
             if password != confirmed {
                 println!("Password mismatch, please try again.");
                 continue;
