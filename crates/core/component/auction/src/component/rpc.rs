@@ -38,16 +38,22 @@ impl QueryService for Server {
         let state = self.storage.latest_snapshot();
         let request = request.into_inner();
 
+        tracing::debug!("received auction state by id request");
+
         let id = request
             .id
             .ok_or_else(|| Status::invalid_argument("missing auction id"))?
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid auction id"))?;
 
+        tracing::debug!(?id, "able to parse auction id");
+
         let raw_auction = state
             .get_raw_auction(id)
             .await
             .ok_or_else(|| tonic::Status::not_found("auction data not found for specified id"))?;
+
+        tracing::debug!(?raw_auction, "found auction data");
 
         Ok(tonic::Response::new(AuctionStateByIdResponse {
             auction: Some(raw_auction),
