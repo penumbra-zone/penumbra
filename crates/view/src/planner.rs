@@ -45,8 +45,7 @@ use penumbra_tct as tct;
 use penumbra_transaction::{
     memo::MemoPlaintext,
     plan::{ActionPlan, MemoPlan, TransactionPlan},
-    TransactionParameters,
-    ActionList
+    ActionList, TransactionParameters,
 };
 
 /// A planner for a [`TransactionPlan`] that can fill in the required spends and change outputs upon
@@ -473,6 +472,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// capital losses when possible, using cost basis information retained by the
     /// view server.
     fn prioritize_and_filter_spendable_notes(
+        &mut self,
         records: Vec<SpendableNoteRecord>,
     ) -> Vec<SpendableNoteRecord> {
         // Filter out zero valued notes.
@@ -536,8 +536,6 @@ impl<R: RngCore + CryptoRng> Planner<R> {
                 .await?;
             notes_by_asset_id.insert(
                 required.asset_id,
-                // TODO: reorganize later, the important thing here is that this
-                // is separate from the Planner logic (will never be commonized)
                 self.prioritize_and_filter_spendable_notes(records),
             );
         }
