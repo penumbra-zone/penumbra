@@ -67,7 +67,7 @@ mod encryption {
         };
         let key = derive_key(&salt, password);
 
-        let mut ciphertext = Vec::new();
+        let mut ciphertext = Vec::with_capacity(TAG_SIZE + salt.len() + data.len());
         ciphertext.extend_from_slice(&[0u8; TAG_SIZE]);
         ciphertext.extend_from_slice(&salt);
         ciphertext.extend_from_slice(&data);
@@ -85,7 +85,7 @@ mod encryption {
     pub fn decrypt(password: Password<'_>, data: &[u8]) -> anyhow::Result<Vec<u8>> {
         anyhow::ensure!(
             data.len() >= TAG_SIZE + SALT_SIZE,
-            "failed to decrypt ciphertext"
+            "provided ciphertext is too short"
         );
         let (header, message) = data.split_at(TAG_SIZE + SALT_SIZE);
         let mut message = message.to_owned();
@@ -184,12 +184,12 @@ pub struct Encrypted<T> {
 
 impl<T: Terminal + Clone + Send + Sync + 'static> Encrypted<T> {
     /// Create a new encrypted config, using the terminal to ask for a password
-    pub async fn new(config: Config, terminal: T) -> anyhow::Result<Self> {
-        Ok(Self {
+    pub fn new(config: Config, terminal: T) -> Self {
+        Self {
             config,
             terminal,
             inner: Default::default(),
-        })
+        }
     }
 
     async fn get_inner(&self) -> Result<&dyn pb::custody_service_server::CustodyService, Status> {

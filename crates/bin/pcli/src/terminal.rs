@@ -19,6 +19,7 @@ async fn read_password(prompt: &str) -> Result<String> {
 
     let mut string: String = Default::default();
     while string.is_empty() {
+        // Keep trying until the user provides an input
         string = get_possibly_empty_string(prompt)?;
     }
     Ok(string)
