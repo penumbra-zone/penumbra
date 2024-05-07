@@ -121,21 +121,20 @@ pub enum RootCommand {
         #[clap(long, display_order = 300)]
         prune: bool,
     },
-    /// Run a migration on the exported storage state of the full node,
-    /// and create a genesis file.
+    /// Run a migration before resuming post-upgrade.
     Migrate {
-        /// The directory containing exported state, created via `pd export`, to be modified
-        /// in-place. This should be a pd home directory, with a subdirectory called "rocksdb".
-        #[clap(long, display_order = 200, alias = "target-dir")]
-        target_directory: PathBuf,
-        #[clap(long, display_order = 300)]
-        /// Timestamp of the genesis file in RFC3339 format. If unset, defaults to the current time,
-        /// unless the migration logic overrides it.
-        genesis_start: Option<tendermint::time::Time>,
-        /// An optional filepath for a compressed archive containing the migrated node state,
-        /// e.g. ~/pd-state-post-upgrade.tar.gz.
-        #[clap(long, display_order = 400)]
-        migrate_archive: Option<PathBuf>,
+        /// The home directory of the full node.
+        ///
+        /// Migration is performed in-place on the home directory.
+        #[clap(long, env = "PENUMBRA_PD_HOME", display_order = 100)]
+        home: Option<PathBuf>,
+        /// If set, also migrate the CometBFT state located in this home directory.
+        /// If both `--home` and `--comet-home` are unset, will attempt to migrate
+        /// CometBFT state alongside the auto-located `pd` state.
+        // Note: this does _NOT_ use an env var because we are trying to
+        // get explicit consent to muck around in another daemon's state.
+        #[clap(long, display_order = 200)]
+        comet_home: Option<PathBuf>,
     },
 }
 
