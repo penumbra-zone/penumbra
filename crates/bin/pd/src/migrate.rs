@@ -34,7 +34,10 @@ pub enum Migration {
     /// Testnet-72 migration:
     /// - Migrate `BatchSwapOutputData` to new protobuf, replacing epoch height with index.
     Testnet72,
-    /// Testnet-74 migration: change liquidity positions to be ordered in descending order rather than ascending.
+    /// Testnet-74 migration:
+    /// - Update the base liquidity index to order routable pairs by descending liquidity
+    /// - Update arb executions to include the amount of filled input in the output
+    /// - Add `AuctionParameters` to the consensus state
     Testnet74,
 }
 
