@@ -25,6 +25,7 @@ use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
 use tokio::runtime;
 use tower_http::cors::CorsLayer;
+use tracing::Instrument as _;
 use tracing_subscriber::{prelude::*, EnvFilter};
 use url::Url;
 
@@ -426,27 +427,31 @@ async fn main() -> anyhow::Result<()> {
                 tracing::info!("export complete: {}", export_directory.display());
             }
         }
-        RootCommand::Migrate {
-            target_directory,
-            genesis_start,
-            migrate_archive,
-        } => {
-            tracing::info!("migrating state in {}", target_directory.display());
+        RootCommand::Migrate { home, comet_home } => {
+            let (pd_home, comet_home) = match home {
+                Some(h) => (h, comet_home),
+                None => {
+                    // If no pd_home was configured, we're assuming we set up the
+                    // data in the default location, in which case we also know where comet lives.
+                    let base = get_testnet_dir(None).join("node0");
+                    (base.join("pd"), Some(base.join("cometbft")))
+                }
+            };
+            let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
+            tracing::info!(?genesis_start, "last block timestamp");
+            let pd_migrate_span = tracing::error_span!("pd_migrate");
+            pd_migrate_span
+                .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
             Testnet74
-                .migrate(target_directory.clone(), genesis_start)
+                .migrate(pd_home.clone(), Some(genesis_start))
+                .instrument(pd_migrate_span)
                 .await
                 .context("failed to upgrade state")?;
-            // Compress to tarball if requested.
-            if let Some(archive_filepath) = migrate_archive {
-                pd::migrate::archive_directory(
-                    target_directory.clone(),
-                    archive_filepath.clone(),
-                    None,
-                )?;
-                tracing::info!("migration complete: {}", archive_filepath.display());
-            } else {
-                // Provide friendly "OK" message that's still accurate without archiving.
-                tracing::info!("migration complete: {}", target_directory.display());
+
+            if let Some(comet_home) = comet_home {
+                // TODO avoid this when refactoring to clean up migrations
+                let genesis_path = pd_home.join("genesis.json");
+                pd::migrate::migrate_comet_data(comet_home, genesis_path).await?;
             }
         }
     }
