@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          lfs: false
+          lfs: true
 
       - name: Install nightly rust toolchain
         # The script for rustdoc build requires nightly toolchain.
