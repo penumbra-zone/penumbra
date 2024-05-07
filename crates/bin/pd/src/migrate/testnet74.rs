@@ -37,11 +37,40 @@ async fn fix_arb_execution_outputs(delta: &mut StateDelta<Snapshot>) -> anyhow::
     Ok(())
 }
 
+/// Update base liquidity index values to be proto-encoded. Previously they were stored as big-endian
+/// encoded amounts, but in https://github.com/penumbra-zone/penumbra/pull/4188 they were changed
+/// to be proto-encoded.
+///
+/// This will rewrite all values under the `dex/ab/` prefix to be proto-encoded.
+async fn rewrite_base_liquidity_indices(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    let prefix_key = "dex/ab/".as_bytes();
+    tracing::trace!(prefix_key = ?EscapedByteSlice(&prefix_key), "updating base liquidity index values");
+    let mut liquidity_stream = delta.nonverifiable_prefix_raw(&prefix_key).boxed();
+
+    while let Some(r) = liquidity_stream.next().await {
+        let (key, raw_amount): (Vec<u8>, Vec<u8>) = r?;
+        tracing::info!(?key, raw_amount = ?EscapedByteSlice(&raw_amount), "migrating base liquidity index entry");
+
+        let amount = Amount::from_be_bytes(raw_amount.as_slice().try_into()?);
+
+        // Store the correctly formatted new value:
+        delta.nonverifiable_put(key.clone(), amount);
+        tracing::info!(
+            key = ?EscapedByteSlice(&key),
+            raw_amount = ?EscapedByteSlice(&raw_amount),
+            ?amount,
+            "updated base liquidity index"
+        );
+    }
+
+    Ok(())
+}
+
 /// Update the ordering of liquidity position indices to return in descending order (see #4189)
 ///
 /// Lookups for liquidity positions based on starting asset were ordered backwards
 /// and returning the positions with the least liquidity first. This migration
-/// needs to modify the keys stored under the JMT `dex/ra/` prefix key to reverse
+/// needs to modify the keys stored under the nonverifiable `dex/ra/` prefix key to reverse
 /// the ordering of the existing data.
 async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
     let prefix_key = "dex/ra/".as_bytes();
@@ -81,11 +110,13 @@ async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
 /// This migration script is responsible for:
 ///
 /// - Updating the ordering of liquidity position indices to return in descending order (see #4189)
-///     * JMT: `dex/ra/`
+///     * nonverifiable: `dex/ra/`
 /// - Updating arb execution output amounts to include the input amount instead of reporting only profit (see #3790)
 ///     * JMT: `dex/arb_execution/`
 /// - Add `AuctionParameters` to the chain state
 ///     * JMT: `dex/auction_parameters`
+/// - Update the base liquidity index values to be proto-encoded (see #4188)
+///     * nonverifiable: `dex/ab/`
 pub async fn migrate(
     path_to_export: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
@@ -116,6 +147,9 @@ pub async fn migrate(
 
         // Write auction parameters
         write_auction_parameters(&mut delta).await?;
+
+        // Rewrite base liquidity indices as proto-encoded
+        rewrite_base_liquidity_indices(&mut delta).await?;
 
         delta.put_block_height(0u64);
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
