@@ -171,6 +171,14 @@ impl Config {
         let decrypted_data = decrypt(password.try_into()?, &self.data)?;
         Ok(InnerConfig::from_bytes(&decrypted_data)?)
     }
+
+    // Attempt to convert this to a threshold config, if possible
+    pub fn convert_to_threshold(self, password: &str) -> anyhow::Result<Option<threshold::Config>> {
+        match self.decrypt(password)? {
+            InnerConfig::SoftKms(_) => Ok(None),
+            InnerConfig::Threshold(c) => Ok(Some(c)),
+        }
+    }
 }
 
 /// Represents a custody service that uses an encrypted configuration.
