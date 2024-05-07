@@ -1,17 +1,15 @@
 use anyhow::Result;
 use std::collections::BTreeMap;
 
+use crate::plan::MemoPlan;
+use crate::{gas::GasCost, TransactionParameters};
+use crate::{ActionPlan, TransactionPlan};
 use penumbra_asset::{asset, Balance};
 use penumbra_fee::{Fee, FeeTier, Gas, GasPrices};
 use penumbra_keys::Address;
 use penumbra_num::Amount;
 use penumbra_shielded_pool::{fmd, OutputPlan};
-use penumbra_transaction::plan::MemoPlan;
-use penumbra_transaction::{gas::GasCost, TransactionParameters};
-use penumbra_transaction::{ActionPlan, TransactionPlan};
 use rand_core::{CryptoRng, RngCore};
-
-use crate::SpendableNoteRecord;
 
 /// A list of planned actions to be turned into a TransactionPlan.
 ///
@@ -229,47 +227,4 @@ impl ActionList {
         self.change_outputs
             .retain(|_, output| output.value.amount > Amount::zero());
     }
-}
-
-/// Prioritize notes to spend to release value of a specific transaction.
-///
-/// Various logic is possible for note selection. Currently, this method
-/// prioritizes notes sent to a one-time address, then notes with the largest
-/// value:
-///
-/// - Prioritizing notes sent to one-time addresses optimizes for a future in
-/// which we implement DAGSync keyed by fuzzy message detection (which will not
-/// be able to detect notes sent to one-time addresses). Spending these notes
-/// immediately converts them into change notes, sent to the default address for
-/// the users' account, which are detectable.
-///
-/// - Prioritizing notes with the largest value optimizes for gas used by the
-/// transaction.
-///
-/// We may want to make note prioritization configurable in the future. For
-/// instance, a user might prefer a note prioritization strategy that harvested
-/// capital losses when possible, using cost basis information retained by the
-/// view server.
-pub fn prioritize_and_filter_spendable_notes(
-    records: Vec<SpendableNoteRecord>,
-) -> Vec<SpendableNoteRecord> {
-    let mut filtered = records
-        .into_iter()
-        .filter(|record| record.note.amount() > Amount::zero())
-        .collect::<Vec<_>>();
-
-    filtered.sort_by(|a, b| {
-        // Sort by whether the note was sent to an ephemeral address...
-        match (
-            a.address_index.is_ephemeral(),
-            b.address_index.is_ephemeral(),
-        ) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            // ... then by largest amount.
-            _ => b.note.amount().cmp(&a.note.amount()),
-        }
-    });
-
-    filtered
 }
