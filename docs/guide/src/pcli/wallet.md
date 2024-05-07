@@ -51,22 +51,34 @@ venue is the dedicated channel.
 Validators need to custody more kinds of key material than ordinary users. A validator operator has
 control over:
 
+- The validator's **identity signing key**: the root of the validator's
+  identity, controlling its on-chain definition and all other subkeys. 
+  The public half of this keypair is contained in a Penumbra validator ID such as
+  `penumbravalid1u2z9c75xcc2ny6jxccge6ehqtqkhgy4ltxms3ldappr06ekpguxqq48pdh`.
+  This key
+  *can never be rotated*, so it is very important for a validator to keep it
+  secure.  However, the identity signing key is _only_ used for signing changes to
+  the validator's configuration data, so it can be kept in cold storage or via
+  threshold (multisig) custody. 
 - The validator's **CometBFT consensus key**: the key used to sign blocks by the running validator.
-  This key can be rotated by uploading a new validator definition with an updated consensus key, but
-  the new consensus key will not take effect until the next epoch. It is also important to keep this
-  key secure, but doing so is outside the scope of this document. For examples of ways to custody
-  this key material, see [Horcrux](https://github.com/strangelove-ventures/horcrux) and
-  [tmkms](https://github.com/iqlusioninc/tmkms), two approaches for high-security online custody of
-  CometBFT consensus keys.
-- The validator's **identity wallet**: the wallet which controls authority over the validator's
-  on-chain definition. This *can never be rotated*, even in the case of compromise. It is very
-  important for a validator to keep this wallet secure.
-- The validator's **governance subkey**: the wallet controlling the key used to vote on governance
-  proposals in the capacity as a validator. By default, this is identical to the validator's
-  identity key, but it can be manually set to a different key. To do this, use the command `pcli
-  init validator-governance-subkey` after you have run `pcli init`. This command requires that you
-  choose a custody backend for the governance subkey, which can be one of `soft-kms` or `threshold`.
-  The same options apply to these as above.
+  Unlike the Cosmos SDK, the consensus key can be freely rotated by uploading a
+  new validator definition with an updated consensus key.  It is important to
+  secure all historical consensus keys used by a validator, as compromise could
+  lead to double-signing and slashing.  Secure custody of consensus keys is
+  outside the scope of this document. For examples of ways to custody this key
+  material, see [Horcrux](https://github.com/strangelove-ventures/horcrux) and
+  [tmkms](https://github.com/iqlusioninc/tmkms), two approaches for
+  high-security online custody of CometBFT consensus keys.
+- The validator's **governance signing key**: the key used to vote on governance
+  proposals in the capacity as a validator.  Unlike the Cosmos SDK, this is also
+  a subkey, allowing validators to vote on governance proposals without taking
+  their most sensitive key material out of cold storage. By default, this is
+  identical to the validator's identity key, but it can be manually set to a
+  different key. To do this, use the command `pcli init validator-governance-subkey` 
+  after you have run `pcli init`. This command
+  requires that you choose a custody backend for the governance subkey, which
+  can be one of `soft-kms` or `threshold`.  The same options apply to these as
+  above.
 - The validator's **treasury wallet(s)**: the wallet(s) which hold the validator's self-delegated
   funds, and which receive output from (some of) the validator's funding stream(s). These are
   configured entirely separately from the validator's identity key, and may be changed at any time
@@ -80,15 +92,22 @@ independently.
 
 ### Multiple signatures when using threshold custody
 
-When a validator is using a threshold custody backend for the identity key, it may require multiple
-signatures to upload a new validator definition. This is because the *definition* must be signed
-(using the custody method of the identity key), and then the *transaction* must be signed (using the
-custody method of the wallet which broadcasts the transaction, which may be different). Similarly,
-when a validator is using a threshold custody backend for the governance subkey, it may require
-multiple signatures to cast a vote as a validator, because the vote is signed independently of the
-transaction which broadcasts it.
+Validator definitions are self-authenticating data packets, signed by the
+validator's identity key.  Updating a validator definition requires two steps:
+first, producing a signed validator definition, and second, relaying that
+definition onto the chain.  In a low-security setup, `pcli` can do these steps automatically.
 
-### Airgap custody
+However, when a validator is using a threshold custody backend for the identity
+key, these steps may require separate signing operations. First, the
+*definition* must be signed (using the custody method of the identity key), and
+then that definition must be broadcast to the chain.  Any wallet can broadcast
+the signed validator definition, similar to the way that any wallet can relay IBC packets.
+
+Similarly, when a validator is using a threshold custody backend for the
+governance subkey, casting a vote as a validator may require separate steps,
+because the vote is signed independently of the transaction which broadcasts it.
+
+### Airgap or Wormhole custody
 
 If a validator wishes to use an airgapped signing setup (with or without threshold custody) to sign
 definition updates or governance votes, this is possible:
@@ -101,3 +120,7 @@ definition updates or governance votes, this is possible:
   using `pcli validator vote sign`, then upload the vote on a networked machine, after copying the
   signature across the airgap, using `pcli validator vote cast` with the optional `--signature` flag
   to specify the externally-produced signature for the vote.
+
+Alternatively, rather than using a literal airgap, [magic
+wormhole](https://magic-wormhole.readthedocs.io/en/latest/) is a fast and secure
+method for relaying data between computers without complex network interactions.
