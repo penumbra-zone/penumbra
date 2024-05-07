@@ -60,7 +60,7 @@ map-to-group method.
 
 ## Homomorphic Balance Commitments
 
-We use the value generator associated to an asset ID to construct homomorphic
+We use the value generator associated to an asset ID to construct additively homomorphic
 commitments to (typed) value.  To do this, we first define the *blinding
 generator* $\widetilde{V}$ as
 ```
@@ -68,7 +68,7 @@ V_tilde = decaf377_encode_to_curve(from_le_bytes(blake2b(b"decaf377-rdsa-binding
 ```
 
 The commitment to value $(v, \mathsf a)$, i.e., amount $v$ of asset $\mathsf a$,
-with blinding factor $\widetilde{v}$, is the Pedersen commitment
+with random blinding factor $\widetilde{v}$, is the Pedersen commitment
 $$
 \operatorname {Commit}_{\mathsf a}(v, \widetilde{v}) = [v]V_{\mathsf a} + [\widetilde{v}]\widetilde{V}.
 $$
@@ -80,6 +80,9 @@ $$
 =
 [x]V_{\mathsf a} + [y] V_{\mathsf b} + [\widetilde{x} + \widetilde{y}]\widetilde{V}.
 $$
+
+where $V_{\mathsf b}$ and $V_{\mathsf a}$ are generators of the group $\mathbb G$, and $\widetilde{x}$ and $\widetilde{y}$ are random blinding factors from $\mathbb F_r$.
+
 Alternatively, this can be thought of as a commitment to a (sparse) vector
 recording the amount of every possible asset type, almost all of whose
 coefficients are zero.
