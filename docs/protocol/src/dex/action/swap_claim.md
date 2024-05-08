@@ -48,7 +48,7 @@ The invariants that the SwapClaim upholds are described below.
 
     5.1. A swap's transmission key binds to the nullifier key as described in the [Nullifier Key Linking](#nullifier-key-linking) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
-    5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
+    5.2. In the `ActionHandler` we check that the nullifier is unspent.
 
 6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check.
 

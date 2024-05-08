@@ -36,7 +36,7 @@ The invariants that the Spend upholds are described below.
 
     2.1. A note's transmission key binds to the nullifier key in circuit as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned note, along with this key are hashed to derive the nullifier in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
-    2.2. This is in the `ActionHandler` implementation on `check_stateful`, and an external check about the integrity of each transaction.
+    2.2. This is in the `ActionHandler` implementation, and an external check about the integrity of each transaction.
 
 3. The circuit verifies for non-zero amounts that there is a valid [Merkle authentication path](#merkle-auth-path-verification) to the note in the global state commitment tree.
 

@@ -16,9 +16,9 @@ Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate c
 
 #### Local Justification
 
-1. In the `ActionHandler` for `check_stateful` we check that the undelegations have finished unbonding.
+1. In the `ActionHandler` we check that the undelegations have finished unbonding.
 
-2. The `ConvertCircuit` verifies that the conversion from the unbonding token to the staking token was done using the correct conversion rate calculated from the penalty. We check in the `ActionHandler` for `check_stateful` that the _correct_ penalty rate was used.
+2. The `ConvertCircuit` verifies that the conversion from the unbonding token to the staking token was done using the correct conversion rate calculated from the penalty. We check in the `ActionHandler` that the _correct_ penalty rate was used.
 
 3. The `UndelegateClaim` performs the above [conversion check in 2 in zero-knowledge](#balance-commitment-integrity) using the private unbonding amount.
 
