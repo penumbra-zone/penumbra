@@ -1,12 +1,34 @@
-use std::io::{Read, Write};
+use std::io::{IsTerminal, Read, Write};
 
 use anyhow::Result;
 use penumbra_custody::threshold::{SigningRequest, Terminal};
+use termion::input::TermRead;
 use tonic::async_trait;
+
+async fn read_password(prompt: &str) -> Result<String> {
+    fn get_possibly_empty_string(prompt: &str) -> Result<String> {
+        // The `rpassword` crate doesn't support reading from stdin, so we check
+        // for an interactive session. We must support non-interactive use cases,
+        // for integration with other tooling.
+        if std::io::stdin().is_terminal() {
+            Ok(rpassword::prompt_password(prompt)?)
+        } else {
+            Ok(std::io::stdin().lock().read_line()?.unwrap_or_default())
+        }
+    }
+
+    let mut string: String = Default::default();
+    while string.is_empty() {
+        // Keep trying until the user provides an input
+        string = get_possibly_empty_string(prompt)?;
+    }
+    Ok(string)
+}
 
 /// For threshold custody, we need to implement this weird terminal abstraction.
 ///
 /// This actually does stuff to stdin and stdout.
+#[derive(Clone)]
 pub struct ActualTerminal;
 
 #[async_trait]
@@ -77,5 +99,23 @@ impl Terminal for ActualTerminal {
             return Ok(None);
         }
         Ok(Some(line))
+    }
+
+    async fn get_password(&self) -> Result<String> {
+        read_password("Enter Password: ").await
+    }
+}
+
+impl ActualTerminal {
+    pub async fn get_confirmed_password(&self) -> Result<String> {
+        loop {
+            let password = read_password("Enter Password: ").await?;
+            let confirmed = read_password("Confirm Password: ").await?;
+            if password != confirmed {
+                println!("Password mismatch, please try again.");
+                continue;
+            }
+            return Ok(password);
+        }
     }
 }
