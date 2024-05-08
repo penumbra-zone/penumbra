@@ -37,7 +37,7 @@ The invariants that the Output upholds are described below.
 
     1.1 The note commitment binds the note to the typed value and the address of the recipient.
 
-    1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
+    1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value, randomness) tuple[^1].
 
 2. The privacy of the note data is enforced via:
 
@@ -111,3 +111,9 @@ The zk-SNARK certifies that the diversified basepoint $B_d$ is not identity.
 
 Note that we do _not_ check the integrity of the ephemeral public key $epk$ in the zk-SNARK.
 Instead this check should be performed at note decryption time as described above.
+
+[^1]: Duplicate note commitments are allowed such that nodes do not need to
+maintain a database of all historical commitments and check for distinctness.
+They simply maintain the state commitment tree, adding new state commitments
+as they appear. Two notes with the same typed value and address will not have
+the same commitment due to the randomness provided by the note blinding factor.
