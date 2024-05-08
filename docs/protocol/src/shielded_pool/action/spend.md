@@ -1,6 +1,14 @@
 # Spend Descriptions
 
-Each spend contains an SpendBody and a zk-SNARK spend proof.
+Each spend contains a `SpendBody`, a spend authorization signature, and a zk-SNARK spend proof.
+
+## [SpendBody](#spend-body)
+
+The body of a `Spend` has three parts:
+
+1. A revealed `Nullifier`, which nullifies the note commitment being spent;
+2. A balance commitment, which commits to the value balance of the spent note;
+3. The randomized verification key, used to verify the spend authorization signature provided on the spend.
 
 ## Invariants
 

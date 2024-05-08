@@ -2,6 +2,15 @@
 
 Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate claim proof.
 
+## [UndelegateClaim](#undelegateclaim-body)
+
+The body of a `UndelegateClaim` has three parts:
+
+1. The validator `IdentityKey` being undelegated from;
+2. The penalty to apply to the undelegation;
+3. The balance contribution which commits to the value balance of the action;
+4. The height at which unbonding started.
+
 # Invariants
 
 #### Local Invariants
