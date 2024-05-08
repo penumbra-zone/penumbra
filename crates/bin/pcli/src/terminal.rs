@@ -75,10 +75,16 @@ impl Terminal for ActualTerminal {
         let mut bytes = Vec::with_capacity(8192);
         for b in std::io::stdin().bytes() {
             let b = b?;
+            // In raw mode, we need to handle control characters ourselves
+            if b == 3 || b == 4 {
+                // Ctrl-C or Ctrl-D
+                return Err(anyhow::anyhow!("aborted"));
+            }
             // In raw mode, the enter key might generate \r or \n, check either.
             if b == b'\n' || b == b'\r' {
                 break;
             }
+            // Store the byte we read and print it back to the terminal.
             bytes.push(b);
             stdout.write(&[b]).unwrap();
             // Flushing may not be the most efficient but performance isn't critical here.
