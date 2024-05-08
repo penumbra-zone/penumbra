@@ -108,7 +108,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### [Diversified address Integrity](#diversified-address-integrity)
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the note being spent was derived as:
 
 $pk_d ​= [ivk] B_d$
 

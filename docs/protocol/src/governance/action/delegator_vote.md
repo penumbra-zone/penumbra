@@ -112,7 +112,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### Diversified Address Integrity
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the note was derived as:
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the note was derived as:
 
 $pk_d ​= [ivk] B_d$
 

@@ -123,7 +123,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### [Nullifier Key Linking](#nullifier-key-linking)
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the
 swap being claimed was derived as:
 
 $pk_d ​= [ivk] B_d$
