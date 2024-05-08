@@ -10,17 +10,17 @@ use rand_core::CryptoRngCore;
 
 use decaf377_frost as frost;
 use frost::round1::SigningCommitments;
-use penumbra_governance::ValidatorVoteBody;
 use penumbra_proto::core::component::{
     governance::v1::ValidatorVoteBody as ProtoValidatorVoteBody,
     stake::v1::Validator as ProtoValidator,
 };
 use penumbra_proto::{penumbra::custody::threshold::v1 as pb, DomainType, Message};
-use penumbra_stake::validator::Validator;
-use penumbra_transaction::{AuthorizationData, TransactionPlan};
+use penumbra_transaction::AuthorizationData;
 use penumbra_txhash::EffectHash;
 
-use super::config::Config;
+use crate::terminal::SigningRequest;
+
+use super::{config::Config, SigningResponse};
 
 /// Represents the message sent by the coordinator at the start of the signing process.
 ///
@@ -28,31 +28,6 @@ use super::config::Config;
 #[derive(Debug, Clone)]
 pub struct CoordinatorRound1 {
     request: SigningRequest,
-}
-
-#[derive(Debug, Clone)]
-pub enum SigningRequest {
-    TransactionPlan(TransactionPlan),
-    ValidatorDefinition(Validator),
-    ValidatorVote(ValidatorVoteBody),
-}
-
-/// Authorization data returned in response to some signing request, which may be a request to
-/// authorize a transaction, a validator definition, or a validator vote.
-#[derive(Clone, Debug)]
-pub enum SigningResponse {
-    /// Authorization data for a transaction.
-    Transaction(AuthorizationData),
-    /// Authorization signature for a validator definition.
-    ValidatorDefinition(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
-    /// Authorization signature for a validator vote.
-    ValidatorVote(decaf377_rdsa::Signature<decaf377_rdsa::SpendAuth>),
-}
-
-impl From<AuthorizationData> for SigningResponse {
-    fn from(msg: AuthorizationData) -> Self {
-        Self::Transaction(msg)
-    }
 }
 
 impl CoordinatorRound1 {

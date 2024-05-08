@@ -81,3 +81,14 @@ the participants securely.
 An end-to-end example of how this process works is captured in this video:
 [https://twitter.com/penumbrazone/status/1732844637180862603](https://twitter.com/penumbrazone/status/1732844637180862603)
 
+## Encryption
+
+A password can be used to generate an encrypted config via:
+```bash
+$ pcli init --encrypted threshold dkg ...
+```
+
+Furthermore, an existing config can be converted to an encrypted one with:
+```bash
+$ pcli init re-encrypt
+```

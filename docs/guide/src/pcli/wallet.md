@@ -8,8 +8,10 @@ custody backend used to store keys.
 There are currently three custody backends:
 
 1. The [`softkms` backend](./wallet/softkms.md) is a good default choice for low-security use cases.  It stores keys unencrypted in a local config file.
-2. The [threshold backend](./wallet/threshold.md) is a good choice for high-security use cases. It provides a shielded multisig, with key material sharded over multiple computers.
+2. The [`threshold` backend](./wallet/threshold.md) is a good choice for high-security use cases. It provides a shielded multisig, with key material sharded over multiple computers.
 3. The `view-only` backend has no custody at all and only has access to viewing keys.
+
+Furthermore, `softkms` and `threshold` allow encrypting the spend-key related material with a password.
 
 After running `pcli init` with one of the backends described above, `pcli` will be initialized.
 
