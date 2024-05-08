@@ -143,15 +143,20 @@ witnessed as part of the swap plaintext.
 
 ### [Height Consistency Check](#height-consistency-check)
 
-The zk-SNARK certifies that the swap commitment's height is equal to the height
-of the batch swap output data (the clearing price height).
+We compute $h_{swap}$ and $e_{swap}$ from the position of the swap commitment
+in the state commitment tree. We compute $h_{BSOD}$ and $e_{BSOD}$ from the
+position prefix where the batch swap occurred, provided on the batch swap output
+data (BSOD).
 
-We compute the intra-epoch block height $h_b$ from the position $pos$ of the swap
-commitment and check the following identity:
+The zk-SNARK certifies that the swap commitment's block height is equal to the block height
+of the BSOD:
 
-$h = h_e + h_b$
+$h_{BSOD} = h_{swap}$
 
-where $h, h_e$ are provided on the batch swap output data as a public input.
+The zk-SNARK also certifies that the swap commitment's epoch is equal to the epoch
+of the BSOD:
+
+$e_{BSOD} = e_{swap}$
 
 ### [Trading Pair Consistency Check](#trading-pair-consistency-check)
 
