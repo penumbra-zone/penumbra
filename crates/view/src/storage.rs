@@ -99,7 +99,7 @@ impl Storage {
         };
 
         let mut client = AppQueryServiceClient::connect(node.to_string())
-            .instrument(error_span!("connecting to endpoint"))
+            .instrument(error_span!("connecting_to_endpoint"))
             .await
             .tap_err(|error| {
                 tracing::error!(?error, "failed to connect to app query service endpoint")
@@ -107,7 +107,7 @@ impl Storage {
             .tap(|_| tracing::debug!("connected to app query service endpoint"));
         let params = client
             .app_parameters(tonic::Request::new(AppParametersRequest {}))
-            .instrument(error_span!("getting app parameters"))
+            .instrument(error_span!("getting_app_parameters"))
             .await?
             .into_inner()
             .try_into()?;
