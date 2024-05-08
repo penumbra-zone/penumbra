@@ -1,10 +1,21 @@
-#!/bin/bash
-# Run e2e summoner ceremony in CI
+#!/usr/bin/env bash
+
+# This script runs an end-to-end test of the summoner ceremony in CI.
+
 set -euo pipefail
 
 # This script also runs the devnet. The reason for this is that if testnet
 # preview is redeployed during the run of this script, the script will fail
 # as the chain ID will be different.
+
+# If `SUMMONER_SMOKE_RESET=1` is set, automatically reset the testnet data
+# directory, and clear the summonerd directory. This is helpful if running this
+# test in a loop with e.g. `entr` or `cargo watch`.
+if [[ "${SUMMONER_SMOKE_RESET:-0}" -eq '1' ]] ; then
+    cargo run --release --bin pd -- testnet unsafe-reset-all
+    rm -rf /tmp/summonerd
+    rm -rf /tmp/account1
+fi
 
 # Fail fast if testnet dir exists, otherwise `cargo run ...` will block
 # for a while, masking the error.
@@ -14,6 +25,21 @@ if [[ -d ~/.penumbra/testnet_data ]] ; then
     exit 1
 fi
 
+# Fail fast if `/tmp/` directories created by this test already exist.
+# Otherwise, this test may be inheriting stale state from a previous run.
+if [[ -d /tmp/summonerd ]] ; then
+    >&2 echo "ERROR: summonerd directory exists at /tmp/summonerd"
+    >&2 echo "Not removing this directory automatically; to remove, run: rm -rf /tmp/summonerd/"
+    exit 1
+fi
+if [[ -d /tmp/account1 ]] ; then
+    >&2 echo "ERROR: account1 directory exists at /tmp/account1"
+    >&2 echo "Not removing this directory automatically; to remove, run: rm -rf /tmp/account1/"
+    exit 1
+fi
+
+# Fail fast if `cometbft` is not in the $PATH, we are missing software to
+# run this smoke test.
 if ! hash cometbft > /dev/null 2>&1 ; then
     >&2 echo "ERROR: cometbft not found in PATH"
     >&2 echo "See install guide: https://guide.penumbra.zone/main/pd/build.html"
