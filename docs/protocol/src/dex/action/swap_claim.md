@@ -50,7 +50,7 @@ The invariants that the SwapClaim upholds are described below.
 
     5.2. In the `ActionHandler` we check that the nullifier is unspent.
 
-6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check.
+6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check. The minted output notes are encrypted.
 
 7. The balance contribution of the two output notes is zero. The only contribution to the balance is the pre-paid SwapClaim fee.
 
