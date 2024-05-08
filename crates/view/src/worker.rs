@@ -28,8 +28,10 @@ use penumbra_proto::{
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
 use proto::core::app::v1::TransactionsByHeightRequest;
+use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
+use tracing::instrument;
 use url::Url;
 
 use crate::{
@@ -55,6 +57,10 @@ impl Worker {
     /// - a shared, in-memory SCT instance;
     /// - a shared error slot;
     /// - a channel for notifying the client of sync progress.
+    #[instrument(
+        skip(storage),
+        fields(url = %node)
+    )]
     pub async fn new(
         storage: Storage,
         node: Url,
@@ -67,7 +73,12 @@ impl Worker {
         ),
         anyhow::Error,
     > {
-        let fvk = storage.full_viewing_key().await?;
+        tracing::trace!("constructing view server worker");
+        let fvk = storage
+            .full_viewing_key()
+            .await
+            .context("failed to retrieve full viewing key from storage")?
+            .tap(|_| tracing::debug!("retrieved full viewing key"));
 
         // Create a shared, in-memory SCT.
         let sct = Arc::new(RwLock::new(storage.state_commitment_tree().await?));
@@ -83,7 +94,8 @@ impl Worker {
             .with_context(|| "could not parse node URI")?
             .connect()
             .await
-            .with_context(|| "could not connect to grpc server")?;
+            .with_context(|| "could not connect to grpc server")
+            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
 
         Ok((
             Self {
