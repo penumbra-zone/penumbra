@@ -103,7 +103,7 @@
           devShells.default = craneLib.devShell {
             inherit LIBCLANG_PATH;
             inputsFrom = [ penumbra ];
-            packages = [ cargo-watch cargo-nextest protobuf ];
+            packages = [ cargo-watch cargo-nextest protobuf cometbft ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
