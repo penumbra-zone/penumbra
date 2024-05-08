@@ -13,7 +13,9 @@ extern crate serde_with;
 mod client;
 mod pre_auth;
 mod request;
+mod terminal;
 
+pub mod encrypted;
 pub mod null_kms;
 pub mod policy;
 pub mod soft_kms;

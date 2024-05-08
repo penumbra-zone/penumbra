@@ -6,7 +6,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use url::Url;
 
-use penumbra_custody::{soft_kms::Config as SoftKmsConfig, threshold::Config as ThresholdConfig};
+use penumbra_custody::{
+    encrypted::Config as EncryptedConfig, soft_kms::Config as SoftKmsConfig,
+    threshold::Config as ThresholdConfig,
+};
 use penumbra_keys::FullViewingKey;
 
 /// Configuration data for `pcli`.
@@ -50,6 +53,7 @@ impl PcliConfig {
                 spend_key.full_viewing_key()
             }
             Some(GovernanceCustodyConfig::Threshold(threshold_config)) => threshold_config.fvk(),
+            Some(GovernanceCustodyConfig::Encrypted { fvk, .. }) => fvk,
             None => &self.full_viewing_key,
         };
         GovernanceKey(fvk.spend_verification_key().clone())
@@ -67,6 +71,8 @@ pub enum CustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted(EncryptedConfig),
 }
 
 /// The governance custody backend to use.
@@ -78,6 +84,11 @@ pub enum GovernanceCustodyConfig {
     SoftKms(SoftKmsConfig),
     /// A manual threshold custody service.
     Threshold(ThresholdConfig),
+    /// An encrypted custody service.
+    Encrypted {
+        fvk: FullViewingKey,
+        config: EncryptedConfig,
+    },
 }
 
 impl Default for CustodyConfig {

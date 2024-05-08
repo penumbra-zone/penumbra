@@ -31,6 +31,11 @@ pub struct InitCmd {
             parse(try_from_str = Url::parse),
         )]
     grpc_url: Url,
+    /// For configs with spend authority, this will enable password encryption.
+    ///
+    /// This has no effect on a view only service.
+    #[clap(long, action)]
+    encrypted: bool,
 }
 
 #[derive(Debug, Clone, clap::Subcommand)]
@@ -62,8 +67,11 @@ pub enum InitSubCmd {
     Threshold(ThresholdInitCmd),
     // This is not accessible directly by the user, because it's impermissible to initialize the
     // governance subkey as view-only.
-    #[clap(skip)]
+    #[clap(skip, display_order = 200)]
     ViewOnly { full_viewing_key: String },
+    /// If relevant, change the current config to an encrypted config, with a password.
+    #[clap(display_order = 800)]
+    ReEncrypt,
 }
 
 #[derive(Debug, Clone, clap::Subcommand)]
@@ -268,35 +276,35 @@ impl InitCmd {
         }
         let home_dir = home_dir.as_ref();
 
-        match &init_type {
-            InitType::SpendKey => {
-                // Check that the data_dir is empty before running init:
-                if home_dir.exists() && home_dir.read_dir()?.next().is_some() {
-                    anyhow::bail!(
-                        "home directory {:?} is not empty; refusing to initialize",
-                        home_dir
-                    );
-                }
+        let existing_config = {
+            let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
+            if config_path.exists() {
+                Some(PcliConfig::load(config_path)?)
+            } else {
+                None
             }
-            InitType::GovernanceKey => {
-                // Check that there is no existing governance key before running init:
-                let config_path = home_dir.join(crate::CONFIG_FILE_NAME);
-                let config = PcliConfig::load(config_path)?;
-                if config.governance_custody.is_some() {
-                    anyhow::bail!(
-                        "governance key already exists in config file at {:?}; refusing to overwrite it",
-                        home_dir
-                    );
-                }
-            }
-        }
+        };
+        let relevant_config_exists = match &init_type {
+            InitType::SpendKey => existing_config.is_some(),
+            InitType::GovernanceKey => existing_config
+                .as_ref()
+                .is_some_and(|x| x.governance_custody.is_some()),
+        };
 
-        let (full_viewing_key, custody) = match (&init_type, &subcmd) {
-            (_, InitSubCmd::SoftKms(cmd)) => {
+        let (full_viewing_key, custody) = match (&init_type, &subcmd, relevant_config_exists) {
+            (_, InitSubCmd::SoftKms(cmd), false) => {
                 let spend_key = cmd.spend_key(init_type)?;
                 (
                     spend_key.full_viewing_key().clone(),
-                    CustodyConfig::SoftKms(spend_key.into()),
+                    if self.encrypted {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                        )?)
+                    } else {
+                        CustodyConfig::SoftKms(spend_key.into())
+                    },
                 )
             }
             (
@@ -305,19 +313,81 @@ impl InitCmd {
                     threshold,
                     num_participants,
                 }),
+                false,
             ) => {
                 let config = threshold::dkg(*threshold, *num_participants, &ActualTerminal).await?;
-                (config.fvk().clone(), CustodyConfig::Threshold(config))
+                let fvk = config.fvk().clone();
+                let custody_config = if self.encrypted {
+                    let password = ActualTerminal.get_confirmed_password().await?;
+                    CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                        &password,
+                        penumbra_custody::encrypted::InnerConfig::Threshold(config),
+                    )?)
+                } else {
+                    CustodyConfig::Threshold(config)
+                };
+                (fvk, custody_config)
             }
-            (_, InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. })) => {
+            (_, InitSubCmd::Threshold(ThresholdInitCmd::Deal { .. }), _) => {
                 unreachable!("this should already have been handled above")
             }
-            (InitType::SpendKey, InitSubCmd::ViewOnly { full_viewing_key }) => {
+            (InitType::SpendKey, InitSubCmd::ViewOnly { full_viewing_key }, false) => {
                 let full_viewing_key = full_viewing_key.parse()?;
                 (full_viewing_key, CustodyConfig::ViewOnly)
             }
-            (InitType::GovernanceKey, InitSubCmd::ViewOnly { .. }) => {
+            (InitType::GovernanceKey, InitSubCmd::ViewOnly { .. }, false) => {
                 unreachable!("governance keys can't be initialized in view-only mode")
+            }
+            (typ, InitSubCmd::ReEncrypt, true) => {
+                let config = existing_config.expect("the config should exist in this branch");
+                let fvk = config.full_viewing_key;
+                let custody = match typ {
+                    InitType::SpendKey => config.custody,
+                    InitType::GovernanceKey => match config
+                        .governance_custody
+                        .expect("the governence custody should exist in this branch")
+                    {
+                        GovernanceCustodyConfig::SoftKms(c) => CustodyConfig::SoftKms(c),
+                        GovernanceCustodyConfig::Threshold(c) => CustodyConfig::Threshold(c),
+                        GovernanceCustodyConfig::Encrypted { config, .. } => {
+                            CustodyConfig::Encrypted(config)
+                        }
+                    },
+                };
+                let custody = match custody {
+                    x @ CustodyConfig::ViewOnly => x,
+                    x @ CustodyConfig::Encrypted(_) => x,
+                    CustodyConfig::SoftKms(spend_key) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                        )?)
+                    }
+                    CustodyConfig::Threshold(c) => {
+                        let password = ActualTerminal.get_confirmed_password().await?;
+                        CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
+                            &password,
+                            penumbra_custody::encrypted::InnerConfig::Threshold(c),
+                        )?)
+                    }
+                };
+                (fvk, custody)
+            }
+            (_, InitSubCmd::ReEncrypt, false) => {
+                anyhow::bail!("re-encrypt requires existing config to exist",);
+            }
+            (InitType::SpendKey, _, true) => {
+                anyhow::bail!(
+                    "home directory {:?} is not empty; refusing to initialize",
+                    home_dir
+                );
+            }
+            (InitType::GovernanceKey, _, true) => {
+                anyhow::bail!(
+                        "governance key already exists in config file at {:?}; refusing to overwrite it",
+                        home_dir
+                    );
             }
         };
 
@@ -336,6 +406,10 @@ impl InitCmd {
             let governance_custody = match custody {
                 CustodyConfig::SoftKms(config) => GovernanceCustodyConfig::SoftKms(config),
                 CustodyConfig::Threshold(config) => GovernanceCustodyConfig::Threshold(config),
+                CustodyConfig::Encrypted(config) => GovernanceCustodyConfig::Encrypted {
+                    fvk: full_viewing_key,
+                    config,
+                },
                 _ => unreachable!("governance keys can't be initialized in view-only mode"),
             };
             config.governance_custody = Some(governance_custody);
