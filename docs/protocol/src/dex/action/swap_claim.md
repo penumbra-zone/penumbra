@@ -4,7 +4,7 @@ Each swap claim contains a SwapClaimBody and a zk-SNARK swap claim proof[^1].
 
 ## [SwapClaim Body](#swapclaim-body)
 
-The body of an `SwapClaim` has four parts:
+The body of a `SwapClaim` has four parts:
 
 1. A revealed `Nullifier`, which nullifies the swap commitment being claimed;
 2. A balance commitment, which commits to the value balance of the spent note;
