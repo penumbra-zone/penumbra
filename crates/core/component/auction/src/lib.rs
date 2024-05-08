@@ -6,6 +6,7 @@ pub mod auction;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
+pub mod event;
 
 #[cfg(feature = "component")]
 pub mod component;
