@@ -1,5 +1,7 @@
-#!/bin/bash
-# Run e2e summoner ceremony in CI
+#!/usr/bin/env bash
+
+# This script runs an end-to-end test of the summoner ceremony in CI.
+
 set -euo pipefail
 
 # This script also runs the devnet. The reason for this is that if testnet
