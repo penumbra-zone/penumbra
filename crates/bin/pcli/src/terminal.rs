@@ -2,7 +2,7 @@ use std::io::{IsTerminal, Read, Write};
 
 use anyhow::Result;
 use penumbra_custody::threshold::{SigningRequest, Terminal};
-use termion::input::TermRead;
+use termion::{color, input::TermRead};
 use tonic::async_trait;
 
 async fn read_password(prompt: &str) -> Result<String> {
@@ -53,12 +53,22 @@ impl Terminal for ActualTerminal {
     }
 
     fn explain(&self, msg: &str) -> Result<()> {
-        println!("{}", msg);
+        println!(
+            "{}{}{}",
+            color::Fg(color::Blue),
+            msg,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
     async fn broadcast(&self, data: &str) -> Result<()> {
-        println!("\n{}\n", data);
+        println!(
+            "\n{}{}{}\n",
+            color::Fg(color::Yellow),
+            data,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
@@ -68,6 +78,7 @@ impl Terminal for ActualTerminal {
         use termion::raw::IntoRawMode;
         tracing::debug!("about to enter raw mode for long pasted input");
 
+        print!("{}", color::Fg(color::Red));
         // In raw mode, the input is not mirrored into the terminal, so we need
         // to read char-by-char and echo it back.
         let mut stdout = std::io::stdout().into_raw_mode()?;
@@ -95,6 +106,7 @@ impl Terminal for ActualTerminal {
         // We consumed a newline of some kind but didn't echo it, now print
         // one out so subsequent output is guaranteed to be on a new line.
         println!("");
+        print!("{}", color::Fg(color::Reset));
 
         tracing::debug!("exited raw mode and returned to cooked mode");
 
