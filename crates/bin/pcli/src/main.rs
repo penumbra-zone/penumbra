@@ -6,16 +6,13 @@ use std::fs;
 use anyhow::{Context, Result};
 use clap::Parser;
 use futures::StreamExt;
-
-use command::*;
-use config::PcliConfig;
-use opt::Opt;
-use penumbra_proto::box_grpc_svc::BoxGrpcService;
 use penumbra_proto::{
-    custody::v1::custody_service_client::CustodyServiceClient,
+    box_grpc_svc::BoxGrpcService, custody::v1::custody_service_client::CustodyServiceClient,
     view::v1::view_service_client::ViewServiceClient,
 };
 use penumbra_view::ViewClient;
+
+use crate::{command::*, config::PcliConfig, opt::Opt};
 
 mod command;
 mod config;
