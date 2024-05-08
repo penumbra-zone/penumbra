@@ -92,7 +92,7 @@ async fn swap_and_swap_claim() -> anyhow::Result<()> {
 
     // 6. Create a SwapClaim action
 
-    // To do this, we need to have an auth path for the swap nft note, which
+    // To do this, we need to have an auth path for the swap, which
     // means we have to synchronize a client's view of the test chain's SCT
     // state.
     let epoch_duration = state.get_epoch_duration_parameter().await?;

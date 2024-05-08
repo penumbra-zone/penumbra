@@ -68,7 +68,7 @@ pub struct SwapClaimProofPrivate {
     pub state_commitment_proof: tct::Proof,
     /// The spend verification key
     pub ak: VerificationKey<SpendAuth>,
-    // The nullifier deriving key for the Swap NFT note.
+    // The nullifier deriving key for the swap.
     pub nk: NullifierKey,
     /// Output amount 1
     pub lambda_1: Amount,
@@ -182,9 +182,7 @@ fn check_circuit_satisfaction(
     Ok(())
 }
 
-/// SwapClaim consumes an existing Swap NFT so they are most similar to Spend operations,
-/// however the note commitment proof needs to be for a specific block due to clearing prices
-/// only being valid for particular blocks (i.e. the exchange rates of assets change over time).
+/// SwapClaim consumes an existing Swap so they are most similar to Spend operations.
 #[derive(Clone, Debug)]
 pub struct SwapClaimCircuit {
     public: SwapClaimProofPublic,
