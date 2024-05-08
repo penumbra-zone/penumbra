@@ -81,9 +81,9 @@ pub fn router(
         .add_service(we(StorageQueryServiceServer::new(StorageServer::new(
             storage.clone(),
         ))))
-        .add_service(AuctionQueryServiceServer::new(AuctionServer::new(
+        .add_service(we(AuctionQueryServiceServer::new(AuctionServer::new(
             storage.clone(),
-        )))
+        ))))
         .add_service(we(AppQueryServiceServer::new(AppQueryServer::new(
             storage.clone(),
         ))))
