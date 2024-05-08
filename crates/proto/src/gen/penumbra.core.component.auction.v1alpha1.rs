@@ -373,6 +373,108 @@ impl ::prost::Name for ActionDutchAuctionWithdrawView {
         )
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDutchAuctionScheduled {
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(message, optional, tag = "2")]
+    pub description: ::core::option::Option<DutchAuctionDescription>,
+}
+impl ::prost::Name for EventDutchAuctionScheduled {
+    const NAME: &'static str = "EventDutchAuctionScheduled";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDutchAuctionUpdated {
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<DutchAuctionState>,
+}
+impl ::prost::Name for EventDutchAuctionUpdated {
+    const NAME: &'static str = "EventDutchAuctionUpdated";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDutchAuctionEnded {
+    #[prost(message, optional, tag = "1")]
+    pub auction_id: ::core::option::Option<AuctionId>,
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<DutchAuctionState>,
+    #[prost(enumeration = "event_dutch_auction_ended::Reason", tag = "3")]
+    pub reason: i32,
+}
+/// Nested message and enum types in `EventDutchAuctionEnded`.
+pub mod event_dutch_auction_ended {
+    /// The reason the auction ended.
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum Reason {
+        Unspecified = 0,
+        /// The auction ended due to reaching its terminal height.
+        Expired = 1,
+        /// The auction ran out of reserves.
+        Filled = 2,
+        /// The auction ended was terminated by the initiator.
+        ClosedByOwner = 3,
+    }
+    impl Reason {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Reason::Unspecified => "REASON_UNSPECIFIED",
+                Reason::Expired => "REASON_EXPIRED",
+                Reason::Filled => "REASON_FILLED",
+                Reason::ClosedByOwner => "REASON_CLOSED_BY_OWNER",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "REASON_UNSPECIFIED" => Some(Self::Unspecified),
+                "REASON_EXPIRED" => Some(Self::Expired),
+                "REASON_FILLED" => Some(Self::Filled),
+                "REASON_CLOSED_BY_OWNER" => Some(Self::ClosedByOwner),
+                _ => None,
+            }
+        }
+    }
+}
+impl ::prost::Name for EventDutchAuctionEnded {
+    const NAME: &'static str = "EventDutchAuctionEnded";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {

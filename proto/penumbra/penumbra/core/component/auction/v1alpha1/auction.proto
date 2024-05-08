@@ -173,3 +173,30 @@ message ActionDutchAuctionWithdrawView {
   // reserves commitment.
   repeated asset.v1.ValueView reserves = 2;
 }
+
+message EventDutchAuctionScheduled {
+  AuctionId auction_id = 1;
+  DutchAuctionDescription description = 2;
+}
+
+message EventDutchAuctionUpdated {
+  AuctionId auction_id = 1;
+  DutchAuctionState state = 2;
+}
+
+message EventDutchAuctionEnded {
+  // The reason the auction ended.
+  enum Reason {
+    REASON_UNSPECIFIED = 0;
+    // The auction ended due to reaching its terminal height.
+    REASON_EXPIRED = 1;
+    // The auction ran out of reserves.
+    REASON_FILLED = 2;
+    // The auction ended was terminated by the initiator.
+    REASON_CLOSED_BY_OWNER = 3;
+  }
+
+  AuctionId auction_id = 1;
+  DutchAuctionState state = 2;
+  Reason reason = 3;
+}
