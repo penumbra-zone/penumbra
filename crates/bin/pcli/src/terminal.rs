@@ -48,21 +48,21 @@ impl Terminal for ActualTerminal {
         println!("Do you approve this {description}?");
         println!("{json}");
         println!("Press enter to continue");
-        self.next_response().await?;
+        self.read_line_raw().await?;
         Ok(true)
     }
 
-    async fn explain(&self, msg: &str) -> Result<()> {
+    fn explain(&self, msg: &str) -> Result<()> {
         println!("{}", msg);
         Ok(())
     }
 
     async fn broadcast(&self, data: &str) -> Result<()> {
-        println!("{}", data);
+        println!("\n{}\n", data);
         Ok(())
     }
 
-    async fn next_response(&self) -> Result<Option<String>> {
+    async fn read_line_raw(&self) -> Result<String> {
         // Use raw mode to allow reading more than 1KB/4KB of data at a time
         // See https://unix.stackexchange.com/questions/204815/terminal-does-not-accept-pasted-or-typed-lines-of-more-than-1024-characters
         use termion::raw::IntoRawMode;
@@ -101,10 +101,7 @@ impl Terminal for ActualTerminal {
         let line = String::from_utf8(bytes)?;
         tracing::debug!(?line, "read response line");
 
-        if line.is_empty() {
-            return Ok(None);
-        }
-        Ok(Some(line))
+        Ok(line)
     }
 
     async fn get_password(&self) -> Result<String> {

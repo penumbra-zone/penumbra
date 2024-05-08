@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use penumbra_transaction::AuthorizationData;
 use rand_core::OsRng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tonic::{async_trait, Request, Response, Status};
 
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
@@ -44,15 +44,6 @@ where
     Ok(serde_json::to_string(&data.to_proto())?)
 }
 
-fn from_json<'a, T: DomainType>(data: &'a str) -> Result<T>
-where
-    T: DomainType,
-    anyhow::Error: From<<T as TryFrom<<T as DomainType>::Proto>>::Error>,
-    <T as DomainType>::Proto: Deserialize<'a>,
-{
-    Ok(serde_json::from_str::<<T as DomainType>::Proto>(data)?.try_into()?)
-}
-
 /// Act as a follower in the signing protocol.
 ///
 /// All this function does is produce side effects on the terminal, potentially returning
@@ -63,16 +54,8 @@ pub async fn follow(
     terminal: &impl Terminal,
 ) -> Result<()> {
     // Round 1
-    terminal
-        .explain("Paste the coordinator's first message:")
-        .await?;
-    let round1_message: sign::CoordinatorRound1 = {
-        let string = terminal
-            .next_response()
-            .await?
-            .ok_or(anyhow!("expected message from coordinator"))?;
-        from_json(&string)?
-    };
+    terminal.explain("Paste the coordinator's first message:")?;
+    let round1_message = terminal.next_response::<sign::CoordinatorRound1>().await?;
     // Pick the right config based on the message
     let config = match round1_message.signing_request() {
         SigningRequest::TransactionPlan(_) => config.ok_or(anyhow!(
@@ -92,25 +75,13 @@ pub async fn follow(
         return Ok(());
     }
     let (round1_reply, round1_state) = sign::follower_round1(&mut OsRng, config, round1_message)?;
-    terminal
-        .explain("Send this message to the coordinator:")
-        .await?;
+    terminal.explain("Send this message to the coordinator:")?;
     terminal.broadcast(&to_json(&round1_reply)?).await?;
     // Round 2
-    terminal
-        .explain("Paste the coordinator's second message:")
-        .await?;
-    let round2_message: sign::CoordinatorRound2 = {
-        let string = terminal
-            .next_response()
-            .await?
-            .ok_or(anyhow!("expected message from coordinator"))?;
-        from_json(&string)?
-    };
+    terminal.explain("Paste the coordinator's second message:")?;
+    let round2_message = terminal.next_response::<sign::CoordinatorRound2>().await?;
     let round2_reply = sign::follower_round2(config, round1_state, round2_message)?;
-    terminal
-        .explain("Send this message to the coordinator:")
-        .await?;
+    terminal.explain("Send this message to the coordinator:")?;
     terminal.broadcast(&to_json(&round2_reply)?).await?;
 
     Ok(())
@@ -127,48 +98,72 @@ pub async fn dkg(t: u16, n: u16, terminal: &impl Terminal) -> Result<Config> {
     let expected_responses = n.saturating_sub(1) as usize;
     // Round 1 top
     let (round1_message, state) = dkg::round1(&mut OsRng, t, n)?;
-    terminal
-        .explain("Round 1/2: Send this message to all other participants:")
-        .await?;
+    terminal.explain("Round 1/2: Send this message to all other participants:")?;
     terminal.broadcast(&to_json(&round1_message)?).await?;
     // Round 1 bottom
-    terminal
-        .explain(&format!(
-            "Round 1/2: Gather {expected_responses} messages from the other participants:"
-        ))
-        .await?;
+    terminal.explain(&format!(
+        "Round 1/2: Gather {expected_responses} messages from the other participants:"
+    ))?;
     let round1_replies = {
         let mut acc: Vec<dkg::Round1> = Vec::new();
         while acc.len() < expected_responses {
-            let string = terminal
-                .next_response()
-                .await?
-                .ok_or(anyhow!("expected message from another participant"))?;
-            acc.push(from_json(&string)?);
+            let rsp = terminal.next_response::<dkg::Round1>().await?;
+            // Before we accept, check that the user hasn't double-pasted the same message.
+            if acc
+                .iter()
+                // Inefficient but good enough.
+                .any(|existing| existing.encode_to_vec() == rsp.encode_to_vec())
+            {
+                terminal.explain("Received a duplicate message, ignoring")?;
+                continue;
+            }
+            // Before we accept, check that the user hasn't pasted their own message.
+            if round1_message.encode_to_vec() == rsp.encode_to_vec() {
+                terminal.explain("Received our own outbound message by mistake, ignoring")?;
+                continue;
+            }
+            acc.push(rsp);
+            terminal.explain(&format!(
+                "Received {}/{} responses...",
+                acc.len(),
+                expected_responses
+            ))?;
         }
         acc
     };
 
     // Round 2 top
     let (round2_message, state) = dkg::round2(&mut OsRng, state, round1_replies)?;
-    terminal
-        .explain("Round 2/2: Send this message to all other participants:")
-        .await?;
+    terminal.explain("Round 2/2: Send this message to all other participants:")?;
     terminal.broadcast(&to_json(&round2_message)?).await?;
     // Round 2 bottom
-    terminal
-        .explain(&format!(
-            "Round 2/2: Gather {expected_responses} messages from the other participants:"
-        ))
-        .await?;
+    terminal.explain(&format!(
+        "Round 2/2: Gather {expected_responses} messages from the other participants:"
+    ))?;
     let round2_replies = {
         let mut acc: Vec<dkg::Round2> = Vec::new();
         while acc.len() < expected_responses {
-            let string = terminal
-                .next_response()
-                .await?
-                .ok_or(anyhow!("expected message from another participant"))?;
-            acc.push(from_json(&string)?);
+            let rsp = terminal.next_response::<dkg::Round2>().await?;
+            // Before we accept, check that the user hasn't double-pasted the same message.
+            if acc
+                .iter()
+                // Inefficient but good enough.
+                .any(|existing| existing.encode_to_vec() == rsp.encode_to_vec())
+            {
+                terminal.explain("Received a duplicate message, ignoring")?;
+                continue;
+            }
+            // Before we accept, check that the user hasn't pasted their own message.
+            if round2_message.encode_to_vec() == rsp.encode_to_vec() {
+                terminal.explain("Received our own outbound message by mistake, ignoring")?;
+                continue;
+            }
+            acc.push(rsp);
+            terminal.explain(&format!(
+                "Received {}/{} responses...",
+                acc.len(),
+                expected_responses
+            ))?;
         }
         acc
     };
@@ -203,26 +198,17 @@ impl<T: Terminal> Threshold<T> {
         // Round 1
         let (round1_message, state1) = sign::coordinator_round1(&mut OsRng, &self.config, request)?;
         self.terminal
-            .explain("Send this message to the other signers:")
-            .await?;
+            .explain("Send this message to the other signers:")?;
         self.terminal.broadcast(&to_json(&round1_message)?).await?;
-        self.terminal
-            .explain(&format!(
-                "Now, gather at least {} replies from the other signers, and paste them below:",
-                self.config.threshold() - 1
-            ))
-            .await?;
+        self.terminal.explain(&format!(
+            "Now, gather at least {} replies from the other signers, and paste them below:",
+            self.config.threshold() - 1
+        ))?;
         let round1_replies = {
-            let mut acc = Vec::new();
+            let mut acc = Vec::<sign::FollowerRound1>::new();
             // We need 1 less, since we've already included ourselves.
             for _ in 1..self.config.threshold() {
-                let reply_str = self
-                    .terminal
-                    .next_response()
-                    .await?
-                    .ok_or(anyhow!("expected round1 reply"))?;
-                let reply = from_json::<sign::FollowerRound1>(&reply_str)?;
-                acc.push(reply);
+                acc.push(self.terminal.next_response().await?);
             }
             acc
         };
@@ -230,25 +216,16 @@ impl<T: Terminal> Threshold<T> {
         let (round2_message, state2) =
             sign::coordinator_round2(&self.config, state1, &round1_replies)?;
         self.terminal
-            .explain("Send this message to the other signers:")
-            .await?;
+            .explain("Send this message to the other signers:")?;
         self.terminal.broadcast(&to_json(&round2_message)?).await?;
-        self.terminal
-            .explain(
-                "Now, gather the replies from the *same* signers as Round 1, and paste them below:",
-            )
-            .await?;
+        self.terminal.explain(
+            "Now, gather the replies from the *same* signers as Round 1, and paste them below:",
+        )?;
         let round2_replies = {
-            let mut acc = Vec::new();
+            let mut acc = Vec::<sign::FollowerRound2>::new();
             // We need 1 less, since we've already included ourselves.
             for _ in 1..self.config.threshold() {
-                let reply_str = self
-                    .terminal
-                    .next_response()
-                    .await?
-                    .ok_or(anyhow!("expected round2 reply"))?;
-                let reply = from_json::<sign::FollowerRound2>(&reply_str)?;
-                acc.push(reply);
+                acc.push(self.terminal.next_response().await?);
             }
             acc
         };
@@ -402,7 +379,7 @@ mod test {
             Ok(true)
         }
 
-        async fn explain(&self, _msg: &str) -> Result<()> {
+        fn explain(&self, _msg: &str) -> Result<()> {
             Ok(())
         }
 
@@ -411,8 +388,8 @@ mod test {
             Ok(())
         }
 
-        async fn next_response(&self) -> Result<Option<String>> {
-            Ok(self.incoming.lock().await.recv().await)
+        async fn read_line_raw(&self) -> Result<String> {
+            Ok(self.incoming.lock().await.recv().await.unwrap_or_default())
         }
 
         async fn get_password(&self) -> Result<String> {
@@ -444,7 +421,7 @@ mod test {
             Ok(true)
         }
 
-        async fn explain(&self, _msg: &str) -> Result<()> {
+        fn explain(&self, _msg: &str) -> Result<()> {
             Ok(())
         }
 
@@ -455,8 +432,8 @@ mod test {
             Ok(())
         }
 
-        async fn next_response(&self) -> Result<Option<String>> {
-            Ok(self.incoming.lock().await.recv().await)
+        async fn read_line_raw(&self) -> Result<String> {
+            Ok(self.incoming.lock().await.recv().await.unwrap_or_default())
         }
 
         async fn get_password(&self) -> Result<String> {
