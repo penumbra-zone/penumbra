@@ -2,7 +2,7 @@ use std::io::{IsTerminal, Read, Write};
 
 use anyhow::Result;
 use penumbra_custody::threshold::{SigningRequest, Terminal};
-use termion::input::TermRead;
+use termion::{color, input::TermRead};
 use tonic::async_trait;
 
 async fn read_password(prompt: &str) -> Result<String> {
@@ -48,26 +48,37 @@ impl Terminal for ActualTerminal {
         println!("Do you approve this {description}?");
         println!("{json}");
         println!("Press enter to continue");
-        self.next_response().await?;
+        self.read_line_raw().await?;
         Ok(true)
     }
 
-    async fn explain(&self, msg: &str) -> Result<()> {
-        println!("{}", msg);
+    fn explain(&self, msg: &str) -> Result<()> {
+        println!(
+            "{}{}{}",
+            color::Fg(color::Blue),
+            msg,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
     async fn broadcast(&self, data: &str) -> Result<()> {
-        println!("{}", data);
+        println!(
+            "\n{}{}{}\n",
+            color::Fg(color::Yellow),
+            data,
+            color::Fg(color::Reset)
+        );
         Ok(())
     }
 
-    async fn next_response(&self) -> Result<Option<String>> {
+    async fn read_line_raw(&self) -> Result<String> {
         // Use raw mode to allow reading more than 1KB/4KB of data at a time
         // See https://unix.stackexchange.com/questions/204815/terminal-does-not-accept-pasted-or-typed-lines-of-more-than-1024-characters
         use termion::raw::IntoRawMode;
         tracing::debug!("about to enter raw mode for long pasted input");
 
+        print!("{}", color::Fg(color::Red));
         // In raw mode, the input is not mirrored into the terminal, so we need
         // to read char-by-char and echo it back.
         let mut stdout = std::io::stdout().into_raw_mode()?;
@@ -75,10 +86,16 @@ impl Terminal for ActualTerminal {
         let mut bytes = Vec::with_capacity(8192);
         for b in std::io::stdin().bytes() {
             let b = b?;
+            // In raw mode, we need to handle control characters ourselves
+            if b == 3 || b == 4 {
+                // Ctrl-C or Ctrl-D
+                return Err(anyhow::anyhow!("aborted"));
+            }
             // In raw mode, the enter key might generate \r or \n, check either.
             if b == b'\n' || b == b'\r' {
                 break;
             }
+            // Store the byte we read and print it back to the terminal.
             bytes.push(b);
             stdout.write(&[b]).unwrap();
             // Flushing may not be the most efficient but performance isn't critical here.
@@ -89,16 +106,14 @@ impl Terminal for ActualTerminal {
         // We consumed a newline of some kind but didn't echo it, now print
         // one out so subsequent output is guaranteed to be on a new line.
         println!("");
+        print!("{}", color::Fg(color::Reset));
 
         tracing::debug!("exited raw mode and returned to cooked mode");
 
         let line = String::from_utf8(bytes)?;
         tracing::debug!(?line, "read response line");
 
-        if line.is_empty() {
-            return Ok(None);
-        }
-        Ok(Some(line))
+        Ok(line)
     }
 
     async fn get_password(&self) -> Result<String> {
