@@ -71,6 +71,10 @@ Given a randomizer $r \xleftarrow{\$} \mathbb F_r$, the randomized verification 
 
 Randomizing a signing key and then deriving the verification key associated to the randomized signing key gives the same result as randomizing the original verification key (with the same randomizer).
 
+## Implementation
+
+An implementation of `decaf377-rdsa` can be found [here](https://github.com/penumbra-zone/decaf377-rdsa).
+
 ## `Binding` signatures
 
 The second signature domain used in Penumbra is for binding signatures.  The
