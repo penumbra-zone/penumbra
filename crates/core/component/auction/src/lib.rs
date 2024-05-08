@@ -3,10 +3,10 @@
 #![deny(clippy::unwrap_used)]
 
 pub mod auction;
+pub mod event;
 pub mod genesis;
 pub mod params;
 pub mod state_key;
-pub mod event;
 
 #[cfg(feature = "component")]
 pub mod component;

@@ -5,7 +5,7 @@ use crate::auction::dutch::{DutchAuction, DutchAuctionDescription, DutchAuctionS
 use crate::auction::AuctionId;
 use crate::component::trigger_data::TriggerData;
 use crate::component::AuctionStoreRead;
-use crate::state_key;
+use crate::{event, state_key};
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
@@ -61,12 +61,17 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             output_reserves: Amount::zero(),
         };
 
-        let dutch_auction = DutchAuction { description, state };
+        let dutch_auction = DutchAuction {
+            description: description.clone(),
+            state,
+        };
 
         // Set the triggger
         self.set_trigger_for_dutch_id(auction_id, next_trigger);
         // Write position to state
         self.write_dutch_auction_state(dutch_auction);
+        // Emit an event
+        self.record_proto(event::dutch_auction_schedule_event(auction_id, description));
     }
 
     /// Execute the [`DutchAuction`] associated with [`AuctionId`], ticking its
@@ -171,10 +176,15 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .compute_step_index(trigger_height)
             .expect("trigger data is validated");
 
+        // We want to track the reason for the auction ending, so that we can emit
+        // an event with the appropriate context.
+        let is_auction_expired = step_index >= step_count;
+        let is_auction_filled = new_dutch_auction.state.input_reserves == Amount::zero();
+
         // Termination conditions:
         // 1. We have reached the `step_count` (= `end_height`)
         // 2. There are no more input reserves.
-        if step_index >= step_count || new_dutch_auction.state.input_reserves == Amount::zero() {
+        if is_auction_expired || is_auction_filled {
             // If the termination condition has been reached, we set the auction
             // sequence to 1 (Closed).
             new_dutch_auction.state.sequence = 1;
@@ -198,7 +208,20 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
         };
 
+        // Keep a copy of the auction state for the event.
+        let auction_state = new_dutch_auction.state.clone();
+
+        // Write back the new auction state.
         self.write_dutch_auction_state(new_dutch_auction);
+
+        // Emit an execution/termination event with the relevant context.
+        if is_auction_expired {
+            self.record_proto(event::dutch_auction_expired(auction_id, auction_state));
+        } else if is_auction_filled {
+            self.record_proto(event::dutch_auction_exhausted(auction_id, auction_state))
+        } else {
+            self.record_proto(event::dutch_auction_updated(auction_id, auction_state));
+        }
         Ok(())
     }
 

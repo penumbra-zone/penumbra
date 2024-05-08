@@ -2,10 +2,12 @@ use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
+use penumbra_proto::StateWriteProto;
 
 use crate::auction::dutch::ActionDutchAuctionEnd;
 use crate::component::AuctionStoreRead;
 use crate::component::DutchAuctionManager;
+use crate::event;
 
 use anyhow::{bail, Context};
 
@@ -35,7 +37,17 @@ impl ActionHandler for ActionDutchAuctionEnd {
             auction.state.sequence
         );
 
+        // Keep a copy of the auction state for the event.
+        let auction_state = auction.state.clone();
+
+        // Terminate the auction
         state.close_auction(auction).await?;
+        // Emit an event, tracing the reason for the auction ending.
+        state.record_proto(event::dutch_auction_closed_by_user(
+            auction_id,
+            auction_state,
+        ));
+
         Ok(())
     }
 }
