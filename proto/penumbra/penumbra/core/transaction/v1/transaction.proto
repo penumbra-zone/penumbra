@@ -199,6 +199,7 @@ message ActionView {
     component.shielded_pool.v1.OutputView output = 2;
     component.dex.v1.SwapView swap = 3;
     component.dex.v1.SwapClaimView swap_claim = 4;
+    component.governance.v1.DelegatorVoteView delegator_vote = 21;
 
     // Action types without visible/opaque variants
     component.stake.v1.ValidatorDefinition validator_definition = 16;
@@ -208,7 +209,6 @@ message ActionView {
     component.governance.v1.ProposalSubmit proposal_submit = 18;
     component.governance.v1.ProposalWithdraw proposal_withdraw = 19;
     component.governance.v1.ValidatorVote validator_vote = 20;
-    component.governance.v1.DelegatorVoteView delegator_vote = 21;
     component.governance.v1.ProposalDepositClaim proposal_deposit_claim = 22;
 
     component.dex.v1.PositionOpen position_open = 30;
