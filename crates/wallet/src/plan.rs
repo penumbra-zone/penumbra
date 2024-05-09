@@ -52,7 +52,7 @@ where
     let unclaimed_swaps = view.unclaimed_swaps().await?;
 
     for swap in unclaimed_swaps {
-        // We found an unspent swap NFT, so we can claim it.
+        // We found an unclaimed swap, so we can claim it.
         let swap_plaintext = swap.swap;
 
         let output_data = swap.output_data;

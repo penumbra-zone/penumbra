@@ -1,6 +1,14 @@
 # Spend Descriptions
 
-Each spend contains an SpendBody and a zk-SNARK spend proof.
+Each spend contains a `SpendBody`, a spend authorization signature, and a zk-SNARK spend proof.
+
+## [SpendBody](#spend-body)
+
+The body of a `Spend` has three parts:
+
+1. A revealed `Nullifier`, which nullifies the note commitment being spent;
+2. A balance commitment, which commits to the value balance of the spent note;
+3. The randomized verification key, used to verify the spend authorization signature provided on the spend.
 
 ## Invariants
 
@@ -16,7 +24,7 @@ The invariants that the Spend upholds are described below.
 
     2.2. No two spends on the ledger, even in the same transaction, can have the same nullifier.
 
-3. You can't spend a note that has not been created, unless the amount of that note is 0.
+3. You can't spend a note that has not been created, unless the amount of that note is 0. Notes with amount 0 are considered dummy spends and are allowed in the protocol.
 
 4. The spend does not reveal the amount, asset type, sender identity, or recipient identity.
 
@@ -30,13 +38,13 @@ The invariants that the Spend upholds are described below.
 
 #### Local Justification
 
-1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority.
+1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority via the `ivk` and `B_d` in the [Diversified Address Integrity](#diversified-address-integrity) check.
 
 2. The following checks prevent spending a positioned note twice:
 
     2.1. A note's transmission key binds to the nullifier key in circuit as described in the [Diversified Address Integrity](#diversified-address-integrity) section, and all components of a positioned note, along with this key are hashed to derive the nullifier in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
-    2.2. This is in the `ActionHandler` implementation on `check_stateful`, and an external check about the integrity of each transaction.
+    2.2. This is in the `ActionHandler` implementation, and an external check about the integrity of each transaction.
 
 3. The circuit verifies for non-zero amounts that there is a valid [Merkle authentication path](#merkle-auth-path-verification) to the note in the global state commitment tree.
 
@@ -44,7 +52,7 @@ The invariants that the Spend upholds are described below.
 
     4.1 The nullifier appears in public, but the nullifier does not reveal anything about the note commitment it nullifies. The spender demonstrates [knowledge of the pre-image of the hash used for nullifier derivation in zero-knowledge](#nullifier-integrity).
 
-    4.2 Merkle path verification, and all other integrity checks involving private data about the note (address, amount, asset type) are done in zero-knowledge.
+    4.2 [Merkle path verification](#merkle-auth-path-verification), [Note Commitment Integrity](#note-commitment-integrity), [Diversified Address Integrity](#diversified-address-integrity), [Nullifier Integrity](#nullifier-integrity), and [Balance Commitment Integrity](#balance-commitment-integrity) which all involve private data about the note (address, amount, asset type) are done in zero-knowledge.
 
     4.3 A randomized verification key (provided on each spend) is used to prevent linkability of spends. The spender demonstrates in zero-knowledge that [this randomized verification key was derived from the spend authorization key given a witnessed spend authorization randomizer](#randomized-verification-key-integrity). The spender also demonstrates in zero-knowledge that the [spend authorization key is associated with the address on the note being spent](#diversified-address-integrity).
 
@@ -108,7 +116,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### [Diversified address Integrity](#diversified-address-integrity)
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the note being spent was derived as:
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the note being spent was derived as:
 
 $pk_d ​= [ivk] B_d$
 

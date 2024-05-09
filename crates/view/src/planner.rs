@@ -273,7 +273,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         Ok(self)
     }
 
-    /// Perform a swap claim based on an input swap NFT with a pre-paid fee.
+    /// Perform a swap claim based on an input swap with a pre-paid fee.
     #[instrument(skip(self))]
     pub fn swap_claim(&mut self, plan: SwapClaimPlan) -> &mut Self {
         self.action_list.push(plan);

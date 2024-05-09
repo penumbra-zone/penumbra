@@ -4,7 +4,7 @@ We commit to:
 
 * the value $v$ of the note.
 * the asset ID $ID$ of the note,
-* the diversified payment address $pk_d$,
+* the diversified transmission key $pk_d$,
 * the diversified basepoint $B_d$,
 
 The note commitment is generated using rate-5 Poseidon hashing with domain separator $ds$ defined as the `Fq` element constructed using:
@@ -25,7 +25,7 @@ is derived as:
 
 We commit to the diversified basepoint and payment address instead of the
 diversifier itself, as in the circuit `OutputProof` when we verify the integrity of
-the derived ephemeral key $epk$, we need $B_d$: 
+the derived ephemeral key $epk$, we need $B_d$:
 
 $epk = [esk] B_d$.
 

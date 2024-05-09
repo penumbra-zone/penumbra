@@ -30,7 +30,8 @@ creating a new note commitment, and proving that it commits to a valid note.
 Spending a note involves proving that the spent note was previously included in
 the state commitment tree, using the spending key to demonstrate spend
 authorization, and revealing the nullifier, which prevents the same note from
-being spent twice.
+being spent twice. Nullifiers that correspond to each spent note are tracked in
+the *nullifier set*, which is recorded as part of the public chain state.
 
 [multi_asset]: https://github.com/zcash/zips/blob/626ea6ed78863290371a4e8bc74ccf8e92292099/drafts/zip-user-defined-assets.rst
 [ADR001]: https://docs.cosmos.network/master/architecture/adr-001-coin-source-tracing.html

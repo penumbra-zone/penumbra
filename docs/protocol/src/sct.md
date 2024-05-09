@@ -13,7 +13,7 @@ privately create new state fragments, and use zero-knowledge proofs to certify
 that the new fragments were created according to the rules of the protocol.
 
 The state commitment tree component manages commitments to private state
-fragments. It maintains two data structures, each responsible for one side of
+fragments. Nodes maintain two data structures, each responsible for one side of
 state management:
 
 1. The _state commitment tree_ ingests and records new state commitments as transactions produce new state fragments;
@@ -49,4 +49,5 @@ they consume, and the chain checks that they have not been previously revealed.
 Nullifiers can only be derived by the actor with authority over the state
 fragment, so the creation of a state fragment (revealing its state commitment)
 and the consumption of that state fragment (revealing its nullifier) are
-publicly unlinkable.
+publicly unlinkable. In practice, the nullifier set is stored in the public
+state using the [Jellyfish Merkle Tree (JMT)](https://diem-developers-components.netlify.app/papers/jellyfish-merkle-tree/2021-01-14.pdf).

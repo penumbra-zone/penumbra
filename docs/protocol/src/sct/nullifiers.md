@@ -40,7 +40,7 @@ Nullifiers are derived only semi-generically. While the nullifier derivation
 itself is generic, depending only on the nullifier key and the positioned
 commitment, each type of state fragment is responsible for defining how the
 nullifier key is linked to the content of that state fragment.  Because
-nullifiers prevent double-spends, this linking is critical for security. 
+nullifiers prevent double-spends, this linking is critical for security.
 
 This section describes the abstract properties required for nullifier key
 linking, and how each type of state fragment achieves those properties.

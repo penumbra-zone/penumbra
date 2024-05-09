@@ -27,7 +27,7 @@ The invariants that the Output upholds are described below.
 
     2.1 The output data included in a transaction preserves this property.
 
-    2.2 The integrity checks as described above are done privately.
+    2.2 The [note commitment integrity check](#note-commitment-integrity) and the [balance commitment integrity check](#balance-commitment-integrity) are done in zero-knowledge.
 
 3. The balance contribution of the value of the note is private.
 
@@ -37,11 +37,11 @@ The invariants that the Output upholds are described below.
 
     1.1 The note commitment binds the note to the typed value and the address of the recipient.
 
-    1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value) pair.
+    1.2 Each note has a unique note commitment if the note blinding factor is unique for duplicate (recipient, typed value) pairs. Duplicate note commitments are allowed on chain since they commit to the same (recipient, typed value, randomness) tuple[^1].
 
 2. The privacy of the note data is enforced via:
 
-    2.1 The output note, which includes the amount, asset, and address of the recipient, is symmetrically encrypted to a key that only the recipient and sender can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender address can *optionally* be included in the symmetrically encrypted memo field of the transaction, which can be decrypted by any output in that transaction as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender or recipient can authorize other parties to view the contents of the note by disclosure of these symmetric keys.
+    2.1 The output note, which includes the amount, asset, and address of the recipient, is symmetrically encrypted to a key that only the recipient and sender can derive, as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The return (sender) address can *optionally* be included in the symmetrically encrypted memo field of the transaction, which can be decrypted by any output in that transaction as specified in [Transaction Cryptography](../../addresses_keys/transaction_crypto.md). The sender or recipient can authorize other parties to view the contents of the note by disclosure of these symmetric keys.
 
     2.2 The note commitment scheme used for property 1 preserves privacy via the hiding property of the note commitment scheme. The sender demonstrates knowledge of the opening of the [note commitment in zero-knowledge](#note-commitment-integrity).
 
@@ -56,6 +56,16 @@ The invariants that the Output upholds are described below.
 Clients using the ephemeral public key $epk$ provided in an output body to decrypt a note payload MUST check:
 
 $epk = [esk] B_d$
+
+This check exists to mitigate a potential attack wherein an attacker attempts to
+link together a target's addresses. Given that the attacker knows the address of
+the target, an attacker can send a note encrypted using the $B_d$ of a second
+address they suspect the target controls. If the target _does_ control both
+addresses, then the target will be able to decrypt this note. If the target responds to
+the attacker out of band confirming the payment was received, the attacker has
+learned the target does control both addresses. To avoid this, client software checks the
+_correct_ diversified basepoint is used during note decryption. See
+[ZIP 212](https://zips.z.cash/zip-0212) for further details.
 
 ## Output zk-SNARK Statements
 
@@ -93,9 +103,17 @@ where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific
 generator point derived in-circuit as described in [Assets and
 Values](../../assets.md).
 
+The asset-specific generator is derived in-circuit instead of witnessed to avoid a malicious prover witnessing the negation of a targeted asset-specific generator. See [Section 0.3 of the MASP specification for more details of this attack](https://github.com/anoma/masp/blob/main/docs/multi-asset-shielded-pool.pdf).
+
 ### Diversified Base is not Identity
 
 The zk-SNARK certifies that the diversified basepoint $B_d$ is not identity.
 
 Note that we do _not_ check the integrity of the ephemeral public key $epk$ in the zk-SNARK.
 Instead this check should be performed at note decryption time as described above.
+
+[^1]: Duplicate note commitments are allowed such that nodes do not need to
+maintain a database of all historical commitments and check for distinctness.
+They simply maintain the state commitment tree, adding new state commitments
+as they appear. Two notes with the same typed value and address will not have
+the same commitment due to the randomness provided by the note blinding factor.

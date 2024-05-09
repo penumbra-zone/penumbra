@@ -1,6 +1,18 @@
 # DelegatorVote Descriptions
 
-Each delegator vote contains an DelegatorVoteBody and a zk-SNARK delegator vote proof.
+Each delegator vote contains an DelegatorVoteBody, a spend authorization signature, and a zk-SNARK delegator vote proof.
+
+## [DelegatorVoteProof](#delegatorvote-body)
+
+The body of a `DelegatorVote` has three parts:
+
+1. The proposal ID the vote is for;
+2. The start position of the proposal in the state commitment tree;
+3. The `Vote` on the proposal;
+4. The `Value` of the staked note being used to vote;
+5. The unbonded amount equivalent to the staked value being used to vote;
+6. A revealed `Nullifier`, which nullifies the staked note commitment being used to vote;
+7. The randomized verification key, used to verify the spend authorization signature provided on the delegator vote.
 
 ## Invariants
 
@@ -112,7 +124,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### Diversified Address Integrity
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the note was derived as:
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the note was derived as:
 
 $pk_d ​= [ivk] B_d$
 

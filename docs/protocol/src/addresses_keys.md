@@ -2,7 +2,7 @@
 
 The key hierarchy is a modification of the design in Zcash [Sapling].  The main
 differences are that it is designed for use with BLS12-377 rather than
-BLS12-381, that it uses Poseidon as a hash and PRF, `decaf377` as the embedded
+BLS12-381, that it also uses Poseidon[^1] as a hash and PRF, `decaf377` as the embedded
 group, and that it includes support for [fuzzy message
 detection](./crypto/fmd.md).
 
@@ -82,3 +82,7 @@ flowchart BT
 
 
 [Sapling]: https://zips.z.cash/protocol/protocol.pdf
+[^1]: In general, the Poseidon hash function is used in places where hashing
+needs to be done in-circuit, for example, when hashing new commitments into the
+state commitment tree. Elsewhere in the protocol, we use BLAKE2b-512 e.g.
+in the derivation of the spend authorization key, which is not done in-circuit.

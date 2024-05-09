@@ -1,6 +1,16 @@
 # SwapClaim Descriptions
 
-Each swap claim contains a SwapClaimBody and a zk-SNARK swap claim proof.
+Each swap claim contains a SwapClaimBody and a zk-SNARK swap claim proof[^1].
+
+## [SwapClaim Body](#swapclaim-body)
+
+The body of a `SwapClaim` has four parts:
+
+1. A revealed `Nullifier`, which nullifies the swap commitment being claimed;
+2. A balance commitment, which commits to the value balance of the spent note;
+3. Note commitments for each of the two output notes minted by the `SwapClaim`;
+4. The prepaid `Fee` being consumed by the `SwapClaim`;
+5. The `BatchSwapOutputData` corresponding to the block in which the swap was executed.
 
 ## Invariants
 
@@ -48,9 +58,9 @@ The invariants that the SwapClaim upholds are described below.
 
     5.1. A swap's transmission key binds to the nullifier key as described in the [Nullifier Key Linking](#nullifier-key-linking) section, and all components of a positioned swap, along with this key, are hashed to derive the nullifier, in circuit as described below in the [Nullifier Integrity](#nullifier-integrity) section.
 
-    5.2. In the `ActionHandler` for `check_stateful` we check that the nullifier is unspent.
+    5.2. In the `ActionHandler` we check that the nullifier is unspent.
 
-6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check.
+6. The revealed SwapClaim on the nullifier does not reveal the swap commitment, since the [Nullifier Integrity](#nullifier-integrity) check is done in zero-knowledge. The amount and asset type of each output note is hidden via the hiding property of the note commitments, which the claimer demonstrates an opening of via the [Output Note Commitment Integrity](#output-note-commitment-integrity) check. The minted output notes are encrypted.
 
 7. The balance contribution of the two output notes is zero. The only contribution to the balance is the pre-paid SwapClaim fee.
 
@@ -123,7 +133,7 @@ as described in [Nullifiers](../../sct/nullifiers.md).
 
 ### [Nullifier Key Linking](#nullifier-key-linking)
 
-The zk-SNARK certifies that the diversified address $pk_d$ associated with the
+The zk-SNARK certifies that the diversified transmission key $pk_d$ associated with the
 swap being claimed was derived as:
 
 $pk_d ​= [ivk] B_d$
@@ -143,15 +153,20 @@ witnessed as part of the swap plaintext.
 
 ### [Height Consistency Check](#height-consistency-check)
 
-The zk-SNARK certifies that the swap commitment's height is equal to the height
-of the batch swap output data (the clearing price height).
+We compute $h_{swap}$ and $e_{swap}$ from the position of the swap commitment
+in the state commitment tree. We compute $h_{BSOD}$ and $e_{BSOD}$ from the
+position prefix where the batch swap occurred, provided on the batch swap output
+data (BSOD).
 
-We compute the intra-epoch block height $h_b$ from the position $pos$ of the swap
-commitment and check the following identity:
+The zk-SNARK certifies that the swap commitment's block height is equal to the block height
+of the BSOD:
 
-$h = h_e + h_b$
+$h_{BSOD} = h_{swap}$
 
-where $h, h_e$ are provided on the batch swap output data as a public input.
+The zk-SNARK also certifies that the swap commitment's epoch is equal to the epoch
+of the BSOD:
+
+$e_{BSOD} = e_{swap}$
 
 ### [Trading Pair Consistency Check](#trading-pair-consistency-check)
 
@@ -179,3 +194,9 @@ $cm_2 = hash_6(ds, (rcm_2, \Lambda_{2i}, ID_2, B_d, pk_d, ck_d))$
 using the above witnessed values and where `ds` is a constant domain separator:
 
 `ds = from_le_bytes(BLAKE2b-512(b"penumbra.notecommit")) mod q`
+
+### Diversified Base is not Identity
+
+The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the address on the note is not identity.
+
+[^1]: There is also a deprecated and unused field `epoch_duration`.

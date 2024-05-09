@@ -3,7 +3,7 @@
 
 #### Invariants
 
-1. Value cannot be created or destroyed after genesis or via IBC. Value cannot be created by the DEX.
+1. Value cannot be created or destroyed after genesis or via IBC except staking (creates value), and DEX arbitrage execution (destroys value). The DEX cannot create value.
 
     1.1. Each action may create or destroy value, but commits to this imbalance, which when summed over a transaction, will not violate this rule.
 
@@ -12,6 +12,8 @@
 #### Justification
 
 1.1. We check that the summed balance commitment of a transaction commits to 0.
+
+2. The transaction binding signature is computed over the `AuthHash`, calculated from the proto-encoding of the entire `TransactionBody`. A valid binding signature can only be generated with knowledge of the opening of the balance commitments for each action in the transaction.
 
 ## Action-Level
 
