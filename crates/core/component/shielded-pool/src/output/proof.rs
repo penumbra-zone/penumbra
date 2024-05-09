@@ -125,8 +125,7 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
 
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity
-            .conditional_enforce_not_equal(&note_var.diversified_generator(), &Boolean::TRUE)?;
+        identity.enforce_not_equal(&note_var.diversified_generator())?;
 
         // Check integrity of balance commitment.
         let balance_commitment =
