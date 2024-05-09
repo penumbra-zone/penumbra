@@ -192,6 +192,8 @@ pub struct SwapClaimCircuit {
 impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: in the allocation of the address on the `SwapPlaintextVar`, we check the diversified
+        // base is not identity.
         let swap_plaintext_var =
             SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.private.swap_plaintext.clone()))?;
 
@@ -249,9 +251,6 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
             ivk.diversified_public(&swap_plaintext_var.claim_address.diversified_generator)?;
         computed_transmission_key
             .enforce_equal(&swap_plaintext_var.claim_address.transmission_key)?;
-        // Check the diversified base is not identity.
-        let identity = ElementVar::new_constant(cs.clone(), decaf377::Element::default())?;
-        identity.enforce_not_equal(&swap_plaintext_var.claim_address.diversified_generator)?;
 
         // Fee consistency check.
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
