@@ -164,6 +164,7 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
             Ok(self.private.spend_auth_randomizer)
         })?;
+        // Note: in the allocation of `AuthorizationKeyVar` we check it is not identity.
         let ak_element_var: AuthorizationKeyVar =
             AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
@@ -214,8 +215,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
         identity.enforce_not_equal(&note_var.diversified_generator())?;
-        // Check the ak is not identity.
-        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         Ok(())
     }

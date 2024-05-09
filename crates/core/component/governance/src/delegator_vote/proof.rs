@@ -172,6 +172,7 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         let spend_auth_randomizer_var = SpendAuthRandomizerVar::new_witness(cs.clone(), || {
             Ok(self.private.spend_auth_randomizer)
         })?;
+        // Note: in the allocation of `AuthorizationKeyVar` we check it is not identity.
         let ak_element_var: AuthorizationKeyVar =
             AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
@@ -220,7 +221,6 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Check elements were not identity.
         let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
         identity.enforce_not_equal(&note_var.diversified_generator())?;
-        identity.enforce_not_equal(&ak_element_var.inner)?;
 
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.
