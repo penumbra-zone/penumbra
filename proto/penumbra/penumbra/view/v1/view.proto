@@ -5,7 +5,7 @@ package penumbra.view.v1;
 import "google/protobuf/any.proto";
 import "penumbra/core/app/v1/app.proto";
 import "penumbra/core/asset/v1/asset.proto";
-import "penumbra/core/component/auction/v1alpha1/auction.proto";
+import "penumbra/core/component/auction/v1/auction.proto";
 import "penumbra/core/component/dex/v1/dex.proto";
 import "penumbra/core/component/fee/v1/fee.proto";
 import "penumbra/core/component/ibc/v1/ibc.proto";
@@ -157,7 +157,7 @@ message AuctionsRequest {
 }
 
 message AuctionsResponse {
-  core.component.auction.v1alpha1.AuctionId id = 1;
+  core.component.auction.v1.AuctionId id = 1;
   // The note recording the auction NFT.
   SpendableNoteRecord note_record = 4;
 
@@ -329,17 +329,17 @@ message TransactionPlannerRequest {
 
   message ActionDutchAuctionSchedule {
     // The description of the auction to schedule.
-    core.component.auction.v1alpha1.DutchAuctionDescription description = 1;
+    core.component.auction.v1.DutchAuctionDescription description = 1;
   }
 
   message ActionDutchAuctionEnd {
     // The unique id of the auction to close.
-    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+    core.component.auction.v1.AuctionId auction_id = 1;
   }
 
   message ActionDutchAuctionWithdraw {
     // The auction to withdraw funds from.
-    core.component.auction.v1alpha1.AuctionId auction_id = 1;
+    core.component.auction.v1.AuctionId auction_id = 1;
     // The sequence number of the withdrawal.
     uint64 seq = 2;
   }
