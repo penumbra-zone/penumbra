@@ -8,6 +8,15 @@ set -euo pipefail
 # preview is redeployed during the run of this script, the script will fail
 # as the chain ID will be different.
 
+# If `SUMMONER_SMOKE_RESET=1` is set, automatically reset the testnet data
+# directory, and clear the summonerd directory. This is helpful if running this
+# test in a loop with e.g. `entr` or `cargo watch`.
+if [[ "${SUMMONER_SMOKE_RESET:-0}" -eq '1' ]] ; then
+    cargo run --release --bin pd -- testnet unsafe-reset-all
+    rm -rf /tmp/summonerd
+    rm -rf /tmp/account1
+fi
+
 # Fail fast if testnet dir exists, otherwise `cargo run ...` will block
 # for a while, masking the error.
 if [[ -d ~/.penumbra/testnet_data ]] ; then
