@@ -1,5 +1,7 @@
 use crate::auction::dutch::{DutchAuctionDescription, DutchAuctionState};
 use crate::auction::AuctionId;
+use penumbra_asset::asset;
+use penumbra_num::Amount;
 use penumbra_proto::penumbra::core::component::auction::v1alpha1 as pb;
 
 /// Event for a Dutch auction that has been scheduled.
@@ -57,5 +59,31 @@ pub fn dutch_auction_exhausted(
         auction_id: Some(id.into()),
         state: Some(state.into()),
         reason: pb::event_dutch_auction_ended::Reason::Filled as i32,
+    }
+}
+
+// Event for value flowing *into* the auction component.
+pub fn auction_vcb_credit(
+    asset_id: asset::Id,
+    previous_balance: Amount,
+    new_balance: Amount,
+) -> pb::EventValueCircuitBreakerCredit {
+    pb::EventValueCircuitBreakerCredit {
+        asset_id: Some(asset_id.into()),
+        previous_balance: Some(previous_balance.into()),
+        new_balance: Some(new_balance.into()),
+    }
+}
+
+// Event for value flowing *out of* the auction component.
+pub fn auction_vcb_debit(
+    asset_id: asset::Id,
+    previous_balance: Amount,
+    new_balance: Amount,
+) -> pb::EventValueCircuitBreakerDebit {
+    pb::EventValueCircuitBreakerDebit {
+        asset_id: Some(asset_id.into()),
+        previous_balance: Some(previous_balance.into()),
+        new_balance: Some(new_balance.into()),
     }
 }

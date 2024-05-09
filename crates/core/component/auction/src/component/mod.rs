@@ -7,6 +7,7 @@ pub mod rpc;
 mod trigger_data;
 
 pub use auction::Auction;
+pub(crate) use auction::AuctionCircuitBreaker;
 pub use auction::{StateReadExt, StateWriteExt};
 pub(crate) use auction_store::AuctionStoreRead;
 pub(crate) use dutch_auction::DutchAuctionManager;

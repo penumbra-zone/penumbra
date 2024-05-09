@@ -200,3 +200,23 @@ message EventDutchAuctionEnded {
   DutchAuctionState state = 2;
   Reason reason = 3;
 }
+
+// A message emitted when value flows *into* the auction component.
+message EventValueCircuitBreakerCredit {
+  // The asset ID being deposited into the Auction component.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the Auction component.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the Auction component.
+  num.v1.Amount new_balance = 3;
+}
+
+// A message emitted when value flows *out* of the auction component.
+message EventValueCircuitBreakerDebit {
+  // The asset ID being deposited into the Auction component.
+  asset.v1.AssetId asset_id = 1;
+  // The previous balance of the asset in the Auction component.
+  num.v1.Amount previous_balance = 2;
+  // The new balance of the asset in the Auction component.
+  num.v1.Amount new_balance = 3;
+}

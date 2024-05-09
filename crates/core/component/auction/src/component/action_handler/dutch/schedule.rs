@@ -126,7 +126,7 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             "the supplied auction id is already known to the chain (id={id})"
         );
 
-        state.schedule_auction(schedule.description.clone()).await;
+        state.schedule_auction(schedule.description.clone()).await?;
         Ok(())
     }
 }

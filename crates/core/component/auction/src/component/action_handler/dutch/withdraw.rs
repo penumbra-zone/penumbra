@@ -49,7 +49,7 @@ impl ActionHandler for ActionDutchAuctionWithdraw {
 
         // Execute the withdrawal, zero-ing out the auction state
         // and increasing its sequence number.
-        let withdrawn_balance = state.withdraw_auction(auction_state);
+        let withdrawn_balance = state.withdraw_auction(auction_state).await?;
 
         // Check that the reported balance commitment, match the recorded reserves.
         let expected_reserve_commitment = withdrawn_balance.commit(Fr::zero());

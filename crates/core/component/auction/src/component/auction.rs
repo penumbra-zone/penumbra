@@ -1,8 +1,12 @@
 use crate::component::dutch_auction::HandleDutchTriggers;
+use crate::event;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
+use penumbra_asset::asset;
+use penumbra_asset::Value;
+use penumbra_num::Amount;
 use penumbra_proto::StateReadProto;
 use penumbra_proto::StateWriteProto;
 use std::sync::Arc;
@@ -15,8 +19,6 @@ pub struct Auction {}
 
 #[async_trait]
 impl Component for Auction {
-    // Note: this is currently empty, but will make future
-    // addition easy to do.
     type AppState = crate::genesis::Content;
 
     #[instrument(name = "auction", skip(state, app_state))]
@@ -80,6 +82,107 @@ pub trait StateWriteExt: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+
+/// Internal trait implementing value flow tracking.
+/// # Overview
+///
+///                                                               
+///                                                  ║            
+///                                                  ║            
+///                                           User initiated      
+///      Auction                                     ║            
+///     component                                    ║            
+///   ┏━━━━━━━━━━━┓                                  ▼            
+///   ┃┌─────────┐┃                     ╔════════════════════════╗
+///   ┃│    A    │┃◀━━value in━━━━━━━━━━║   Schedule auction A   ║
+///   ┃└─────────┘┃                     ╚════════════════════════╝
+///   ┃           ┃                                               
+///   ┃     │     ┃                                               
+///   ┃           ┃                     ■■■■■■■■■■■■■■■■■■■■■■■■■■
+///   ┃  closed   ┃━━━value out by ━━━━▶■■■■■■Dex□black□box■■■■■■■
+///   ┃   then    ┃   creating lp       ■■■■■■■■■■■■■■■■■■■■■■■■■■
+///   ┃withdrawn  ┃                                  ┃            
+///   ┃           ┃                                  ┃            
+///   ┃     │     ┃                value in by       ┃            
+///   ┃           ┃◀━━━━━━━━━━━━━━━withdrawing lp━━━━┛            
+///   ┃     │     ┃                                               
+///   ┃     ▼     ┃                                               
+///   ┃┌ ─ ─ ─ ─ ┐┃                     ╔════════════════════════╗
+///   ┃     A     ┃━━━value out━━━━━━━━▶║   Withdraw auction A   ║
+///   ┃└ ─ ─ ─ ─ ┘┃                     ╚════════════════════════╝
+///   ┗━━━━━━━━━━━┛                                  ▲            
+///                                                  ║            
+///                                                  ║            
+///                                           User initiated      
+///                                              withdrawl        
+///                                                  ║            
+///                                                  ║            
+///                                                  ║            
+///
+pub(crate) trait AuctionCircuitBreaker: StateWrite {
+    /// Fetch the current balance of the auction circuit breaker for a given asset,
+    /// returning zero if no balance is tracked yet.
+    async fn get_auction_value_balance_for(&self, asset_id: &asset::Id) -> Amount {
+        self.get(&state_key::value_balance::for_asset(asset_id))
+            .await
+            .expect("failed to fetch auction value breaker balance")
+            .unwrap_or_else(Amount::zero)
+    }
+
+    /// Credit a deposit into the auction component.
+    async fn auction_vcb_credit(&mut self, value: Value) -> Result<()> {
+        let prev_balance = self.get_auction_value_balance_for(&value.asset_id).await;
+        let new_balance = prev_balance.checked_add(&value.amount).ok_or_else(|| {
+            tracing::error!(
+                ?prev_balance,
+                ?value,
+                "overflowed balance while crediting auction circuit breaker"
+            );
+            anyhow::anyhow!("overflowed balance while crediting auction circuit breaker")
+        })?;
+
+        // Write the new balance to the chain state.
+        self.put(
+            state_key::value_balance::for_asset(&value.asset_id),
+            new_balance,
+        );
+        // And emit an event to trace the value flow.
+        self.record_proto(event::auction_vcb_credit(
+            value.asset_id,
+            prev_balance,
+            new_balance,
+        ));
+        Ok(())
+    }
+
+    /// Debit a balance from the auction component.
+    async fn auction_vcb_debit(&mut self, value: Value) -> Result<()> {
+        let prev_balance = self.get_auction_value_balance_for(&value.asset_id).await;
+        let new_balance = prev_balance.checked_sub(&value.amount).ok_or_else(|| {
+            tracing::error!(
+                ?prev_balance,
+                ?value,
+                "underflowed balance while debiting auction circuit breaker"
+            );
+            anyhow::anyhow!("underflowed balance while debiting auction circuit breaker")
+        })?;
+
+        // Write the new balance to the chain state.
+        self.put(
+            state_key::value_balance::for_asset(&value.asset_id),
+            new_balance,
+        );
+        // And emit an event to trace the value flow out of the component.
+        self.record_proto(event::auction_vcb_debit(
+            value.asset_id,
+            prev_balance,
+            new_balance,
+        ));
+        Ok(())
+    }
+}
+
+impl<T: StateWrite + ?Sized> AuctionCircuitBreaker for T {}
 
 #[cfg(tests)]
 mod tests {}
