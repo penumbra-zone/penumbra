@@ -153,6 +153,7 @@ pub struct DelegatorVoteCircuit {
 impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: In the allocation of the address on `NoteVar` we check the diversified base is not identity.
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof.commitment())
@@ -217,10 +218,6 @@ impl ConstraintSynthesizer<Fq> for DelegatorVoteCircuit {
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
         balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
-
-        // Check elements were not identity.
-        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.enforce_not_equal(&note_var.diversified_generator())?;
 
         // Additionally, check that the start position has a zero commitment index, since this is
         // the only sensible start time for a vote.

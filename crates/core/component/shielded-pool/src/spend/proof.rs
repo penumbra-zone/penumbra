@@ -145,6 +145,7 @@ pub struct SpendCircuit {
 impl ConstraintSynthesizer<Fq> for SpendCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: in the allocation of the address on `NoteVar` we check the diversified base is not identity.
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let claimed_note_commitment = StateCommitmentVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof.commitment())
@@ -211,10 +212,6 @@ impl ConstraintSynthesizer<Fq> for SpendCircuit {
         // Check integrity of balance commitment.
         let balance_commitment = note_var.value().commit(v_blinding_vars)?;
         balance_commitment.enforce_equal(&claimed_balance_commitment_var)?;
-
-        // Check the diversified base is not identity.
-        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.enforce_not_equal(&note_var.diversified_generator())?;
 
         Ok(())
     }

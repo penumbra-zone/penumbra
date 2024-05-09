@@ -113,6 +113,7 @@ impl OutputCircuit {
 impl ConstraintSynthesizer<Fq> for OutputCircuit {
     fn generate_constraints(self, cs: ConstraintSystemRef<Fq>) -> ark_relations::r1cs::Result<()> {
         // Witnesses
+        // Note: In the allocation of the address on `NoteVar`, we check the diversified base is not identity.
         let note_var = note::NoteVar::new_witness(cs.clone(), || Ok(self.private.note.clone()))?;
         let balance_blinding_arr: [u8; 32] = self.private.balance_blinding.to_bytes();
         let balance_blinding_vars = UInt8::new_witness_vec(cs.clone(), &balance_blinding_arr)?;
@@ -122,10 +123,6 @@ impl ConstraintSynthesizer<Fq> for OutputCircuit {
             StateCommitmentVar::new_input(cs.clone(), || Ok(self.public.note_commitment))?;
         let claimed_balance_commitment =
             BalanceCommitmentVar::new_input(cs.clone(), || Ok(self.public.balance_commitment))?;
-
-        // Check the diversified base is not identity.
-        let identity = ElementVar::new_constant(cs, decaf377::Element::default())?;
-        identity.enforce_not_equal(&note_var.diversified_generator())?;
 
         // Check integrity of balance commitment.
         let balance_commitment =
