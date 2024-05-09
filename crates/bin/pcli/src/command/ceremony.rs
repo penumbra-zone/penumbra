@@ -58,6 +58,7 @@ async fn handle_bid(app: &mut App, to: Address, from: AddressIndex, bid: &str) -
     planner.output(value, to);
     let plan = planner
         .memo("E PLURIBUS UNUM".into())
+        .memo_return_address(app.config.full_viewing_key.payment_address(from).0)
         .plan(
             app.view
                 .as_mut()
