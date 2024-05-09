@@ -84,6 +84,41 @@ pub trait StateWriteExt: StateWrite {
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 /// Internal trait implementing value flow tracking.
+/// # Overview
+///
+///                                                               
+///                                                  ║            
+///                                                  ║            
+///                                           User initiated      
+///      Auction                                     ║            
+///     component                                    ║            
+///   ┏━━━━━━━━━━━┓                                  ▼            
+///   ┃┌─────────┐┃                     ╔════════════════════════╗
+///   ┃│    A    │┃◀━━value in━━━━━━━━━━║   Schedule auction A   ║
+///   ┃└─────────┘┃                     ╚════════════════════════╝
+///   ┃           ┃                                               
+///   ┃     │     ┃                                               
+///   ┃           ┃                     ■■■■■■■■■■■■■■■■■■■■■■■■■■
+///   ┃  closed   ┃━━━value out by ━━━━▶■■■■■■Dex□black□box■■■■■■■
+///   ┃   then    ┃   creating lp       ■■■■■■■■■■■■■■■■■■■■■■■■■■
+///   ┃withdrawn  ┃                                  ┃            
+///   ┃           ┃                                  ┃            
+///   ┃     │     ┃                value in by       ┃            
+///   ┃           ┃◀━━━━━━━━━━━━━━━withdrawing lp━━━━┛            
+///   ┃     │     ┃                                               
+///   ┃     ▼     ┃                                               
+///   ┃┌ ─ ─ ─ ─ ┐┃                     ╔════════════════════════╗
+///   ┃     A     ┃━━━value out━━━━━━━━▶║   Withdraw auction A   ║
+///   ┃└ ─ ─ ─ ─ ┘┃                     ╚════════════════════════╝
+///   ┗━━━━━━━━━━━┛                                  ▲            
+///                                                  ║            
+///                                                  ║            
+///                                           User initiated      
+///                                              withdrawl        
+///                                                  ║            
+///                                                  ║            
+///                                                  ║            
+///
 pub(crate) trait AuctionCircuitBreaker: StateWrite {
     /// Fetch the current balance of the auction circuit breaker for a given asset,
     /// returning zero if no balance is tracked yet.
@@ -91,7 +126,7 @@ pub(crate) trait AuctionCircuitBreaker: StateWrite {
         self.get(&state_key::value_balance::for_asset(asset_id))
             .await
             .expect("failed to fetch auction value breaker balance")
-            .unwrap_or_else(|| Amount::zero())
+            .unwrap_or_else(Amount::zero)
     }
 
     /// Credit a deposit into the auction component.
@@ -146,6 +181,8 @@ pub(crate) trait AuctionCircuitBreaker: StateWrite {
         Ok(())
     }
 }
+
+impl<T: StateWrite + ?Sized> AuctionCircuitBreaker for T {}
 
 #[cfg(tests)]
 mod tests {}

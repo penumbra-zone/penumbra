@@ -4,9 +4,10 @@ use std::pin::Pin;
 use crate::auction::dutch::{DutchAuction, DutchAuctionDescription, DutchAuctionState};
 use crate::auction::AuctionId;
 use crate::component::trigger_data::TriggerData;
+use crate::component::AuctionCircuitBreaker;
 use crate::component::AuctionStoreRead;
 use crate::{event, state_key};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use futures::StreamExt;
@@ -25,7 +26,7 @@ use prost::{Message, Name};
 pub(crate) trait DutchAuctionManager: StateWrite {
     /// Schedule an auction for the specified [`DutchAuctionDescritpion`], initializing
     /// its state, and registering it for execution by the component.
-    async fn schedule_auction(&mut self, description: DutchAuctionDescription) {
+    async fn schedule_auction(&mut self, description: DutchAuctionDescription) -> Result<()> {
         let auction_id = description.id();
         let DutchAuctionDescription {
             input: _,
@@ -66,12 +67,17 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             state,
         };
 
+        // Deposit into the component's value balance.
+        self.auction_vcb_credit(dutch_auction.description.input)
+            .await
+            .context("failed to schedule auction")?;
         // Set the triggger
         self.set_trigger_for_dutch_id(auction_id, next_trigger);
         // Write position to state
         self.write_dutch_auction_state(dutch_auction);
         // Emit an event
         self.record_proto(event::dutch_auction_schedule_event(auction_id, description));
+        Ok(())
     }
 
     /// Execute the [`DutchAuction`] associated with [`AuctionId`], ticking its
@@ -156,20 +162,51 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             state: old_dutch_auction.state,
         };
 
-        // After consuming the LP, we reset the state, getting ready to either
-        // execute another session, or retire the auction.
+        // First, we reset the state (Lp/trigger tracking), transfer value from the dex
+        // and prepare to either: execute another session, or retire the auction altogether.
+
+        // 1. We untrack the old position.
         new_dutch_auction.state.current_position = None;
-        new_dutch_auction.state.input_reserves += lp_reserves
-            .provided()
-            .filter(|v| v.asset_id == input.asset_id)
-            .map(|v| v.amount)
-            .sum::<Amount>();
-        new_dutch_auction.state.output_reserves += lp_reserves
-            .provided()
-            .filter(|v| v.asset_id == output_id)
-            .map(|v| v.amount)
-            .sum::<Amount>();
+        // 2. We untrack the trigger.
         new_dutch_auction.state.next_trigger = None;
+
+        /* *********** value transfer *************** */
+        // Critically, we need to orchestrate a value transfer from the Dex (lp position)
+        // into the auction component. This is done in three steps:
+        // 1. Compute the LP inflow to the auction's input and output reserves
+        // 2. Credit the auction's value balance with the respective inflows.
+        // 3. Add the inflows to the auction's reserves.
+
+        // 1. We compute the inflow from the LP's reserves.
+        let lp_inflow_input_asset = Value {
+            asset_id: auction_input_id,
+            amount: lp_reserves
+                .provided()
+                .filter(|v| v.asset_id == auction_input_id)
+                .map(|v| v.amount)
+                .sum::<Amount>(),
+        };
+        let lp_inflow_output_asset = Value {
+            asset_id: auction_output_id,
+            amount: lp_reserves
+                .provided()
+                .filter(|v| v.asset_id == auction_output_id)
+                .map(|v| v.amount)
+                .sum::<Amount>(),
+        };
+
+        // 2. We credit the auction's value balance with the inflows.
+        self.auction_vcb_credit(lp_inflow_input_asset)
+            .await
+            .context("failed to absorb LP inflow of input asset into auction value balance")?;
+        self.auction_vcb_credit(lp_inflow_output_asset)
+            .await
+            .context("failed to absorb LP inflow of output asset into auction value balance")?;
+
+        // 3. We add the inflows to the auction's reserves.
+        new_dutch_auction.state.input_reserves += lp_inflow_input_asset.amount;
+        new_dutch_auction.state.output_reserves += lp_inflow_output_asset.amount;
+        /* ***************** end value transfer ************************** */
 
         // Compute the current step index, between 0 and `step_count`.
         let step_index = auction_trigger
@@ -316,21 +353,31 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             .get_dutch_auction_by_id(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("auction not found"))?;
-        self.withdraw_auction(auction);
+        self.withdraw_auction(auction).await?;
         Ok(())
     }
 
-    fn withdraw_auction(&mut self, mut auction: DutchAuction) -> Balance {
-        let previous_input_reserves = Balance::from(Value {
+    async fn withdraw_auction(&mut self, mut auction: DutchAuction) -> Result<Balance> {
+        let previous_input_reserves = Value {
             amount: auction.state.input_reserves,
             asset_id: auction.description.input.asset_id,
-        });
-        let previous_output_reserves = Balance::from(Value {
+        };
+        let previous_output_reserves = Value {
             amount: auction.state.output_reserves,
             asset_id: auction.description.output_id,
-        });
+        };
 
-        let withdraw_balance = previous_input_reserves + previous_output_reserves;
+        // We debit the auction's value balance with the outflows, aborting
+        // if the balance underflows.
+        self.auction_vcb_debit(previous_input_reserves)
+            .await
+            .context("couldn't withdraw input reserves from auction")?;
+        self.auction_vcb_debit(previous_output_reserves)
+            .await
+            .context("couldn't withdraw output reserves from auction")?;
+
+        let withdraw_balance =
+            Balance::from(previous_input_reserves) + Balance::from(previous_output_reserves);
 
         auction.state.sequence = auction.state.sequence.saturating_add(1);
         auction.state.current_position = None;
@@ -339,7 +386,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         auction.state.output_reserves = Amount::zero();
         self.write_dutch_auction_state(auction);
 
-        withdraw_balance
+        Ok(withdraw_balance)
     }
 }
 
@@ -450,6 +497,12 @@ trait Inner: StateWrite {
                 attempt_counter += 1;
                 continue;
             } else {
+                self.auction_vcb_debit(lp.reserves_1())
+                    .await
+                    .context("failed to debit vcb of r1 during position allocation")?;
+                self.auction_vcb_debit(lp.reserves_2())
+                    .await
+                    .context("failed to debit vcb of r2 during position allocation")?;
                 self.open_position(lp).await.expect("no state incoherence");
                 return Ok(position_id);
             }
