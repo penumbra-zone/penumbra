@@ -67,7 +67,7 @@ cargo run --quiet --release --bin pd -- start --home "${HOME}/.penumbra/testnet_
 pd_pid="$!"
 
 # Ensure processes are cleaned up after script exits, regardless of status.
-trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT
+trap 'kill -9 "$cometbft_pid" "$pd_pid"' EXIT INT
 
 echo "Waiting $TESTNET_BOOTTIME seconds for network to boot..."
 sleep "$TESTNET_BOOTTIME"
@@ -93,7 +93,7 @@ echo "Starting phase 1 run..."
 cargo run --quiet --release --bin summonerd -- start --phase 1 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 --bind-addr 127.0.0.1:8082 &
 phase1_pid="$!"
 # If script ends early, ensure phase 1 is halted.
-trap 'kill -9 "$phase1_pid"' EXIT
+trap 'kill -9 "$cometbft_pid" "$pd_pid" "$phase1_pid"' EXIT INT
 
 echo "Setting up test accounts..."
 # We are returning 0 always here because the backup wallet file does not respect the location of
@@ -123,7 +123,7 @@ echo "Starting phase 2 run..."
 cargo run --quiet --release --bin summonerd -- start --phase 2 --storage-dir /tmp/summonerd --fvk $SUMMONER_FVK --node http://127.0.0.1:8080 --bind-addr 127.0.0.1:8082 &
 phase2_pid="$!"
 # If script ends early, ensure phase 2 is halted.
-trap 'kill -9 "$phase2_pid"' EXIT
+trap 'kill -9 "$cometbft_pid" "$pd_pid" "$phase1_pid" "$phase2_pid' EXIT INT
 
 echo "Phase 2 contributions..."
 cargo run --quiet --release --bin pcli -- --home /tmp/account1 ceremony contribute --coordinator-url http://127.0.0.1:8082 --coordinator-address $SUMMONER_ADDRESS --phase 2 --bid 10penumbra
