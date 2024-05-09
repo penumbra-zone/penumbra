@@ -23,7 +23,6 @@ use penumbra_app::SUBSTORE_PREFIXES;
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
-use tokio::runtime;
 use tower_http::cors::CorsLayer;
 use tracing::Instrument as _;
 use tracing_subscriber::{prelude::*, EnvFilter};
@@ -183,10 +182,9 @@ async fn main() -> anyhow::Result<()> {
                 .install()
                 .expect("global recorder already installed");
 
-            // This spawns the HTTP service that lets Prometheus pull metrics from `pd`
-            let handle = runtime::Handle::try_current().expect("unable to get runtime handle");
-            handle.spawn(exporter);
-
+            // Spawn the HTTP service that lets Prometheus pull metrics from `pd`, and then
+            // register pd's metrics with the exporter.
+            tokio::spawn(exporter);
             pd::register_metrics();
 
             // We error out if a service errors, rather than keep running.
