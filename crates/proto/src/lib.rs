@@ -73,9 +73,9 @@ pub mod penumbra {
         /// Components of the Penumbra application.
         pub mod component {
             pub mod auction {
-                pub mod v1alpha1 {
-                    include!("gen/penumbra.core.component.auction.v1alpha1.rs");
-                    include!("gen/penumbra.core.component.auction.v1alpha1.serde.rs");
+                pub mod v1 {
+                    include!("gen/penumbra.core.component.auction.v1.rs");
+                    include!("gen/penumbra.core.component.auction.v1.serde.rs");
                 }
             }
             pub mod compact_block {

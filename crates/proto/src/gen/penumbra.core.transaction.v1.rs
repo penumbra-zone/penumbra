@@ -167,15 +167,15 @@ pub mod action {
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+            super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
         ActionDutchAuctionEnd(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdraw,
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdraw,
         ),
         #[prost(message, tag = "200")]
         Ics20Withdrawal(super::super::super::component::ibc::v1::Ics20Withdrawal),
@@ -470,15 +470,15 @@ pub mod action_view {
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionScheduleView,
+            super::super::super::component::auction::v1::ActionDutchAuctionScheduleView,
         ),
         #[prost(message, tag = "54")]
         ActionDutchAuctionEnd(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdrawView,
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdrawView,
         ),
         /// TODO: we have no way to recover the opening of the undelegate_claim's
         /// balance commitment, and can only infer the value from looking at the rest
@@ -673,15 +673,15 @@ pub mod action_plan {
         /// Dutch auctions
         #[prost(message, tag = "53")]
         ActionDutchAuctionSchedule(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionSchedule,
+            super::super::super::component::auction::v1::ActionDutchAuctionSchedule,
         ),
         #[prost(message, tag = "54")]
         ActionDutchAuctionEnd(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionEnd,
+            super::super::super::component::auction::v1::ActionDutchAuctionEnd,
         ),
         #[prost(message, tag = "55")]
         ActionDutchAuctionWithdraw(
-            super::super::super::component::auction::v1alpha1::ActionDutchAuctionWithdrawPlan,
+            super::super::super::component::auction::v1::ActionDutchAuctionWithdrawPlan,
         ),
     }
 }

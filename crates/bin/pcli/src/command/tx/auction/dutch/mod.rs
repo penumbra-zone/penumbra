@@ -229,7 +229,7 @@ impl DutchCmd {
                     bail!("auction state is missing from view server response")
                 };
 
-                use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
+                use penumbra_proto::core::component::auction::v1 as pb_auction;
                 // We're processing a Dutch auction:
                 assert_eq!(raw_da_state.type_url, pb_auction::DutchAuction::type_url());
 

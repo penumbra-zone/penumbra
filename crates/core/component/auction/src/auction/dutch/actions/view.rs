@@ -7,7 +7,7 @@ use crate::auction::{
 };
 use anyhow::anyhow;
 use penumbra_asset::ValueView;
-use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 /* Domain type definitions */

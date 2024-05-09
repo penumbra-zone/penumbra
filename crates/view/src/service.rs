@@ -412,8 +412,8 @@ impl ViewService for ViewServer {
         &self,
         request: tonic::Request<pb::AuctionsRequest>,
     ) -> Result<tonic::Response<Self::AuctionsStream>, tonic::Status> {
-        use penumbra_proto::core::component::auction::v1alpha1 as pb_auction;
-        use penumbra_proto::core::component::auction::v1alpha1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
+        use penumbra_proto::core::component::auction::v1 as pb_auction;
+        use penumbra_proto::core::component::auction::v1::query_service_client::QueryServiceClient as AuctionQueryServiceClient;
 
         let parameters = request.into_inner();
         let query_latest_state = parameters.query_latest_state;

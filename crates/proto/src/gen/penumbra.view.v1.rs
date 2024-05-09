@@ -25,7 +25,7 @@ impl ::prost::Name for AuctionsRequest {
 pub struct AuctionsResponse {
     #[prost(message, optional, tag = "1")]
     pub id: ::core::option::Option<
-        super::super::core::component::auction::v1alpha1::AuctionId,
+        super::super::core::component::auction::v1::AuctionId,
     >,
     /// The note recording the auction NFT.
     #[prost(message, optional, tag = "4")]
@@ -507,7 +507,7 @@ pub mod transaction_planner_request {
         /// The description of the auction to schedule.
         #[prost(message, optional, tag = "1")]
         pub description: ::core::option::Option<
-            super::super::super::core::component::auction::v1alpha1::DutchAuctionDescription,
+            super::super::super::core::component::auction::v1::DutchAuctionDescription,
         >,
     }
     impl ::prost::Name for ActionDutchAuctionSchedule {
@@ -525,7 +525,7 @@ pub mod transaction_planner_request {
         /// The unique id of the auction to close.
         #[prost(message, optional, tag = "1")]
         pub auction_id: ::core::option::Option<
-            super::super::super::core::component::auction::v1alpha1::AuctionId,
+            super::super::super::core::component::auction::v1::AuctionId,
         >,
     }
     impl ::prost::Name for ActionDutchAuctionEnd {
@@ -543,7 +543,7 @@ pub mod transaction_planner_request {
         /// The auction to withdraw funds from.
         #[prost(message, optional, tag = "1")]
         pub auction_id: ::core::option::Option<
-            super::super::super::core::component::auction::v1alpha1::AuctionId,
+            super::super::super::core::component::auction::v1::AuctionId,
         >,
         /// The sequence number of the withdrawal.
         #[prost(uint64, tag = "2")]

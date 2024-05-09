@@ -2,8 +2,8 @@
 
 use penumbra_dex::{component::PositionRead, lp::position};
 use penumbra_proto::{
-    core::component::auction::v1alpha1 as pb,
-    core::component::auction::v1alpha1::{
+    core::component::auction::v1 as pb,
+    core::component::auction::v1::{
         query_service_server::QueryService, AuctionStateByIdRequest, AuctionStateByIdResponse,
         AuctionStateByIdsRequest, AuctionStateByIdsResponse, DutchAuctionState,
     },

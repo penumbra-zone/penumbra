@@ -1,6 +1,6 @@
 use anyhow::{bail, Context};
 use penumbra_proto::{
-    penumbra::core::component::auction::v1alpha1 as pb, serializers::bech32str, DomainType,
+    penumbra::core::component::auction::v1 as pb, serializers::bech32str, DomainType,
 };
 use serde::{Deserialize, Serialize};
 
