@@ -475,6 +475,52 @@ impl ::prost::Name for EventDutchAuctionEnded {
         )
     }
 }
+/// A message emitted when value flows *into* the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerCredit {
+    /// The asset ID being deposited into the Auction component.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the Auction component.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the Auction component.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerCredit {
+    const NAME: &'static str = "EventValueCircuitBreakerCredit";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
+/// A message emitted when value flows *out* of the auction component.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventValueCircuitBreakerDebit {
+    /// The asset ID being deposited into the Auction component.
+    #[prost(message, optional, tag = "1")]
+    pub asset_id: ::core::option::Option<super::super::super::asset::v1::AssetId>,
+    /// The previous balance of the asset in the Auction component.
+    #[prost(message, optional, tag = "2")]
+    pub previous_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+    /// The new balance of the asset in the Auction component.
+    #[prost(message, optional, tag = "3")]
+    pub new_balance: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for EventValueCircuitBreakerDebit {
+    const NAME: &'static str = "EventValueCircuitBreakerDebit";
+    const PACKAGE: &'static str = "penumbra.core.component.auction.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.auction.v1alpha1.{}", Self::NAME
+        )
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
