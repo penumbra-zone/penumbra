@@ -41,8 +41,8 @@ impl AuctionCmd {
                 if pb_auction_state.type_url == pb_auction::DutchAuction::type_url() {
                     let dutch_auction = DutchAuction::decode(pb_auction_state.value)
                         .expect("no deserialization error");
-                    let position = positions.get(0).cloned();
-                    render_dutch_auction(&dutch_auction, position)
+                    let asset_cache = view_client.assets().await?;
+                    render_dutch_auction(&asset_cache, &dutch_auction, positions.get(0).cloned())
                         .await
                         .expect("no rendering errors");
                 } else {
@@ -51,7 +51,7 @@ impl AuctionCmd {
             } else {
                 let position_ids: Vec<String> = positions
                     .into_iter()
-                    .map(|lp| format!("{}", lp.id()))
+                    .map(|lp: penumbra_dex::lp::position::Position| format!("{}", lp.id()))
                     .collect();
 
                 let mut auction_table = Table::new();
@@ -65,22 +65,7 @@ impl AuctionCmd {
                             .set_alignment(comfy_table::CellAlignment::Center),
                     ]);
 
-                let mut position_table = Table::new();
-                position_table
-                    .load_preset(presets::NOTHING)
-                    .set_content_arrangement(ContentArrangement::Dynamic)
-                    .set_table_width(80)
-                    .set_header(vec![
-                        "position id",
-                        "state",
-                        "input reserves",
-                        "output reserves",
-                        "quoting price",
-                    ])
-                    .add_row(vec![Cell::new("nothing for now")]);
-
                 println!("{auction_table}");
-                println!("detected auction with")
             }
         }
         Ok(())

@@ -1,9 +1,10 @@
+use crate::command::utils::render_positions;
 use crate::App;
 use clap::Subcommand;
 use comfy_table::{presets, Table};
 use comfy_table::{Cell, ContentArrangement};
 use penumbra_asset::asset::Cache;
-use penumbra_asset::{asset, Value};
+use penumbra_asset::Value;
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_auction::auction::AuctionId;
 use penumbra_dex::lp::position::{self, Position};
@@ -16,6 +17,7 @@ use penumbra_proto::core::component::dex::v1::query_service_client::QueryService
 use penumbra_proto::core::component::dex::v1::LiquidityPositionByIdRequest;
 use penumbra_proto::DomainType;
 use penumbra_proto::Name;
+use penumbra_view::ViewClient;
 
 #[derive(Debug, Subcommand)]
 pub enum AuctionCmd {
@@ -62,7 +64,9 @@ impl AuctionCmd {
                         None
                     };
 
-                    render_dutch_auction(&dutch_auction, position).await?;
+                    let asset_cache = app.view().assets().await?;
+
+                    render_dutch_auction(&asset_cache, &dutch_auction, position).await?;
                 } else {
                     unimplemented!("only supporting dutch auctions at the moment, come back later");
                 }
@@ -73,22 +77,16 @@ impl AuctionCmd {
 }
 
 pub async fn render_dutch_auction(
+    asset_cache: &Cache,
     dutch_auction: &DutchAuction,
     position: Option<Position>,
 ) -> anyhow::Result<()> {
     let auction_id = dutch_auction.description.id();
-
     println!("dutch auction with id {auction_id:?}");
-    if let Some(id) = position.as_ref() {
-        let position_id = id.id();
-        println!("auction has a deployed liquidity position with id: {position_id:?}");
-    }
+
     let initial_input = dutch_auction.description.input;
     let input_id = initial_input.asset_id;
     let output_id = dutch_auction.description.output_id;
-
-    let _input_id_str = truncate_asset_id(&input_id);
-    let _output_id_str = truncate_asset_id(&output_id);
 
     let initial_input_amount = U128x128::from(initial_input.amount);
     let min_output = U128x128::from(dutch_auction.description.min_output);
@@ -120,10 +118,8 @@ pub async fn render_dutch_auction(
     let start_height = dutch_auction.description.start_height;
     let end_height = dutch_auction.description.end_height;
 
-    let basic_cache = Cache::with_known_assets();
-
     let mut auction_table = Table::new();
-    auction_table.load_preset(presets::ASCII_FULL);
+    auction_table.load_preset(presets::UTF8_FULL);
     auction_table
         .set_header(vec![
             "Auction id",
@@ -144,29 +140,22 @@ pub async fn render_dutch_auction(
             Cell::new(&dutch_auction.description.step_count.to_string()),
             Cell::new(&format!("{}", start_price)),
             Cell::new(&format!("{}", end_price)),
-            Cell::new(&initial_input.format(&basic_cache)),
+            Cell::new(&initial_input.format(asset_cache)),
             Cell::new(format!(
                 "({}, {})",
-                &auction_input_reserves.format(&basic_cache),
-                &auction_output_reserves.format(&basic_cache)
+                &auction_input_reserves.format(asset_cache),
+                &auction_output_reserves.format(asset_cache)
             )),
             Cell::new(format!("{}", render_position_id(&maybe_id)))
                 .set_alignment(comfy_table::CellAlignment::Center),
         ]);
 
-    let mut position_table = Table::new();
-    position_table
-        .load_preset(presets::NOTHING)
-        .set_content_arrangement(ContentArrangement::Dynamic)
-        .set_table_width(80)
-        .set_header(vec![
-            "position id",
-            "state",
-            "input reserves",
-            "output reserves",
-            "quoting price",
-        ])
-        .add_row(vec![Cell::new("nothing for now")]);
+    if let Some(lp) = position {
+        auction_table.add_row(vec![Cell::new(format!(
+            "{}",
+            render_positions(asset_cache, &[lp])
+        ))]);
+    }
 
     println!("{auction_table}");
     Ok(())
@@ -179,16 +168,6 @@ fn render_sequence(state: u64) -> String {
         format!("Closed")
     } else {
         format!("Withdrawn (seq={state})")
-    }
-}
-
-fn truncate_asset_id(asset_id: &asset::Id) -> String {
-    let input = format!("{asset_id:?}");
-    let prefix_len = 15;
-    if input.len() > prefix_len {
-        format!("{}...", &input[..prefix_len])
-    } else {
-        input
     }
 }
 
