@@ -16,6 +16,21 @@ if [[ -d ~/.penumbra/testnet_data ]] ; then
     exit 1
 fi
 
+# Fail fast if `/tmp/` directories created by this test already exist.
+# Otherwise, this test may be inheriting stale state from a previous run.
+if [[ -d /tmp/summonerd ]] ; then
+    >&2 echo "ERROR: summonerd directory exists at /tmp/summonerd"
+    >&2 echo "Not removing this directory automatically; to remove, run: rm -rf /tmp/summonerd/"
+    exit 1
+fi
+if [[ -d /tmp/account1 ]] ; then
+    >&2 echo "ERROR: account1 directory exists at /tmp/account1"
+    >&2 echo "Not removing this directory automatically; to remove, run: rm -rf /tmp/account1/"
+    exit 1
+fi
+
+# Fail fast if `cometbft` is not in the $PATH, we are missing software to
+# run this smoke test.
 if ! hash cometbft > /dev/null 2>&1 ; then
     >&2 echo "ERROR: cometbft not found in PATH"
     >&2 echo "See install guide: https://guide.penumbra.zone/main/pd/build.html"
