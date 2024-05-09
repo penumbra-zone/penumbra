@@ -1,6 +1,8 @@
 #![allow(unused)] // TODO: remove this when filling in the RPCs
 
+use penumbra_dex::{component::PositionRead, lp::position};
 use penumbra_proto::{
+    core::component::auction::v1alpha1 as pb,
     core::component::auction::v1alpha1::{
         query_service_server::QueryService, AuctionStateByIdRequest, AuctionStateByIdResponse,
         AuctionStateByIdsRequest, AuctionStateByIdsResponse, DutchAuctionState,
@@ -11,11 +13,14 @@ use penumbra_proto::{
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
 use penumbra_proto::Message;
+use prost::Name;
 use std::pin::Pin;
 use tonic::Status;
 use tracing::instrument;
 
-use super::AuctionStoreRead;
+use crate::auction::dutch::DutchAuction;
+
+use super::{action_handler::dutch, AuctionStoreRead};
 use cnidarium::Storage;
 
 pub struct Server {
@@ -49,9 +54,38 @@ impl QueryService for Server {
             .await
             .ok_or_else(|| tonic::Status::not_found("auction data not found for specified id"))?;
 
+        // Note: we can easily optimize this by adding a lookup table for auction_id -> position id and
+        // save on deserialization or needing to "support" things in this rpc.
+        let maybe_lp = if raw_auction.type_url == pb::DutchAuction::type_url() {
+            let dutch_auction = DutchAuction::decode(raw_auction.value.as_ref())
+                .map_err(|_| tonic::Status::internal("error deserializing auction state"))?;
+
+            dutch_auction.state.current_position
+        } else {
+            return Err(tonic::Status::unimplemented(
+                "only supporting dutch auctions",
+            ));
+        };
+
+        let positions = match maybe_lp {
+            Some(lp_id) => {
+                let id: position::Id = lp_id.try_into().map_err(|_| {
+                    tonic::Status::internal("error converting auction state to position id")
+                })?;
+                state
+                    .position_by_id(&id)
+                    .await
+                    .map_err(|_| tonic::Status::internal("error fetching position state"))?
+                    .into_iter()
+                    .map(Into::into)
+                    .collect()
+            }
+            None => Vec::new(),
+        };
+
         Ok(tonic::Response::new(AuctionStateByIdResponse {
             auction: Some(raw_auction),
-            positions: Vec::new(),
+            positions,
         }))
     }
 
