@@ -1,9 +1,9 @@
-# Since the summoner smoke test takes ~18m to run, we don't want
-# to run it on every PR. Instead, we want to run it on demand,
-# and for now on merges into `main`.
+# TODO(kate): this is temporarily being enabled on pull requests so that we
+# can verify that #4358 fixes problems in the summoner smoke test.
 name: Summoner smoke Test
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches:
       - main
