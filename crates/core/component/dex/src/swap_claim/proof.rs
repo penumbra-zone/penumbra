@@ -206,6 +206,7 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         let merkle_path_var = tct::r1cs::MerkleAuthPathVar::new_witness(cs.clone(), || {
             Ok(self.private.state_commitment_proof)
         })?;
+        // Note: in the allocation of `AuthorizationKeyVar` we check it is not identity.
         let ak_var = AuthorizationKeyVar::new_witness(cs.clone(), || Ok(self.private.ak))?;
         let nk_var = NullifierKeyVar::new_witness(cs.clone(), || Ok(self.private.nk))?;
         let lambda_1_i_var = AmountVar::new_witness(cs.clone(), || Ok(self.private.lambda_1))?;
@@ -251,8 +252,6 @@ impl ConstraintSynthesizer<Fq> for SwapClaimCircuit {
         // Check the diversified base is not identity.
         let identity = ElementVar::new_constant(cs.clone(), decaf377::Element::default())?;
         identity.enforce_not_equal(&swap_plaintext_var.claim_address.diversified_generator)?;
-        // Check the ak is not identity.
-        identity.enforce_not_equal(&ak_var.inner)?;
 
         // Fee consistency check.
         claimed_fee_var.enforce_equal(&swap_plaintext_var.claim_fee)?;
