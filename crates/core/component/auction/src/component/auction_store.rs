@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::StateRead;
 use pbjson_types::Any;
-use penumbra_proto::core::component::auction::v1alpha1 as pb;
+use penumbra_proto::core::component::auction::v1 as pb;
 use penumbra_proto::DomainType;
 use penumbra_proto::Name;
 use penumbra_proto::StateReadProto;

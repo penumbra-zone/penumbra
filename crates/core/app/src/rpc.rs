@@ -28,7 +28,7 @@ use {
         core::{
             app::v1::query_service_server::QueryServiceServer as AppQueryServiceServer,
             component::{
-                auction::v1alpha1::query_service_server::QueryServiceServer as AuctionQueryServiceServer,
+                auction::v1::query_service_server::QueryServiceServer as AuctionQueryServiceServer,
                 compact_block::v1::query_service_server::QueryServiceServer as CompactBlockQueryServiceServer,
                 dex::v1::{
                     query_service_server::QueryServiceServer as DexQueryServiceServer,

@@ -17,7 +17,7 @@ use penumbra_dex::lp::position::{self, Position};
 use penumbra_dex::lp::Reserves;
 use penumbra_dex::DirectedTradingPair;
 use penumbra_num::Amount;
-use penumbra_proto::core::component::auction::v1alpha1 as pb;
+use penumbra_proto::core::component::auction::v1 as pb;
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::clock::EpochRead;
 use prost::{Message, Name};

@@ -2,7 +2,7 @@ use crate::auction::dutch::{DutchAuctionDescription, DutchAuctionState};
 use crate::auction::AuctionId;
 use penumbra_asset::asset;
 use penumbra_num::Amount;
-use penumbra_proto::penumbra::core::component::auction::v1alpha1 as pb;
+use penumbra_proto::penumbra::core::component::auction::v1 as pb;
 
 /// Event for a Dutch auction that has been scheduled.
 pub fn dutch_auction_schedule_event(

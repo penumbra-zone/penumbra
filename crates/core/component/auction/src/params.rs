@@ -1,4 +1,4 @@
-use penumbra_proto::core::component::auction::v1alpha1 as pb;
+use penumbra_proto::core::component::auction::v1 as pb;
 use penumbra_proto::DomainType;
 use serde::{Deserialize, Serialize};
 

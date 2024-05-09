@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use penumbra_asset::{Balance, Value};
-use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
 use penumbra_txhash::{EffectHash, EffectingData};
 use serde::{Deserialize, Serialize};
 

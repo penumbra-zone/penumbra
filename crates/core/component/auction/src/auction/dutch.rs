@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use penumbra_asset::{asset, Value};
 use penumbra_dex::lp::position::{self};
 use penumbra_num::Amount;
-use penumbra_proto::{core::component::auction::v1alpha1 as pb, DomainType};
+use penumbra_proto::{core::component::auction::v1 as pb, DomainType};
 use serde::{Deserialize, Serialize};
 
 use crate::auction::AuctionId;

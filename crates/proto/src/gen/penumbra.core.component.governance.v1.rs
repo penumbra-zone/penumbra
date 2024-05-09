@@ -1083,7 +1083,7 @@ pub struct ChangedAppParameters {
     /// Auction module parameters.
     #[prost(message, optional, tag = "11")]
     pub auction_params: ::core::option::Option<
-        super::super::auction::v1alpha1::AuctionParameters,
+        super::super::auction::v1::AuctionParameters,
     >,
 }
 impl ::prost::Name for ChangedAppParameters {

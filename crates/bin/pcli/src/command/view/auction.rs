@@ -2,7 +2,7 @@ use anyhow::Result;
 use comfy_table::{presets, Cell, ContentArrangement, Table};
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::{core::component::auction::v1alpha1 as pb_auction, DomainType, Name};
+use penumbra_proto::{core::component::auction::v1 as pb_auction, DomainType, Name};
 use penumbra_view::ViewClient;
 
 use crate::command::query::auction::render_dutch_auction;
