@@ -7,10 +7,7 @@ use ark_r1cs_std::prelude::*;
 use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
-use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Bls12_377, Fq,
-};
+use decaf377::{r1cs::FqVar, Bls12_377, Fq};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_fee::Fee;
 use penumbra_proto::{core::component::dex::v1 as pb, DomainType};

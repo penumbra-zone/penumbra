@@ -8,10 +8,7 @@ use ark_relations::r1cs::{ConstraintSynthesizer, ConstraintSystemRef};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_snark::SNARK;
 use base64::{engine::general_purpose, Engine as _};
-use decaf377::{
-    r1cs::{ElementVar, FqVar},
-    Bls12_377, FieldExt, Fq, Fr,
-};
+use decaf377::{r1cs::FqVar, Bls12_377, FieldExt, Fq, Fr};
 use decaf377_rdsa::{SpendAuth, VerificationKey};
 use penumbra_asset::{
     balance::{self, commitment::BalanceCommitmentVar, Commitment},
