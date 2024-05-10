@@ -46,7 +46,7 @@ impl<C> TestNode<C> {
     /// By default, signatures for all of the validators currently within the keyring will be
     /// included in the block. Use [`Builder::with_signatures()`] to set a different set of
     /// validator signatures.
-    pub fn block<'e>(&'e mut self) -> Builder<'e, C> {
+    pub fn block(&mut self) -> Builder<'_, C> {
         let signatures = self.generate_signatures().collect();
         Builder {
             test_node: self,
@@ -150,7 +150,7 @@ where
 
         let height = {
             let height = test_node.height.increment();
-            test_node.height = height.clone();
+            test_node.height = height;
             tracing::Span::current().record("height", height.value());
             height
         };

@@ -56,9 +56,8 @@ impl<C> TestNode<C> {
     /// Returns an [`Iterator`] of signatures for validators in the keyring.
     pub(super) fn generate_signatures(&self) -> impl Iterator<Item = CommitSig> + '_ {
         self.keyring
-            .iter()
-            // Compute the address of this validator.
-            .map(|(vk, _)| -> [u8; 20] {
+            .keys()
+            .map(|vk| {
                 <Sha256 as Digest>::digest(vk).as_slice()[0..20]
                     .try_into()
                     .expect("")
@@ -86,11 +85,7 @@ impl<'e, C: 'e> Builder<'e, C> {
 
         CommitInfo {
             round,
-            votes: signatures
-                .into_iter()
-                .map(Self::vote)
-                .filter_map(|v| v)
-                .collect(),
+            votes: signatures.into_iter().filter_map(Self::vote).collect(),
         }
     }
 

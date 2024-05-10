@@ -334,7 +334,7 @@ pub fn no_signature_response(
     request: &SigningRequest,
 ) -> Result<Option<SigningResponse>> {
     match request {
-        SigningRequest::TransactionPlan(plan) if required_signatures(request) <= 0 => {
+        SigningRequest::TransactionPlan(plan) if required_signatures(request) == 0 => {
             Ok(Some(SigningResponse::Transaction(AuthorizationData {
                 effect_hash: Some(plan.effect_hash(fvk)?),
                 spend_auths: Vec::new(),

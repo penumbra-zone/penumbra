@@ -361,7 +361,7 @@ impl InitCmd {
                         let password = ActualTerminal.get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
-                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
+                            penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key),
                         )?)
                     }
                     CustodyConfig::Threshold(c) => {

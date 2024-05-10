@@ -154,7 +154,10 @@ pub async fn migrate(
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
         tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
 
-        (start_time.elapsed().unwrap(), post_upgrade_root_hash)
+        (
+            start_time.elapsed().expect("start time not set"),
+            post_upgrade_root_hash,
+        )
     };
 
     storage.release().await;

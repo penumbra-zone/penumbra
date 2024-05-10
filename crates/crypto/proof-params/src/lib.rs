@@ -1,4 +1,5 @@
 #![deny(clippy::unwrap_used)]
+#![allow(clippy::redundant_static_lifetimes)]
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 

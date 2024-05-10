@@ -152,7 +152,7 @@ impl Migration {
                 let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
                 tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
 
-                let migration_duration = start_time.elapsed().unwrap();
+                let migration_duration = start_time.elapsed().expect("start time not set");
 
                 // Reload storage so we can make reads against its migrated state:
                 storage.release().await;
