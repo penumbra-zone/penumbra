@@ -26,6 +26,7 @@ pub fn router(prefix: &str, archive_bytes: &'static [u8]) -> axum::Router {
         .route(&path2, get(handler2))
 }
 
+#[allow(clippy::unwrap_used)]
 async fn serve_zip(
     archive_bytes: &'static [u8],
     Path(mut path): Path<String>,

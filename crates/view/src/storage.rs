@@ -1043,7 +1043,6 @@ impl Storage {
         auction_state: u64,
     ) -> anyhow::Result<()> {
         let auction_id = auction_id.0.to_vec();
-        let auction_state = auction_state;
 
         let pool = self.pool.clone();
 

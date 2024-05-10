@@ -130,7 +130,7 @@ impl GradualAuction {
         );
 
         let mut rng = rand::thread_rng();
-        let exp_dist = Exp::new(1.0 / lambda).unwrap();
+        let exp_dist = Exp::new(1.0 / lambda).expect("lambda too small");
         let mut current_height = start_height as f64;
 
         let mut auction_starts = Vec::with_capacity(num_auctions as usize);

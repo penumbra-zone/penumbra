@@ -49,6 +49,7 @@ impl From<DexParameters> for pb::DexParameters {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 impl Default for DexParameters {
     fn default() -> Self {
         // This will get used for generating default chain parameters; put some

@@ -100,8 +100,10 @@ pub async fn render_dutch_auction(
         || (Amount::zero(), Amount::zero()),
         |lp| {
             (
-                lp.reserves_for(input_id).unwrap(),
-                lp.reserves_for(output_id).unwrap(),
+                lp.reserves_for(input_id)
+                    .expect("lp doesn't have reserves for input asset"),
+                lp.reserves_for(output_id)
+                    .expect("lp doesn't have reserves for output asset"),
             )
         },
     );
@@ -134,13 +136,13 @@ pub async fn render_dutch_auction(
         ])
         .set_content_arrangement(ContentArrangement::DynamicFullWidth)
         .add_row(vec![
-            Cell::new(&truncate_auction_id(&auction_id)).set_delimiter('.'),
-            Cell::new(&render_sequence(dutch_auction.state.sequence)),
-            Cell::new(&format!("{start_height} -> {end_height}")),
-            Cell::new(&dutch_auction.description.step_count.to_string()),
-            Cell::new(&format!("{}", start_price)),
-            Cell::new(&format!("{}", end_price)),
-            Cell::new(&initial_input.format(asset_cache)),
+            Cell::new(truncate_auction_id(&auction_id)).set_delimiter('.'),
+            Cell::new(render_sequence(dutch_auction.state.sequence)),
+            Cell::new(format!("{start_height} -> {end_height}")),
+            Cell::new(dutch_auction.description.step_count.to_string()),
+            Cell::new(format!("{}", start_price)),
+            Cell::new(format!("{}", end_price)),
+            Cell::new(initial_input.format(asset_cache)),
             Cell::new(format!(
                 "({}, {})",
                 &auction_input_reserves.format(asset_cache),

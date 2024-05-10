@@ -524,7 +524,7 @@ impl SimulationService for Server {
 
         let state = self.storage.latest_snapshot();
 
-        let mut routing_params = state.routing_params().await.unwrap();
+        let mut routing_params = state.routing_params().await.expect("routing params unset");
         match routing_strategy {
             Setting::SingleHop(_) => {
                 routing_params.max_hops = 1;

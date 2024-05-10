@@ -3,6 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::{bail, ensure, Result};
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
+// HashMap is okay here because we don't care about ordering of substore roots.
+#[allow(clippy::disallowed_types)]
 use std::collections::HashMap;
 use tokio::sync::watch;
 use tracing::Span;
@@ -304,6 +306,7 @@ impl Storage {
         let changes = Arc::new(cache.clone_changes());
 
         let mut changes_by_substore = cache.shard_by_prefix(&self.0.multistore_config);
+        #[allow(clippy::disallowed_types)]
         let mut substore_roots = HashMap::new();
         let mut multistore_versions =
             multistore::MultistoreCache::from_config(self.0.multistore_config.clone());
@@ -510,7 +513,7 @@ impl Storage {
             }
 
             let old_substore_version = snapshot
-                .substore_version(&substore_config)
+                .substore_version(substore_config)
                 .expect("substores must be initialized at startup");
 
             // if the substore exists in `substore_roots`, there have been updates to the substore.

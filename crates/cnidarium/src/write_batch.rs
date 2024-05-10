@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+// HashMap is okay here because we don't care about ordering of substore roots.
+#[allow(clippy::disallowed_types)]
 use std::collections::HashMap;
 
 use crate::{
@@ -22,6 +24,7 @@ pub struct StagedWriteBatch {
     pub(crate) root_hash: RootHash,
     /// The configs, root hashes, and new versions of each substore
     /// that was updated in this batch.
+    #[allow(clippy::disallowed_types)]
     pub(crate) substore_roots: HashMap<Arc<SubstoreConfig>, (RootHash, u64)>,
     /// Whether or not to perform a migration.
     pub(crate) perform_migration: bool,

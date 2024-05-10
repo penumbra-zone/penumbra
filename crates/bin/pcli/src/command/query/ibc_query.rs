@@ -179,7 +179,9 @@ impl IbcCmd {
                     "Client ID",
                     "Client Height",
                 ]);
-                let mut state_str = State::from_i32(channel.state).unwrap().to_string();
+                let mut state_str = State::from_i32(channel.state)
+                    .expect("invalid state value")
+                    .to_string();
 
                 let current_time: time::OffsetDateTime = SystemTime::now().into();
                 let current_time_tm: tendermint::Time = current_time.try_into()?;
@@ -270,7 +272,9 @@ impl IbcCmd {
                 ]);
 
                 for info in channel_infos {
-                    let mut state_str = State::from_i32(info.channel.state).unwrap().to_string();
+                    let mut state_str = State::from_i32(info.channel.state)
+                        .expect("invalid state value")
+                        .to_string();
                     let current_time: time::OffsetDateTime = SystemTime::now().into();
                     let current_time_tm: tendermint::Time = current_time.try_into()?;
 

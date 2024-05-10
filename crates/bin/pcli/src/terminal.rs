@@ -97,7 +97,7 @@ impl Terminal for ActualTerminal {
             }
             // Store the byte we read and print it back to the terminal.
             bytes.push(b);
-            stdout.write(&[b]).unwrap();
+            stdout.write_all(&[b]).expect("stdout write failed");
             // Flushing may not be the most efficient but performance isn't critical here.
             stdout.flush()?;
         }
