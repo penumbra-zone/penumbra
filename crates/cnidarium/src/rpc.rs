@@ -27,6 +27,7 @@ use crate::rpc::proto::v1::{
     KeyValueRequest, KeyValueResponse, PrefixValueRequest, PrefixValueResponse, WatchRequest,
     WatchResponse,
 };
+use base64::prelude::*;
 use futures::{StreamExt, TryStreamExt};
 use regex::Regex;
 use tokio_stream::wrappers::ReceiverStream;
@@ -52,17 +53,56 @@ impl QueryService for Server {
             return Err(Status::invalid_argument("key is empty"));
         }
 
-        // TODO(erwan): Don't generate the proof if the request doesn't ask for it. Tracked in #2647.
-        let (some_value, proof) = state
-            .get_with_proof(request.key.into_bytes())
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        // Determine which storage backend to query.
+        let storage_backend: proto::v1::key_value_request::StorageBackend = request
+            .storage_backend
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("bad storage backend"))?;
+
+        let (some_value, proof) = match storage_backend {
+            // Default backend is JMT.
+            proto::v1::key_value_request::StorageBackend::Unspecified
+            | proto::v1::key_value_request::StorageBackend::Jmt => {
+                // Don't generate the proof if the request doesn't ask for it.
+                let (v, p) = if request.proof {
+                    let (v, p) = state
+                        .get_with_proof(request.key.into_bytes())
+                        .await
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?;
+                    (v, Some(p))
+                } else {
+                    (
+                        state
+                            .get_raw(&request.key)
+                            .await
+                            .map_err(|e| tonic::Status::internal(e.to_string()))?,
+                        None,
+                    )
+                };
+                (v, p)
+            }
+            proto::v1::key_value_request::StorageBackend::Nonverifiable => {
+                // The key for nonverifiable queries is a base64-encoded string:
+                let key = BASE64_STANDARD.decode(&request.key).map_err(|e| {
+                    tonic::Status::invalid_argument(format!("invalid base64: {}", e))
+                })?;
+                (
+                    state
+                        .nonverifiable_get_raw(&key)
+                        .await
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?,
+                    // No proofs for nonverifiable storage.
+                    None,
+                )
+            }
+        };
 
         Ok(tonic::Response::new(KeyValueResponse {
             value: some_value.map(|value| Value { value }),
             proof: if request.proof {
                 Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
                     proofs: proof
+                        .expect("proof should be present")
                         .proofs
                         .into_iter()
                         .map(|p| {

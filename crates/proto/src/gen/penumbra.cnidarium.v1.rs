@@ -10,6 +10,52 @@ pub struct KeyValueRequest {
     /// whether to return a proof
     #[prost(bool, tag = "3")]
     pub proof: bool,
+    /// Which storage to query.
+    #[prost(enumeration = "key_value_request::StorageBackend", tag = "4")]
+    pub storage_backend: i32,
+}
+/// Nested message and enum types in `KeyValueRequest`.
+pub mod key_value_request {
+    /// The storage type to query.
+    #[derive(
+        Clone,
+        Copy,
+        Debug,
+        PartialEq,
+        Eq,
+        Hash,
+        PartialOrd,
+        Ord,
+        ::prost::Enumeration
+    )]
+    #[repr(i32)]
+    pub enum StorageBackend {
+        Unspecified = 0,
+        Jmt = 1,
+        Nonverifiable = 2,
+    }
+    impl StorageBackend {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                StorageBackend::Unspecified => "STORAGE_BACKEND_UNSPECIFIED",
+                StorageBackend::Jmt => "STORAGE_BACKEND_JMT",
+                StorageBackend::Nonverifiable => "STORAGE_BACKEND_NONVERIFIABLE",
+            }
+        }
+        /// Creates an enum from field names used in the ProtoBuf definition.
+        pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+            match value {
+                "STORAGE_BACKEND_UNSPECIFIED" => Some(Self::Unspecified),
+                "STORAGE_BACKEND_JMT" => Some(Self::Jmt),
+                "STORAGE_BACKEND_NONVERIFIABLE" => Some(Self::Nonverifiable),
+                _ => None,
+            }
+        }
+    }
 }
 impl ::prost::Name for KeyValueRequest {
     const NAME: &'static str = "KeyValueRequest";

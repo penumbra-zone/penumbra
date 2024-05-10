@@ -40,7 +40,18 @@ pub enum QueryCmd {
     /// Queries an arbitrary key.
     Key {
         /// The key to query.
+        ///
+        /// When querying the JMT, keys are plain string values.
+        ///
+        /// When querying nonverifiable storage, keys should be base64-encoded strings.
         key: String,
+        /// The storage backend to query.
+        ///
+        /// Valid arguments are "jmt" and "nonverifiable".
+        ///
+        /// Defaults to the JMT.
+        #[clap(long, default_value = "jmt")]
+        storage_backend: String,
     },
     /// Queries shielded pool data.
     #[clap(subcommand)]
@@ -145,7 +156,7 @@ impl QueryCmd {
             return Ok(());
         }
 
-        let key = match self {
+        let (key, storage_backend) = match self {
             QueryCmd::Tx(_)
             | QueryCmd::Chain(_)
             | QueryCmd::Validator(_)
@@ -157,15 +168,32 @@ impl QueryCmd {
             | QueryCmd::Ibc(_) => {
                 unreachable!("query handled in guard");
             }
-            QueryCmd::ShieldedPool(p) => p.key().clone(),
-            QueryCmd::Key { key } => key.clone(),
+            QueryCmd::ShieldedPool(p) => (p.key().clone(), "jmt".to_string()),
+            QueryCmd::Key {
+                key,
+                storage_backend,
+            } => (key.clone(), storage_backend.clone()),
         };
 
         use penumbra_proto::cnidarium::v1::query_service_client::QueryServiceClient;
         let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
+        // Using an enum in the clap arguments was annoying; this is workable:
+        let storage_backend = match storage_backend.as_str() {
+            "jmt" => penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Jmt as i32,
+            "nonverifiable" => {
+                penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Nonverifiable
+                    as i32
+            }
+            // Default to JMT
+            _ => penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Jmt as i32,
+        };
+
         let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
             key: key.clone(),
+            storage_backend,
+            // Command-line queries don't have a reason to include proofs as of now.
+            proof: false,
             ..Default::default()
         };
 

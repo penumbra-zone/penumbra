@@ -21,10 +21,19 @@ service QueryService {
 //
 // Proofs are only supported by key.
 message KeyValueRequest {
+  // The storage type to query.
+  enum StorageBackend {
+    STORAGE_BACKEND_UNSPECIFIED = 0;
+    STORAGE_BACKEND_JMT = 1;
+    STORAGE_BACKEND_NONVERIFIABLE = 2;
+  }
+
   // If set, the key to fetch from storage.
   string key = 2;
   // whether to return a proof
   bool proof = 3;
+  // Which storage to query.
+  StorageBackend storage_backend = 4;
 }
 
 message KeyValueResponse {
