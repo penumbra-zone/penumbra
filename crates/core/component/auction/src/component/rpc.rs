@@ -62,9 +62,7 @@ impl QueryService for Server {
 
             dutch_auction.state.current_position
         } else {
-            return Err(tonic::Status::unimplemented(
-                "only supporting dutch auctions",
-            ));
+            return Err(tonic::Status::unimplemented("unrecognized auction type"));
         };
 
         let positions = match maybe_lp {
