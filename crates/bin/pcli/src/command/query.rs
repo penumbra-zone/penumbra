@@ -11,12 +11,14 @@ mod tx;
 mod validator;
 
 use auction::AuctionCmd;
+use base64::prelude::*;
 use chain::ChainCmd;
 use colored_json::ToColoredJson;
 use community_pool::CommunityPoolCmd;
 use dex::DexCmd;
 use governance::GovernanceCmd;
 use ibc_query::IbcCmd;
+use penumbra_proto::cnidarium::v1::non_verifiable_key_value_request::Key as NVKey;
 use shielded_pool::ShieldedPool;
 use tx::Tx;
 pub(super) use validator::ValidatorCmd;
@@ -179,34 +181,50 @@ impl QueryCmd {
         let mut client = QueryServiceClient::new(app.pd_channel().await?);
 
         // Using an enum in the clap arguments was annoying; this is workable:
-        let storage_backend = match storage_backend.as_str() {
-            "jmt" => penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Jmt as i32,
+        match storage_backend.as_str() {
             "nonverifiable" => {
-                penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Nonverifiable
-                    as i32
+                let key_bytes = BASE64_STANDARD
+                    .decode(&key)
+                    .map_err(|e| anyhow::anyhow!(format!("invalid base64: {}", e)))?;
+
+                let req = penumbra_proto::cnidarium::v1::NonVerifiableKeyValueRequest {
+                    key: Some(NVKey { inner: key_bytes }),
+                    ..Default::default()
+                };
+
+                tracing::debug!(?req);
+
+                let value = client
+                    .non_verifiable_key_value(req)
+                    .await?
+                    .into_inner()
+                    .value
+                    .context(format!("key not found! key={}", key))?;
+
+                self.display_value(&value.value)?;
             }
             // Default to JMT
-            _ => penumbra_proto::cnidarium::v1::key_value_request::StorageBackend::Jmt as i32,
+            "jmt" | _ => {
+                let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
+                    key: key.clone(),
+                    // Command-line queries don't have a reason to include proofs as of now.
+                    proof: false,
+                    ..Default::default()
+                };
+
+                tracing::debug!(?req);
+
+                let value = client
+                    .key_value(req)
+                    .await?
+                    .into_inner()
+                    .value
+                    .context(format!("key not found! key={}", key))?;
+
+                self.display_value(&value.value)?;
+            }
         };
 
-        let req = penumbra_proto::cnidarium::v1::KeyValueRequest {
-            key: key.clone(),
-            storage_backend,
-            // Command-line queries don't have a reason to include proofs as of now.
-            proof: false,
-            ..Default::default()
-        };
-
-        tracing::debug!(?req);
-
-        let value = client
-            .key_value(req)
-            .await?
-            .into_inner()
-            .value
-            .context(format!("key not found! key={}", key))?;
-
-        self.display_value(&value.value)?;
         Ok(())
     }
 

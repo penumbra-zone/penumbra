@@ -9,6 +9,10 @@ service QueryService {
   // arbitrary keys in the JMT storage.
   rpc KeyValue(KeyValueRequest) returns (KeyValueResponse);
 
+  // General-purpose key-value state query API, that can be used to query
+  // arbitrary keys in the non-verifiable storage.
+  rpc NonVerifiableKeyValue(NonVerifiableKeyValueRequest) returns (NonVerifiableKeyValueResponse);
+
   // General-purpose prefixed key-value state query API, that can be used to query
   // arbitrary prefixes in the JMT storage.
   rpc PrefixValue(PrefixValueRequest) returns (stream PrefixValueResponse);
@@ -17,23 +21,32 @@ service QueryService {
   rpc Watch(WatchRequest) returns (stream WatchResponse);
 }
 
-// Performs a key-value query, either by key or by key hash.
+// Performs a key-value query against the nonverifiable storage,
+// using a byte-encoded key.
+message NonVerifiableKeyValueRequest {
+    message Key {
+        bytes inner = 1;
+    }
+
+    Key key = 1;
+}
+
+message NonVerifiableKeyValueResponse {
+  message Value {
+    bytes value = 1;
+  }
+  // The value corresponding to the specified key, if it was found.
+  Value value = 1;
+}
+
+// Performs a key-value query against the JMT, either by key or by key hash.
 //
 // Proofs are only supported by key.
 message KeyValueRequest {
-  // The storage type to query.
-  enum StorageBackend {
-    STORAGE_BACKEND_UNSPECIFIED = 0;
-    STORAGE_BACKEND_JMT = 1;
-    STORAGE_BACKEND_NONVERIFIABLE = 2;
-  }
-
   // If set, the key to fetch from storage.
   string key = 2;
   // whether to return a proof
   bool proof = 3;
-  // Which storage to query.
-  StorageBackend storage_backend = 4;
 }
 
 message KeyValueResponse {
