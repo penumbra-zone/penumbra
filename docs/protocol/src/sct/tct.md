@@ -1,9 +1,10 @@
 # Tiered Commitment Tree
 
-Penumbra's state commitment tree is
-instantiated using the _tiered commitment tree_ (TCT), an append-only,
-ZK-friendly Merkle tree. It stores cryptographic commitments to shielded state,
-such as note and swap commitments. The unique features of the TCT are that it is:
+The Penumbra protocol's [state commitment tree (SCT)](../sct.md) stores
+cryptographic commitments to shielded state, such as note and swap commitments.
+The SCT is instantiated using the _tiered commitment tree_ (TCT) data structure,
+an append-only, ZK-friendly Merkle tree. The unique features of the TCT are
+that it is:
 
 * *Quaternary:* Each node of the tiered commitment tree has four children. This means
 that the tree can be much shallower while having the same amount of capacity for
