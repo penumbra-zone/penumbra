@@ -61,6 +61,7 @@ async fn path_search_basic() {
 async fn path_extension_basic() {
     let _ = tracing_subscriber::fmt::try_init();
     let mut state = StateDelta::new(());
+    state.put_dex_params(DexParameters::default());
 
     // Write some test positions with a mispriced gn:pusd pair.
     create_test_positions_basic(&mut state, true).await;
@@ -130,6 +131,8 @@ async fn path_extension_basic() {
 
     // Reset the state.
     let mut state = StateDelta::new(());
+
+    state.put_dex_params(DexParameters::default());
 
     // Write some test positions without the mispriced position.
     create_test_positions_basic(&mut state, false).await;

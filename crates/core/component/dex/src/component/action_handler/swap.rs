@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
@@ -7,7 +9,9 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
-    component::{metrics, StateReadExt, StateWriteExt, SwapManager},
+    component::{
+        metrics, position_manager::PositionManager as _, StateReadExt, StateWriteExt, SwapManager,
+    },
     event,
     swap::{proof::SwapProofPublic, Swap},
 };
@@ -64,6 +68,14 @@ impl ActionHandler for Swap {
         state
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
+
+        // Mark the assets for the swap's trading pair as accessed during this block.
+        let fixed_candidates = Arc::new(dex_params.fixed_candidates.clone());
+        state.add_recently_accessed_asset(
+            swap.body.trading_pair.asset_1(),
+            fixed_candidates.clone(),
+        );
+        state.add_recently_accessed_asset(swap.body.trading_pair.asset_2(), fixed_candidates);
 
         metrics::histogram!(crate::component::metrics::DEX_SWAP_DURATION)
             .record(swap_start.elapsed());

@@ -11,9 +11,12 @@ use penumbra_asset::{asset, Balance};
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::component::position_manager::{
-    base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
-    price_index::PositionByPriceIndex,
+use crate::component::{
+    dex::StateReadExt as _,
+    position_manager::{
+        base_liquidity_index::AssetByLiquidityIndex, inventory_index::PositionByInventoryIndex,
+        price_index::PositionByPriceIndex,
+    },
 };
 use crate::lp::Reserves;
 use crate::{
@@ -26,6 +29,7 @@ use crate::{
 use crate::{event, state_key};
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
+const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;
 
 mod base_liquidity_index;
 mod counter;
@@ -142,6 +146,12 @@ pub trait PositionRead: StateRead {
             })
             .boxed()
     }
+
+    /// Fetch the list of assets interacted with during this block.
+    fn recently_accessed_assets(&self) -> im::OrdSet<asset::Id> {
+        self.object_get(state_key::recently_accessed_assets())
+            .unwrap_or_default()
+    }
 }
 impl<T: StateRead + ?Sized> PositionRead for T {}
 
@@ -244,11 +254,51 @@ pub trait PositionManager: StateWrite + PositionRead {
         self.vcb_credit(position.reserves_1()).await?;
         self.vcb_credit(position.reserves_2()).await?;
 
+        // Add the asset IDs from the new position's trading pair
+        // to the candidate set for this block.
+        let routing_params = self.routing_params().await?;
+        self.add_recently_accessed_asset(
+            position.phi.pair.asset_1(),
+            routing_params.fixed_candidates.clone(),
+        );
+        self.add_recently_accessed_asset(
+            position.phi.pair.asset_2(),
+            routing_params.fixed_candidates,
+        );
+
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
         self.update_position(None, position).await?;
 
         Ok(())
+    }
+
+    /// Adds an asset ID to the list of recently accessed assets,
+    /// making it a candidate for the current block's arbitrage routing.
+    ///
+    /// This ensures that assets associated with recently active positions
+    /// will be eligible for arbitrage if mispriced positions are opened.
+    #[tracing::instrument(level = "debug", skip_all)]
+    fn add_recently_accessed_asset(
+        &mut self,
+        asset_id: asset::Id,
+        fixed_candidates: Arc<Vec<asset::Id>>,
+    ) {
+        let mut assets = self.recently_accessed_assets();
+
+        // Limit the number of recently accessed assets to prevent blowing
+        // up routing time.
+        if assets.len() >= RECENTLY_ACCESSED_ASSET_LIMIT {
+            return;
+        }
+
+        // If the asset is already in the fixed candidate list, don't insert it.
+        if fixed_candidates.contains(&asset_id) {
+            return;
+        }
+
+        assets.insert(asset_id);
+        self.object_put(state_key::recently_accessed_assets(), assets);
     }
 
     /// Record execution against an opened position.
