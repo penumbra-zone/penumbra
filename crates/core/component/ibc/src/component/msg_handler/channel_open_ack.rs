@@ -110,7 +110,7 @@ impl MsgHandler for MsgChannelOpenAck {
 }
 
 fn channel_state_is_correct(channel: &ChannelEnd) -> anyhow::Result<()> {
-    if channel.state == ChannelState::Init || channel.state == ChannelState::TryOpen {
+    if channel.state == ChannelState::Init {
         Ok(())
     } else {
         Err(anyhow::anyhow!("channel is not in the correct state"))
