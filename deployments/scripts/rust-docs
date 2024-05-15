@@ -57,6 +57,8 @@ cargo +nightly doc --no-deps \
   -p penumbra-wallet \
   -p poseidon-paramgen \
   -p poseidon-permutation \
+  -p penumbra-mock-consensus \
+  -p penumbra-mock-client \
   -p poseidon377 \
   -p tendermint \
   -p tendermint-config \
