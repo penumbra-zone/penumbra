@@ -23,6 +23,12 @@ if ! hash process-compose > /dev/null 2>&1 ; then
     exit 1
 fi
 
+if ! hash grpcurl > /dev/null 2>&1 ; then
+    >&2 echo "ERROR: grpcurl not found in PATH"
+    >&2 echo "Install it via https://github.com/fullstorydev/grpcurl/"
+    exit 1
+fi
+
 # Check for interactive terminal session, enable TUI if yes.
 if [[ -t 1 ]] ; then
     use_tui="true"

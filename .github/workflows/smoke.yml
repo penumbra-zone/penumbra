@@ -28,6 +28,9 @@ jobs:
           sh -c "$(curl --location https://raw.githubusercontent.com/F1bonacc1/process-compose/main/scripts/get-pc.sh)" --
           -d -b ~/bin
 
+      - name: Install grpcurl
+        run: ./deployments/scripts/install-grpcurl
+
       - name: Run the smoke test suite
         run: |
           export PATH="$HOME/bin:$PATH"
