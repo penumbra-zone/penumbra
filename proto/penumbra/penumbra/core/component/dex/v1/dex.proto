@@ -472,6 +472,14 @@ service QueryService {
   // This method doesn't do simulation, so actually executing might result in a
   // better price (if the chain takes a different route to the target asset).
   rpc Spread(SpreadRequest) returns (SpreadResponse);
+
+  // Get historical candlestick data for a given trading pair.
+  //
+  // Note that this RPC is directional, to get data for both directions, make a second request.
+  rpc CandleStickData(CandleStickDataRequest) returns (CandleStickDataResponse);
+
+  // Subscribe to candlestick data updates.
+  rpc CandleStickDataStream(CandleStickDataStreamRequest) returns (stream CandleStickDataStreamResponse);
 }
 
 // Simulation for the DEX component.
@@ -741,4 +749,53 @@ message DexParameters {
 message GenesisContent {
   // The initial parameters for the DEX.
   DexParameters dex_params = 1;
+}
+
+message CandleStickData {
+  // The height of the candlestick data.
+  uint64 height = 1;
+  // The first observed price during the block execution.
+  double open = 2;
+  // The last observed price during the block execution.
+  double close = 3;
+  // The highest observed price during the block execution.
+  double high = 4;
+  // The lowest observed price during the block execution.
+  double low = 5;
+  // The volume that traded "directly", during individual position executions.
+  double direct_volume = 6;
+  // The volume that traded as part of swaps, which could have traversed multiple routes.
+  double swap_volume = 7;
+}
+
+message CandleStickDataRequest {
+  // The directed trading pair to request candlestick data for.
+  //
+  // NOTE: the returned data will only have trades from the SOURCE asset to the
+  // DEST asset, not the other direction. Make another request if you want both
+  // sets of data.
+  DirectedTradingPair pair = 1;
+  // The maximum number of candlestick data points to return.
+  //
+  // The server may clamp this limit to a maximum value.
+  uint64 limit = 2;
+  // The height to start the query from.
+  //
+  // If this is unset (= 0), the server will return the most recent data points.
+  uint64 start_height = 3;
+}
+
+message CandleStickDataResponse {
+  // The candlestick data points.
+  repeated CandleStickData data = 1;
+}
+
+message CandleStickDataStreamRequest {
+  // The directed trading pair to subscribe to.
+  DirectedTradingPair pair = 1;
+}
+
+message CandleStickDataStreamResponse {
+  // The candlestick data point.
+  CandleStickData data = 1;
 }
