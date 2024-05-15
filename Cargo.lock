@@ -4526,6 +4526,7 @@ version = "0.76.0-alpha.1"
 dependencies = [
  "anyhow",
  "ark-ff",
+ "assert_cmd",
  "async-stream",
  "async-trait",
  "axum",
@@ -4581,7 +4582,9 @@ dependencies = [
  "penumbra-transaction",
  "pin-project",
  "pin-project-lite",
+ "predicates 2.1.5",
  "prost",
+ "prost-reflect",
  "prost-types",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -6367,6 +6370,17 @@ dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
  "syn 2.0.51",
+]
+
+[[package]]
+name = "prost-reflect"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f5eec97d5d34bdd17ad2db2219aabf46b054c6c41bd5529767c9ce55be5898f"
+dependencies = [
+ "once_cell",
+ "prost",
+ "prost-types",
 ]
 
 [[package]]

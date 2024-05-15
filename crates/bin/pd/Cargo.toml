@@ -128,3 +128,6 @@ penumbra-proof-params = { workspace = true, features = [
     "bundled-proving-keys",
     "download-proving-keys",
 ], default-features = true }
+assert_cmd = { workspace = true }
+predicates = "2.1"
+prost-reflect = "0.13.1"
