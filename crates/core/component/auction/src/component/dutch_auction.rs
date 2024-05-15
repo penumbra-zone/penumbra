@@ -285,49 +285,66 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             output_reserves,
         } = auction_to_close.state;
 
-        // Short-circuit to no-op if the auction is already closed.
+        // If the auction is already closed, or withdrawn, we short-circuit.
+        // This is safe to do because its associated LP position must have been
+        // closed and withdrawn already.
         if sequence >= 1 {
             return Ok(());
         }
 
         let auction_id = auction_to_close.description.id();
+        let input_id = auction_to_close.description.input.asset_id;
+        let output_id = auction_to_close.description.output_id;
 
-        // We close and retire the DEX position owned by this auction state,
-        // and return the respective amount of input and output we should credit
-        // to the total tracked amount, so that it can be returned to its bearer.
-        let (input_from_position, output_from_position) =
-            if let Some(position_id) = current_position {
-                self.close_position_by_id(&position_id).await?;
-                let balance = self.withdraw_position(position_id, 0).await?;
+        // If the auction has a deployed LP, we need to withdraw it, and credit its
+        // balance to the component's VCB and to the auction reserves.
+        // This is done in three steps:
+        // 1. Close and withdraw the LP position, compute the inflow from the position.
+        // 2. Credit the component's value balance with the respective inflows.
+        // 3. Add the inflows to the auction's reserves.
 
-                let input_id = auction_to_close.description.input.asset_id;
-                let output_id = auction_to_close.description.output_id;
+        /* ********* Value transfer ********* */
+        // 1. Close and withdraw the position, if it exists.
+        let lp_reserves = if let Some(position_id) = current_position {
+            self.close_position_by_id(&position_id).await?;
+            self.withdraw_position(position_id, 0).await?
+        } else {
+            Balance::zero()
+        };
+        let lp_inflow_input_asset = Value {
+            asset_id: input_id,
+            amount: lp_reserves
+                .provided()
+                .filter(|v| v.asset_id == input_id)
+                .map(|v| v.amount)
+                .sum::<Amount>(),
+        };
+        let lp_inflow_output_asset = Value {
+            asset_id: output_id,
+            amount: lp_reserves
+                .provided()
+                .filter(|v| v.asset_id == output_id)
+                .map(|v| v.amount)
+                .sum::<Amount>(),
+        };
 
-                let input_balance = balance
-                    .provided()
-                    .filter(|v| v.asset_id == input_id)
-                    .map(|v| v.amount)
-                    .sum::<Amount>();
+        // 2. Credit the component's value balance with the inflows.
+        self.auction_vcb_credit(lp_inflow_input_asset)
+            .await
+            .context("failed to absorb LP inflow of input asset into auction value balance")?;
+        self.auction_vcb_credit(lp_inflow_output_asset)
+            .await
+            .context("failed to absorb LP inflow of output asset into auction value balance")?;
 
-                let output_balance = balance
-                    .provided()
-                    .filter(|v| v.asset_id == output_id)
-                    .map(|v| v.amount)
-                    .sum::<Amount>();
-
-                (input_balance, output_balance)
-            } else {
-                (Amount::zero(), Amount::zero())
-            };
+        // 3. Add the inflows to the auction's reserves.
+        let total_input_reserves = input_reserves + lp_inflow_input_asset.amount;
+        let total_output_reserves = output_reserves + lp_inflow_output_asset.amount;
+        /* ******** End value transfer ******* */
 
         // If a `next_trigger` entry is set, we remove it.
         if let Some(height) = next_trigger {
             self.unset_trigger_for_dutch_id(auction_id, height.into())
         }
-
-        let total_input_reserves = input_reserves + input_from_position;
-        let total_output_reserves = output_reserves + output_from_position;
-
         let closed_auction = DutchAuction {
             description: auction_to_close.description,
             state: DutchAuctionState {
