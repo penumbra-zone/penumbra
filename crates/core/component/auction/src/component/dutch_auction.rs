@@ -328,6 +328,25 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         let total_input_reserves = input_reserves + input_from_position;
         let total_output_reserves = output_reserves + output_from_position;
 
+        let lp_inflow_input_asset = Value {
+            asset_id: auction_to_close.description.input.asset_id,
+            amount: total_input_reserves,
+        };
+
+        let lp_output_input_asset = Value {
+            asset_id: auction_to_close.description.output_id,
+            amount: total_output_reserves,
+        };
+
+        // We credit the auction's value balance with the inflows if user manually triggers
+        // an auction close.
+        self.auction_vcb_credit(lp_inflow_input_asset)
+            .await
+            .context("failed to absorb LP inflow of input asset into auction value balance")?;
+        self.auction_vcb_credit(lp_output_input_asset)
+            .await
+            .context("failed to absorb LP inflow of output asset into auction value balance")?;
+
         let closed_auction = DutchAuction {
             description: auction_to_close.description,
             state: DutchAuctionState {
