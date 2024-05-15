@@ -40,6 +40,7 @@ serde_json = {workspace = true}
 sha2 = {workspace = true}
 tendermint = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
+time = {workspace = true}
 tonic = {workspace = true, optional = true}
 tower = {workspace = true}
 tracing = {workspace = true}

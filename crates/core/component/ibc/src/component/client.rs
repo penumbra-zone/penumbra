@@ -1,3 +1,7 @@
+use core::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
+
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 
@@ -21,6 +25,34 @@ use crate::IBC_COMMITMENT_PREFIX;
 
 use super::state_key;
 use super::HostInterface;
+
+/// ClientStatus represents the current status of an IBC client.
+///
+/// https://github.com/cosmos/ibc-go/blob/main/modules/core/exported/client.go#L30
+pub enum ClientStatus {
+    /// Active is a status type of a client. An active client is allowed to be used.
+    Active,
+    /// Frozen is a status type of a client. A frozen client is not allowed to be used.
+    Frozen,
+    /// Expired is a status type of a client. An expired client is not allowed to be used.
+    Expired,
+    /// Unknown indicates there was an error in determining the status of a client.
+    Unknown,
+    /// Unauthorized indicates that the client type is not registered as an allowed client type.
+    Unauthorized,
+}
+
+impl Display for ClientStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ClientStatus::Active => write!(f, "Active"),
+            ClientStatus::Frozen => write!(f, "Frozen"),
+            ClientStatus::Expired => write!(f, "Expired"),
+            ClientStatus::Unknown => write!(f, "Unknown"),
+            ClientStatus::Unauthorized => write!(f, "Unauthorized"),
+        }
+    }
+}
 
 #[async_trait]
 pub(crate) trait Ics2ClientExt: StateWrite {
@@ -198,7 +230,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 #[async_trait]
-pub trait StateReadExt: StateRead {
+pub trait StateReadExt: StateRead + penumbra_sct::component::clock::EpochRead {
     async fn client_counter(&self) -> Result<ClientCounter> {
         self.get("ibc_client_counter")
             .await
@@ -222,6 +254,63 @@ pub trait StateReadExt: StateRead {
             .await?;
 
         client_state.context(format!("could not find client state for {client_id}"))
+    }
+
+    async fn get_client_status(&self, client_id: &ClientId) -> ClientStatus {
+        let client_type = self.get_client_type(client_id).await;
+
+        if client_type.is_err() {
+            return ClientStatus::Unknown;
+        }
+
+        // let _client_type = client_type.expect("client type is Ok");
+        // IBC-Go has a check here to see if the client type is allowed.
+        // We don't have a similar allowlist in Penumbra, so we skip that check.
+        // https://github.com/cosmos/ibc-go/blob/main/modules/core/02-client/types/params.go#L34
+
+        let client_state = self.get_client_state(client_id).await;
+
+        if client_state.is_err() {
+            return ClientStatus::Unknown;
+        }
+
+        let client_state = client_state.expect("client state is Ok");
+
+        if client_state.is_frozen() {
+            return ClientStatus::Frozen;
+        }
+
+        // get latest consensus state to check for expiry
+        let latest_consensus_state = self
+            .get_verified_consensus_state(&client_state.latest_height(), client_id)
+            .await;
+
+        if latest_consensus_state.is_err() {
+            // if the client state does not have an associated consensus state for its latest height
+            // then it must be expired
+            return ClientStatus::Expired;
+        }
+
+        let latest_consensus_state = latest_consensus_state.expect("latest consensus state is Ok");
+
+        let current_block_time = self.get_block_timestamp().await;
+
+        if current_block_time.is_err() {
+            return ClientStatus::Unknown;
+        }
+
+        let current_block_time = current_block_time.expect("current block time is Ok");
+        let time_elapsed = current_block_time.duration_since(latest_consensus_state.timestamp);
+        if time_elapsed.is_err() {
+            return ClientStatus::Unknown;
+        }
+        let time_elapsed = time_elapsed.expect("time elapsed is Ok");
+
+        if client_state.expired(time_elapsed) {
+            return ClientStatus::Expired;
+        }
+
+        ClientStatus::Active
     }
 
     async fn get_verified_heights(&self, client_id: &ClientId) -> Result<Option<VerifiedHeights>> {
