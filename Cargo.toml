@@ -232,3 +232,6 @@ tower-service                    = { version = "0.3.2" }
 tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
+
+[patch.crates-io]
+tonic-reflection = { git = "https://github.com/cratelyn/tonic", branch = "kate/update-tonic-reflection-to-v1.based-on-tonic-0-10-2" }
