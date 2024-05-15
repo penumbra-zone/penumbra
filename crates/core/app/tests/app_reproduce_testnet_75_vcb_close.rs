@@ -1,3 +1,4 @@
+use decaf377_fmd::Precision;
 use penumbra_auction::StateReadExt as _;
 use tracing_subscriber::filter::EnvFilter;
 use {
@@ -161,7 +162,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
             ..Default::default()
         },
     };
-    plan.populate_detection_data(&mut OsRng, 0);
+    plan.populate_detection_data(&mut OsRng, Precision::default());
 
     let tx = client.witness_auth_build(&mut plan).await?;
     node.block()
@@ -232,7 +233,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
             ..Default::default()
         },
     };
-    plan.populate_detection_data(&mut OsRng, 0);
+    plan.populate_detection_data(&mut OsRng, Precision::default());
 
     let tx = client.witness_auth_build(&mut plan).await?;
     tracing::info!("closing the auction");
