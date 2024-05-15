@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use decaf377_fmd::Clue;
@@ -31,24 +31,27 @@ impl<T: StateWrite + ?Sized> ClueWriteExt for T {}
 
 #[async_trait]
 trait ClueReadExt: StateRead {
+    // The implementation for both of these methods will return 0 on a missing key,
+    // this is because the clue count is just used to tally clues over time,
+    // and so 0 will always be a good starting value.
     async fn get_current_clue_count(&self) -> Result<u64> {
-        Ok(u64::from_be_bytes(
-            self.get_raw(state_key::clue_count::current())
-                .await?
-                .ok_or(anyhow!("no current clue count"))?
-                .as_slice()
-                .try_into()?,
-        ))
+        Ok(self
+            .get_raw(state_key::clue_count::current())
+            .await?
+            .map(|x| x.as_slice().try_into())
+            .transpose()?
+            .map(u64::from_be_bytes)
+            .unwrap_or(0u64))
     }
 
     async fn get_previous_clue_count(&self) -> Result<u64> {
-        Ok(u64::from_be_bytes(
-            self.get_raw(state_key::clue_count::previous())
-                .await?
-                .ok_or(anyhow!("no current clue count"))?
-                .as_slice()
-                .try_into()?,
-        ))
+        Ok(self
+            .get_raw(state_key::clue_count::previous())
+            .await?
+            .map(|x| x.as_slice().try_into())
+            .transpose()?
+            .map(u64::from_be_bytes)
+            .unwrap_or(0u64))
     }
 }
 
