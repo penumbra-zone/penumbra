@@ -20,37 +20,6 @@ pub fn register_metrics() {
         Unit::Count,
         "The number of missed blocks per validator"
     );
-    describe_gauge!(
-        ACTIVE_VALIDATORS,
-        Unit::Count,
-        "The number of active validators"
-    );
-    describe_gauge!(
-        INACTIVE_VALIDATORS,
-        Unit::Count,
-        "The number of inactive validators"
-    );
-    describe_gauge!(
-        JAILED_VALIDATORS,
-        Unit::Count,
-        "The number of jailed validators"
-    );
-    describe_gauge!(
-        DISABLED_VALIDATORS,
-        Unit::Count,
-        "The number of disabled validators"
-    );
-    describe_gauge!(
-        TOMBSTONED_VALIDATORS,
-        Unit::Count,
-        "The number of tombstoned validators"
-    );
 }
 
 pub const MISSED_BLOCKS: &str = "penumbra_stake_missed_blocks";
-pub const ACTIVE_VALIDATORS: &str = "penumbra_stake_validators_active";
-pub const DISABLED_VALIDATORS: &str = "penumbra_stake_validators_disabled";
-pub const DEFINED_VALIDATORS: &str = "penumbra_stake_validators_defined";
-pub const INACTIVE_VALIDATORS: &str = "penumbra_stake_validators_inactive";
-pub const JAILED_VALIDATORS: &str = "penumbra_stake_validators_jailed";
-pub const TOMBSTONED_VALIDATORS: &str = "penumbra_stake_validators_tombstoned";
