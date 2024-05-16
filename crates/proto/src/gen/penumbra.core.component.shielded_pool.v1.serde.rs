@@ -1181,6 +1181,9 @@ impl serde::Serialize for NotePayload {
         if self.encrypted_note.is_some() {
             len += 1;
         }
+        if self.sync_exclude {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.NotePayload", len)?;
         if let Some(v) = self.note_commitment.as_ref() {
             struct_ser.serialize_field("noteCommitment", v)?;
@@ -1191,6 +1194,9 @@ impl serde::Serialize for NotePayload {
         }
         if let Some(v) = self.encrypted_note.as_ref() {
             struct_ser.serialize_field("encryptedNote", v)?;
+        }
+        if self.sync_exclude {
+            struct_ser.serialize_field("syncExclude", &self.sync_exclude)?;
         }
         struct_ser.end()
     }
@@ -1208,6 +1214,8 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
             "ephemeralKey",
             "encrypted_note",
             "encryptedNote",
+            "sync_exclude",
+            "syncExclude",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -1215,6 +1223,7 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
             NoteCommitment,
             EphemeralKey,
             EncryptedNote,
+            SyncExclude,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -1240,6 +1249,7 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                             "noteCommitment" | "note_commitment" => Ok(GeneratedField::NoteCommitment),
                             "ephemeralKey" | "ephemeral_key" => Ok(GeneratedField::EphemeralKey),
                             "encryptedNote" | "encrypted_note" => Ok(GeneratedField::EncryptedNote),
+                            "syncExclude" | "sync_exclude" => Ok(GeneratedField::SyncExclude),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -1262,6 +1272,7 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                 let mut note_commitment__ = None;
                 let mut ephemeral_key__ = None;
                 let mut encrypted_note__ = None;
+                let mut sync_exclude__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::NoteCommitment => {
@@ -1284,6 +1295,12 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                             }
                             encrypted_note__ = map_.next_value()?;
                         }
+                        GeneratedField::SyncExclude => {
+                            if sync_exclude__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("syncExclude"));
+                            }
+                            sync_exclude__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -1293,6 +1310,7 @@ impl<'de> serde::Deserialize<'de> for NotePayload {
                     note_commitment: note_commitment__,
                     ephemeral_key: ephemeral_key__.unwrap_or_default(),
                     encrypted_note: encrypted_note__,
+                    sync_exclude: sync_exclude__.unwrap_or_default(),
                 })
             }
         }
@@ -2476,6 +2494,9 @@ impl serde::Serialize for SpendBody {
         if self.rk.is_some() {
             len += 1;
         }
+        if self.sync_exclude {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.SpendBody", len)?;
         if let Some(v) = self.balance_commitment.as_ref() {
             struct_ser.serialize_field("balanceCommitment", v)?;
@@ -2485,6 +2506,9 @@ impl serde::Serialize for SpendBody {
         }
         if let Some(v) = self.rk.as_ref() {
             struct_ser.serialize_field("rk", v)?;
+        }
+        if self.sync_exclude {
+            struct_ser.serialize_field("syncExclude", &self.sync_exclude)?;
         }
         struct_ser.end()
     }
@@ -2500,6 +2524,8 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             "balanceCommitment",
             "nullifier",
             "rk",
+            "sync_exclude",
+            "syncExclude",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -2507,6 +2533,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
             BalanceCommitment,
             Nullifier,
             Rk,
+            SyncExclude,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -2532,6 +2559,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                             "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
                             "nullifier" => Ok(GeneratedField::Nullifier),
                             "rk" => Ok(GeneratedField::Rk),
+                            "syncExclude" | "sync_exclude" => Ok(GeneratedField::SyncExclude),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -2554,6 +2582,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                 let mut balance_commitment__ = None;
                 let mut nullifier__ = None;
                 let mut rk__ = None;
+                let mut sync_exclude__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BalanceCommitment => {
@@ -2574,6 +2603,12 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                             }
                             rk__ = map_.next_value()?;
                         }
+                        GeneratedField::SyncExclude => {
+                            if sync_exclude__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("syncExclude"));
+                            }
+                            sync_exclude__ = Some(map_.next_value()?);
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -2583,6 +2618,7 @@ impl<'de> serde::Deserialize<'de> for SpendBody {
                     balance_commitment: balance_commitment__,
                     nullifier: nullifier__,
                     rk: rk__,
+                    sync_exclude: sync_exclude__.unwrap_or_default(),
                 })
             }
         }

@@ -147,6 +147,9 @@ pub struct NotePayload {
     /// 176 = 80(address) + 16(amount) + 32(asset ID) + 32(rseed) + 16(MAC) bytes.
     #[prost(message, optional, tag = "3")]
     pub encrypted_note: ::core::option::Option<NoteCiphertext>,
+    /// Whether to exclude this spend from the CompactBlock.
+    #[prost(bool, tag = "4")]
+    pub sync_exclude: bool,
 }
 impl ::prost::Name for NotePayload {
     const NAME: &'static str = "NotePayload";
@@ -283,6 +286,9 @@ pub struct SpendBody {
     pub rk: ::core::option::Option<
         super::super::super::super::crypto::decaf377_rdsa::v1::SpendVerificationKey,
     >,
+    /// Whether to exclude this spend from the CompactBlock.
+    #[prost(bool, tag = "7")]
+    pub sync_exclude: bool,
 }
 impl ::prost::Name for SpendBody {
     const NAME: &'static str = "SpendBody";
