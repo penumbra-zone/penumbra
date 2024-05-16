@@ -1394,6 +1394,7 @@ version = "0.75.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "base64 0.21.7",
  "borsh",
  "futures",
  "hex",

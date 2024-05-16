@@ -23,9 +23,10 @@ use std::pin::Pin;
 
 use crate::read::StateRead;
 use crate::rpc::proto::v1::{
-    key_value_response::Value, query_service_server::QueryService, watch_response as wr,
-    KeyValueRequest, KeyValueResponse, PrefixValueRequest, PrefixValueResponse, WatchRequest,
-    WatchResponse,
+    key_value_response::Value as JMTValue, non_verifiable_key_value_response::Value as NVValue,
+    query_service_server::QueryService, watch_response as wr, KeyValueRequest, KeyValueResponse,
+    NonVerifiableKeyValueRequest, NonVerifiableKeyValueResponse, PrefixValueRequest,
+    PrefixValueResponse, WatchRequest, WatchResponse,
 };
 use futures::{StreamExt, TryStreamExt};
 use regex::Regex;
@@ -37,6 +38,29 @@ use crate::Storage;
 
 #[tonic::async_trait]
 impl QueryService for Server {
+    #[instrument(skip(self, request))]
+    async fn non_verifiable_key_value(
+        &self,
+        request: tonic::Request<NonVerifiableKeyValueRequest>,
+    ) -> Result<tonic::Response<NonVerifiableKeyValueResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        let request = request.into_inner();
+
+        if request.key.is_none() || request.key.as_ref().expect("key is Some").inner.is_empty() {
+            return Err(Status::invalid_argument("key is empty"));
+        }
+
+        let key = request.key.expect("key is Some").inner;
+        let some_value = state
+            .nonverifiable_get_raw(&key)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+
+        Ok(tonic::Response::new(NonVerifiableKeyValueResponse {
+            value: some_value.map(|value| NVValue { value }),
+        }))
+    }
+
     #[instrument(skip(self, request))]
     async fn key_value(
         &self,
@@ -52,17 +76,32 @@ impl QueryService for Server {
             return Err(Status::invalid_argument("key is empty"));
         }
 
-        // TODO(erwan): Don't generate the proof if the request doesn't ask for it. Tracked in #2647.
-        let (some_value, proof) = state
-            .get_with_proof(request.key.into_bytes())
-            .await
-            .map_err(|e| tonic::Status::internal(e.to_string()))?;
+        let (some_value, proof) = {
+            // Don't generate the proof if the request doesn't ask for it.
+            let (v, p) = if request.proof {
+                let (v, p) = state
+                    .get_with_proof(request.key.into_bytes())
+                    .await
+                    .map_err(|e| tonic::Status::internal(e.to_string()))?;
+                (v, Some(p))
+            } else {
+                (
+                    state
+                        .get_raw(&request.key)
+                        .await
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?,
+                    None,
+                )
+            };
+            (v, p)
+        };
 
         Ok(tonic::Response::new(KeyValueResponse {
-            value: some_value.map(|value| Value { value }),
+            value: some_value.map(|value| JMTValue { value }),
             proof: if request.proof {
                 Some(ibc_proto::ibc::core::commitment::v1::MerkleProof {
                     proofs: proof
+                        .expect("proof should be present")
                         .proofs
                         .into_iter()
                         .map(|p| {
