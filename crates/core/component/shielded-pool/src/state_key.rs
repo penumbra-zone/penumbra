@@ -1,8 +1,14 @@
-use penumbra_asset::asset;
-use std::string::String;
+pub mod denom_by_asset {
+    use penumbra_asset::asset;
+    use std::string::String;
 
-pub fn denom_by_asset(asset_id: &asset::Id) -> String {
-    format!("shielded_pool/assets/{asset_id}/denom")
+    pub fn prefix() -> &'static str {
+        "shielded_pool/assets/"
+    }
+
+    pub fn key(asset_id: &asset::Id) -> String {
+        format!("shielded_pool/assets/{asset_id}/denom")
+    }
 }
 
 // State keys used to temporarily store payloads and nullifiers to be inserted into the compact
