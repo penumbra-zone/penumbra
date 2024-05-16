@@ -69,7 +69,6 @@ rand_chacha = {workspace = true}
 rand_core = {workspace = true}
 regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
-serde_unit_struct = {workspace = true}
 serde_with = {workspace = true}
 sha2 = {workspace = true}
 tap = {workspace = true}
