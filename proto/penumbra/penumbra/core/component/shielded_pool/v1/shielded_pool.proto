@@ -60,6 +60,8 @@ message NotePayload {
   // An encryption of the newly created note.
   // 176 = 80(address) + 16(amount) + 32(asset ID) + 32(rseed) + 16(MAC) bytes.
   NoteCiphertext encrypted_note = 3;
+  // Whether to exclude this spend from the CompactBlock.
+  bool sync_exclude = 4;
 }
 
 // A Penumbra ZK output proof.
@@ -107,6 +109,8 @@ message SpendBody {
   sct.v1.Nullifier nullifier = 6;
   // The randomized validating key for the spend authorization signature.
   crypto.decaf377_rdsa.v1.SpendVerificationKey rk = 4;
+  // Whether to exclude this spend from the CompactBlock.
+  bool sync_exclude = 7;
 }
 message SpendView {
   message Visible {

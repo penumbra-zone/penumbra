@@ -80,6 +80,7 @@ impl SpendPlan {
             balance_commitment: self.balance().commit(self.value_blinding),
             nullifier: self.nullifier(fvk),
             rk: self.rk(fvk),
+            sync_exclude: false,
         }
     }
 

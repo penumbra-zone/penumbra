@@ -14,6 +14,7 @@ pub struct NotePayload {
     pub note_commitment: note::StateCommitment,
     pub ephemeral_key: ka::Public,
     pub encrypted_note: NoteCiphertext,
+    pub sync_exclude: bool,
 }
 
 impl NotePayload {
@@ -97,6 +98,7 @@ impl TryFrom<pb::NotePayload> for NotePayload {
                 .encrypted_note
                 .ok_or_else(|| anyhow::anyhow!("missing encrypted note"))?
                 .try_into()?,
+            sync_exclude: proto.sync_exclude,
         })
     }
 }

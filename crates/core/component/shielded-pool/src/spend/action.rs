@@ -23,6 +23,7 @@ pub struct Body {
     pub balance_commitment: balance::Commitment,
     pub nullifier: Nullifier,
     pub rk: VerificationKey<SpendAuth>,
+    pub sync_exclude: bool,
 }
 
 impl EffectingData for Body {
@@ -121,6 +122,7 @@ impl TryFrom<pb::SpendBody> for Body {
             balance_commitment,
             nullifier,
             rk,
+            sync_exclude: proto.sync_exclude,
         })
     }
 }

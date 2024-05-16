@@ -148,6 +148,7 @@ impl Note {
             note_commitment: self.commit(),
             ephemeral_key: self.ephemeral_public_key(),
             encrypted_note: self.encrypt(),
+            sync_exclude: false,
         }
     }
 
