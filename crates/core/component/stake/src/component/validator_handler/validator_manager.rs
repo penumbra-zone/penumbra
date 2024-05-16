@@ -302,8 +302,6 @@ pub trait ValidatorManager: StateWrite {
         tracing::info!("successful state transition");
         self.put(validator_state_path, new_state);
 
-        Self::state_machine_metrics(old_state, new_state);
-
         Ok((old_state, new_state))
     }
 
@@ -485,17 +483,6 @@ pub trait ValidatorManager: StateWrite {
         self.set_validator_bonding_state(&validator_identity, initial_bonding_state);
         self.set_validator_pool_size(&validator_identity, initial_delegation_pool_size);
 
-        // Finally, update metrics for the new validator.
-        match initial_state {
-            validator::State::Active => {
-                metrics::gauge!(metrics::ACTIVE_VALIDATORS).increment(1.0);
-            }
-            validator::State::Defined => {
-                metrics::gauge!(metrics::DEFINED_VALIDATORS).increment(1.0);
-            }
-            _ => unreachable!("the initial state was validated by the guard condition"),
-        };
-
         metrics::gauge!(metrics::MISSED_BLOCKS, "identity_key" => validator_identity.to_string())
             .increment(0.0);
 
@@ -673,26 +660,6 @@ pub trait ValidatorManager: StateWrite {
         }
 
         Ok(())
-    }
-
-    fn state_machine_metrics(old_state: validator::State, new_state: validator::State) {
-        // Update the validator metrics once the state transition has been applied.
-        match old_state {
-            Defined => metrics::gauge!(metrics::DEFINED_VALIDATORS).decrement(1.0),
-            Inactive => metrics::gauge!(metrics::INACTIVE_VALIDATORS).decrement(1.0),
-            Active => metrics::gauge!(metrics::ACTIVE_VALIDATORS).decrement(1.0),
-            Disabled => metrics::gauge!(metrics::DISABLED_VALIDATORS).decrement(1.0),
-            Jailed => metrics::gauge!(metrics::JAILED_VALIDATORS).decrement(1.0),
-            Tombstoned => metrics::gauge!(metrics::TOMBSTONED_VALIDATORS).decrement(1.0),
-        };
-        match new_state {
-            Defined => metrics::gauge!(metrics::DEFINED_VALIDATORS).increment(1.0),
-            Inactive => metrics::gauge!(metrics::INACTIVE_VALIDATORS).increment(1.0),
-            Active => metrics::gauge!(metrics::ACTIVE_VALIDATORS).increment(1.0),
-            Disabled => metrics::gauge!(metrics::DISABLED_VALIDATORS).increment(1.0),
-            Jailed => metrics::gauge!(metrics::JAILED_VALIDATORS).increment(1.0),
-            Tombstoned => metrics::gauge!(metrics::TOMBSTONED_VALIDATORS).increment(1.0),
-        };
     }
 }
 
