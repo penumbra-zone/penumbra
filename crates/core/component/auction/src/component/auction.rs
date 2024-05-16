@@ -10,6 +10,7 @@ use penumbra_num::Amount;
 use penumbra_proto::StateReadProto;
 use penumbra_proto::StateWriteProto;
 use std::sync::Arc;
+use tap::Tap;
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
@@ -67,6 +68,17 @@ pub trait StateReadExt: StateRead {
         self.object_get::<()>(state_key::parameters::updated_flag())
             .is_some()
     }
+
+    /// Fetch the current balance of the auction circuit breaker for a given asset,
+    /// returning zero if no balance is tracked yet.
+    #[instrument(skip(self))]
+    async fn get_auction_value_balance_for(&self, asset_id: &asset::Id) -> Amount {
+        self.get(&state_key::value_balance::for_asset(asset_id))
+            .await
+            .expect("failed to fetch auction value breaker balance")
+            .unwrap_or_else(Amount::zero)
+            .tap(|vcb| tracing::trace!(?vcb))
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -120,26 +132,24 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 ///                                                  ║            
 ///
 pub(crate) trait AuctionCircuitBreaker: StateWrite {
-    /// Fetch the current balance of the auction circuit breaker for a given asset,
-    /// returning zero if no balance is tracked yet.
-    async fn get_auction_value_balance_for(&self, asset_id: &asset::Id) -> Amount {
-        self.get(&state_key::value_balance::for_asset(asset_id))
-            .await
-            .expect("failed to fetch auction value breaker balance")
-            .unwrap_or_else(Amount::zero)
-    }
-
     /// Credit a deposit into the auction component.
+    #[instrument(skip(self))]
     async fn auction_vcb_credit(&mut self, value: Value) -> Result<()> {
+        if value.amount == Amount::zero() {
+            tracing::trace!("short-circuit crediting zero-value");
+            return Ok(());
+        }
+
         let prev_balance = self.get_auction_value_balance_for(&value.asset_id).await;
         let new_balance = prev_balance.checked_add(&value.amount).ok_or_else(|| {
-            tracing::error!(
-                ?prev_balance,
-                ?value,
-                "overflowed balance while crediting auction circuit breaker"
-            );
-            anyhow::anyhow!("overflowed balance while crediting auction circuit breaker")
+            anyhow::anyhow!("overflowed balance while crediting auction circuit breaker (prev balance: {prev_balance:?}, credit: {value:?}")
         })?;
+
+        tracing::trace!(
+            ?prev_balance,
+            ?new_balance,
+            "crediting the auction component VCB"
+        );
 
         // Write the new balance to the chain state.
         self.put(
@@ -156,18 +166,24 @@ pub(crate) trait AuctionCircuitBreaker: StateWrite {
     }
 
     /// Debit a balance from the auction component.
+    #[instrument(skip(self))]
     async fn auction_vcb_debit(&mut self, value: Value) -> Result<()> {
+        if value.amount == Amount::zero() {
+            tracing::trace!("short-circuit debiting zero-value");
+            return Ok(());
+        }
+
         let prev_balance = self.get_auction_value_balance_for(&value.asset_id).await;
         let new_balance = prev_balance.checked_sub(&value.amount).ok_or_else(|| {
-            tracing::error!(
-                ?prev_balance,
-                ?value,
-                "underflowed balance while debiting auction circuit breaker"
-            );
-            anyhow::anyhow!("underflowed balance while debiting auction circuit breaker")
+            anyhow::anyhow!("underflowed balance while debiting auction circuit breaker (prev balance: {prev_balance:?}, debit={value:?}")
         })?;
 
-        // Write the new balance to the chain state.
+        tracing::trace!(
+            ?prev_balance,
+            ?new_balance,
+            "debiting the auction component VCB"
+        );
+
         self.put(
             state_key::value_balance::for_asset(&value.asset_id),
             new_balance,

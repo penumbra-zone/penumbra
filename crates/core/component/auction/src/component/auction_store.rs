@@ -14,7 +14,7 @@ use crate::{
 
 /// Provide access to internal auction data.
 #[async_trait]
-pub(crate) trait AuctionStoreRead: StateRead {
+pub trait AuctionStoreRead: StateRead {
     /// Returns whether the supplied `auction_id` exists in the chain state.
     async fn auction_id_exists(&self, auction_id: AuctionId) -> bool {
         self.get_raw_auction(auction_id).await.is_some()
