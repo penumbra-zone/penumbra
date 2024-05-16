@@ -31,7 +31,6 @@ decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
-penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-dex = {workspace = true, default-features = false}
 penumbra-fee = {workspace = true, default-features = false}
 penumbra-governance = {workspace = true, default-features = false}
