@@ -115,7 +115,12 @@ pub trait SctManager: StateWrite {
 
     #[instrument(skip(self, source))]
     /// Record a nullifier as spent in the verifiable storage.
-    async fn nullify(&mut self, nullifier: Nullifier, source: CommitmentSource) {
+    async fn nullify(
+        &mut self,
+        nullifier: Nullifier,
+        source: CommitmentSource,
+        sync_exclude: bool,
+    ) {
         tracing::debug!("marking as spent");
 
         // We need to record the nullifier as spent in the JMT (to prevent
@@ -133,10 +138,12 @@ pub trait SctManager: StateWrite {
             },
         );
 
-        // Record the nullifier to be inserted into the compact block
-        let mut nullifiers = self.pending_nullifiers();
-        nullifiers.push_back(nullifier);
-        self.object_put(state_key::nullifier_set::pending_nullifiers(), nullifiers);
+        // Record the nullifier to be inserted into the compact block, unless explicitly excluded from syncing.
+        if !sync_exclude {
+            let mut nullifiers = self.pending_nullifiers();
+            nullifiers.push_back(nullifier);
+            self.object_put(state_key::nullifier_set::pending_nullifiers(), nullifiers);
+        }
     }
 
     /// Seal the current block in the SCT, and produce an epoch root if

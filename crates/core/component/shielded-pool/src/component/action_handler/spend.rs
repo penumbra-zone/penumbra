@@ -46,9 +46,9 @@ impl ActionHandler for Spend {
 
         let source = state.get_current_source().expect("source should be set");
 
-        // TODO: if the request body has the "don't store in compact block" bit set,
-        // then we should not store this nullifier in the compact block.
-        state.nullify(self.body.nullifier, source).await;
+        state
+            .nullify(self.body.nullifier, source, self.body.sync_exclude)
+            .await;
 
         // Also record an ABCI event for transaction indexing.
         state.record_proto(event::spend(&self.body.nullifier));
