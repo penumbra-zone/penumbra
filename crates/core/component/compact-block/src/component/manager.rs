@@ -91,6 +91,8 @@ trait Inner: StateWrite {
         let note_payloads = self
             .pending_note_payloads()
             .into_iter()
+            // Filter out notes with the compact block exclusion flag set.
+            .filter(|(_pos, note, _source)| !note.sync_exclude)
             // Strip the sources of transaction IDs
             .map(|(pos, note, source)| (pos, (note, source.stripped()).into()));
         let rolled_up_payloads = self
