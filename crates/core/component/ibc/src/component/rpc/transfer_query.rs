@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use futures::StreamExt;
 use ibc_proto::ibc::applications::transfer::v1::query_server::Query as TransferQuery;
 use ibc_proto::ibc::apps::transfer::v1::{
     QueryDenomHashRequest, QueryDenomHashResponse, QueryDenomTraceRequest, QueryDenomTraceResponse,
@@ -6,9 +7,10 @@ use ibc_proto::ibc::apps::transfer::v1::{
     QueryEscrowAddressResponse, QueryParamsRequest, QueryParamsResponse,
     QueryTotalEscrowForDenomRequest, QueryTotalEscrowForDenomResponse,
 };
+use penumbra_asset::asset::Denom;
 use penumbra_proto::StateReadProto as _;
-use penumbra_shielded_pool::state_key;
 
+use crate::component::state_key;
 use crate::component::HostInterface;
 
 use super::IbcQuery;
@@ -57,37 +59,35 @@ impl<HI: HostInterface + Send + Sync + 'static> TransferQuery for IbcQuery<HI> {
         let snapshot = self.storage.latest_snapshot();
         let s = snapshot.prefix(state_key::denom_by_asset::prefix());
         Ok(tonic::Response::new(
-            s.filter_map(
-                move |i: anyhow::Result<(String, SwapExecution)>| async move {
-                    if i.is_err() {
-                        return Some(Err(tonic::Status::unavailable(format!(
-                            "error getting prefix value from storage: {}",
-                            i.expect_err("i is_err")
-                        ))));
-                    }
+            s.filter_map(move |i: anyhow::Result<(String, Denom)>| async move {
+                if i.is_err() {
+                    return Some(Err(tonic::Status::unavailable(format!(
+                        "error getting prefix value from storage: {}",
+                        i.expect_err("i is_err")
+                    ))));
+                }
 
-                    let (key, arb_execution) = i.expect("i is Ok");
-                    let height = key
-                        .split('/')
-                        .last()
-                        .expect("arb execution key has height as last part")
-                        .parse()
-                        .expect("height is a number");
+                let (key, denom) = i.expect("i is Ok");
+                let height = key
+                    .split('/')
+                    .last()
+                    .expect("arb execution key has height as last part")
+                    .parse()
+                    .expect("height is a number");
 
-                    // TODO: would be great to start iteration at start_height
-                    // and stop at end_height rather than touching _every_
-                    // key, but the current storage implementation doesn't make this
-                    // easy.
-                    if height < start_height || height > end_height {
-                        None
-                    } else {
-                        Some(Ok(ArbExecutionsResponse {
-                            swap_execution: Some(arb_execution.into()),
-                            height,
-                        }))
-                    }
-                },
-            )
+                // TODO: would be great to start iteration at start_height
+                // and stop at end_height rather than touching _every_
+                // key, but the current storage implementation doesn't make this
+                // easy.
+                if height < start_height || height > end_height {
+                    None
+                } else {
+                    Some(Ok(ArbExecutionsResponse {
+                        swap_execution: Some(arb_execution.into()),
+                        height,
+                    }))
+                }
+            })
             // TODO: how do we instrument a Stream
             //.instrument(Span::current())
             .boxed(),

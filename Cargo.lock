@@ -5200,6 +5200,7 @@ dependencies = [
  "base64 0.21.7",
  "blake2b_simd 1.0.2",
  "cnidarium",
+ "futures",
  "hex",
  "ibc-proto",
  "ibc-types",

@@ -21,6 +21,7 @@ async-trait = {workspace = true}
 base64 = {workspace = true}
 blake2b_simd = {workspace = true}
 cnidarium = {workspace = true, optional = true, default-features = true}
+futures = {workspace = true}
 hex = {workspace = true}
 ibc-proto = {workspace = true, default-features = false}
 ibc-types = {workspace = true, default-features = false}
@@ -33,7 +34,6 @@ penumbra-asset = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
-penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-txhash = {workspace = true, default-features = false}
 prost = {workspace = true}
 serde = {workspace = true, features = ["derive"]}

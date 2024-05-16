@@ -22,3 +22,18 @@ pub fn counter() -> &'static str {
 pub fn ics20_value_balance(channel_id: &ChannelId, asset_id: &asset::Id) -> String {
     format!("ibc/ics20-value-balance/{channel_id}/{asset_id}")
 }
+
+// TODO: had to copy this from the shielded pool temporarily,
+// to avoid a circular dependency. This is sub-optimal.
+pub mod denom_by_asset {
+    use penumbra_asset::asset;
+    use std::string::String;
+
+    pub fn prefix() -> &'static str {
+        "shielded_pool/assets/"
+    }
+
+    pub fn key(asset_id: &asset::Id) -> String {
+        format!("shielded_pool/assets/{asset_id}/denom")
+    }
+}
