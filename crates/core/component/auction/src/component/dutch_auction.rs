@@ -21,13 +21,17 @@ use penumbra_proto::core::component::auction::v1 as pb;
 use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::clock::EpochRead;
 use prost::{Message, Name};
+use tracing::instrument;
 
 #[async_trait]
 pub(crate) trait DutchAuctionManager: StateWrite {
     /// Schedule an auction for the specified [`DutchAuctionDescritpion`], initializing
     /// its state, and registering it for execution by the component.
+    #[instrument(skip(self), level = "debug")]
     async fn schedule_auction(&mut self, description: DutchAuctionDescription) -> Result<()> {
         let auction_id = description.id();
+        tracing::debug!(?auction_id, "attempting to schedule a dutch auction");
+
         let DutchAuctionDescription {
             input: _,
             output_id: _,
@@ -86,11 +90,13 @@ pub(crate) trait DutchAuctionManager: StateWrite {
     /// For a given auction, this translates into withdrawing a PCL liquidity position,
     /// credit and zero-out its reserves, and finally, examine the auction's termination
     /// condition.
+    #[instrument(skip(self))]
     async fn execute_dutch_auction(
         &mut self,
         auction_id: AuctionId,
         trigger_height: u64,
     ) -> Result<()> {
+        tracing::trace!(?auction_id, "executing a dutch auction");
         let old_dutch_auction = self
             .get_dutch_auction_by_id(auction_id)
             .await
@@ -108,13 +114,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
             nonce: _,
         } = old_dutch_auction.description;
 
-        let DutchAuctionState {
-            sequence: _,
-            current_position,
-            next_trigger: _,
-            input_reserves: _,
-            output_reserves: _,
-        } = old_dutch_auction.state;
+        let current_position = old_dutch_auction.state.current_position;
 
         let auction_input_id = input.asset_id;
         let auction_output_id = output_id;
@@ -199,6 +199,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         self.auction_vcb_credit(lp_inflow_input_asset)
             .await
             .context("failed to absorb LP inflow of input asset into auction value balance")?;
+
         self.auction_vcb_credit(lp_inflow_output_asset)
             .await
             .context("failed to absorb LP inflow of output asset into auction value balance")?;
@@ -241,6 +242,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
                 .await
                 .expect("no state incoherence");
             new_dutch_auction.state.current_position = Some(id);
+            new_dutch_auction.state.next_trigger = NonZeroU64::new(next_trigger);
 
             self.set_trigger_for_dutch_id(auction_id, next_trigger);
         };
@@ -267,16 +269,18 @@ pub(crate) trait DutchAuctionManager: StateWrite {
     /// # Errors
     /// This method returns an error if the id is not found, or if the
     /// recorded entry is not of type `DutchAuction`.
-    async fn close_auction_by_id(&mut self, id: AuctionId) -> Result<()> {
+    #[instrument(skip(self))]
+    async fn end_auction_by_id(&mut self, id: AuctionId) -> Result<()> {
         let auction = self
             .get_dutch_auction_by_id(id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("auction not found"))?;
-        self.close_auction(auction).await
+        self.end_auction(auction).await
     }
 
     /// Terminate and update the supplied auction state.
-    async fn close_auction(&mut self, auction_to_close: DutchAuction) -> Result<()> {
+    #[instrument(skip_all, fields(auction_id = %auction_to_close.description.id(), current_sequence = auction_to_close.state.sequence))]
+    async fn end_auction(&mut self, auction_to_close: DutchAuction) -> Result<()> {
         let DutchAuctionState {
             sequence,
             current_position,
@@ -289,6 +293,10 @@ pub(crate) trait DutchAuctionManager: StateWrite {
         // This is safe to do because its associated LP position must have been
         // closed and withdrawn already.
         if sequence >= 1 {
+            tracing::trace!(
+                ?sequence,
+                "dutch auction is already closed, short-circuiting"
+            );
             return Ok(());
         }
 
@@ -365,6 +373,7 @@ pub(crate) trait DutchAuctionManager: StateWrite {
     /// # Errors
     /// This method errors if the auction id is not found, or if the associated
     /// entry is not of type [`DutchAuction`].
+    #[instrument(skip(self), level = "debug")]
     async fn withdraw_auction_by_id(&mut self, id: AuctionId) -> Result<()> {
         let auction = self
             .get_dutch_auction_by_id(id)
@@ -412,6 +421,7 @@ impl<T: StateWrite + ?Sized> DutchAuctionManager for T {}
 #[async_trait]
 pub(crate) trait HandleDutchTriggers: StateWrite {
     /// Process the trigger height for a [`DutchAuction`],
+    #[instrument(skip(self))]
     async fn process_triggers(&mut self, trigger_height: u64) -> Result<()> {
         use futures::StreamExt;
         let auction_ids: Vec<AuctionId> = self
@@ -460,6 +470,7 @@ pub(crate) trait DutchAuctionData: StateRead {
 impl<T: StateRead + ?Sized> DutchAuctionData for T {}
 
 trait Inner: StateWrite {
+    #[instrument(skip(self, auction_nonce))]
     async fn allocate_position(
         &mut self,
         pair: DirectedTradingPair,
@@ -480,6 +491,7 @@ trait Inner: StateWrite {
         let mut attempt_counter = 0u64;
 
         loop {
+            tracing::trace!(attempt_counter, "trying to find a valid nonce to deploy lp");
             let lp_reserves = Reserves {
                 r1: input_reserves,
                 r2: Amount::zero(),
@@ -495,18 +507,17 @@ trait Inner: StateWrite {
             let mut tough_nonce = [0u8; 32];
             tough_nonce[0..32].copy_from_slice(&full_hash.as_bytes()[0..32]);
 
-            let mut lp =
-                Position::new_with_nonce(tough_nonce, pair.clone(), 0u32, p, q, lp_reserves);
-            // PSA, hackers:
-            // Since our goal is to acquire some output asset, we want to close the
-            // position as soon as it gets filled. Otherwise, it could round-trip
-            // back to the input asset which defeats the purpose.
+            let mut lp = Position::new_with_nonce(tough_nonce, pair, 0u32, p, q, lp_reserves);
+            // PSA, hackers: Our goal is to *only* acquire some output assets.
+            // This means that we want to close the position as soon as it gets
+            // filled. Otherwise, it could round-trip back to the input asset,
+            // thus defeating the purpose for this logic.
             lp.close_on_fill = true;
 
             let position_id = lp.id();
 
             if self.check_position_by_id(&position_id).await? {
-                tracing::error!(
+                tracing::debug!(
                     attempt_counter,
                     ?position_id,
                     "another position with our attempted id exists, retrying"
@@ -514,6 +525,11 @@ trait Inner: StateWrite {
                 attempt_counter += 1;
                 continue;
             } else {
+                tracing::debug!(
+                    attempt_counter,
+                    ?position_id,
+                    "attempting to open position with unique id"
+                );
                 self.auction_vcb_debit(lp.reserves_1())
                     .await
                     .context("failed to debit vcb of r1 during position allocation")?;
@@ -527,6 +543,7 @@ trait Inner: StateWrite {
     }
 
     /// Serialize a `DutchAuction` as an `Any` into chain state.
+    #[instrument(skip(self))]
     fn write_dutch_auction_state(&mut self, new_state: DutchAuction) {
         let id = new_state.description.id();
         let key = state_key::auction_store::by_id(id);
@@ -544,18 +561,22 @@ trait Inner: StateWrite {
     }
 
     /// Set a trigger for a Dutch auction.
+    #[instrument(skip(self))]
     fn set_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
-            .as_bytes()
-            .to_vec();
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
+        tracing::trace!(state_key = ?trigger_path, "setting trigger for dutch auction");
+        let trigger_path = trigger_path.as_bytes().to_vec();
+
         self.nonverifiable_put(trigger_path, auction_id);
     }
 
     /// Delete a trigger for a Dutch auction.
+    #[instrument(skip(self))]
     fn unset_trigger_for_dutch_id(&mut self, auction_id: AuctionId, trigger_height: u64) {
-        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height)
-            .as_bytes()
-            .to_vec();
+        let trigger_path = state_key::dutch::trigger::auction_at_height(auction_id, trigger_height);
+        tracing::trace!(state_key = ?trigger_path, "unsetting trigger for dutch auction");
+        let trigger_path = trigger_path.as_bytes().to_vec();
+
         self.nonverifiable_delete(trigger_path);
     }
 }
