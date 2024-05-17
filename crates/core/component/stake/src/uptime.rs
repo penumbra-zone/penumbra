@@ -79,7 +79,7 @@ impl Uptime {
     }
 
     /// Enumerates the missed blocks over the window in terms of absolute block height.
-    pub fn missed_blocks(&self) -> impl Iterator<Item = u64> + '_ {
+    pub fn missed_blocks(&self) -> impl Iterator<Item = u64> + DoubleEndedIterator + '_ {
         // The height of the next block to be recorded (not yet recorded):
         let current_height = self.as_of_block_height;
         // The length of the window of blocks being recorded:
