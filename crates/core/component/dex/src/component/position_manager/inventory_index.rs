@@ -1,4 +1,5 @@
 use cnidarium::StateWrite;
+use tracing::instrument;
 
 use crate::{
     lp::position::{self, Position},
@@ -33,8 +34,9 @@ pub(super) trait PositionByInventoryIndex: StateWrite {
 impl<T: StateWrite + ?Sized> PositionByInventoryIndex for T {}
 
 trait Inner: StateWrite {
+    #[instrument(skip(self, position))]
     fn index_position_by_inventory(&mut self, position: &position::Position, id: &position::Id) {
-        tracing::debug!("indexing position by inventory");
+        tracing::trace!("indexing position by inventory");
         let canonical_pair = position.phi.pair;
         // A position is bound to an unordered trading pair: A <> B.
         // We want to index the position by inventory for each direction:

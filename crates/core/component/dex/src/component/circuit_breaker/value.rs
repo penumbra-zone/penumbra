@@ -4,39 +4,54 @@ use penumbra_asset::Value;
 use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tonic::async_trait;
+use tracing::instrument;
 
 use crate::{event, state_key};
 
 /// Tracks the aggregate value of deposits in the DEX.
 #[async_trait]
 pub trait ValueCircuitBreaker: StateWrite {
-    /// Credits a deposit into the DEX.
-    async fn vcb_credit(&mut self, value: Value) -> Result<()> {
-        let balance: Amount = self
+    /// Credits the supplied [`Value`] to the dex VCB.
+    #[instrument(skip(self))]
+    async fn dex_vcb_credit(&mut self, value: Value) -> Result<()> {
+        if value.amount == Amount::zero() {
+            return Ok(());
+        }
+
+        let prev_balance: Amount = self
             .get(&state_key::value_balance(&value.asset_id))
             .await?
             .unwrap_or_default();
-        let new_balance = balance
+        let new_balance = prev_balance
             .checked_add(&value.amount)
-            .ok_or_else(|| anyhow!("overflowed balance while crediting value circuit breaker"))?;
+            .ok_or_else(|| anyhow!("overflowed balance while crediting value circuit breaker (prev balance={prev_balance:?}, credit={value:?}"))?;
+
+        tracing::debug!(?prev_balance, ?new_balance, "crediting the dex VCB");
         self.put(state_key::value_balance(&value.asset_id), new_balance);
 
-        self.record_proto(event::vcb_credit(value.asset_id, balance, new_balance));
+        self.record_proto(event::vcb_credit(value.asset_id, prev_balance, new_balance));
         Ok(())
     }
 
-    /// Debits a deposit from the DEX.
-    async fn vcb_debit(&mut self, value: Value) -> Result<()> {
-        let balance: Amount = self
+    /// Debits the specified [`Value`] from the dex VCB.
+    #[instrument(skip(self))]
+    async fn dex_vcb_debit(&mut self, value: Value) -> Result<()> {
+        if value.amount == Amount::zero() {
+            return Ok(());
+        }
+
+        let prev_balance: Amount = self
             .get(&state_key::value_balance(&value.asset_id))
             .await?
             .unwrap_or_default();
-        let new_balance = balance
+        let new_balance = prev_balance
             .checked_sub(&value.amount)
-            .ok_or_else(|| anyhow!("underflowed balance while debiting value circuit breaker"))?;
+            .ok_or_else(|| anyhow!("underflowed balance while debiting value circuit breaker (prev balance={prev_balance:?}, debit={value:?}"))?;
+
+        tracing::debug!(?prev_balance, ?new_balance, "crediting the dex VCB");
         self.put(state_key::value_balance(&value.asset_id), new_balance);
 
-        self.record_proto(event::vcb_debit(value.asset_id, balance, new_balance));
+        self.record_proto(event::vcb_debit(value.asset_id, prev_balance, new_balance));
         Ok(())
     }
 }
@@ -82,21 +97,21 @@ mod tests {
 
         // A credit followed by a debit of the same amount should succeed.
         // Credit 100 gm.
-        state_tx.vcb_credit(gm.value(100u64.into())).await?;
+        state_tx.dex_vcb_credit(gm.value(100u64.into())).await?;
         // Credit 100 gn.
-        state_tx.vcb_credit(gn.value(100u64.into())).await?;
+        state_tx.dex_vcb_credit(gn.value(100u64.into())).await?;
 
         // Debit 100 gm.
-        state_tx.vcb_debit(gm.value(100u64.into())).await?;
+        state_tx.dex_vcb_debit(gm.value(100u64.into())).await?;
         // Debit 100 gn.
-        state_tx.vcb_debit(gn.value(100u64.into())).await?;
+        state_tx.dex_vcb_debit(gn.value(100u64.into())).await?;
 
         // Debiting an additional gm should fail.
-        assert!(state_tx.vcb_debit(gm.value(1u64.into())).await.is_err());
+        assert!(state_tx.dex_vcb_debit(gm.value(1u64.into())).await.is_err());
 
         // Debiting an asset that hasn't been credited should also fail.
         assert!(state_tx
-            .vcb_debit(test_usd.value(1u64.into()))
+            .dex_vcb_debit(test_usd.value(1u64.into()))
             .await
             .is_err());
 

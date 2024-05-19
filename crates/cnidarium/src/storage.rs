@@ -3,8 +3,6 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::{bail, ensure, Result};
 use parking_lot::RwLock;
 use rocksdb::{Options, DB};
-// HashMap is okay here because we don't care about ordering of substore roots.
-#[allow(clippy::disallowed_types)]
 use std::collections::HashMap;
 use tokio::sync::watch;
 use tracing::Span;

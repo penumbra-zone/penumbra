@@ -2,6 +2,7 @@ use anyhow::Result;
 use cnidarium::StateWrite;
 use penumbra_num::Amount;
 use position::State::*;
+use tracing::instrument;
 
 use crate::lp::position::{self, Position};
 use crate::state_key::engine;
@@ -144,6 +145,7 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
 impl<T: StateWrite + ?Sized> AssetByLiquidityIndex for T {}
 
 trait Inner: StateWrite {
+    #[instrument(skip(self))]
     async fn update_asset_by_base_liquidity_index_inner(
         &mut self,
         id: &position::Id,
@@ -166,7 +168,7 @@ trait Inner: StateWrite {
 
         // If the update operation is a no-op, we can skip the update and return early.
         if prev_tally == new_tally {
-            tracing::debug!(
+            tracing::trace!(
                 ?prev_tally,
                 ?pair,
                 ?id,
@@ -186,7 +188,7 @@ trait Inner: StateWrite {
 
         let auxiliary_key = engine::routable_assets::lookup_base_liquidity_by_pair(&pair).to_vec();
         self.nonverifiable_put(auxiliary_key, new_tally);
-        tracing::debug!(
+        tracing::trace!(
             ?pair,
             "base liquidity heuristic marked directed pair as routable"
         );
