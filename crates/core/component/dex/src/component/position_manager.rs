@@ -10,6 +10,8 @@ use futures::StreamExt;
 use penumbra_asset::{asset, Balance};
 use penumbra_proto::DomainType;
 use penumbra_proto::{StateReadProto, StateWriteProto};
+use tap::Tap;
+use tracing::instrument;
 
 use crate::component::{
     dex::StateReadExt as _,
@@ -165,13 +167,15 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// # Errors
     ///
     /// Returns an error if the position does not exist.
+    #[instrument(level = "debug", skip(self))]
     async fn close_position_by_id(&mut self, id: &position::Id) -> Result<()> {
         tracing::debug!(?id, "closing position, first fetch it");
         let prev_state = self
             .position_by_id(id)
             .await
             .expect("fetching position should not fail")
-            .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?;
+            .ok_or_else(|| anyhow::anyhow!("could not find position {} to close", id))?
+            .tap(|lp| tracing::trace!(prev_state = ?lp, "retrieved previous lp state"));
 
         anyhow::ensure!(
             matches!(
@@ -212,9 +216,11 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 
     /// Close all positions that have been queued for closure.
+    #[instrument(skip_all)]
     async fn close_queued_positions(&mut self) -> Result<()> {
         let to_close = self.pending_position_closures();
         for id in to_close {
+            tracing::trace!(position_to_close = ?id, "processing LP queue");
             self.close_position_by_id(&id).await?;
         }
         self.object_delete(state_key::pending_position_closures());
@@ -236,23 +242,24 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// In any of those cases, we do not want to allow a new position to be opened.
     #[tracing::instrument(level = "debug", skip_all)]
     async fn open_position(&mut self, position: position::Position) -> Result<()> {
+        let id = position.id();
+        tracing::debug!(?id, "attempting to open a position");
+
         // Double-check that the position is in the `Opened` state
         if position.state != position::State::Opened {
             anyhow::bail!("attempted to open a position with a state besides `Opened`");
         }
 
         // Validate that the position ID doesn't collide
-        if let Some(existing) = self.position_by_id(&position.id()).await? {
+        if let Some(existing_lp) = self.position_by_id(&id).await? {
             anyhow::bail!(
-                "attempted to open a position with ID {}, which already exists with state {:?}",
-                position.id(),
-                existing
+                "attempted to open a position with ID {id:?}, which already exists with state {existing_lp:?}",
             );
         }
 
         // Credit the DEX for the inflows from this position.
-        self.vcb_credit(position.reserves_1()).await?;
-        self.vcb_credit(position.reserves_2()).await?;
+        self.dex_vcb_credit(position.reserves_1()).await?;
+        self.dex_vcb_credit(position.reserves_2()).await?;
 
         // Add the asset IDs from the new position's trading pair
         // to the candidate set for this block.
@@ -323,13 +330,14 @@ pub trait PositionManager: StateWrite + PositionRead {
     /// execution exhausts either side of their reserves. This method returns the
     /// position that was written to the chain state, making it possible for callers
     /// to inspect any change that has occured during execution handling.
-    #[tracing::instrument(level = "debug", skip_all)]
+    #[tracing::instrument(level = "debug", skip(self, new_state))]
     async fn position_execution(
         &mut self,
         mut new_state: Position,
         context: DirectedTradingPair,
     ) -> Result<Position> {
         let position_id = new_state.id();
+        tracing::debug!(?position_id, "attempting to execute position");
         let prev_state = self
             .position_by_id(&position_id)
             .await?
@@ -444,8 +452,8 @@ pub trait PositionManager: StateWrite + PositionRead {
         let reserves = prev_state.reserves.balance(&prev_state.phi.pair);
 
         // Debit the DEX for the outflows from this position.
-        self.vcb_debit(prev_state.reserves_1()).await?;
-        self.vcb_debit(prev_state.reserves_2()).await?;
+        self.dex_vcb_debit(prev_state.reserves_1()).await?;
+        self.dex_vcb_debit(prev_state.reserves_2()).await?;
 
         // Finally, update the position. This has two steps:
         // - update the state with the correct sequence number;
@@ -472,15 +480,15 @@ trait Inner: StateWrite {
     ///
     /// This should be the SOLE ENTRYPOINT for writing positions to the state.
     /// All other position changes exposed by the `PositionManager` should run through here.
-    #[tracing::instrument(level = "debug", skip_all,  fields(id = ?new_state.id()))]
+    #[instrument(level = "debug", skip_all)]
     async fn update_position(
         &mut self,
         prev_state: Option<Position>,
         new_state: Position,
     ) -> Result<Position> {
-        tracing::debug!(?prev_state, ?new_state, "updating position state");
-
         let id = new_state.id();
+        tracing::debug!(?id, prev_position_state = ?prev_state.as_ref().map(|p| &p.state), new_position_state = ?new_state.state, "updating position state");
+        tracing::trace!(?id, ?prev_state, ?new_state, "updating position state");
 
         // Assert `update_position` state transitions invariants:
         Self::guard_invalid_transitions(&prev_state, &new_state, &id)?;

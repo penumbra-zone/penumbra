@@ -222,12 +222,12 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         //
         // In the case of a value inflation bug, the debit call will return an underflow
         // error, which will halt the chain.
-        self.vcb_debit(Value {
+        self.dex_vcb_debit(Value {
             amount: output_data.unfilled_1 + output_data.lambda_1,
             asset_id: output_data.trading_pair.asset_1,
         })
         .await?;
-        self.vcb_debit(Value {
+        self.dex_vcb_debit(Value {
             amount: output_data.unfilled_2 + output_data.lambda_2,
             asset_id: output_data.trading_pair.asset_2,
         })
@@ -276,12 +276,12 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         //
         // Note that we credit the DEX for _all_ inflows, since we don't know
         // how much will eventually be filled.
-        self.vcb_credit(Value {
+        self.dex_vcb_credit(Value {
             amount: swap_flow.0,
             asset_id: trading_pair.asset_1,
         })
         .await?;
-        self.vcb_credit(Value {
+        self.dex_vcb_credit(Value {
             amount: swap_flow.1,
             asset_id: trading_pair.asset_2,
         })

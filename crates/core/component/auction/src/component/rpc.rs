@@ -66,18 +66,13 @@ impl QueryService for Server {
         };
 
         let positions = match maybe_lp {
-            Some(lp_id) => {
-                let id: position::Id = lp_id.try_into().map_err(|_| {
-                    tonic::Status::internal("error converting auction state to position id")
-                })?;
-                state
-                    .position_by_id(&id)
-                    .await
-                    .map_err(|_| tonic::Status::internal("error fetching position state"))?
-                    .into_iter()
-                    .map(Into::into)
-                    .collect()
-            }
+            Some(id) => state
+                .position_by_id(&id)
+                .await
+                .map_err(|_| tonic::Status::internal("error fetching position state"))?
+                .into_iter()
+                .map(Into::into)
+                .collect(),
             None => Vec::new(),
         };
 

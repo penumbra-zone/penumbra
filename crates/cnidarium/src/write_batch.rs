@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 // HashMap is okay here because we don't care about ordering of substore roots.
-#[allow(clippy::disallowed_types)]
 use std::collections::HashMap;
 
 use crate::{

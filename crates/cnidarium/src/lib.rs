@@ -52,10 +52,11 @@
 //!
 //! With the `rpc` feature enabled, this crate also provides a GRPC interface to
 //! the key-value store using Tonic.
-
 #![deny(clippy::unwrap_used)]
 // Requires nightly.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+// We use `HashMap`s opportunistically.
+#![allow(clippy::disallowed_types)]
 
 mod cache;
 mod delta;
