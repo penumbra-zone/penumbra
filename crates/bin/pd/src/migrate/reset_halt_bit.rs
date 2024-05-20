@@ -1,4 +1,4 @@
-//! Contains functions related to the migration script of Testnet74
+//! A migration script to reset the chain's halt bit.
 
 use anyhow;
 use cnidarium::{StateDelta, Storage};
