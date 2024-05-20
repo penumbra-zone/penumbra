@@ -1241,7 +1241,12 @@ impl Storage {
         dbtx.execute(
             "INSERT INTO notes (note_commitment, address, amount, asset_id, rseed)
                 VALUES (?1, ?2, ?3, ?4, ?5)
-                ON CONFLICT DO NOTHING",
+                ON CONFLICT (note_commitment) 
+                DO UPDATE SET 
+                address = excluded.address, 
+                amount = excluded.amount, 
+                asset_id = excluded.asset_id, 
+                rseed = excluded.rseed",
             (note_commitment, address, amount, asset_id, rseed),
         )?;
 
@@ -1437,7 +1442,15 @@ impl Storage {
                 dbtx.execute(
                     "INSERT INTO spendable_notes
                     (note_commitment, nullifier, position, height_created, address_index, source, height_spent, tx_hash)
-                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7)
+                    ON CONFLICT (note_commitment)
+                    DO UPDATE SET nullifier = excluded.nullifier, 
+                    position = excluded.position, 
+                    height_created = excluded.height_created, 
+                    address_index = excluded.address_index, 
+                    source = excluded.source, 
+                    height_spent = excluded.height_spent, 
+                    tx_hash = excluded.tx_hash",
                     (
                         &note_commitment,
                         &nullifier,
@@ -1462,7 +1475,14 @@ impl Storage {
 
                 dbtx.execute(
                     "INSERT INTO swaps (swap_commitment, swap, position, nullifier, output_data, height_claimed, source)
-                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, ?6)
+                    ON CONFLICT (swap_commitment) 
+                    DO UPDATE SET swap = excluded.swap, 
+                    position = excluded.position, 
+                    nullifier = excluded.nullifier, 
+                    output_data = excluded.output_data, 
+                    height_claimed = excluded.height_claimed, 
+                    source = excluded.source",
                     (
                         &swap_commitment,
                         &swap_bytes,
@@ -1558,7 +1578,7 @@ impl Storage {
                 tracing::debug!(tx_hash = ?hex::encode(tx_hash), "recording extended transaction");
 
                 dbtx.execute(
-                    "INSERT INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
+                    "INSERT OR IGNORE INTO tx (tx_hash, tx_bytes, block_height, return_address) VALUES (?1, ?2, ?3, ?4)",
                     (&tx_hash, &tx_bytes, tx_block_height, return_address),
                 )?;
 
@@ -1566,7 +1586,7 @@ impl Storage {
                 for nf in transaction.spent_nullifiers() {
                     let nf_bytes = nf.0.to_bytes().to_vec();
                     dbtx.execute(
-                        "INSERT INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?1, ?2)",
+                        "INSERT OR IGNORE INTO tx_by_nullifier (nullifier, tx_hash) VALUES (?1, ?2)",
                         (&nf_bytes, &tx_hash),
                     )?;
                 }
