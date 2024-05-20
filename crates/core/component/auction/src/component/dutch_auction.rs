@@ -470,7 +470,7 @@ pub(crate) trait DutchAuctionData: StateRead {
 impl<T: StateRead + ?Sized> DutchAuctionData for T {}
 
 trait Inner: StateWrite {
-    #[instrument(skip(self, auction_nonce))]
+    #[instrument(skip(self, auction_nonce), ret, level = "debug")]
     async fn allocate_position(
         &mut self,
         pair: DirectedTradingPair,
