@@ -28,7 +28,8 @@ network:
   # Customization of the voting period for governance proposals.
   # Dial this down if you want faster voting for testing.
   proposal_voting_blocks:
-
+  # Set the length of an epoch, in blocks. If not set, uses pd's default.
+  epoch_duration:
   # How many validators are present at genesis. This number must
   # match the count in the JSON file used to define the validators.
   num_validators: 2

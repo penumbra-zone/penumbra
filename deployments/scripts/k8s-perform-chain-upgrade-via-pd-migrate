@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# CI script to perform a chain migration via `pd migrate` on testnet deployment.
+# The general flow is:
+#
+#   1. determine target environment
+#   2. determine end-state version
+#   3. set environment to maintenance mode (i.e. stop penumbra & cometbft)
+#   4. backup
+#   5. migrate
+#   6. export archives (required for testnet join later)
+#   7. disable maint mode.
+#
+# Eventually we can make this logic durable enough to run in CI, but for now
+# we expect this script to be run on an admin's workstation, to be responsive
+# to migration behavior.
+set -euo pipefail
+
+# script expects to be in deployments/ dir
+if [[ ! -e ci.sh ]] ; then
+    >&2 echo "ERROR: script should be run from inside 'deployments/' dir"
+    exit 1
+fi
+
+TO_VERSION="${TO_VERSION:-}"
+if [[ -z "$TO_VERSION" ]] ; then
+    >&2 echo "ERROR: TO_VERSION must be set with post-upgrade version"
+    exit 1
+fi
+
+# Default to devnet to avoid touching testnet unless explicitly requested.
+HELM_RELEASE="${HELM_RELEASE:-penumbra-devnet}"
+
+# Get the pod names for the genesis-validators in the target environment.
+function get_validators() {
+    kubectl get pods -l "app.kubernetes.io/part-of=${HELM_RELEASE}, app.kubernetes.io/component=genesis-validator" -o name
+}
+
+# Get the pod names for all fullnodes in the target environment.
+function get_fullnodes() {
+    kubectl get pods -l "app.kubernetes.io/part-of=${HELM_RELEASE}, app.kubernetes.io/name=penumbra-node" -o name
+}
+
+# Perform chain migration. Generic over fullnode/validator,
+# which have slightly different mount points for their data.
+# Assumes that service has already been paused!
+function perform_migration() {
+    local podname
+    local testnet_dir
+    podname="${1:-}"
+    testnet_dir="${2:-}"
+    shift 2
+
+    >&2 echo "Backing up node state for '$podname'..."
+    backup_tarball="${testnet_dir}/node0-state-backup.tar"
+    kubectl exec -it "$podname" -c pd -- rm -f "$backup_tarball"
+    kubectl exec -it "$podname" -c pd -- tar -C "$testnet_dir" -cf "$backup_tarball" node0
+
+    >&2 echo "Performing migration for '$podname'..."
+    kubectl exec -it "$podname" -c pd -- pd migrate \
+        --home "${testnet_dir}/node0/pd" \
+        --comet-home "${testnet_dir}/node0/cometbft"
+
+    >&2 echo "Exporting state archive for '$podname'..."
+    migration_archive="${testnet_dir}/node0-migration-archive.tar.gz"
+    kubectl exec -it "$podname" -c pd -- rm -f "$migration_archive"
+    kubectl exec -it "$podname" -c pd -- tar -C "$testnet_dir" \
+        --transform='s#node0/pd/##;s#node0/cometbft/config/##;s#node0/cometbft/data/##' \
+        -czf "$migration_archive" \
+        node0/pd/rocksdb \
+        node0/cometbft/config/genesis.json \
+        node0/cometbft/data/priv_validator_state.json
+    >&2 echo "Migration complete! Archive available at: ${podname}:${migration_archive}"
+}
+
+# Fetch pre-upgrade export archive, and post-export migration archive,
+# locally, for rehosting on snapshots server. New-joining nodes will need
+# a post-migration snapshot, and archive nodes (e.g. for Hermes) will need
+# the pre-migration state.
+function fetch_archives() {
+    # pick any node
+    pod_name="${HELM_RELEASE}-nodes-1"
+
+    >&2 echo "Fetching archives from $pod_name ..."
+    # N.B. these filepaths are hardcoded and brittle, any refactor must be careful to update throughout.
+    for f in "node0-migration-archive.tar.gz" "node0-state-backup.tar" ; do
+        rm -f "$f"
+        kubectl cp -c pd "${pod_name}:/penumbra-config/testnet_data/${f}" "$f"
+    done
+    mv -v "node0-migration-archive.tar.gz" "${pod_name}-${TO_VERSION}-migration-archive.tar.gz"
+    mv -v "node0-state-backup.tar" "${pod_name}-state-backup-pre-${TO_VERSION}.tar"
+}
+
+function main() {
+    >&2 echo "Upgrading environment '${HELM_RELEASE}' to version ${TO_VERSION}..."
+    # sleep for a chance to ctrl+c if wrong environment specified
+    sleep 5
+
+    export HELM_RELEASE
+    export TO_VERSION
+    scripts/k8s-enable-maintenance-mode
+    # validators and fullnodes have a slightly different mount path
+    for v in $(get_validators) ; do
+        testnet_dir="/penumbra-config/${HELM_RELEASE}-val"
+        perform_migration "$v" "$testnet_dir"
+    done
+
+    for n in $(get_fullnodes) ; do
+        testnet_dir="/penumbra-config/testnet_data"
+        perform_migration "$n" "$testnet_dir"
+    done
+
+    fetch_archives
+    scripts/k8s-disable-maintenance-mode
+    >&2 echo "Migration complete! ${HELM_RELEASE} is now running version ${TO_VERSION}"
+}
+
+main
+
+exit 0
