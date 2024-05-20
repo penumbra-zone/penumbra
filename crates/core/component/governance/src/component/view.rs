@@ -44,7 +44,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Returns true if the next height is an upgrade height.
     /// We look-ahead to the next height because we want to halt the chain immediately after
     /// committing the block.
-    async fn is_upgrade_height(&self) -> Result<bool> {
+    async fn is_pre_upgrade_height(&self) -> Result<bool> {
         let Some(next_upgrade_height) = self
             .nonverifiable_get_raw(state_key::upgrades::next_upgrade().as_bytes())
             .await?

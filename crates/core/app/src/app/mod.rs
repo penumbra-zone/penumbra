@@ -406,10 +406,10 @@ impl App {
                 .expect("able to get epoch duration in end_block"),
         ) || state_tx.is_epoch_ending_early().await;
 
-        // If a chain upgrade is scheduled for this block, we trigger an early epoch change
+        // If a chain upgrade is scheduled for the next block, we trigger an early epoch change
         // so that the upgraded chain starts at a clean epoch boundary.
         let is_chain_upgrade = state_tx
-            .is_upgrade_height()
+            .is_pre_upgrade_height()
             .await
             .expect("able to detect upgrade heights");
 
@@ -502,19 +502,17 @@ impl App {
         // Check if an emergency halt has been signaled.
         let should_halt = state.is_chain_halted().await;
 
-        let is_upgrade_height = state
-            .is_upgrade_height()
+        let is_pre_upgrade_height = state
+            .is_pre_upgrade_height()
             .await
             .expect("must be able to read upgrade height");
 
-        if is_upgrade_height {
-            tracing::info!("upgrade height reached, signaling halt");
-            // If we are about to reach an upgrade height, we want to increase the
-            // halt counter to prevent the chain from restarting without manual intervention.
-            state
-                .signal_halt()
-                .await
-                .expect("must be able to signal halt");
+        // If the next height is an upgrade height, we signal a halt and turn
+        // a `halt_bit` on which will prevent the chain from restarting without
+        // running a migration.
+        if is_pre_upgrade_height {
+            tracing::info!("pre-upgrade height reached, signaling halt");
+            state.signal_halt();
         }
 
         // Commit the pending writes, clearing the state.
@@ -529,7 +527,7 @@ impl App {
             std::process::exit(0);
         }
 
-        if is_upgrade_height {
+        if is_pre_upgrade_height {
             tracing::info!("committed block at upgrade height; exiting now");
             std::process::exit(0);
         }
