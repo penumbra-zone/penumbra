@@ -80,7 +80,7 @@ impl Migration {
         match self {
             Migration::ReadyToStart => {
                 let mut delta = StateDelta::new(export_state);
-                delta.signal_halt();
+                delta.ready_to_start();
                 let _ = storage.commit_in_place(delta).await?;
                 tracing::info!(
                     "migration completed: halt bit is turned off, chain is ready to start"
