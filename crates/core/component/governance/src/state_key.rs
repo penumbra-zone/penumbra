@@ -124,8 +124,6 @@ pub fn param_changes_for_height(block_height: u64) -> String {
     format!("governance/param_changes/{block_height}/")
 }
 
-// Used for object store:
-
 pub fn proposal_started() -> &'static str {
     "governance/proposal_started"
 }
@@ -136,8 +134,8 @@ pub mod upgrades {
     }
 }
 
-pub mod halt {
-    pub fn halt_count() -> &'static str {
-        "governance/counters/halt_count"
+pub mod persistent_flags {
+    pub fn halt_bit() -> &'static str {
+        "governance/persistent_flags/halt_bit"
     }
 }
