@@ -8277,8 +8277,7 @@ dependencies = [
 [[package]]
 name = "tonic"
 version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d560933a0de61cf715926b9cac824d4c883c2c43142f787595e48280c40a1d0e"
+source = "git+https://github.com/penumbra-zone/tonic.git?tag=v0.10.3-penumbra#db355dd7029d1404ffa21639f596da58024364f0"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -8308,8 +8307,7 @@ dependencies = [
 [[package]]
 name = "tonic-reflection"
 version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fa37c513df1339d197f4ba21d28c918b9ef1ac1768265f11ecb6b7f1cba1b76"
+source = "git+https://github.com/penumbra-zone/tonic.git?tag=v0.10.3-penumbra#db355dd7029d1404ffa21639f596da58024364f0"
 dependencies = [
  "prost",
  "prost-types",
@@ -8321,8 +8319,7 @@ dependencies = [
 [[package]]
 name = "tonic-web"
 version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fddb2a37b247e6adcb9f239f4e5cefdcc5ed526141a416b943929f13aea2cce"
+source = "git+https://github.com/penumbra-zone/tonic.git?tag=v0.10.3-penumbra#db355dd7029d1404ffa21639f596da58024364f0"
 dependencies = [
  "base64 0.21.7",
  "bytes",
