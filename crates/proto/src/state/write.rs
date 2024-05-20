@@ -31,6 +31,14 @@ pub trait StateWriteProto: StateWrite + Send + Sync {
         self.nonverifiable_put_raw(key, value.encode_to_vec());
     }
 
+    /// Puts a proto type into the verifiable key-value store with the given key.
+    fn nonverifiable_put_proto<P>(&mut self, key: Vec<u8>, value: P)
+    where
+        P: Message + Default + Debug,
+    {
+        self.nonverifiable_put_raw(key, value.encode_to_vec());
+    }
+
     /// Records a Protobuf message as a typed ABCI event.
     fn record_proto<E>(&mut self, proto_event: E)
     where

@@ -61,6 +61,23 @@ pub trait StateReadProto: StateRead + Send + Sync {
         }
     }
 
+    /// Gets a value from the nonverifiable key-value store as a proto type.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Some(v))` if the value is present and parseable as a proto type `P`;
+    /// * `Ok(None)` if the value is missing;
+    /// * `Err(_)` if the value is present but not parseable as a proto type `P`, or if an underlying storage error occurred.
+    fn nonverifiable_get_proto<P>(&self, key: &[u8]) -> ProtoFuture<P, Self::GetRawFut>
+    where
+        P: Message + Default + Debug,
+    {
+        ProtoFuture {
+            inner: self.nonverifiable_get_raw(key),
+            _marker: std::marker::PhantomData,
+        }
+    }
+
     /// Retrieve all values for keys matching a prefix from consensus-critical state, as domain types.
     #[allow(clippy::type_complexity)]
     fn prefix<'a, D>(

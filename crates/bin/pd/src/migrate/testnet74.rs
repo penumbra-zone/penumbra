@@ -118,12 +118,11 @@ async fn update_lp_index_order(delta: &mut StateDelta<Snapshot>) -> anyhow::Resu
 /// - Update the base liquidity index values to be proto-encoded (see #4188)
 ///     * nonverifiable: `dex/ab/`
 pub async fn migrate(
+    storage: Storage,
     path_to_export: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
     // Setup:
-    let rocksdb_dir = path_to_export.join("rocksdb");
-    let storage = Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
     let export_state = storage.latest_snapshot();
     let root_hash = export_state.root_hash().await.expect("can get root hash");
     let pre_upgrade_root_hash: RootHash = root_hash.into();
@@ -162,8 +161,9 @@ pub async fn migrate(
     };
 
     tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
-
     storage.release().await;
+
+    let rocksdb_dir = path_to_export.join("rocksdb");
     let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
     let migrated_state = storage.latest_snapshot();
     storage.release().await;

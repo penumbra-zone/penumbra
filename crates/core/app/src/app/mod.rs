@@ -35,7 +35,7 @@ use tendermint::abci::{self, Event};
 
 use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
-use tracing::Instrument;
+use tracing::{instrument, Instrument};
 
 use crate::action_handler::AppActionHandler;
 use crate::genesis::AppState;
@@ -59,6 +59,7 @@ pub struct App {
 
 impl App {
     /// Constructs a new application, using the provided [`Snapshot`].
+    #[instrument(err, skip_all)]
     pub async fn new(snapshot: Snapshot) -> Result<Self> {
         tracing::debug!("initializing App instance");
 
@@ -69,8 +70,7 @@ impl App {
         // If the state says that the chain is halted, we should not proceed. This is a safety check
         // to ensure that automatic restarts by software like systemd do not cause the chain to come
         // back up again after a halt.
-        if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
-            tracing::error!("chain is halted, refusing to restart!");
+        if state.is_chain_halted().await {
             anyhow::bail!("chain is halted, refusing to restart");
         }
 
@@ -406,10 +406,10 @@ impl App {
                 .expect("able to get epoch duration in end_block"),
         ) || state_tx.is_epoch_ending_early().await;
 
-        // If a chain upgrade is scheduled for this block, we trigger an early epoch change
+        // If a chain upgrade is scheduled for the next block, we trigger an early epoch change
         // so that the upgraded chain starts at a clean epoch boundary.
         let is_chain_upgrade = state_tx
-            .is_upgrade_height()
+            .is_pre_upgrade_height()
             .await
             .expect("able to detect upgrade heights");
 
@@ -500,24 +500,19 @@ impl App {
             .expect("we have exclusive ownership of the State at commit()");
 
         // Check if an emergency halt has been signaled.
-        let should_halt = state
-            .is_chain_halted(TOTAL_HALT_COUNT)
-            .await
-            .expect("must be able to read halt flag");
+        let should_halt = state.is_chain_halted().await;
 
-        let is_upgrade_height = state
-            .is_upgrade_height()
+        let is_pre_upgrade_height = state
+            .is_pre_upgrade_height()
             .await
             .expect("must be able to read upgrade height");
 
-        if is_upgrade_height {
-            tracing::info!("upgrade height reached, signaling halt");
-            // If we are about to reach an upgrade height, we want to increase the
-            // halt counter to prevent the chain from restarting without manual intervention.
-            state
-                .signal_halt()
-                .await
-                .expect("must be able to signal halt");
+        // If the next height is an upgrade height, we signal a halt and turn
+        // a `halt_bit` on which will prevent the chain from restarting without
+        // running a migration.
+        if is_pre_upgrade_height {
+            tracing::info!("pre-upgrade height reached, signaling halt");
+            state.signal_halt();
         }
 
         // Commit the pending writes, clearing the state.
@@ -532,7 +527,7 @@ impl App {
             std::process::exit(0);
         }
 
-        if is_upgrade_height {
+        if is_pre_upgrade_height {
             tracing::info!("committed block at upgrade height; exiting now");
             std::process::exit(0);
         }
@@ -553,12 +548,6 @@ impl App {
             .unwrap_or_default()
     }
 }
-
-/// The total number of times the chain has been halted.
-///
-/// Increment this manually after fixing the root cause for a chain halt: updated nodes will then be
-/// able to proceed past the block height of the halt.
-const TOTAL_HALT_COUNT: u64 = 0;
 
 #[async_trait]
 pub trait StateReadExt: StateRead {

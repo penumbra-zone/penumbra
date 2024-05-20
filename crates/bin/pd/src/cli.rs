@@ -135,6 +135,9 @@ pub enum RootCommand {
         // get explicit consent to muck around in another daemon's state.
         #[clap(long, display_order = 200)]
         comet_home: Option<PathBuf>,
+        /// If set, force a migration to occur even if the chain is not halted.
+        #[clap(long, display_order = 1000)]
+        force: bool,
     },
 }
 

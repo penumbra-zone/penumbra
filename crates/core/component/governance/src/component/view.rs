@@ -33,6 +33,7 @@ use crate::{
     params::GovernanceParameters,
     proposal::{Proposal, ProposalPayload},
     proposal_state::State as ProposalState,
+    state_key::persistent_flags,
     validator_vote::action::ValidatorVoteReason,
     vote::Vote,
 };
@@ -43,7 +44,7 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
     /// Returns true if the next height is an upgrade height.
     /// We look-ahead to the next height because we want to halt the chain immediately after
     /// committing the block.
-    async fn is_upgrade_height(&self) -> Result<bool> {
+    async fn is_pre_upgrade_height(&self) -> Result<bool> {
         let Some(next_upgrade_height) = self
             .nonverifiable_get_raw(state_key::upgrades::next_upgrade().as_bytes())
             .await?
@@ -561,19 +562,11 @@ pub trait StateReadExt: StateRead + penumbra_stake::StateReadExt {
             .is_some()
     }
 
-    async fn is_chain_halted(&self, total_halt_count: u64) -> Result<bool> {
-        Ok(total_halt_count
-            < self
-                .get_proto(state_key::halt::halt_count())
-                .await?
-                .unwrap_or_default())
-    }
-
-    async fn halt_count(&self) -> Result<u64> {
-        Ok(self
-            .get_proto(state_key::halt::halt_count())
-            .await?
-            .unwrap_or_default())
+    async fn is_chain_halted(&self) -> bool {
+        self.nonverifiable_get_proto(state_key::persistent_flags::halt_bit().as_bytes())
+            .await
+            .expect("no deserialization errors")
+            .unwrap_or_default()
     }
 }
 
@@ -875,7 +868,7 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
                     // Print an informational message and signal to the consensus worker to halt the
                     // process after the state is committed
                     tracing::info!("emergency proposal passed calling for immediate chain halt");
-                    self.signal_halt().await?;
+                    self.signal_halt();
                 }
             }
             ProposalPayload::ParameterChange(change) => {
@@ -955,12 +948,17 @@ pub trait StateWriteExt: StateWrite + penumbra_ibc::component::ConnectionStateWr
         Ok(())
     }
 
-    /// Signals to the consensus worker to halt after the next commit.
-    async fn signal_halt(&mut self) -> Result<()> {
-        let halt_count = self.halt_count().await?;
+    /// Sets the application `halt_bit` to `true`, signaling that
+    /// the chain should be halted, and preventing restarts until
+    /// a migration is ran.
+    fn signal_halt(&mut self) {
+        self.nonverifiable_put_proto(persistent_flags::halt_bit().as_bytes().to_vec(), true);
+    }
 
-        self.put_proto(state_key::halt::halt_count().to_string(), halt_count + 1);
-        Ok(())
+    /// Sets the application `halt_bit` to `false`, signaling that
+    /// the chain can resume, and the application is ready to start.
+    fn ready_to_start(&mut self) {
+        self.nonverifiable_put_proto(persistent_flags::halt_bit().as_bytes().to_vec(), false);
     }
 }
 
