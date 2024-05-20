@@ -11,6 +11,8 @@ docs/*/book/*
 .firebase/
 firebase-debug.log
 docs/*/firebase-tmp/
+# ignore auto-generated rust-docs index
+docs/rustdoc/index.html
 
 # Nix build output goes here
 result

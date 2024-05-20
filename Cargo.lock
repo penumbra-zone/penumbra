@@ -473,7 +473,7 @@ dependencies = [
  "num-traits",
  "rusticata-macros",
  "thiserror",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -3113,7 +3113,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
  "tracing",
 ]
 
@@ -3141,7 +3141,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -3174,7 +3174,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
  "tracing",
  "uint",
 ]
@@ -3206,7 +3206,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -3263,7 +3263,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
  "tracing",
  "uint",
 ]
@@ -3288,7 +3288,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -3307,7 +3307,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -4456,7 +4456,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "termion",
- "time 0.3.34",
+ "time 0.3.36",
  "tokio",
  "tokio-stream",
  "tokio-util 0.7.10",
@@ -6591,7 +6591,7 @@ checksum = "6413f3de1edee53342e6138e75b56d32e7bc6e332b3bd62d497b1929d4cfbcdd"
 dependencies = [
  "pem",
  "ring 0.16.20",
- "time 0.3.34",
+ "time 0.3.36",
  "yasna",
 ]
 
@@ -7269,7 +7269,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "serde_with_macros",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -7841,7 +7841,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.34",
+ "time 0.3.36",
  "zeroize",
 ]
 
@@ -7869,7 +7869,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -7887,7 +7887,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -7915,7 +7915,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.34",
+ "time 0.3.36",
  "tokio",
  "tracing",
  "url",
@@ -8015,9 +8015,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.34"
+version = "0.3.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8248b6521bb14bc45b4067159b9b6ad792e2d6d754d6c41fb50e29fefe38749"
+checksum = "5dfd88e563464686c916c7e46e623e520ddc6d79fa6641390f2e3fa86e83e885"
 dependencies = [
  "deranged",
  "itoa",
@@ -8025,7 +8025,7 @@ dependencies = [
  "powerfmt",
  "serde",
  "time-core",
- "time-macros 0.2.17",
+ "time-macros 0.2.18",
 ]
 
 [[package]]
@@ -8046,9 +8046,9 @@ dependencies = [
 
 [[package]]
 name = "time-macros"
-version = "0.2.17"
+version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ba3a3ef41e6672a2f0f001392bb5dcd3ff0a9992d618ca761a11c3121547774"
+checksum = "3f252a68540fde3a3877aeea552b832b40ab9a69e318efd078774a01ddee1ccf"
 dependencies = [
  "num-conv",
  "time-core",
@@ -9089,7 +9089,7 @@ dependencies = [
  "oid-registry",
  "rusticata-macros",
  "thiserror",
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -9115,7 +9115,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e17bb3549cc1321ae1296b9cdc2698e2b6cb1992adfa19a8c72e5b7a738f44cd"
 dependencies = [
- "time 0.3.34",
+ "time 0.3.36",
 ]
 
 [[package]]
@@ -9174,7 +9174,7 @@ dependencies = [
  "hmac 0.12.1",
  "pbkdf2 0.11.0",
  "sha1 0.10.6",
- "time 0.3.34",
+ "time 0.3.36",
  "zstd",
 ]
 
