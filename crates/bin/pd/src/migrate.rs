@@ -8,6 +8,7 @@ mod reset_halt_bit;
 mod simple;
 mod testnet72;
 mod testnet74;
+mod testnet76;
 
 use anyhow::{ensure, Context};
 use penumbra_governance::StateReadExt;
@@ -38,6 +39,9 @@ pub enum Migration {
     /// - Update arb executions to include the amount of filled input in the output
     /// - Add `AuctionParameters` to the consensus state
     Testnet74,
+    /// Testnet-76 migration:
+    /// - Heal the auction component's VCB tally.
+    Testnet76,
 }
 
 impl Migration {
@@ -86,6 +90,9 @@ impl Migration {
             }
             Migration::Testnet74 => {
                 testnet74::migrate(storage, pd_home.clone(), genesis_start).await?
+            }
+            Migration::Testnet76 => {
+                testnet76::migrate(storage, pd_home.clone(), genesis_start).await?
             }
         };
 
