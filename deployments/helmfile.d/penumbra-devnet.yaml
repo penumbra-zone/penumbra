@@ -9,9 +9,11 @@ releases:
       - preserve_lb_svc: true
       - only_lb_svc: false
       - image:
-          tag: main
+          tag: "main"
       - network:
           external_addresses: "104.198.226.117:26656,34.134.110.25:26656"
+          proposal_voting_blocks: "50"
+          epoch_duration: "20"
       - part_of: penumbra-devnet
       # Sidecar vars file for storing external ips. The "penumbra-network" chart
       # doesn't read these vars, but the "get-lb-ips" script writes them there,
@@ -32,7 +34,7 @@ releases:
       - preserve_lb_svc: true
       - only_lb_svc: false
       - image:
-          tag: main
+          tag: "main"
       # Communicate intra-cluster to the private validator rpc address.
       - penumbra_bootstrap_node_cometbft_rpc_url: "http://penumbra-devnet-val-0:26657"
       - persistence:
