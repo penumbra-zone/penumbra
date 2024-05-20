@@ -7,14 +7,15 @@
 mod testnet72;
 mod testnet74;
 
-use anyhow::Context;
+use anyhow::{ensure, Context};
 use futures::StreamExt as _;
+use penumbra_governance::{StateReadExt, StateWriteExt};
 use std::path::{Path, PathBuf};
 use tracing::instrument;
 
 use cnidarium::{StateDelta, StateRead, StateWrite, Storage};
 use jmt::RootHash;
-use penumbra_app::{app::StateReadExt, SUBSTORE_PREFIXES};
+use penumbra_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 
 use crate::testnet::generate::TestnetConfig;
@@ -24,9 +25,10 @@ use flate2::Compression;
 use std::fs::File;
 
 /// The kind of migration that should be performed.
+#[derive(Debug)]
 pub enum Migration {
-    /// No-op migration.
-    Noop,
+    /// Set the chain's halt bit to `false`.
+    ReadyToStart,
     /// A simple migration: adds a key to the consensus state.
     /// This is useful for testing upgrade mechanisms, including in production.
     SimpleMigration,
@@ -43,23 +45,49 @@ pub enum Migration {
 }
 
 impl Migration {
+    #[instrument(skip(path_to_export, genesis_start, force))]
     pub async fn migrate(
         &self,
         path_to_export: PathBuf,
         genesis_start: Option<tendermint::time::Time>,
+        force: bool,
     ) -> anyhow::Result<()> {
+        tracing::debug!(
+            ?path_to_export,
+            ?genesis_start,
+            ?force,
+            "preparing to run migration!"
+        );
+        let rocksdb_dir = path_to_export.join("rocksdb");
+        let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
+        let export_state = storage.latest_snapshot();
+        let root_hash = export_state.root_hash().await.expect("can get root hash");
+        let app_hash_pre_migration: RootHash = root_hash.into();
+        let height = export_state
+            .get_block_height()
+            .await
+            .expect("can get block height");
+
+        tracing::debug!(?app_hash_pre_migration, current_height = ?height, ?force,
+            "determining if the chain is halted and the migration is allowed to run");
+
+        ensure!(
+            export_state.is_chain_halted().await || force,
+            "to run a migration, the chain halt bit must be set to `true` or use the `--force` cli flag"
+        );
+
+        tracing::info!(?app_hash_pre_migration, pre_upgrade_height = ?height, ?self, "started migration");
         match self {
-            Migration::Noop => Ok(()),
+            Migration::ReadyToStart => {
+                let mut delta = StateDelta::new(export_state);
+                delta.signal_halt();
+                let _ = storage.commit_in_place(delta).await?;
+                tracing::info!(
+                    "migration completed: halt bit is turned off, chain is ready to start"
+                );
+                Ok(())
+            }
             Migration::SimpleMigration => {
-                let rocksdb_dir = path_to_export.join("rocksdb");
-                let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
-                let export_state = storage.latest_snapshot();
-                let root_hash = export_state.root_hash().await.expect("can get root hash");
-                let app_hash_pre_migration: RootHash = root_hash.into();
-                let height = export_state
-                    .get_block_height()
-                    .await
-                    .expect("can get block height");
                 let post_ugprade_height = height.wrapping_add(1);
 
                 /* --------- writing to the jmt  ------------ */

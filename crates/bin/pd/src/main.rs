@@ -7,12 +7,12 @@ use std::io::IsTerminal as _;
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
 
-use anyhow::Context;
-use cnidarium::{StateDelta, Storage};
+use anyhow::{anyhow, Context};
+use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    migrate::Migration::Testnet74,
+    migrate::Migration::ReadyToStart,
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
         generate::TestnetConfig,
@@ -99,7 +99,9 @@ async fn main() -> anyhow::Result<()> {
 
             let storage = Storage::load(rocksdb_home, SUBSTORE_PREFIXES.to_vec())
                 .await
-                .context("Unable to initialize RocksDB storage")?;
+                .context(
+                    "Unable to initialize RocksDB storage - is there another `pd` process running?",
+                )?;
 
             tracing::info!(
                 ?abci_bind,
@@ -166,13 +168,13 @@ async fn main() -> anyhow::Result<()> {
                     penumbra_dex::component::metrics::DEX_BUCKETS,
                 )?
                 .build()
-                .map_err(|_| {
+                .map_err(|e| {
                     let msg = format!(
                         "failed to build prometheus recorder; make sure {} is available",
                         &metrics_bind
                     );
-                    tracing::error!("{}", msg);
-                    anyhow::anyhow!(msg)
+                    tracing::error!(?e, ?msg);
+                    anyhow!(msg)
                 })?;
 
             Stack::new(recorder)
@@ -402,14 +404,7 @@ async fn main() -> anyhow::Result<()> {
             // to compressing. So we'll just mandate the presence of the --export-directory arg
             // always.
             if prune {
-                tracing::info!("pruning JMT tree");
-                let export = Storage::load(dst_rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
-                let _ = StateDelta::new(export.latest_snapshot());
-                // TODO:
-                // - add utilities in `cnidarium` to prune a tree
-                // - apply the delta to the exported storage
-                // - apply checks: root hash, size, etc.
-                todo!()
+                unimplemented!("storage pruning is unimplemented (for now)")
             }
 
             // Compress to tarball if requested.
@@ -425,7 +420,11 @@ async fn main() -> anyhow::Result<()> {
                 tracing::info!("export complete: {}", export_directory.display());
             }
         }
-        RootCommand::Migrate { home, comet_home } => {
+        RootCommand::Migrate {
+            home,
+            comet_home,
+            force,
+        } => {
             let (pd_home, comet_home) = match home {
                 Some(h) => (h, comet_home),
                 None => {
@@ -440,8 +439,8 @@ async fn main() -> anyhow::Result<()> {
             let pd_migrate_span = tracing::error_span!("pd_migrate");
             pd_migrate_span
                 .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
-            Testnet74
-                .migrate(pd_home.clone(), Some(genesis_start))
+            ReadyToStart
+                .migrate(pd_home.clone(), Some(genesis_start), force)
                 .instrument(pd_migrate_span)
                 .await
                 .context("failed to upgrade state")?;
