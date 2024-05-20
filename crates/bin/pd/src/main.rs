@@ -440,16 +440,10 @@ async fn main() -> anyhow::Result<()> {
             pd_migrate_span
                 .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
             ReadyToStart
-                .migrate(pd_home.clone(), Some(genesis_start), force)
+                .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
                 .instrument(pd_migrate_span)
                 .await
                 .context("failed to upgrade state")?;
-
-            if let Some(comet_home) = comet_home {
-                // TODO avoid this when refactoring to clean up migrations
-                let genesis_path = pd_home.join("genesis.json");
-                pd::migrate::migrate_comet_data(comet_home, genesis_path).await?;
-            }
         }
     }
     Ok(())

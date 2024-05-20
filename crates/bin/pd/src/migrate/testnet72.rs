@@ -126,11 +126,10 @@ async fn translate_compact_block_storage(
 
 /// Run the full migration, given an export path and a start time for genesis.
 pub async fn migrate(
+    storage: Storage,
     path_to_export: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
-    let rocksdb_dir = path_to_export.join("rocksdb");
-    let storage = Storage::load(rocksdb_dir.clone(), SUBSTORE_PREFIXES.to_vec()).await?;
     let export_state = storage.latest_snapshot();
     let root_hash = export_state.root_hash().await.expect("can get root hash");
     let pre_upgrade_root_hash: RootHash = root_hash.into();
@@ -161,6 +160,8 @@ pub async fn migrate(
     };
 
     storage.release().await;
+
+    let rocksdb_dir = path_to_export.join("rocksdb");
     let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
     let migrated_state = storage.latest_snapshot();
 
