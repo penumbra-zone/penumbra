@@ -16,7 +16,7 @@ mod swap_manager;
 
 pub use self::metrics::register_metrics;
 pub(crate) use arb::Arbitrage;
-pub use circuit_breaker::ExecutionCircuitBreaker;
+pub(crate) use circuit_breaker::ExecutionCircuitBreaker;
 pub(crate) use circuit_breaker::ValueCircuitBreaker;
 pub use dex::{Dex, StateReadExt, StateWriteExt};
 pub use position_manager::{PositionManager, PositionRead};

@@ -4,8 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
-use penumbra_asset::{asset, Value, STAKING_TOKEN_ASSET_ID};
-use penumbra_num::Amount;
+use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -102,30 +101,15 @@ impl Component for Dex {
             price_limit: Some(1u64.into()),
         };
 
-        let arb_burn = match state
+        match state
             .arbitrage(*STAKING_TOKEN_ASSET_ID, arb_routing_params)
             .await
         {
-            Ok(v) => v,
-            Err(e) => {
-                // The arbitrage search should not error, but if it does, we should
-                // simply not perform arbitrage, rather than halting the entire chain.
-                tracing::warn!(?e, "error processing arbitrage, this is a bug");
-                Value {
-                    amount: Amount::zero(),
-                    asset_id: *STAKING_TOKEN_ASSET_ID,
-                }
-            }
-        };
-
-        if arb_burn.amount != 0u64.into() {
-            // TODO: hack to avoid needing an asset cache for nice debug output
-            let unit = asset::Cache::with_known_assets()
-                .get_unit("penumbra")
-                .expect("penumbra is a known asset");
-            let burn = format!("{}{}", unit.format_value(arb_burn.amount), unit);
-            // TODO: this should be an ABCI event
-            tracing::info!(%burn, "executed arbitrage opportunity");
+            // The arb search completed, it may or may not have found surplus.
+            Ok(v) => tracing::info!(surplus = ?v, "arbitrage successful!"),
+            // The arbitrage search should not error, but if it does, we should
+            // simply not perform arbitrage, rather than halting the entire chain.
+            Err(e) => tracing::warn!(?e, "error processing arb, this is a bug"),
         }
 
         // 4. Close all positions queued for closure at the end of the block.
