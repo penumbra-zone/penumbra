@@ -1,5 +1,5 @@
-mod execution;
-mod value;
+pub(crate) mod execution;
+pub(crate) mod value;
 
-pub use execution::ExecutionCircuitBreaker;
-pub use value::ValueCircuitBreaker;
+pub(crate) use execution::ExecutionCircuitBreaker;
+pub(crate) use value::ValueCircuitBreaker;

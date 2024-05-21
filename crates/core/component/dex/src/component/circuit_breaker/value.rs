@@ -10,7 +10,7 @@ use crate::{event, state_key};
 
 /// Tracks the aggregate value of deposits in the DEX.
 #[async_trait]
-pub trait ValueCircuitBreaker: StateWrite {
+pub(crate) trait ValueCircuitBreaker: StateWrite {
     /// Credits the supplied [`Value`] to the dex VCB.
     #[instrument(skip(self))]
     async fn dex_vcb_credit(&mut self, value: Value) -> Result<()> {
