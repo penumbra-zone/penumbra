@@ -62,22 +62,12 @@ impl Migration {
         );
         let rocksdb_dir = pd_home.join("rocksdb");
         let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
-        let export_state = storage.latest_snapshot();
-        let root_hash = export_state.root_hash().await.expect("can get root hash");
-        let height = export_state
-            .get_block_height()
-            .await
-            .expect("can get block height");
-
-        tracing::debug!(pre_migration_root_hash = ?root_hash, current_height = ?height, ?force,
-            "determining if the chain is halted and the migration is allowed to run");
-
         ensure!(
-            export_state.is_chain_halted().await || force,
+            storage.latest_snapshot().is_chain_halted().await || force,
             "to run a migration, the chain halt bit must be set to `true` or use the `--force` cli flag"
         );
+        tracing::info!("started migration");
 
-        tracing::info!(pre_migration_root_hash = ?root_hash, pre_upgrade_height = ?height, ?self, "started migration");
         match self {
             Migration::ReadyToStart => {
                 reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
@@ -86,12 +76,15 @@ impl Migration {
             Migration::SimpleMigration => {
                 simple::migrate(storage, pd_home.clone(), genesis_start).await?
             }
+
             Migration::Testnet72 => {
                 testnet72::migrate(storage, pd_home.clone(), genesis_start).await?
             }
+
             Migration::Testnet74 => {
                 testnet74::migrate(storage, pd_home.clone(), genesis_start).await?
             }
+
             Migration::Testnet76 => {
                 testnet76::migrate(storage, pd_home.clone(), genesis_start).await?
             }
