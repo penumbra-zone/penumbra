@@ -49,7 +49,7 @@ decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
-ibc-proto = {workspace = true, default-features = false}
+ibc-proto = {workspace = true, default-features = false, features = ["server"]}
 ibc-types = {workspace = true, default-features = false}
 im = {workspace = true}
 metrics = {workspace = true}
