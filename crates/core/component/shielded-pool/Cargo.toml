@@ -11,6 +11,7 @@ component = [
     "penumbra-ibc/component",
     "penumbra-sct/component",
     "tonic",
+    "ibc-proto/server",
 ]
 # proving-keys = ["penumbra-proof-params/proving-keys"]
 default = ["std", "component"]
@@ -49,7 +50,7 @@ decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
-ibc-proto = {workspace = true, default-features = false, features = ["server"]}
+ibc-proto = {workspace = true, default-features = false}
 ibc-types = {workspace = true, default-features = false}
 im = {workspace = true}
 metrics = {workspace = true}
