@@ -61,7 +61,7 @@ impl Default for Parameters {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MetaParametersAlgorithm {
-    /// Used a fixed precision forever.
+    /// Use a fixed precision forever.
     Fixed(Precision),
 }
 
