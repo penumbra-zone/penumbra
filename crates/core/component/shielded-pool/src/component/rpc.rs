@@ -4,7 +4,7 @@ use cnidarium::Storage;
 use penumbra_asset::asset;
 use penumbra_proto::core::component::shielded_pool::v1::{
     query_service_server::QueryService, AssetMetadataByIdRequest, AssetMetadataByIdResponse,
-    AssetMetadataByIdsRequest, AssetMetadataByIdsResponse,
+    AssetMetadataByIdsRequest, AssetMetadataByIdsResponse, TotalSupplyRequest, TotalSupplyResponse,
 };
 
 use tonic::Status;
@@ -30,6 +30,16 @@ impl QueryService for Server {
     type AssetMetadataByIdsStream = Pin<
         Box<dyn futures::Stream<Item = Result<AssetMetadataByIdsResponse, tonic::Status>> + Send>,
     >;
+    type TotalSupplyStream =
+        Pin<Box<dyn futures::Stream<Item = Result<TotalSupplyResponse, tonic::Status>> + Send>>;
+
+    #[instrument(skip(self, request))]
+    async fn total_supply(
+        &self,
+        request: tonic::Request<TotalSupplyRequest>,
+    ) -> Result<tonic::Response<Self::TotalSupplyStream>, tonic::Status> {
+        todo!("need way to fetch total asset supply from shielded pool")
+    }
 
     #[instrument(skip(self, request))]
     async fn asset_metadata_by_id(
