@@ -8,9 +8,8 @@ use ibc_proto::ibc::apps::transfer::v1::{
     QueryEscrowAddressRequest, QueryEscrowAddressResponse, QueryParamsRequest, QueryParamsResponse,
     QueryTotalEscrowForDenomRequest, QueryTotalEscrowForDenomResponse,
 };
-use penumbra_asset::asset::Denom;
+use penumbra_asset::asset::Metadata;
 use penumbra_proto::StateReadProto as _;
-use regex::Regex;
 
 use crate::state_key;
 
@@ -63,34 +62,20 @@ impl TransferQuery for Server {
         // TODO: Currently pagination is ignored and all denom traces are returned at once.
         // Since this API isn't streaming, this may be something useful to implement later.
         let snapshot = self.storage.latest_snapshot();
-        let s = snapshot.prefix(state_key::denom_by_asset::prefix());
+        let s = snapshot.prefix(state_key::denom_metadata_by_asset::prefix());
         let denom_traces = s
-            .filter_map(move |i: anyhow::Result<(String, Denom)>| async move {
+            .filter_map(move |i: anyhow::Result<(String, Metadata)>| async move {
                 if i.is_err() {
                     return Some(Err(i.context("bad denom in state").err().unwrap()));
                 }
-                let (key, denom) = i.expect("should not be an error");
+                let (_key, denom) = i.expect("should not be an error");
 
                 // Convert the key to an IBC asset path
-                let re = Regex::new("^transfer/channel-XYZ");
-                if re.is_err() {
-                    return Some(Err(re
-                        .context("error instantiating denom matching regex")
-                        .err()
-                        .unwrap()));
+                match denom.ibc_transfer_path() {
+                    Ok(None) => return None,
+                    Err(e) => return Some(Err(e)),
+                    Ok(Some((path, base_denom))) => Some(Ok(DenomTrace { path, base_denom })),
                 }
-                let re = re.expect("should not be an error");
-
-                if re.is_match(&key) {
-                    let path = "foo".to_string();
-
-                    return Some(Ok(DenomTrace {
-                        path,
-                        base_denom: denom.denom,
-                    }));
-                }
-
-                None
             })
             .collect::<Vec<_>>()
             .await

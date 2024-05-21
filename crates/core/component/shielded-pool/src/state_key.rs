@@ -1,4 +1,4 @@
-pub mod denom_by_asset {
+pub mod denom_metadata_by_asset {
     use penumbra_asset::asset;
     use std::string::String;
 
@@ -6,7 +6,7 @@ pub mod denom_by_asset {
         "shielded_pool/assets/"
     }
 
-    pub fn key(asset_id: &asset::Id) -> String {
+    pub fn by_asset_id(asset_id: &asset::Id) -> String {
         format!("shielded_pool/assets/{asset_id}/denom")
     }
 }

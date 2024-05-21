@@ -45,13 +45,13 @@ impl QueryService for Server {
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("could not parse asset_id: {e}")))?;
 
-        let denom = state.denom_by_asset(&id).await;
+        let denom_metadata = state.denom_metadata_by_asset(&id).await;
 
-        let rsp = match denom {
-            Some(denom) => {
-                tracing::debug!(?id, ?denom, "found denom");
+        let rsp = match denom_metadata {
+            Some(denom_metadata) => {
+                tracing::debug!(?id, ?denom_metadata, "found denom metadata");
                 AssetMetadataByIdResponse {
-                    denom_metadata: Some(denom.into()),
+                    denom_metadata: Some(denom_metadata.into()),
                 }
             }
             None => {
