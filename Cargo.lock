@@ -5506,6 +5506,7 @@ dependencies = [
  "ark-relations",
  "ark-serialize",
  "ark-snark",
+ "async-stream",
  "async-trait",
  "base64 0.21.7",
  "blake2b_simd 1.0.2",
