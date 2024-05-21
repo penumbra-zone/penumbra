@@ -48,6 +48,7 @@ decaf377-ka = {workspace = true}
 decaf377-rdsa = {workspace = true}
 futures = {workspace = true}
 hex = {workspace = true}
+ibc-proto = {workspace = true, default-features = false}
 ibc-types = {workspace = true, default-features = false}
 im = {workspace = true}
 metrics = {workspace = true}
@@ -65,6 +66,7 @@ poseidon377 = {workspace = true, features = ["r1cs"]}
 prost = {workspace = true}
 rand = {workspace = true}
 rand_core = {workspace = true, features = ["getrandom"]}
+regex = {workspace = true}
 serde = {workspace = true, features = ["derive"]}
 serde_json = {workspace = true}
 tap = {workspace = true}

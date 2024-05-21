@@ -106,11 +106,13 @@ pub fn router(
         .add_service(we(ShieldedPoolQueryServiceServer::new(
             ShieldedPoolServer::new(storage.clone()),
         )))
+        .add_service(we(TransferQueryServer::new(ShieldedPoolServer::new(
+            storage.clone(),
+        ))))
         .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
             storage.clone(),
         ))))
         .add_service(we(ClientQueryServer::new(ibc.clone())))
-        .add_service(we(TransferQueryServer::new(ibc.clone())))
         .add_service(we(ChannelQueryServer::new(ibc.clone())))
         .add_service(we(ConnectionQueryServer::new(ibc.clone())))
         .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))

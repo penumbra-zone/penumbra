@@ -6,7 +6,6 @@ use super::HostInterface;
 mod client_query;
 mod connection_query;
 mod consensus_query;
-mod transfer_query;
 
 use std::marker::PhantomData;
 

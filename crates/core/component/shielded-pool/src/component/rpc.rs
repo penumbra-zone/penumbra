@@ -12,6 +12,8 @@ use tracing::instrument;
 
 use super::AssetRegistryRead;
 
+mod transfer_query;
+
 // TODO: Hide this and only expose a Router?
 pub struct Server {
     storage: Storage,
