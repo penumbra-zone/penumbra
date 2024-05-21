@@ -2,6 +2,7 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
+    decaf377_fmd::Precision,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -87,7 +88,7 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
             ..Default::default()
         },
     };
-    plan.populate_detection_data(OsRng, 0);
+    plan.populate_detection_data(OsRng, Precision::default());
 
     let tx = client.witness_auth_build(&plan).await?;
 

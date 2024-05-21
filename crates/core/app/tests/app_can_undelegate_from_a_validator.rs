@@ -3,6 +3,7 @@ use {
     anyhow::anyhow,
     ark_ff::UniformRand,
     cnidarium::TempStorage,
+    decaf377_fmd::Precision,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -149,7 +150,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         (plan, note, staking_note_nullifier)
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -249,7 +250,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         (plan, undelegate_token_id)
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -333,7 +334,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 ..Default::default()
             },
         };
-        plan.populate_detection_data(rand_core::OsRng, 0);
+        plan.populate_detection_data(rand_core::OsRng, Precision::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;

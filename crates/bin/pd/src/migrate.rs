@@ -41,6 +41,7 @@ pub enum Migration {
     Testnet74,
     /// Testnet-76 migration:
     /// - Heal the auction component's VCB tally.
+    /// - Update FMD parameters to new protobuf structure.
     Testnet76,
 }
 

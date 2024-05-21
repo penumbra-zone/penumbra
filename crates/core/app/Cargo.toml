@@ -54,6 +54,7 @@ penumbra-shielded-pool           = { workspace = true, features = ["component"],
 penumbra-stake                   = { workspace = true, default-features = true }
 penumbra-tct                     = { workspace = true, default-features = true }
 penumbra-tendermint-proxy        = { path = "../../util/tendermint-proxy" }
+penumbra-test-subscriber         = { workspace = true }
 penumbra-tower-trace             = {  path = "../../util/tower-trace"  }
 penumbra-transaction             = { workspace = true, features = ["parallel"], default-features = true }
 penumbra-txhash                  = { workspace = true, default-features = true }
@@ -82,10 +83,10 @@ tracing                          = { workspace = true }
 url                              = { workspace = true }
 
 [dev-dependencies]
+decaf377-fmd             = { workspace = true, default-features = true }
 ed25519-consensus        = { workspace = true }
 penumbra-mock-consensus  = { workspace = true }
 penumbra-mock-client     = { workspace = true }
-penumbra-test-subscriber = { workspace = true }
 rand                     = { workspace = true }
 rand_core                = { workspace = true }
 rand_chacha              = { workspace = true }

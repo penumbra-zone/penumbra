@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
 use penumbra_sct::{component::source::SourceContext, CommitmentSource};
+use penumbra_shielded_pool::component::ClueManager;
 use penumbra_transaction::Transaction;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
@@ -105,6 +106,18 @@ impl AppActionHandler for Transaction {
         // Delete the note source, in case someone else tries to read it.
         state.put_current_source(None);
 
+        // Record all the clues in this transaction
+        // To avoid recomputing a hash.
+        let id = self.id();
+        for clue in self
+            .transaction_body
+            .detection_data
+            .iter()
+            .flat_map(|x| x.fmd_clues.iter())
+        {
+            state.record_clue(clue.clone(), id.clone()).await?;
+        }
+
         Ok(())
     }
 }
@@ -172,7 +185,7 @@ mod tests {
                 clue_plans: vec![CluePlan::new(
                     &mut OsRng,
                     test_keys::ADDRESS_1.deref().clone(),
-                    1,
+                    1.try_into().unwrap(),
                 )],
             }),
             memo: None,

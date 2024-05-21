@@ -60,7 +60,7 @@ impl ActionList {
             memo: memo_plan,
             detection_data: None,
         };
-        plan.populate_detection_data(rng, fmd_params.precision_bits.into());
+        plan.populate_detection_data(rng, fmd_params.precision);
 
         // Implement a canonical ordering to the actions within the transaction
         // plan to reduce client distinguishability.

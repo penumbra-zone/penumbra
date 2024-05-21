@@ -2,6 +2,7 @@
 //! creation.
 
 use anyhow::Result;
+use decaf377_fmd::Precision;
 use penumbra_community_pool::{CommunityPoolDeposit, CommunityPoolOutput, CommunityPoolSpend};
 use penumbra_dex::{
     lp::action::{PositionClose, PositionOpen},
@@ -359,19 +360,19 @@ impl TransactionPlan {
     pub fn populate_detection_data<R: CryptoRng + Rng>(
         &mut self,
         mut rng: R,
-        precision_bits: usize,
+        precision: Precision,
     ) {
         // Add one clue per recipient.
         let mut clue_plans = vec![];
         for dest_address in self.dest_addresses() {
-            clue_plans.push(CluePlan::new(&mut rng, dest_address, precision_bits));
+            clue_plans.push(CluePlan::new(&mut rng, dest_address, precision));
         }
 
         // Now add dummy clues until we have one clue per output.
         let num_dummy_clues = self.num_outputs() - clue_plans.len();
         for _ in 0..num_dummy_clues {
             let dummy_address = Address::dummy(&mut rng);
-            clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision_bits));
+            clue_plans.push(CluePlan::new(&mut rng, dummy_address, precision));
         }
 
         if !clue_plans.is_empty() {
@@ -529,7 +530,7 @@ mod tests {
                 chain_id: "penumbra-test".to_string(),
             },
             detection_data: Some(DetectionDataPlan {
-                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1)],
+                clue_plans: vec![CluePlan::new(&mut OsRng, addr, 1.try_into().unwrap())],
             }),
             memo: Some(MemoPlan::new(&mut OsRng, memo_plaintext.clone())),
         };

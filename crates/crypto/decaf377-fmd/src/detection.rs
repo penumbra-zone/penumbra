@@ -16,7 +16,7 @@ pub struct DetectionKey {
     /// The detection key.
     dtk: Fr,
     /// Cached copies of the child detection keys; these can be fully derived from `dtk`.
-    xs: [Fr; MAX_PRECISION],
+    xs: [Fr; MAX_PRECISION as usize],
 }
 
 impl DetectionKey {
@@ -36,7 +36,7 @@ impl DetectionKey {
         let root_pub = dtk * decaf377::basepoint();
         let root_pub_enc = root_pub.vartime_compress();
 
-        let xs: [_; MAX_PRECISION] = (0..MAX_PRECISION)
+        let xs: [_; MAX_PRECISION as usize] = (0..MAX_PRECISION as usize)
             .map(|i| {
                 hkd::derive_private(
                     &dtk,
@@ -102,7 +102,10 @@ impl DetectionKey {
             return false;
         }
 
-        let precision_bits = clue.0[64];
+        let precision_bits = match clue.precision() {
+            Err(_) => return false,
+            Ok(x) => x.bits() as u8,
+        };
         let ciphertexts = BitSlice::<u8, order::Lsb0>::from_slice(&clue.0[65..68]);
 
         let m = hash::to_scalar(&P_encoding.0, precision_bits, &clue.0[65..68]);

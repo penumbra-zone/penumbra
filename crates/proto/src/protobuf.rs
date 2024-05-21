@@ -109,9 +109,7 @@ impl DomainType for Clue {
 
 impl From<Clue> for ProtoClue {
     fn from(msg: Clue) -> Self {
-        ProtoClue {
-            inner: bytes::Bytes::copy_from_slice(&msg.0).to_vec(),
-        }
+        ProtoClue { inner: msg.into() }
     }
 }
 
@@ -119,11 +117,9 @@ impl TryFrom<ProtoClue> for Clue {
     type Error = anyhow::Error;
 
     fn try_from(proto: ProtoClue) -> Result<Self, Self::Error> {
-        let clue: [u8; 68] = proto.inner[..]
+        proto.inner[..]
             .try_into()
-            .map_err(|_| anyhow::anyhow!("expected 68-byte clue"))?;
-
-        Ok(Clue(clue))
+            .map_err(|_| anyhow::anyhow!("expected 68-byte clue"))
     }
 }
 

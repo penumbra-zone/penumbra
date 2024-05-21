@@ -11,11 +11,12 @@ mod detection;
 mod error;
 mod hash;
 mod hkd;
+mod precision;
 
 pub use clue::Clue;
 pub use clue_key::{ClueKey, ExpandedClueKey};
 pub use detection::DetectionKey;
 pub use error::Error;
+pub use precision::Precision;
 
-/// The maximum detection precision, chosen so that the message bits fit in 3 bytes.
-pub const MAX_PRECISION: usize = 24;
+pub(crate) use precision::MAX_PRECISION;

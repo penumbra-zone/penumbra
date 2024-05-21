@@ -6,10 +6,13 @@ use futures::TryStreamExt;
 use jmt::RootHash;
 use pbjson_types::Any;
 use penumbra_app::app::StateReadExt as _;
+use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
+use penumbra_shielded_pool::params::ShieldedPoolParameters;
+use penumbra_shielded_pool::{component::StateWriteExt as _, fmd::Parameters as FmdParameters};
 use std::path::PathBuf;
 use tracing::instrument;
 
@@ -60,6 +63,17 @@ async fn heal_auction_vcb(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()
     Ok(())
 }
 
+async fn write_shielded_pool_params(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    delta.put_shielded_pool_params(ShieldedPoolParameters::default());
+    Ok(())
+}
+
+async fn write_fmd_params(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()> {
+    delta.put_previous_fmd_parameters(FmdParameters::default());
+    delta.put_current_fmd_parameters(FmdParameters::default());
+    Ok(())
+}
+
 /// Run the full migration, given an export path and a start time for genesis.
 ///
 /// Menu:
@@ -71,11 +85,10 @@ pub async fn migrate(
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
     // Setup:
-    let snapshot = storage.latest_snapshot();
-    let chain_id = snapshot.get_chain_id().await?;
-    let root_hash = snapshot.root_hash().await.expect("can get root hash");
+    let export_state = storage.latest_snapshot();
+    let root_hash = export_state.root_hash().await.expect("can get root hash");
     let pre_upgrade_root_hash: RootHash = root_hash.into();
-    let pre_upgrade_height = snapshot
+    let pre_upgrade_height = export_state
         .get_block_height()
         .await
         .expect("can get block height");
@@ -83,10 +96,14 @@ pub async fn migrate(
 
     // We initialize a `StateDelta` and start by reaching into the JMT for all entries matching the
     // swap execution prefix. Then, we write each entry to the nv-storage.
-    let mut delta = StateDelta::new(snapshot);
+    let mut delta = StateDelta::new(export_state);
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
+        // Set shield pool params to the new default
+        write_shielded_pool_params(&mut delta).await?;
+        // Initialize fmd params
+        write_fmd_params(&mut delta).await?;
         // Reconstruct a VCB balance for the auction component.
         heal_auction_vcb(&mut delta).await?;
 
@@ -95,16 +112,20 @@ pub async fn migrate(
         tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
 
         (
-            start_time.elapsed().expect("start time is set"),
+            start_time.elapsed().expect("start time not set"),
             post_upgrade_root_hash,
         )
     };
 
     storage.release().await;
+    let rocksdb_dir = pd_home.join("rocksdb");
+    let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
+    let migrated_state = storage.latest_snapshot();
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
+    let chain_id = migrated_state.get_chain_id().await?;
     let app_state = penumbra_app::genesis::Content {
         chain_id,
         ..Default::default()
@@ -121,7 +142,6 @@ pub async fn migrate(
         tracing::info!(%now, "no genesis time provided, detecting a testing setup");
         now
     });
-
     let checkpoint = post_upgrade_root_hash.0.to_vec();
     let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
 
@@ -131,6 +151,7 @@ pub async fn migrate(
     std::fs::write(genesis_path, genesis_json).expect("can write genesis");
 
     let validator_state_path = pd_home.join("priv_validator_state.json");
+
     let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
     std::fs::write(validator_state_path, fresh_validator_state).expect("can write validator state");
 

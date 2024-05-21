@@ -5,12 +5,15 @@ import "penumbra/core/asset/v1/asset.proto";
 import "penumbra/core/component/sct/v1/sct.proto";
 import "penumbra/core/keys/v1/keys.proto";
 import "penumbra/core/num/v1/num.proto";
+import "penumbra/core/txhash/v1/txhash.proto";
+import "penumbra/crypto/decaf377_fmd/v1/decaf377_fmd.proto";
 import "penumbra/crypto/decaf377_rdsa/v1/decaf377_rdsa.proto";
 import "penumbra/crypto/tct/v1/tct.proto";
 
 // Configuration data for the shielded pool component.
 message ShieldedPoolParameters {
-  FmdParameters fixed_fmd_params = 1;
+  FmdParameters fixed_fmd_params = 1 [deprecated = true];
+  FmdMetaParameters fmd_meta_params = 2;
 }
 
 // Genesis data for the shielded pool component.
@@ -24,6 +27,16 @@ message GenesisContent {
 
   // The allocations present at genesis
   repeated Allocation allocations = 3;
+}
+
+// The parameters which control how the FMD parameters evolve over time.
+message FmdMetaParameters {
+  // How much time users have to transition to new parameters.
+  uint64 fmd_grace_period_blocks = 1; 
+  // The algorithm governing how the parameters change.
+  oneof algorithm {
+    uint32 fixed_precision_bits = 2;
+  }
 }
 
 // Parameters for Fuzzy Message Detection
@@ -95,6 +108,12 @@ message EventSpend {
 // ABCI Event recording an output.
 message EventOutput {
   crypto.tct.v1.StateCommitment note_commitment = 1;
+}
+
+// ABCI Event recording a clue.
+message EventBroadcastClue {
+  crypto.decaf377_fmd.v1.Clue clue = 1;
+  txhash.v1.TransactionId tx = 2;
 }
 
 // The body of a spend description, containing only the effecting data
