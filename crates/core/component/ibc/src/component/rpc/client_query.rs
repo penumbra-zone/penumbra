@@ -223,9 +223,18 @@ impl<HI: HostInterface + Send + Sync + 'static> ClientQuery for IbcQuery<HI> {
     /// Status queries the status of an IBC client.
     async fn client_status(
         &self,
-        _request: tonic::Request<QueryClientStatusRequest>,
+        request: tonic::Request<QueryClientStatusRequest>,
     ) -> std::result::Result<tonic::Response<QueryClientStatusResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        let snapshot = self.storage.latest_snapshot();
+        let client_id = ClientId::from_str(&request.get_ref().client_id)
+            .map_err(|e| tonic::Status::invalid_argument(format!("invalid client id: {e}")))?;
+
+        let client_status = snapshot.get_client_status(&client_id).await;
+        let resp = QueryClientStatusResponse {
+            status: client_status.to_string(),
+        };
+
+        Ok(tonic::Response::new(resp))
     }
     /// ClientParams queries all parameters of the ibc client.
     async fn client_params(

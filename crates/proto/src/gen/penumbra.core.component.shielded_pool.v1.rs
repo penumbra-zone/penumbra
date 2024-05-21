@@ -579,6 +579,39 @@ impl ::prost::Name for OutputPlan {
         )
     }
 }
+/// Requests information on total asset supply
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TotalSupplyRequest {}
+impl ::prost::Name for TotalSupplyRequest {
+    const NAME: &'static str = "TotalSupplyRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
+/// Returns information regarding supply of an asset.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TotalSupplyResponse {
+    /// A single asset denom streamed from the node.
+    #[prost(message, optional, tag = "1")]
+    pub denom_metadata: ::core::option::Option<super::super::super::asset::v1::Metadata>,
+    /// A single asset supply streamed from the node.
+    #[prost(message, optional, tag = "2")]
+    pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
+}
+impl ::prost::Name for TotalSupplyResponse {
+    const NAME: &'static str = "TotalSupplyResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
 /// Requests information on an asset by asset id
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -800,6 +833,39 @@ pub mod query_service_client {
                 );
             self.inner.server_streaming(req, path, codec).await
         }
+        /// Returns a stream of the total supply of all assets.
+        /// Similar to the `cosmos.bank.v1beta1.Query/TotalSupply` call,
+        /// but not Cosmos-specific.
+        pub async fn total_supply(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TotalSupplyRequest>,
+        ) -> std::result::Result<
+            tonic::Response<tonic::codec::Streaming<super::TotalSupplyResponse>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.shielded_pool.v1.QueryService/TotalSupply",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.shielded_pool.v1.QueryService",
+                        "TotalSupply",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -836,6 +902,22 @@ pub mod query_service_server {
             request: tonic::Request<super::AssetMetadataByIdsRequest>,
         ) -> std::result::Result<
             tonic::Response<Self::AssetMetadataByIdsStream>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the TotalSupply method.
+        type TotalSupplyStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<super::TotalSupplyResponse, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        /// Returns a stream of the total supply of all assets.
+        /// Similar to the `cosmos.bank.v1beta1.Query/TotalSupply` call,
+        /// but not Cosmos-specific.
+        async fn total_supply(
+            &self,
+            request: tonic::Request<super::TotalSupplyRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::TotalSupplyStream>,
             tonic::Status,
         >;
     }
@@ -1000,6 +1082,53 @@ pub mod query_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AssetMetadataByIdsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.shielded_pool.v1.QueryService/TotalSupply" => {
+                    #[allow(non_camel_case_types)]
+                    struct TotalSupplySvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<super::TotalSupplyRequest>
+                    for TotalSupplySvc<T> {
+                        type Response = super::TotalSupplyResponse;
+                        type ResponseStream = T::TotalSupplyStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TotalSupplyRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::total_supply(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TotalSupplySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -9,8 +9,8 @@ use crate::state_key;
 
 #[async_trait]
 pub trait AssetRegistryRead: StateRead {
-    async fn denom_by_asset(&self, asset_id: &asset::Id) -> Option<Metadata> {
-        self.get(&state_key::denom_by_asset(asset_id))
+    async fn denom_metadata_by_asset(&self, asset_id: &asset::Id) -> Option<Metadata> {
+        self.get(&state_key::denom_metadata_by_asset::by_asset_id(asset_id))
             .await
             .expect("no deserialization error")
     }
@@ -27,8 +27,11 @@ pub trait AssetRegistry: StateWrite {
         let asset_id = denom.id();
         tracing::debug!(?asset_id, "registering asset metadata in shielded pool");
 
-        if self.denom_by_asset(&asset_id).await.is_none() {
-            self.put(state_key::denom_by_asset(&asset_id), denom.clone());
+        if self.denom_metadata_by_asset(&asset_id).await.is_none() {
+            self.put(
+                state_key::denom_metadata_by_asset::by_asset_id(&asset_id),
+                denom.clone(),
+            );
         }
     }
 }

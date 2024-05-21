@@ -90,7 +90,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
         if !withdrawal.denom.starts_with(&prefix) {
             // we are the source. add the value balance to the escrow channel.
             let existing_value_balance: Amount = self
-                .get(&state_key::ics20_value_balance(
+                .get(&state_key::ics20_value_balance::by_asset_id(
                     &withdrawal.source_channel,
                     &withdrawal.denom.id(),
                 ))
@@ -104,7 +104,10 @@ pub trait Ics20TransferWriteExt: StateWrite {
                     anyhow::anyhow!("overflow adding value balance in ics20 withdrawal")
                 })?;
             self.put(
-                state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
+                state_key::ics20_value_balance::by_asset_id(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id(),
+                ),
                 new_value_balance,
             );
         } else {
@@ -116,7 +119,7 @@ pub trait Ics20TransferWriteExt: StateWrite {
             // transferred in. (Our counterparties should be checking this anyways, since if we
             // were Byzantine we could lie to them).
             let value_balance: Amount = self
-                .get(&state_key::ics20_value_balance(
+                .get(&state_key::ics20_value_balance::by_asset_id(
                     &withdrawal.source_channel,
                     &withdrawal.denom.id(),
                 ))
@@ -134,7 +137,10 @@ pub trait Ics20TransferWriteExt: StateWrite {
                         anyhow::anyhow!("underflow subtracting value balance in ics20 withdrawal")
                     })?;
             self.put(
-                state_key::ics20_value_balance(&withdrawal.source_channel, &withdrawal.denom.id()),
+                state_key::ics20_value_balance::by_asset_id(
+                    &withdrawal.source_channel,
+                    &withdrawal.denom.id(),
+                ),
                 new_value_balance,
             );
         }
@@ -221,7 +227,7 @@ impl AppHandlerCheck for Ics20Transfer {
         if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
             // check if we have enough balance to refund tokens to sender
             let value_balance: Amount = state
-                .get(&state_key::ics20_value_balance(
+                .get(&state_key::ics20_value_balance::by_asset_id(
                     &msg.packet.chan_on_a,
                     &denom.id(),
                 ))
@@ -300,7 +306,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
         // assume AppHandlerCheck has already been called, and we have enough balance to mint tokens to receiver
         // check if we have enough balance to unescrow tokens to receiver
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_b,
                 &unprefixed_denom.id(),
             ))
@@ -328,7 +334,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         // update the value balance
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_b,
                 &unprefixed_denom.id(),
             ))
@@ -340,7 +346,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
             .checked_sub(&receiver_amount)
             .context("underflow subtracing value balance in ics20 transfer")?;
         state.put(
-            state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
     } else {
@@ -382,7 +388,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         // update the value balance
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_b,
                 &denom.id(),
             ))
@@ -391,7 +397,7 @@ async fn recv_transfer_packet_inner<S: StateWrite>(
 
         let new_value_balance = value_balance.saturating_add(&value.amount);
         state.put(
-            state_key::ics20_value_balance(&msg.packet.chan_on_b, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_b, &denom.id()),
             new_value_balance,
         );
     }
@@ -427,7 +433,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
     if is_source(&msg.packet.port_on_a, &msg.packet.chan_on_a, &denom, true) {
         // sender was source chain, unescrow tokens back to sender
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_a,
                 &denom.id(),
             ))
@@ -453,7 +459,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
 
         // update the value balance
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_a,
                 &denom.id(),
             ))
@@ -465,12 +471,12 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
             .checked_sub(&amount)
             .context("underflow in ics20 timeout packet value balance subtraction")?;
         state.put(
-            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
     } else {
         let value_balance: Amount = state
-            .get(&state_key::ics20_value_balance(
+            .get(&state_key::ics20_value_balance::by_asset_id(
                 &msg.packet.chan_on_a,
                 &denom.id(),
             ))
@@ -493,7 +499,7 @@ async fn timeout_packet_inner<S: StateWrite>(mut state: S, msg: &MsgTimeout) -> 
 
         let new_value_balance = value_balance.saturating_add(&value.amount);
         state.put(
-            state_key::ics20_value_balance(&msg.packet.chan_on_a, &denom.id()),
+            state_key::ics20_value_balance::by_asset_id(&msg.packet.chan_on_a, &denom.id()),
             new_value_balance,
         );
     }

@@ -14,6 +14,7 @@ use {
         proto::v1::query_service_server::QueryServiceServer as StorageQueryServiceServer,
         Server as StorageServer,
     },
+    ibc_proto::ibc::applications::transfer::v1::query_server::QueryServer as TransferQueryServer,
     ibc_proto::ibc::core::{
         channel::v1::query_server::QueryServer as ChannelQueryServer,
         client::v1::query_server::QueryServer as ClientQueryServer,
@@ -105,6 +106,9 @@ pub fn router(
         .add_service(we(ShieldedPoolQueryServiceServer::new(
             ShieldedPoolServer::new(storage.clone()),
         )))
+        .add_service(we(TransferQueryServer::new(ShieldedPoolServer::new(
+            storage.clone(),
+        ))))
         .add_service(we(StakeQueryServiceServer::new(StakeServer::new(
             storage.clone(),
         ))))
