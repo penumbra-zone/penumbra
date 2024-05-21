@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::component::metrics;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateDelta, StateWrite};
@@ -8,7 +9,10 @@ use penumbra_proto::StateWriteProto as _;
 use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
-use crate::{component::ExecutionCircuitBreaker, event, SwapExecution};
+use crate::{
+    component::{ExecutionCircuitBreaker, ValueCircuitBreaker},
+    event, SwapExecution,
+};
 
 use super::{
     router::{RouteAndFill, RoutingParams},
@@ -84,7 +88,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 asset_id: arb_token,
             });
         } else {
-            tracing::info!(
+            tracing::debug!(
                 ?filled_input,
                 ?output,
                 ?unfilled_input,
@@ -119,10 +123,18 @@ pub trait Arbitrage: StateWrite + Sized {
             },
         };
         self_mut.set_arb_execution(height, se.clone());
+
+        // Deduct the input surplus from the dex's VCB.
+        self_mut
+            .dex_vcb_debit(Value {
+                amount: arb_profit,
+                asset_id: arb_token,
+            })
+            .await?;
+
         // Emit an ABCI event detailing the arb execution.
         self_mut.record_proto(event::arb_execution(height, se));
-        metrics::histogram!(crate::component::metrics::DEX_ARB_DURATION)
-            .record(arb_start.elapsed());
+        metrics::histogram!(metrics::DEX_ARB_DURATION).record(arb_start.elapsed());
         return Ok(Value {
             amount: arb_profit,
             asset_id: arb_token,
