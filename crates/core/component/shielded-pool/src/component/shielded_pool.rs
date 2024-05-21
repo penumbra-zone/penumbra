@@ -64,7 +64,7 @@ impl Component for ShieldedPool {
     ) {
     }
 
-    #[instrument(name = "shielded_pool", skip(state, end_block))]
+    #[instrument(name = "shielded_pool", skip_all)]
     async fn end_block<S: StateWrite + 'static>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
