@@ -61,11 +61,11 @@ impl Default for Parameters {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MetaParametersAlgorithm {
-    /// Used a fixed precision forever.
+    /// Use a fixed precision forever.
     Fixed(Precision),
 }
 
-/// Meta paramaters governing how FMD parameters change.
+/// Meta parameters governing how FMD parameters change.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
 pub struct MetaParameters {
