@@ -5,7 +5,7 @@ use cnidarium::{Snapshot, StateDelta, Storage};
 use futures::TryStreamExt;
 use jmt::RootHash;
 use pbjson_types::Any;
-use penumbra_app::{app::StateReadExt as _, SUBSTORE_PREFIXES};
+use penumbra_app::app::StateReadExt as _;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
@@ -64,17 +64,18 @@ async fn heal_auction_vcb(delta: &mut StateDelta<Snapshot>) -> anyhow::Result<()
 ///
 /// Menu:
 /// - Reconstruct a correct VCB balance for the auction component.
-#[instrument(skip_all)]
+#[instrument]
 pub async fn migrate(
     storage: Storage,
-    path_to_export: PathBuf,
+    pd_home: PathBuf,
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
     // Setup:
-    let export_state = storage.latest_snapshot();
-    let root_hash = export_state.root_hash().await.expect("can get root hash");
+    let snapshot = storage.latest_snapshot();
+    let chain_id = snapshot.get_chain_id().await?;
+    let root_hash = snapshot.root_hash().await.expect("can get root hash");
     let pre_upgrade_root_hash: RootHash = root_hash.into();
-    let pre_upgrade_height = export_state
+    let pre_upgrade_height = snapshot
         .get_block_height()
         .await
         .expect("can get block height");
@@ -82,7 +83,7 @@ pub async fn migrate(
 
     // We initialize a `StateDelta` and start by reaching into the JMT for all entries matching the
     // swap execution prefix. Then, we write each entry to the nv-storage.
-    let mut delta = StateDelta::new(export_state);
+    let mut delta = StateDelta::new(snapshot);
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
@@ -94,22 +95,16 @@ pub async fn migrate(
         tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
 
         (
-            start_time.elapsed().expect("start time not set"),
+            start_time.elapsed().expect("start time is set"),
             post_upgrade_root_hash,
         )
     };
 
-    tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
     storage.release().await;
-
-    let rocksdb_dir = path_to_export.join("rocksdb");
-    let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
-    let migrated_state = storage.latest_snapshot();
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
-    let chain_id = migrated_state.get_chain_id().await?;
     let app_state = penumbra_app::genesis::Content {
         chain_id,
         ..Default::default()
@@ -126,15 +121,16 @@ pub async fn migrate(
         tracing::info!(%now, "no genesis time provided, detecting a testing setup");
         now
     });
+
     let checkpoint = post_upgrade_root_hash.0.to_vec();
     let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
 
     let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
     tracing::info!("genesis: {}", genesis_json);
-    let genesis_path = path_to_export.join("genesis.json");
+    let genesis_path = pd_home.join("genesis.json");
     std::fs::write(genesis_path, genesis_json).expect("can write genesis");
 
-    let validator_state_path = path_to_export.join("priv_validator_state.json");
+    let validator_state_path = pd_home.join("priv_validator_state.json");
     let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
     std::fs::write(validator_state_path, fresh_validator_state).expect("can write validator state");
 
