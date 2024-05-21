@@ -109,8 +109,8 @@ fn verify_merkle_proof(
 }
 
 #[async_trait]
-pub trait ClientUpgradeProofVerifier: StateReadExt {
-    async fn verify_client_upgrade_proof(
+pub trait ClientUpgradeProofVerifier: StateReadExt + Sized {
+    async fn verify_client_upgrade_proof<HI: HostInterface>(
         &self,
         client_id: &ClientId,
         client_state_proof: &MerkleProof,
@@ -127,8 +127,8 @@ pub trait ClientUpgradeProofVerifier: StateReadExt {
             anyhow::bail!("upgrade path is not set");
         };
 
-        let upgrade_path_prefix = MerklePrefix::try_from(upgrade_path[0].clone().into_bytes())
-            .map_err(|_| {
+        let upgrade_path_prefix =
+            MerklePrefix::try_from(upgrade_path.clone().concat().into_bytes()).map_err(|_| {
                 anyhow::anyhow!("couldn't create commitment prefix from client upgrade path")
             })?;
 
@@ -141,6 +141,14 @@ pub trait ClientUpgradeProofVerifier: StateReadExt {
         let trusted_consensus_state = self
             .get_verified_consensus_state(&trusted_client_state.latest_height(), client_id)
             .await?;
+
+        // check that the client is not expired
+        let now = HI::get_block_timestamp(&self).await?;
+        let time_elapsed = now.duration_since(trusted_consensus_state.timestamp)?;
+
+        if trusted_client_state.expired(time_elapsed) {
+            anyhow::bail!("client is expired");
+        }
 
         verify_merkle_proof(
             &trusted_client_state.proof_specs,

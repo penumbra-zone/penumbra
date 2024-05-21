@@ -83,7 +83,7 @@ impl MsgHandler for MsgTimeout {
 
         if channel.ordering == ChannelOrder::Ordered {
             // ordered channel: check that packet has not been received
-            if self.next_seq_recv_on_b != self.packet.sequence {
+            if self.next_seq_recv_on_b > self.packet.sequence {
                 anyhow::bail!("packet sequence number does not match");
             }
 

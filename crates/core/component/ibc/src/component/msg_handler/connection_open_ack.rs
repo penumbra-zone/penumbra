@@ -230,11 +230,10 @@ async fn verify_previous_connection<S: StateRead>(
 
     // see
     // https://github.com/cosmos/ibc/blob/master/spec/core/ics-003-connection-semantics/README.md
+    //
     // for this validation logic
-    let state_is_consistent = connection.state_matches(&State::Init)
-        && connection.versions.contains(&msg.version)
-        || connection.state_matches(&State::TryOpen)
-            && connection.versions.get(0).eq(&Some(&msg.version));
+    let state_is_consistent =
+        connection.state_matches(&State::Init) && connection.versions.contains(&msg.version);
 
     if !state_is_consistent {
         anyhow::bail!("connection is not in the correct state");
