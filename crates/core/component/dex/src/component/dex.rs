@@ -105,15 +105,12 @@ impl Component for Dex {
             .arbitrage(*STAKING_TOKEN_ASSET_ID, arb_routing_params)
             .await
         {
-            Ok(v) => {
-                tracing::info!(?v, "arbitrage successful")
-            }
-            Err(e) => {
-                // The arbitrage search should not error, but if it does, we should
-                // simply not perform arbitrage, rather than halting the entire chain.
-                tracing::warn!(?e, "error processing arbitrage, this is a bug");
-            }
-        };
+            // The arb search completed, it may or may not have found surplus.
+            Ok(v) => tracing::info!(surplus = ?v, "arbitrage successful!"),
+            // The arbitrage search should not error, but if it does, we should
+            // simply not perform arbitrage, rather than halting the entire chain.
+            Err(e) => tracing::warn!(?e, "error processing arb, this is a bug"),
+        }
 
         // 4. Close all positions queued for closure at the end of the block.
         // It's important to do this after execution, to allow block-scoped JIT liquidity.

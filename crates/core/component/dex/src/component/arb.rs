@@ -94,7 +94,7 @@ pub trait Arbitrage: StateWrite + Sized {
                 ?unfilled_input,
                 ?total_output,
                 ?arb_profit,
-                "arbitrage successful"
+                "arb search detected surplus!"
             );
         }
 
