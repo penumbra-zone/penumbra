@@ -65,7 +65,7 @@ pub enum MetaParametersAlgorithm {
     Fixed(Precision),
 }
 
-/// Meta paramaters governing how FMD parameters change.
+/// Meta parameters governing how FMD parameters change.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
 pub struct MetaParameters {
