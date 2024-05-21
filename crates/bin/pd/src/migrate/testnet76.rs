@@ -6,7 +6,6 @@ use futures::TryStreamExt;
 use jmt::RootHash;
 use pbjson_types::Any;
 use penumbra_app::app::StateReadExt as _;
-use penumbra_app::SUBSTORE_PREFIXES;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::DutchAuction;
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
@@ -85,18 +84,22 @@ pub async fn migrate(
     genesis_start: Option<tendermint::time::Time>,
 ) -> anyhow::Result<()> {
     // Setup:
-    let export_state = storage.latest_snapshot();
-    let root_hash = export_state.root_hash().await.expect("can get root hash");
+    let initial_state = storage.latest_snapshot();
+    let chain_id = initial_state.get_chain_id().await?;
+    let root_hash = initial_state
+        .root_hash()
+        .await
+        .expect("chain state has a root hash");
     let pre_upgrade_root_hash: RootHash = root_hash.into();
-    let pre_upgrade_height = export_state
+    let pre_upgrade_height = initial_state
         .get_block_height()
         .await
-        .expect("can get block height");
+        .expect("chain state has a block height");
     let post_upgrade_height = pre_upgrade_height.wrapping_add(1);
 
     // We initialize a `StateDelta` and start by reaching into the JMT for all entries matching the
     // swap execution prefix. Then, we write each entry to the nv-storage.
-    let mut delta = StateDelta::new(export_state);
+    let mut delta = StateDelta::new(initial_state);
     let (migration_duration, post_upgrade_root_hash) = {
         let start_time = std::time::SystemTime::now();
 
@@ -109,23 +112,18 @@ pub async fn migrate(
 
         delta.put_block_height(0u64);
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
-        tracing::info!(?post_upgrade_root_hash, "post-upgrade root hash");
+        tracing::info!(?post_upgrade_root_hash, "post-migration root hash");
 
         (
             start_time.elapsed().expect("start time not set"),
             post_upgrade_root_hash,
         )
     };
-
     storage.release().await;
-    let rocksdb_dir = pd_home.join("rocksdb");
-    let storage = Storage::load(rocksdb_dir, SUBSTORE_PREFIXES.to_vec()).await?;
-    let migrated_state = storage.latest_snapshot();
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
     // initial height.
-    let chain_id = migrated_state.get_chain_id().await?;
     let app_state = penumbra_app::genesis::Content {
         chain_id,
         ..Default::default()
