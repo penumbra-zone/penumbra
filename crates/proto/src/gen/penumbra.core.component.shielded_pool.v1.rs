@@ -300,7 +300,7 @@ impl ::prost::Name for EventOutput {
 /// ABCI Event recording a clue.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventClue {
+pub struct EventBroadcastClue {
     #[prost(message, optional, tag = "1")]
     pub clue: ::core::option::Option<
         super::super::super::super::crypto::decaf377_fmd::v1::Clue,
@@ -308,8 +308,8 @@ pub struct EventClue {
     #[prost(message, optional, tag = "2")]
     pub tx: ::core::option::Option<super::super::super::txhash::v1::TransactionId>,
 }
-impl ::prost::Name for EventClue {
-    const NAME: &'static str = "EventClue";
+impl ::prost::Name for EventBroadcastClue {
+    const NAME: &'static str = "EventBroadcastClue";
     const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!(

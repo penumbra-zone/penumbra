@@ -60,12 +60,11 @@ impl<T: StateRead + ?Sized> ClueReadExt for T {}
 #[async_trait]
 pub trait ClueManager: StateRead + StateWrite {
     async fn record_clue(&mut self, clue: Clue, tx: TransactionId) -> Result<()> {
-        // Update count
         {
             let count = self.get_current_clue_count().await?;
             self.put_current_clue_count(count.saturating_add(1));
         }
-        self.record_proto(pb::EventClue {
+        self.record_proto(pb::EventBroadcastClue {
             clue: Some(clue.into()),
             tx: Some(tx.into()),
         });

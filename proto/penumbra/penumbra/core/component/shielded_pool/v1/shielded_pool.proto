@@ -111,7 +111,7 @@ message EventOutput {
 }
 
 // ABCI Event recording a clue.
-message EventClue {
+message EventBroadcastClue {
   crypto.decaf377_fmd.v1.Clue clue = 1;
   txhash.v1.TransactionId tx = 2;
 }

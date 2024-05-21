@@ -382,7 +382,7 @@ impl<'de> serde::Deserialize<'de> for AssetMetadataByIdsResponse {
         deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.AssetMetadataByIdsResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for EventClue {
+impl serde::Serialize for EventBroadcastClue {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -396,7 +396,7 @@ impl serde::Serialize for EventClue {
         if self.tx.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventClue", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.EventBroadcastClue", len)?;
         if let Some(v) = self.clue.as_ref() {
             struct_ser.serialize_field("clue", v)?;
         }
@@ -406,7 +406,7 @@ impl serde::Serialize for EventClue {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for EventClue {
+impl<'de> serde::Deserialize<'de> for EventBroadcastClue {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -454,13 +454,13 @@ impl<'de> serde::Deserialize<'de> for EventClue {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = EventClue;
+            type Value = EventBroadcastClue;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventClue")
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.EventBroadcastClue")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventClue, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventBroadcastClue, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -485,13 +485,13 @@ impl<'de> serde::Deserialize<'de> for EventClue {
                         }
                     }
                 }
-                Ok(EventClue {
+                Ok(EventBroadcastClue {
                     clue: clue__,
                     tx: tx__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventClue", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.EventBroadcastClue", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventOutput {
