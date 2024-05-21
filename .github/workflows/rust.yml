@@ -59,7 +59,7 @@ jobs:
 
   check:
     name: Check all crate features
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: buildjet-16vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
         with:
