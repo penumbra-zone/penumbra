@@ -118,6 +118,9 @@ fn main() -> anyhow::Result<()> {
                 "../../proto/penumbra/penumbra/view/v1/view.proto",
                 "../../proto/rust-vendored/tendermint/types/validator.proto",
                 "../../proto/rust-vendored/tendermint/p2p/types.proto",
+                "../../proto/rust-vendored/ibc/core/channel/v1/query.proto",
+                "../../proto/rust-vendored/ibc/core/client/v1/query.proto",
+                "../../proto/rust-vendored/ibc/core/connection/v1/query.proto",
             ],
             &["../../proto/penumbra/", "../../proto/rust-vendored/"],
         )?;

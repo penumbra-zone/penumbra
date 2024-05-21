@@ -17,7 +17,13 @@ echo "Pulling proto dependencies from BSR..."
 pushd "${repo_root}/proto/"
 # Make sure the lockfile is up to date.
 buf mod update penumbra
+
+# Pull our vendored IBC-go proto defs so we can get reflection for service definitions.
+# The penumbra dependencies will override some of these.
+buf export buf.build/penumbra-zone/ibc-go-vendor --output rust-vendored/
+
 buf export penumbra --output rust-vendored/
+
 # Remove the re-exported Penumbra proto defs, since we version control
 # those directly in this repo, and don't need to duplicate them as output.
 rm -rf rust-vendored/penumbra/

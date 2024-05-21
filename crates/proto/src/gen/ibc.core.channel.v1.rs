@@ -1,0 +1,1431 @@
+/// Generated client implementations.
+#[cfg(feature = "rpc")]
+pub mod query_client {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
+    /// Query provides defines the gRPC querier service
+    #[derive(Debug, Clone)]
+    pub struct QueryClient<T> {
+        inner: tonic::client::Grpc<T>,
+    }
+    impl QueryClient<tonic::transport::Channel> {
+        /// Attempt to create a new client by connecting to a given endpoint.
+        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
+        where
+            D: TryInto<tonic::transport::Endpoint>,
+            D::Error: Into<StdError>,
+        {
+            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
+            Ok(Self::new(conn))
+        }
+    }
+    impl<T> QueryClient<T>
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::Error: Into<StdError>,
+        T::ResponseBody: Body<Data = Bytes> + Send + 'static,
+        <T::ResponseBody as Body>::Error: Into<StdError> + Send,
+    {
+        pub fn new(inner: T) -> Self {
+            let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> QueryClient<InterceptedService<T, F>>
+        where
+            F: tonic::service::Interceptor,
+            T::ResponseBody: Default,
+            T: tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                >,
+            >,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::BoxBody>,
+            >>::Error: Into<StdError> + Send + Sync,
+        {
+            QueryClient::new(InterceptedService::new(inner, interceptor))
+        }
+        /// Compress requests with the given encoding.
+        ///
+        /// This requires the server to support it otherwise it might respond with an
+        /// error.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
+            self
+        }
+        /// Enable decompressing responses.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
+            self
+        }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_decoding_message_size(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.inner = self.inner.max_encoding_message_size(limit);
+            self
+        }
+        /// Channel queries an IBC Channel.
+        pub async fn channel(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<::ibc_proto::ibc::core::channel::v1::QueryChannelResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/Channel",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "Channel"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// Channels queries all the IBC channels of a chain.
+        pub async fn channels(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<::ibc_proto::ibc::core::channel::v1::QueryChannelsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/Channels",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "Channels"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// ConnectionChannels queries all the channels associated with a connection
+        /// end.
+        pub async fn connection_channels(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/ConnectionChannels",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "ConnectionChannels"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// ChannelClientState queries for the client state for the channel associated
+        /// with the provided channel identifiers.
+        pub async fn channel_client_state(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/ChannelClientState",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "ChannelClientState"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// ChannelConsensusState queries for the consensus state for the channel
+        /// associated with the provided channel identifiers.
+        pub async fn channel_consensus_state(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/ChannelConsensusState",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "ChannelConsensusState"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// PacketCommitment queries a stored packet commitment hash.
+        pub async fn packet_commitment(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/PacketCommitment",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "PacketCommitment"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// PacketCommitments returns all the packet commitments hashes associated
+        /// with a channel.
+        pub async fn packet_commitments(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/PacketCommitments",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "PacketCommitments"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// PacketReceipt queries if a given packet sequence has been received on the
+        /// queried chain
+        pub async fn packet_receipt(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/PacketReceipt",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "PacketReceipt"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// PacketAcknowledgement queries a stored packet acknowledgement hash.
+        pub async fn packet_acknowledgement(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/PacketAcknowledgement",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "PacketAcknowledgement"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// PacketAcknowledgements returns all the packet acknowledgements associated
+        /// with a channel.
+        pub async fn packet_acknowledgements(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/PacketAcknowledgements",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "ibc.core.channel.v1.Query",
+                        "PacketAcknowledgements",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// UnreceivedPackets returns all the unreceived IBC packets associated with a
+        /// channel and sequences.
+        pub async fn unreceived_packets(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/UnreceivedPackets",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "UnreceivedPackets"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// UnreceivedAcks returns all the unreceived IBC acknowledgements associated
+        /// with a channel and sequences.
+        pub async fn unreceived_acks(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/UnreceivedAcks",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("ibc.core.channel.v1.Query", "UnreceivedAcks"));
+            self.inner.unary(req, path, codec).await
+        }
+        /// NextSequenceReceive returns the next receive sequence for a given channel.
+        pub async fn next_sequence_receive(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.channel.v1.Query/NextSequenceReceive",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.core.channel.v1.Query", "NextSequenceReceive"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+    }
+}
+/// Generated server implementations.
+#[cfg(feature = "rpc")]
+pub mod query_server {
+    #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
+    use tonic::codegen::*;
+    /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
+    #[async_trait]
+    pub trait Query: Send + Sync + 'static {
+        /// Channel queries an IBC Channel.
+        async fn channel(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<::ibc_proto::ibc::core::channel::v1::QueryChannelResponse>,
+            tonic::Status,
+        >;
+        /// Channels queries all the IBC channels of a chain.
+        async fn channels(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<::ibc_proto::ibc::core::channel::v1::QueryChannelsResponse>,
+            tonic::Status,
+        >;
+        /// ConnectionChannels queries all the channels associated with a connection
+        /// end.
+        async fn connection_channels(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsResponse,
+            >,
+            tonic::Status,
+        >;
+        /// ChannelClientState queries for the client state for the channel associated
+        /// with the provided channel identifiers.
+        async fn channel_client_state(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateResponse,
+            >,
+            tonic::Status,
+        >;
+        /// ChannelConsensusState queries for the consensus state for the channel
+        /// associated with the provided channel identifiers.
+        async fn channel_consensus_state(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateResponse,
+            >,
+            tonic::Status,
+        >;
+        /// PacketCommitment queries a stored packet commitment hash.
+        async fn packet_commitment(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentResponse,
+            >,
+            tonic::Status,
+        >;
+        /// PacketCommitments returns all the packet commitments hashes associated
+        /// with a channel.
+        async fn packet_commitments(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsResponse,
+            >,
+            tonic::Status,
+        >;
+        /// PacketReceipt queries if a given packet sequence has been received on the
+        /// queried chain
+        async fn packet_receipt(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptResponse,
+            >,
+            tonic::Status,
+        >;
+        /// PacketAcknowledgement queries a stored packet acknowledgement hash.
+        async fn packet_acknowledgement(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementResponse,
+            >,
+            tonic::Status,
+        >;
+        /// PacketAcknowledgements returns all the packet acknowledgements associated
+        /// with a channel.
+        async fn packet_acknowledgements(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsResponse,
+            >,
+            tonic::Status,
+        >;
+        /// UnreceivedPackets returns all the unreceived IBC packets associated with a
+        /// channel and sequences.
+        async fn unreceived_packets(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsResponse,
+            >,
+            tonic::Status,
+        >;
+        /// UnreceivedAcks returns all the unreceived IBC acknowledgements associated
+        /// with a channel and sequences.
+        async fn unreceived_acks(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksResponse,
+            >,
+            tonic::Status,
+        >;
+        /// NextSequenceReceive returns the next receive sequence for a given channel.
+        async fn next_sequence_receive(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveResponse,
+            >,
+            tonic::Status,
+        >;
+    }
+    /// Query provides defines the gRPC querier service
+    #[derive(Debug)]
+    pub struct QueryServer<T: Query> {
+        inner: _Inner<T>,
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
+        max_decoding_message_size: Option<usize>,
+        max_encoding_message_size: Option<usize>,
+    }
+    struct _Inner<T>(Arc<T>);
+    impl<T: Query> QueryServer<T> {
+        pub fn new(inner: T) -> Self {
+            Self::from_arc(Arc::new(inner))
+        }
+        pub fn from_arc(inner: Arc<T>) -> Self {
+            let inner = _Inner(inner);
+            Self {
+                inner,
+                accept_compression_encodings: Default::default(),
+                send_compression_encodings: Default::default(),
+                max_decoding_message_size: None,
+                max_encoding_message_size: None,
+            }
+        }
+        pub fn with_interceptor<F>(
+            inner: T,
+            interceptor: F,
+        ) -> InterceptedService<Self, F>
+        where
+            F: tonic::service::Interceptor,
+        {
+            InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
+        }
+        /// Limits the maximum size of a decoded message.
+        ///
+        /// Default: `4MB`
+        #[must_use]
+        pub fn max_decoding_message_size(mut self, limit: usize) -> Self {
+            self.max_decoding_message_size = Some(limit);
+            self
+        }
+        /// Limits the maximum size of an encoded message.
+        ///
+        /// Default: `usize::MAX`
+        #[must_use]
+        pub fn max_encoding_message_size(mut self, limit: usize) -> Self {
+            self.max_encoding_message_size = Some(limit);
+            self
+        }
+    }
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServer<T>
+    where
+        T: Query,
+        B: Body + Send + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        type Response = http::Response<tonic::body::BoxBody>;
+        type Error = std::convert::Infallible;
+        type Future = BoxFuture<Self::Response, Self::Error>;
+        fn poll_ready(
+            &mut self,
+            _cx: &mut Context<'_>,
+        ) -> Poll<std::result::Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, req: http::Request<B>) -> Self::Future {
+            let inner = self.inner.clone();
+            match req.uri().path() {
+                "/ibc.core.channel.v1.Query/Channel" => {
+                    #[allow(non_camel_case_types)]
+                    struct ChannelSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryChannelRequest,
+                    > for ChannelSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryChannelResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryChannelRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::channel(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ChannelSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/Channels" => {
+                    #[allow(non_camel_case_types)]
+                    struct ChannelsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryChannelsRequest,
+                    > for ChannelsSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryChannelsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryChannelsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::channels(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ChannelsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/ConnectionChannels" => {
+                    #[allow(non_camel_case_types)]
+                    struct ConnectionChannelsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest,
+                    > for ConnectionChannelsSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::connection_channels(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ConnectionChannelsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/ChannelClientState" => {
+                    #[allow(non_camel_case_types)]
+                    struct ChannelClientStateSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest,
+                    > for ChannelClientStateSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryChannelClientStateRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::channel_client_state(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ChannelClientStateSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/ChannelConsensusState" => {
+                    #[allow(non_camel_case_types)]
+                    struct ChannelConsensusStateSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateRequest,
+                    > for ChannelConsensusStateSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryChannelConsensusStateRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::channel_consensus_state(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ChannelConsensusStateSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/PacketCommitment" => {
+                    #[allow(non_camel_case_types)]
+                    struct PacketCommitmentSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentRequest,
+                    > for PacketCommitmentSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::packet_commitment(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PacketCommitmentSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/PacketCommitments" => {
+                    #[allow(non_camel_case_types)]
+                    struct PacketCommitmentsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest,
+                    > for PacketCommitmentsSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::packet_commitments(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PacketCommitmentsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/PacketReceipt" => {
+                    #[allow(non_camel_case_types)]
+                    struct PacketReceiptSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptRequest,
+                    > for PacketReceiptSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryPacketReceiptRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::packet_receipt(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PacketReceiptSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/PacketAcknowledgement" => {
+                    #[allow(non_camel_case_types)]
+                    struct PacketAcknowledgementSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementRequest,
+                    > for PacketAcknowledgementSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::packet_acknowledgement(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PacketAcknowledgementSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/PacketAcknowledgements" => {
+                    #[allow(non_camel_case_types)]
+                    struct PacketAcknowledgementsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest,
+                    > for PacketAcknowledgementsSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::packet_acknowledgements(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PacketAcknowledgementsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/UnreceivedPackets" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnreceivedPacketsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsRequest,
+                    > for UnreceivedPacketsSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedPacketsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::unreceived_packets(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UnreceivedPacketsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/UnreceivedAcks" => {
+                    #[allow(non_camel_case_types)]
+                    struct UnreceivedAcksSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksRequest,
+                    > for UnreceivedAcksSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryUnreceivedAcksRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::unreceived_acks(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = UnreceivedAcksSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.channel.v1.Query/NextSequenceReceive" => {
+                    #[allow(non_camel_case_types)]
+                    struct NextSequenceReceiveSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveRequest,
+                    > for NextSequenceReceiveSvc<T> {
+                        type Response = ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::core::channel::v1::QueryNextSequenceReceiveRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::next_sequence_receive(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = NextSequenceReceiveSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                _ => {
+                    Box::pin(async move {
+                        Ok(
+                            http::Response::builder()
+                                .status(200)
+                                .header("grpc-status", "12")
+                                .header("content-type", "application/grpc")
+                                .body(empty_body())
+                                .unwrap(),
+                        )
+                    })
+                }
+            }
+        }
+    }
+    impl<T: Query> Clone for QueryServer<T> {
+        fn clone(&self) -> Self {
+            let inner = self.inner.clone();
+            Self {
+                inner,
+                accept_compression_encodings: self.accept_compression_encodings,
+                send_compression_encodings: self.send_compression_encodings,
+                max_decoding_message_size: self.max_decoding_message_size,
+                max_encoding_message_size: self.max_encoding_message_size,
+            }
+        }
+    }
+    impl<T: Query> Clone for _Inner<T> {
+        fn clone(&self) -> Self {
+            Self(Arc::clone(&self.0))
+        }
+    }
+    impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
+    impl<T: Query> tonic::server::NamedService for QueryServer<T> {
+        const NAME: &'static str = "ibc.core.channel.v1.Query";
+    }
+}
