@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use cnidarium::StateWrite;
 use cnidarium_component::ActionHandler;
 use penumbra_proto::StateWriteProto;
+use tracing::instrument;
 
 use crate::auction::dutch::ActionDutchAuctionEnd;
 use crate::component::AuctionStoreRead;
@@ -18,6 +19,7 @@ impl ActionHandler for ActionDutchAuctionEnd {
         Ok(())
     }
 
+    #[instrument(name = "dutch_auction_end", skip(self, state))]
     async fn check_and_execute<S: StateWrite>(&self, mut state: S) -> Result<()> {
         let auction_id = self.auction_id;
 
@@ -41,7 +43,7 @@ impl ActionHandler for ActionDutchAuctionEnd {
         let auction_state = auction.state.clone();
 
         // Terminate the auction
-        state.close_auction(auction).await?;
+        state.end_auction(auction).await?;
         // Emit an event, tracing the reason for the auction ending.
         state.record_proto(event::dutch_auction_closed_by_user(
             auction_id,

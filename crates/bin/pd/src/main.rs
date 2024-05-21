@@ -12,7 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    migrate::Migration::ReadyToStart,
+    migrate::Migration::Testnet76,
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
         generate::TestnetConfig,
@@ -439,7 +439,7 @@ async fn main() -> anyhow::Result<()> {
             let pd_migrate_span = tracing::error_span!("pd_migrate");
             pd_migrate_span
                 .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
-            ReadyToStart
+            Testnet76
                 .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
                 .instrument(pd_migrate_span)
                 .await

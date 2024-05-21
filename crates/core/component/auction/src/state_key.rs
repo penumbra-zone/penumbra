@@ -8,16 +8,16 @@ pub mod parameters {
     }
 }
 
-pub(crate) mod value_balance {
+pub mod value_balance {
     use penumbra_asset::asset;
 
     #[allow(dead_code)] // For some reason, this shows up as unused
-    pub(crate) fn prefix() -> &'static str {
+    pub fn prefix() -> &'static str {
         "auction/value_breaker/"
     }
 
     #[allow(dead_code)] // For some reason, this shows up as unused
-    pub(crate) fn for_asset(asset_id: &asset::Id) -> String {
+    pub fn for_asset(asset_id: &asset::Id) -> String {
         format!("{}{asset_id}", prefix())
     }
 }

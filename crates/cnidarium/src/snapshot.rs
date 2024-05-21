@@ -270,7 +270,7 @@ impl StateRead for Snapshot {
         let db = self.0.db.clone();
 
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
-        tracing::debug!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
+        tracing::trace!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
 
         let version = self
             .substore_version(&config)
@@ -332,7 +332,7 @@ impl StateRead for Snapshot {
         let db = self.0.db.clone();
 
         let (prefix_truncated, config) = self.0.multistore_cache.config.match_prefix_str(prefix);
-        tracing::debug!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
+        tracing::trace!(substore_key = prefix_truncated,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
 
         let version = self
             .substore_version(&config)
@@ -378,7 +378,7 @@ impl StateRead for Snapshot {
         let db = self.0.db.clone();
 
         let (truncated_prefix, config) = self.0.multistore_cache.config.match_prefix_bytes(prefix);
-        tracing::debug!(substore_key = ?truncated_prefix,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
+        tracing::trace!(substore_key = ?truncated_prefix,  substore_prefix = config.prefix, prefix_supplied = ?prefix, "matched prefix, fetching substore");
         let version = self
             .substore_version(&config)
             .expect("the substore exists and has been initialized");

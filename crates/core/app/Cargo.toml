@@ -1,16 +1,16 @@
 [package]
-name = "penumbra-app"
-version = {workspace = true}
-authors = {workspace = true}
-edition = {workspace = true}
-repository = {workspace = true}
-homepage = {workspace = true}
-license = {workspace = true}
-publish = false
+name        = "penumbra-app"
+version     = { workspace = true }
+authors     = { workspace = true }
+edition     = { workspace = true}
+repository  = { workspace = true }
+homepage    = { workspace = true }
+license     = { workspace = true }
+publish     = false
 
 [features]
 default = ["std"]
-std = ["ark-ff/std", "ibc-types/std"]
+std     = ["ark-ff/std", "ibc-types/std"]
 
 [dependencies]
 anyhow                           = { workspace = true }
