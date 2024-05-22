@@ -1,33 +1,21 @@
+use crate::TendermintProxy;
 use chrono::DateTime;
-use penumbra_proto::{self as proto, DomainType, Message};
-use penumbra_transaction::Transaction;
-use proto::util::tendermint_proxy::v1::{
-    tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest, AbciQueryResponse,
-    BroadcastTxAsyncRequest, BroadcastTxAsyncResponse, BroadcastTxSyncRequest,
-    BroadcastTxSyncResponse, GetBlockByHeightRequest, GetBlockByHeightResponse, GetStatusRequest,
-    GetStatusResponse, GetTxRequest, GetTxResponse, SyncInfo, Tag, TxResult,
+use penumbra_proto::{
+    self as proto,
+    util::tendermint_proxy::v1::{
+        tendermint_proxy_service_server::TendermintProxyService, AbciQueryRequest,
+        AbciQueryResponse, BroadcastTxAsyncRequest, BroadcastTxAsyncResponse,
+        BroadcastTxSyncRequest, BroadcastTxSyncResponse, GetBlockByHeightRequest,
+        GetBlockByHeightResponse, GetStatusRequest, GetStatusResponse, GetTxRequest, GetTxResponse,
+        SyncInfo, Tag, TxResult,
+    },
+    DomainType, Message,
 };
+use penumbra_transaction::Transaction;
 use std::ops::Deref;
 use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
-
-/// Implements service traits for Tonic gRPC services.
-///
-/// The fields of this struct are the configuration and data
-/// necessary to the gRPC services.
-#[derive(Clone, Debug)]
-pub struct TendermintProxy {
-    /// Address of upstream Tendermint server to proxy requests to.
-    tendermint_url: url::Url,
-}
-
-impl TendermintProxy {
-    /// Returns a new [`TendermintProxy`].
-    pub fn new(tendermint_url: url::Url) -> Self {
-        Self { tendermint_url }
-    }
-}
 
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
