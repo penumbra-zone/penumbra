@@ -5682,6 +5682,7 @@ dependencies = [
  "pin-project",
  "pin-project-lite",
  "sha2 0.10.8",
+ "tap",
  "tendermint",
  "tendermint-config",
  "tendermint-light-client-verifier",
