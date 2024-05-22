@@ -9,16 +9,20 @@ use cnidarium::{StateDelta, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
-        query_service_server::QueryService, simulate_trade_request::routing,
-        simulate_trade_request::routing::Setting, simulate_trade_request::Routing,
-        simulation_service_server::SimulationService, ArbExecutionRequest, ArbExecutionResponse,
-        ArbExecutionsRequest, ArbExecutionsResponse, BatchSwapOutputDataRequest,
-        BatchSwapOutputDataResponse, LiquidityPositionByIdRequest, LiquidityPositionByIdResponse,
-        LiquidityPositionsByIdRequest, LiquidityPositionsByIdResponse,
-        LiquidityPositionsByPriceRequest, LiquidityPositionsByPriceResponse,
-        LiquidityPositionsRequest, LiquidityPositionsResponse, SimulateTradeRequest,
-        SimulateTradeResponse, SpreadRequest, SpreadResponse, SwapExecutionRequest,
-        SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
+        query_service_server::QueryService,
+        simulate_trade_request::{
+            routing::{self, Setting},
+            Routing,
+        },
+        simulation_service_server::SimulationService,
+        ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandleStickDataRequest,
+        CandleStickDataResponse, CandleStickDataStreamRequest, CandleStickDataStreamResponse,
+        LiquidityPositionByIdRequest, LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
+        LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
+        LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
+        SimulateTradeRequest, SimulateTradeResponse, SpreadRequest, SpreadResponse,
+        SwapExecutionRequest, SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
     },
     DomainType, StateReadProto,
 };
@@ -63,6 +67,11 @@ impl QueryService for Server {
         Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
     type SwapExecutionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
+    type CandleStickDataStreamStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<CandleStickDataStreamResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     #[instrument(skip(self, request))]
     async fn arb_execution(
@@ -191,6 +200,22 @@ impl QueryService for Server {
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn candle_stick_data(
+        &self,
+        request: tonic::Request<CandleStickDataRequest>,
+    ) -> Result<tonic::Response<CandleStickDataResponse>, Status> {
+        todo!()
+    }
+
+    #[instrument(skip(self, request))]
+    async fn candle_stick_data_stream(
+        &self,
+        request: tonic::Request<CandleStickDataStreamRequest>,
+    ) -> Result<tonic::Response<Self::CandleStickDataStreamStream>, Status> {
+        todo!()
     }
 
     #[instrument(skip(self, request))]
