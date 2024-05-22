@@ -27,6 +27,14 @@ pub fn all_positions() -> &'static str {
     "dex/position/"
 }
 
+pub fn block_position_executions() -> &'static str {
+    "dex/block_position_executions"
+}
+
+pub fn block_swap_executions() -> &'static str {
+    "dex/block_swap_executions"
+}
+
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
         "dex/output/{:020}/{}/{}",
