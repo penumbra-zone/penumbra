@@ -30,6 +30,8 @@ use crate::{
 };
 use crate::{event, state_key};
 
+use super::candlestick::Chandelier;
+
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;
 
@@ -159,7 +161,7 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 
 /// Manages liquidity positions within the chain state.
 #[async_trait]
-pub trait PositionManager: StateWrite + PositionRead {
+pub trait PositionManager: Chandelier + StateWrite + PositionRead {
     /// Close a position by id, removing it from the state.
     ///
     /// If the position is already closed, this is a no-op.
@@ -390,6 +392,10 @@ pub trait PositionManager: StateWrite + PositionRead {
             }
         }
 
+        // Update the candlestick tracking
+        self.record_position_execution(&prev_state, &new_state, &context)
+            .await;
+
         self.update_position(Some(prev_state), new_state).await
     }
 
@@ -472,7 +478,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 }
 
-impl<T: StateWrite + ?Sized> PositionManager for T {}
+impl<T: StateWrite + ?Sized + Chandelier> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {

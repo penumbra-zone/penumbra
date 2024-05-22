@@ -1,4 +1,5 @@
 use cnidarium::StateWrite;
+use tonic::async_trait;
 
 use crate::{lp::position::Position, DirectedTradingPair, SwapExecution};
 
@@ -19,13 +20,24 @@ pub(crate) struct CandlestickData {
     swap_volume: f64,
 }
 
+#[async_trait]
 pub(crate) trait Chandelier: StateWrite {
-    fn record_position_execution(
+    async fn record_position_execution(
         &mut self,
         prev_state: &Position,
         new_state: &Position,
         trading_pair: &DirectedTradingPair,
-    );
-    fn record_swap_execution(&mut self, swap: &SwapExecution);
-    fn finalize(&mut self) -> anyhow::Result<CandlestickData>;
+    ) {
+        todo!()
+    }
+
+    async fn record_swap_execution(&mut self, swap: &SwapExecution) {
+        todo!()
+    }
+
+    async fn finalize_block_candlesticks(&mut self) -> anyhow::Result<CandlestickData> {
+        todo!()
+    }
 }
+
+impl<T: StateWrite + ?Sized> Chandelier for T {}
