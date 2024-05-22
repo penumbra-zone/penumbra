@@ -901,6 +901,233 @@ impl<'de> serde::Deserialize<'de> for DelegationChanges {
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.DelegationChanges", FIELDS, GeneratedVisitor)
     }
 }
+impl serde::Serialize for EventDelegate {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_identity.is_some() {
+            len += 1;
+        }
+        if self.amount.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventDelegate", len)?;
+        if let Some(v) = self.validator_identity.as_ref() {
+            struct_ser.serialize_field("validatorIdentity", v)?;
+        }
+        if let Some(v) = self.amount.as_ref() {
+            struct_ser.serialize_field("amount", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventDelegate {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_identity",
+            "validatorIdentity",
+            "amount",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorIdentity,
+            Amount,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "amount" => Ok(GeneratedField::Amount),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventDelegate;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventDelegate")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventDelegate, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_identity__ = None;
+                let mut amount__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorIdentity => {
+                            if validator_identity__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                            }
+                            validator_identity__ = map_.next_value()?;
+                        }
+                        GeneratedField::Amount => {
+                            if amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("amount"));
+                            }
+                            amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventDelegate {
+                    validator_identity: validator_identity__,
+                    amount: amount__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventDelegate", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventRateDataChange {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        if self.rate_data.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventRateDataChange", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        if let Some(v) = self.rate_data.as_ref() {
+            struct_ser.serialize_field("rateData", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventRateDataChange {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+            "rate_data",
+            "rateData",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            RateData,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "rateData" | "rate_data" => Ok(GeneratedField::RateData),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventRateDataChange;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventRateDataChange")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventRateDataChange, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                let mut rate_data__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::RateData => {
+                            if rate_data__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("rateData"));
+                            }
+                            rate_data__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventRateDataChange {
+                    identity_key: identity_key__,
+                    rate_data: rate_data__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventRateDataChange", FIELDS, GeneratedVisitor)
+    }
+}
 impl serde::Serialize for EventTombstoneValidator {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -1078,6 +1305,651 @@ impl<'de> serde::Deserialize<'de> for EventTombstoneValidator {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventTombstoneValidator", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventUndelegate {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.validator_identity.is_some() {
+            len += 1;
+        }
+        if self.amount.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventUndelegate", len)?;
+        if let Some(v) = self.validator_identity.as_ref() {
+            struct_ser.serialize_field("validatorIdentity", v)?;
+        }
+        if let Some(v) = self.amount.as_ref() {
+            struct_ser.serialize_field("amount", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventUndelegate {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "validator_identity",
+            "validatorIdentity",
+            "amount",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ValidatorIdentity,
+            Amount,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "amount" => Ok(GeneratedField::Amount),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventUndelegate;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventUndelegate")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventUndelegate, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut validator_identity__ = None;
+                let mut amount__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ValidatorIdentity => {
+                            if validator_identity__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                            }
+                            validator_identity__ = map_.next_value()?;
+                        }
+                        GeneratedField::Amount => {
+                            if amount__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("amount"));
+                            }
+                            amount__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventUndelegate {
+                    validator_identity: validator_identity__,
+                    amount: amount__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventUndelegate", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValidatorBondingStateChange {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        if self.bonding_state.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventValidatorBondingStateChange", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        if let Some(v) = self.bonding_state.as_ref() {
+            struct_ser.serialize_field("bondingState", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValidatorBondingStateChange {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+            "bonding_state",
+            "bondingState",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            BondingState,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "bondingState" | "bonding_state" => Ok(GeneratedField::BondingState),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValidatorBondingStateChange;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventValidatorBondingStateChange")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValidatorBondingStateChange, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                let mut bonding_state__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::BondingState => {
+                            if bonding_state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("bondingState"));
+                            }
+                            bonding_state__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValidatorBondingStateChange {
+                    identity_key: identity_key__,
+                    bonding_state: bonding_state__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventValidatorBondingStateChange", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValidatorDefinitionUpload {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.definition.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventValidatorDefinitionUpload", len)?;
+        if let Some(v) = self.definition.as_ref() {
+            struct_ser.serialize_field("definition", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValidatorDefinitionUpload {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "definition",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            Definition,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "definition" => Ok(GeneratedField::Definition),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValidatorDefinitionUpload;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventValidatorDefinitionUpload")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValidatorDefinitionUpload, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut definition__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::Definition => {
+                            if definition__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("definition"));
+                            }
+                            definition__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValidatorDefinitionUpload {
+                    definition: definition__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventValidatorDefinitionUpload", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValidatorMissedBlock {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventValidatorMissedBlock", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValidatorMissedBlock {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValidatorMissedBlock;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventValidatorMissedBlock")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValidatorMissedBlock, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValidatorMissedBlock {
+                    identity_key: identity_key__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventValidatorMissedBlock", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValidatorStateChange {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        if self.state.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventValidatorStateChange", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        if let Some(v) = self.state.as_ref() {
+            struct_ser.serialize_field("state", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValidatorStateChange {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+            "state",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            State,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "state" => Ok(GeneratedField::State),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValidatorStateChange;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventValidatorStateChange")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValidatorStateChange, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                let mut state__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::State => {
+                            if state__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("state"));
+                            }
+                            state__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValidatorStateChange {
+                    identity_key: identity_key__,
+                    state: state__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventValidatorStateChange", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventValidatorVotingPowerChange {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        if self.voting_power.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventValidatorVotingPowerChange", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        if let Some(v) = self.voting_power.as_ref() {
+            struct_ser.serialize_field("votingPower", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventValidatorVotingPowerChange {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+            "voting_power",
+            "votingPower",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            VotingPower,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "votingPower" | "voting_power" => Ok(GeneratedField::VotingPower),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventValidatorVotingPowerChange;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventValidatorVotingPowerChange")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventValidatorVotingPowerChange, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                let mut voting_power__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::VotingPower => {
+                            if voting_power__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("votingPower"));
+                            }
+                            voting_power__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventValidatorVotingPowerChange {
+                    identity_key: identity_key__,
+                    voting_power: voting_power__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventValidatorVotingPowerChange", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for FundingStream {
