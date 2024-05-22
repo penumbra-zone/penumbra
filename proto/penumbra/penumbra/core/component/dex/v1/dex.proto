@@ -476,10 +476,10 @@ service QueryService {
   // Get historical candlestick data for a given trading pair.
   //
   // Note that this RPC is directional, to get data for both directions, make a second request.
-  rpc CandleStickData(CandleStickDataRequest) returns (CandleStickDataResponse);
+  rpc CandlestickData(CandlestickDataRequest) returns (CandlestickDataResponse);
 
   // Subscribe to candlestick data updates.
-  rpc CandleStickDataStream(CandleStickDataStreamRequest) returns (stream CandleStickDataStreamResponse);
+  rpc CandlestickDataStream(CandlestickDataStreamRequest) returns (stream CandlestickDataStreamResponse);
 }
 
 // Simulation for the DEX component.
@@ -751,7 +751,7 @@ message GenesisContent {
   DexParameters dex_params = 1;
 }
 
-message CandleStickData {
+message CandlestickData {
   // The height of the candlestick data.
   uint64 height = 1;
   // The first observed price during the block execution.
@@ -768,7 +768,7 @@ message CandleStickData {
   double swap_volume = 7;
 }
 
-message CandleStickDataRequest {
+message CandlestickDataRequest {
   // The directed trading pair to request candlestick data for.
   //
   // NOTE: the returned data will only have trades from the SOURCE asset to the
@@ -785,17 +785,17 @@ message CandleStickDataRequest {
   uint64 start_height = 3;
 }
 
-message CandleStickDataResponse {
+message CandlestickDataResponse {
   // The candlestick data points.
-  repeated CandleStickData data = 1;
+  repeated CandlestickData data = 1;
 }
 
-message CandleStickDataStreamRequest {
+message CandlestickDataStreamRequest {
   // The directed trading pair to subscribe to.
   DirectedTradingPair pair = 1;
 }
 
-message CandleStickDataStreamResponse {
+message CandlestickDataStreamResponse {
   // The candlestick data point.
-  CandleStickData data = 1;
+  CandlestickData data = 1;
 }

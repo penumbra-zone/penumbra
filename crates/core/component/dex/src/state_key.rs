@@ -27,12 +27,32 @@ pub fn all_positions() -> &'static str {
     "dex/position/"
 }
 
-pub fn block_position_executions() -> &'static str {
-    "dex/block_position_executions"
-}
+pub mod candlesticks {
+    use penumbra_proto::DomainType;
 
-pub fn block_swap_executions() -> &'static str {
-    "dex/block_swap_executions"
+    use crate::DirectedTradingPair;
+
+    pub fn block_executions() -> &'static str {
+        "dex/block_executions"
+    }
+
+    pub fn block_position_executions() -> &'static str {
+        "dex/block_position_executions"
+    }
+
+    pub fn block_swap_executions() -> &'static str {
+        "dex/block_swap_executions"
+    }
+
+    pub fn in_progress(pair: &DirectedTradingPair) -> String {
+        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
+        format!("dex/in_progress_candlestick/{pair_bytes}")
+    }
+
+    pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
+        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
+        format!("dex/candlesticks/{pair_bytes}/{height:020}")
+    }
 }
 
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {

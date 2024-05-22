@@ -1056,7 +1056,7 @@ impl<'de> serde::Deserialize<'de> for BatchSwapOutputDataResponse {
         deserializer.deserialize_struct("penumbra.core.component.dex.v1.BatchSwapOutputDataResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for CandleStickData {
+impl serde::Serialize for CandlestickData {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1085,7 +1085,7 @@ impl serde::Serialize for CandleStickData {
         if self.swap_volume != 0. {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandleStickData", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickData", len)?;
         if self.height != 0 {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("height", ToString::to_string(&self.height).as_str())?;
@@ -1111,7 +1111,7 @@ impl serde::Serialize for CandleStickData {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for CandleStickData {
+impl<'de> serde::Deserialize<'de> for CandlestickData {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1176,13 +1176,13 @@ impl<'de> serde::Deserialize<'de> for CandleStickData {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = CandleStickData;
+            type Value = CandlestickData;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dex.v1.CandleStickData")
+                formatter.write_str("struct penumbra.core.component.dex.v1.CandlestickData")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandleStickData, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandlestickData, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1256,7 +1256,7 @@ impl<'de> serde::Deserialize<'de> for CandleStickData {
                         }
                     }
                 }
-                Ok(CandleStickData {
+                Ok(CandlestickData {
                     height: height__.unwrap_or_default(),
                     open: open__.unwrap_or_default(),
                     close: close__.unwrap_or_default(),
@@ -1267,10 +1267,10 @@ impl<'de> serde::Deserialize<'de> for CandleStickData {
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandleStickData", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandlestickData", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for CandleStickDataRequest {
+impl serde::Serialize for CandlestickDataRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1287,7 +1287,7 @@ impl serde::Serialize for CandleStickDataRequest {
         if self.start_height != 0 {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandleStickDataRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickDataRequest", len)?;
         if let Some(v) = self.pair.as_ref() {
             struct_ser.serialize_field("pair", v)?;
         }
@@ -1302,7 +1302,7 @@ impl serde::Serialize for CandleStickDataRequest {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for CandleStickDataRequest {
+impl<'de> serde::Deserialize<'de> for CandlestickDataRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1354,13 +1354,13 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = CandleStickDataRequest;
+            type Value = CandlestickDataRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dex.v1.CandleStickDataRequest")
+                formatter.write_str("struct penumbra.core.component.dex.v1.CandlestickDataRequest")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandleStickDataRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandlestickDataRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1396,17 +1396,17 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataRequest {
                         }
                     }
                 }
-                Ok(CandleStickDataRequest {
+                Ok(CandlestickDataRequest {
                     pair: pair__,
                     limit: limit__.unwrap_or_default(),
                     start_height: start_height__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandleStickDataRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandlestickDataRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for CandleStickDataResponse {
+impl serde::Serialize for CandlestickDataResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1417,14 +1417,14 @@ impl serde::Serialize for CandleStickDataResponse {
         if !self.data.is_empty() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandleStickDataResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickDataResponse", len)?;
         if !self.data.is_empty() {
             struct_ser.serialize_field("data", &self.data)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for CandleStickDataResponse {
+impl<'de> serde::Deserialize<'de> for CandlestickDataResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1469,13 +1469,13 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = CandleStickDataResponse;
+            type Value = CandlestickDataResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dex.v1.CandleStickDataResponse")
+                formatter.write_str("struct penumbra.core.component.dex.v1.CandlestickDataResponse")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandleStickDataResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandlestickDataResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1493,15 +1493,15 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataResponse {
                         }
                     }
                 }
-                Ok(CandleStickDataResponse {
+                Ok(CandlestickDataResponse {
                     data: data__.unwrap_or_default(),
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandleStickDataResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandlestickDataResponse", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for CandleStickDataStreamRequest {
+impl serde::Serialize for CandlestickDataStreamRequest {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1512,14 +1512,14 @@ impl serde::Serialize for CandleStickDataStreamRequest {
         if self.pair.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandleStickDataStreamRequest", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickDataStreamRequest", len)?;
         if let Some(v) = self.pair.as_ref() {
             struct_ser.serialize_field("pair", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for CandleStickDataStreamRequest {
+impl<'de> serde::Deserialize<'de> for CandlestickDataStreamRequest {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1564,13 +1564,13 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataStreamRequest {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = CandleStickDataStreamRequest;
+            type Value = CandlestickDataStreamRequest;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dex.v1.CandleStickDataStreamRequest")
+                formatter.write_str("struct penumbra.core.component.dex.v1.CandlestickDataStreamRequest")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandleStickDataStreamRequest, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandlestickDataStreamRequest, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1588,15 +1588,15 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataStreamRequest {
                         }
                     }
                 }
-                Ok(CandleStickDataStreamRequest {
+                Ok(CandlestickDataStreamRequest {
                     pair: pair__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandleStickDataStreamRequest", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandlestickDataStreamRequest", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for CandleStickDataStreamResponse {
+impl serde::Serialize for CandlestickDataStreamResponse {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -1607,14 +1607,14 @@ impl serde::Serialize for CandleStickDataStreamResponse {
         if self.data.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandleStickDataStreamResponse", len)?;
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.CandlestickDataStreamResponse", len)?;
         if let Some(v) = self.data.as_ref() {
             struct_ser.serialize_field("data", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for CandleStickDataStreamResponse {
+impl<'de> serde::Deserialize<'de> for CandlestickDataStreamResponse {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -1659,13 +1659,13 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataStreamResponse {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = CandleStickDataStreamResponse;
+            type Value = CandlestickDataStreamResponse;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct penumbra.core.component.dex.v1.CandleStickDataStreamResponse")
+                formatter.write_str("struct penumbra.core.component.dex.v1.CandlestickDataStreamResponse")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandleStickDataStreamResponse, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<CandlestickDataStreamResponse, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -1683,12 +1683,12 @@ impl<'de> serde::Deserialize<'de> for CandleStickDataStreamResponse {
                         }
                     }
                 }
-                Ok(CandleStickDataStreamResponse {
+                Ok(CandlestickDataStreamResponse {
                     data: data__,
                 })
             }
         }
-        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandleStickDataStreamResponse", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("penumbra.core.component.dex.v1.CandlestickDataStreamResponse", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for DexParameters {
