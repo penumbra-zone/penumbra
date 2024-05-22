@@ -34,6 +34,7 @@ serde_json = {workspace = true}
 subtle-encoding = "0.5"
 tendermint = {workspace = true}
 tendermint-rpc = {workspace = true, features = ["http-client"]}
+thiserror = {workspace = true}
 tonic = {workspace = true, optional = true}
 tower = {workspace = true, features = ["full"], optional = true}
 tracing = {workspace = true}

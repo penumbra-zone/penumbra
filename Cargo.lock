@@ -5447,6 +5447,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-rpc",
+ "thiserror",
  "tonic",
  "tower",
  "tracing",
