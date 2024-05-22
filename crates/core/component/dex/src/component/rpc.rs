@@ -16,8 +16,8 @@ use penumbra_proto::{
         },
         simulation_service_server::SimulationService,
         ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
-        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandleStickDataRequest,
-        CandleStickDataResponse, CandleStickDataStreamRequest, CandleStickDataStreamResponse,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandlestickDataRequest,
+        CandlestickDataResponse, CandlestickDataStreamRequest, CandlestickDataStreamResponse,
         LiquidityPositionByIdRequest, LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
         LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
         LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
@@ -68,9 +68,9 @@ impl QueryService for Server {
         Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
     type SwapExecutionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
-    type CandleStickDataStreamStream = Pin<
+    type CandlestickDataStreamStream = Pin<
         Box<
-            dyn futures::Stream<Item = Result<CandleStickDataStreamResponse, tonic::Status>> + Send,
+            dyn futures::Stream<Item = Result<CandlestickDataStreamResponse, tonic::Status>> + Send,
         >,
     >;
 
@@ -204,18 +204,18 @@ impl QueryService for Server {
     }
 
     #[instrument(skip(self, request))]
-    async fn candle_stick_data(
+    async fn candlestick_data(
         &self,
-        request: tonic::Request<CandleStickDataRequest>,
-    ) -> Result<tonic::Response<CandleStickDataResponse>, Status> {
+        request: tonic::Request<CandlestickDataRequest>,
+    ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
         todo!()
     }
 
     #[instrument(skip(self, request))]
-    async fn candle_stick_data_stream(
+    async fn candlestick_data_stream(
         &self,
-        request: tonic::Request<CandleStickDataStreamRequest>,
-    ) -> Result<tonic::Response<Self::CandleStickDataStreamStream>, Status> {
+        request: tonic::Request<CandlestickDataStreamRequest>,
+    ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
         todo!()
     }
 

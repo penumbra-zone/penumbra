@@ -10,6 +10,7 @@ use tracing::instrument;
 
 use crate::{
     component::{
+        candlestick::Chandelier,
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
         ExecutionCircuitBreaker, PositionManager, StateWriteExt,
@@ -108,6 +109,20 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             )
                 .into(),
         };
+
+        // Update the candlestick tracking
+        if let Some(se) = swap_execution_1_for_2.clone() {
+            Arc::get_mut(self)
+                .expect("expected state to have no other refs")
+                .record_swap_execution(&se)
+                .await?;
+        }
+        if let Some(se) = swap_execution_2_for_1.clone() {
+            Arc::get_mut(self)
+                .expect("expected state to have no other refs")
+                .record_swap_execution(&se)
+                .await?;
+        }
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
         tracing::debug!(
