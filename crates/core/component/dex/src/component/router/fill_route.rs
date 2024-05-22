@@ -264,9 +264,6 @@ async fn fill_route_inner<S: StateWrite + Sized + Chandelier>(
         state.record(event);
     }
 
-    // Update the candlestick tracking
-    state.record_swap_execution(&swap_execution).await;
-
     let fill_elapsed = fill_start.elapsed();
     metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
     // cleanup / finalization
