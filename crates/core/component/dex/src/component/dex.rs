@@ -16,6 +16,7 @@ use crate::{
 };
 
 use super::{
+    candlestick::Chandelier,
     router::{HandleBatchSwaps, RoutingParams},
     Arbitrage, PositionManager, ValueCircuitBreaker,
 };
@@ -46,7 +47,7 @@ impl Component for Dex {
     }
 
     #[instrument(name = "dex", skip(state, end_block))]
-    async fn end_block<S: StateWrite + 'static>(
+    async fn end_block<S: StateWrite + 'static + Chandelier>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
@@ -125,6 +126,13 @@ impl Component for Dex {
             .close_queued_positions()
             .await
             .expect("closing queued positions should not fail");
+
+        // 5. Finalize the candlestick data for the block.
+        Arc::get_mut(state)
+            .expect("state should be uniquely referenced after batch swaps complete")
+            .finalize_block_candlesticks()
+            .await
+            .expect("finalizing block candlesticks should not fail");
     }
 
     #[instrument(name = "dex", skip(_state))]

@@ -15,7 +15,7 @@ use penumbra_num::{
 use tracing::instrument;
 
 use crate::{
-    component::{metrics, PositionManager, PositionRead},
+    component::{candlestick::Chandelier, metrics, PositionManager, PositionRead},
     lp::{
         position::{self, Position},
         Reserves,
@@ -81,7 +81,7 @@ pub trait FillRoute: StateWrite + Sized {
 
 impl<S: StateWrite> FillRoute for S {}
 
-async fn fill_route_inner<S: StateWrite + Sized>(
+async fn fill_route_inner<S: StateWrite + Sized + Chandelier>(
     state: S,
     mut input: Value,
     hops: &[asset::Id],
@@ -263,6 +263,9 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     for event in events {
         state.record(event);
     }
+
+    // Update the candlestick tracking
+    state.record_swap_execution(&swap_execution).await;
 
     let fill_elapsed = fill_start.elapsed();
     metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
