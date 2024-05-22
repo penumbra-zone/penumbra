@@ -93,6 +93,10 @@ pub enum RootCommand {
         /// But, it is a potential DoS vector, so it is disabled by default.
         #[clap(short, long, display_order = 500)]
         enable_expensive_rpc: bool,
+
+        /// Force the node to start even if the application's halt flag is set.
+        #[clap(long, display_order = 1000)]
+        force: bool,
     },
     /// Generate, join, or reset a testnet.
     Testnet {

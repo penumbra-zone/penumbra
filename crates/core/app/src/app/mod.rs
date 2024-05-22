@@ -67,14 +67,15 @@ impl App {
         // there should be no unexpected copies elsewhere.
         let state = Arc::new(StateDelta::new(snapshot));
 
-        // If the state says that the chain is halted, we should not proceed. This is a safety check
-        // to ensure that automatic restarts by software like systemd do not cause the chain to come
-        // back up again after a halt.
-        if state.is_chain_halted().await {
-            anyhow::bail!("chain is halted, refusing to restart");
-        }
-
         Ok(Self { state })
+    }
+
+    #[instrument(skip_all, ret)]
+    pub async fn is_ready(snapshot: Snapshot) -> bool {
+        // If the chain is halted, we are not ready to start the application.
+        // This is a safety mechanism to prevent the chain from starting if it
+        // is in a halted state.
+        !state.is_chain_halted().await
     }
 
     // StateDelta::apply only works when the StateDelta wraps an underlying
