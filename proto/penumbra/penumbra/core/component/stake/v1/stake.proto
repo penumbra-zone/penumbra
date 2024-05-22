@@ -369,9 +369,16 @@ message EventValidatorBondingStateChange {
   BondingState bonding_state = 2;
 }
 
+message EventRateDataChange {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The new rate data.
+  RateData rate_data = 2;
+}
+
 message EventValidatorDefinitionUpload {
   // The validator definition.
-  ValidatorDefinition definition = 1;
+  Validator validator = 1;
 }
 
 message EventValidatorMissedBlock {
@@ -391,11 +398,4 @@ message EventUndelegate {
   keys.v1.IdentityKey validator_identity = 1;
   // The amount of stake undelegated, in the staking token.
   num.v1.Amount amount = 3;
-}
-
-message EventRateDataChange {
-  // The validator's identity key.
-  keys.v1.IdentityKey identity_key = 1;
-  // The new rate data.
-  RateData rate_data = 2;
 }

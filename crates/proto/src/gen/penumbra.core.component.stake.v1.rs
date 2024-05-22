@@ -896,10 +896,27 @@ impl ::prost::Name for EventValidatorBondingStateChange {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventRateDataChange {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The new rate data.
+    #[prost(message, optional, tag = "2")]
+    pub rate_data: ::core::option::Option<RateData>,
+}
+impl ::prost::Name for EventRateDataChange {
+    const NAME: &'static str = "EventRateDataChange";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventValidatorDefinitionUpload {
     /// The validator definition.
     #[prost(message, optional, tag = "1")]
-    pub definition: ::core::option::Option<ValidatorDefinition>,
+    pub validator: ::core::option::Option<Validator>,
 }
 impl ::prost::Name for EventValidatorDefinitionUpload {
     const NAME: &'static str = "EventValidatorDefinitionUpload";
@@ -955,23 +972,6 @@ pub struct EventUndelegate {
 }
 impl ::prost::Name for EventUndelegate {
     const NAME: &'static str = "EventUndelegate";
-    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventRateDataChange {
-    /// The validator's identity key.
-    #[prost(message, optional, tag = "1")]
-    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
-    /// The new rate data.
-    #[prost(message, optional, tag = "2")]
-    pub rate_data: ::core::option::Option<RateData>,
-}
-impl ::prost::Name for EventRateDataChange {
-    const NAME: &'static str = "EventRateDataChange";
     const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)

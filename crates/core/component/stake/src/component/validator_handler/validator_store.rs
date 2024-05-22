@@ -1,5 +1,6 @@
 use crate::{
     component::{StateReadExt as _, MAX_VOTING_POWER},
+    event,
     rate::RateData,
     state_key,
     validator::{self, BondingState::*, State, Validator},
@@ -250,8 +251,9 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
         tracing::debug!(?state, validator_identity = %identity_key, "set bonding state for validator");
         self.put(
             state_key::validators::pool::bonding_state::by_id(identity_key),
-            state,
+            state.clone(),
         );
+        self.record_proto(event::validator_bonding_state_change(*identity_key, state));
     }
 
     #[instrument(skip(self))]
@@ -268,6 +270,10 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
             state_key::validators::power::by_id(identity_key),
             voting_power,
         );
+        self.record_proto(event::validator_voting_power_change(
+            *identity_key,
+            voting_power,
+        ));
 
         Ok(())
     }
@@ -284,6 +290,7 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
         }
 
         self.put(state_key::validators::state::by_id(id), initial_state);
+        self.record_proto(event::validator_state_change(*id, initial_state));
         Ok(())
     }
 
@@ -292,8 +299,9 @@ pub(crate) trait ValidatorDataWrite: StateWrite {
         tracing::debug!("setting validator rate data");
         self.put(
             state_key::validators::rate::current_by_id(identity_key),
-            rate_data,
+            rate_data.clone(),
         );
+        self.record_proto(event::validator_rate_data_change(*identity_key, rate_data));
     }
 
     #[instrument(skip(self))]

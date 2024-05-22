@@ -1,10 +1,11 @@
 use crate::{
-    validator::{BondingState, Definition, State},
+    rate,
+    validator::{BondingState, State, Validator},
     Delegate, IdentityKey, Undelegate,
 };
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1 as pb;
-use tendermint::abci::{types::Misbehavior, Event, EventAttributeIndexExt};
+use tendermint::abci::types::Misbehavior;
 
 pub fn validator_state_change(
     identity_key: IdentityKey,
@@ -36,9 +37,25 @@ pub fn validator_bonding_state_change(
     }
 }
 
-pub fn validator_definition_upload(definition: Definition) -> pb::EventValidatorDefinitionUpload {
+pub fn validator_rate_data_change(
+    identity_key: IdentityKey,
+    rate_data: rate::RateData,
+) -> pb::EventRateDataChange {
+    pb::EventRateDataChange {
+        identity_key: Some(identity_key.into()),
+        rate_data: Some(rate_data.into()),
+    }
+}
+
+pub fn validator_definition_upload(validator: Validator) -> pb::EventValidatorDefinitionUpload {
     pb::EventValidatorDefinitionUpload {
-        definition: Some(definition.into()),
+        validator: Some(validator.into()),
+    }
+}
+
+pub fn validator_missed_block(identity_key: IdentityKey) -> pb::EventValidatorMissedBlock {
+    pb::EventValidatorMissedBlock {
+        identity_key: Some(identity_key.into()),
     }
 }
 
