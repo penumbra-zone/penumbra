@@ -291,7 +291,7 @@ impl TendermintProxyService for TendermintProxy {
             .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))?;
 
         // TODO: these conversions exist because the penumbra proto files define
-        // their own proxy methods, since tendermint odesn't include them, and this results
+        // their own proxy methods, since tendermint does not include them. This results
         // in duplicated proto types relative to the tendermint-proto ones.
 
         // The tendermint-rs `Timestamp` type is a newtype wrapper
