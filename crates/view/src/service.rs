@@ -282,12 +282,15 @@ impl ViewServer {
             }.boxed()
     }
 
+    #[instrument(level = "trace", skip(self))]
     async fn tendermint_proxy_client(
         &self,
     ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
-        let client = TendermintProxyServiceClient::connect(self.node.to_string()).await?;
-
-        Ok(client)
+        TendermintProxyServiceClient::connect(self.node.to_string())
+            .tap(|_| tracing::debug!("connecting to tendermint proxy"))
+            .await
+            .tap_err(|error| tracing::error!(?error, "failed to connect to tendermint proxy"))
+            .map_err(anyhow::Error::from)
     }
 
     /// Return the latest block height known by the fullnode or its peers, as
