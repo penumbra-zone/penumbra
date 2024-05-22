@@ -203,3 +203,78 @@ where
         }
     }
 }
+
+mod tendermint_rpc_compat {
+    use crate::util::tendermint_proxy::v1 as penumbra_pb;
+
+    // === get_tx ===
+
+    impl From<tendermint_rpc::endpoint::tx::Response> for penumbra_pb::GetTxResponse {
+        fn from(
+            tendermint_rpc::endpoint::tx::Response {
+                hash,
+                height,
+                index,
+                tx_result,
+                tx,
+                proof: _,
+            }: tendermint_rpc::endpoint::tx::Response,
+        ) -> Self {
+            Self {
+                height: height.value(),
+                index: index as u64,
+                hash: hash.as_bytes().to_vec(),
+                tx_result: Some(tx_result.into()),
+                tx,
+            }
+        }
+    }
+
+    impl From<tendermint::abci::types::ExecTxResult> for penumbra_pb::TxResult {
+        fn from(
+            tendermint::abci::types::ExecTxResult {
+                log,
+                gas_wanted,
+                gas_used,
+                events,
+                code: _,
+                data: _,
+                info: _,
+                codespace: _,
+            }: tendermint::abci::types::ExecTxResult,
+        ) -> Self {
+            use tendermint::abci::Event;
+            Self {
+                log: log.to_string(),
+                // TODO: validation here, fix mismatch between i64 <> u64
+                gas_wanted: gas_wanted as u64,
+                gas_used: gas_used as u64,
+                tags: events
+                    .into_iter()
+                    .flat_map(|Event { attributes, .. }: Event| {
+                        attributes.into_iter().map(penumbra_pb::Tag::from)
+                    })
+                    .collect(),
+            }
+        }
+    }
+
+    impl From<tendermint::abci::EventAttribute> for penumbra_pb::Tag {
+        fn from(
+            tendermint::abci::EventAttribute {
+                key,
+                value,
+                index: _,
+            }: tendermint::abci::EventAttribute,
+        ) -> Self {
+            Self {
+                key: key.into_bytes(),
+                value: value.into_bytes(),
+                // TODO(kate): this was set to false previously, but it should probably use the
+                // index field from the tendermint object. for now, carry out a refactor and avoid
+                // changing behavior while doing so.
+                index: false,
+            }
+        }
+    }
+}

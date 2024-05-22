@@ -7,7 +7,7 @@ use penumbra_proto::{
         AbciQueryResponse, BroadcastTxAsyncRequest, BroadcastTxAsyncResponse,
         BroadcastTxSyncRequest, BroadcastTxSyncResponse, GetBlockByHeightRequest,
         GetBlockByHeightResponse, GetStatusRequest, GetStatusResponse, GetTxRequest, GetTxResponse,
-        SyncInfo, Tag, TxResult,
+        SyncInfo,
     },
     DomainType, Message,
 };
@@ -26,59 +26,38 @@ impl TendermintProxyService for TendermintProxy {
     // since none of the structs are defined in our crates :(
     // TODO: move those to proto/src/protobuf.rs
 
+    /// Fetches a transaction by hash.
+    ///
+    /// Returns a [`GetTxResponse`] information about the requested transaction.
     #[instrument(level = "info", skip_all)]
     async fn get_tx(
         &self,
         req: tonic::Request<GetTxRequest>,
     ) -> Result<tonic::Response<GetTxResponse>, Status> {
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
-            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        // Create an HTTP client, connecting to tendermint.
+        let client = HttpClient::new(self.tendermint_url.as_ref()).map_err(|e| {
+            Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
         })?;
 
-        let req = req.into_inner();
-        let hash = req.hash;
-        let prove = req.prove;
+        // Parse the inbound transaction hash from the client request.
+        let GetTxRequest { hash, prove } = req.into_inner();
+        let hash = hash
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("invalid transaction hash: {e:#?}")))?;
+
+        // Send the request to Tendermint.
         let rsp = client
-            .tx(
-                hash.try_into().map_err(|e| {
-                    tonic::Status::invalid_argument(format!("invalid transaction hash: {e:#?}"))
-                })?,
-                prove,
-            )
+            .tx(hash, prove)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error getting tx: {e}")))?;
+            .map(GetTxResponse::from)
+            .map_err(|e| Status::unavailable(format!("error getting tx: {e}")))?;
 
-        let tx = Transaction::decode(rsp.tx.as_ref())
-            .map_err(|e| tonic::Status::unavailable(format!("error decoding tx: {e}")))?;
+        // Before forwarding along the response, verify that the transaction can be
+        // successfully decoded into our domain type.
+        Transaction::decode(rsp.tx.as_ref())
+            .map_err(|e| Status::unavailable(format!("error decoding tx: {e}")))?;
 
-        Ok(tonic::Response::new(GetTxResponse {
-            tx: tx.into(),
-            tx_result: Some(TxResult {
-                log: rsp.tx_result.log.to_string(),
-                // TODO: validation here, fix mismatch between i64 <> u64
-                gas_wanted: rsp.tx_result.gas_wanted as u64,
-                gas_used: rsp.tx_result.gas_used as u64,
-                tags: rsp
-                    .tx_result
-                    .events
-                    .iter()
-                    .flat_map(|e| {
-                        let a = &e.attributes;
-                        a.iter().map(move |a| {
-                            Tag {
-                                key: a.key.to_string().as_bytes().to_vec(),
-                                value: a.value.to_string().as_bytes().to_vec(),
-                                // TODO: not sure where this index value comes from
-                                index: false,
-                            }
-                        })
-                    })
-                    .collect(),
-            }),
-            height: rsp.height.value(),
-            index: rsp.index as u64,
-            hash: rsp.hash.as_bytes().to_vec(),
-        }))
+        Ok(tonic::Response::new(rsp))
     }
 
     #[instrument(level = "info", skip_all)]
