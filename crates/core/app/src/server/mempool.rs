@@ -35,7 +35,7 @@ impl Mempool {
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
     ) -> Result<Self> {
-        let app = App::new(storage.latest_snapshot()).await?;
+        let app = App::new(storage.latest_snapshot());
         let snapshot_rx = storage.subscribe();
 
         Ok(Self {
@@ -91,7 +91,7 @@ impl Mempool {
                     if let Ok(()) = change {
                         let snapshot = self.rx_snapshot.borrow().clone();
                         tracing::debug!(height = ?snapshot.version(), "resetting ephemeral mempool state");
-                        self.app = App::new(snapshot).await?;
+                        self.app = App::new(snapshot);
                     } else {
                         // TODO: what triggers this, now that the channel is owned by the
                         // shared Storage instance, rather than the consensus worker?

@@ -59,19 +59,21 @@ pub struct App {
 
 impl App {
     /// Constructs a new application, using the provided [`Snapshot`].
-    #[instrument(err, skip_all)]
-    pub async fn new(snapshot: Snapshot) -> Result<Self> {
+    /// Callers should ensure that [`App::is_ready`]) returns `true`, but this is not enforced.
+    #[instrument(skip_all)]
+    pub fn new(snapshot: Snapshot) -> Self {
         tracing::debug!("initializing App instance");
 
         // We perform the `Arc` wrapping of `State` here to ensure
         // there should be no unexpected copies elsewhere.
         let state = Arc::new(StateDelta::new(snapshot));
 
-        Ok(Self { state })
+        Self { state }
     }
 
+    /// Returns whether the application is ready to start.
     #[instrument(skip_all, ret)]
-    pub async fn is_ready(snapshot: Snapshot) -> bool {
+    pub async fn is_ready(state: Snapshot) -> bool {
         // If the chain is halted, we are not ready to start the application.
         // This is a safety mechanism to prevent the chain from starting if it
         // is in a halted state.
