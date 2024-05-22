@@ -60,28 +60,32 @@ impl TendermintProxyService for TendermintProxy {
         Ok(tonic::Response::new(rsp))
     }
 
-    #[instrument(level = "info", skip_all)]
+    /// Broadcasts a transaction asynchronously.
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(req_id = tracing::field::Empty),
+    )]
     async fn broadcast_tx_async(
         &self,
         req: tonic::Request<BroadcastTxAsyncRequest>,
     ) -> Result<tonic::Response<BroadcastTxAsyncResponse>, Status> {
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
-            tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
+        // Create an HTTP client, connecting to tendermint.
+        let client = HttpClient::new(self.tendermint_url.as_ref()).map_err(|e| {
+            Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
         })?;
 
-        let params = req.into_inner().params;
+        // Process the inbound request, recording the request ID in the tracing span.
+        let BroadcastTxAsyncRequest { req_id, params } = req.into_inner();
+        tracing::Span::current().record("req_id", req_id);
 
-        let res = client
+        // Broadcast the transaction parameters.
+        client
             .broadcast_tx_async(params)
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error broadcasting tx async: {e}")))?;
-
-        Ok(tonic::Response::new(BroadcastTxAsyncResponse {
-            code: u32::from(res.code) as u64,
-            data: res.data.to_vec(),
-            log: res.log.to_string(),
-            hash: res.hash.as_bytes().to_vec(),
-        }))
+            .map(BroadcastTxAsyncResponse::from)
+            .map(tonic::Response::new)
+            .map_err(|e| Status::unavailable(format!("error broadcasting tx async: {e}")))
     }
 
     #[instrument(level = "info", skip_all)]

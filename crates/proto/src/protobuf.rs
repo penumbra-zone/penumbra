@@ -277,4 +277,26 @@ mod tendermint_rpc_compat {
             }
         }
     }
+
+    // === broadcast_tx_async ===
+
+    impl From<tendermint_rpc::endpoint::broadcast::tx_async::Response>
+        for penumbra_pb::BroadcastTxAsyncResponse
+    {
+        fn from(
+            tendermint_rpc::endpoint::broadcast::tx_async::Response {
+                code,
+                data,
+                log,
+                hash,
+            }: tendermint_rpc::endpoint::broadcast::tx_async::Response,
+        ) -> Self {
+            Self {
+                code: u32::from(code) as u64,
+                data: data.to_vec(),
+                log: log.to_string(),
+                hash: hash.as_bytes().to_vec(),
+            }
+        }
+    }
 }
