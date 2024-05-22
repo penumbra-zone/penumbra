@@ -1,8 +1,8 @@
 #![allow(clippy::clone_on_copy)]
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
-use std::error::Error;
 use std::io::IsTerminal as _;
+use std::{error::Error, process::exit};
 
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
@@ -20,6 +20,7 @@ use pd::{
     },
 };
 use penumbra_app::SUBSTORE_PREFIXES;
+use penumbra_governance::StateReadExt;
 use rand::Rng;
 use rand_core::OsRng;
 use tendermint_config::net::Address as TendermintAddress;
@@ -113,6 +114,12 @@ async fn main() -> anyhow::Result<()> {
                 ?enable_expensive_rpc,
                 "starting pd"
             );
+
+            // If the chain is halted, shutdown immediately.
+            if storage.latest_snapshot().is_chain_halted().await {
+                tracing::warn!("chain is halted, shutting down.");
+                exit(0)
+            }
 
             let abci_server = tokio::task::spawn(
                 penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
