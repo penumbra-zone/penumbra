@@ -321,4 +321,130 @@ mod tendermint_rpc_compat {
             }
         }
     }
+
+    // === get_status ===
+
+    impl From<tendermint_rpc::endpoint::status::Response> for penumbra_pb::GetStatusResponse {
+        fn from(
+            tendermint_rpc::endpoint::status::Response {
+                node_info,
+                sync_info,
+                validator_info,
+            }: tendermint_rpc::endpoint::status::Response,
+        ) -> Self {
+            Self {
+                node_info: Some(node_info.into()),
+                sync_info: Some(sync_info.into()),
+                validator_info: Some(validator_info.into()),
+            }
+        }
+    }
+
+    impl From<tendermint::node::Info> for crate::tendermint::p2p::DefaultNodeInfo {
+        fn from(
+            tendermint::node::Info {
+                protocol_version,
+                id,
+                listen_addr,
+                network,
+                version,
+                channels,
+                moniker,
+                other,
+            }: tendermint::node::Info,
+        ) -> Self {
+            Self {
+                protocol_version: Some(protocol_version.into()),
+                default_node_id: id.to_string(),
+                listen_addr: listen_addr.to_string(),
+                network: network.to_string(),
+                version: version.to_string(),
+                channels: channels.to_string().as_bytes().to_vec(),
+                moniker: moniker.to_string(),
+                other: Some(crate::tendermint::p2p::DefaultNodeInfoOther {
+                    tx_index: match other.tx_index {
+                        tendermint::node::info::TxIndexStatus::On => "on".to_string(),
+                        tendermint::node::info::TxIndexStatus::Off => "off".to_string(),
+                    },
+                    rpc_address: other.rpc_address.to_string(),
+                }),
+            }
+        }
+    }
+
+    impl From<tendermint_rpc::endpoint::status::SyncInfo> for penumbra_pb::SyncInfo {
+        fn from(
+            tendermint_rpc::endpoint::status::SyncInfo {
+                latest_block_hash,
+                latest_app_hash,
+                latest_block_height,
+                latest_block_time,
+                catching_up,
+                earliest_block_hash: _,
+                earliest_app_hash: _,
+                earliest_block_height: _,
+                earliest_block_time: _,
+            }: tendermint_rpc::endpoint::status::SyncInfo,
+        ) -> Self {
+            // The tendermint-rs `Timestamp` type is a newtype wrapper
+            // around a `time::PrimitiveDateTime` however it's private so we
+            // have to use string parsing to get to the prost type we want :(
+            let latest_block_time =
+                chrono::DateTime::parse_from_rfc3339(latest_block_time.to_rfc3339().as_str())
+                    .expect("timestamp should roundtrip to string");
+
+            Self {
+                latest_block_hash: latest_block_hash.to_string().as_bytes().to_vec(),
+                latest_app_hash: latest_app_hash.to_string().as_bytes().to_vec(),
+                latest_block_height: latest_block_height.value(),
+                latest_block_time: Some(pbjson_types::Timestamp {
+                    seconds: latest_block_time.timestamp(),
+                    nanos: latest_block_time.timestamp_subsec_nanos() as i32,
+                }),
+                catching_up,
+                // These don't exist in tendermint-rpc right now.
+                // earliest_app_hash: res.sync_info.earliest_app_hash.to_string().as_bytes().to_vec(),
+                // earliest_block_hash: res.sync_info.earliest_block_hash.to_string().as_bytes().to_vec(),
+                // earliest_block_height: res.sync_info.earliest_block_height.value(),
+                // earliest_block_time: Some(pbjson_types::Timestamp{
+                //     seconds: earliest_block_time.timestamp(),
+                //     nanos: earliest_block_time.timestamp_nanos() as i32,
+                // }),
+            }
+        }
+    }
+
+    impl From<tendermint::validator::Info> for crate::tendermint::types::Validator {
+        fn from(
+            tendermint::validator::Info {
+                address,
+                pub_key,
+                power,
+                proposer_priority,
+                name: _,
+            }: tendermint::validator::Info,
+        ) -> Self {
+            use crate::tendermint::crypto::{public_key::Sum::Ed25519, PublicKey};
+            Self {
+                address: address.to_string().as_bytes().to_vec(),
+                pub_key: Some(PublicKey {
+                    sum: Some(Ed25519(pub_key.to_bytes().to_vec())),
+                }),
+                voting_power: power.into(),
+                proposer_priority: proposer_priority.into(),
+            }
+        }
+    }
+
+    impl From<tendermint::node::info::ProtocolVersionInfo> for crate::tendermint::p2p::ProtocolVersion {
+        fn from(
+            tendermint::node::info::ProtocolVersionInfo {
+                p2p,
+                block,
+                app
+            }: tendermint::node::info::ProtocolVersionInfo,
+        ) -> Self {
+            Self { p2p, block, app }
+        }
+    }
 }

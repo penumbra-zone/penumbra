@@ -117,6 +117,7 @@ impl TendermintProxyService for TendermintProxy {
             .tap_ok(|res| tracing::debug!("{:?}", res))
     }
 
+    // Queries the current status.
     #[instrument(level = "info", skip_all)]
     async fn get_status(
         &self,
@@ -124,83 +125,17 @@ impl TendermintProxyService for TendermintProxy {
     ) -> Result<tonic::Response<GetStatusResponse>, Status> {
         // generic bounds on HttpClient::new are not well-constructed, so we have to
         // render the URL as a String, then borrow it, then re-parse the borrowed &str
-        let client = HttpClient::new(self.tendermint_url.to_string().as_ref()).map_err(|e| {
+        let client = HttpClient::new(self.tendermint_url.as_ref()).map_err(|e| {
             tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
         })?;
 
-        let res = client
+        // Send the status request.
+        client
             .status()
             .await
-            .map_err(|e| tonic::Status::unavailable(format!("error querying status: {e}")))?;
-
-        // The tendermint-rs `Timestamp` type is a newtype wrapper
-        // around a `time::PrimitiveDateTime` however it's private so we
-        // have to use string parsing to get to the prost type we want :(
-        let latest_block_time =
-            DateTime::parse_from_rfc3339(&res.sync_info.latest_block_time.to_rfc3339())
-                .expect("timestamp should roundtrip to string");
-        Ok(tonic::Response::new(GetStatusResponse {
-            node_info: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfo {
-                protocol_version: Some(penumbra_proto::tendermint::p2p::ProtocolVersion {
-                    p2p: res.node_info.protocol_version.p2p,
-                    block: res.node_info.protocol_version.block,
-                    app: res.node_info.protocol_version.app,
-                }),
-                default_node_id: res.node_info.id.to_string(),
-                listen_addr: res.node_info.listen_addr.to_string(),
-                network: res.node_info.network.to_string(),
-                version: res.node_info.version.to_string(),
-                channels: res.node_info.channels.to_string().as_bytes().to_vec(),
-                moniker: res.node_info.moniker.to_string(),
-                other: Some(penumbra_proto::tendermint::p2p::DefaultNodeInfoOther {
-                    tx_index: match res.node_info.other.tx_index {
-                        tendermint::node::info::TxIndexStatus::On => "on".to_string(),
-                        tendermint::node::info::TxIndexStatus::Off => "off".to_string(),
-                    },
-                    rpc_address: res.node_info.other.rpc_address.to_string(),
-                }),
-            }),
-            sync_info: Some(SyncInfo {
-                latest_block_hash: res
-                    .sync_info
-                    .latest_block_hash
-                    .to_string()
-                    .as_bytes()
-                    .to_vec(),
-                latest_app_hash: res
-                    .sync_info
-                    .latest_app_hash
-                    .to_string()
-                    .as_bytes()
-                    .to_vec(),
-                latest_block_height: res.sync_info.latest_block_height.value(),
-                latest_block_time: Some(pbjson_types::Timestamp {
-                    seconds: latest_block_time.timestamp(),
-                    nanos: latest_block_time.timestamp_subsec_nanos() as i32,
-                }),
-                // These don't exist in tendermint-rpc right now.
-                // earliest_app_hash: res.sync_info.earliest_app_hash.to_string().as_bytes().to_vec(),
-                // earliest_block_hash: res.sync_info.earliest_block_hash.to_string().as_bytes().to_vec(),
-                // earliest_block_height: res.sync_info.earliest_block_height.value(),
-                // earliest_block_time: Some(pbjson_types::Timestamp{
-                //     seconds: earliest_block_time.timestamp(),
-                //     nanos: earliest_block_time.timestamp_nanos() as i32,
-                // }),
-                catching_up: res.sync_info.catching_up,
-            }),
-            validator_info: Some(penumbra_proto::tendermint::types::Validator {
-                address: res.validator_info.address.to_string().as_bytes().to_vec(),
-                pub_key: Some(penumbra_proto::tendermint::crypto::PublicKey {
-                    sum: Some(
-                        penumbra_proto::tendermint::crypto::public_key::Sum::Ed25519(
-                            res.validator_info.pub_key.to_bytes().to_vec(),
-                        ),
-                    ),
-                }),
-                voting_power: res.validator_info.power.into(),
-                proposer_priority: res.validator_info.proposer_priority.into(),
-            }),
-        }))
+            .map(GetStatusResponse::from)
+            .map(tonic::Response::new)
+            .map_err(|e| tonic::Status::unavailable(format!("error querying status: {e}")))
     }
 
     #[instrument(level = "info", skip_all)]
