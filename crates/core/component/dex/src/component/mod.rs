@@ -8,6 +8,7 @@ pub mod router;
 
 mod action_handler;
 mod arb;
+mod candlestick;
 pub(crate) mod circuit_breaker;
 mod dex;
 mod flow;
