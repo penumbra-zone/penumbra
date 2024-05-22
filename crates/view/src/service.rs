@@ -39,7 +39,7 @@ use penumbra_num::Amount;
 use penumbra_proto::{
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
-        GetStatusRequest,
+        GetStatusRequest, GetStatusResponse, SyncInfo,
     },
     view::v1::{
         self as pb,
@@ -299,17 +299,19 @@ impl ViewServer {
     pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
         let mut client = self.tendermint_proxy_client().await?;
 
-        let rsp = client.get_status(GetStatusRequest {}).await?.into_inner();
+        let GetStatusResponse { sync_info, .. } = client
+            .get_status(GetStatusRequest {})
+            .tap(|_| tracing::debug!("querying current status"))
+            .await
+            .tap_err(|error| tracing::debug!(?error, "failed to query current status"))?
+            .into_inner();
 
-        //tracing::debug!("{:#?}", rsp);
-
-        let sync_info = rsp
-            .sync_info
+        let SyncInfo {
+            latest_block_height,
+            catching_up,
+            ..
+        } = sync_info
             .ok_or_else(|| anyhow::anyhow!("could not parse sync_info in gRPC response"))?;
-
-        let latest_block_height = sync_info.latest_block_height;
-
-        let node_catching_up = sync_info.catching_up;
 
         // There is a `max_peer_block_height` available in TM 0.35, however it should not be used
         // as it does not seem to reflect the consensus height. Since clients use `latest_known_block_height`
@@ -319,11 +321,12 @@ impl ViewServer {
 
         tracing::debug!(
             ?latest_block_height,
-            ?node_catching_up,
-            ?latest_known_block_height
+            ?catching_up,
+            ?latest_known_block_height,
+            "found latest known block height"
         );
 
-        Ok((latest_known_block_height, node_catching_up))
+        Ok((latest_known_block_height, catching_up))
     }
 
     #[instrument(skip(self))]
