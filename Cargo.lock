@@ -5428,6 +5428,7 @@ dependencies = [
  "async-trait",
  "bech32",
  "bytes",
+ "chrono",
  "cnidarium",
  "decaf377-fmd",
  "decaf377-rdsa",
