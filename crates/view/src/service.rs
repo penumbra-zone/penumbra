@@ -13,7 +13,7 @@ use futures::stream::{self, StreamExt, TryStreamExt};
 use penumbra_auction::auction::dutch::actions::view::ActionDutchAuctionWithdrawView;
 use rand::Rng;
 use rand_core::OsRng;
-use tap::Tap;
+use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
@@ -140,41 +140,34 @@ impl ViewServer {
         })
     }
 
+    /// Checks if the view server worker has encountered an error.
+    ///
+    /// This function returns a gRPC [`tonic::Status`] containing the view server worker error if
+    /// any exists, otherwise it returns `Ok(())`.
+    #[instrument(level = "debug", skip_all)]
     async fn check_worker(&self) -> Result<(), tonic::Status> {
         // If the shared error slot is set, then an error has occurred in the worker
         // that we should bubble up.
-        if self
+        tracing::debug!("checking view server worker");
+        if let Some(error) = self
             .error_slot
             .lock()
+            .tap_err(|error| tracing::error!(?error, "unable to lock worker error slot"))
             .map_err(|e| {
                 tonic::Status::unavailable(format!("unable to lock worker error slot {:#}", e))
             })?
-            .is_some()
+            .as_ref()
         {
             return Err(tonic::Status::new(
                 tonic::Code::Internal,
-                format!(
-                    "Worker failed: {}",
-                    self.error_slot
-                        .lock()
-                        .map_err(|e| {
-                            tonic::Status::unavailable(format!(
-                                "unable to lock worker error slot {:#}",
-                                e
-                            ))
-                        })?
-                        .as_ref()
-                        .ok_or_else(|| {
-                            tonic::Status::unavailable("unable to get ref to worker error slot")
-                        })?
-                ),
+                format!("Worker failed: {error}"),
             ));
         }
 
         // TODO: check whether the worker is still alive, else fail, when we have a way to do that
         // (if the worker is to crash without setting the error_slot, the service should die as well)
 
-        Ok(())
+        Ok(()).tap(|_| tracing::trace!("view server worker is healthy"))
     }
 
     #[instrument(skip(self, transaction), fields(id = %transaction.id()))]
