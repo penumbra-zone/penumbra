@@ -61,7 +61,6 @@ async fn main() -> anyhow::Result<()> {
             metrics_bind,
             cometbft_addr,
             enable_expensive_rpc,
-            force,
         } => {
             // Use the given `grpc_bind` address if one was specified. If not, we will choose a
             // default depending on whether or not `grpc_auto_https` was set. See the
@@ -115,7 +114,7 @@ async fn main() -> anyhow::Result<()> {
                 "starting pd"
             );
 
-            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await || force {
+            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await {
                 tracing::info!("application ready to start");
             } else {
                 tracing::warn!("application is halted, refusing to start");
