@@ -294,7 +294,29 @@ mod tendermint_rpc_compat {
             Self {
                 code: u32::from(code) as u64,
                 data: data.to_vec(),
-                log: log.to_string(),
+                log,
+                hash: hash.as_bytes().to_vec(),
+            }
+        }
+    }
+
+    // === broadcast_tx_sync ===
+
+    impl From<tendermint_rpc::endpoint::broadcast::tx_sync::Response>
+        for penumbra_pb::BroadcastTxSyncResponse
+    {
+        fn from(
+            tendermint_rpc::endpoint::broadcast::tx_sync::Response {
+                code,
+                data,
+                log,
+                hash,
+            }: tendermint_rpc::endpoint::broadcast::tx_sync::Response,
+        ) -> Self {
+            Self {
+                code: u32::from(code) as u64,
+                data: data.to_vec(),
+                log,
                 hash: hash.as_bytes().to_vec(),
             }
         }
