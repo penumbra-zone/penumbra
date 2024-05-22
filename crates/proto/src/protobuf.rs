@@ -447,4 +447,77 @@ mod tendermint_rpc_compat {
             Self { p2p, block, app }
         }
     }
+
+    // === abci_query ===
+
+    #[derive(Debug, thiserror::Error)]
+    #[error("height '{height}' from tendermint overflowed i64, this should never happen")]
+    pub struct HeightOverflowError {
+        height: u64,
+        #[source]
+        source: <i64 as TryFrom<u64>>::Error,
+    }
+
+    impl TryFrom<tendermint_rpc::endpoint::abci_query::AbciQuery> for penumbra_pb::AbciQueryResponse {
+        type Error = HeightOverflowError;
+        fn try_from(
+            tendermint_rpc::endpoint::abci_query::AbciQuery {
+                code,
+                log,
+                info,
+                index,
+                key,
+                value,
+                proof,
+                height,
+                codespace,
+            }: tendermint_rpc::endpoint::abci_query::AbciQuery,
+        ) -> Result<Self, Self::Error> {
+            let proof_ops = proof.map(crate::tendermint::crypto::ProofOps::from);
+            let height = i64::try_from(height.value()).map_err(|source| HeightOverflowError {
+                height: height.value(),
+                source,
+            })?;
+            Ok(Self {
+                code: u32::from(code),
+                log,
+                info,
+                index,
+                key,
+                value,
+                proof_ops,
+                height,
+                codespace,
+            })
+        }
+    }
+
+    impl From<tendermint::merkle::proof::ProofOps> for crate::tendermint::crypto::ProofOps {
+        fn from(
+            tendermint::merkle::proof::ProofOps { ops }: tendermint::merkle::proof::ProofOps,
+        ) -> Self {
+            Self {
+                ops: ops
+                    .into_iter()
+                    .map(crate::tendermint::crypto::ProofOp::from)
+                    .collect(),
+            }
+        }
+    }
+
+    impl From<tendermint::merkle::proof::ProofOp> for crate::tendermint::crypto::ProofOp {
+        fn from(
+            tendermint::merkle::proof::ProofOp {
+                field_type,
+                key,
+                data,
+            }: tendermint::merkle::proof::ProofOp,
+        ) -> Self {
+            Self {
+                r#type: field_type,
+                key,
+                data,
+            }
+        }
+    }
 }

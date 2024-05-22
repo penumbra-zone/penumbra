@@ -149,50 +149,34 @@ impl TendermintProxyService for TendermintProxy {
             tonic::Status::unavailable(format!("error creating tendermint http client: {e:#?}"))
         })?;
 
+        // Parse the inbound request, confirm that the height provided is valid.
         // TODO: how does path validation work on tendermint-rs@29
-        let path = req.get_ref().path.clone();
-        let data = &req.get_ref().data;
-        let height: Height = req
-            .get_ref()
-            .height
+        let AbciQueryRequest {
+            data,
+            path,
+            height,
+            prove,
+        } = req.into_inner();
+        let height: Height = height
             .try_into()
-            .map_err(|_| tonic::Status::invalid_argument("invalid height"))?;
-        let prove = req.get_ref().prove;
-        let res = client
-            .abci_query(Some(path), data.clone(), Some(height), prove)
-            .await
-            .map_err(|e| tonic::Status::unavailable(format!("error querying abci: {e}")))?;
+            .map_err(|_| Status::invalid_argument("invalid height"))?;
 
-        match res.code {
-            Code::Ok => Ok(tonic::Response::new(AbciQueryResponse {
-                code: u32::from(res.code),
-                log: res.log.to_string(),
-                info: res.info,
-                index: res.index,
-                key: res.key,
-                value: res.value,
-                proof_ops: res.proof.map(|p| proto::tendermint::crypto::ProofOps {
-                    ops: p
-                        .ops
-                        .into_iter()
-                        .map(|op| proto::tendermint::crypto::ProofOp {
-                            r#type: op.field_type,
-                            key: op.key,
-                            data: op.data,
-                        })
-                        .collect(),
-                }),
-                height: i64::try_from(res.height.value()).map_err(|_| {
-                    tonic::Status::internal(
-                        "height from tendermint overflowed i64, this should never happen",
-                    )
-                })?,
-                codespace: res.codespace,
-            })),
-            tendermint::abci::Code::Err(e) => Err(tonic::Status::unavailable(format!(
-                "error querying abci: {e}"
-            ))),
-        }
+        // Send the ABCI query to Tendermint.
+        let rsp = client
+            .abci_query(Some(path), data, Some(height), prove)
+            .await
+            .map_err(|e| Status::unavailable(format!("error querying abci: {e}")))
+            // Confirm that the response code is 0, or return an error response.
+            .and_then(|rsp| match rsp.code {
+                Code::Ok => Ok(rsp),
+                tendermint::abci::Code::Err(e) => {
+                    Err(Status::unavailable(format!("error querying abci: {e}")))
+                }
+            })?;
+
+        AbciQueryResponse::try_from(rsp)
+            .map(tonic::Response::new)
+            .map_err(|error| Status::internal(format!("{error}")))
     }
 
     #[instrument(level = "info", skip_all)]
