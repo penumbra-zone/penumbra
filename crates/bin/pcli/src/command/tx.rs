@@ -562,7 +562,7 @@ impl TxCmd {
                     .delegate(epoch, unbonded_amount, rate_data)
                     .plan(app.view(), AddressIndex::new(*source))
                     .await
-                    .context("can't plan delegation")?;
+                    .context("can't plan delegation, try running pcli tx sweep and try again")?;
 
                 app.build_and_submit_transaction(plan).await?;
             }
