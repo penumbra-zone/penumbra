@@ -31,18 +31,18 @@ pub struct Mempool {
 }
 
 impl Mempool {
-    pub async fn new(
+    pub fn new(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    ) -> Result<Self> {
+    ) -> Self {
         let app = App::new(storage.latest_snapshot());
         let snapshot_rx = storage.subscribe();
 
-        Ok(Self {
+        Self {
             queue,
             app,
             rx_snapshot: snapshot_rx,
-        })
+        }
     }
 
     pub async fn check_tx(&mut self, req: Request) -> Result<Response, tower::BoxError> {
