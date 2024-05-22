@@ -16,6 +16,7 @@ use std::ops::Deref;
 use tendermint::{abci::Code, block::Height};
 use tendermint_rpc::{Client, HttpClient};
 use tonic::Status;
+use tracing::instrument;
 
 #[tonic::async_trait]
 impl TendermintProxyService for TendermintProxy {
@@ -25,6 +26,7 @@ impl TendermintProxyService for TendermintProxy {
     // since none of the structs are defined in our crates :(
     // TODO: move those to proto/src/protobuf.rs
 
+    #[instrument(level = "info", skip_all)]
     async fn get_tx(
         &self,
         req: tonic::Request<GetTxRequest>,
@@ -79,6 +81,7 @@ impl TendermintProxyService for TendermintProxy {
         }))
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn broadcast_tx_async(
         &self,
         req: tonic::Request<BroadcastTxAsyncRequest>,
@@ -102,6 +105,7 @@ impl TendermintProxyService for TendermintProxy {
         }))
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn broadcast_tx_sync(
         &self,
         req: tonic::Request<BroadcastTxSyncRequest>,
@@ -124,6 +128,7 @@ impl TendermintProxyService for TendermintProxy {
         }))
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn get_status(
         &self,
         _req: tonic::Request<GetStatusRequest>,
@@ -209,6 +214,7 @@ impl TendermintProxyService for TendermintProxy {
         }))
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn abci_query(
         &self,
         req: tonic::Request<AbciQueryRequest>,
@@ -265,6 +271,7 @@ impl TendermintProxyService for TendermintProxy {
         }
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn get_block_by_height(
         &self,
         req: tonic::Request<GetBlockByHeightRequest>,
