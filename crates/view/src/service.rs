@@ -408,6 +408,7 @@ impl ViewService for ViewServer {
     type AuctionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<pb::AuctionsResponse, tonic::Status>> + Send>>;
 
+    #[instrument(skip_all, level = "trace")]
     async fn auctions(
         &self,
         request: tonic::Request<pb::AuctionsRequest>,
@@ -476,6 +477,7 @@ impl ViewService for ViewServer {
         Ok(Response::new(stream))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn broadcast_transaction(
         &self,
         request: tonic::Request<pb::BroadcastTransactionRequest>,
@@ -496,6 +498,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(stream))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_planner(
         &self,
         request: tonic::Request<pb::TransactionPlannerRequest>,
@@ -767,6 +770,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn address_by_index(
         &self,
         request: tonic::Request<pb::AddressByIndexRequest>,
@@ -790,6 +794,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn index_by_address(
         &self,
         request: tonic::Request<pb::IndexByAddressRequest>,
@@ -813,6 +818,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn ephemeral_address(
         &self,
         request: tonic::Request<pb::EphemeralAddressRequest>,
@@ -836,6 +842,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_info_by_hash(
         &self,
         request: tonic::Request<pb::TransactionInfoByHashRequest>,
@@ -1019,6 +1026,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn swap_by_commitment(
         &self,
         request: tonic::Request<pb::SwapByCommitmentRequest>,
@@ -1144,6 +1152,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn note_by_commitment(
         &self,
         request: tonic::Request<pb::NoteByCommitmentRequest>,
@@ -1174,6 +1183,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn nullifier_status(
         &self,
         request: tonic::Request<pb::NullifierStatusRequest>,
@@ -1197,6 +1207,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn status(
         &self,
         _: tonic::Request<pb::StatusRequest>,
@@ -1208,6 +1219,7 @@ impl ViewService for ViewServer {
         })?))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn status_stream(
         &self,
         _: tonic::Request<pb::StatusStreamRequest>,
@@ -1240,6 +1252,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(stream.boxed()))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn notes(
         &self,
         request: tonic::Request<pb::NotesRequest>,
@@ -1291,6 +1304,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn notes_for_voting(
         &self,
         request: tonic::Request<pb::NotesForVotingRequest>,
@@ -1331,6 +1345,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn assets(
         &self,
         request: tonic::Request<pb::AssetsRequest>,
@@ -1399,6 +1414,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn transaction_info(
         &self,
         request: tonic::Request<pb::TransactionInfoRequest>,
@@ -1446,6 +1462,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn witness(
         &self,
         request: tonic::Request<pb::WitnessRequest>,
@@ -1526,6 +1543,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(witness_response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn witness_and_build(
         &self,
         request: tonic::Request<pb::WitnessAndBuildRequest>,
@@ -1592,6 +1610,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn app_parameters(
         &self,
         _request: tonic::Request<pb::AppParametersRequest>,
@@ -1610,6 +1629,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn gas_prices(
         &self,
         _request: tonic::Request<pb::GasPricesRequest>,
@@ -1629,6 +1649,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn fmd_parameters(
         &self,
         _request: tonic::Request<pb::FmdParametersRequest>,
@@ -1647,6 +1668,7 @@ impl ViewService for ViewServer {
         Ok(tonic::Response::new(response))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn owned_position_ids(
         &self,
         request: tonic::Request<pb::OwnedPositionIdsRequest>,
@@ -1693,6 +1715,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn authorize_and_build(
         &self,
         _request: tonic::Request<pb::AuthorizeAndBuildRequest>,
@@ -1700,6 +1723,7 @@ impl ViewService for ViewServer {
         unimplemented!("authorize_and_build")
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn unclaimed_swaps(
         &self,
         _: tonic::Request<pb::UnclaimedSwapsRequest>,
@@ -1727,6 +1751,7 @@ impl ViewService for ViewServer {
         ))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn wallet_id(
         &self,
         _: Request<WalletIdRequest>,
@@ -1740,6 +1765,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn asset_metadata_by_id(
         &self,
         request: Request<AssetMetadataByIdRequest>,
@@ -1762,6 +1788,7 @@ impl ViewService for ViewServer {
         }))
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn delegations_by_address_index(
         &self,
         _request: tonic::Request<pb::DelegationsByAddressIndexRequest>,
@@ -1769,6 +1796,7 @@ impl ViewService for ViewServer {
         unimplemented!("delegations_by_address_index")
     }
 
+    #[instrument(skip_all, level = "trace")]
     async fn unbonding_tokens_by_address_index(
         &self,
         _request: tonic::Request<pb::UnbondingTokensByAddressIndexRequest>,
