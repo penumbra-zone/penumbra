@@ -1225,8 +1225,16 @@ impl ViewService for ViewServer {
     ) -> Result<tonic::Response<Self::StatusStreamStream>, tonic::Status> {
         self.check_worker().await?;
 
-        let (latest_known_block_height, _) =
-            self.latest_known_block_height().await.map_err(|e| {
+        let (latest_known_block_height, _) = self
+            .latest_known_block_height()
+            .await
+            .tap_err(|error| {
+                tracing::debug!(
+                    ?error,
+                    "unable to fetch latest known block height from fullnode"
+                )
+            })
+            .map_err(|e| {
                 tonic::Status::unknown(format!(
                     "unable to fetch latest known block height from fullnode: {e}"
                 ))
