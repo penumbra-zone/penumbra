@@ -9,4 +9,20 @@
 //! [proxy-proto]: https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.util.tendermint_proxy.v1
 
 mod tendermint_proxy;
-pub use tendermint_proxy::TendermintProxy;
+
+/// Implements service traits for Tonic gRPC services.
+///
+/// The fields of this struct are the configuration and data
+/// necessary to the gRPC services.
+#[derive(Clone, Debug)]
+pub struct TendermintProxy {
+    /// Address of upstream Tendermint server to proxy requests to.
+    tendermint_url: url::Url,
+}
+
+impl TendermintProxy {
+    /// Returns a new [`TendermintProxy`].
+    pub fn new(tendermint_url: url::Url) -> Self {
+        Self { tendermint_url }
+    }
+}
