@@ -240,7 +240,7 @@ pub enum ProposalPayload {
         /// An optional commit hash for code that this proposal refers to.
         commit: Option<String>,
     },
-    /// An emergency proposal is immediately passed when 2/3 of all validators approve it, without
+    /// An emergency proposal is immediately passed when 1/3 of all validators approve it, without
     /// waiting for the voting period to conclude.
     Emergency {
         /// If `halt_chain == true`, then the chain will immediately halt when the proposal is

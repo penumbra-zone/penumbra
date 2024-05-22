@@ -628,7 +628,7 @@ pub mod proposal {
             )
         }
     }
-    /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
+    /// An emergency proposal can be passed instantaneously by a 1/3 majority of validators, without
     /// waiting for the voting period to expire.
     ///
     /// If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the
@@ -723,7 +723,7 @@ pub mod proposal {
     }
     /// Freeze an existing IBC client.
     /// Like `Emergency` proposals, it is enacted immediately after receiving
-    /// +2/3 of validator votes.
+    /// +1/3 of validator votes.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct FreezeIbcClient {
@@ -741,7 +741,7 @@ pub mod proposal {
     }
     /// Unfreeze an existing IBC client.
     /// Like `Emergency` proposals, it is enacted immediately after receiving
-    /// +2/3 of validator votes.
+    /// +1/3 of validator votes.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct UnfreezeIbcClient {

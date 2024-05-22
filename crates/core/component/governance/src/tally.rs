@@ -186,8 +186,8 @@ impl Tally {
         }
 
         // Now that we've checked for slash and quorum, we can just check to see if it should pass in
-        // the emergency condition of 2/3 majority of voting power
-        Ratio::new(self.yes, total_voting_power) > Ratio::new(2, 3)
+        // the emergency condition of 1/3 majority of voting power
+        Ratio::new(self.yes, total_voting_power) > Ratio::new(1, 3)
     }
 }
 
