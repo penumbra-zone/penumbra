@@ -31,13 +31,23 @@ message GenesisContent {
 
 // The parameters which control how the FMD parameters evolve over time.
 message FmdMetaParameters {
+  // A sliding window algorithm for updating the parameters.
+  message AlgorithmSlidingWindow {
+    // The number of blocks in the window.
+    uint32 window_blocks = 1;
+    // The number of detections we aim to see per window.
+    uint32 targeted_detections_per_window = 2;
+  }
+
   // How much time users have to transition to new parameters.
   uint64 fmd_grace_period_blocks = 1; 
   // The algorithm governing how the parameters change.
   oneof algorithm {
     uint32 fixed_precision_bits = 2;
+    AlgorithmSlidingWindow sliding_window = 3;
   }
 }
+
 
 // Parameters for Fuzzy Message Detection
 message FmdParameters {

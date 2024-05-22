@@ -68,17 +68,40 @@ pub struct FmdMetaParameters {
     #[prost(uint64, tag = "1")]
     pub fmd_grace_period_blocks: u64,
     /// The algorithm governing how the parameters change.
-    #[prost(oneof = "fmd_meta_parameters::Algorithm", tags = "2")]
+    #[prost(oneof = "fmd_meta_parameters::Algorithm", tags = "2, 3")]
     pub algorithm: ::core::option::Option<fmd_meta_parameters::Algorithm>,
 }
 /// Nested message and enum types in `FmdMetaParameters`.
 pub mod fmd_meta_parameters {
+    /// A sliding window algorithm for updating the parameters.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct AlgorithmSlidingWindow {
+        /// The number of blocks in the window.
+        #[prost(uint32, tag = "1")]
+        pub window_blocks: u32,
+        /// The number of detections we aim to see per window.
+        #[prost(uint32, tag = "2")]
+        pub targeted_detections_per_window: u32,
+    }
+    impl ::prost::Name for AlgorithmSlidingWindow {
+        const NAME: &'static str = "AlgorithmSlidingWindow";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1.FmdMetaParameters.{}",
+                Self::NAME
+            )
+        }
+    }
     /// The algorithm governing how the parameters change.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Algorithm {
         #[prost(uint32, tag = "2")]
         FixedPrecisionBits(u32),
+        #[prost(message, tag = "3")]
+        SlidingWindow(AlgorithmSlidingWindow),
     }
 }
 impl ::prost::Name for FmdMetaParameters {

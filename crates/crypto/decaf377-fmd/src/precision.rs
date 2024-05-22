@@ -16,6 +16,8 @@ pub(crate) const MAX_PRECISION: u8 = 24;
 pub struct Precision(u8);
 
 impl Precision {
+    pub const MAX: Precision = Precision(MAX_PRECISION);
+
     pub fn new(precision_bits: u8) -> Result<Self, Error> {
         if precision_bits > MAX_PRECISION {
             return Err(Error::PrecisionTooLarge(precision_bits.into()));

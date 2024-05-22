@@ -709,6 +709,9 @@ impl serde::Serialize for FmdMetaParameters {
                 fmd_meta_parameters::Algorithm::FixedPrecisionBits(v) => {
                     struct_ser.serialize_field("fixedPrecisionBits", v)?;
                 }
+                fmd_meta_parameters::Algorithm::SlidingWindow(v) => {
+                    struct_ser.serialize_field("slidingWindow", v)?;
+                }
             }
         }
         struct_ser.end()
@@ -725,12 +728,15 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
             "fmdGracePeriodBlocks",
             "fixed_precision_bits",
             "fixedPrecisionBits",
+            "sliding_window",
+            "slidingWindow",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             FmdGracePeriodBlocks,
             FixedPrecisionBits,
+            SlidingWindow,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -755,6 +761,7 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                         match value {
                             "fmdGracePeriodBlocks" | "fmd_grace_period_blocks" => Ok(GeneratedField::FmdGracePeriodBlocks),
                             "fixedPrecisionBits" | "fixed_precision_bits" => Ok(GeneratedField::FixedPrecisionBits),
+                            "slidingWindow" | "sliding_window" => Ok(GeneratedField::SlidingWindow),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -792,6 +799,13 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
                             }
                             algorithm__ = map_.next_value::<::std::option::Option<::pbjson::private::NumberDeserialize<_>>>()?.map(|x| fmd_meta_parameters::Algorithm::FixedPrecisionBits(x.0));
                         }
+                        GeneratedField::SlidingWindow => {
+                            if algorithm__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("slidingWindow"));
+                            }
+                            algorithm__ = map_.next_value::<::std::option::Option<_>>()?.map(fmd_meta_parameters::Algorithm::SlidingWindow)
+;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -804,6 +818,124 @@ impl<'de> serde::Deserialize<'de> for FmdMetaParameters {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for fmd_meta_parameters::AlgorithmSlidingWindow {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.window_blocks != 0 {
+            len += 1;
+        }
+        if self.targeted_detections_per_window != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow", len)?;
+        if self.window_blocks != 0 {
+            struct_ser.serialize_field("windowBlocks", &self.window_blocks)?;
+        }
+        if self.targeted_detections_per_window != 0 {
+            struct_ser.serialize_field("targetedDetectionsPerWindow", &self.targeted_detections_per_window)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindow {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "window_blocks",
+            "windowBlocks",
+            "targeted_detections_per_window",
+            "targetedDetectionsPerWindow",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            WindowBlocks,
+            TargetedDetectionsPerWindow,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "windowBlocks" | "window_blocks" => Ok(GeneratedField::WindowBlocks),
+                            "targetedDetectionsPerWindow" | "targeted_detections_per_window" => Ok(GeneratedField::TargetedDetectionsPerWindow),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = fmd_meta_parameters::AlgorithmSlidingWindow;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<fmd_meta_parameters::AlgorithmSlidingWindow, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut window_blocks__ = None;
+                let mut targeted_detections_per_window__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::WindowBlocks => {
+                            if window_blocks__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("windowBlocks"));
+                            }
+                            window_blocks__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::TargetedDetectionsPerWindow => {
+                            if targeted_detections_per_window__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("targetedDetectionsPerWindow"));
+                            }
+                            targeted_detections_per_window__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(fmd_meta_parameters::AlgorithmSlidingWindow {
+                    window_blocks: window_blocks__.unwrap_or_default(),
+                    targeted_detections_per_window: targeted_detections_per_window__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for FmdParameters {
