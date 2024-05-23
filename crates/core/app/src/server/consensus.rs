@@ -36,27 +36,21 @@ impl Consensus {
 
     pub fn new(storage: Storage) -> ConsensusService {
         tower_actor::Actor::new(Self::QUEUE_SIZE, |queue: _| {
-            let storage = storage.clone();
-            async move {
-                Consensus::new_inner(storage.clone(), queue)
-                    .await?
-                    .run()
-                    .await
-            }
+            Consensus::new_inner(storage, queue).run()
         })
     }
 
-    async fn new_inner(
+    fn new_inner(
         storage: Storage,
         queue: mpsc::Receiver<Message<Request, Response, tower::BoxError>>,
-    ) -> Result<Self> {
-        let app = App::new(storage.latest_snapshot()).await?;
+    ) -> Self {
+        let app = App::new(storage.latest_snapshot());
 
-        Ok(Self {
+        Self {
             queue,
             storage,
             app,
-        })
+        }
     }
 
     async fn run(mut self) -> Result<(), tower::BoxError> {
