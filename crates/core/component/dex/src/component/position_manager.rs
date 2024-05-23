@@ -393,7 +393,7 @@ pub trait PositionManager: Chandelier + StateWrite + PositionRead {
         }
 
         // Update the candlestick tracking
-        self.record_position_execution(&prev_state, &new_state, &context)
+        self.record_position_execution(&prev_state, &new_state)
             .await?;
 
         self.update_position(Some(prev_state), new_state).await

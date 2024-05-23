@@ -39,7 +39,6 @@ pub trait Chandelier: StateWrite {
         &mut self,
         prev_state: &Position,
         new_state: &Position,
-        trading_pair: &DirectedTradingPair,
     ) -> Result<()> {
         // Don't record a position execution if the two states are the same.
         // TODO: is this unnecessary due to https://github.com/penumbra-zone/penumbra/blob/d6299e9dd1519784953139a6a2c37512239fdfe4/crates/core/component/dex/src/component/position_manager.rs#L375-L376 ?
@@ -48,32 +47,46 @@ pub trait Chandelier: StateWrite {
             return Ok(());
         }
 
-        let mut block_executions = self.block_executions_by_pair(trading_pair).clone();
+        // Determine the directionality of the trade.
+        // If the reserves of asset 1 increased and asset 2 decreased, the trade was for asset 1 -> asset 2.
+        // If the reserves of asset 2 increased and asset 1 decreased, the trade was for asset 2 -> asset 1.
+        let trading_pair = prev_state.phi.pair;
+        let directed_trading_pair = if new_state.reserves_for(trading_pair.asset_1)
+            > prev_state.reserves_for(trading_pair.asset_1)
+        {
+            DirectedTradingPair::new(trading_pair.asset_1, trading_pair.asset_2)
+        } else {
+            DirectedTradingPair::new(trading_pair.asset_2, trading_pair.asset_1)
+        };
+
+        let mut block_executions = self
+            .block_executions_by_pair(&directed_trading_pair)
+            .clone();
 
         // The execution occurred at the price of the previous state.
         let execution_price = prev_state
             .phi
-            .orient_start(trading_pair.end)
-            .context("position has one end = asset 2")?
+            .orient_start(directed_trading_pair.end)
+            .context("recording position execution failed, position missing an end = asset 2")?
             .effective_price();
 
         // The volume can be found by the change in reserves of the input asset.
         let direct_volume = (new_state
-            .reserves_for(trading_pair.start)
+            .reserves_for(directed_trading_pair.start)
             .context("missing reserves")?
             - prev_state
-                .reserves_for(trading_pair.start)
+                .reserves_for(directed_trading_pair.start)
                 .context("missing reserves")?)
         .into();
 
         tracing::debug!(
-            ?trading_pair,
+            ?directed_trading_pair,
             ?execution_price,
             ?direct_volume,
             "record position execution"
         );
         block_executions.push_back((execution_price, Some(direct_volume), None));
-        self.put_block_executions_by_pair(trading_pair, block_executions);
+        self.put_block_executions_by_pair(&directed_trading_pair, block_executions);
 
         Ok(())
     }
