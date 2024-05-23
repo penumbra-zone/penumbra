@@ -204,6 +204,11 @@ where
     }
 }
 
+/// Facilities to help interoperate with [`tendermint`] and [`tendermint_rpc`] types.
+//
+//  NOTE: this submodule is tightly focused on helping `penumbra-tendermint-proxy` function.
+//  this is not an exhaustive pass at providing compatibility between all of the types in either
+//  library. accordingly, it is grouped by conversions needed for each RPC endpoint.
 mod tendermint_rpc_compat {
     use crate::util::tendermint_proxy::v1 as penumbra_pb;
 
@@ -517,6 +522,401 @@ mod tendermint_rpc_compat {
                 r#type: field_type,
                 key,
                 data,
+            }
+        }
+    }
+
+    // === get_block_by_height ===
+
+    impl TryFrom<tendermint_rpc::endpoint::block::Response> for penumbra_pb::GetBlockByHeightResponse {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(
+            tendermint_rpc::endpoint::block::Response {
+                block,
+                block_id,
+            }: tendermint_rpc::endpoint::block::Response,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                block: block.try_into().map(Some)?,
+                block_id: Some(block_id.into()),
+            })
+        }
+    }
+
+    impl TryFrom<tendermint::Block> for crate::tendermint::types::Block {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(
+            tendermint::Block {
+                header,
+                data,
+                evidence,
+                last_commit,
+                ..
+            }: tendermint::Block,
+        ) -> Result<Self, Self::Error> {
+            Ok(crate::tendermint::types::Block {
+                header: header.try_into().map(Some)?,
+                data: Some(crate::tendermint::types::Data { txs: data }),
+                evidence: evidence.try_into().map(Some)?,
+                last_commit: Some(
+                    last_commit
+                        .map(crate::tendermint::types::Commit::try_from)
+                        .transpose()?
+                        // TODO(kate): this probably should not panic, but this is here to preserve
+                        // existing behavior. panic if no last commit is set.
+                        .expect("last_commit"),
+                ),
+            })
+        }
+    }
+
+    impl TryFrom<tendermint::block::Header> for crate::tendermint::types::Header {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(
+            tendermint::block::Header {
+                version,
+                chain_id,
+                height,
+                time,
+                last_block_id,
+                last_commit_hash,
+                data_hash,
+                validators_hash,
+                next_validators_hash,
+                consensus_hash,
+                app_hash,
+                last_results_hash,
+                evidence_hash,
+                proposer_address,
+            }: tendermint::block::Header,
+        ) -> Result<Self, Self::Error> {
+            // The tendermint-rs `Timestamp` type is a newtype wrapper
+            // around a `time::PrimitiveDateTime` however it's private so we
+            // have to use string parsing to get to the prost type we want :(
+            let header_time = chrono::DateTime::parse_from_rfc3339(time.to_rfc3339().as_str())
+                .expect("timestamp should roundtrip to string");
+            Ok(Self {
+                version: Some(crate::tendermint::version::Consensus {
+                    block: version.block,
+                    app: version.app,
+                }),
+                chain_id: chain_id.into(),
+                height: height.into(),
+                time: Some(pbjson_types::Timestamp {
+                    seconds: header_time.timestamp(),
+                    nanos: header_time.timestamp_nanos_opt().ok_or_else(|| {
+                        tonic::Status::invalid_argument("missing header_time nanos")
+                    })? as i32,
+                }),
+                last_block_id: last_block_id.map(|id| crate::tendermint::types::BlockId {
+                    hash: id.hash.into(),
+                    part_set_header: Some(crate::tendermint::types::PartSetHeader {
+                        total: id.part_set_header.total,
+                        hash: id.part_set_header.hash.into(),
+                    }),
+                }),
+                last_commit_hash: last_commit_hash.map(Into::into).unwrap_or_default(),
+                data_hash: data_hash.map(Into::into).unwrap_or_default(),
+                validators_hash: validators_hash.into(),
+                next_validators_hash: next_validators_hash.into(),
+                consensus_hash: consensus_hash.into(),
+                app_hash: app_hash.into(),
+                last_results_hash: last_results_hash.map(Into::into).unwrap_or_default(),
+                evidence_hash: evidence_hash.map(Into::into).unwrap_or_default(),
+                proposer_address: proposer_address.into(),
+            })
+        }
+    }
+
+    impl TryFrom<tendermint::evidence::List> for crate::tendermint::types::EvidenceList {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(list: tendermint::evidence::List) -> Result<Self, Self::Error> {
+            list.into_vec()
+                .into_iter()
+                .map(crate::tendermint::types::Evidence::try_from)
+                .collect::<Result<Vec<_>, _>>()
+                .map(|evidence| Self { evidence })
+        }
+    }
+
+    // TODO(kate): this should be decomposed further at a later point, i am refraining from doing
+    // so right now. there are `Option::expect()` calls below that should be considered.
+    impl TryFrom<tendermint::evidence::Evidence> for crate::tendermint::types::Evidence {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(evidence: tendermint::evidence::Evidence) -> Result<Self, Self::Error> {
+            use {chrono::DateTime, std::ops::Deref};
+            Ok(Self {
+                sum: Some(match evidence {
+                    tendermint::evidence::Evidence::DuplicateVote(e) => {
+                        let e2 =
+                            tendermint_proto::types::DuplicateVoteEvidence::from(e.deref().clone());
+                        crate::tendermint::types::evidence::Sum::DuplicateVoteEvidence(
+                            crate::tendermint::types::DuplicateVoteEvidence {
+                                vote_a: Some(crate::tendermint::types::Vote {
+                                    r#type: match e.votes().0.vote_type {
+                                        tendermint::vote::Type::Prevote => {
+                                            crate::tendermint::types::SignedMsgType::Prevote as i32
+                                        }
+                                        tendermint::vote::Type::Precommit => {
+                                            crate::tendermint::types::SignedMsgType::Precommit
+                                                as i32
+                                        }
+                                    },
+                                    height: e.votes().0.height.into(),
+                                    round: e.votes().0.round.into(),
+                                    block_id: Some(crate::tendermint::types::BlockId {
+                                        hash: e.votes().0.block_id.expect("block id").hash.into(),
+                                        part_set_header: Some(
+                                            crate::tendermint::types::PartSetHeader {
+                                                total: e
+                                                    .votes()
+                                                    .0
+                                                    .block_id
+                                                    .expect("block id")
+                                                    .part_set_header
+                                                    .total,
+                                                hash: e
+                                                    .votes()
+                                                    .0
+                                                    .block_id
+                                                    .expect("block id")
+                                                    .part_set_header
+                                                    .hash
+                                                    .into(),
+                                            },
+                                        ),
+                                    }),
+                                    timestamp: Some(pbjson_types::Timestamp {
+                                        seconds: DateTime::parse_from_rfc3339(
+                                            &e.votes().0.timestamp.expect("timestamp").to_rfc3339(),
+                                        )
+                                        .expect("timestamp should roundtrip to string")
+                                        .timestamp(),
+                                        nanos: DateTime::parse_from_rfc3339(
+                                            &e.votes().0.timestamp.expect("timestamp").to_rfc3339(),
+                                        )
+                                        .expect("timestamp should roundtrip to string")
+                                        .timestamp_nanos_opt()
+                                        .ok_or_else(|| {
+                                            tonic::Status::invalid_argument(
+                                                "missing timestamp nanos",
+                                            )
+                                        })? as i32,
+                                    }),
+                                    validator_address: e.votes().0.validator_address.into(),
+                                    validator_index: e.votes().0.validator_index.into(),
+                                    signature: e
+                                        .votes()
+                                        .0
+                                        .signature
+                                        .clone()
+                                        .expect("signed vote")
+                                        .into(),
+                                }),
+                                vote_b: Some(crate::tendermint::types::Vote {
+                                    r#type: match e.votes().1.vote_type {
+                                        tendermint::vote::Type::Prevote => {
+                                            crate::tendermint::types::SignedMsgType::Prevote as i32
+                                        }
+                                        tendermint::vote::Type::Precommit => {
+                                            crate::tendermint::types::SignedMsgType::Precommit
+                                                as i32
+                                        }
+                                    },
+                                    height: e.votes().1.height.into(),
+                                    round: e.votes().1.round.into(),
+                                    block_id: Some(crate::tendermint::types::BlockId {
+                                        hash: e.votes().1.block_id.expect("block id").hash.into(),
+                                        part_set_header: Some(
+                                            crate::tendermint::types::PartSetHeader {
+                                                total: e
+                                                    .votes()
+                                                    .1
+                                                    .block_id
+                                                    .expect("block id")
+                                                    .part_set_header
+                                                    .total,
+                                                hash: e
+                                                    .votes()
+                                                    .1
+                                                    .block_id
+                                                    .expect("block id")
+                                                    .part_set_header
+                                                    .hash
+                                                    .into(),
+                                            },
+                                        ),
+                                    }),
+                                    timestamp: Some(pbjson_types::Timestamp {
+                                        seconds: DateTime::parse_from_rfc3339(
+                                            &e.votes().1.timestamp.expect("timestamp").to_rfc3339(),
+                                        )
+                                        .expect("timestamp should roundtrip to string")
+                                        .timestamp(),
+                                        nanos: DateTime::parse_from_rfc3339(
+                                            &e.votes().1.timestamp.expect("timestamp").to_rfc3339(),
+                                        )
+                                        .expect("timestamp should roundtrip to string")
+                                        .timestamp_nanos_opt()
+                                        .ok_or_else(|| {
+                                            tonic::Status::invalid_argument(
+                                                "missing timestamp nanos",
+                                            )
+                                        })? as i32,
+                                    }),
+                                    validator_address: e.votes().1.validator_address.into(),
+                                    validator_index: e.votes().1.validator_index.into(),
+                                    signature: e
+                                        .votes()
+                                        .1
+                                        .signature
+                                        .clone()
+                                        .expect("signed vote")
+                                        .into(),
+                                }),
+                                total_voting_power: e2.total_voting_power,
+                                validator_power: e2.validator_power,
+                                timestamp: e2.timestamp.map(|t| pbjson_types::Timestamp {
+                                    seconds: t.seconds,
+                                    nanos: t.nanos,
+                                }),
+                            },
+                        )
+                    }
+                    tendermint::evidence::Evidence::LightClientAttack(e) => {
+                        use crate::Message;
+                        let e2 = tendermint_proto::types::LightClientAttackEvidence::from(
+                            e.deref().clone(),
+                        );
+                        let e2_bytes = e2.encode_to_vec();
+                        let e3 = crate::tendermint::types::LightClientAttackEvidence::decode(
+                            e2_bytes.as_slice(),
+                        )
+                        .expect("can decode encoded data");
+                        crate::tendermint::types::evidence::Sum::LightClientAttackEvidence(e3)
+                    }
+                }),
+            })
+        }
+    }
+
+    impl TryFrom<tendermint::block::Commit> for crate::tendermint::types::Commit {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(
+            tendermint::block::Commit {
+                height,
+                round,
+                block_id,
+                signatures,
+            }: tendermint::block::Commit,
+        ) -> Result<Self, Self::Error> {
+            Ok(Self {
+                height: height.into(),
+                round: round.into(),
+                block_id: Some(block_id.into()),
+                signatures: signatures
+                    .into_iter()
+                    .map(crate::tendermint::types::CommitSig::try_from)
+                    .collect::<Result<_, _>>()?,
+            })
+        }
+    }
+
+    impl TryFrom<tendermint::block::CommitSig> for crate::tendermint::types::CommitSig {
+        // TODO(kate): ideally this would not return a tonic status object, but we'll use this for
+        // now to avoid invasively refactoring this code.
+        type Error = tonic::Status;
+        fn try_from(signature: tendermint::block::CommitSig) -> Result<Self, Self::Error> {
+            use chrono::DateTime;
+            Ok({
+                match signature {
+                    tendermint::block::CommitSig::BlockIdFlagAbsent => {
+                        crate::tendermint::types::CommitSig {
+                            block_id_flag: crate::tendermint::types::BlockIdFlag::Absent as i32,
+                            // No validator address, or timestamp is recorded for this variant. Not sure if this is a bug in tendermint-rs or not.
+                            validator_address: vec![],
+                            timestamp: None,
+                            signature: vec![],
+                        }
+                    }
+                    tendermint::block::CommitSig::BlockIdFlagCommit {
+                        validator_address,
+                        timestamp,
+                        signature,
+                    } => crate::tendermint::types::CommitSig {
+                        block_id_flag: crate::tendermint::types::BlockIdFlag::Commit as i32,
+                        validator_address: validator_address.into(),
+                        timestamp: Some(pbjson_types::Timestamp {
+                            seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
+                                .expect("timestamp should roundtrip to string")
+                                .timestamp(),
+                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
+                                .expect("timestamp should roundtrip to string")
+                                .timestamp_nanos_opt()
+                                .ok_or_else(|| {
+                                    tonic::Status::invalid_argument("missing timestamp nanos")
+                                })? as i32,
+                        }),
+                        signature: signature.expect("signature").into(),
+                    },
+                    tendermint::block::CommitSig::BlockIdFlagNil {
+                        validator_address,
+                        timestamp,
+                        signature,
+                    } => crate::tendermint::types::CommitSig {
+                        block_id_flag: crate::tendermint::types::BlockIdFlag::Nil as i32,
+                        validator_address: validator_address.into(),
+                        timestamp: Some(pbjson_types::Timestamp {
+                            seconds: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
+                                .expect("timestamp should roundtrip to string")
+                                .timestamp(),
+                            nanos: DateTime::parse_from_rfc3339(&timestamp.to_rfc3339())
+                                .expect("timestamp should roundtrip to string")
+                                .timestamp_nanos_opt()
+                                .ok_or_else(|| {
+                                    tonic::Status::invalid_argument("missing timestamp nanos")
+                                })? as i32,
+                        }),
+                        signature: signature.expect("signature").into(),
+                    },
+                }
+            })
+        }
+    }
+
+    impl From<tendermint::block::Id> for crate::tendermint::types::BlockId {
+        fn from(
+            tendermint::block::Id {
+                hash,
+                part_set_header,
+            }: tendermint::block::Id,
+        ) -> Self {
+            Self {
+                hash: hash.into(),
+                part_set_header: Some(part_set_header.into()),
+            }
+        }
+    }
+
+    impl From<tendermint::block::parts::Header> for crate::tendermint::types::PartSetHeader {
+        fn from(
+            tendermint::block::parts::Header { total, hash, .. }: tendermint::block::parts::Header,
+        ) -> Self {
+            Self {
+                total,
+                hash: hash.into(),
             }
         }
     }
