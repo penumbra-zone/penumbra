@@ -5050,6 +5050,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
