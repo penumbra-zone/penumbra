@@ -286,8 +286,9 @@ impl ValidatorCmd {
                     100.0 * params.stake_params.missed_blocks_maximum as f64 / window_len as f64;
                 let percent_downtime = 100.0 * missed_blocks as f64 / window_len as f64;
                 let percent_downtime_penalty =
-                    // Converting from basis points squared to percentage
-                    params.stake_params.slashing_penalty_downtime as f64 / 100.0 / 100.0;
+                    // Converting from basis points squared to percentage: bais point ^ 2  %-age
+                    //                                                    /--------------\/-----\
+                    params.stake_params.slashing_penalty_downtime as f64 / 100.0 / 100.0 / 100.0;
                 let min_remaining_downtime_blocks = (window_len as u64)
                     .saturating_sub(missed_blocks as u64)
                     .saturating_sub(min_uptime_blocks);
