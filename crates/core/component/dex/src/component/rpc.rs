@@ -4,6 +4,7 @@ use anyhow::Result;
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
 use prost::Message as _;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
 use tracing::instrument;
 
@@ -254,29 +255,23 @@ impl QueryService for Server {
         &self,
         request: tonic::Request<CandlestickDataStreamRequest>,
     ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
-        let state = self.storage.latest_snapshot();
-        let pair: DirectedTradingPair = request
-            .get_ref()
-            .pair
-            .clone()
-            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
-            .try_into()
-            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-        let prefix = state_key::candlesticks::by_pair(&pair);
-        tracing::trace!(?prefix, "searching for candlesticks from starting height");
-        let candlesticks_stream = state
-            .nonverifiable_prefix_raw(prefix.as_bytes())
-            .map(|entry| match entry {
-                Ok((_, v)) => Ok(CandlestickDataStreamResponse {
-                    data: Some(penumbra_proto::penumbra::core::component::dex::v1::CandlestickData::decode(&*v).map_err(|e| {
-                        tonic::Status::internal(format!("error decoding candlestick data: {}", e))
-                    })?),
-                }),
-                Err(e) => Err(Status::internal(format!("error getting candlestick data from storage: {}", e))),
-            })
-            .boxed();
+        let request = request.into_inner();
+        tracing::debug!(?request);
 
-        Ok(tonic::Response::new(candlesticks_stream))
+        let (tx, rx) =
+            tokio::sync::mpsc::channel::<Result<CandlestickDataStreamResponse, tonic::Status>>(10);
+
+        tokio::spawn(watch_candlesticks(
+            self.storage.clone(),
+            tx,
+            request
+                .pair
+                .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+                .try_into()
+                .map_err(|_| Status::invalid_argument("invalid trading_pair"))?,
+        ));
+
+        Ok(tonic::Response::new(Box::pin(ReceiverStream::new(rx))))
     }
 
     #[instrument(skip(self, request))]
@@ -657,5 +652,35 @@ impl SimulationService for Server {
         metrics::histogram!(metrics::DEX_RPC_SIMULATE_TRADE_DURATION).record(duration);
 
         Ok(rsp)
+    }
+}
+
+async fn watch_candlesticks(
+    storage: Storage,
+    tx: tokio::sync::mpsc::Sender<Result<CandlestickDataStreamResponse, tonic::Status>>,
+    pair: DirectedTradingPair,
+) -> anyhow::Result<()> {
+    let prefix = state_key::candlesticks::by_pair(&pair)
+        .as_bytes()
+        .to_owned();
+
+    let mut changes_rx = storage.subscribe_changes();
+    loop {
+        // Wait for a new set of changes, reporting an error if we don't get one.
+        if let Err(e) = changes_rx.changed().await {
+            tx.send(Err(tonic::Status::internal(e.to_string()))).await?;
+        }
+        let (_version, changes) = changes_rx.borrow_and_update().clone();
+
+        for (key, value) in changes.nonverifiable_changes().iter() {
+            if key.starts_with(&prefix) {
+                tx.send(Ok(CandlestickDataStreamResponse {
+                    data: Some(penumbra_proto::penumbra::core::component::dex::v1::CandlestickData::decode(&*value.clone().unwrap_or_default()).map_err(|e| {
+                        tonic::Status::internal(format!("error decoding candlestick data: {}", e))
+                    })?),
+                }))
+                .await?;
+            }
+        }
     }
 }
