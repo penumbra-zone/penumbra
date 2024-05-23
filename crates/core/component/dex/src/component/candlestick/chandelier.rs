@@ -218,6 +218,7 @@ mod tests {
     use cnidarium::{ArcStateDeltaExt as _, StateDelta, TempStorage};
     use cnidarium_component::Component as _;
     use penumbra_asset::asset;
+    use penumbra_sct::{component::clock::EpochManager as _, epoch::Epoch};
     use tendermint::abci;
 
     use crate::{
@@ -236,6 +237,20 @@ mod tests {
         let _ = tracing_subscriber::fmt::try_init();
         let storage = TempStorage::new().await?.apply_minimal_genesis().await?;
 
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        let mut state_tx = state.try_begin_transaction().unwrap();
+
+        state_tx.put_block_height(0);
+        state_tx.put_epoch_by_height(
+            0,
+            penumbra_sct::epoch::Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
+        state_tx.apply();
+
+        storage.commit(Arc::try_unwrap(state).unwrap()).await?;
         let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
 
         // Create a single position and execute a swap against it.
@@ -281,10 +296,27 @@ mod tests {
         };
         Dex::end_block(&mut state, &end_block).await;
 
+        storage.commit(Arc::try_unwrap(state).unwrap()).await?;
+
+        // Begin a new block and have a few more positions and swaps
+        let mut state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        // set the epoch for the next block
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        let height = 1u64;
+        state_tx.put_block_height(height);
+        state_tx.put_epoch_by_height(
+            height,
+            Epoch {
+                index: 0,
+                start_height: 0,
+            },
+        );
+        state_tx.apply();
+
         // Check if the candlestick is set for height 0
         assert!(
             state
-                .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), height)
+                .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), 0u64)
                 .await
                 .unwrap()
                 .is_some(),
@@ -292,7 +324,7 @@ mod tests {
         );
 
         let cs = state
-            .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), height)
+            .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), 0u64)
             .await
             .unwrap()
             .unwrap();
@@ -317,6 +349,81 @@ mod tests {
             "swap volume is 1 gn"
         );
 
+        // Create a single 1:2 gn:penumbra position (i.e. buy 1 gn at 2 penumbra).
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        let buy_1 = create_buy(pair_gn_penumbra.clone(), 1u64.into(), 2u64.into());
+        state_tx.open_position(buy_1).await.unwrap();
+        state_tx.apply();
+
+        // Open a higher-priced position.
+        // Create a single 1:1 gn:penumbra position (i.e. buy 1 gn at 1 penumbra).
+        let mut state_tx = state.try_begin_transaction().unwrap();
+        let buy_2 = create_buy(pair_gn_penumbra.clone(), 1u64.into(), 1u64.into());
+        state_tx.open_position(buy_2).await.unwrap();
+        state_tx.apply();
+
+        // A swap for gn -> penumbra should first apply against the 1:2 position
+        // resulting in an opening price of 2.0
+        let mut swap_flow = state.swap_flow(&trading_pair);
+
+        assert!(trading_pair.asset_1() == penumbra.id());
+
+        // Add the amount of each asset being swapped to the batch swap flow.
+        swap_flow.0 += 0u32.into();
+        // Swap 2 gn into penumbra, meaning each position is filled.
+        swap_flow.1 += gn.value(2u32.into()).amount;
+
+        // Set the batch swap flow for the trading pair.
+        Arc::get_mut(&mut state)
+            .unwrap()
+            .put_swap_flow(&trading_pair, swap_flow.clone())
+            .await
+            .unwrap();
+
+        // End the block so the chandelier is generated
+        let end_block = abci::request::EndBlock {
+            height: height.try_into().unwrap(),
+        };
+        Dex::end_block(&mut state, &end_block).await;
+        storage.commit(Arc::try_unwrap(state).unwrap()).await?;
+
+        // Begin a new block and have a few more positions and swaps
+        let state = Arc::new(StateDelta::new(storage.latest_snapshot()));
+        // Check if the candlestick is set for height 0
+        assert!(
+            state
+                .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), height)
+                .await
+                .unwrap()
+                .is_some(),
+            "candlestick exists for height 1"
+        );
+
+        let cs = state
+            .get_candlestick(&pair_gn_penumbra.into_directed_trading_pair(), height)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let two_gn = gn.value(2u32.into());
+        let base_gn = gn.base();
+        let direct_volume: U128x128 = cs.direct_volume.try_into().unwrap();
+        let swap_volume: U128x128 = cs.swap_volume.try_into().unwrap();
+        assert_eq!(cs.height, 1u64, "height is 1");
+        assert_eq!(cs.open, 2.0, "open price is 2.0");
+        assert_eq!(cs.close, 1.5, "close price is 1.5");
+        assert_eq!(cs.high, 2.0, "high price is 2.0");
+        assert_eq!(cs.low, 1.0, "low price is 1.0");
+        assert_eq!(
+            base_gn.value(direct_volume.try_into().unwrap()),
+            two_gn,
+            "direct volume is 2 gn"
+        );
+        assert_eq!(
+            base_gn.value(swap_volume.try_into().unwrap()),
+            two_gn,
+            "swap volume is 2 gn"
+        );
         Ok(())
     }
 }
