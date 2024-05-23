@@ -153,3 +153,14 @@ where
         Ok(()).tap(|_| info!("finished fast forward"))
     }
 }
+
+/// Assert that a [`TestNode`] is both [`Send`] and [`Sync`].
+#[allow(dead_code)]
+mod assert_address_is_send_and_sync {
+    fn is_send<T: Send>() {}
+    fn is_sync<T: Sync>() {}
+    fn f() {
+        is_send::<super::TestNode<()>>();
+        is_sync::<super::TestNode<()>>();
+    }
+}
