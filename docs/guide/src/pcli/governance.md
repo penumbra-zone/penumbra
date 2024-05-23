@@ -132,7 +132,7 @@ may be included to specify these changes.
 #### Emergency Proposals
 
 Emergency proposals are meant for when immediate action is required to address a crisis, and
-conclude early as soon as a 2/3 majority of all active voting power votes yes.
+conclude early as soon as a 1/3 majority of all active voting power votes yes.
 
 Emergency proposals have the power to optionally halt the chain when passed. If this occurs,
 off-chain coordination between validators will be required to restart the chain.

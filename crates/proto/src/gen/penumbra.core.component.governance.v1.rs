@@ -628,7 +628,7 @@ pub mod proposal {
             )
         }
     }
-    /// An emergency proposal can be passed instantaneously by a 2/3 majority of validators, without
+    /// An emergency proposal can be passed instantaneously by a 1/3 majority of validators, without
     /// waiting for the voting period to expire.
     ///
     /// If the boolean `halt_chain` is set to `true`, then the chain will halt immediately when the

@@ -22,14 +22,14 @@ proposals can reclaim their deposit).
 Proposals can either be normal or emergency proposals.  In either case, the
 voting period begins immediately, in the next block after the proposal has been
 committed to the chain.  Normal proposals have a fixed-length voting period,
-while emergency proposals are accepted as soon as a 2/3 majority of the stake is
+while emergency proposals are accepted as soon as a 1/3 majority of the stake is
 reached.
 
 Because validators provide default votes for their delegation pool, an emergency
 proposal can in principle be accepted immediately, without any input from
 delegators. This allows time-critical resolution of emergencies (e.g., deploying
-an 0day hotfix); the 2/3 majority of the stake required is already sufficient to
-arbitrarily rewrite the chain state.
+an 0day hotfix); a 1/3 + 1 plurality of the stake required is already sufficient to
+halt the chain.
 
 Proposals can also be withdrawn by their proposer prior to the end of the voting
 period.  This is done by creating a transaction with a `ProposalWithdraw`
