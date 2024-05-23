@@ -45,6 +45,7 @@ members = [
   "crates/proto",
   "crates/test/mock-client",
   "crates/test/mock-consensus",
+  "crates/test/mock-tendermint-proxy",
   "crates/test/tct-property-test",
   "crates/test/tracing-subscriber",
   "crates/util/auto-https",
@@ -178,6 +179,7 @@ penumbra-ibc                     = { default-features = false, path = "crates/co
 penumbra-keys                    = { default-features = false, path = "crates/core/keys" }
 penumbra-mock-client             = { path = "crates/test/mock-client" }
 penumbra-mock-consensus          = { path = "crates/test/mock-consensus" }
+penumbra-mock-tendermint-proxy   = { path = "crates/test/mock-tendermint-proxy" }
 penumbra-num                     = { default-features = false, path = "crates/core/num" }
 penumbra-proof-params            = { default-features = false, path = "crates/crypto/proof-params" }
 penumbra-proof-setup             = { path = "crates/crypto/proof-setup" }

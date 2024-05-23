@@ -5328,6 +5328,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "penumbra-mock-tendermint-proxy"
+version = "0.76.0"
+dependencies = [
+ "penumbra-mock-consensus",
+ "penumbra-proto",
+ "tap",
+ "tendermint",
+ "tonic",
+ "tracing",
+]
+
+[[package]]
 name = "penumbra-num"
 version = "0.76.0"
 dependencies = [
