@@ -1,8 +1,8 @@
 #![allow(clippy::clone_on_copy)]
 #![deny(clippy::unwrap_used)]
 #![recursion_limit = "512"]
-use std::error::Error;
 use std::io::IsTerminal as _;
+use std::{error::Error, process::exit};
 
 use metrics_tracing_context::{MetricsLayer, TracingContextLayer};
 use metrics_util::layers::Stack;
@@ -111,6 +111,13 @@ async fn main() -> anyhow::Result<()> {
                 ?enable_expensive_rpc,
                 "starting pd"
             );
+
+            if penumbra_app::app::App::is_ready(storage.latest_snapshot()).await {
+                tracing::info!("application ready to start");
+            } else {
+                tracing::warn!("application is halted, refusing to start");
+                exit(0)
+            }
 
             let abci_server = tokio::task::spawn(
                 penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
