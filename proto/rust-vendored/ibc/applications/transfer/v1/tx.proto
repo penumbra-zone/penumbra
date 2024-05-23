@@ -36,14 +36,14 @@ message MsgTransfer {
   // the channel by which the packet will be sent
   string source_channel = 2;
   // the tokens to be transferred
-  cosmos.base.v1beta1.Coin token = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.v1beta1.Coin token = 3 [(gogoproto.nullable) = false, (amino.encoding) = "legacy_coin"];
   // the sender address
   string sender = 4;
   // the recipient address on the destination chain
   string receiver = 5;
   // Timeout height relative to the current block height.
   // The timeout is disabled when set to 0.
-  ibc.core.client.v1.Height timeout_height = 6 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  ibc.core.client.v1.Height timeout_height = 6 [(gogoproto.nullable) = false];
   // Timeout timestamp in absolute nanoseconds since unix epoch.
   // The timeout is disabled when set to 0.
   uint64 timeout_timestamp = 7;
@@ -65,7 +65,7 @@ message MsgUpdateParams {
 
   option (gogoproto.goproto_getters) = false;
 
-  // signer address
+  // signer address (it may be the the address that controls the module, which defaults to x/gov unless overwritten).
   string signer = 1;
 
   // params defines the transfer parameters to update.

@@ -129,28 +129,28 @@ impl BankQuery for Server {
         &self,
         _: tonic::Request<QueryParamsRequest>,
     ) -> std::result::Result<tonic::Response<QueryParamsResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn balance(
         &self,
         _: tonic::Request<QueryBalanceRequest>,
     ) -> std::result::Result<tonic::Response<QueryBalanceResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn all_balances(
         &self,
         _: tonic::Request<QueryAllBalancesRequest>,
     ) -> std::result::Result<tonic::Response<QueryAllBalancesResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn spendable_balances(
         &self,
         _: tonic::Request<QuerySpendableBalancesRequest>,
     ) -> std::result::Result<tonic::Response<QuerySpendableBalancesResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn spendable_balance_by_denom(
@@ -158,41 +158,41 @@ impl BankQuery for Server {
         _: tonic::Request<QuerySpendableBalanceByDenomRequest>,
     ) -> std::result::Result<tonic::Response<QuerySpendableBalanceByDenomResponse>, tonic::Status>
     {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn supply_of(
         &self,
         _: tonic::Request<QuerySupplyOfRequest>,
     ) -> std::result::Result<tonic::Response<QuerySupplyOfResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denom_metadata(
         &self,
         _: tonic::Request<QueryDenomMetadataRequest>,
     ) -> std::result::Result<tonic::Response<QueryDenomMetadataResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denoms_metadata(
         &self,
         _: tonic::Request<QueryDenomsMetadataRequest>,
     ) -> std::result::Result<tonic::Response<QueryDenomsMetadataResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denom_owners(
         &self,
         _: tonic::Request<QueryDenomOwnersRequest>,
     ) -> std::result::Result<tonic::Response<QueryDenomOwnersResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn send_enabled(
         &self,
         _: tonic::Request<QuerySendEnabledRequest>,
     ) -> std::result::Result<tonic::Response<QuerySendEnabledResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 }

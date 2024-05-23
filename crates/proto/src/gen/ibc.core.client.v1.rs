@@ -363,36 +363,6 @@ pub mod query_client {
                 );
             self.inner.unary(req, path, codec).await
         }
-        /// VerifyMembership queries an IBC light client for proof verification of a value at a given key path.
-        pub async fn verify_membership(
-            &mut self,
-            request: impl tonic::IntoRequest<
-                ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<
-                ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipResponse,
-            >,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/VerifyMembership",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(GrpcMethod::new("ibc.core.client.v1.Query", "VerifyMembership"));
-            self.inner.unary(req, path, codec).await
-        }
     }
 }
 /// Generated server implementations.
@@ -510,18 +480,6 @@ pub mod query_server {
         ) -> std::result::Result<
             tonic::Response<
                 ::ibc_proto::ibc::core::client::v1::QueryUpgradedConsensusStateResponse,
-            >,
-            tonic::Status,
-        >;
-        /// VerifyMembership queries an IBC light client for proof verification of a value at a given key path.
-        async fn verify_membership(
-            &self,
-            request: tonic::Request<
-                ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<
-                ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipResponse,
             >,
             tonic::Status,
         >;
@@ -1033,55 +991,6 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = UpgradedConsensusStateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/ibc.core.client.v1.Query/VerifyMembership" => {
-                    #[allow(non_camel_case_types)]
-                    struct VerifyMembershipSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipRequest,
-                    > for VerifyMembershipSvc<T> {
-                        type Response = ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<
-                                ::ibc_proto::ibc::core::client::v1::QueryVerifyMembershipRequest,
-                            >,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as Query>::verify_membership(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = VerifyMembershipSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
