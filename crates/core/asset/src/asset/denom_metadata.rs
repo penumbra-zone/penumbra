@@ -39,6 +39,7 @@ pub(super) struct Inner {
     // For now, don't bother with a domain type here,
     // since we don't render images from Rust code.
     images: Vec<pb::AssetImage>,
+    priority_score: u64,
 
     /// Sorted by priority order.
     pub(super) units: Vec<BareDenomUnit>,
@@ -64,6 +65,7 @@ impl From<&Inner> for pb::Metadata {
             penumbra_asset_id: Some(inner.id.into()),
             denom_units: inner.units.clone().into_iter().map(|x| x.into()).collect(),
             images: inner.images.clone(),
+            priority_score: inner.priority_score,
         }
     }
 }
@@ -129,6 +131,7 @@ impl TryFrom<pb::Metadata> for Inner {
             name: value.name,
             symbol: value.symbol,
             images: value.images,
+            priority_score: value.priority_score,
         })
     }
 }
@@ -250,6 +253,7 @@ impl Inner {
             name: String::new(),
             symbol: String::new(),
             images: Vec::new(),
+            priority_score: 0,
         }
     }
 }
@@ -416,6 +420,7 @@ impl Debug for Metadata {
             display_index,
             name,
             symbol,
+            priority_score,
         } = inner.as_ref();
 
         f.debug_struct("Metadata")
@@ -423,6 +428,7 @@ impl Debug for Metadata {
             .field("base_denom", base_denom)
             .field("description", description)
             .field("images", images)
+            .field("priority_score", priority_score)
             .field("units", units)
             .field("display_index", display_index)
             .field("name", name)
