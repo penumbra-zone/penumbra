@@ -6,7 +6,7 @@
 mod init_chain;
 
 use {
-    crate::{Keyring, TestNode},
+    crate::{Keyring, OnBlockFn, TestNode},
     bytes::Bytes,
 };
 
@@ -15,6 +15,7 @@ use {
 pub struct Builder {
     pub app_state: Option<Bytes>,
     pub keyring: Keyring,
+    pub on_block: Option<OnBlockFn>,
 }
 
 impl TestNode<()> {
@@ -90,5 +91,16 @@ impl Builder {
         let vk = sk.verification_key();
         tracing::trace!(verification_key = ?vk, "generated consensus key");
         keyring.insert(vk, sk);
+    }
+
+    /// Sets a callback that will be invoked when a new block is constructed.
+    pub fn on_block<F>(self, f: F) -> Self
+    where
+        F: FnMut(tendermint::Block) + Send + Sync + 'static,
+    {
+        Self {
+            on_block: Some(Box::new(f)),
+            ..self
+        }
     }
 }
