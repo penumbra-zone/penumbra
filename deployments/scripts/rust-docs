@@ -43,6 +43,7 @@ cargo +nightly doc --no-deps \
   -p penumbra-keys \
   -p penumbra-measure \
   -p penumbra-mock-consensus \
+  -p penumbra-mock-tendermint-proxy \
   -p penumbra-mock-client \
   -p penumbra-num \
   -p penumbra-proof-params \

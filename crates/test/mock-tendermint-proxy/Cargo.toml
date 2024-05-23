@@ -1,0 +1,16 @@
+[package]
+name = "penumbra-mock-tendermint-proxy"
+authors.workspace    = true
+edition.workspace    = true
+version.workspace    = true
+repository.workspace = true
+homepage.workspace   = true
+license.workspace    = true
+
+[dependencies]
+penumbra-mock-consensus = { workspace = true }
+penumbra-proto          = { workspace = true, features = ["rpc", "tendermint"] }
+tap                     = { workspace = true }
+tendermint              = { workspace = true }
+tonic                   = { workspace = true }
+tracing                 = { workspace = true }
