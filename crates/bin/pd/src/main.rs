@@ -125,8 +125,8 @@ async fn main() -> anyhow::Result<()> {
                 penumbra_app::server::new(storage.clone()).listen_tcp(abci_bind),
             );
 
-            let grpc_server =
-                penumbra_app::rpc::router(&storage, cometbft_addr, enable_expensive_rpc)?;
+            let tm_proxy = penumbra_tendermint_proxy::TendermintProxy::new(cometbft_addr);
+            let grpc_server = penumbra_app::rpc::router(&storage, tm_proxy, enable_expensive_rpc)?;
 
             // Create Axum routes for the frontend app.
             let frontend = pd::zipserve::router("/app/", pd::MINIFRONT_ARCHIVE_BYTES);
