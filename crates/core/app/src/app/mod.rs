@@ -155,6 +155,13 @@ impl App {
         &mut self,
         proposal: request::PrepareProposal,
     ) -> response::PrepareProposal {
+        if self.state.is_chain_halted().await {
+            // If we find ourselves preparing a proposal for a halted chain
+            // we stop abruptly to prevent any progress.
+            // The persistent halt mechanism will prevent restarts until we are ready.
+            process::exit(0);
+        }
+
         let mut included_txs = Vec::new();
         let num_candidate_txs = proposal.txs.len();
         tracing::debug!(
