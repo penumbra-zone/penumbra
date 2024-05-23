@@ -53,6 +53,11 @@ pub mod candlesticks {
         let pair_bytes = hex::encode_upper(pair.encode_to_vec());
         format!("dex/candlesticks/{pair_bytes}/{height:020}")
     }
+
+    pub fn by_pair(pair: &DirectedTradingPair) -> String {
+        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
+        format!("dex/candlesticks/{pair_bytes}/")
+    }
 }
 
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
