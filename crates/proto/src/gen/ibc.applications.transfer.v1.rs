@@ -85,38 +85,6 @@ pub mod query_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// DenomTrace queries a denomination trace information.
-        pub async fn denom_trace(
-            &mut self,
-            request: impl tonic::IntoRequest<
-                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<
-                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse,
-            >,
-            tonic::Status,
-        > {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.applications.transfer.v1.Query/DenomTrace",
-            );
-            let mut req = request.into_request();
-            req.extensions_mut()
-                .insert(
-                    GrpcMethod::new("ibc.applications.transfer.v1.Query", "DenomTrace"),
-                );
-            self.inner.unary(req, path, codec).await
-        }
         /// DenomTraces queries all denomination traces.
         pub async fn denom_traces(
             &mut self,
@@ -146,6 +114,38 @@ pub mod query_client {
             req.extensions_mut()
                 .insert(
                     GrpcMethod::new("ibc.applications.transfer.v1.Query", "DenomTraces"),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// DenomTrace queries a denomination trace information.
+        pub async fn denom_trace(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Query/DenomTrace",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("ibc.applications.transfer.v1.Query", "DenomTrace"),
                 );
             self.inner.unary(req, path, codec).await
         }
@@ -246,6 +246,41 @@ pub mod query_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.
+        pub async fn total_escrow_for_denom(
+            &mut self,
+            request: impl tonic::IntoRequest<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomResponse,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.transfer.v1.Query/TotalEscrowForDenom",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "ibc.applications.transfer.v1.Query",
+                        "TotalEscrowForDenom",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -256,18 +291,6 @@ pub mod query_server {
     /// Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
-        /// DenomTrace queries a denomination trace information.
-        async fn denom_trace(
-            &self,
-            request: tonic::Request<
-                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
-            >,
-        ) -> std::result::Result<
-            tonic::Response<
-                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse,
-            >,
-            tonic::Status,
-        >;
         /// DenomTraces queries all denomination traces.
         async fn denom_traces(
             &self,
@@ -277,6 +300,18 @@ pub mod query_server {
         ) -> std::result::Result<
             tonic::Response<
                 ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTracesResponse,
+            >,
+            tonic::Status,
+        >;
+        /// DenomTrace queries a denomination trace information.
+        async fn denom_trace(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse,
             >,
             tonic::Status,
         >;
@@ -313,6 +348,18 @@ pub mod query_server {
         ) -> std::result::Result<
             tonic::Response<
                 ::ibc_proto::ibc::applications::transfer::v1::QueryEscrowAddressResponse,
+            >,
+            tonic::Status,
+        >;
+        /// TotalEscrowForDenom returns the total amount of tokens in escrow based on the denom.
+        async fn total_escrow_for_denom(
+            &self,
+            request: tonic::Request<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomRequest,
+            >,
+        ) -> std::result::Result<
+            tonic::Response<
+                ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomResponse,
             >,
             tonic::Status,
         >;
@@ -397,55 +444,6 @@ pub mod query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/ibc.applications.transfer.v1.Query/DenomTrace" => {
-                    #[allow(non_camel_case_types)]
-                    struct DenomTraceSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<
-                        ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
-                    > for DenomTraceSvc<T> {
-                        type Response = ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<
-                                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
-                            >,
-                        ) -> Self::Future {
-                            let inner = Arc::clone(&self.0);
-                            let fut = async move {
-                                <T as Query>::denom_trace(&inner, request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let max_decoding_message_size = self.max_decoding_message_size;
-                    let max_encoding_message_size = self.max_encoding_message_size;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = DenomTraceSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            )
-                            .apply_max_message_size_config(
-                                max_decoding_message_size,
-                                max_encoding_message_size,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
                 "/ibc.applications.transfer.v1.Query/DenomTraces" => {
                     #[allow(non_camel_case_types)]
                     struct DenomTracesSvc<T: Query>(pub Arc<T>);
@@ -480,6 +478,55 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = DenomTracesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.transfer.v1.Query/DenomTrace" => {
+                    #[allow(non_camel_case_types)]
+                    struct DenomTraceSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
+                    > for DenomTraceSvc<T> {
+                        type Response = ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::applications::transfer::v1::QueryDenomTraceRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::denom_trace(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = DenomTraceSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -627,6 +674,55 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = EscrowAddressSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.transfer.v1.Query/TotalEscrowForDenom" => {
+                    #[allow(non_camel_case_types)]
+                    struct TotalEscrowForDenomSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomRequest,
+                    > for TotalEscrowForDenomSvc<T> {
+                        type Response = ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                ::ibc_proto::ibc::applications::transfer::v1::QueryTotalEscrowForDenomRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Query>::total_escrow_for_denom(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TotalEscrowForDenomSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

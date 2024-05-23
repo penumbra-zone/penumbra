@@ -15,10 +15,7 @@ use crate::state_key;
 
 use super::Server;
 
-// use super::IbcQuery;
-
 #[async_trait]
-// impl<HI: HostInterface + Send + Sync + 'static> TransferQuery for Server {
 impl TransferQuery for Server {
     async fn total_escrow_for_denom(
         &self,

@@ -28,6 +28,11 @@ pub struct PageRequest {
     /// is set.
     #[prost(bool, tag = "4")]
     pub count_total: bool,
+    /// reverse is set to true if results are to be returned in the descending order.
+    ///
+    /// Since: cosmos-sdk 0.43
+    #[prost(bool, tag = "5")]
+    pub reverse: bool,
 }
 impl ::prost::Name for PageRequest {
     const NAME: &'static str = "PageRequest";
@@ -47,7 +52,8 @@ impl ::prost::Name for PageRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
-    /// query the next page most efficiently
+    /// query the next page most efficiently. It will be empty if
+    /// there are no more results.
     #[prost(bytes = "vec", tag = "1")]
     pub next_key: ::prost::alloc::vec::Vec<u8>,
     /// total is total number of results available if PageRequest.count_total
