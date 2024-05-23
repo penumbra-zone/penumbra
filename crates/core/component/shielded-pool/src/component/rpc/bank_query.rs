@@ -136,21 +136,27 @@ impl BankQuery for Server {
         &self,
         _: tonic::Request<QueryBalanceRequest>,
     ) -> std::result::Result<tonic::Response<QueryBalanceResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        Err(tonic::Status::unimplemented(
+            "not implemented, penumbra is a shielded chain",
+        ))
     }
 
     async fn all_balances(
         &self,
         _: tonic::Request<QueryAllBalancesRequest>,
     ) -> std::result::Result<tonic::Response<QueryAllBalancesResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        Err(tonic::Status::unimplemented(
+            "not implemented, penumbra is a shielded chain",
+        ))
     }
 
     async fn spendable_balances(
         &self,
         _: tonic::Request<QuerySpendableBalancesRequest>,
     ) -> std::result::Result<tonic::Response<QuerySpendableBalancesResponse>, tonic::Status> {
-        Err(tonic::Status::unimplemented("not implemented"))
+        Err(tonic::Status::unimplemented(
+            "not implemented, penumbra is a shielded chain",
+        ))
     }
 
     async fn spendable_balance_by_denom(
@@ -158,7 +164,9 @@ impl BankQuery for Server {
         _: tonic::Request<QuerySpendableBalanceByDenomRequest>,
     ) -> std::result::Result<tonic::Response<QuerySpendableBalanceByDenomResponse>, tonic::Status>
     {
-        Err(tonic::Status::unimplemented("not implemented"))
+        Err(tonic::Status::unimplemented(
+            "not implemented, penumbra is a shielded chain",
+        ))
     }
 
     async fn supply_of(
