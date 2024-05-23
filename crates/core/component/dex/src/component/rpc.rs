@@ -1,11 +1,13 @@
 use std::{pin::Pin, sync::Arc};
 
+use anyhow::Result;
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
+use prost::Message as _;
 use tonic::Status;
 use tracing::instrument;
 
-use cnidarium::{StateDelta, Storage};
+use cnidarium::{StateDelta, StateRead as _, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
@@ -29,6 +31,7 @@ use penumbra_proto::{
 
 use super::ExecutionCircuitBreaker;
 use crate::{
+    component::candlestick::CandlestickData,
     lp::position::{self, Position},
     state_key, DirectedTradingPair, SwapExecution, TradingPair,
 };
@@ -207,7 +210,40 @@ impl QueryService for Server {
         &self,
         request: tonic::Request<CandlestickDataRequest>,
     ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
-        todo!()
+        let state = self.storage.latest_snapshot();
+        let start_height = request.get_ref().start_height;
+        let limit = request.get_ref().limit as usize;
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+        let prefix = state_key::candlesticks::by_pair_and_height(&pair, start_height);
+        tracing::trace!(?prefix, "searching for candlesticks from starting height");
+        let candlesticks = state
+            .nonverifiable_prefix_raw(prefix.as_bytes())
+            .map(|entry| match entry {
+                Ok((_, v)) => Ok(CandlestickData::decode(&*v)?),
+                Err(e) => Err(e),
+            })
+            .boxed()
+            .take(limit)
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| {
+                tonic::Status::internal(format!(
+                    "error getting candlestick data from storage: {}",
+                    e
+                ))
+            })?;
+
+        Ok(tonic::Response::new(CandlestickDataResponse {
+            data: candlesticks.into_iter().map(Into::into).collect(),
+        }))
     }
 
     #[instrument(skip(self, request))]
@@ -215,7 +251,29 @@ impl QueryService for Server {
         &self,
         request: tonic::Request<CandlestickDataStreamRequest>,
     ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
-        todo!()
+        let state = self.storage.latest_snapshot();
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+        let prefix = state_key::candlesticks::by_pair(&pair);
+        tracing::trace!(?prefix, "searching for candlesticks from starting height");
+        let candlesticks_stream = state
+            .nonverifiable_prefix_raw(prefix.as_bytes())
+            .map(|entry| match entry {
+                Ok((_, v)) => Ok(CandlestickDataStreamResponse {
+                    data: Some(penumbra_proto::penumbra::core::component::dex::v1::CandlestickData::decode(&*v).map_err(|e| {
+                        tonic::Status::internal(format!("error decoding candlestick data: {}", e))
+                    })?),
+                }),
+                Err(e) => Err(Status::internal(format!("error getting candlestick data from storage: {}", e))),
+            })
+            .boxed();
+
+        Ok(tonic::Response::new(candlesticks_stream))
     }
 
     #[instrument(skip(self, request))]
