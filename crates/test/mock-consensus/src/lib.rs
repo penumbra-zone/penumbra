@@ -82,7 +82,12 @@ pub struct TestNode<C> {
     ///
     /// Entries in this keyring consist of a [`VerificationKey`] and a [`SigningKey`].
     keyring: Keyring,
+    /// A callback that will be invoked when a new block is constructed.
+    on_block: Option<OnBlockFn>,
 }
+
+/// A type alias for the `TestNode::on_block` callback.
+pub type OnBlockFn = Box<dyn FnMut(tendermint::Block) + Send + Sync + 'static>;
 
 /// An ordered map of consensus keys.
 ///

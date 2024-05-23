@@ -38,6 +38,7 @@ impl Builder {
         let Self {
             app_state: Some(app_state),
             keyring,
+            on_block,
         } = self
         else {
             bail!("builder was not fully initialized")
@@ -69,6 +70,7 @@ impl Builder {
             height: block::Height::from(0_u8),
             last_app_hash: app_hash.as_bytes().to_owned(),
             keyring,
+            on_block,
         })
     }
 

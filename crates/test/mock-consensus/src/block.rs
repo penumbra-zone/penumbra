@@ -113,7 +113,7 @@ where
             evidence: _,
             last_commit,
             ..
-        } = block.tap(|block| {
+        } = block.clone().tap(|block| {
             tracing::span::Span::current()
                 .record("height", block.header.height.value())
                 .record("time", block.header.time.unix_timestamp());
@@ -129,6 +129,9 @@ where
         test_node.end_block().await?;
         test_node.commit().await?;
         trace!("finished sending block");
+
+        // If an `on_block` callback was set, call it now.
+        test_node.on_block.as_mut().map(move |f| f(block));
 
         Ok(())
     }
