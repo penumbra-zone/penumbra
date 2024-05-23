@@ -41,6 +41,13 @@ pub trait Chandelier: StateWrite {
         new_state: &Position,
         trading_pair: &DirectedTradingPair,
     ) -> Result<()> {
+        // Don't record a position execution if the two states are the same.
+        // TODO: is this unnecessary due to https://github.com/penumbra-zone/penumbra/blob/d6299e9dd1519784953139a6a2c37512239fdfe4/crates/core/component/dex/src/component/position_manager.rs#L375-L376 ?
+        // the potentially extraneous check is probably fine for safety's sake
+        if prev_state == new_state {
+            return Ok(());
+        }
+
         let mut block_executions = self.block_executions_by_pair(trading_pair).clone();
 
         // The execution occurred at the price of the previous state.
@@ -73,6 +80,12 @@ pub trait Chandelier: StateWrite {
 
     #[tracing::instrument(level = "debug", skip(self))]
     async fn record_swap_execution(&mut self, swap: &SwapExecution) -> Result<()> {
+        // Don't record a swap execution if the output amount was zero.
+        // It's possible for no-op swap executions to be recorded, so this is an important check.
+        if swap.output.amount == 0u32.into() {
+            return Ok(());
+        }
+
         let trading_pair: DirectedTradingPair = DirectedTradingPair {
             start: swap.input.asset_id,
             end: swap.output.asset_id,

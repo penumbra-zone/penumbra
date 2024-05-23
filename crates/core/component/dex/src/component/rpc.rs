@@ -212,7 +212,9 @@ impl QueryService for Server {
     ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
         let start_height = request.get_ref().start_height;
-        let limit = request.get_ref().limit as usize;
+        // Limit the number of candlesticks returned to 20,000 (approximately 1 day)
+        // to prevent the server from being overwhelmed by a single request.
+        let limit = std::cmp::max(request.get_ref().limit as usize, 20_000usize);
         let pair: DirectedTradingPair = request
             .get_ref()
             .pair
