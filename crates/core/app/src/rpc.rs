@@ -42,22 +42,22 @@ use {
                 stake::v1::query_service_server::QueryServiceServer as StakeQueryServiceServer,
             },
         },
-        util::tendermint_proxy::v1::tendermint_proxy_service_server::TendermintProxyServiceServer,
+        util::tendermint_proxy::v1::tendermint_proxy_service_server::{
+            TendermintProxyService, TendermintProxyServiceServer,
+        },
     },
     penumbra_sct::component::rpc::Server as SctServer,
     penumbra_shielded_pool::component::rpc::Server as ShieldedPoolServer,
     penumbra_stake::component::rpc::Server as StakeServer,
-    penumbra_tendermint_proxy::TendermintProxy,
     penumbra_tower_trace::remote_addr,
     tonic_web::enable as we,
 };
 
 pub fn router(
     storage: &cnidarium::Storage,
-    cometbft_addr: url::Url,
+    tm_proxy: impl TendermintProxyService,
     enable_expensive_rpc: bool,
 ) -> anyhow::Result<tonic::transport::server::Router> {
-    let tm_proxy = TendermintProxy::new(cometbft_addr);
     let ibc = penumbra_ibc::component::rpc::IbcQuery::<PenumbraHost>::new(storage.clone());
     let mut grpc_server = tonic::transport::server::Server::builder()
         .trace_fn(|req| match remote_addr(req) {
@@ -115,7 +115,7 @@ pub fn router(
         .add_service(we(ClientQueryServer::new(ibc.clone())))
         .add_service(we(ChannelQueryServer::new(ibc.clone())))
         .add_service(we(ConnectionQueryServer::new(ibc.clone())))
-        .add_service(we(TendermintProxyServiceServer::new(tm_proxy.clone())))
+        .add_service(we(TendermintProxyServiceServer::new(tm_proxy)))
         .add_service(we(tonic_reflection::server::Builder::configure()
             .register_encoded_file_descriptor_set(penumbra_proto::FILE_DESCRIPTOR_SET)
             .build()
