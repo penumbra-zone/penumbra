@@ -1,4 +1,6 @@
+use std::process;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -35,7 +37,8 @@ use tendermint::abci::{self, Event};
 
 use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
-use tracing::Instrument;
+use tokio::time::sleep;
+use tracing::{instrument, Instrument};
 
 use crate::action_handler::AppActionHandler;
 use crate::genesis::AppState;
@@ -59,22 +62,25 @@ pub struct App {
 
 impl App {
     /// Constructs a new application, using the provided [`Snapshot`].
-    pub async fn new(snapshot: Snapshot) -> Result<Self> {
+    /// Callers should ensure that [`App::is_ready`]) returns `true`, but this is not enforced.
+    #[instrument(skip_all)]
+    pub fn new(snapshot: Snapshot) -> Self {
         tracing::debug!("initializing App instance");
 
         // We perform the `Arc` wrapping of `State` here to ensure
         // there should be no unexpected copies elsewhere.
         let state = Arc::new(StateDelta::new(snapshot));
 
-        // If the state says that the chain is halted, we should not proceed. This is a safety check
-        // to ensure that automatic restarts by software like systemd do not cause the chain to come
-        // back up again after a halt.
-        if state.is_chain_halted(TOTAL_HALT_COUNT).await? {
-            tracing::error!("chain is halted, refusing to restart!");
-            anyhow::bail!("chain is halted, refusing to restart");
-        }
+        Self { state }
+    }
 
-        Ok(Self { state })
+    /// Returns whether the application is ready to start.
+    #[instrument(skip_all, ret)]
+    pub async fn is_ready(state: Snapshot) -> bool {
+        // If the chain is halted, we are not ready to start the application.
+        // This is a safety mechanism to prevent the chain from starting if it
+        // is in a halted state.
+        !state.is_chain_halted().await
     }
 
     // StateDelta::apply only works when the StateDelta wraps an underlying
@@ -152,6 +158,13 @@ impl App {
         &mut self,
         proposal: request::PrepareProposal,
     ) -> response::PrepareProposal {
+        if self.state.is_chain_halted().await {
+            // If we find ourselves preparing a proposal for a halted chain
+            // we stop abruptly to prevent any progress.
+            // The persistent halt mechanism will prevent restarts until we are ready.
+            process::exit(0);
+        }
+
         let mut included_txs = Vec::new();
         let num_candidate_txs = proposal.txs.len();
         tracing::debug!(
@@ -526,15 +539,16 @@ impl App {
             .await
             .expect("must be able to successfully commit to storage");
 
-        // If we should halt, we should end the process here.
-        if should_halt {
-            tracing::info!("committed block when a chain halt was signaled; exiting now");
-            std::process::exit(0);
-        }
-
-        if is_upgrade_height {
-            tracing::info!("committed block at upgrade height; exiting now");
-            std::process::exit(0);
+        // We want to halt the node, but not before we submit an ABCI `Commit`
+        // response to `CometBFT`. To do this, we schedule a process exit in `2s`,
+        // assuming a `5s` timeout.
+        // See #4443 for more context.
+        if should_halt || is_pre_upgrade_height {
+            tokio::spawn(async move {
+                sleep(Duration::from_secs(2)).await;
+                tracing::info!("halt signal recorded, exiting process");
+                std::process::exit(0);
+            });
         }
 
         tracing::debug!(?jmt_root, "finished committing state");

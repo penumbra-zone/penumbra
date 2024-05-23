@@ -57,8 +57,7 @@ pub fn new(
             req.create_span()
         }))
         .service(tower_actor::Actor::new(10, |queue: _| {
-            let storage = storage.clone();
-            async move { Mempool::new(storage.clone(), queue).await?.run().await }
+            Mempool::new(storage.clone(), queue).run()
         }));
     let info = Info::new(storage.clone());
     let snapshot = Snapshot {};
