@@ -5446,6 +5446,7 @@ dependencies = [
  "serde_json",
  "subtle-encoding",
  "tendermint",
+ "tendermint-proto",
  "tendermint-rpc",
  "thiserror",
  "tonic",
