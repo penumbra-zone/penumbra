@@ -110,14 +110,22 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                 .into(),
         };
 
+        tracing::debug!(
+            ?output_data,
+            ?swap_execution_1_for_2,
+            ?swap_execution_2_for_1
+        );
+
         // Update the candlestick tracking
         if let Some(se) = swap_execution_1_for_2.clone() {
+            tracing::debug!("updating candlestick for 1=>2 swap");
             Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .record_swap_execution(&se)
                 .await?;
         }
         if let Some(se) = swap_execution_2_for_1.clone() {
+            tracing::debug!("updating candlestick for 2=>1 swap");
             Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .record_swap_execution(&se)
@@ -125,11 +133,6 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
         }
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
-        tracing::debug!(
-            ?output_data,
-            ?swap_execution_1_for_2,
-            ?swap_execution_2_for_1
-        );
         Arc::get_mut(self)
             .expect("expected state to have no other refs")
             .set_output_data(output_data, swap_execution_1_for_2, swap_execution_2_for_1)
