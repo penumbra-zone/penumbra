@@ -15,7 +15,7 @@ hex                              = { workspace = true }
 http                             = { workspace = true }
 metrics                          = { workspace = true }
 pbjson-types                     = { workspace = true }
-penumbra-proto                   = { workspace = true, features = ["rpc"] }
+penumbra-proto                   = { workspace = true, features = ["rpc", "tendermint"] }
 penumbra-transaction             = { workspace = true }
 pin-project                      = { workspace = true }
 pin-project-lite                 = { workspace = true }
