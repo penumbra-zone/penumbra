@@ -1,6 +1,7 @@
 use crate::Name;
 use std::convert::{From, TryFrom};
 
+#[cfg(feature = "tendermint")]
 mod tendermint_compat;
 
 /// A marker type that captures the relationships between a domain type (`Self`) and a protobuf type (`Self::Proto`).
