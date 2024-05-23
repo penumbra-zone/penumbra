@@ -524,15 +524,16 @@ impl App {
             .await
             .expect("must be able to successfully commit to storage");
 
-        // If we should halt, we should end the process here.
-        if should_halt {
-            tracing::info!("committed block when a chain halt was signaled; exiting now");
-            std::process::exit(0);
-        }
-
-        if is_pre_upgrade_height {
-            tracing::info!("committed block at upgrade height; exiting now");
-            std::process::exit(0);
+        // We want to halt the node, but not before we submit an ABCI `Commit`
+        // response to `CometBFT`. To do this, we schedule a process exit in `2s`,
+        // assuming a `5s` timeout.
+        // See #4443 for more context.
+        if should_halt || is_pre_upgrade_height {
+            tokio::spawn(async move {
+                sleep(Duration::from_secs(2)).await;
+                tracing::info!("halt signal recorded, exiting process");
+                std::process::exit(0);
+            });
         }
 
         tracing::debug!(?jmt_root, "finished committing state");
