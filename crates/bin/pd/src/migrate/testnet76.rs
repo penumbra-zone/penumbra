@@ -8,6 +8,7 @@ use pbjson_types::Any;
 use penumbra_app::app::StateReadExt as _;
 use penumbra_asset::Balance;
 use penumbra_auction::auction::dutch::DutchAuction;
+use penumbra_governance::StateWriteExt;
 use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::{EpochManager, EpochRead};
 use penumbra_shielded_pool::params::ShieldedPoolParameters;
@@ -110,6 +111,7 @@ pub async fn migrate(
         // Reconstruct a VCB balance for the auction component.
         heal_auction_vcb(&mut delta).await?;
 
+        delta.ready_to_start();
         delta.put_block_height(0u64);
         let post_upgrade_root_hash = storage.commit_in_place(delta).await?;
         tracing::info!(?post_upgrade_root_hash, "post-migration root hash");
