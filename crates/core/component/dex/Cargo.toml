@@ -74,6 +74,7 @@ tendermint = {workspace = true}
 tendermint-light-client-verifier = {workspace = true}
 thiserror = {workspace = true}
 tokio = {workspace = true, features = ["full"], optional = true}
+tokio-stream = {workspace = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
 
