@@ -7,7 +7,7 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
-    component::{metrics, StateReadExt, StateWriteExt, SwapManager},
+    component::{StateReadExt, StateWriteExt, SwapManager},
     event,
     swap::{proof::SwapProofPublic, Swap},
 };
@@ -42,7 +42,6 @@ impl ActionHandler for Swap {
             "Dex MUST be enabled to process swap actions."
         );
 
-        let swap_start = std::time::Instant::now();
         let swap = self;
 
         // All swaps will be tallied for the block so the
@@ -65,8 +64,6 @@ impl ActionHandler for Swap {
             .add_swap_payload(self.body.payload.clone(), source)
             .await;
 
-        metrics::histogram!(crate::component::metrics::DEX_SWAP_DURATION)
-            .record(swap_start.elapsed());
         state.record_proto(event::swap(self));
 
         Ok(())
