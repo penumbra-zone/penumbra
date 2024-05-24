@@ -19,9 +19,10 @@ use penumbra_proto::{
         },
         simulation_service_server::SimulationService,
         ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
-        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandlestickDataRequest,
-        CandlestickDataResponse, CandlestickDataStreamRequest, CandlestickDataStreamResponse,
-        LiquidityPositionByIdRequest, LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse,
+        CandlestickData as ProtoCandlestickData, CandlestickDataRequest, CandlestickDataResponse,
+        CandlestickDataStreamRequest, CandlestickDataStreamResponse, LiquidityPositionByIdRequest,
+        LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
         LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
         LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
         SimulateTradeRequest, SimulateTradeResponse, SpreadRequest, SpreadResponse,
@@ -32,7 +33,6 @@ use penumbra_proto::{
 
 use super::ExecutionCircuitBreaker;
 use crate::{
-    component::candlestick::CandlestickData,
     component::metrics,
     lp::position::{self, Position},
     state_key, DirectedTradingPair, SwapExecution, TradingPair,
@@ -224,29 +224,45 @@ impl QueryService for Server {
             .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-        let prefix = state_key::candlesticks::by_pair_and_height(&pair, start_height);
+        let prefix = state_key::candlesticks::by_pair(&pair);
         tracing::trace!(?prefix, "searching for candlesticks from starting height");
-        let candlesticks = state
-            .nonverifiable_prefix_raw(prefix.as_bytes())
-            .map(|entry| match entry {
-                Ok((_, v)) => Ok(CandlestickData::decode(&*v)?),
-                Err(e) => Err(e),
-            })
-            .boxed()
-            .take(limit)
-            .collect::<Vec<_>>()
-            .await
-            .into_iter()
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| {
-                tonic::Status::internal(format!(
-                    "error getting candlestick data from storage: {}",
-                    e
-                ))
+        let start_height = format!("{:020}", start_height).as_bytes().to_vec();
+        // let mut range = state_init.nonverifiable_range_raw(Some(b"compact_block/"), ..cb_80)?;
+        // for height in 0..80 {
+        //     assert_eq!(
+        //         range.next().await.transpose()?,
+        //         Some((
+        //             format!("compact_block/{:020}", height).as_bytes().to_vec(),
+        //             format!("compact_block/{:020}", height).as_bytes().to_vec()
+        //         )),
+        //         "height: {}",
+        //         height
+        //     );
+        // }
+
+        let mut candlesticks = Vec::new();
+        let mut counter = 0;
+        let mut range = state
+            .nonverifiable_range_raw(Some(prefix.as_bytes()), start_height..)
+            .map_err(|_| Status::internal("error constructing candlestick range query"))?;
+        while let Some(res) = range.next().await {
+            if counter >= limit {
+                break;
+            }
+
+            let (_k, v) = res.map_err(|_| {
+                tonic::Status::internal("error getting candlestick data from storage")
             })?;
 
+            candlesticks.push(ProtoCandlestickData::decode(&*v).map_err(|_| {
+                tonic::Status::internal("error decoding candlestick data from storage")
+            })?);
+
+            counter += 1;
+        }
+
         Ok(tonic::Response::new(CandlestickDataResponse {
-            data: candlesticks.into_iter().map(Into::into).collect(),
+            data: candlesticks,
         }))
     }
 
