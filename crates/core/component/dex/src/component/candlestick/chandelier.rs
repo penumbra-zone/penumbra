@@ -31,9 +31,7 @@ pub trait Chandelier: StateWrite {
         prev_state: &Position,
         new_state: &Position,
     ) -> Result<()> {
-        // Don't record a position execution if the two states are the same.
-        // TODO: is this unnecessary due to https://github.com/penumbra-zone/penumbra/blob/d6299e9dd1519784953139a6a2c37512239fdfe4/crates/core/component/dex/src/component/position_manager.rs#L375-L376 ?
-        // the potentially extraneous check is probably fine for safety's sake
+        // Redundant check that we do not record no-op executions.
         if prev_state == new_state {
             return Ok(());
         }
@@ -85,7 +83,8 @@ pub trait Chandelier: StateWrite {
     #[tracing::instrument(level = "debug", skip(self))]
     async fn record_swap_execution(&mut self, swap: &SwapExecution) -> Result<()> {
         // Don't record a swap execution if the output amount was zero.
-        // It's possible for no-op swap executions to be recorded, so this is an important check.
+        // This is not an superfluous check, as the swap execution could really
+        // have zero output e.g. in the case of a dust swap.
         if swap.output.amount == 0u32.into() {
             return Ok(());
         }

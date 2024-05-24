@@ -6,7 +6,7 @@ use penumbra_proto::{core::component::dex::v1 as pb, DomainType};
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "pb::CandlestickData", into = "pb::CandlestickData")]
 pub struct CandlestickData {
-    /// The height of the candlestick data.
+    /// The block height of the candlestick data.
     pub height: u64,
     /// The first observed price during the block execution.
     pub open: f64,
