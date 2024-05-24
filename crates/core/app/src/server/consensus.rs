@@ -22,10 +22,10 @@ pub type ConsensusService = tower_actor::Actor<Request, Response, BoxError>;
 
 fn trace_events(events: &[Event]) {
     for event in events {
-        let span = tracing::info_span!("event", kind = ?event.kind);
+        let span = tracing::debug_span!("event", kind = ?event.kind);
         span.in_scope(|| {
             for attr in &event.attributes {
-                tracing::info!(k = ?attr.key, v=?attr.value);
+                tracing::debug!(k = ?attr.key, v=?attr.value);
             }
         })
     }
