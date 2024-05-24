@@ -50,9 +50,10 @@ members = [
   "crates/util/auto-https",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
+  "crates/util/easy-rpc",
   "crates/view",
   "crates/wallet",
-  "tools/summonerd",
+  "tools/summonerd", "crates/util/easy-rpc",
 ]
 
 # Config for 'cargo dist'

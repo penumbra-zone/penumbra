@@ -2082,6 +2082,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d6ef0072f8a535281e4876be788938b528e9a1d43900b82c2569af7da799125"
 
 [[package]]
+name = "easy-rpc"
+version = "0.76.0-alpha.1"
+dependencies = [
+ "futures",
+ "tokio",
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.16.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5019,6 +5027,7 @@ dependencies = [
  "decaf377-fmd",
  "decaf377-ka",
  "decaf377-rdsa",
+ "easy-rpc",
  "futures",
  "hex",
  "im",
