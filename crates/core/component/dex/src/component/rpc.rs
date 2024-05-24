@@ -216,7 +216,7 @@ impl QueryService for Server {
         let start_height = request.get_ref().start_height;
         // Limit the number of candlesticks returned to 20,000 (approximately 1 day)
         // to prevent the server from being overwhelmed by a single request.
-        let limit = std::cmp::max(request.get_ref().limit as usize, 20_000usize);
+        let limit = std::cmp::min(request.get_ref().limit as usize, 20_000usize);
         let pair: DirectedTradingPair = request
             .get_ref()
             .pair
