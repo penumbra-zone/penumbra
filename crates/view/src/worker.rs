@@ -399,12 +399,7 @@ impl Worker {
                                 .record_asset(denom_metadata.try_into()?)
                                 .await?;
                         } else {
-                            // Otherwise we are dealing with an unknown/novel asset ID, but we don't have the original raw denom field naming the asset.
-                            // For now, we can just record the asset ID with the denom value as "Unknown".
-
-                            self.storage
-                                .record_unknown_asset(note_record.note.asset_id())
-                                .await?;
+                            tracing::warn!(asset_id = ?note_record.note.asset_id(), "received unknown asset ID with no available metadata");
                         }
                     }
                 }
