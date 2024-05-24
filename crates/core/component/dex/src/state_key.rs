@@ -44,11 +44,6 @@ pub mod candlesticks {
         "dex/block_swap_executions"
     }
 
-    pub fn in_progress(pair: &DirectedTradingPair) -> String {
-        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
-        format!("dex/in_progress_candlestick/{pair_bytes}")
-    }
-
     pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
         let pair_bytes = hex::encode_upper(pair.encode_to_vec());
         format!("dex/candlesticks/{pair_bytes}/{height:020}")

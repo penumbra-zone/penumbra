@@ -47,7 +47,7 @@ impl Component for Dex {
     }
 
     #[instrument(name = "dex", skip(state, end_block))]
-    async fn end_block<S: StateWrite + 'static + Chandelier>(
+    async fn end_block<S: StateWrite + 'static>(
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {

@@ -149,7 +149,7 @@ impl<T: StateRead + ?Sized> PositionRead for T {}
 
 /// Manages liquidity positions within the chain state.
 #[async_trait]
-pub trait PositionManager: Chandelier + StateWrite + PositionRead {
+pub trait PositionManager: StateWrite + PositionRead {
     /// Close a position by id, removing it from the state.
     ///
     /// If the position is already closed, this is a no-op.
@@ -335,8 +335,11 @@ pub trait PositionManager: Chandelier + StateWrite + PositionRead {
         }
 
         // Update the candlestick tracking
+        // We use `.ok` here to avoid halting the chain if there's an error recording
         self.record_position_execution(&prev_state, &new_state)
-            .await?;
+            .await
+            .map_err(|e| tracing::warn!(?e, "failed to record position execution"))
+            .ok();
 
         self.update_position(Some(prev_state), new_state).await
     }

@@ -15,7 +15,7 @@ use penumbra_num::{
 use tracing::instrument;
 
 use crate::{
-    component::{candlestick::Chandelier, metrics, PositionManager, PositionRead},
+    component::{metrics, PositionManager, PositionRead},
     lp::{
         position::{self, Position},
         Reserves,
@@ -81,7 +81,7 @@ pub trait FillRoute: StateWrite + Sized {
 
 impl<S: StateWrite> FillRoute for S {}
 
-async fn fill_route_inner<S: StateWrite + Sized + Chandelier>(
+async fn fill_route_inner<S: StateWrite + Sized>(
     state: S,
     mut input: Value,
     hops: &[asset::Id],

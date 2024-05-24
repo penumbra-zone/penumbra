@@ -124,11 +124,11 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
                 .record_swap_execution(&se)
                 .await?;
         }
-        if let Some(se) = swap_execution_2_for_1.clone() {
+        if let Some(se) = &swap_execution_2_for_1 {
             tracing::debug!("updating candlestick for 2=>1 swap");
             Arc::get_mut(self)
                 .expect("expected state to have no other refs")
-                .record_swap_execution(&se)
+                .record_swap_execution(se)
                 .await?;
         }
 
