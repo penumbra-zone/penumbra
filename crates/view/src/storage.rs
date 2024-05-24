@@ -1147,25 +1147,6 @@ impl Storage {
         .await?
     }
 
-    pub async fn record_unknown_asset(&self, id: asset::Id) -> anyhow::Result<()> {
-        let asset_id = id.to_bytes().to_vec();
-        let denom = "Unknown".to_string();
-
-        let pool = self.pool.clone();
-
-        spawn_blocking(move || {
-            pool.get()?
-                .execute(
-                    "INSERT OR IGNORE INTO assets (asset_id, denom) VALUES (?1, ?2)",
-                    (asset_id, denom),
-                )
-                .map_err(anyhow::Error::from)
-        })
-        .await??;
-
-        Ok(())
-    }
-
     pub async fn record_position(&self, position: Position) -> anyhow::Result<()> {
         let position_id = position.id().0.to_vec();
 
