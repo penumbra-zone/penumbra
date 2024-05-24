@@ -269,7 +269,7 @@ pub mod query_client {
                 .insert(GrpcMethod::new("ibc.core.client.v1.Query", "ClientStatus"));
             self.inner.unary(req, path, codec).await
         }
-        /// ClientParams queries all parameters of the ibc client.
+        /// ClientParams queries all parameters of the ibc client submodule.
         pub async fn client_params(
             &mut self,
             request: impl tonic::IntoRequest<
@@ -447,7 +447,7 @@ pub mod query_server {
             >,
             tonic::Status,
         >;
-        /// ClientParams queries all parameters of the ibc client.
+        /// ClientParams queries all parameters of the ibc client submodule.
         async fn client_params(
             &self,
             request: tonic::Request<

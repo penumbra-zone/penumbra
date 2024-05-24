@@ -15,44 +15,41 @@ use crate::state_key;
 
 use super::Server;
 
-// use super::IbcQuery;
-
 #[async_trait]
-// impl<HI: HostInterface + Send + Sync + 'static> TransferQuery for Server {
 impl TransferQuery for Server {
     async fn total_escrow_for_denom(
         &self,
         _: tonic::Request<QueryTotalEscrowForDenomRequest>,
     ) -> std::result::Result<tonic::Response<QueryTotalEscrowForDenomResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn escrow_address(
         &self,
         _: tonic::Request<QueryEscrowAddressRequest>,
     ) -> std::result::Result<tonic::Response<QueryEscrowAddressResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denom_hash(
         &self,
         _: tonic::Request<QueryDenomHashRequest>,
     ) -> std::result::Result<tonic::Response<QueryDenomHashResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn params(
         &self,
         _: tonic::Request<QueryParamsRequest>,
     ) -> std::result::Result<tonic::Response<QueryParamsResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denom_trace(
         &self,
         _: tonic::Request<QueryDenomTraceRequest>,
     ) -> std::result::Result<tonic::Response<QueryDenomTraceResponse>, tonic::Status> {
-        unimplemented!()
+        Err(tonic::Status::unimplemented("not implemented"))
     }
 
     async fn denom_traces(

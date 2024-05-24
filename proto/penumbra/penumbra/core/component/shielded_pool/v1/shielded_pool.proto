@@ -220,23 +220,6 @@ service QueryService {
   // objects -- that is, the number of responses may be smaller than the length
   // of the asset IDs array.
   rpc AssetMetadataByIds(AssetMetadataByIdsRequest) returns (stream AssetMetadataByIdsResponse);
-
-  // Returns a stream of the total supply of all assets.
-  // Similar to the `cosmos.bank.v1beta1.Query/TotalSupply` call,
-  // but not Cosmos-specific.
-  rpc TotalSupply(TotalSupplyRequest) returns (stream TotalSupplyResponse);
-}
-
-// Requests information on total asset supply
-message TotalSupplyRequest {
-}
-
-// Returns information regarding supply of an asset.
-message TotalSupplyResponse {
-  // A single asset denom streamed from the node.
-  core.asset.v1.Metadata denom_metadata = 1;
-  // A single asset supply streamed from the node.
-  penumbra.core.num.v1.Amount amount = 2;
 }
 
 
