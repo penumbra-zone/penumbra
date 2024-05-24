@@ -1,3 +1,5 @@
+/// Filters in an `AuctionsRequest` will be combined using `AND` logic -- that
+/// is, the more filters you add, the fewer responses you're likely to get.
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuctionsRequest {
@@ -12,6 +14,11 @@ pub struct AuctionsRequest {
     /// If set, query a fullnode for the current state of the auctions.
     #[prost(bool, tag = "3")]
     pub query_latest_state: bool,
+    /// If present, filter to only include auctions whose IDs are in this array.
+    #[prost(message, repeated, tag = "4")]
+    pub auction_ids_filter: ::prost::alloc::vec::Vec<
+        super::super::core::component::auction::v1::AuctionId,
+    >,
 }
 impl ::prost::Name for AuctionsRequest {
     const NAME: &'static str = "AuctionsRequest";
@@ -27,9 +34,6 @@ pub struct AuctionsResponse {
     pub id: ::core::option::Option<
         super::super::core::component::auction::v1::AuctionId,
     >,
-    /// The note recording the auction NFT.
-    #[prost(message, optional, tag = "4")]
-    pub note_record: ::core::option::Option<SpendableNoteRecord>,
     /// The state of the returned auction.
     ///
     /// Only present when `query_latest_state` was provided.
@@ -43,6 +47,20 @@ pub struct AuctionsResponse {
     pub positions: ::prost::alloc::vec::Vec<
         super::super::core::component::dex::v1::Position,
     >,
+    /// The note recording the auction NFT.
+    #[prost(message, optional, tag = "4")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
+    /// The sequence number of the auction state *as known to the local view
+    /// service*. Note that the local view service may lag behind the fullnode. For
+    /// example, if the chain hits an auction's `end_height`, but the user hasn't
+    /// yet exchanged their sequence-0 (opened) auction NFT for a sequence-1
+    /// (closed) auction NFT, the local view service will have a sequnce number of
+    /// 0.
+    ///
+    /// Dutch auctions move from:
+    /// 0 (opened) => 1 (closed) => n (withdrawn)
+    #[prost(uint64, tag = "5")]
+    pub local_seq: u64,
 }
 impl ::prost::Name for AuctionsResponse {
     const NAME: &'static str = "AuctionsResponse";
