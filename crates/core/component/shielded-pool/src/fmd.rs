@@ -102,16 +102,18 @@ impl SlidingWindow {
         )
         .unwrap_or(u32::MAX);
 
+        // 1 / this_number of transactions should be detected as false positives
+        let inverse_detection_ratio = approximate_clue_count / self.targeted_detections_per_window;
         // To receive the power of two *above* the targeted number of clues,
         // take the base 2 logarithm, round down, and use 1 for 0 clues
-        let required_precision = if approximate_clue_count == 0 {
+        let required_precision = if inverse_detection_ratio == 0 {
             Precision::new(1u8).expect("1 is a valid precision")
         } else {
-            let lg_projected_clues = 63 - approximate_clue_count.leading_zeros();
-            if lg_projected_clues > Precision::MAX.bits().into() {
+            let lg_inverse_ratio = 63 - inverse_detection_ratio.leading_zeros();
+            if lg_inverse_ratio > Precision::MAX.bits().into() {
                 Precision::MAX
             } else {
-                Precision::new(lg_projected_clues as u8)
+                Precision::new(lg_inverse_ratio as u8)
                     .expect("unexpected precision overflow after check")
             }
         };
