@@ -31,15 +31,15 @@ pub mod candlesticks {
 
     pub mod object {
         pub fn block_executions() -> &'static str {
-            "dex/object/block_executions"
+            "dex/candlesticks/object/block_executions"
         }
 
         pub fn block_position_executions() -> &'static str {
-            "dex/object/block_position_executions"
+            "dex/candlesticks/object/block_position_executions"
         }
 
         pub fn block_swap_executions() -> &'static str {
-            "dex/object/block_swap_executions"
+            "dex/candlesticks/object/block_swap_executions"
         }
     }
 
