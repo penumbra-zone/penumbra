@@ -227,18 +227,6 @@ impl QueryService for Server {
         let prefix = state_key::candlesticks::by_pair(&pair);
         tracing::trace!(?prefix, "searching for candlesticks from starting height");
         let start_height = format!("{:020}", start_height).as_bytes().to_vec();
-        // let mut range = state_init.nonverifiable_range_raw(Some(b"compact_block/"), ..cb_80)?;
-        // for height in 0..80 {
-        //     assert_eq!(
-        //         range.next().await.transpose()?,
-        //         Some((
-        //             format!("compact_block/{:020}", height).as_bytes().to_vec(),
-        //             format!("compact_block/{:020}", height).as_bytes().to_vec()
-        //         )),
-        //         "height: {}",
-        //         height
-        //     );
-        // }
 
         let mut candlesticks = Vec::new();
         let mut counter = 0;
