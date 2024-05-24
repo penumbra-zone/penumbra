@@ -10,7 +10,7 @@ use tracing::instrument;
 
 use crate::{
     component::{
-        candlestick::Chandelier,
+        chandelier::Chandelier,
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
         ExecutionCircuitBreaker, PositionManager, StateWriteExt,

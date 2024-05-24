@@ -30,7 +30,7 @@ use crate::{
 };
 use crate::{event, state_key};
 
-use super::candlestick::Chandelier;
+use super::chandelier::Chandelier;
 
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;

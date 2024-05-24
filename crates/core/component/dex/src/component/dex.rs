@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    candlestick::Chandelier,
+    chandelier::Chandelier,
     router::{HandleBatchSwaps, RoutingParams},
     Arbitrage, PositionManager, PositionRead as _, ValueCircuitBreaker,
 };

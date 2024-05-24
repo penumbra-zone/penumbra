@@ -1,18 +1,19 @@
 use anyhow::Ok;
 use anyhow::{Context as _, Result};
 
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
+use futures::{StreamExt, TryStreamExt as _};
 use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::{StateReadProto, StateWriteProto};
+use penumbra_proto::{DomainType, StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead as _;
 use tonic::async_trait;
 
 use crate::{lp::position::Position, state_key::candlesticks, DirectedTradingPair, SwapExecution};
 
-use super::CandlestickData;
+use crate::CandlestickData;
 
 #[async_trait]
-pub trait Chandelier: StateWrite {
+pub trait CandlestickRead: StateRead {
     #[tracing::instrument(level = "debug", skip(self))]
     async fn get_candlestick(
         &self,
@@ -25,6 +26,37 @@ pub trait Chandelier: StateWrite {
         .await
     }
 
+    async fn candlesticks(
+        &self,
+        trading_pair: &DirectedTradingPair,
+        start_height: u64,
+        limit: usize,
+    ) -> Result<Vec<CandlestickData>> {
+        let prefix = candlesticks::data::by_pair(&trading_pair);
+        let start_height_key = format!("{:020}", start_height).as_bytes().to_vec();
+        tracing::trace!(
+            ?prefix,
+            ?start_height,
+            "searching for candlesticks from starting height"
+        );
+
+        let range = self
+            .nonverifiable_range_raw(Some(prefix.as_bytes()), start_height_key..)
+            .context("error forming range query")?;
+
+        range
+            .take(limit)
+            .and_then(|(_k, v)| async move {
+                CandlestickData::decode(v.as_ref()).context("error deserializing candlestick")
+            })
+            .try_collect()
+            .await
+    }
+}
+impl<T: StateRead + ?Sized> CandlestickRead for T {}
+
+#[async_trait]
+pub trait Chandelier: StateWrite {
     #[tracing::instrument(level = "debug", skip(self))]
     async fn record_position_execution(
         &mut self,
