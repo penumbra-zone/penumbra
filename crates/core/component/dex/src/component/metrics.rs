@@ -36,9 +36,9 @@ pub fn register_metrics() {
         "The time spent filling routes while executing trades within the DEX"
     );
     describe_histogram!(
-        DEX_SWAP_DURATION,
+        DEX_RPC_SIMULATE_TRADE_DURATION,
         Unit::Seconds,
-        "The time spent processing swaps within the DEX"
+        "The time spent processing a SimulateTrade RPC request"
     );
 }
 
@@ -52,4 +52,5 @@ pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_se
 pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
 pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
 pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
-pub const DEX_SWAP_DURATION: &str = "penumbra_dex_swap_duration_seconds";
+pub const DEX_RPC_SIMULATE_TRADE_DURATION: &str =
+    "penumbra_dex_rpc_simulate_trade_duration_seconds";
