@@ -1,24 +1,31 @@
 use std::{pin::Pin, sync::Arc};
 
+use anyhow::Result;
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
+use prost::Message as _;
 use tonic::Status;
 use tracing::instrument;
 
-use cnidarium::{StateDelta, Storage};
+use cnidarium::{StateDelta, StateRead as _, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
-        query_service_server::QueryService, simulate_trade_request::routing,
-        simulate_trade_request::routing::Setting, simulate_trade_request::Routing,
-        simulation_service_server::SimulationService, ArbExecutionRequest, ArbExecutionResponse,
-        ArbExecutionsRequest, ArbExecutionsResponse, BatchSwapOutputDataRequest,
-        BatchSwapOutputDataResponse, LiquidityPositionByIdRequest, LiquidityPositionByIdResponse,
-        LiquidityPositionsByIdRequest, LiquidityPositionsByIdResponse,
-        LiquidityPositionsByPriceRequest, LiquidityPositionsByPriceResponse,
-        LiquidityPositionsRequest, LiquidityPositionsResponse, SimulateTradeRequest,
-        SimulateTradeResponse, SpreadRequest, SpreadResponse, SwapExecutionRequest,
-        SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
+        query_service_server::QueryService,
+        simulate_trade_request::{
+            routing::{self, Setting},
+            Routing,
+        },
+        simulation_service_server::SimulationService,
+        ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse,
+        CandlestickData as ProtoCandlestickData, CandlestickDataRequest, CandlestickDataResponse,
+        CandlestickDataStreamRequest, CandlestickDataStreamResponse, LiquidityPositionByIdRequest,
+        LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
+        LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
+        LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
+        SimulateTradeRequest, SimulateTradeResponse, SpreadRequest, SpreadResponse,
+        SwapExecutionRequest, SwapExecutionResponse, SwapExecutionsRequest, SwapExecutionsResponse,
     },
     DomainType, StateReadProto,
 };
@@ -27,7 +34,8 @@ use super::ExecutionCircuitBreaker;
 use crate::{
     component::metrics,
     lp::position::{self, Position},
-    state_key, DirectedTradingPair, SwapExecution, TradingPair,
+    state_key::{self, candlesticks},
+    DirectedTradingPair, SwapExecution, TradingPair,
 };
 
 use super::{router::RouteAndFill, PositionRead, StateReadExt};
@@ -64,6 +72,11 @@ impl QueryService for Server {
         Pin<Box<dyn futures::Stream<Item = Result<ArbExecutionsResponse, tonic::Status>> + Send>>;
     type SwapExecutionsStream =
         Pin<Box<dyn futures::Stream<Item = Result<SwapExecutionsResponse, tonic::Status>> + Send>>;
+    type CandlestickDataStreamStream = Pin<
+        Box<
+            dyn futures::Stream<Item = Result<CandlestickDataStreamResponse, tonic::Status>> + Send,
+        >,
+    >;
 
     #[instrument(skip(self, request))]
     async fn arb_execution(
@@ -192,6 +205,62 @@ impl QueryService for Server {
             })),
             None => Err(Status::not_found("batch swap output data not found")),
         }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn candlestick_data(
+        &self,
+        request: tonic::Request<CandlestickDataRequest>,
+    ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+        let start_height = request.get_ref().start_height;
+        // Limit the number of candlesticks returned to 20,000 (approximately 1 day)
+        // to prevent the server from being overwhelmed by a single request.
+        let limit = std::cmp::min(request.get_ref().limit as usize, 20_000usize);
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+        let prefix = candlesticks::data::by_pair(&pair);
+        tracing::trace!(?prefix, "searching for candlesticks from starting height");
+        let start_height = format!("{:020}", start_height).as_bytes().to_vec();
+
+        let mut candlesticks = Vec::new();
+        let mut counter = 0;
+        let mut range = state
+            .nonverifiable_range_raw(Some(prefix.as_bytes()), start_height..)
+            .map_err(|_| Status::internal("error constructing candlestick range query"))?;
+        while let Some(res) = range.next().await {
+            if counter >= limit {
+                break;
+            }
+
+            let (_k, v) = res.map_err(|_| {
+                tonic::Status::internal("error getting candlestick data from storage")
+            })?;
+
+            candlesticks.push(ProtoCandlestickData::decode(&*v).map_err(|_| {
+                tonic::Status::internal("error decoding candlestick data from storage")
+            })?);
+
+            counter += 1;
+        }
+
+        Ok(tonic::Response::new(CandlestickDataResponse {
+            data: candlesticks,
+        }))
+    }
+
+    async fn candlestick_data_stream(
+        &self,
+        _request: tonic::Request<CandlestickDataStreamRequest>,
+    ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
+        Err(Status::unimplemented(
+            "candlestick stream is not implemented",
+        ))
     }
 
     #[instrument(skip(self, request))]

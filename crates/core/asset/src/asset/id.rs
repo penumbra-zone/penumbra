@@ -95,6 +95,7 @@ impl std::fmt::Debug for Id {
 }
 
 impl std::fmt::Display for Id {
+    // IMPORTANT: Changing this is state-breaking.
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(&bech32str::encode(
             &self.0.to_bytes(),

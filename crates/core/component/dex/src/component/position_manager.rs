@@ -30,6 +30,8 @@ use crate::{
 };
 use crate::{event, state_key};
 
+use super::candlestick::Chandelier;
+
 const DYNAMIC_ASSET_LIMIT: usize = 10;
 const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;
 
@@ -390,6 +392,13 @@ pub trait PositionManager: StateWrite + PositionRead {
             }
         }
 
+        // Update the candlestick tracking
+        // We use `.ok` here to avoid halting the chain if there's an error recording
+        self.record_position_execution(&prev_state, &new_state)
+            .await
+            .map_err(|e| tracing::warn!(?e, "failed to record position execution"))
+            .ok();
+
         self.update_position(Some(prev_state), new_state).await
     }
 
@@ -472,7 +481,7 @@ pub trait PositionManager: StateWrite + PositionRead {
     }
 }
 
-impl<T: StateWrite + ?Sized> PositionManager for T {}
+impl<T: StateWrite + ?Sized + Chandelier> PositionManager for T {}
 
 #[async_trait]
 trait Inner: StateWrite {

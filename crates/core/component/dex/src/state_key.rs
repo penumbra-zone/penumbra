@@ -27,6 +27,39 @@ pub fn all_positions() -> &'static str {
     "dex/position/"
 }
 
+pub mod candlesticks {
+
+    pub mod object {
+        pub fn block_executions() -> &'static str {
+            "dex/candlesticks/object/block_executions"
+        }
+
+        pub fn block_position_executions() -> &'static str {
+            "dex/candlesticks/object/block_position_executions"
+        }
+
+        pub fn block_swap_executions() -> &'static str {
+            "dex/candlesticks/object/block_swap_executions"
+        }
+    }
+
+    pub mod data {
+        use crate::DirectedTradingPair;
+
+        pub fn prefix() -> &'static str {
+            "dex/candlesticks/data/"
+        }
+
+        pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
+            format!("{}{}/{}/{height:020}", prefix(), &pair.start, &pair.end)
+        }
+
+        pub fn by_pair(pair: &DirectedTradingPair) -> String {
+            format!("{}{}/{}/", prefix(), &pair.start, &pair.end)
+        }
+    }
+}
+
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
         "dex/output/{:020}/{}/{}",

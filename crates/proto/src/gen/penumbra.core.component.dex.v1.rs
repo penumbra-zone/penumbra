@@ -1591,6 +1591,108 @@ impl ::prost::Name for GenesisContent {
         ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
     }
 }
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CandlestickData {
+    /// The height of the candlestick data.
+    #[prost(uint64, tag = "1")]
+    pub height: u64,
+    /// The first observed price during the block execution.
+    #[prost(double, tag = "2")]
+    pub open: f64,
+    /// The last observed price during the block execution.
+    #[prost(double, tag = "3")]
+    pub close: f64,
+    /// The highest observed price during the block execution.
+    #[prost(double, tag = "4")]
+    pub high: f64,
+    /// The lowest observed price during the block execution.
+    #[prost(double, tag = "5")]
+    pub low: f64,
+    /// The volume that traded "directly", during individual position executions.
+    #[prost(double, tag = "6")]
+    pub direct_volume: f64,
+    /// The volume that traded as part of swaps, which could have traversed multiple routes.
+    #[prost(double, tag = "7")]
+    pub swap_volume: f64,
+}
+impl ::prost::Name for CandlestickData {
+    const NAME: &'static str = "CandlestickData";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CandlestickDataRequest {
+    /// The directed trading pair to request candlestick data for.
+    ///
+    /// NOTE: the returned data will only have trades from the SOURCE asset to the
+    /// DEST asset, not the other direction. Make another request if you want both
+    /// sets of data.
+    #[prost(message, optional, tag = "1")]
+    pub pair: ::core::option::Option<DirectedTradingPair>,
+    /// The maximum number of candlestick data points to return.
+    ///
+    /// The server may clamp this limit to a maximum value.
+    #[prost(uint64, tag = "2")]
+    pub limit: u64,
+    /// The height to start the query from.
+    ///
+    /// If this is unset (= 0), the server will return the most recent data points.
+    #[prost(uint64, tag = "3")]
+    pub start_height: u64,
+}
+impl ::prost::Name for CandlestickDataRequest {
+    const NAME: &'static str = "CandlestickDataRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CandlestickDataResponse {
+    /// The candlestick data points.
+    #[prost(message, repeated, tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<CandlestickData>,
+}
+impl ::prost::Name for CandlestickDataResponse {
+    const NAME: &'static str = "CandlestickDataResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CandlestickDataStreamRequest {
+    /// The directed trading pair to subscribe to.
+    #[prost(message, optional, tag = "1")]
+    pub pair: ::core::option::Option<DirectedTradingPair>,
+}
+impl ::prost::Name for CandlestickDataStreamRequest {
+    const NAME: &'static str = "CandlestickDataStreamRequest";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CandlestickDataStreamResponse {
+    /// The candlestick data point.
+    #[prost(message, optional, tag = "1")]
+    pub data: ::core::option::Option<CandlestickData>,
+}
+impl ::prost::Name for CandlestickDataStreamResponse {
+    const NAME: &'static str = "CandlestickDataStreamResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.dex.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.dex.v1.{}", Self::NAME)
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "rpc")]
 pub mod query_service_client {
@@ -1994,6 +2096,72 @@ pub mod query_service_client {
                 );
             self.inner.unary(req, path, codec).await
         }
+        /// Get historical candlestick data for a given trading pair.
+        ///
+        /// Note that this RPC is directional, to get data for both directions, make a second request.
+        pub async fn candlestick_data(
+            &mut self,
+            request: impl tonic::IntoRequest<super::CandlestickDataRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::CandlestickDataResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.dex.v1.QueryService/CandlestickData",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1.QueryService",
+                        "CandlestickData",
+                    ),
+                );
+            self.inner.unary(req, path, codec).await
+        }
+        /// Subscribe to candlestick data updates.
+        pub async fn candlestick_data_stream(
+            &mut self,
+            request: impl tonic::IntoRequest<super::CandlestickDataStreamRequest>,
+        ) -> std::result::Result<
+            tonic::Response<
+                tonic::codec::Streaming<super::CandlestickDataStreamResponse>,
+            >,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/penumbra.core.component.dex.v1.QueryService/CandlestickDataStream",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "penumbra.core.component.dex.v1.QueryService",
+                        "CandlestickDataStream",
+                    ),
+                );
+            self.inner.server_streaming(req, path, codec).await
+        }
     }
 }
 /// Generated client implementations.
@@ -2249,6 +2417,33 @@ pub mod query_service_server {
             &self,
             request: tonic::Request<super::SpreadRequest>,
         ) -> std::result::Result<tonic::Response<super::SpreadResponse>, tonic::Status>;
+        /// Get historical candlestick data for a given trading pair.
+        ///
+        /// Note that this RPC is directional, to get data for both directions, make a second request.
+        async fn candlestick_data(
+            &self,
+            request: tonic::Request<super::CandlestickDataRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::CandlestickDataResponse>,
+            tonic::Status,
+        >;
+        /// Server streaming response type for the CandlestickDataStream method.
+        type CandlestickDataStreamStream: tonic::codegen::tokio_stream::Stream<
+                Item = std::result::Result<
+                    super::CandlestickDataStreamResponse,
+                    tonic::Status,
+                >,
+            >
+            + Send
+            + 'static;
+        /// Subscribe to candlestick data updates.
+        async fn candlestick_data_stream(
+            &self,
+            request: tonic::Request<super::CandlestickDataStreamRequest>,
+        ) -> std::result::Result<
+            tonic::Response<Self::CandlestickDataStreamStream>,
+            tonic::Status,
+        >;
     }
     /// Query operations for the DEX component.
     #[derive(Debug)]
@@ -2810,6 +3005,104 @@ pub mod query_service_server {
                                 max_encoding_message_size,
                             );
                         let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.dex.v1.QueryService/CandlestickData" => {
+                    #[allow(non_camel_case_types)]
+                    struct CandlestickDataSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::UnaryService<super::CandlestickDataRequest>
+                    for CandlestickDataSvc<T> {
+                        type Response = super::CandlestickDataResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::CandlestickDataRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::candlestick_data(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = CandlestickDataSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/penumbra.core.component.dex.v1.QueryService/CandlestickDataStream" => {
+                    #[allow(non_camel_case_types)]
+                    struct CandlestickDataStreamSvc<T: QueryService>(pub Arc<T>);
+                    impl<
+                        T: QueryService,
+                    > tonic::server::ServerStreamingService<
+                        super::CandlestickDataStreamRequest,
+                    > for CandlestickDataStreamSvc<T> {
+                        type Response = super::CandlestickDataStreamResponse;
+                        type ResponseStream = T::CandlestickDataStreamStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::CandlestickDataStreamRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as QueryService>::candlestick_data_stream(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = CandlestickDataStreamSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
