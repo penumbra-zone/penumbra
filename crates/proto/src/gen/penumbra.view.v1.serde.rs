@@ -1008,13 +1008,13 @@ impl serde::Serialize for AuctionsResponse {
         if self.id.is_some() {
             len += 1;
         }
-        if self.note_record.is_some() {
-            len += 1;
-        }
         if self.auction.is_some() {
             len += 1;
         }
         if !self.positions.is_empty() {
+            len += 1;
+        }
+        if self.note_record.is_some() {
             len += 1;
         }
         if self.local_seq != 0 {
@@ -1024,14 +1024,14 @@ impl serde::Serialize for AuctionsResponse {
         if let Some(v) = self.id.as_ref() {
             struct_ser.serialize_field("id", v)?;
         }
-        if let Some(v) = self.note_record.as_ref() {
-            struct_ser.serialize_field("noteRecord", v)?;
-        }
         if let Some(v) = self.auction.as_ref() {
             struct_ser.serialize_field("auction", v)?;
         }
         if !self.positions.is_empty() {
             struct_ser.serialize_field("positions", &self.positions)?;
+        }
+        if let Some(v) = self.note_record.as_ref() {
+            struct_ser.serialize_field("noteRecord", v)?;
         }
         if self.local_seq != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1048,10 +1048,10 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
     {
         const FIELDS: &[&str] = &[
             "id",
-            "note_record",
-            "noteRecord",
             "auction",
             "positions",
+            "note_record",
+            "noteRecord",
             "local_seq",
             "localSeq",
         ];
@@ -1059,9 +1059,9 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             Id,
-            NoteRecord,
             Auction,
             Positions,
+            NoteRecord,
             LocalSeq,
             __SkipField__,
         }
@@ -1086,9 +1086,9 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
                     {
                         match value {
                             "id" => Ok(GeneratedField::Id),
-                            "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
                             "auction" => Ok(GeneratedField::Auction),
                             "positions" => Ok(GeneratedField::Positions),
+                            "noteRecord" | "note_record" => Ok(GeneratedField::NoteRecord),
                             "localSeq" | "local_seq" => Ok(GeneratedField::LocalSeq),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -1110,9 +1110,9 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut id__ = None;
-                let mut note_record__ = None;
                 let mut auction__ = None;
                 let mut positions__ = None;
+                let mut note_record__ = None;
                 let mut local_seq__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -1121,12 +1121,6 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
                                 return Err(serde::de::Error::duplicate_field("id"));
                             }
                             id__ = map_.next_value()?;
-                        }
-                        GeneratedField::NoteRecord => {
-                            if note_record__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("noteRecord"));
-                            }
-                            note_record__ = map_.next_value()?;
                         }
                         GeneratedField::Auction => {
                             if auction__.is_some() {
@@ -1139,6 +1133,12 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
                                 return Err(serde::de::Error::duplicate_field("positions"));
                             }
                             positions__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::NoteRecord => {
+                            if note_record__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("noteRecord"));
+                            }
+                            note_record__ = map_.next_value()?;
                         }
                         GeneratedField::LocalSeq => {
                             if local_seq__.is_some() {
@@ -1155,9 +1155,9 @@ impl<'de> serde::Deserialize<'de> for AuctionsResponse {
                 }
                 Ok(AuctionsResponse {
                     id: id__,
-                    note_record: note_record__,
                     auction: auction__,
                     positions: positions__.unwrap_or_default(),
+                    note_record: note_record__,
                     local_seq: local_seq__.unwrap_or_default(),
                 })
             }

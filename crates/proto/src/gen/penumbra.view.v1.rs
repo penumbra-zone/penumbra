@@ -34,9 +34,6 @@ pub struct AuctionsResponse {
     pub id: ::core::option::Option<
         super::super::core::component::auction::v1::AuctionId,
     >,
-    /// The note recording the auction NFT.
-    #[prost(message, optional, tag = "4")]
-    pub note_record: ::core::option::Option<SpendableNoteRecord>,
     /// The state of the returned auction.
     ///
     /// Only present when `query_latest_state` was provided.
@@ -50,6 +47,9 @@ pub struct AuctionsResponse {
     pub positions: ::prost::alloc::vec::Vec<
         super::super::core::component::dex::v1::Position,
     >,
+    /// The note recording the auction NFT.
+    #[prost(message, optional, tag = "4")]
+    pub note_record: ::core::option::Option<SpendableNoteRecord>,
     /// The sequence number of the auction state *as known to the local view
     /// service*. Note that the local view service may lag behind the fullnode. For
     /// example, if the chain hits an auction's `end_height`, but the user hasn't
