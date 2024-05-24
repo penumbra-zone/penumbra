@@ -205,7 +205,7 @@ async fn watch_changes(
     tx: tokio::sync::mpsc::Sender<Result<WatchResponse, tonic::Status>>,
 ) -> anyhow::Result<()> {
     let mut changes_rx = storage.subscribe_changes();
-    loop {
+    while !tx.is_closed() {
         // Wait for a new set of changes, reporting an error if we don't get one.
         if let Err(e) = changes_rx.changed().await {
             tx.send(Err(tonic::Status::internal(e.to_string()))).await?;
@@ -252,4 +252,5 @@ async fn watch_changes(
             }
         }
     }
+    return Ok(());
 }
