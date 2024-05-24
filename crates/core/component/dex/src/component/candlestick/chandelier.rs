@@ -3,9 +3,7 @@ use anyhow::{Context as _, Result};
 
 use cnidarium::StateWrite;
 use penumbra_num::fixpoint::U128x128;
-use penumbra_proto::core::component::dex::v1 as pb;
-use penumbra_proto::DomainType;
-use penumbra_proto::StateReadProto;
+use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead as _;
 use tonic::async_trait;
 
@@ -21,20 +19,10 @@ pub trait Chandelier: StateWrite {
         trading_pair: &DirectedTradingPair,
         height: u64,
     ) -> Result<Option<CandlestickData>> {
-        let candlestick: Option<pb::CandlestickData> = self
-            .nonverifiable_get_proto(
-                state_key::candlesticks::by_pair_and_height(trading_pair, height).as_bytes(),
-            )
-            .await?;
-
-        if candlestick.is_none() {
-            return Ok(None);
-        }
-
-        match candlestick {
-            Some(candlestick) => Ok(Some(candlestick.try_into()?)),
-            None => Ok(None),
-        }
+        self.nonverifiable_get(
+            state_key::candlesticks::by_pair_and_height(trading_pair, height).as_bytes(),
+        )
+        .await
     }
 
     #[tracing::instrument(level = "debug", skip(self))]
@@ -188,9 +176,9 @@ pub trait Chandelier: StateWrite {
                 ?candlestick,
                 "finalizing candlestick"
             );
-            self.nonverifiable_put_raw(
+            self.nonverifiable_put(
                 state_key::candlesticks::by_pair_and_height(&trading_pair, height).into(),
-                candlestick.encode_to_vec(),
+                candlestick,
             );
         }
 
