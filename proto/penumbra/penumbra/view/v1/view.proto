@@ -162,9 +162,6 @@ message AuctionsRequest {
 
 message AuctionsResponse {
   core.component.auction.v1.AuctionId id = 1;
-  // The note recording the auction NFT.
-  SpendableNoteRecord note_record = 4;
-
   // The state of the returned auction.
   //
   // Only present when `query_latest_state` was provided.
@@ -174,6 +171,8 @@ message AuctionsResponse {
   // Only present when `query_latest_state` was provided.
   // Could be empty, depending on the auction state.
   repeated core.component.dex.v1.Position positions = 3;
+  // The note recording the auction NFT.
+  SpendableNoteRecord note_record = 4;
   // The sequence number of the auction state _as known to the local view
   // service_. Note that the local view service may lag behind the fullnode. For
   // example, if the chain hits an auction's `end_height`, but the user hasn't
