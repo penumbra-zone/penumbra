@@ -60,10 +60,10 @@ impl Default for Parameters {
 }
 
 /// A struct holding params for the sliding window algorithm
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct SlidingWindow {
-    window_blocks: uint32,
-    targeted_detections_per_window: uint32,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SlidingWindow {
+    window_blocks: u32,
+    targeted_detections_per_window: u32,
 }
 
 impl SlidingWindow {
@@ -76,22 +76,54 @@ impl SlidingWindow {
     ) -> (Parameters, MetaParametersAlgorithmState) {
         // An edge case, which should act as a constant.
         if self.window_blocks == 0 {
-            return old;
+            return (
+                old.clone(),
+                MetaParametersAlgorithmState::SlidingWindow {
+                    approximate_clue_count: 0,
+                },
+            );
         }
 
         let new_clues_in_block = clue_count_delta.1.saturating_sub(clue_count_delta.1);
 
-        let projected_clues_in_window = self.window_blocks * new_clues_in_block;
+        let projected_clue_count = u64::from(self.window_blocks) * new_clues_in_block;
+        let old_approximate_clue_count = match state {
+            MetaParametersAlgorithmState::SlidingWindow {
+                approximate_clue_count,
+            } => approximate_clue_count,
+            _ => 0,
+        };
+        // ((w - 1) * old + new) / w, but using u64 for more precision, and saturating
+        let approximate_clue_count: u32 = u32::try_from(
+            (u64::from(old_approximate_clue_count)
+                .saturating_mul((self.window_blocks - 1).into())
+                .saturating_add(projected_clue_count))
+                / u64::from(self.window_blocks),
+        )
+        .unwrap_or(u32::MAX);
 
         // To receive the power of two *above* the targeted number of clues,
         // take the base 2 logarithm, round down, and use 1 for 0 clues
-        let required_precision = if projected_clues_in_window == 0 {
+        let required_precision = if approximate_clue_count == 0 {
             Precision::new(1u8).expect("1 is a valid precision")
         } else {
-            let lg_projected_clues = 63 - projected_clues_in_window.leading_zeros();
-            Precision::new(lg_projected_clues).unwrap_or(Precision::MAX)
+            let lg_projected_clues = 63 - approximate_clue_count.leading_zeros();
+            if lg_projected_clues > Precision::MAX.bits().into() {
+                Precision::MAX
+            } else {
+                Precision::new(lg_projected_clues as u8)
+                    .expect("unexpected precision overflow after check")
+            }
         };
-        todo!()
+        (
+            Parameters {
+                precision: required_precision,
+                as_of_block_height: height,
+            },
+            MetaParametersAlgorithmState::SlidingWindow {
+                approximate_clue_count,
+            },
+        )
     }
 }
 
@@ -123,7 +155,12 @@ impl TryFrom<pb::FmdMetaParameters> for MetaParameters {
             pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(p) => {
                 MetaParametersAlgorithm::Fixed(Precision::new(p as u8)?)
             }
-            pb::fmd_meta_parameters::Algorithm::SlidingWindow(x) => {}
+            pb::fmd_meta_parameters::Algorithm::SlidingWindow(x) => {
+                MetaParametersAlgorithm::SlidingWindow(SlidingWindow {
+                    window_blocks: x.window_blocks,
+                    targeted_detections_per_window: x.targeted_detections_per_window,
+                })
+            }
         };
         Ok(MetaParameters {
             fmd_grace_period_blocks,
@@ -178,7 +215,7 @@ impl Default for MetaParameters {
     try_from = "pb::FmdMetaParametersAlgorithmState",
     into = "pb::FmdMetaParametersAlgorithmState"
 )]
-enum MetaParametersAlgorithmState {
+pub enum MetaParametersAlgorithmState {
     /// A catch-all case to allow us to explicitly handle not having state
     Nothing,
     /// The state for the fixed algorithm

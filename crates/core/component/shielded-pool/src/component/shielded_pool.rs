@@ -88,7 +88,10 @@ impl Component for ShieldedPool {
                 .flush_clue_count()
                 .await
                 .expect("should be able to read state");
-            let algorithm_state = state.get_fmd_algorithm_state().await?;
+            let algorithm_state = state
+                .get_fmd_algorithm_state()
+                .await
+                .expect("should be able to read state");
             let (new, algorithm_state) =
                 meta_params.updated_fmd_params(&old, algorithm_state, height, clue_count_delta);
             state.put_previous_fmd_parameters(old);
@@ -123,10 +126,11 @@ pub trait StateReadExt: StateRead {
             .ok_or_else(|| anyhow!("Missing ShieldedPoolParameters"))
     }
 
-    async fn get_fmd_algorithm_state(&self) -> Result<fmd::MetaParametersAlgorithm> {
-        self.get(fmd::state_key::meta_parameters::algorithm_state())
+    async fn get_fmd_algorithm_state(&self) -> Result<fmd::MetaParametersAlgorithmState> {
+        Ok(self
+            .get(fmd::state_key::meta_parameters::algorithm_state())
             .await?
-            .unwrap_or_default()
+            .unwrap_or_default())
     }
 }
 
@@ -149,7 +153,7 @@ pub trait StateWriteExt: StateWrite + StateReadExt {
         self.put(fmd::state_key::parameters::previous().into(), params)
     }
 
-    fn put_fmd_algorithm_state(&mut self, state: fmd::MetaParametersAlgorithm) {
+    fn put_fmd_algorithm_state(&mut self, state: fmd::MetaParametersAlgorithmState) {
         self.put(
             fmd::state_key::meta_parameters::algorithm_state().into(),
             state,
