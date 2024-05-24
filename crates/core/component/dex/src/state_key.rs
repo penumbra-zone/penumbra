@@ -28,29 +28,35 @@ pub fn all_positions() -> &'static str {
 }
 
 pub mod candlesticks {
-    use crate::DirectedTradingPair;
 
-    pub fn block_executions() -> &'static str {
-        "dex/block_executions"
+    pub mod object {
+        pub fn block_executions() -> &'static str {
+            "dex/object/block_executions"
+        }
+
+        pub fn block_position_executions() -> &'static str {
+            "dex/object/block_position_executions"
+        }
+
+        pub fn block_swap_executions() -> &'static str {
+            "dex/object/block_swap_executions"
+        }
     }
 
-    pub fn block_position_executions() -> &'static str {
-        "dex/block_position_executions"
-    }
+    pub mod data {
+        use crate::DirectedTradingPair;
 
-    pub fn block_swap_executions() -> &'static str {
-        "dex/block_swap_executions"
-    }
+        pub fn prefix() -> &'static str {
+            "dex/candlesticks/data/"
+        }
 
-    pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
-        format!(
-            "dex/candlesticks/{}/{}/{height:020}",
-            &pair.start, &pair.end
-        )
-    }
+        pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
+            format!("{}{}/{}/{height:020}", prefix(), &pair.start, &pair.end)
+        }
 
-    pub fn by_pair(pair: &DirectedTradingPair) -> String {
-        format!("dex/candlesticks/{}/{}/", &pair.start, &pair.end)
+        pub fn by_pair(pair: &DirectedTradingPair) -> String {
+            format!("{}{}/{}/", prefix(), &pair.start, &pair.end)
+        }
     }
 }
 

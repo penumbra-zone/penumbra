@@ -34,7 +34,8 @@ use super::ExecutionCircuitBreaker;
 use crate::{
     component::metrics,
     lp::position::{self, Position},
-    state_key, DirectedTradingPair, SwapExecution, TradingPair,
+    state_key::{self, candlesticks},
+    DirectedTradingPair, SwapExecution, TradingPair,
 };
 
 use super::{router::RouteAndFill, PositionRead, StateReadExt};
@@ -223,7 +224,7 @@ impl QueryService for Server {
             .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-        let prefix = state_key::candlesticks::by_pair(&pair);
+        let prefix = candlesticks::data::by_pair(&pair);
         tracing::trace!(?prefix, "searching for candlesticks from starting height");
         let start_height = format!("{:020}", start_height).as_bytes().to_vec();
 

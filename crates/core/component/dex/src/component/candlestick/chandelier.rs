@@ -7,7 +7,7 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use penumbra_sct::component::clock::EpochRead as _;
 use tonic::async_trait;
 
-use crate::{lp::position::Position, state_key, DirectedTradingPair, SwapExecution};
+use crate::{lp::position::Position, state_key::candlesticks, DirectedTradingPair, SwapExecution};
 
 use super::CandlestickData;
 
@@ -20,7 +20,7 @@ pub trait Chandelier: StateWrite {
         height: u64,
     ) -> Result<Option<CandlestickData>> {
         self.nonverifiable_get(
-            state_key::candlesticks::by_pair_and_height(trading_pair, height).as_bytes(),
+            candlesticks::data::by_pair_and_height(trading_pair, height).as_bytes(),
         )
         .await
     }
@@ -176,7 +176,7 @@ pub trait Chandelier: StateWrite {
                 "finalizing candlestick"
             );
             self.nonverifiable_put(
-                state_key::candlesticks::by_pair_and_height(&trading_pair, height).into(),
+                candlesticks::data::by_pair_and_height(&trading_pair, height).into(),
                 candlestick,
             );
         }
@@ -194,7 +194,7 @@ trait Inner: StateWrite {
         &self,
     ) -> im::HashMap<DirectedTradingPair, im::Vector<(U128x128, Option<U128x128>, Option<U128x128>)>>
     {
-        self.object_get(state_key::candlesticks::block_executions())
+        self.object_get(candlesticks::object::block_executions())
             .unwrap_or_default()
     }
 
@@ -220,7 +220,7 @@ trait Inner: StateWrite {
         let mut block_executions_map = self.block_executions();
         block_executions_map.insert(trading_pair.clone(), block_executions);
         self.object_put(
-            state_key::candlesticks::block_executions(),
+            candlesticks::object::block_executions(),
             block_executions_map,
         );
     }
