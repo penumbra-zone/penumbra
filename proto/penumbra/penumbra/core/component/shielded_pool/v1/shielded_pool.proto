@@ -48,6 +48,22 @@ message FmdMetaParameters {
   }
 }
 
+// Used to potentially store state for the FMD Meta Parameters algorithm.
+message FmdMetaParametersAlgorithmState {
+  // The state used for the fixed algorithm.
+  message FixedState {}
+
+  // The state used for the sliding window algorithm.
+  message SlidingWindowState {
+    // The number of clues previously observed, approximately.
+    uint32 approximate_clue_count = 1;
+  }
+
+  oneof state {
+    FixedState fixed = 1;
+    SlidingWindowState sliding_window = 2;
+  }
+}
 
 // Parameters for Fuzzy Message Detection
 message FmdParameters {

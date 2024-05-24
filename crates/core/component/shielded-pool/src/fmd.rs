@@ -70,9 +70,10 @@ impl SlidingWindow {
     pub fn updated_fmd_params(
         &self,
         old: &Parameters,
+        state: MetaParametersAlgorithmState,
         height: u64,
         clue_count_delta: (u64, u64),
-    ) -> Parameters {
+    ) -> (Parameters, MetaParametersAlgorithmState) {
         // An edge case, which should act as a constant.
         if self.window_blocks == 0 {
             return old;
@@ -94,7 +95,7 @@ impl SlidingWindow {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MetaParametersAlgorithm {
     /// Use a fixed precision forever.
     Fixed(Precision),
@@ -103,7 +104,7 @@ pub enum MetaParametersAlgorithm {
 }
 
 /// Meta parameters governing how FMD parameters change.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(try_from = "pb::FmdMetaParameters", into = "pb::FmdMetaParameters")]
 pub struct MetaParameters {
     pub fmd_grace_period_blocks: u64,
@@ -167,13 +168,85 @@ impl Default for MetaParameters {
     }
 }
 
+/// If any, the current state for the algorithm we're using.
+///
+/// This allows algorithms to hold arbitrary state. The algorithms need to be able
+/// to start from having no state and function appropriately, which allows for good
+/// backwards-compatability.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(
+    try_from = "pb::FmdMetaParametersAlgorithmState",
+    into = "pb::FmdMetaParametersAlgorithmState"
+)]
+enum MetaParametersAlgorithmState {
+    /// A catch-all case to allow us to explicitly handle not having state
+    Nothing,
+    /// The state for the fixed algorithm
+    Fixed,
+    /// The state for the sliding window algorithm.
+    SlidingWindow {
+        /// The approximate number of clues in the previous window.
+        approximate_clue_count: u32,
+    },
+}
+
+impl TryFrom<pb::FmdMetaParametersAlgorithmState> for MetaParametersAlgorithmState {
+    type Error = anyhow::Error;
+
+    fn try_from(value: pb::FmdMetaParametersAlgorithmState) -> Result<Self> {
+        Ok(match value.state {
+            Some(pb::fmd_meta_parameters_algorithm_state::State::Fixed(_)) => Self::Fixed,
+            Some(pb::fmd_meta_parameters_algorithm_state::State::SlidingWindow(x)) => {
+                Self::SlidingWindow {
+                    approximate_clue_count: x.approximate_clue_count,
+                }
+            }
+            None => Self::Nothing,
+        })
+    }
+}
+
+impl From<MetaParametersAlgorithmState> for pb::FmdMetaParametersAlgorithmState {
+    fn from(value: MetaParametersAlgorithmState) -> Self {
+        let state = match value {
+            MetaParametersAlgorithmState::Nothing => None,
+            MetaParametersAlgorithmState::Fixed => {
+                Some(pb::fmd_meta_parameters_algorithm_state::State::Fixed(
+                    pb::fmd_meta_parameters_algorithm_state::FixedState {},
+                ))
+            }
+            MetaParametersAlgorithmState::SlidingWindow {
+                approximate_clue_count,
+            } => Some(
+                pb::fmd_meta_parameters_algorithm_state::State::SlidingWindow(
+                    pb::fmd_meta_parameters_algorithm_state::SlidingWindowState {
+                        approximate_clue_count,
+                    },
+                ),
+            ),
+        };
+        pb::FmdMetaParametersAlgorithmState { state }
+    }
+}
+
+impl DomainType for MetaParametersAlgorithmState {
+    type Proto = pb::FmdMetaParametersAlgorithmState;
+}
+
+impl Default for MetaParametersAlgorithmState {
+    fn default() -> Self {
+        Self::Nothing
+    }
+}
+
 impl MetaParameters {
     pub fn updated_fmd_params(
         &self,
         old: &Parameters,
+        state: MetaParametersAlgorithmState,
         height: u64,
         clue_count_delta: (u64, u64),
-    ) -> Parameters {
+    ) -> (Parameters, MetaParametersAlgorithmState) {
         if clue_count_delta.1 < clue_count_delta.0 {
             tracing::warn!(
                 "decreasing clue count at height {}: {} then {}",
@@ -183,12 +256,15 @@ impl MetaParameters {
             );
         }
         match self.algorithm {
-            MetaParametersAlgorithm::Fixed(precision) => Parameters {
-                precision,
-                as_of_block_height: height,
-            },
+            MetaParametersAlgorithm::Fixed(precision) => (
+                Parameters {
+                    precision,
+                    as_of_block_height: height,
+                },
+                MetaParametersAlgorithmState::Fixed,
+            ),
             MetaParametersAlgorithm::SlidingWindow(w) => {
-                w.updated_fmd_params(old, height, clue_count_delta)
+                w.updated_fmd_params(old, state, height, clue_count_delta)
             }
         }
     }

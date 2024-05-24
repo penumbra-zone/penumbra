@@ -113,6 +113,65 @@ impl ::prost::Name for FmdMetaParameters {
         )
     }
 }
+/// Used to potentially store state for the FMD Meta Parameters algorithm.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FmdMetaParametersAlgorithmState {
+    #[prost(oneof = "fmd_meta_parameters_algorithm_state::State", tags = "1, 2")]
+    pub state: ::core::option::Option<fmd_meta_parameters_algorithm_state::State>,
+}
+/// Nested message and enum types in `FmdMetaParametersAlgorithmState`.
+pub mod fmd_meta_parameters_algorithm_state {
+    /// The state used for the fixed algorithm.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FixedState {}
+    impl ::prost::Name for FixedState {
+        const NAME: &'static str = "FixedState";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.{}",
+                Self::NAME
+            )
+        }
+    }
+    /// The state used for the sliding window algorithm.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct SlidingWindowState {
+        /// The number of clues previously observed, approximately.
+        #[prost(uint32, tag = "1")]
+        pub approximate_clue_count: u32,
+    }
+    impl ::prost::Name for SlidingWindowState {
+        const NAME: &'static str = "SlidingWindowState";
+        const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!(
+                "penumbra.core.component.shielded_pool.v1.FmdMetaParametersAlgorithmState.{}",
+                Self::NAME
+            )
+        }
+    }
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum State {
+        #[prost(message, tag = "1")]
+        Fixed(FixedState),
+        #[prost(message, tag = "2")]
+        SlidingWindow(SlidingWindowState),
+    }
+}
+impl ::prost::Name for FmdMetaParametersAlgorithmState {
+    const NAME: &'static str = "FmdMetaParametersAlgorithmState";
+    const PACKAGE: &'static str = "penumbra.core.component.shielded_pool.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!(
+            "penumbra.core.component.shielded_pool.v1.{}", Self::NAME
+        )
+    }
+}
 /// Parameters for Fuzzy Message Detection
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]

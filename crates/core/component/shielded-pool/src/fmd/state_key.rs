@@ -1,5 +1,3 @@
-// use std::string::String;
-
 pub mod parameters {
     pub fn current() -> &'static str {
         "shielded_pool/fmd_parameters/current"
@@ -7,6 +5,12 @@ pub mod parameters {
 
     pub fn previous() -> &'static str {
         "shielded_pool/fmd_parameters/previous"
+    }
+}
+
+pub(crate) mod meta_parameters {
+    pub fn algorithm_state() -> &'static str {
+        "shielded_pool/fmd_meta_parameters/algorithm_state"
     }
 }
 
