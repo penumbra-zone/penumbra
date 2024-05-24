@@ -102,7 +102,7 @@ impl App {
         println!("broadcasting transaction and awaiting confirmation...");
         let mut rsp = self.view().broadcast_transaction(transaction, true).await?;
 
-        let id = (async move {
+        let id = async move {
             while let Some(rsp) = rsp.try_next().await? {
                 match rsp.status {
                     Some(status) => match status {
@@ -140,7 +140,7 @@ impl App {
                 "should have received BroadcastTransaction status or error"
             ))
         }
-        .boxed())
+        .boxed()
         .await
         .context("error broadcasting transaction")?;
 
