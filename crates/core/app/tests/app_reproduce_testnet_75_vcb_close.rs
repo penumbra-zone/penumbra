@@ -1,6 +1,3 @@
-use decaf377_fmd::Precision;
-use penumbra_auction::StateReadExt as _;
-use tracing_subscriber::filter::EnvFilter;
 use {
     self::common::BuilderExt,
     anyhow::anyhow,
@@ -10,6 +7,7 @@ use {
         server::consensus::Consensus,
     },
     penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID},
+    penumbra_auction::StateReadExt as _,
     penumbra_auction::{
         auction::{
             dutch::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule, DutchAuctionDescription},
@@ -29,7 +27,9 @@ use {
     std::{ops::Deref, str::FromStr},
     tap::Tap,
     tracing::{error_span, info, Instrument},
+    tracing_subscriber::filter::EnvFilter,
 };
+
 mod common;
 
 #[tokio::test]
@@ -150,7 +150,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
         nft_open_output_note.clone().into(),
     ];
 
-    let mut plan = TransactionPlan {
+    let plan = TransactionPlan {
         memo: Some(MemoPlan::new(
             &mut OsRng,
             MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
@@ -161,10 +161,10 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),
             ..Default::default()
         },
-    };
-    plan.populate_detection_data(&mut OsRng, Precision::default());
+    }
+    .with_populated_detection_data(OsRng, Default::default());
 
-    let tx = client.witness_auth_build(&mut plan).await?;
+    let tx = client.witness_auth_build(&plan).await?;
     node.block()
         .add_tx(tx.encode_to_vec())
         .execute()
@@ -221,7 +221,7 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
         nft_closed_output_note,
     ];
 
-    let mut plan = TransactionPlan {
+    let plan = TransactionPlan {
         memo: Some(MemoPlan::new(
             &mut OsRng,
             MemoPlaintext::blank_memo(test_keys::ADDRESS_0.deref().clone()),
@@ -232,10 +232,10 @@ async fn app_can_reproduce_tesnet_75_vcb_close() -> anyhow::Result<()> {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),
             ..Default::default()
         },
-    };
-    plan.populate_detection_data(&mut OsRng, Precision::default());
+    }
+    .with_populated_detection_data(OsRng, Default::default());
 
-    let tx = client.witness_auth_build(&mut plan).await?;
+    let tx = client.witness_auth_build(&plan).await?;
     tracing::info!("closing the auction");
     node.block()
         .add_tx(tx.encode_to_vec())

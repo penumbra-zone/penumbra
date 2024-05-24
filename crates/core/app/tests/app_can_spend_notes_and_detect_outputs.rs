@@ -2,7 +2,6 @@ use {
     self::common::BuilderExt,
     anyhow::anyhow,
     cnidarium::TempStorage,
-    decaf377_fmd::Precision,
     penumbra_app::{
         genesis::{self, AppState},
         server::consensus::Consensus,
@@ -57,7 +56,7 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow!("mock client had no note"))?;
 
     // Write down a transaction plan with exactly one spend and one output.
-    let mut plan = TransactionPlan {
+    let plan = TransactionPlan {
         actions: vec![
             // First, spend the selected input note.
             SpendPlan::new(
@@ -87,8 +86,8 @@ async fn app_can_spend_notes_and_detect_outputs() -> anyhow::Result<()> {
             chain_id: TestNode::<()>::CHAIN_ID.to_string(),
             ..Default::default()
         },
-    };
-    plan.populate_detection_data(OsRng, Precision::default());
+    }
+    .with_populated_detection_data(OsRng, Default::default());
 
     let tx = client.witness_auth_build(&plan).await?;
 

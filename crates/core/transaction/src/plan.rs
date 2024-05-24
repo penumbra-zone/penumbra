@@ -382,6 +382,18 @@ impl TransactionPlan {
         }
     }
 
+    /// A builder-style version of [`TransactionPlan::populate_detection_data()`].
+    ///
+    /// Populates the detection data for this transaction plan.
+    pub fn with_populated_detection_data<R: CryptoRng + Rng>(
+        mut self,
+        rng: R,
+        precision_bits: Precision,
+    ) -> Self {
+        self.populate_detection_data(rng, precision_bits);
+        self
+    }
+
     /// Convenience method to grab the `MemoKey` from the plan.
     pub fn memo_key(&self) -> Option<PayloadKey> {
         self.memo.as_ref().map(|memo_plan| memo_plan.key.clone())

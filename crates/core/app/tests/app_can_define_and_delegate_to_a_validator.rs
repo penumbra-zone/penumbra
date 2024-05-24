@@ -2,7 +2,6 @@ use {
     self::common::{BuilderExt, TestNodeExt, ValidatorDataReadExt},
     anyhow::anyhow,
     cnidarium::TempStorage,
-    decaf377_fmd::Precision,
     decaf377_rdsa::{SigningKey, SpendAuth, VerificationKey},
     penumbra_app::{
         genesis::{self, AppState},
@@ -148,7 +147,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             validator: new_validator.clone(),
             auth_sig,
         });
-        let mut plan = TransactionPlan {
+        TransactionPlan {
             actions: vec![action.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: None,
@@ -157,9 +156,8 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
-        plan
+        }
+        .with_populated_detection_data(OsRng, Default::default())
     };
     let tx = client.witness_auth_build(&plan).await?;
 
@@ -258,7 +256,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             delegate.delegation_value(),
             test_keys::ADDRESS_1.deref().clone(),
         );
-        let mut plan = TransactionPlan {
+        TransactionPlan {
             actions: vec![spend.into(), output.into(), delegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
@@ -270,9 +268,8 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
-        plan
+        }
+        .with_populated_detection_data(OsRng, Default::default())
     };
     let tx = client.witness_auth_build(&plan).await?;
 
@@ -419,8 +416,7 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
             undelegate.unbonded_value(),
             test_keys::ADDRESS_1.deref().clone(),
         );
-
-        let mut plan = TransactionPlan {
+        TransactionPlan {
             actions: vec![spend.into(), output.into(), undelegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
@@ -432,9 +428,8 @@ async fn app_can_define_and_delegate_to_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
-        plan
+        }
+        .with_populated_detection_data(OsRng, Default::default())
     };
     let tx = client.witness_auth_build(&plan).await?;
 
