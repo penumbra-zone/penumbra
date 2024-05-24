@@ -137,7 +137,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             delegate.delegation_value(),
             test_keys::ADDRESS_1.deref().clone(),
         );
-        let mut plan = TransactionPlan {
+        let plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), delegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
@@ -149,8 +149,8 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
+        }
+        .with_populated_detection_data(rand_core::OsRng, Precision::default());
         (plan, note, staking_note_nullifier)
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -237,7 +237,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             undelegate.unbonded_value(),
             test_keys::ADDRESS_1.deref().clone(),
         );
-        let mut plan = TransactionPlan {
+        let plan = TransactionPlan {
             actions: vec![spend.into(), output.into(), undelegate.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
@@ -249,8 +249,8 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
+        }
+        .with_populated_detection_data(rand_core::OsRng, Precision::default());
         (plan, undelegate_token_id)
     };
     let tx = client.witness_auth_build(&plan).await?;
@@ -321,7 +321,7 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
             proof_blinding_r: decaf377::Fq::rand(&mut OsRng),
             proof_blinding_s: decaf377::Fq::rand(&mut OsRng),
         };
-        let mut plan = TransactionPlan {
+        let plan = TransactionPlan {
             actions: vec![claim.into()],
             // Now fill out the remaining parts of the transaction needed for verification:
             memo: Some(MemoPlan::new(
@@ -333,8 +333,8 @@ async fn app_can_undelegate_from_a_validator() -> anyhow::Result<()> {
                 chain_id: TestNode::<()>::CHAIN_ID.to_string(),
                 ..Default::default()
             },
-        };
-        plan.populate_detection_data(rand_core::OsRng, Precision::default());
+        }
+        .with_populated_detection_data(rand_core::OsRng, Precision::default());
         plan
     };
     let tx = client.witness_auth_build(&plan).await?;

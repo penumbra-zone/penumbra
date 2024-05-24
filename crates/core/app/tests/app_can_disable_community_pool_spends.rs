@@ -162,7 +162,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow!("mock client had no note"))?;
 
     // Create a community pool transaction.
-    let mut plan = {
+    let plan = {
         let value = note.value();
         let spend = SpendPlan::new(
             &mut OsRng,
@@ -183,8 +183,8 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                 ..Default::default()
             },
         }
+        .with_populated_detection_data(OsRng, Default::default())
     };
-    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
@@ -198,7 +198,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
 
     // Now, make a governance proposal that we should spend community pool funds, to return
     // the note back to the test wallet.
-    let mut plan = {
+    let plan = {
         let value = note.value();
         let proposed_tx_plan = TransactionPlan {
             actions: vec![
@@ -252,8 +252,8 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                 ..Default::default()
             },
         }
+        .with_populated_detection_data(OsRng, Default::default())
     };
-    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
@@ -268,7 +268,7 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
     let post_proposal_state = storage.latest_snapshot().proposal_state(0).await?;
 
     // Now make another transaction that will contain a validator vote upon our transaction.
-    let mut plan = {
+    let plan = {
         let body = ValidatorVoteBody {
             proposal: 0_u64,
             vote: penumbra_governance::Vote::Yes,
@@ -287,8 +287,8 @@ async fn app_can_disable_community_pool_spends() -> anyhow::Result<()> {
                 ..Default::default()
             },
         }
+        .with_populated_detection_data(OsRng, Default::default())
     };
-    plan.populate_detection_data(OsRng, Default::default());
     let tx = client.witness_auth_build(&plan).await?;
 
     // Execute the transaction, applying it to the chain state.
