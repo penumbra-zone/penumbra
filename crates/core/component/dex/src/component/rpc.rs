@@ -25,6 +25,7 @@ use penumbra_proto::{
 
 use super::ExecutionCircuitBreaker;
 use crate::{
+    component::metrics,
     lp::position::{self, Position},
     state_key, DirectedTradingPair, SwapExecution, TradingPair,
 };
@@ -522,6 +523,7 @@ impl SimulationService for Server {
                 tonic::Status::invalid_argument(format!("error parsing output id: {:#}", e))
             })?;
 
+        let start_time = std::time::Instant::now();
         let state = self.storage.latest_snapshot();
 
         let mut routing_params = state.routing_params().await.expect("routing params unset");
@@ -560,9 +562,15 @@ impl SimulationService for Server {
             asset_id: input.asset_id,
         };
 
-        Ok(tonic::Response::new(SimulateTradeResponse {
+        let rsp = tonic::Response::new(SimulateTradeResponse {
             unfilled: Some(unfilled.into()),
             output: Some(swap_execution.into()),
-        }))
+        });
+
+        let duration = start_time.elapsed();
+
+        metrics::histogram!(metrics::DEX_RPC_SIMULATE_TRADE_DURATION).record(duration);
+
+        Ok(rsp)
     }
 }
