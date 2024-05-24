@@ -81,12 +81,13 @@ pub trait Chandelier: StateWrite {
     }
 
     #[tracing::instrument(level = "debug", skip(self))]
-    async fn record_swap_execution(&mut self, swap: &SwapExecution) -> Result<()> {
+    async fn record_swap_execution(&mut self, swap: &SwapExecution) {
         // Don't record a swap execution if the output amount was zero.
         // This is not an superfluous check, as the swap execution could really
         // have zero output e.g. in the case of a dust swap.
-        if swap.output.amount == 0u32.into() {
-            return Ok(());
+        if swap.output.amount == 0u32.into() || swap.input.amount == 0u32.into() {
+            tracing::debug!(?swap, "skipping swap execution");
+            return;
         }
 
         let trading_pair: DirectedTradingPair = DirectedTradingPair {
@@ -96,7 +97,7 @@ pub trait Chandelier: StateWrite {
         let mut block_executions = self.block_executions_by_pair(&trading_pair).clone();
 
         let execution_price = U128x128::ratio(swap.output.amount, swap.input.amount)
-            .context("denom unit is not 0")?;
+            .expect("input amount is not zero");
 
         // The volume is the amount of the input asset.
         let swap_volume = swap.input.amount.into();
@@ -109,8 +110,6 @@ pub trait Chandelier: StateWrite {
         );
         block_executions.push_back((execution_price, None, Some(swap_volume)));
         self.put_block_executions_by_pair(&trading_pair, block_executions);
-
-        Ok(())
     }
 
     #[tracing::instrument(level = "debug", skip(self))]

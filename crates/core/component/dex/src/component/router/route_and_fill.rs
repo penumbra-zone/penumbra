@@ -122,14 +122,14 @@ pub trait HandleBatchSwaps: StateWrite + Sized {
             Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .record_swap_execution(&se)
-                .await?;
+                .await;
         }
         if let Some(se) = &swap_execution_2_for_1 {
             tracing::debug!("updating candlestick for 2=>1 swap");
             Arc::get_mut(self)
                 .expect("expected state to have no other refs")
                 .record_swap_execution(se)
-                .await?;
+                .await;
         }
 
         // Fetch the swap execution object that should have been modified during the routing and filling.
