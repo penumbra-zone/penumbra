@@ -28,8 +28,6 @@ pub fn all_positions() -> &'static str {
 }
 
 pub mod candlesticks {
-    use penumbra_proto::DomainType;
-
     use crate::DirectedTradingPair;
 
     pub fn block_executions() -> &'static str {
@@ -45,13 +43,14 @@ pub mod candlesticks {
     }
 
     pub fn by_pair_and_height(pair: &DirectedTradingPair, height: u64) -> String {
-        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
-        format!("dex/candlesticks/{pair_bytes}/{height:020}")
+        format!(
+            "dex/candlesticks/{}/{}/{height:020}",
+            &pair.start, &pair.end
+        )
     }
 
     pub fn by_pair(pair: &DirectedTradingPair) -> String {
-        let pair_bytes = hex::encode_upper(pair.encode_to_vec());
-        format!("dex/candlesticks/{pair_bytes}/")
+        format!("dex/candlesticks/{}/{}/", &pair.start, &pair.end)
     }
 }
 
