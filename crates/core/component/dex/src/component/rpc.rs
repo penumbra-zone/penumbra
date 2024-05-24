@@ -1,4 +1,3 @@
-use easy_rpc::StreamWithWorker;
 use std::{pin::Pin, sync::Arc};
 
 use anyhow::Result;
@@ -266,7 +265,7 @@ impl QueryService for Server {
         let (tx, rx) =
             tokio::sync::mpsc::channel::<Result<CandlestickDataStreamResponse, tonic::Status>>(10);
 
-        let jh = tokio::spawn(watch_candlesticks(
+        tokio::spawn(watch_candlesticks(
             self.storage.clone(),
             tx,
             request
@@ -276,9 +275,7 @@ impl QueryService for Server {
                 .map_err(|_| Status::invalid_argument("invalid trading_pair"))?,
         ));
 
-        let stream = StreamWithWorker::new(ReceiverStream::new(rx), jh);
-
-        Ok(tonic::Response::new(Box::pin(stream)))
+        Ok(tonic::Response::new(Box::pin(ReceiverStream::new(rx))))
     }
 
     #[instrument(skip(self, request))]
