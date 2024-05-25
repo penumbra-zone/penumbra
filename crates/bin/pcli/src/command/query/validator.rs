@@ -302,7 +302,7 @@ impl ValidatorCmd {
                 let window_len_len = window_len.to_string().len();
 
                 println!("{state} validator: as of block {as_of_height}");
-                println!("Successful signing: {percent_uptime:>6.2}% = {signed_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
+                println!("Achieved signing: {percent_uptime:>6.2}% = {signed_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
                 if active {
                     println!("Required signing: {percent_min_uptime:>6.2}% = {min_uptime_blocks:width$}/{window_len} most-recent blocks", width = window_len_len);
                 }
