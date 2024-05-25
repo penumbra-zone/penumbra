@@ -6687,6 +6687,9 @@ impl serde::Serialize for SwapBody {
         if self.fee_commitment.is_some() {
             len += 1;
         }
+        if self.balance_commitment.is_some() {
+            len += 1;
+        }
         if self.payload.is_some() {
             len += 1;
         }
@@ -6702,6 +6705,9 @@ impl serde::Serialize for SwapBody {
         }
         if let Some(v) = self.fee_commitment.as_ref() {
             struct_ser.serialize_field("feeCommitment", v)?;
+        }
+        if let Some(v) = self.balance_commitment.as_ref() {
+            struct_ser.serialize_field("balanceCommitment", v)?;
         }
         if let Some(v) = self.payload.as_ref() {
             struct_ser.serialize_field("payload", v)?;
@@ -6724,6 +6730,8 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
             "delta2I",
             "fee_commitment",
             "feeCommitment",
+            "balance_commitment",
+            "balanceCommitment",
             "payload",
         ];
 
@@ -6733,6 +6741,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
             Delta1I,
             Delta2I,
             FeeCommitment,
+            BalanceCommitment,
             Payload,
             __SkipField__,
         }
@@ -6760,6 +6769,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                             "delta1I" | "delta_1_i" => Ok(GeneratedField::Delta1I),
                             "delta2I" | "delta_2_i" => Ok(GeneratedField::Delta2I),
                             "feeCommitment" | "fee_commitment" => Ok(GeneratedField::FeeCommitment),
+                            "balanceCommitment" | "balance_commitment" => Ok(GeneratedField::BalanceCommitment),
                             "payload" => Ok(GeneratedField::Payload),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -6784,6 +6794,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                 let mut delta_1_i__ = None;
                 let mut delta_2_i__ = None;
                 let mut fee_commitment__ = None;
+                let mut balance_commitment__ = None;
                 let mut payload__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -6811,6 +6822,12 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                             }
                             fee_commitment__ = map_.next_value()?;
                         }
+                        GeneratedField::BalanceCommitment => {
+                            if balance_commitment__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balanceCommitment"));
+                            }
+                            balance_commitment__ = map_.next_value()?;
+                        }
                         GeneratedField::Payload => {
                             if payload__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("payload"));
@@ -6827,6 +6844,7 @@ impl<'de> serde::Deserialize<'de> for SwapBody {
                     delta_1_i: delta_1_i__,
                     delta_2_i: delta_2_i__,
                     fee_commitment: fee_commitment__,
+                    balance_commitment: balance_commitment__,
                     payload: payload__,
                 })
             }
