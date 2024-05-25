@@ -19,6 +19,7 @@ use super::{action as swap, proof::SwapProof, Swap, SwapPlaintext};
 pub struct SwapPlan {
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
+    pub balance_blinding: Fr,
     pub proof_blinding_r: Fq,
     pub proof_blinding_s: Fq,
 }
@@ -27,9 +28,11 @@ impl SwapPlan {
     /// Create a new [`SwapPlan`] that requests a swap between the given assets and input amounts.
     pub fn new<R: CryptoRng + RngCore>(rng: &mut R, swap_plaintext: SwapPlaintext) -> SwapPlan {
         let fee_blinding = Fr::rand(rng);
+        let balance_blinding = Fr::rand(rng);
 
         SwapPlan {
             fee_blinding,
+            balance_blinding,
             swap_plaintext,
             proof_blinding_r: Fq::rand(rng),
             proof_blinding_s: Fq::rand(rng),
@@ -51,6 +54,7 @@ impl SwapPlan {
             delta_1_i: self.swap_plaintext.delta_1_i,
             delta_2_i: self.swap_plaintext.delta_2_i,
             fee_commitment: self.fee_commitment(),
+            balance_commitment: self.balance_commitment(),
             payload: self.swap_plaintext.encrypt(fvk.outgoing()),
         }
     }
@@ -59,8 +63,8 @@ impl SwapPlan {
     pub fn swap_proof(&self) -> SwapProof {
         use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 
-        let balance_commitment =
-            self.transparent_balance().commit(Fr::zero()) + self.fee_commitment();
+        let balance_commitment = self.transparent_balance().commit(Fr::zero())
+            + self.swap_plaintext.claim_fee.commit(self.balance_blinding);
         SwapProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
@@ -72,6 +76,7 @@ impl SwapPlan {
             },
             SwapProofPrivate {
                 fee_blinding: self.fee_blinding,
+                balance_blinding: self.balance_blinding,
                 swap_plaintext: self.swap_plaintext.clone(),
             },
         )
@@ -80,6 +85,12 @@ impl SwapPlan {
 
     pub fn fee_commitment(&self) -> balance::Commitment {
         self.swap_plaintext.claim_fee.commit(self.fee_blinding)
+    }
+
+    pub fn balance_commitment(&self) -> balance::Commitment {
+        let transparent_blinding = Fr::from(0u64);
+        self.transparent_balance().commit(transparent_blinding)
+            + self.swap_plaintext.claim_fee.commit(self.balance_blinding)
     }
 
     pub fn transparent_balance(&self) -> Balance {
@@ -144,8 +155,13 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
         let fee_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("expected 32 byte fee blinding"))?;
+        let balance_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
+            .try_into()
+            .map_err(|_| anyhow!("expected 32 byte balance blinding"))?;
         Ok(Self {
             fee_blinding: Fr::from_bytes(fee_blinding_bytes).context("fee blinding malformed")?,
+            balance_blinding: Fr::from_bytes(balance_blinding_bytes)
+                .context("value balance blinding malformed")?,
             swap_plaintext: msg
                 .swap_plaintext
                 .ok_or_else(|| anyhow!("missing swap_plaintext"))?

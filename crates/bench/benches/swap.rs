@@ -46,6 +46,7 @@ fn swap_proving_time(c: &mut Criterion) {
         claim_address,
     );
     let fee_blinding = Fr::from(0u64);
+    let balance_blinding = Fr::from(0u64);
     let fee_commitment = swap_plaintext.claim_fee.commit(fee_blinding);
     let swap_commitment = swap_plaintext.swap_commitment();
 
@@ -64,8 +65,10 @@ fn swap_proving_time(c: &mut Criterion) {
     let mut balance = Balance::default();
     balance -= value_1;
     balance -= value_2;
-    balance -= value_fee;
-    let balance_commitment = balance.commit(Fr::from(0u64));
+
+    let transparent_blinding = Fr::from(0u64);
+    let balance_commitment =
+        balance.commit(transparent_blinding) + value_fee.commit(balance_blinding);
 
     let public = SwapProofPublic {
         balance_commitment,
@@ -74,6 +77,7 @@ fn swap_proving_time(c: &mut Criterion) {
     };
     let private = SwapProofPrivate {
         fee_blinding,
+        balance_blinding,
         swap_plaintext,
     };
 

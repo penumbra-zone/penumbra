@@ -183,6 +183,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     let delta_2 = Amount::from(0u64);
     let fee = Fee::default();
     let fee_blinding = Fr::rand(&mut OsRng);
+    let balance_blinding = Fr::rand(&mut OsRng);
 
     let swap_plaintext =
         SwapPlaintext::new(&mut rng, trading_pair, delta_1, delta_2, fee, claim_address);
@@ -204,8 +205,10 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     let mut balance = Balance::default();
     balance -= value_1;
     balance -= value_2;
-    balance -= value_fee;
-    let balance_commitment = balance.commit(fee_blinding);
+
+    let transparent_blinding = Fr::from(0u64);
+    let balance_commitment =
+        balance.commit(transparent_blinding) + value_fee.commit(balance_blinding);
 
     let public = SwapProofPublic {
         balance_commitment,
@@ -214,6 +217,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     };
     let private = SwapProofPrivate {
         fee_blinding,
+        balance_blinding,
         swap_plaintext,
     };
 

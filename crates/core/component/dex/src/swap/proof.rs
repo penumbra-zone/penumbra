@@ -47,6 +47,8 @@ pub struct SwapProofPublic {
 pub struct SwapProofPrivate {
     /// A randomizer to make the commitment to the fee hiding.
     pub fee_blinding: Fr,
+    /// A randomizer to make the commitment to the value balance hiding.
+    pub balance_blinding: Fr,
     /// All information about the swap.
     pub swap_plaintext: SwapPlaintext,
 }
@@ -71,8 +73,8 @@ fn check_satisfaction(public: &SwapProofPublic, private: &SwapProofPrivate) -> R
     let transparent_blinding = Fr::from(0u64);
     let balance_1_commit = balance_1.commit(transparent_blinding);
     let balance_2_commit = balance_2.commit(transparent_blinding);
-    let transparent_balance_commitment = balance_1_commit + balance_2_commit;
-    let total_balance_commitment = transparent_balance_commitment + fee_commitment;
+    let opaque_commitment = fee_balance.commit(private.balance_blinding);
+    let total_balance_commitment = balance_1_commit + balance_2_commit + opaque_commitment;
     if total_balance_commitment != public.balance_commitment {
         anyhow::bail!("balance commitment did not match public input");
     }
@@ -109,6 +111,8 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
             SwapPlaintextVar::new_witness(cs.clone(), || Ok(self.private.swap_plaintext.clone()))?;
         let fee_blinding_var =
             UInt8::new_witness_vec(cs.clone(), &self.private.fee_blinding.to_bytes())?;
+        let balance_blinding_var =
+            UInt8::new_witness_vec(cs.clone(), &self.private.balance_blinding.to_bytes())?;
 
         // Inputs
         let claimed_balance_commitment =
@@ -133,8 +137,8 @@ impl ConstraintSynthesizer<Fq> for SwapCircuit {
         let balance_2 = BalanceVar::from_negative_value_var(swap_plaintext_var.delta_2_value());
         let balance_1_commit = balance_1.commit(transparent_blinding_var.clone())?;
         let balance_2_commit = balance_2.commit(transparent_blinding_var)?;
-        let transparent_balance_commitment = balance_1_commit + balance_2_commit;
-        let total_balance_commitment = transparent_balance_commitment + fee_commitment;
+        let opaque_commitment = fee_balance.commit(balance_blinding_var)?;
+        let total_balance_commitment = balance_1_commit + balance_2_commit + opaque_commitment;
 
         // Balance commitment integrity check
         claimed_balance_commitment.enforce_equal(&total_balance_commitment)?;
@@ -181,6 +185,7 @@ impl DummyWitness for SwapCircuit {
             private: SwapProofPrivate {
                 swap_plaintext: swap_plaintext.clone(),
                 fee_blinding: Fr::from(1),
+                balance_blinding: Fr::from(1),
             },
             public: SwapProofPublic {
                 swap_commitment: swap_plaintext.swap_commitment(),
@@ -306,7 +311,7 @@ mod tests {
     }
 
     prop_compose! {
-        fn arb_valid_swap_statement()(fee_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
+        fn arb_valid_swap_statement()(fee_blinding in fr_strategy(), balance_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_trader = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_trader = sk_trader.full_viewing_key();
@@ -348,11 +353,13 @@ mod tests {
             let mut balance = Balance::default();
             balance -= value_1;
             balance -= value_2;
-            balance -= value_fee;
-            let balance_commitment = balance.commit(fee_blinding);
+
+            let zero_blinding = Fr::from(0u64);
+            let opaque_commitment = value_fee.commit(balance_blinding);
+            let balance_commitment = balance.commit(zero_blinding) + opaque_commitment;
 
             let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment };
-            let private = SwapProofPrivate { fee_blinding, swap_plaintext };
+            let private = SwapProofPrivate { fee_blinding, balance_blinding, swap_plaintext };
 
             (public, private)
         }
@@ -368,7 +375,7 @@ mod tests {
 
     prop_compose! {
         // This strategy generates a swap statement with an invalid fee blinding factor.
-        fn arb_invalid_swap_statement_fee_commitment()(fee_blinding in fr_strategy(), invalid_fee_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
+        fn arb_invalid_swap_statement_fee_commitment()(fee_blinding in fr_strategy(), balance_blinding in fr_strategy(), invalid_fee_blinding in fr_strategy(), address_index in any::<u32>(), value1_amount in any::<u64>(), seed_phrase_randomness in any::<[u8; 32]>(), rseed_randomness in any::<[u8; 32]>()) -> (SwapProofPublic, SwapProofPrivate) {
             let seed_phrase = SeedPhrase::from_randomness(&seed_phrase_randomness);
             let sk_trader = SpendKey::from_seed_phrase_bip44(seed_phrase, &Bip44Path::new(0));
             let fvk_trader = sk_trader.full_viewing_key();
@@ -409,13 +416,14 @@ mod tests {
             let mut balance = Balance::default();
             balance -= value_1;
             balance -= value_2;
-            balance -= value_fee;
-            let balance_commitment = balance.commit(fee_blinding);
 
+            let zero_blinding = Fr::from(0u64);
+            let opaque_commitment = value_fee.commit(balance_blinding);
+            let balance_commitment = balance.commit(zero_blinding) + opaque_commitment;
             let invalid_fee_commitment = swap_plaintext.claim_fee.commit(invalid_fee_blinding);
 
             let public = SwapProofPublic { balance_commitment, swap_commitment, fee_commitment: invalid_fee_commitment };
-            let private = SwapProofPrivate { fee_blinding, swap_plaintext };
+            let private = SwapProofPrivate { fee_blinding, balance_blinding, swap_plaintext };
 
             (public, private)
         }

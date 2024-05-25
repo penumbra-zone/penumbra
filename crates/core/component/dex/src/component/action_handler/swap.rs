@@ -26,7 +26,7 @@ impl ActionHandler for Swap {
         self.proof.verify(
             &SWAP_PROOF_VERIFICATION_KEY,
             SwapProofPublic {
-                balance_commitment: self.balance_commitment_inner(),
+                balance_commitment: self.body.balance_commitment,
                 swap_commitment: self.body.payload.commitment,
                 fee_commitment: self.body.fee_commitment,
             },

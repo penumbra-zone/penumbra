@@ -316,7 +316,7 @@ impl IsAction for Swap {
     /// Compute a commitment to the value contributed to a transaction by this swap.
     /// Will subtract (v1,t1), (v2,t2), and (f,fee_token)
     fn balance_commitment(&self) -> balance::Commitment {
-        self.balance_commitment_inner()
+        self.body.balance_commitment
     }
 
     fn view_from_perspective(&self, txp: &TransactionPerspective) -> ActionView {
