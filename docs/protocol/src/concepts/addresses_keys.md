@@ -59,7 +59,10 @@ relevant transactions, as well as some amount of unrelated cover traffic.
 Unlike incoming viewing keys, detection keys are not shared between diversified
 addresses, allowing fine-grained control of delegation.
 
-
 This diagram shows only the user-visible parts of the key hierarchy.
 Internally, each of these keys has different components, described in detail in
 the [Addresses and Keys](../addresses_keys.md) chapter.
+
+### Privacy Implications
+
+Users should be aware that giving out multiple detection keys to a detection entity can carry a subset of the privacy implications, described in [Addresses and Detection Keys](https://protocol.penumbra.zone/main/addresses_keys/addresses.html#detection-keys).
