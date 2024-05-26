@@ -68,7 +68,7 @@ These are the current types of state fragment recorded by Penumbra:
 The nullifier key for a note is the nullifier key component of the full viewing
 key for the address controlling the note.
 
-**Uniqueness**: TODO
+**Uniqueness**: Nullifiers are unique, to prevent faerie gold attacks, as they are derived from the position in the state commitment tree which is unique. 
 
 ### Swaps
 
