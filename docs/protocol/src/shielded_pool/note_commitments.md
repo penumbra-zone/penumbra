@@ -14,7 +14,7 @@ The note commitment is generated using rate-5 Poseidon hashing with domain separ
 The note commitment is then constructed using the above domain separator and
 hashing together the above contents along with the note blinding factor $rcm$:
 
-`note_commitment = hash_5(ds, (rcm, v, ID, B_d, pk_d))`
+`note_commitment = hash_6(ds, (rcm, v, ID, B_d, pk_d, ck_d))`
 
 The note blinding factor $rcm$ is derived from the `rseed` 32-byte value in the
 note. Define `prf_expand(label, key, input)` as BLAKE2b-512 with
