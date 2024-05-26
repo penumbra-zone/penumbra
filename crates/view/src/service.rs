@@ -458,6 +458,7 @@ impl ViewService for ViewServer {
                         note_record: Some(note_record.into()),
                         auction: any_state,
                         positions,
+                        local_seq: 0, // TODO: implement with real values
                     })
                 }
             }))

@@ -983,6 +983,7 @@ where
                 account_filter: account_filter.map(Into::into),
                 include_inactive,
                 query_latest_state,
+                auction_ids_filter: Vec::new(), // TODO: Support `auction_ids_filter`
             });
 
             let auctions: Vec<pb::AuctionsResponse> =
