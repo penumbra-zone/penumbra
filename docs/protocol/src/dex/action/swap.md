@@ -90,6 +90,7 @@ The swap proof demonstrates the properties enumerated below for the private witn
   * Transmission key $pk_d \isin \mathbb G$ corresponding to the claim address
   * Clue key $\mathsf{ck_d} \isin \mathbb F_q$ corresponding to the claim address
 * Fee blinding factor $\widetilde{v_f} \isin \mathbb F_r$ used to blind the fee commitment
+* Balance blinding factor $\widetilde{v_i} \isin \mathbb F_r$ used to blind the value balance commitment
 
 And the corresponding public inputs:
 
@@ -121,6 +122,6 @@ where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-spec
 
 The zk-SNARK certifies that the total public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [-v_1] G_1 + [-v_2] G_2 + cv_f$
+$cv = [-v_1] G_1 + [-v_2] G_2 + [-v_f] G_{v_f} +[\widetilde{v_i}]G_{\widetilde{v_i}}$
 
-where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $cv_f$ is the fee commitment.
+where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2, G_{v_f}, G_{v_i}$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $\widetilde{v_i}$ is a randomizer to make the commitment to the value balance hiding. 
