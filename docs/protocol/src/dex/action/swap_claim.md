@@ -148,7 +148,7 @@ The zk-SNARK also certifies that:
 
 ### [Fee Consistency Check](#fee-consistency-check)
 
-The zk-SNARK certifies that the public claim fee is equal to the value
+The zk-SNARK certifies that the public claim fee $v_f$ is equal to the value
 witnessed as part of the swap plaintext.
 
 ### [Height Consistency Check](#height-consistency-check)
@@ -179,9 +179,13 @@ $ID_2 = ID_{pi2}$
 
 ### [Output Amounts Integrity](#output-amounts-integrity)
 
-The zk-SNARK certifies that the claimed output amounts $\Lambda_{1i}, \Lambda_{2i}$
-were computed correctly following the pro-rata output calculation performed
-using the correct batch swap output data.
+The zk-SNARK certifies that the claimed output amounts $\Lambda_{1i}, \Lambda_{2i}$ were computed correctly following the pro-rata output calculation performed using the correct batch swap output data.
+
+$\Lambda_{2i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\Lambda_{2}$ + ($\Lambda_{2i}/ \Delta_{2}$) * unfilled_2
+
+$\Lambda_{1i}$ = ($\Delta_{1i} / \Delta_{1}$) * unfilled_1 + ($\Delta_{2i} / \Delta_{2}$) * $\Lambda_{1}$
+
+where $\Delta_{1}, \Delta_{2}$ are the total amounts of assets 1 and 2 that was output from the batch swap for 1=>2 trades, and unfilled_1 and unfilled_2 are the amount of asset 1 and 2 that was returned unfilled from the batch swap for 2=>1 trades. These fields are part of the batch swap output data. 
 
 ### [Output Note Commitment Integrity](#output-note-commitment-integrity)
 
