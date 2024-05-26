@@ -181,11 +181,11 @@ $ID_2 = ID_{pi2}$
 
 The zk-SNARK certifies that the claimed output amounts $\Lambda_{1i}, \Lambda_{2i}$ were computed correctly following the pro-rata output calculation performed using the correct batch swap output data.
 
-$\Lambda_{2i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\Lambda_{2}$ + ($\Lambda_{2i}/ \Delta_{2}$) * unfilled_2
+$\Lambda_{2i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\Lambda_{2}$ + ($\Lambda_{2i}/ \Delta_{2}$) * $\textit{unfilled\_2}$
 
-$\Lambda_{1i}$ = ($\Delta_{1i} / \Delta_{1}$) * unfilled_1 + ($\Delta_{2i} / \Delta_{2}$) * $\Lambda_{1}$
+$\Lambda_{1i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\textit{unfilled\_1}$ + ($\Delta_{2i} / \Delta_{2}$) * $\Lambda_{1}$
 
-where $\Delta_{1}, \Delta_{2}$ are the total amounts of assets 1 and 2 that was output from the batch swap for 1=>2 trades, and unfilled_1 and unfilled_2 are the amount of asset 1 and 2 that was returned unfilled from the batch swap for 2=>1 trades. These fields are part of the batch swap output data. 
+where $\Delta_{1}, \Delta_{2}$ are the total amounts of assets 1 and 2 that was output from the batch swap, and $\textit{unfilled\_1}$ and $\textit{unfilled\_2}$ are the amounts of assets 1 and 2 that was returned unfilled from the batch swap. These fields are part of the batch swap output data. 
 
 ### [Output Note Commitment Integrity](#output-note-commitment-integrity)
 
