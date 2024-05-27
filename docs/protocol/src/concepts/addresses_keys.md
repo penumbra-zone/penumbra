@@ -37,10 +37,10 @@ flowchart BT
 
 From bottom to top:
 
-- the *seed phrase* is the root key material. Multiple *accounts* - each with
+- the *seed phrase* is the root key material. Multiple *wallets* - each with
 separate spend authority - can be derived from this root seed phrase.
-- the *spending key* is the capability representing spending authority for a given account;
-- the *full viewing key* represents the capability to view all transactions related to the account;
+- the *spending key* is the capability representing spending authority for a given wallet;
+- the *full viewing key* represents the capability to view all transactions related to the wallet;
 - the *outgoing viewing key* represents the capability to view only outgoing transactions, and is used to recover information about previously sent transactions;
 - the *incoming viewing key* represents the capability to view only incoming transactions, and is used to scan the block chain for incoming transactions.
 
