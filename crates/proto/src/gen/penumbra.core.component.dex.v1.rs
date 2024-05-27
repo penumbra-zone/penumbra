@@ -120,14 +120,14 @@ pub struct SwapBody {
     pub fee_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
     >,
-    /// A commitment to the value balance.
+    /// The swap commitment and encryption of the swap data.
     #[prost(message, optional, tag = "5")]
+    pub payload: ::core::option::Option<SwapPayload>,
+    /// A commitment to the value balance.
+    #[prost(message, optional, tag = "6")]
     pub balance_commitment: ::core::option::Option<
         super::super::super::asset::v1::BalanceCommitment,
     >,
-    /// The swap commitment and encryption of the swap data.
-    #[prost(message, optional, tag = "6")]
-    pub payload: ::core::option::Option<SwapPayload>,
 }
 impl ::prost::Name for SwapBody {
     const NAME: &'static str = "SwapBody";

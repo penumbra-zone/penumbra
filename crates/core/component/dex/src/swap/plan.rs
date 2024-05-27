@@ -54,8 +54,8 @@ impl SwapPlan {
             delta_1_i: self.swap_plaintext.delta_1_i,
             delta_2_i: self.swap_plaintext.delta_2_i,
             fee_commitment: self.fee_commitment(),
-            balance_commitment: self.balance_commitment(),
             payload: self.swap_plaintext.encrypt(fvk.outgoing()),
+            balance_commitment: self.balance_commitment(),
         }
     }
 

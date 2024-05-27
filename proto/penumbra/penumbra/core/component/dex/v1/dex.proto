@@ -68,10 +68,10 @@ message SwapBody {
   // in the future we'll want separate commitments to each delta_j_i
   // anyways in order to prove consistency with flow encryption.
   asset.v1.BalanceCommitment fee_commitment = 4;
-  // A commitment to the value balance.
-  asset.v1.BalanceCommitment balance_commitment = 5;
   // The swap commitment and encryption of the swap data.
-  SwapPayload payload = 6;
+  SwapPayload payload = 5;
+  // A commitment to the value balance.
+  asset.v1.BalanceCommitment balance_commitment = 6;
 }
 
 message SwapPayload {
