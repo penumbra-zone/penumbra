@@ -4,13 +4,12 @@ Each swap claim contains a SwapClaimBody and a zk-SNARK swap claim proof[^1].
 
 ## [SwapClaim Body](#swapclaim-body)
 
-The body of a `SwapClaim` has five parts:
+The body of a `SwapClaim` has four parts:
 
 1. A revealed `Nullifier`, which nullifies the swap commitment being claimed;
-2. A balance commitment, which commits to the value balance of the spent note;
-3. Note commitments for each of the two output notes minted by the `SwapClaim`;
-4. The prepaid `Fee` being consumed by the `SwapClaim`;
-5. The `BatchSwapOutputData` corresponding to the block in which the swap was executed.
+2. Note commitments for each of the two output notes minted by the `SwapClaim`;
+3. The prepaid `Fee` being consumed by the `SwapClaim`;
+4. The `BatchSwapOutputData` corresponding to the block in which the swap was executed.
 
 ## Invariants
 
