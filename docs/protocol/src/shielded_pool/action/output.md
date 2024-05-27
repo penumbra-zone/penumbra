@@ -97,7 +97,7 @@ using the above witnessed values and where `ds` is a constant domain separator:
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
+$cv = [-v] G_v + [\widetilde{v}] G_{\widetilde{v}}$
 
 where $G_{\widetilde{v}}$ is a constant generator and $G_v$ is an asset-specific
 generator point derived in-circuit as described in [Assets and
