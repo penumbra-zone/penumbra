@@ -64,8 +64,8 @@ pub struct Body {
     pub delta_1_i: Amount,
     pub delta_2_i: Amount,
     pub fee_commitment: balance::Commitment,
-    pub balance_commitment: balance::Commitment,
     pub payload: SwapPayload,
+    pub balance_commitment: balance::Commitment,
 }
 
 impl EffectingData for Body {
@@ -111,13 +111,13 @@ impl TryFrom<pb::SwapBody> for Body {
                 .fee_commitment
                 .ok_or_else(|| anyhow::anyhow!("missing fee_commitment"))?
                 .try_into()?,
-            balance_commitment: s
-                .balance_commitment
-                .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
-                .try_into()?,
             payload: s
                 .payload
                 .ok_or_else(|| anyhow::anyhow!("missing payload"))?
+                .try_into()?,
+            balance_commitment: s
+                .balance_commitment
+                .ok_or_else(|| anyhow::anyhow!("missing balance_commitment"))?
                 .try_into()?,
         })
     }

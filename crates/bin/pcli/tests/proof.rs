@@ -205,6 +205,7 @@ fn swap_proof_parameters_vs_current_swap_circuit() {
     let mut balance = Balance::default();
     balance -= value_1;
     balance -= value_2;
+    balance -= value_fee;
 
     let transparent_blinding = Fr::from(0u64);
     let balance_commitment =

@@ -122,6 +122,6 @@ where $G_{\widetilde{v}}$ is a constant generator and $G_{v_f}$ is an asset-spec
 
 The zk-SNARK certifies that the total public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = [-v_1] G_1 + [-v_2] G_2 + [-v_f] G_{v_f} +[\widetilde{v_i}]G_{\widetilde{v_i}}$
+$cv = [-v_1] G_1 + [-v_2] G_2 +[\widetilde{v_i}]G_{\widetilde{v_i}}$
 
-where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2, G_{v_f}, G_{v_i}$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $\widetilde{v_i}$ is a randomizer to make the commitment to the value balance hiding. 
+where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2, G_{\widetilde{v_i}}$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $\widetilde{v_i}$ is a randomizer to make the commitment to the value balance hiding. 

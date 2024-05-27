@@ -65,6 +65,7 @@ fn swap_proving_time(c: &mut Criterion) {
     let mut balance = Balance::default();
     balance -= value_1;
     balance -= value_2;
+    balance -= value_fee;
 
     let transparent_blinding = Fr::from(0u64);
     let balance_commitment =

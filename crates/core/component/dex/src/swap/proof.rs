@@ -353,6 +353,7 @@ mod tests {
             let mut balance = Balance::default();
             balance -= value_1;
             balance -= value_2;
+            balance -= value_fee;
 
             let zero_blinding = Fr::from(0u64);
             let opaque_commitment = value_fee.commit(balance_blinding);

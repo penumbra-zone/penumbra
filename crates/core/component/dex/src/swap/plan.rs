@@ -19,9 +19,9 @@ use super::{action as swap, proof::SwapProof, Swap, SwapPlaintext};
 pub struct SwapPlan {
     pub swap_plaintext: SwapPlaintext,
     pub fee_blinding: Fr,
-    pub balance_blinding: Fr,
     pub proof_blinding_r: Fq,
     pub proof_blinding_s: Fq,
+    pub balance_blinding: Fr,
 }
 
 impl SwapPlan {
@@ -32,10 +32,10 @@ impl SwapPlan {
 
         SwapPlan {
             fee_blinding,
-            balance_blinding,
             swap_plaintext,
             proof_blinding_r: Fq::rand(rng),
             proof_blinding_s: Fq::rand(rng),
+            balance_blinding,
         }
     }
 
@@ -136,6 +136,7 @@ impl From<SwapPlan> for pb::SwapPlan {
             fee_blinding: msg.fee_blinding.to_bytes().to_vec(),
             proof_blinding_r: msg.proof_blinding_r.to_bytes().to_vec(),
             proof_blinding_s: msg.proof_blinding_s.to_bytes().to_vec(),
+            balance_blinding: msg.balance_blinding.to_bytes().to_vec(),
         }
     }
 }
@@ -155,7 +156,7 @@ impl TryFrom<pb::SwapPlan> for SwapPlan {
         let fee_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("expected 32 byte fee blinding"))?;
-        let balance_blinding_bytes: [u8; 32] = msg.fee_blinding[..]
+        let balance_blinding_bytes: [u8; 32] = msg.balance_blinding[..]
             .try_into()
             .map_err(|_| anyhow!("expected 32 byte balance blinding"))?;
         Ok(Self {
