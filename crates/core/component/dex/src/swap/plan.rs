@@ -63,16 +63,14 @@ impl SwapPlan {
     pub fn swap_proof(&self) -> SwapProof {
         use penumbra_proof_params::SWAP_PROOF_PROVING_KEY;
 
-        let balance_commitment = self.transparent_balance().commit(Fr::zero())
-            + self.swap_plaintext.claim_fee.commit(self.balance_blinding);
         SwapProof::prove(
             self.proof_blinding_r,
             self.proof_blinding_s,
             &SWAP_PROOF_PROVING_KEY,
             SwapProofPublic {
-                balance_commitment,
                 swap_commitment: self.swap_plaintext.swap_commitment(),
                 fee_commitment: self.fee_commitment(),
+                balance_commitment: self.balance_commitment(),
             },
             SwapProofPrivate {
                 fee_blinding: self.fee_blinding,
