@@ -103,6 +103,8 @@ message SwapPlan {
   bytes proof_blinding_r = 3;
   // The second blinding factor to use for the ZK swap proof.
   bytes proof_blinding_s = 4;
+  // The blinding factor for the value balance commitment.
+  bytes balance_blinding = 5;
 }
 
 message SwapClaimPlan {

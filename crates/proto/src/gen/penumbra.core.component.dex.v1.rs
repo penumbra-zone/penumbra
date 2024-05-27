@@ -197,6 +197,9 @@ pub struct SwapPlan {
     /// The second blinding factor to use for the ZK swap proof.
     #[prost(bytes = "vec", tag = "4")]
     pub proof_blinding_s: ::prost::alloc::vec::Vec<u8>,
+    /// The blinding factor for the value balance commitment.
+    #[prost(bytes = "vec", tag = "5")]
+    pub balance_blinding: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for SwapPlan {
     const NAME: &'static str = "SwapPlan";

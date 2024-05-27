@@ -8739,6 +8739,9 @@ impl serde::Serialize for SwapPlan {
         if !self.proof_blinding_s.is_empty() {
             len += 1;
         }
+        if !self.balance_blinding.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.dex.v1.SwapPlan", len)?;
         if let Some(v) = self.swap_plaintext.as_ref() {
             struct_ser.serialize_field("swapPlaintext", v)?;
@@ -8754,6 +8757,10 @@ impl serde::Serialize for SwapPlan {
         if !self.proof_blinding_s.is_empty() {
             #[allow(clippy::needless_borrow)]
             struct_ser.serialize_field("proofBlindingS", pbjson::private::base64::encode(&self.proof_blinding_s).as_str())?;
+        }
+        if !self.balance_blinding.is_empty() {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("balanceBlinding", pbjson::private::base64::encode(&self.balance_blinding).as_str())?;
         }
         struct_ser.end()
     }
@@ -8773,6 +8780,8 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
             "proofBlindingR",
             "proof_blinding_s",
             "proofBlindingS",
+            "balance_blinding",
+            "balanceBlinding",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -8781,6 +8790,7 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
             FeeBlinding,
             ProofBlindingR,
             ProofBlindingS,
+            BalanceBlinding,
             __SkipField__,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -8807,6 +8817,7 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                             "feeBlinding" | "fee_blinding" => Ok(GeneratedField::FeeBlinding),
                             "proofBlindingR" | "proof_blinding_r" => Ok(GeneratedField::ProofBlindingR),
                             "proofBlindingS" | "proof_blinding_s" => Ok(GeneratedField::ProofBlindingS),
+                            "balanceBlinding" | "balance_blinding" => Ok(GeneratedField::BalanceBlinding),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
                     }
@@ -8830,6 +8841,7 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                 let mut fee_blinding__ = None;
                 let mut proof_blinding_r__ = None;
                 let mut proof_blinding_s__ = None;
+                let mut balance_blinding__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::SwapPlaintext => {
@@ -8862,6 +8874,14 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
+                        GeneratedField::BalanceBlinding => {
+                            if balance_blinding__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("balanceBlinding"));
+                            }
+                            balance_blinding__ = 
+                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
+                            ;
+                        }
                         GeneratedField::__SkipField__ => {
                             let _ = map_.next_value::<serde::de::IgnoredAny>()?;
                         }
@@ -8872,6 +8892,7 @@ impl<'de> serde::Deserialize<'de> for SwapPlan {
                     fee_blinding: fee_blinding__.unwrap_or_default(),
                     proof_blinding_r: proof_blinding_r__.unwrap_or_default(),
                     proof_blinding_s: proof_blinding_s__.unwrap_or_default(),
+                    balance_blinding: balance_blinding__.unwrap_or_default(),
                 })
             }
         }
