@@ -124,3 +124,7 @@ The zk-SNARK certifies that the total public input balance commitment $cv$ was d
 $cv = [-v_1] G_1 + [-v_2] G_2 + cv_f$
 
 where the first two terms are from the input amounts and assets, with the corresponding asset-specific generators $G_1, G_2$ derived in-circuit as described in [Balance Commitments](../../assets.md), and $cv_f$ is the fee commitment.
+
+### Diversified Base is not Identity
+
+The zk-SNARK certifies that the diversified basepoint $B_d$ associated with the address on the note is not identity.
