@@ -39,7 +39,7 @@ The swap commitment is then constructed using the above domain separator and
 hashing together the above contents along with an `inner` value computed using
 rate-4 poseidon hashing:
 
-`note_commitment = hash_7(ds, (rseed, f, t_f, B_d, pk_d, ck_d, inner))`
+`swap_commitment = hash_7(ds, (rseed, f, t_f, B_d, pk_d, ck_d, inner))`
 
 `inner = hash_4(ds, (t_1, t_2, \Delta_1, \Delta_2))`
 
