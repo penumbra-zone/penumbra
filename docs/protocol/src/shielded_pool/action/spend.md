@@ -38,7 +38,7 @@ The invariants that the Spend upholds are described below.
 
 #### Local Justification
 
-1. We verify the auth_sig using the randomized verification key, which must not be 0, provided on the spend body, even if the amount of the note is 0. A note's transmission key binds the authority via the `ivk` and `B_d` in the [Diversified Address Integrity](#diversified-address-integrity) check.
+1. We verify the auth_sig using the randomized verification key, provided on the spend body, even if the amount of the note is 0. The randomized verification key is derived using additive blinding, ensuring a non-zero key is produced. A note's transmission key binds the authority via the `ivk` and `B_d` in the [Diversified Address Integrity](#diversified-address-integrity) check.
 
 2. The following checks prevent spending a positioned note twice:
 
@@ -136,7 +136,7 @@ where $B_{SpendAuth}$ is the conventional `decaf377` basepoint as described in [
 
 ### [Merkle auth path verification](#merkle-auth-path-verification)
 
-The zk-SNARK certifies that for non-zero values $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. Only for notes with non-zero values $v \ne 0$, the note is unrooted from the state commitment tree to allow for these "dummy" spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
+The zk-SNARK certifies that for non-zero values $v \ne 0$, the witnessed Merkle authentication path is a valid Merkle path to the provided public anchor. Only for notes with zero values ($v = 0$) the note is unrooted from the state commitment tree to allow for these "dummy" spends to pass stateless verification. Dummy spends may be added for metadata resistance (e.g. to ensure there are two spends and two outputs in each transaction).
 
 ### Diversified Base is not Identity
 
