@@ -156,12 +156,7 @@ pub trait StateReadExt: StateRead {
 
     /// Uses the DEX parameters to construct a `RoutingParams` for use in execution or simulation.
     async fn routing_params(&self) -> Result<RoutingParams> {
-        let dex_params = self.get_dex_params().await?;
-        Ok(RoutingParams {
-            max_hops: dex_params.max_hops as usize,
-            fixed_candidates: Arc::new(dex_params.fixed_candidates),
-            price_limit: None,
-        })
+        self.get_dex_params().await.map(RoutingParams::from)
     }
 
     async fn output_data(
