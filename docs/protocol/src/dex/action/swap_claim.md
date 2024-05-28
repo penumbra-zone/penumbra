@@ -94,7 +94,7 @@ And the corresponding public inputs:
 
 * Merkle anchor $\isin \mathbb F_q$ of the state commitment tree
 * Nullifier $nf \isin F_q$ corresponding to the swap
-* Fee to claim the outputs which consists of an amount $v_f$ interpreted as an $\mathbb F_q$ constrained to fit in 128 bits and an asset ID $ID_{v_f} \isin \mathbb F_q$
+* Fee to claim the outputs which consists of an amount $v_{f,pub}$ interpreted as an $\mathbb F_q$ constrained to fit in 128 bits and an asset ID $ID_{v_{f,pub}} \isin \mathbb F_q$
 * The batch swap output data, which consists of:
   * trading pair, which consists of two asset IDs $ID_{pi1}, ID_{pi2} \isin \mathbb F_q$
   * 128-bit fixed point values (represented in circuit as four 64-bit (Boolean constraint) limbs) for the batched inputs $\Delta_1, \Delta_2$, outputs $\Lambda_1, \Lambda_2$, and the unfilled quantities $U_1, U_2$
@@ -148,8 +148,12 @@ The zk-SNARK also certifies that:
 
 ### [Fee Consistency Check](#fee-consistency-check)
 
-The zk-SNARK certifies that the public claim fee $v_f$ is equal to the value
-witnessed as part of the swap plaintext.
+The zk-SNARK certifies that the public claim fee is equal to the fee value
+witnessed as part of the swap plaintext:
+
+$v_f = v_{f,pub}$
+
+$ID_{v_f} = ID_{v_{f,pub}}$
 
 ### [Height Consistency Check](#height-consistency-check)
 
@@ -185,7 +189,7 @@ $\Lambda_{2i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\Lambda_{2}$ + ($\Lambda_{2i}/ 
 
 $\Lambda_{1i}$ = ($\Delta_{1i} / \Delta_{1}$) * $\textit{unfilled\_1}$ + ($\Delta_{2i} / \Delta_{2}$) * $\Lambda_{1}$
 
-where $\Delta_{1}, \Delta_{2}$ are the total amounts of assets 1 and 2 that was output from the batch swap, and $\textit{unfilled\_1}$ and $\textit{unfilled\_2}$ are the amounts of assets 1 and 2 that was returned unfilled from the batch swap. These fields are part of the batch swap output data. 
+where $\Delta_{1}, \Delta_{2}$ are the total amounts of assets 1 and 2 that was output from the batch swap, and $\textit{unfilled\_1}$ and $\textit{unfilled\_2}$ are the amounts of assets 1 and 2 that was returned unfilled from the batch swap. These fields are part of the batch swap output data.
 
 ### [Output Note Commitment Integrity](#output-note-commitment-integrity)
 
