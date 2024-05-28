@@ -4,7 +4,7 @@ Each undelegate claim contains a UndelegateClaimBody and a zk-SNARK undelegate c
 
 ## [UndelegateClaim](#undelegateclaim-body)
 
-The body of a `UndelegateClaim` has three parts:
+The body of a `UndelegateClaim` has four parts:
 
 1. The validator `IdentityKey` being undelegated from;
 2. The penalty to apply to the undelegation;
@@ -61,18 +61,18 @@ And the corresponding public inputs:
 
 The zk-SNARK certifies that the public input balance commitment $cv$ was derived from the witnessed values as:
 
-$cv = v_e + [\widetilde{v}] G_{\widetilde{v}}$
+$cv = [-v_i] G_{v_i} + [v_e] G_{v_t} + [\widetilde{v}] G_{\widetilde{v}}$
 
-where $G_{\widetilde{v}}$ is a constant generator.
+where:
+* $G_{\widetilde{v}}$ is a constant generator
+* $v_e$ is the expected balance computed from the public conversion rate $p$ and the input
+amount $v_i$, i.e. $v_e = p \cdot v_i$
+* $G_{v_i}$ is the asset-specific generator corresponding to the input
+token with asset ID $ID_i$
+* $G_{v_t}$ is the asset-specific generator corresponding to the
+target token with asset ID $ID_t$.
 
-$v_e$ is the expected balance computed from the public conversion rate $p$ and the input
-amount $v_i$:
-
-$v_e = [-v_i] G_{v_i} + [p * v_i] G_{v_t}$
-
-where $G_{v_i}$ is the asset-specific generator corresponding to the input
-token with asset ID $ID_i$ and $G_{v_t}$ is the asset-specific generator corresponding to the
-target token with asset ID $ID_t$. Both these asset-specific bases are derived in-circuit as described in [Assets and Values](../../assets.md).
+Both these asset-specific bases $G_{v_t}$ and $G_{v_i}$ are derived in-circuit as described in [Assets and Values](../../assets.md).
 
 ## Undelegate Claim
 
