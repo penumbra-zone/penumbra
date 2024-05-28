@@ -19,7 +19,7 @@ pub enum PositionCmd {
     Order(OrderCmd),
     /// Debits an all opened position NFTs associated with a specific source and credits closed position NFTs.
     CloseAll {
-        /// Only spend funds originally received by the given address index.
+        /// Only spend fugdnds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
         /// Only close positions for the given trading pair.
@@ -29,13 +29,13 @@ pub enum PositionCmd {
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Debits an opened position NFT and credits a closed position NFT.
+    /// Debits opened position NFTs and credits closed position NFTs.
     Close {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// The [`position::Id`] of the position to close.
-        position_id: position::Id,
+        /// The list of [`position::Id`] of the positions to close.
+        position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
