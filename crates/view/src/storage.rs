@@ -1094,7 +1094,7 @@ impl Storage {
         &self,
         account_filter: Option<AddressIndex>,
         include_inactive: bool,
-    ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord)>> {
+    ) -> anyhow::Result<Vec<(AuctionId, SpendableNoteRecord, u64 /* local seqnum */)>> {
         let account_clause = account_filter
             .map(|idx| {
                 format!(
@@ -1111,7 +1111,7 @@ impl Storage {
         };
 
         let query = format!(
-            "SELECT auctions.auction_id, spendable_notes.*, notes.*
+            "SELECT auctions.auction_id, spendable_notes.*, notes.*, auctions.auction_state
                  FROM auctions
                  JOIN spendable_notes ON auctions.note_commitment = spendable_notes.note_commitment
                  JOIN notes ON auctions.note_commitment = notes.note_commitment
@@ -1128,7 +1128,7 @@ impl Storage {
             let mut conn = pool.get()?;
             let tx = conn.transaction()?;
 
-            let spendable_note_records: Vec<(AuctionId, SpendableNoteRecord)> = tx
+            let spendable_note_records: Vec<(AuctionId, SpendableNoteRecord, u64)> = tx
                 .prepare(&query)?
                 .query_and_then((), |row| {
                     let raw_auction_id: Vec<u8> = row.get("auction_id")?;
@@ -1137,7 +1137,8 @@ impl Storage {
                         .map_err(|_| anyhow!("auction id must be 32 bytes"))?;
                     let auction_id = AuctionId(array_auction_id);
                     let spendable_note_record: SpendableNoteRecord = row.try_into()?;
-                    Ok((auction_id, spendable_note_record))
+                    let local_seq: u64 = row.get("auction_state")?;
+                    Ok((auction_id, spendable_note_record, local_seq))
                 })?
                 .collect::<anyhow::Result<Vec<_>>>()?;
 

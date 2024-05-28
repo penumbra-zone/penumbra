@@ -13,8 +13,8 @@ use tracing::instrument;
 use crate::{SpendableNoteRecord, ViewClient};
 use anyhow::anyhow;
 use penumbra_asset::{asset, Value};
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
+use penumbra_auction::auction::dutch::{actions::ActionDutchAuctionWithdrawPlan, DutchAuction};
 use penumbra_auction::auction::{
     dutch::actions::{ActionDutchAuctionEnd, ActionDutchAuctionSchedule},
     AuctionId,
@@ -222,9 +222,33 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     }
 
     /// Withdraws the reserves of the Dutch auction.
-    // TODO: nicer api? what do we get by passing fields individually rather than the plan?
+    ///
+    /// Uses the provided auction state to automatically end the auction
+    /// if necessary.
     #[instrument(skip(self))]
-    pub fn dutch_auction_withdraw(&mut self, plan: ActionDutchAuctionWithdrawPlan) -> &mut Self {
+    pub fn dutch_auction_withdraw(&mut self, auction: &DutchAuction) -> &mut Self {
+        let auction_id = auction.description.id();
+        // Check if the auction needs to be ended
+        if auction.state.sequence == 0 {
+            self.dutch_auction_end(auction_id);
+        }
+
+        let reserves_input = Value {
+            amount: auction.state.input_reserves,
+            asset_id: auction.description.input.asset_id,
+        };
+        let reserves_output = Value {
+            amount: auction.state.output_reserves,
+            asset_id: auction.description.output_id,
+        };
+
+        let plan = ActionDutchAuctionWithdrawPlan {
+            auction_id,
+            seq: 2, // 1 (closed) -> 2 (withdrawn)
+            reserves_input,
+            reserves_output,
+        };
+
         self.action_list.push(plan);
         self
     }
