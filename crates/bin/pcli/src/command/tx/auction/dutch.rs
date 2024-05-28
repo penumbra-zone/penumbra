@@ -236,7 +236,6 @@ impl DutchCmd {
                     (false, Some(auction_id)) => {
                         let auction_id = auction_id.parse::<AuctionId>()?;
 
-                        // TODO: better way to do this?
                         let all = auctions_to_withdraw(app.view(), *source).await?;
                         vec![all
                             .into_iter()
@@ -371,18 +370,33 @@ impl DutchCmd {
     }
 }
 
-async fn dutch_auction_states(
+async fn all_dutch_auction_states(
     view_client: &mut impl ViewClient,
     source: impl Into<AddressIndex>,
-) -> Result<Vec<(AuctionId, DutchAuction)>> {
+) -> Result<Vec<(AuctionId, DutchAuction, u64)>> {
+    fetch_dutch_auction_states(view_client, source, true).await
+}
+
+async fn active_dutch_auction_states(
+    view_client: &mut impl ViewClient,
+    source: impl Into<AddressIndex>,
+) -> Result<Vec<(AuctionId, DutchAuction, u64)>> {
+    fetch_dutch_auction_states(view_client, source, false).await
+}
+
+async fn fetch_dutch_auction_states(
+    view_client: &mut impl ViewClient,
+    source: impl Into<AddressIndex>,
+    include_inactive: bool,
+) -> Result<Vec<(AuctionId, DutchAuction, u64)>> {
     let auctions = view_client
-        .auctions(Some(source.into()), false, true)
+        .auctions(Some(source.into()), include_inactive, true)
         .await?
         .into_iter()
-        .filter_map(|(id, _, state, _)| {
+        .filter_map(|(id, _, local_seq, state, _)| {
             if let Some(state) = state {
                 if let Ok(da) = DutchAuction::decode(state.value) {
-                    Some((id, da))
+                    Some((id, da, local_seq))
                 } else {
                     None
                 }
@@ -393,16 +407,16 @@ async fn dutch_auction_states(
         .collect();
     Ok(auctions)
 }
-
+/// Return all the auctions that need to be ended, based on our local view of the chain state.
 async fn auctions_to_end(view_client: &mut impl ViewClient, source: u32) -> Result<Vec<AuctionId>> {
-    let auctions = dutch_auction_states(view_client, source).await?;
+    let auctions = active_dutch_auction_states(view_client, source).await?;
 
     let auction_ids = auctions
         .into_iter()
-        .filter_map(|(id, auction)| {
-            // Ending an auction changes sequence from 0 => 1
-            // so if the sequence is 0, it's open and we should end it.
-            if auction.state.sequence == 0 {
+        .filter_map(|(id, _auction, local_seq)| {
+            // We want to end auctions that we track as "opened" (local_seq == 0)
+            // so that we can close them, or catch-up with the chain state if they are already closed.
+            if local_seq == 0 {
                 Some(id)
             } else {
                 None
@@ -417,14 +431,14 @@ async fn auctions_to_withdraw(
     view_client: &mut impl ViewClient,
     source: u32,
 ) -> Result<Vec<DutchAuction>> {
-    let auctions = dutch_auction_states(view_client, source).await?;
+    let auctions = all_dutch_auction_states(view_client, source).await?;
 
     let auction_ids = auctions
         .into_iter()
-        .filter_map(|(_id, auction)| {
-            // Withdrawing an auction changes sequence from 1 => 2
-            // so we want to withdraw if the sequence is 1.
-            if auction.state.sequence == 1 {
+        .filter_map(|(_, auction, local_seq)| {
+            // We want to end auctions that we track as "closed" (local_seq == 1)
+            // so that we can close them, or catch-up with the chain state if they are already closed.
+            if local_seq == 1 {
                 Some(auction)
             } else {
                 None

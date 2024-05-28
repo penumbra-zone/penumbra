@@ -30,21 +30,27 @@ impl AuctionCmd {
         let auctions: Vec<(
             penumbra_auction::auction::AuctionId,
             penumbra_view::SpendableNoteRecord,
+            u64,
             Option<pbjson_types::Any>,
             Vec<penumbra_dex::lp::position::Position>,
         )> = view_client
             .auctions(None, self.include_inactive, self.query_latest_state)
             .await?;
 
-        for (auction_id, _, maybe_auction_state, positions) in auctions.into_iter() {
+        for (auction_id, _, local_seq, maybe_auction_state, positions) in auctions.into_iter() {
             if let Some(pb_auction_state) = maybe_auction_state {
                 if pb_auction_state.type_url == pb_auction::DutchAuction::type_url() {
                     let dutch_auction = DutchAuction::decode(pb_auction_state.value)
                         .expect("no deserialization error");
                     let asset_cache = view_client.assets().await?;
-                    render_dutch_auction(&asset_cache, &dutch_auction, positions.get(0).cloned())
-                        .await
-                        .expect("no rendering errors");
+                    render_dutch_auction(
+                        &asset_cache,
+                        &dutch_auction,
+                        Some(local_seq),
+                        positions.get(0).cloned(),
+                    )
+                    .await
+                    .expect("no rendering errors");
                 } else {
                     unimplemented!("only supporting dutch auctions at the moment, come back later");
                 }

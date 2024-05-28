@@ -66,7 +66,7 @@ impl AuctionCmd {
 
                     let asset_cache = app.view().assets().await?;
 
-                    render_dutch_auction(&asset_cache, &dutch_auction, position).await?;
+                    render_dutch_auction(&asset_cache, &dutch_auction, None, position).await?;
                 } else {
                     unimplemented!("only supporting dutch auctions at the moment, come back later");
                 }
@@ -79,10 +79,11 @@ impl AuctionCmd {
 pub async fn render_dutch_auction(
     asset_cache: &Cache,
     dutch_auction: &DutchAuction,
+    local_view: Option<u64>,
     position: Option<Position>,
 ) -> anyhow::Result<()> {
     let auction_id = dutch_auction.description.id();
-    println!("dutch auction with id {auction_id:?}");
+    println!("dutch auction with id {auction_id:?}:");
 
     let initial_input = dutch_auction.description.input;
     let input_id = initial_input.asset_id;
@@ -137,7 +138,7 @@ pub async fn render_dutch_auction(
         .set_content_arrangement(ContentArrangement::DynamicFullWidth)
         .add_row(vec![
             Cell::new(truncate_auction_id(&auction_id)).set_delimiter('.'),
-            Cell::new(render_sequence(dutch_auction.state.sequence)),
+            Cell::new(render_sequence(dutch_auction.state.sequence, local_view)),
             Cell::new(format!("{start_height} -> {end_height}")),
             Cell::new(dutch_auction.description.step_count.to_string()),
             Cell::new(format!("{}", start_price)),
@@ -163,13 +164,19 @@ pub async fn render_dutch_auction(
     Ok(())
 }
 
-fn render_sequence(state: u64) -> String {
-    if state == 0 {
+fn render_sequence(state: u64, local_seq: Option<u64>) -> String {
+    let main = if state == 0 {
         format!("Opened")
     } else if state == 1 {
         format!("Closed")
     } else {
         format!("Withdrawn (seq={state})")
+    };
+
+    if let Some(local_seq) = local_seq {
+        format!("{main} (local_seq={local_seq})")
+    } else {
+        main
     }
 }
 
