@@ -46,7 +46,7 @@ pub fn register_metrics() {
 // Prometheus metrics are structured as a Histogram, rather than as a Summary.
 // These values are loosely based on the initial Summary output, and may need to be
 // updated over time.
-pub const DEX_BUCKETS: &[f64; 5] = &[0.00001, 0.0001, 0.001, 0.01, 0.1];
+pub const DEX_BUCKETS: &[f64] = &[0.00001, 0.0001, 0.001, 0.01, 0.1, 1_f64, 10_f64];
 
 pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
 pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
