@@ -244,7 +244,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         let plan = ActionDutchAuctionWithdrawPlan {
             auction_id,
-            seq: 2,
+            seq: 2, // 1 (closed) -> 2 (withdrawn)
             reserves_input,
             reserves_output,
         };
