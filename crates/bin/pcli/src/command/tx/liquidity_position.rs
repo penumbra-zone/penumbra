@@ -52,13 +52,13 @@ pub enum PositionCmd {
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
     },
-    /// Debits a closed position NFT and credits a withdrawn position NFT and the final reserves.
+    /// Debits closed position NFTs and credits withdrawn position NFTs and the final reserves.
     Withdraw {
         /// Only spend funds originally received by the given address index.
         #[clap(long, default_value = "0")]
         source: u32,
-        /// The [`position::Id`] of the position to withdraw.
-        position_id: position::Id,
+        /// The list of [`position::Id`] of the positions to withdraw.
+        position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t)]
         fee_tier: FeeTier,
