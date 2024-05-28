@@ -2,18 +2,16 @@ use std::path::Path;
 
 use crate::command::tx::FeeTier;
 use crate::App;
+use anyhow::Result;
 use anyhow::{anyhow, bail, Context};
 use clap::Subcommand;
 use comfy_table::presets;
 use dialoguer::Confirm;
 use penumbra_asset::{asset::Cache, Value};
-use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
 use penumbra_auction::auction::{dutch::DutchAuction, dutch::DutchAuctionDescription, AuctionId};
-use penumbra_dex::lp::position::Position;
 use penumbra_keys::keys::AddressIndex;
 use penumbra_num::Amount;
-use penumbra_proto::{view::v1::GasPricesRequest, DomainType, Name};
-use penumbra_view::SpendableNoteRecord;
+use penumbra_proto::{view::v1::GasPricesRequest, DomainType};
 use penumbra_view::ViewClient;
 use penumbra_wallet::plan::Planner;
 use rand::RngCore;
@@ -103,9 +101,12 @@ pub enum DutchCmd {
         /// Source account terminating the auction.
         #[clap(long, display_order = 100, default_value = "0")]
         source: u32,
-        /// Identifier of the auction.
-        #[clap(long, display_order = 200)]
-        auction_id: String,
+        /// If set, ends all auctions owned by the specified account.
+        #[clap(long, display_order = 150)]
+        all: bool,
+        /// Identifier of the auction to end, if `--all` is not set.
+        #[clap(display_order = 200)]
+        auction_id: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 300)]
         fee_tier: FeeTier,
@@ -114,11 +115,14 @@ pub enum DutchCmd {
     #[clap(display_order = 200, name = "withdraw")]
     DutchAuctionWithdraw {
         /// Source account withdrawing from the auction.
-        #[clap(long, display_order = 100)]
+        #[clap(long, display_order = 100, default_value = "0")]
         source: u32,
-        /// The auction to withdraw funds from.
-        #[clap(long, display_order = 200)]
-        auction_id: String,
+        /// If set, withdraws all auctions owned by the specified account.
+        #[clap(long, display_order = 150)]
+        all: bool,
+        /// Identifier of the auction to withdraw from, if `--all` is not set.
+        #[clap(display_order = 200)]
+        auction_id: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
         #[clap(short, long, value_enum, default_value_t, display_order = 600)]
         fee_tier: FeeTier,
@@ -178,21 +182,38 @@ impl DutchCmd {
                         AddressIndex::new(*source),
                     )
                     .await
-                    .context("can't build send transaction")?;
+                    .context("can't build auction schedule transaction")?;
                 app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
             DutchCmd::DutchAuctionEnd {
+                all,
                 auction_id,
                 source,
                 fee_tier,
             } => {
-                let auction_id = auction_id.parse::<AuctionId>()?;
+                let auction_ids = match (all, auction_id) {
+                    (true, _) => auctions_to_end(app.view(), *source).await?,
+                    (false, Some(auction_id)) => {
+                        let auction_id = auction_id.parse::<AuctionId>()?;
+                        vec![auction_id]
+                    }
+                    (false, None) => {
+                        bail!("auction_id is required when --all is not set")
+                    }
+                };
 
-                let plan = Planner::new(OsRng)
+                let mut planner = Planner::new(OsRng);
+
+                planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into())
-                    .dutch_auction_end(auction_id)
+                    .set_fee_tier((*fee_tier).into());
+
+                for auction_id in auction_ids {
+                    planner.dutch_auction_end(auction_id);
+                }
+
+                let plan = planner
                     .plan(
                         app.view
                             .as_mut()
@@ -200,62 +221,46 @@ impl DutchCmd {
                         AddressIndex::new(*source),
                     )
                     .await
-                    .context("can't build send transaction")?;
+                    .context("can't build auction end transaction")?;
                 app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
             DutchCmd::DutchAuctionWithdraw {
+                all,
                 source,
                 auction_id,
                 fee_tier,
             } => {
-                let auction_id = auction_id.parse::<AuctionId>()?;
+                let auctions = match (all, auction_id) {
+                    (true, _) => auctions_to_withdraw(app.view(), *source).await?,
+                    (false, Some(auction_id)) => {
+                        let auction_id = auction_id.parse::<AuctionId>()?;
 
-                use pbjson_types::Any;
-                let view_client = app.view();
-                let (auction_id, _, auction_raw, _): (
-                    AuctionId,
-                    SpendableNoteRecord,
-                    Option<Any>,
-                    Vec<Position>,
-                ) = view_client
-                    .auctions(None, true, true)
-                    .await?
-                    .into_iter()
-                    .find(|(id, _, _, _)| &auction_id == id)
-                    .ok_or_else(|| anyhow!("the auction id is unknown from the view service!"))?;
-
-                let Some(raw_da_state) = auction_raw else {
-                    bail!("auction state is missing from view server response")
+                        // TODO: better way to do this?
+                        let all = auctions_to_withdraw(app.view(), *source).await?;
+                        vec![all
+                            .into_iter()
+                            .find(|a| a.description.id() == auction_id)
+                            .ok_or_else(|| {
+                                anyhow!("the auction id is unknown from the view service!")
+                            })?]
+                    }
+                    (false, None) => {
+                        bail!("auction_id is required when --all is not set")
+                    }
                 };
-
-                use penumbra_proto::core::component::auction::v1 as pb_auction;
-                // We're processing a Dutch auction:
-                assert_eq!(raw_da_state.type_url, pb_auction::DutchAuction::type_url());
-
-                let dutch_auction = DutchAuction::decode(raw_da_state.value)?;
-
-                let reserves_input = Value {
-                    amount: dutch_auction.state.input_reserves,
-                    asset_id: dutch_auction.description.input.asset_id,
-                };
-                let reserves_output = Value {
-                    amount: dutch_auction.state.output_reserves,
-                    asset_id: dutch_auction.description.output_id,
-                };
-                let seq = dutch_auction.state.sequence + 1;
 
                 let mut planner = Planner::new(OsRng);
 
-                let plan = planner
+                planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into())
-                    .dutch_auction_withdraw(ActionDutchAuctionWithdrawPlan {
-                        auction_id,
-                        seq,
-                        reserves_input,
-                        reserves_output,
-                    })
+                    .set_fee_tier((*fee_tier).into());
+
+                for auction in &auctions {
+                    planner.dutch_auction_withdraw(auction);
+                }
+
+                let plan = planner
                     .plan(
                         app.view
                             .as_mut()
@@ -263,7 +268,7 @@ impl DutchCmd {
                         AddressIndex::new(*source),
                     )
                     .await
-                    .context("can't build send transaction")?;
+                    .context("can't build auction withdrawal transaction")?;
                 app.build_and_submit_transaction(plan).await?;
                 Ok(())
             }
@@ -364,6 +369,70 @@ impl DutchCmd {
             }
         }
     }
+}
+
+async fn dutch_auction_states(
+    view_client: &mut impl ViewClient,
+    source: impl Into<AddressIndex>,
+) -> Result<Vec<(AuctionId, DutchAuction)>> {
+    let auctions = view_client
+        .auctions(Some(source.into()), false, true)
+        .await?
+        .into_iter()
+        .filter_map(|(id, _, state, _)| {
+            if let Some(state) = state {
+                if let Ok(da) = DutchAuction::decode(state.value) {
+                    Some((id, da))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+    Ok(auctions)
+}
+
+async fn auctions_to_end(view_client: &mut impl ViewClient, source: u32) -> Result<Vec<AuctionId>> {
+    let auctions = dutch_auction_states(view_client, source).await?;
+
+    let auction_ids = auctions
+        .into_iter()
+        .filter_map(|(id, auction)| {
+            // Ending an auction changes sequence from 0 => 1
+            // so if the sequence is 0, it's open and we should end it.
+            if auction.state.sequence == 0 {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(auction_ids)
+}
+
+async fn auctions_to_withdraw(
+    view_client: &mut impl ViewClient,
+    source: u32,
+) -> Result<Vec<DutchAuction>> {
+    let auctions = dutch_auction_states(view_client, source).await?;
+
+    let auction_ids = auctions
+        .into_iter()
+        .filter_map(|(_id, auction)| {
+            // Withdrawing an auction changes sequence from 1 => 2
+            // so we want to withdraw if the sequence is 1.
+            if auction.state.sequence == 1 {
+                Some(auction)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(auction_ids)
 }
 
 fn display_auction_description(asset_cache: &Cache, auctions: Vec<DutchAuctionDescription>) {
