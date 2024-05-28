@@ -436,8 +436,8 @@ impl ViewService for ViewServer {
             None
         };
 
-        let responses =
-            futures::future::join_all(all_auctions.into_iter().map(|(auction_id, note_record)| {
+        let responses = futures::future::join_all(all_auctions.into_iter().map(
+            |(auction_id, note_record, local_seq)| {
                 let maybe_client = client.clone();
                 async move {
                     let (any_state, positions) = if let Some(mut client2) = maybe_client {
@@ -458,11 +458,12 @@ impl ViewService for ViewServer {
                         note_record: Some(note_record.into()),
                         auction: any_state,
                         positions,
-                        local_seq: 0, // TODO: implement with real values
+                        local_seq,
                     })
                 }
-            }))
-            .await;
+            },
+        ))
+        .await;
 
         let stream = stream::iter(responses)
             .map_err(|e| tonic::Status::internal(format!("error getting auction: {e}")))

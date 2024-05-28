@@ -60,7 +60,13 @@ pub trait ViewClient {
         Box<
             dyn Future<
                     Output = Result<
-                        Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)>,
+                        Vec<(
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64,
+                            Option<Any>,
+                            Vec<Position>,
+                        )>,
                     >,
                 > + Send
                 + 'static,
@@ -971,7 +977,13 @@ where
         Box<
             dyn Future<
                     Output = Result<
-                        Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)>,
+                        Vec<(
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64,
+                            Option<Any>,
+                            Vec<Position>,
+                        )>,
                     >,
                 > + Send
                 + 'static,
@@ -993,33 +1005,46 @@ where
                     .try_collect()
                     .await?;
 
-            let resp: Vec<(AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>)> =
-                auctions
-                    .into_iter()
-                    .map(|auction_rsp| {
-                        let pb_id = auction_rsp
-                            .id
-                            .ok_or_else(|| anyhow::anyhow!("missing auction id!!"))?;
-                        let auction_id: AuctionId = pb_id.try_into()?;
-                        let snr: SpendableNoteRecord = auction_rsp
-                            .note_record
-                            .ok_or_else(|| anyhow::anyhow!("mission SNR from auction response"))?
-                            .try_into()?;
+            let resp: Vec<(
+                AuctionId,
+                SpendableNoteRecord,
+                u64,
+                Option<Any>,
+                Vec<Position>,
+            )> = auctions
+                .into_iter()
+                .map(|auction_rsp| {
+                    let pb_id = auction_rsp
+                        .id
+                        .ok_or_else(|| anyhow::anyhow!("missing auction id"))?;
+                    let auction_id: AuctionId = pb_id.try_into()?;
+                    let snr: SpendableNoteRecord = auction_rsp
+                        .note_record
+                        .ok_or_else(|| anyhow::anyhow!("missing SNR from auction response"))?
+                        .try_into()?;
 
-                        let auction = auction_rsp.auction;
-                        let lps: Vec<Position> = auction_rsp
-                            .positions
-                            .into_iter()
-                            .map(TryInto::try_into)
-                            .collect::<Result<Vec<_>>>()?;
+                    let local_seq = auction_rsp.local_seq;
 
-                        Ok::<
-                            (AuctionId, SpendableNoteRecord, Option<Any>, Vec<Position>),
-                            anyhow::Error,
-                        >((auction_id, snr, auction, lps))
-                    })
-                    .filter_map(|res| res.ok()) // TODO: scrap this later.
-                    .collect();
+                    let auction = auction_rsp.auction;
+                    let lps: Vec<Position> = auction_rsp
+                        .positions
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .collect::<Result<Vec<_>>>()?;
+
+                    Ok::<
+                        (
+                            AuctionId,
+                            SpendableNoteRecord,
+                            u64, /* the local sequence number */
+                            Option<Any>, /* the auction state if it was requested */
+                            Vec<Position>, /* associated liquidity positions if we queried the latest state */
+                        ),
+                        anyhow::Error,
+                    >((auction_id, snr, local_seq, auction, lps))
+                })
+                .filter_map(|res| res.ok()) // TODO: scrap this later.
+                .collect();
 
             Ok(resp)
         }
