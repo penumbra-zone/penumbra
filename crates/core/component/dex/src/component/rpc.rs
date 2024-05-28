@@ -3,11 +3,11 @@ use std::{pin::Pin, sync::Arc};
 use anyhow::Result;
 use async_stream::try_stream;
 use futures::{StreamExt, TryStreamExt};
-use prost::Message as _;
+use tokio::sync::mpsc;
 use tonic::Status;
 use tracing::instrument;
 
-use cnidarium::{StateDelta, StateRead as _, Storage};
+use cnidarium::{StateDelta, Storage};
 use penumbra_asset::{asset, Value};
 use penumbra_proto::{
     core::component::dex::v1::{
@@ -18,10 +18,9 @@ use penumbra_proto::{
         },
         simulation_service_server::SimulationService,
         ArbExecutionRequest, ArbExecutionResponse, ArbExecutionsRequest, ArbExecutionsResponse,
-        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse,
-        CandlestickData as ProtoCandlestickData, CandlestickDataRequest, CandlestickDataResponse,
-        CandlestickDataStreamRequest, CandlestickDataStreamResponse, LiquidityPositionByIdRequest,
-        LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
+        BatchSwapOutputDataRequest, BatchSwapOutputDataResponse, CandlestickDataRequest,
+        CandlestickDataResponse, CandlestickDataStreamRequest, CandlestickDataStreamResponse,
+        LiquidityPositionByIdRequest, LiquidityPositionByIdResponse, LiquidityPositionsByIdRequest,
         LiquidityPositionsByIdResponse, LiquidityPositionsByPriceRequest,
         LiquidityPositionsByPriceResponse, LiquidityPositionsRequest, LiquidityPositionsResponse,
         SimulateTradeRequest, SimulateTradeResponse, SpreadRequest, SpreadResponse,
@@ -34,11 +33,10 @@ use super::ExecutionCircuitBreaker;
 use crate::{
     component::metrics,
     lp::position::{self, Position},
-    state_key::{self, candlesticks},
-    DirectedTradingPair, SwapExecution, TradingPair,
+    state_key, CandlestickData, DirectedTradingPair, SwapExecution, TradingPair,
 };
 
-use super::{router::RouteAndFill, PositionRead, StateReadExt};
+use super::{chandelier::CandlestickRead, router::RouteAndFill, PositionRead, StateReadExt};
 
 // TODO: Hide this and only expose a Router?
 pub struct Server {
@@ -213,10 +211,18 @@ impl QueryService for Server {
         request: tonic::Request<CandlestickDataRequest>,
     ) -> Result<tonic::Response<CandlestickDataResponse>, Status> {
         let state = self.storage.latest_snapshot();
-        let start_height = request.get_ref().start_height;
         // Limit the number of candlesticks returned to 20,000 (approximately 1 day)
         // to prevent the server from being overwhelmed by a single request.
-        let limit = std::cmp::min(request.get_ref().limit as usize, 20_000usize);
+        let limit = std::cmp::min(request.get_ref().limit, 20_000u64);
+        let start_height = match request.get_ref().start_height {
+            0 => {
+                // If no start height is provided, go `limit` blocks back from now.
+                let current_height = state.version();
+                current_height.saturating_sub(limit)
+            }
+            start_height => start_height,
+        };
+
         let pair: DirectedTradingPair = request
             .get_ref()
             .pair
@@ -224,42 +230,64 @@ impl QueryService for Server {
             .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
             .try_into()
             .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
-        let prefix = candlesticks::data::by_pair(&pair);
-        tracing::trace!(?prefix, "searching for candlesticks from starting height");
-        let start_height = format!("{:020}", start_height).as_bytes().to_vec();
 
-        let mut candlesticks = Vec::new();
-        let mut counter = 0;
-        let mut range = state
-            .nonverifiable_range_raw(Some(prefix.as_bytes()), start_height..)
-            .map_err(|_| Status::internal("error constructing candlestick range query"))?;
-        while let Some(res) = range.next().await {
-            if counter >= limit {
-                break;
-            }
-
-            let (_k, v) = res.map_err(|_| {
-                tonic::Status::internal("error getting candlestick data from storage")
-            })?;
-
-            candlesticks.push(ProtoCandlestickData::decode(&*v).map_err(|_| {
-                tonic::Status::internal("error decoding candlestick data from storage")
-            })?);
-
-            counter += 1;
-        }
+        let candlesticks = state
+            .candlesticks(&pair, start_height, limit as usize)
+            .await
+            .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         Ok(tonic::Response::new(CandlestickDataResponse {
-            data: candlesticks,
+            data: candlesticks.into_iter().map(Into::into).collect(),
         }))
     }
 
     async fn candlestick_data_stream(
         &self,
-        _request: tonic::Request<CandlestickDataStreamRequest>,
+        request: tonic::Request<CandlestickDataStreamRequest>,
     ) -> Result<tonic::Response<Self::CandlestickDataStreamStream>, Status> {
-        Err(Status::unimplemented(
-            "candlestick stream is not implemented",
+        let pair: DirectedTradingPair = request
+            .get_ref()
+            .pair
+            .clone()
+            .ok_or_else(|| Status::invalid_argument("missing trading_pair"))?
+            .try_into()
+            .map_err(|_| Status::invalid_argument("invalid trading_pair"))?;
+
+        let (tx_candle, rx_candle) = mpsc::channel::<CandlestickData>(1);
+        let storage = self.storage.clone();
+        tokio::spawn(async move {
+            // could add metrics here
+            // let _guard = CandlestickDataStreamConnectionCounter::new();
+            let mut rx_state_snapshot = storage.subscribe();
+            loop {
+                rx_state_snapshot
+                    .changed()
+                    .await
+                    .expect("channel should be open");
+                let snapshot = rx_state_snapshot.borrow().clone();
+                let height = snapshot.version();
+                match snapshot.get_candlestick(&pair, height).await? {
+                    Some(candle) => tx_candle.send(candle).await?,
+                    None => {
+                        // If there's no candlestick data, might as well check that
+                        // tx_candle is still open in case the client has disconnected.
+                        if tx_candle.is_closed() {
+                            break;
+                        }
+                    }
+                }
+            }
+            Ok::<_, anyhow::Error>(())
+        });
+
+        Ok(tonic::Response::new(
+            tokio_stream::wrappers::ReceiverStream::new(rx_candle)
+                .map(|candle| {
+                    Ok(CandlestickDataStreamResponse {
+                        data: Some(candle.into()),
+                    })
+                })
+                .boxed(),
         ))
     }
 
