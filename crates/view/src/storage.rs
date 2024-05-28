@@ -186,7 +186,7 @@ impl Storage {
                     .context("failed to query client version: the database was probably created by an old client version, and needs to be reset and resynchronized")?;
 
                 anyhow::bail!(
-                    "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize",
+                    "can't load view database created by client version {} using client version {}: they have different schemata, so you need to reset your view database and resynchronize by running pcli view reset",
                     database_client_version,
                     env!("CARGO_PKG_VERSION"),
                 );
