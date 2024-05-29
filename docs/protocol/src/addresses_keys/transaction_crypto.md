@@ -7,7 +7,7 @@ For the symmetric encryption described in this section, we use ChaCha20-Poly1305
 It is security-critical that `(key, nonce)` pairs are not reused. We do this by either:
 
 * deriving per-action keys from ephemeral shared secrets using a fixed nonce (used for notes and memo keys),
-* deriving per-action keys from the outgoing viewing key using a nonce derived from a commitment (used for swaps).
+* deriving per-action keys from the outgoing viewing key using a fixed nonce (used for swaps).
 
 We use each key at maximum once with a given nonce. We describe the nonces and keys below.
 
@@ -17,7 +17,7 @@ We use a different nonce to encrypt each type of item using the following `[u8; 
 
 * Notes: `[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
 * Memos: `[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
-* Swaps: we use the first 12 bytes of the swap commitment
+* Swaps: `[2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
 * Memo keys: `[3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]`
 
 ## Keys

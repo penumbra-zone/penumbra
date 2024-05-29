@@ -134,7 +134,7 @@ impl SwapPlaintext {
         let commitment = self.swap_commitment();
         let key = PayloadKey::derive_swap(ovk, commitment);
         let swap_plaintext: [u8; SWAP_LEN_BYTES] = self.into();
-        let encryption_result = key.encrypt_swap(swap_plaintext.to_vec(), commitment);
+        let encryption_result = key.encrypt_swap(swap_plaintext.to_vec());
 
         let ciphertext: [u8; SWAP_CIPHERTEXT_BYTES] = encryption_result
             .try_into()
