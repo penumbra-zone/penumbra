@@ -38,6 +38,7 @@
           # Important environment variables so that the build can find the necessary libraries
           PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
           LIBCLANG_PATH="${pkgs.libclang.lib}/lib";
+          ROCKSDB_LIB_DIR="${pkgs.rocksdb.out}/lib";
         in with pkgs; with pkgs.lib; let
           # All the Penumbra binaries
           penumbra = (craneLib.buildPackage {
@@ -56,8 +57,8 @@
                 (craneLib.filterCargoSources path type);
             };
             nativeBuildInputs = [ pkg-config ];
-            buildInputs = [ clang openssl ];
-            inherit system PKG_CONFIG_PATH LIBCLANG_PATH;
+            buildInputs = [ clang openssl rocksdb ];
+            inherit system PKG_CONFIG_PATH LIBCLANG_PATH ROCKSDB_LIB_DIR;
             cargoExtraArgs = "-p pd -p pcli -p pclientd";
             meta = {
               description = "A fully private proof-of-stake network and decentralized exchange for the Cosmos ecosystem";
@@ -101,12 +102,13 @@
             paths = [ penumbra cometbft ];
           };
           devShells.default = craneLib.devShell {
-            inherit LIBCLANG_PATH;
+            inherit LIBCLANG_PATH ROCKSDB_LIB_DIR;
             inputsFrom = [ penumbra ];
-            packages = [ cargo-watch cargo-nextest protobuf cometbft ];
+            packages = [ cargo-watch cargo-nextest protobuf cometbft rocksdb ];
             shellHook = ''
               export LIBCLANG_PATH=${LIBCLANG_PATH}
               export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc} # Required for rust-analyzer
+              export ROCKSDB_LIB_DIR=${ROCKSDB_LIB_DIR}
             '';
           };
         }
