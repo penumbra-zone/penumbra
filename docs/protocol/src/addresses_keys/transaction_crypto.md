@@ -59,7 +59,7 @@ action_payload_key = BLAKE2b-512("Penumbra_Payload", shared_secret, epk)
 ```
 
 This symmetric key is then used with the nonces specified above to encrypt a memo key or note.
-It should not be used to encrypt two items of the same type.
+It must not be used to encrypt two items of the same type.
 
 ### [Per-action Payload Key: Swaps](#per-action-swap-key)
 
