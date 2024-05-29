@@ -9,25 +9,24 @@ use penumbra_auction::auction::AuctionNft;
 use penumbra_compact_block::CompactBlock;
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::{
-    self as proto,
-    core::{
-        app::v1::query_service_client::QueryServiceClient as AppQueryServiceClient,
-        component::{
-            compact_block::v1::{
-                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-                CompactBlockRangeRequest,
-            },
-            shielded_pool::v1::{
-                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-                AssetMetadataByIdRequest,
-            },
+use penumbra_proto::core::{
+    app::v1::{
+        query_service_client::QueryServiceClient as AppQueryServiceClient,
+        TransactionsByHeightRequest,
+    },
+    component::{
+        compact_block::v1::{
+            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+            CompactBlockRangeRequest,
+        },
+        shielded_pool::v1::{
+            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+            AssetMetadataByIdRequest,
         },
     },
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use proto::core::app::v1::TransactionsByHeightRequest;
 use tap::{Tap, TapFallible};
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
