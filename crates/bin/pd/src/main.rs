@@ -195,6 +195,7 @@ async fn main() -> anyhow::Result<()> {
             // register pd's metrics with the exporter.
             tokio::spawn(exporter);
             pd::register_metrics();
+            tokio::spawn(pd::metrics::sleep_worker::run());
 
             // We error out if a service errors, rather than keep running.
             // A special attempt is made to detect whether binding to target socket failed;
