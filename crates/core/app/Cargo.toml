@@ -89,6 +89,7 @@ decaf377-fmd                     = { workspace = true, default-features = true }
 ed25519-consensus                = { workspace = true }
 penumbra-mock-client             = { workspace = true }
 penumbra-mock-consensus          = { workspace = true }
+penumbra-proto                   = { workspace = true, features = ["box-grpc"] }
 penumbra-test-subscriber         = { workspace = true }
 penumbra-mock-tendermint-proxy   = { workspace = true }
 penumbra-view                    = { workspace = true }
