@@ -1336,8 +1336,7 @@ impl Storage {
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
         sct: &mut tct::Tree,
-        // TODO: sucks passing this around, figure something better out
-        node: Url,
+        channel: tonic::transport::Channel,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -1368,7 +1367,7 @@ impl Storage {
         // If the app parameters have changed, update them.
         let new_app_parameters: Option<AppParameters> = if filtered_block.app_parameters_updated {
             // Fetch the latest parameters
-            let mut client = AppQueryServiceClient::connect(node.to_string()).await?;
+            let mut client = AppQueryServiceClient::new(channel);
             Some(
                 client
                     .app_parameters(tonic::Request::new(AppParametersRequest {}))
