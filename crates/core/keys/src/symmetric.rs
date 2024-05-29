@@ -4,6 +4,7 @@ use chacha20poly1305::{
     aead::{Aead, NewAead},
     ChaCha20Poly1305, Key, Nonce,
 };
+use decaf377::FieldExt;
 use decaf377_ka as ka;
 use penumbra_asset::balance;
 use penumbra_proto::core::keys::v1::{self as pb};
@@ -24,15 +25,29 @@ pub enum PayloadKind {
     Memo,
     /// Swap is action-scoped.
     Swap,
+    /// A LegacySwap is action-scoped, and is the encryption method
+    /// used prior to the ECC May 2024 audit. This was added to facilitate
+    /// decryption of legacy swaps.
+    LegacySwap,
 }
 
 impl PayloadKind {
-    pub(crate) fn nonce(&self) -> [u8; 12] {
+    pub(crate) fn nonce(&self, commitment: Option<StateCommitment>) -> [u8; 12] {
         match self {
             Self::Note => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::MemoKey => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::Swap => [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             Self::Memo => [3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            Self::LegacySwap => {
+                let mut nonce = [0u8; 12];
+                nonce[0..12].copy_from_slice(
+                    &commitment
+                        .expect("swaps use the prefix bytes of the swap commitment as a nonce")
+                        .0
+                        .to_bytes()[0..12],
+                );
+                nonce
+            }
         }
     }
 }
@@ -71,7 +86,7 @@ impl PayloadKey {
     /// Encrypt a note, memo, or memo key using the `PayloadKey`.
     pub fn encrypt(&self, plaintext: Vec<u8>, kind: PayloadKind) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -83,7 +98,7 @@ impl PayloadKey {
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
 
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -109,7 +124,7 @@ impl PayloadKey {
     /// Encrypt a swap using the `PayloadKey`.
     pub fn encrypt_swap(&self, plaintext: Vec<u8>) -> Vec<u8> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = PayloadKind::Swap.nonce();
+        let nonce_bytes = PayloadKind::Swap.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -118,14 +133,28 @@ impl PayloadKey {
     }
 
     /// Decrypt a swap using the `PayloadKey`.
-    pub fn decrypt_swap(&self, ciphertext: Vec<u8>) -> Result<Vec<u8>> {
+    ///
+    /// In order to decrypt swaps encrypted using the legacy method wherein
+    /// the nonce used is the first 12 bytes of the swap commitment, we try
+    /// both decryption methods.
+    pub fn decrypt_swap(
+        &self,
+        ciphertext: Vec<u8>,
+        commitment: StateCommitment,
+    ) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
 
-        let nonce_bytes = PayloadKind::Swap.nonce();
+        let nonce_bytes = PayloadKind::Swap.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
+        // First try new method, then try legacy method
         cipher
             .decrypt(nonce, ciphertext.as_ref())
+            .or_else(|_| {
+                let nonce_bytes = PayloadKind::LegacySwap.nonce(Some(commitment));
+                let nonce = Nonce::from_slice(&nonce_bytes);
+                cipher.decrypt(nonce, ciphertext.as_ref())
+            })
             .map_err(|_| anyhow::anyhow!("decryption error"))
     }
 }
@@ -214,7 +243,7 @@ impl OutgoingCipherKey {
         // References:
         // * Section 5.4.3 of the ZCash protocol spec
         // * Section 2.3 RFC 7539
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
@@ -225,7 +254,7 @@ impl OutgoingCipherKey {
     /// Decrypt key material using the `OutgoingCipherKey`.
     pub fn decrypt(&self, ciphertext: Vec<u8>, kind: PayloadKind) -> Result<Vec<u8>> {
         let cipher = ChaCha20Poly1305::new(&self.0);
-        let nonce_bytes = kind.nonce();
+        let nonce_bytes = kind.nonce(None);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         cipher
