@@ -27,11 +27,10 @@ use penumbra_proto::core::{
 };
 use penumbra_sct::{CommitmentSource, Nullifier};
 use penumbra_transaction::Transaction;
-use tap::{Tap, TapFallible};
+use tap::Tap;
 use tokio::sync::{watch, RwLock};
 use tonic::transport::Channel;
 use tracing::instrument;
-use url::Url;
 
 use crate::{
     sync::{scan_block, FilteredBlock},
@@ -55,13 +54,10 @@ impl Worker {
     /// - a shared, in-memory SCT instance;
     /// - a shared error slot;
     /// - a channel for notifying the client of sync progress.
-    #[instrument(
-        skip(storage),
-        fields(url = %node)
-    )]
+    #[instrument(skip_all)]
     pub async fn new(
         storage: Storage,
-        node: Url,
+        channel: Channel,
     ) -> Result<
         (
             Self,
@@ -87,13 +83,6 @@ impl Worker {
             watch::channel(storage.last_sync_height().await?.unwrap_or(0));
         // Mark the current height as seen, since it's not new.
         sync_height_rx.borrow_and_update();
-
-        let channel = Channel::from_shared(node.to_string())
-            .with_context(|| "could not parse node URI")?
-            .connect()
-            .await
-            .with_context(|| "could not connect to grpc server")
-            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
 
         Ok((
             Self {
