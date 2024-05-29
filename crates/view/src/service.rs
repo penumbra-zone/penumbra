@@ -36,6 +36,7 @@ use penumbra_keys::{
 };
 use penumbra_num::Amount;
 use penumbra_proto::{
+    box_grpc_svc::BoxGrpcService,
     util::tendermint_proxy::v1::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, BroadcastTxSyncRequest,
         GetStatusRequest, GetStatusResponse, SyncInfo,
@@ -86,7 +87,7 @@ pub struct ViewServer {
     // The pd gRPC endpoint.
     //
     // This can be a remote node, or a boxed in-memory service running locally.
-    channel: Channel,
+    rpc_svc: BoxGrpcService,
     /// Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
 }
@@ -102,14 +103,14 @@ impl ViewServer {
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
-        channel: Channel,
+        rpc_svc: BoxGrpcService,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, channel.clone())
+        let storage = Storage::load_or_initialize(storage_path, fvk, rpc_svc.clone())
             .tap(|_| tracing::trace!("loading or initializing storage"))
             .await?
             .tap(|_| tracing::debug!("storage is ready"));
 
-        Self::new(storage, channel)
+        Self::new(storage, rpc_svc)
             .tap(|_| tracing::trace!("constructing view server"))
             .await
             .tap(|_| tracing::debug!("constructed view server"))
@@ -123,9 +124,9 @@ impl ViewServer {
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
     #[instrument(skip_all)]
-    pub async fn new(storage: Storage, channel: Channel) -> anyhow::Result<Self> {
+    pub async fn new(storage: Storage, rpc_svc: BoxGrpcService) -> anyhow::Result<Self> {
         let (worker, state_commitment_tree, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), channel.clone())
+            Worker::new(storage.clone(), rpc_svc.clone())
                 .tap(|_| tracing::trace!("constructing view server worker"))
                 .await?
                 .tap(|_| tracing::debug!("constructed view server worker"));
@@ -137,7 +138,7 @@ impl ViewServer {
             error_slot,
             sync_height_rx,
             state_commitment_tree,
-            channel,
+            rpc_svc,
         })
     }
 
@@ -195,7 +196,7 @@ impl ViewServer {
                 // 2. Broadcast the transaction to the network.
                 // Note that "synchronous" here means "wait for the tx to be accepted by
                 // the fullnode", not "wait for the tx to be included on chain.
-                let mut fullnode_client = TendermintProxyServiceClient::new(self2.channel.clone());
+                let mut fullnode_client = TendermintProxyServiceClient::new(self2.rpc_svc.clone());
                 let node_rsp = fullnode_client
                     .broadcast_tx_sync(BroadcastTxSyncRequest {
                         params: transaction.encode_to_vec(),
@@ -280,7 +281,7 @@ impl ViewServer {
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
-        let mut client = TendermintProxyServiceClient::new(self.channel.clone());
+        let mut client = TendermintProxyServiceClient::new(self.rpc_svc.clone());
 
         let GetStatusResponse { sync_info, .. } = client
             .get_status(GetStatusRequest {})

@@ -27,6 +27,7 @@ use penumbra_fee::GasPrices;
 use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_proto::{
+    box_grpc_svc::BoxGrpcService,
     core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
     },
@@ -82,7 +83,7 @@ impl Storage {
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
-        channel: tonic::transport::Channel,
+        rpc_svc: BoxGrpcService,
     ) -> anyhow::Result<Self> {
         if let Some(path) = storage_path.as_ref().map(AsRef::as_ref) {
             if path.exists() {
@@ -93,7 +94,7 @@ impl Storage {
             }
         };
 
-        let params = AppQueryServiceClient::new(channel)
+        let params = AppQueryServiceClient::new(rpc_svc)
             .app_parameters(tonic::Request::new(AppParametersRequest {}))
             .instrument(error_span!("getting_app_parameters"))
             .await?
@@ -1319,7 +1320,7 @@ impl Storage {
         filtered_block: FilteredBlock,
         transactions: Vec<Transaction>,
         sct: &mut tct::Tree,
-        channel: tonic::transport::Channel,
+        rpc_svc: BoxGrpcService,
     ) -> anyhow::Result<()> {
         //Check that the incoming block height follows the latest recorded height
         let last_sync_height = self.last_sync_height().await?;
@@ -1350,7 +1351,7 @@ impl Storage {
         // If the app parameters have changed, update them.
         let new_app_parameters: Option<AppParameters> = if filtered_block.app_parameters_updated {
             // Fetch the latest parameters
-            let mut client = AppQueryServiceClient::new(channel);
+            let mut client = AppQueryServiceClient::new(rpc_svc);
             Some(
                 client
                     .app_parameters(tonic::Request::new(AppParametersRequest {}))

@@ -67,37 +67,20 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
         .tap(|url| tracing::debug!(%url, "parsed grpc url"));
 
     // Spawn the server-side view server.
-    {
-        let make_svc = penumbra_app::rpc::router(
-            storage.as_ref(),
-            proxy,
-            false, /*enable_expensive_rpc*/
-        )?
-        .into_router()
-        .layer(tower_http::cors::CorsLayer::permissive())
-        .into_make_service()
-        .tap(|_| tracing::debug!("initialized rpc service"));
-        let [addr] = grpc_url
-            .socket_addrs(|| None)?
-            .try_into()
-            .expect("grpc url can be turned into a socket address");
-        let server = axum_server::bind(addr).serve(make_svc);
-        tokio::spawn(async { server.await.expect("grpc server returned an error") })
-            .tap(|_| tracing::debug!("grpc server is running"))
+    let rpc = {
+        penumbra_app::rpc::router(storage.as_ref(), proxy, false /*enable_expensive_rpc*/)?
+            .into_router()
+            .layer(tower_http::cors::CorsLayer::permissive())
+            .into_make_service()
+            .tap(|_| tracing::debug!("initialized rpc service"))
     };
 
     // Spawn the client-side view server...
     let view_server = {
-        let channel = tonic::transport::Channel::from_shared(grpc_url.to_string())
-            .with_context(|| "could not parse node URI")?
-            .connect()
-            .await
-            .with_context(|| "could not connect to grpc server")
-            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
         penumbra_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
-            channel,
+            rpc,
         )
         .await
         // TODO(kate): the goal is to communicate with the `ViewServiceServer`.

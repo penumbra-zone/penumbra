@@ -9,19 +9,22 @@ use penumbra_auction::auction::AuctionNft;
 use penumbra_compact_block::CompactBlock;
 use penumbra_dex::lp::{position, LpNft};
 use penumbra_keys::FullViewingKey;
-use penumbra_proto::core::{
-    app::v1::{
-        query_service_client::QueryServiceClient as AppQueryServiceClient,
-        TransactionsByHeightRequest,
-    },
-    component::{
-        compact_block::v1::{
-            query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
-            CompactBlockRangeRequest,
+use penumbra_proto::{
+    box_grpc_svc::BoxGrpcService,
+    core::{
+        app::v1::{
+            query_service_client::QueryServiceClient as AppQueryServiceClient,
+            TransactionsByHeightRequest,
         },
-        shielded_pool::v1::{
-            query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
-            AssetMetadataByIdRequest,
+        component::{
+            compact_block::v1::{
+                query_service_client::QueryServiceClient as CompactBlockQueryServiceClient,
+                CompactBlockRangeRequest,
+            },
+            shielded_pool::v1::{
+                query_service_client::QueryServiceClient as ShieldedPoolQueryServiceClient,
+                AssetMetadataByIdRequest,
+            },
         },
     },
 };
@@ -43,8 +46,10 @@ pub struct Worker {
     fvk: FullViewingKey, // TODO: notifications (see TODOs on ViewService)
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     sync_height_tx: watch::Sender<u64>,
-    /// Tonic channel used to create GRPC clients.
-    channel: Channel,
+    // The pd gRPC endpoint.
+    //
+    // This can be a remote node, or a boxed in-memory service running locally.
+    rpc_svc: BoxGrpcService,
 }
 
 impl Worker {
@@ -57,7 +62,7 @@ impl Worker {
     #[instrument(skip_all)]
     pub async fn new(
         storage: Storage,
-        channel: Channel,
+        rpc_svc: BoxGrpcService,
     ) -> Result<
         (
             Self,
@@ -91,7 +96,7 @@ impl Worker {
                 fvk,
                 error_slot: error_slot.clone(),
                 sync_height_tx,
-                channel,
+                rpc_svc,
             },
             sct,
             error_slot,
@@ -133,7 +138,7 @@ impl Worker {
         );
 
         let all_transactions =
-            fetch_transactions(self.channel.clone(), filtered_block.height).await?;
+            fetch_transactions(self.rpc_svc.clone(), filtered_block.height).await?;
 
         let mut transactions = Vec::new();
 
@@ -192,7 +197,7 @@ impl Worker {
             .map(|h| h + 1)
             .unwrap_or(0);
 
-        let mut client = CompactBlockQueryServiceClient::new(self.channel.clone());
+        let mut client = CompactBlockQueryServiceClient::new(self.rpc_svc.clone());
         let mut stream = client
             .compact_block_range(tonic::Request::new(CompactBlockRangeRequest {
                 start_height,
@@ -371,7 +376,7 @@ impl Worker {
                     } else {
                         // If the asset is unknown, we may be able to query for its denom metadata and store that.
 
-                        let mut client = ShieldedPoolQueryServiceClient::new(self.channel.clone());
+                        let mut client = ShieldedPoolQueryServiceClient::new(self.rpc_svc.clone());
                         if let Some(denom_metadata) = client
                             .asset_metadata_by_id(AssetMetadataByIdRequest {
                                 asset_id: Some(note_record.note.asset_id().into()),
@@ -396,7 +401,7 @@ impl Worker {
                         filtered_block.clone(),
                         transactions,
                         &mut sct_guard,
-                        self.channel.clone(),
+                        self.rpc_svc.clone(),
                     )
                     .await?;
                 // Notify all watchers of the new height we just recorded.
@@ -438,10 +443,10 @@ impl Worker {
 
 // Fetches all transactions in the block.
 async fn fetch_transactions(
-    channel: Channel,
+    rpc_svc: BoxGrpcService,
     block_height: u64,
 ) -> anyhow::Result<Vec<Transaction>> {
-    let mut client = AppQueryServiceClient::new(channel);
+    let mut client = AppQueryServiceClient::new(rpc_svc);
     let request = TransactionsByHeightRequest {
         block_height,
         ..Default::default()
