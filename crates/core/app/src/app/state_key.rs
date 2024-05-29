@@ -10,6 +10,12 @@ pub mod data {
     }
 }
 
+pub fn deferred_event(index: usize) -> Vec<u8> {
+    format!("application/deferred_events/{index}")
+        .as_bytes()
+        .to_vec()
+}
+
 pub mod cometbft_data {
     use crate::COMETBFT_SUBSTORE_PREFIX;
 

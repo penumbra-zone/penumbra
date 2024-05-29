@@ -34,6 +34,7 @@ use penumbra_stake::component::{
 use penumbra_transaction::Transaction;
 use prost::Message as _;
 use tendermint::abci::{self, Event};
+use tendermint_proto::v0_34::abci::Event as ProtoEvent;
 
 use tendermint::v0_37::abci::{request, response};
 use tendermint::validator::Update;
@@ -151,6 +152,22 @@ impl App {
             }
         };
 
+        // Apply the state from `init_chain` and return the events generated during genesis. These
+        // cannot be emitted at this time due to a limitation of ABCI, but they will be emitted
+        // during the first BeginBlock.
+        let events = state_tx.apply().1;
+
+        // Commit the genesis events to the state.
+        let mut state_tx = self
+            .state
+            .try_begin_transaction()
+            .expect("state Arc should not be referenced elsewhere");
+        for (i, event) in events.into_iter().enumerate() {
+            let mut event_bytes = Vec::new();
+            tendermint_proto::Protobuf::<ProtoEvent>::encode(event, &mut event_bytes)
+                .expect("events are always valid and can be encoded");
+            state_tx.nonverifiable_put_raw(state_key::deferred_event(i), event_bytes);
+        }
         state_tx.apply();
     }
 
@@ -218,6 +235,23 @@ impl App {
 
     pub async fn begin_block(&mut self, begin_block: &request::BeginBlock) -> Vec<abci::Event> {
         let mut state_tx = StateDelta::new(self.state.clone());
+
+        // Before anything else, emit the deferred events (only present if right after genesis), and
+        // delete each one to prevent it from being emitted again.
+        for i in 0.. {
+            if let Some(event_bytes) = state_tx
+                .nonverifiable_get_raw(&state_key::deferred_event(i))
+                .await
+                .expect("can attempt to get deferred event")
+            {
+                let event = tendermint_proto::Protobuf::<ProtoEvent>::decode(&event_bytes[..])
+                    .expect("deferred event is always valid");
+                state_tx.record(event);
+                state_tx.nonverifiable_delete(state_key::deferred_event(i));
+            } else {
+                break;
+            }
+        }
 
         // If a app parameter change is scheduled for this block, apply it here,
         // before any other component has executed. This ensures that app
