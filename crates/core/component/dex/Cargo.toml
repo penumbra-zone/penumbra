@@ -7,6 +7,7 @@ edition = {workspace = true}
 component = [
     "cnidarium-component",
     "cnidarium",
+    "metrics-exporter-prometheus",
     "penumbra-proto/cnidarium",
     "penumbra-shielded-pool/component",
     "penumbra-fee/component",
@@ -49,6 +50,7 @@ futures = {workspace = true}
 hex = {workspace = true}
 im = {workspace = true}
 metrics = {workspace = true}
+metrics-exporter-prometheus = {workspace = true, optional = true}
 once_cell = {workspace = true}
 parking_lot = {workspace = true}
 pbjson-types = {workspace = true}

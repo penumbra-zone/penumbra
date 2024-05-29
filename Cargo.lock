@@ -5024,6 +5024,7 @@ dependencies = [
  "im",
  "itertools 0.11.0",
  "metrics",
+ "metrics-exporter-prometheus",
  "once_cell",
  "parking_lot",
  "pbjson-types",

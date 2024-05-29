@@ -71,3 +71,23 @@ pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
 pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
 pub const DEX_RPC_SIMULATE_TRADE_DURATION: &str =
     "penumbra_dex_rpc_simulate_trade_duration_seconds";
+
+/// An extension trait providing DEX-related interfaces for [`PrometheusBuilder`].
+///
+/// [builder]: metrics_exporter_prometheus::PrometheusBuilder
+pub trait PrometheusBuilderExt
+where
+    Self: Sized,
+{
+    /// Configure buckets for histogram metrics.
+    fn set_buckets_for_dex_metrics(self) -> Result<Self, metrics_exporter_prometheus::BuildError>;
+}
+
+impl PrometheusBuilderExt for metrics_exporter_prometheus::PrometheusBuilder {
+    fn set_buckets_for_dex_metrics(self) -> Result<Self, metrics_exporter_prometheus::BuildError> {
+        self.set_buckets_for_metric(
+            metrics_exporter_prometheus::Matcher::Prefix("penumbra_dex_".to_string()),
+            DEX_BUCKETS,
+        )
+    }
+}
