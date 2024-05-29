@@ -157,6 +157,7 @@ im                               = { version = "^15.1.0" }
 indicatif                        = { version = "0.16" }
 jmt                              = { version = "0.10", features = ["migration"] }
 metrics                          = { version = "0.22" }
+metrics-exporter-prometheus      = { version = "0.13", features = ["http-listener"] }
 metrics-tracing-context          = { version = "0.15" }
 num-bigint                       = { version = "0.4" }
 num-traits                       = { default-features = false, version = "0.2.15" }
