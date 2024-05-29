@@ -6,6 +6,7 @@ use cnidarium::{StateDelta, StateRead};
 use futures::StreamExt;
 use penumbra_asset::asset;
 use penumbra_num::fixpoint::U128x128;
+use tap::Tap;
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -88,7 +89,16 @@ async fn relax_active_paths<S: StateRead + 'static>(
         "relaxing active paths"
     );
     for path in active_paths {
-        js.spawn(relax_path(cache.clone(), path, fixed_candidates.clone()));
+        let candidates = Arc::clone(&fixed_candidates);
+        let cache = Arc::clone(&cache);
+        js.spawn(async move {
+            use crate::component::metrics::DEX_PATH_SEARCH_RELAX_PATH_DURATION;
+            let metric = metrics::histogram!(DEX_PATH_SEARCH_RELAX_PATH_DURATION);
+            let start = std::time::Instant::now();
+            relax_path(cache, path, candidates)
+                .await
+                .tap(|_| metric.record(start.elapsed()))
+        });
     }
     // Wait for all relaxations to complete.
     while let Some(task) = js.join_next().await {
