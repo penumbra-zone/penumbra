@@ -80,7 +80,7 @@ Then, build all the project binaries using `cargo`:
 cargo build --release
 ```
 
-### Linking Against RocksDB
+### Linking Against RocksDB (Optional)
 
 Development builds can avoid the cost of recompiling RocksDB for storage libraries in the Cargo
 workspace. This manifests as a `librocksdb-sys(build)` message when building or testing crates
