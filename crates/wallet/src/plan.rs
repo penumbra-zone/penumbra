@@ -32,7 +32,7 @@ where
 }
 
 #[instrument(skip(view, rng))]
-pub async fn claim_unclaimed_swaps<V, R>(
+async fn claim_unclaimed_swaps<V, R>(
     view: &mut V,
     mut rng: R,
 ) -> anyhow::Result<Vec<TransactionPlan>>
@@ -84,7 +84,7 @@ where
 }
 
 #[instrument(skip(view, rng))]
-pub async fn sweep_notes<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
+async fn sweep_notes<V, R>(view: &mut V, mut rng: R) -> anyhow::Result<Vec<TransactionPlan>>
 where
     V: ViewClient,
     R: RngCore + CryptoRng,
