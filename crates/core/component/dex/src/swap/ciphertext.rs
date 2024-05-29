@@ -15,13 +15,17 @@ impl SwapCiphertext {
         commitment: note::StateCommitment,
     ) -> Result<SwapPlaintext> {
         let payload_key = PayloadKey::derive_swap(ovk, commitment);
-        self.decrypt_with_payload_key(&payload_key)
+        self.decrypt_with_payload_key(&payload_key, commitment)
     }
 
-    pub fn decrypt_with_payload_key(&self, payload_key: &PayloadKey) -> Result<SwapPlaintext> {
+    pub fn decrypt_with_payload_key(
+        &self,
+        payload_key: &PayloadKey,
+        commitment: note::StateCommitment,
+    ) -> Result<SwapPlaintext> {
         let swap_ciphertext = self.0;
         let decryption_result = payload_key
-            .decrypt_swap(swap_ciphertext.to_vec())
+            .decrypt_swap(swap_ciphertext.to_vec(), commitment)
             .map_err(|_| anyhow::anyhow!("unable to decrypt swap ciphertext"))?;
 
         // TODO: encapsulate plaintext encoding by making this a
