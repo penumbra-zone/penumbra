@@ -122,9 +122,17 @@ impl ViewServer {
     /// To create multiple [`ViewService`]s, clone the [`ViewService`] returned
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
+    #[instrument(skip_all)]
     pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
+        let channel = Channel::from_shared(node.to_string())
+            .with_context(|| "could not parse node URI")?
+            .connect()
+            .await
+            .with_context(|| "could not connect to grpc server")
+            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
+
         let (worker, state_commitment_tree, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), node.clone())
+            Worker::new(storage.clone(), channel)
                 .tap(|_| tracing::trace!("constructing view server worker"))
                 .await?
                 .tap(|_| tracing::debug!("constructed view server worker"));
