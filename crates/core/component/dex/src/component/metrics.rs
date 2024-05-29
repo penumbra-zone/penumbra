@@ -85,9 +85,14 @@ where
 
 impl PrometheusBuilderExt for metrics_exporter_prometheus::PrometheusBuilder {
     fn set_buckets_for_dex_metrics(self) -> Result<Self, metrics_exporter_prometheus::BuildError> {
-        self.set_buckets_for_metric(
-            metrics_exporter_prometheus::Matcher::Prefix("penumbra_dex_".to_string()),
-            DEX_BUCKETS,
-        )
+        use metrics_exporter_prometheus::Matcher::Full;
+        self.set_buckets_for_metric(Full(DEX_PATH_SEARCH_DURATION.to_owned()), DEX_BUCKETS)?
+            .set_buckets_for_metric(Full(DEX_ROUTE_FILL_DURATION.to_owned()), DEX_BUCKETS)?
+            .set_buckets_for_metric(Full(DEX_ARB_DURATION.to_owned()), DEX_BUCKETS)?
+            .set_buckets_for_metric(Full(DEX_BATCH_DURATION.to_owned()), DEX_BUCKETS)?
+            .set_buckets_for_metric(
+                Full(DEX_RPC_SIMULATE_TRADE_DURATION.to_owned()),
+                DEX_BUCKETS,
+            )
     }
 }
