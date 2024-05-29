@@ -138,6 +138,12 @@ pub enum RootCommand {
         /// If set, force a migration to occur even if the chain is not halted.
         #[clap(long, display_order = 1000)]
         force: bool,
+        /// If set, edit local state to to permit the node to start, despite
+        /// a pre-existing halt order, e.g. via governance. This option
+        /// can be useful for relayer operators, to run a temporary archive node
+        /// across upgrade boundaries.
+        #[clap(long, display_order = 1000)]
+        ready_to_start: bool,
     },
 }
 
