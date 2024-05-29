@@ -12,7 +12,7 @@ use cnidarium::Storage;
 use metrics_exporter_prometheus::PrometheusBuilder;
 use pd::{
     cli::{Opt, RootCommand, TestnetCommand},
-    migrate::Migration::Testnet76,
+    migrate::Migration::{ReadyToStart, Testnet76},
     testnet::{
         config::{get_testnet_dir, parse_tm_address, url_has_necessary_parts},
         generate::TestnetConfig,
@@ -431,6 +431,7 @@ async fn main() -> anyhow::Result<()> {
             home,
             comet_home,
             force,
+            ready_to_start,
         } => {
             let (pd_home, comet_home) = match home {
                 Some(h) => (h, comet_home),
@@ -441,11 +442,22 @@ async fn main() -> anyhow::Result<()> {
                     (base.join("pd"), Some(base.join("cometbft")))
                 }
             };
-            let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
-            tracing::info!(?genesis_start, "last block timestamp");
             let pd_migrate_span = tracing::error_span!("pd_migrate");
             pd_migrate_span
                 .in_scope(|| tracing::info!("migrating pd state in {}", pd_home.display()));
+
+            if ready_to_start {
+                tracing::info!("disabling halt order in local state");
+                ReadyToStart
+                    .migrate(pd_home, comet_home, None, force)
+                    .instrument(pd_migrate_span)
+                    .await
+                    .context("failed to disable halt bit in local state")?;
+                exit(0)
+            }
+
+            let genesis_start = pd::migrate::last_block_timestamp(pd_home.clone()).await?;
+            tracing::info!(?genesis_start, "last block timestamp");
             Testnet76
                 .migrate(pd_home.clone(), comet_home, Some(genesis_start), force)
                 .instrument(pd_migrate_span)
