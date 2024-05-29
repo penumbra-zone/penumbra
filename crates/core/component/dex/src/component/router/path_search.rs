@@ -34,8 +34,13 @@ pub trait PathSearch: StateRead + Clone + 'static {
 
         // Initialize some metrics for calculating time spent on path searching
         // vs route filling. We use vecs so we can count across iterations of the loop.
-        let path_start = std::time::Instant::now();
         tracing::debug!(?src, ?dst, ?max_hops, "searching for path");
+        let path_start = std::time::Instant::now();
+        let record_duration = || {
+            use crate::component::metrics::DEX_PATH_SEARCH_DURATION;
+            let elapsed = path_start.elapsed();
+            metrics::histogram!(DEX_PATH_SEARCH_DURATION).record(elapsed);
+        };
 
         // Work in a new stack of state changes, which we can completely discard
         // at the end of routing
@@ -49,14 +54,14 @@ pub trait PathSearch: StateRead + Clone + 'static {
 
         let entry = cache.lock().0.remove(&dst);
         let Some(PathEntry { path, spill, .. }) = entry else {
+            record_duration();
             return Ok((None, None));
         };
 
         let nodes = path.nodes;
         let spill_price = spill.map(|p| p.price);
         tracing::debug!(price = %path.price, spill_price = %spill_price.unwrap_or_else(|| 0u64.into()), ?src, ?nodes, "found path");
-        metrics::histogram!(crate::component::metrics::DEX_PATH_SEARCH_DURATION)
-            .record(path_start.elapsed());
+        record_duration();
 
         match price_limit {
             // Note: previously, this branch was a load-bearing termination condition, primarily
