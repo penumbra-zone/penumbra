@@ -46,7 +46,7 @@ pub fn register_metrics() {
 // Prometheus metrics are structured as a Histogram, rather than as a Summary.
 // These values may need to be updated over time.
 // These values are logarithmically spaced from 5ms to 250ms.
-pub const DEX_BUCKETS: &[f64; 16] = &[
+const GENERIC_DEX_BUCKETS: &[f64; 16] = &[
     0.005,
     0.00648985018,
     0.00842363108,
@@ -86,13 +86,19 @@ where
 impl PrometheusBuilderExt for metrics_exporter_prometheus::PrometheusBuilder {
     fn set_buckets_for_dex_metrics(self) -> Result<Self, metrics_exporter_prometheus::BuildError> {
         use metrics_exporter_prometheus::Matcher::Full;
-        self.set_buckets_for_metric(Full(DEX_PATH_SEARCH_DURATION.to_owned()), DEX_BUCKETS)?
-            .set_buckets_for_metric(Full(DEX_ROUTE_FILL_DURATION.to_owned()), DEX_BUCKETS)?
-            .set_buckets_for_metric(Full(DEX_ARB_DURATION.to_owned()), DEX_BUCKETS)?
-            .set_buckets_for_metric(Full(DEX_BATCH_DURATION.to_owned()), DEX_BUCKETS)?
-            .set_buckets_for_metric(
-                Full(DEX_RPC_SIMULATE_TRADE_DURATION.to_owned()),
-                DEX_BUCKETS,
-            )
+        self.set_buckets_for_metric(
+            Full(DEX_PATH_SEARCH_DURATION.to_owned()),
+            GENERIC_DEX_BUCKETS,
+        )?
+        .set_buckets_for_metric(
+            Full(DEX_ROUTE_FILL_DURATION.to_owned()),
+            GENERIC_DEX_BUCKETS,
+        )?
+        .set_buckets_for_metric(Full(DEX_ARB_DURATION.to_owned()), GENERIC_DEX_BUCKETS)?
+        .set_buckets_for_metric(Full(DEX_BATCH_DURATION.to_owned()), GENERIC_DEX_BUCKETS)?
+        .set_buckets_for_metric(
+            Full(DEX_RPC_SIMULATE_TRADE_DURATION.to_owned()),
+            GENERIC_DEX_BUCKETS,
+        )
     }
 }
