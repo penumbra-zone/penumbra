@@ -59,7 +59,7 @@ ibc-types                        = { workspace = true, default-features = true }
 ics23                            = { workspace = true }
 jmt                              = { workspace = true }
 metrics                          = { workspace = true }
-metrics-exporter-prometheus      = { version = "0.13", features = ["http-listener"] }
+metrics-exporter-prometheus      = { workspace = true }
 metrics-tracing-context          = { workspace = true }
 metrics-util                     = "0.16.2"
 mime_guess                       = "2"
