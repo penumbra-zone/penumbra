@@ -1,9 +1,10 @@
+use std::fmt::Display;
+
 use clap::ArgEnum;
 use penumbra_asset::Value;
 use penumbra_auction::auction::dutch::DutchAuctionDescription;
-use rand::RngCore;
+use rand::{Rng, RngCore};
 use rand_core::OsRng;
-use rand_distr::Distribution;
 use serde::Serialize;
 
 #[derive(ArgEnum, Clone, Debug, Serialize)]
@@ -36,25 +37,25 @@ impl GdaRecipe {
             GdaRecipe::SixHours => 6 * 60 * 12,
             GdaRecipe::TwelveHours => 12 * 60 * 12,
             GdaRecipe::OneDay => 24 * 60 * 12,
-            GdaRecipe::TwoDays => 2 * 24 * 60 * 12,
+            GdaRecipe::TwoDays => 48 * 60 * 12,
         }
     }
 
-    pub fn poisson_intensity_per_block(&self) -> f64 {
+    pub fn poisson_parameter(&self) -> f64 {
         match &self {
-            GdaRecipe::TenMinutes => 0.064614,
-            GdaRecipe::ThirtyMinutes => 0.050577,
-            GdaRecipe::OneHour => 0.042122,
-            GdaRecipe::TwoHours => 0.022629,
-            GdaRecipe::SixHours => 0.010741,
-            GdaRecipe::TwelveHours => 0.00537,
-            GdaRecipe::OneDay => 0.03469,
-            GdaRecipe::TwoDays => 0.00735,
+            GdaRecipe::TenMinutes => 0.06458333333,
+            GdaRecipe::ThirtyMinutes => 0.05058333333,
+            GdaRecipe::OneHour => 0.02525,
+            GdaRecipe::TwoHours => 0.02266666666,
+            GdaRecipe::SixHours => 0.01075,
+            GdaRecipe::TwelveHours => 0.00533333333,
+            GdaRecipe::OneDay => 0.0035,
+            GdaRecipe::TwoDays => 0.00175,
         }
     }
 
-    pub fn poisson_intensity(&self) -> f64 {
-        self.poisson_intensity_per_block() * self.as_blocks() as f64
+    pub fn intensity(&self) -> f64 {
+        self.poisson_parameter()
     }
 
     pub fn num_auctions(&self) -> u64 {
@@ -88,6 +89,12 @@ impl GdaRecipe {
     }
 }
 
+impl Display for GdaRecipe {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct GradualAuction {
     pub input: Value,
@@ -115,8 +122,7 @@ impl GradualAuction {
     }
 
     pub fn generate_start_heights(&self) -> Vec<u64> {
-        use rand_distr::Exp;
-        let lambda = self.recipe.poisson_intensity();
+        let lambda = self.recipe.intensity();
         let num_auctions = self.recipe.num_auctions();
         let start_height = self.start_height;
         let sub_auction_length = self.recipe.sub_auction_length();
@@ -130,16 +136,15 @@ impl GradualAuction {
         );
 
         let mut rng = rand::thread_rng();
-        let exp_dist = Exp::new(1.0 / lambda).expect("lambda too small");
         let mut current_height = start_height as f64;
 
         let mut auction_starts = Vec::with_capacity(num_auctions as usize);
         for _ in 0..num_auctions {
-            let ff_clock = exp_dist.sample(&mut rng);
+            let ff_clock = ((rng.gen::<f64>()).ln()).abs() / lambda;
             current_height += ff_clock;
             let height = current_height.ceil() as u64;
             tracing::debug!(height, arrival_time = ff_clock, "selected auction start");
-            auction_starts.push(height)
+            auction_starts.push(height);
         }
 
         auction_starts
