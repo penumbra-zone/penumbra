@@ -46,7 +46,6 @@ pub struct Worker {
     sync_height_tx: watch::Sender<u64>,
     /// Tonic channel used to create GRPC clients.
     channel: Channel,
-    node: Url,
 }
 
 impl Worker {
@@ -104,7 +103,6 @@ impl Worker {
                 error_slot: error_slot.clone(),
                 sync_height_tx,
                 channel,
-                node,
             },
             sct,
             error_slot,
@@ -409,7 +407,7 @@ impl Worker {
                         filtered_block.clone(),
                         transactions,
                         &mut sct_guard,
-                        self.node.clone(),
+                        self.channel.clone(),
                     )
                     .await?;
                 // Notify all watchers of the new height we just recorded.
