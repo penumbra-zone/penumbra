@@ -14,7 +14,8 @@ tendermint = [
     "dep:chrono",
     "dep:tendermint-proto",
     "dep:tendermint-rpc",
-    "dep:thiserror"
+    "dep:thiserror",
+    "dep:tonic",
 ]
 
 [dependencies]
