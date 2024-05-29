@@ -204,7 +204,6 @@ rand                             = { version = "0.8.5" }
 rand_chacha                      = { version = "0.3.1" }
 rand_core                        = { version = "0.6.4" }
 regex                            = { version = "1.8.1" }
-rocksdb                          = { version = "0.21.0" }
 serde                            = { version = "1.0.186" }
 serde_json                       = { version = "1.0.96" }
 serde_unit_struct                = { version = "0.1" }
@@ -233,6 +232,15 @@ tower-service                    = { version = "0.3.2" }
 tracing                          = { version = "0.1" }
 tracing-subscriber               = { version = "0.3.17", features = ["env-filter"] }
 url                              = { version = "2.2" }
+
+# NB: RocksDB is used as consensus-critical storage for cnidarium. Be careful
+# to inspect updates to these bindings (which statically link to RocksDB)
+# with care. So, this is pinned specifically to `0.21.0`.
+#
+# This release builds and links against commit `6a43615` of rocksdb, v8.1.1:
+# https://github.com/facebook/rocksdb/tree/6a436150417120a3f9732d65a2a5c2b8d19b60fc
+[workspace.dependencies.rocksdb]
+version = "=0.21.0"
 
 # TODO(kate):
 # temporarily point these dependencies to a tag in the penumbra-zone fork.
