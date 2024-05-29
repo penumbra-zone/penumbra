@@ -5,6 +5,7 @@ use crate::App;
 use anyhow::{anyhow, bail, Context};
 use clap::Subcommand;
 use comfy_table::presets;
+use debug::DebugGda;
 use dialoguer::Confirm;
 use penumbra_asset::{asset::Cache, Value};
 use penumbra_auction::auction::dutch::actions::ActionDutchAuctionWithdrawPlan;
@@ -55,7 +56,7 @@ pub enum DutchCmd {
         #[clap(short, long, value_enum, default_value_t, display_order = 1000)]
         fee_tier: FeeTier,
         #[clap(long, hide = true)]
-        // Use to produce a debug file for numerical analysis.
+        // Use to produce a debug file for offline analysis.
         debug: bool,
     },
     /// Schedule a Dutch auction, a tool to help accomplish price discovery.
@@ -318,7 +319,8 @@ impl DutchCmd {
                     let debug_data_path = Path::new("gda-debug-definition-data.json");
                     let auction_data_path = Path::new("gda-debug-auction-data.json");
 
-                    let gda_debug_data = serde_json::to_string(&gda)?;
+                    let gda_debug: DebugGda = gda.into();
+                    let gda_debug_data = serde_json::to_string(&gda_debug)?;
                     std::fs::write(debug_data_path, gda_debug_data)?;
 
                     let gda_auction_data = serde_json::to_string(
