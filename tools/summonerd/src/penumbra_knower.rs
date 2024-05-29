@@ -4,7 +4,7 @@ use penumbra_asset::STAKING_TOKEN_ASSET_ID;
 use penumbra_keys::{Address, FullViewingKey};
 use penumbra_num::Amount;
 use penumbra_view::{Storage, ViewServer};
-use url::Url;
+use tonic::transport::Channel;
 
 /// Knows things about a running penumbra system, requires internet connectivity
 #[derive(Clone)]
@@ -25,10 +25,10 @@ impl PenumbraKnower {
     pub async fn load_or_initialize(
         storage_path: impl AsRef<Utf8Path>,
         fvk: &FullViewingKey,
-        node: Url,
+        channel: Channel,
     ) -> Result<Self> {
-        let storage = Storage::load_or_initialize(Some(storage_path), fvk, node.clone()).await?;
-        let view = ViewServer::new(storage.clone(), node).await?;
+        let storage = Storage::load_or_initialize(Some(storage_path), fvk, channel.clone()).await?;
+        let view = ViewServer::new(storage.clone(), channel).await?;
         Ok(Self {
             storage,
             _view: view,

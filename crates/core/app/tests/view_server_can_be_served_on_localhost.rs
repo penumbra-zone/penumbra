@@ -88,10 +88,16 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Spawn the client-side view server...
     let view_server = {
+        let channel = tonic::transport::Channel::from_shared(grpc_url.to_string())
+            .with_context(|| "could not parse node URI")?
+            .connect()
+            .await
+            .with_context(|| "could not connect to grpc server")
+            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
         penumbra_view::ViewServer::load_or_initialize(
             None::<&camino::Utf8Path>,
             &*test_keys::FULL_VIEWING_KEY,
-            grpc_url,
+            channel,
         )
         .await
         // TODO(kate): the goal is to communicate with the `ViewServiceServer`.

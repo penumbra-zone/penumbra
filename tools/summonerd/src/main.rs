@@ -8,6 +8,7 @@ mod server;
 mod storage;
 mod web;
 
+use anyhow::Context;
 use anyhow::Result;
 use ark_groth16::{ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalSerialize;
@@ -33,6 +34,7 @@ use std::io::IsTerminal as _;
 use std::io::Read;
 use std::net::SocketAddr;
 use storage::Storage;
+use tap::TapFallible;
 use tonic::transport::Server;
 use tracing::Instrument;
 use tracing_subscriber::{prelude::*, EnvFilter};
@@ -190,9 +192,18 @@ impl Opt {
                 {
                     anyhow::bail!("Please run the transition command before this command 8^)");
                 }
-                let knower =
-                    PenumbraKnower::load_or_initialize(storage_dir.join("penumbra.db"), &fvk, node)
-                        .await?;
+                let channel = tonic::transport::Channel::from_shared(node.to_string())
+                    .with_context(|| "could not parse node URI")?
+                    .connect()
+                    .await
+                    .with_context(|| "could not connect to grpc server")
+                    .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
+                let knower = PenumbraKnower::load_or_initialize(
+                    storage_dir.join("penumbra.db"),
+                    &fvk,
+                    channel,
+                )
+                .await?;
                 let queue = ParticipantQueue::new();
                 let coordinator = Coordinator::new(config, storage.clone(), queue.clone());
                 let coordinator_span = tracing::error_span!("coordinator");

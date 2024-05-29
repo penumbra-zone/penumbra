@@ -317,8 +317,20 @@ impl Opt {
                 let compact_block_query_proxy = CompactBlockQueryProxy(proxy_channel.clone());
                 let tendermint_proxy_proxy = TendermintProxyProxy(proxy_channel.clone());
 
-                let view_service =
-                    ViewServiceServer::new(ViewServer::new(storage, config.grpc_url).await?);
+                let view_service = {
+                    use tap::TapFallible;
+                    let channel =
+                        tonic::transport::Channel::from_shared(config.grpc_url.to_string())
+                            .with_context(|| "could not parse node URI")?
+                            .connect()
+                            .await
+                            .with_context(|| "could not connect to grpc server")
+                            .tap_err(|error| {
+                                tracing::error!(?error, "could not connect to grpc server")
+                            })?;
+                    ViewServiceServer::new(ViewServer::new(storage, channel).await?)
+                };
+
                 let custody_service = config.kms_config.as_ref().map(|kms_config| {
                     CustodyServiceServer::new(SoftKms::new(kms_config.spend_key.clone().into()))
                 });

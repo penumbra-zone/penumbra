@@ -37,6 +37,7 @@ r2d2 = {workspace = true}
 r2d2_sqlite = {workspace = true, features = ["bundled"]}
 rand = {workspace = true}
 rand_core = {workspace = true}
+tap = {workspace = true}
 tokio = {workspace = true, features = ["full"]}
 tokio-stream = {workspace = true}
 tonic = {workspace = true}

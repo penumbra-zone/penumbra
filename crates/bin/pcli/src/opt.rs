@@ -3,7 +3,7 @@ use crate::{
     terminal::ActualTerminal,
     App, Command,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use camino::Utf8PathBuf;
 use clap::Parser;
 use directories::ProjectDirs;
@@ -17,6 +17,7 @@ use penumbra_proto::{
 };
 use penumbra_view::ViewServer;
 use std::io::IsTerminal as _;
+use tap::TapFallible;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -132,12 +133,15 @@ impl Opt {
                 let path = self.home.join(crate::VIEW_FILE_NAME);
                 tracing::info!(%path, "using local view service");
 
-                let svc = ViewServer::load_or_initialize(
-                    Some(path),
-                    &config.full_viewing_key,
-                    config.grpc_url.clone(),
-                )
-                .await?;
+                let channel = tonic::transport::Channel::from_shared(config.grpc_url.to_string())
+                    .with_context(|| "could not parse node URI")?
+                    .connect()
+                    .await
+                    .with_context(|| "could not connect to grpc server")
+                    .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
+                let svc =
+                    ViewServer::load_or_initialize(Some(path), &config.full_viewing_key, channel)
+                        .await?;
 
                 // Now build the view and custody clients, doing gRPC with ourselves
                 let svc = ViewServiceServer::new(svc);

@@ -18,7 +18,6 @@ use tokio::sync::{watch, RwLock};
 use tokio_stream::wrappers::WatchStream;
 use tonic::{async_trait, transport::Channel, Request, Response, Status};
 use tracing::instrument;
-use url::Url;
 
 use penumbra_asset::{asset, asset::Metadata, Value};
 use penumbra_dex::{
@@ -84,8 +83,10 @@ pub struct ViewServer {
     error_slot: Arc<Mutex<Option<anyhow::Error>>>,
     // A copy of the SCT used by the worker task.
     state_commitment_tree: Arc<RwLock<penumbra_tct::Tree>>,
-    // The Url for the pd gRPC endpoint on remote node.
-    node: Url,
+    // The pd gRPC endpoint.
+    //
+    // This can be a remote node, or a boxed in-memory service running locally.
+    channel: Channel,
     /// Used to watch for changes to the sync height.
     sync_height_rx: watch::Receiver<u64>,
 }
@@ -96,20 +97,19 @@ impl ViewServer {
         skip_all,
         fields(
             path = ?storage_path.as_ref().map(|p| p.as_ref().as_str()),
-            url = %node,
         )
     )]
     pub async fn load_or_initialize(
         storage_path: Option<impl AsRef<Utf8Path>>,
         fvk: &FullViewingKey,
-        node: Url,
+        channel: Channel,
     ) -> anyhow::Result<Self> {
-        let storage = Storage::load_or_initialize(storage_path, fvk, node.clone())
+        let storage = Storage::load_or_initialize(storage_path, fvk, channel.clone())
             .tap(|_| tracing::trace!("loading or initializing storage"))
             .await?
             .tap(|_| tracing::debug!("storage is ready"));
 
-        Self::new(storage, node)
+        Self::new(storage, channel)
             .tap(|_| tracing::trace!("constructing view server"))
             .await
             .tap(|_| tracing::debug!("constructed view server"))
@@ -123,16 +123,9 @@ impl ViewServer {
     /// by this method, rather than calling it multiple times.  That way, each clone
     /// will be backed by the same scanning task, rather than each spawning its own.
     #[instrument(skip_all)]
-    pub async fn new(storage: Storage, node: Url) -> anyhow::Result<Self> {
-        let channel = Channel::from_shared(node.to_string())
-            .with_context(|| "could not parse node URI")?
-            .connect()
-            .await
-            .with_context(|| "could not connect to grpc server")
-            .tap_err(|error| tracing::error!(?error, "could not connect to grpc server"))?;
-
+    pub async fn new(storage: Storage, channel: Channel) -> anyhow::Result<Self> {
         let (worker, state_commitment_tree, error_slot, sync_height_rx) =
-            Worker::new(storage.clone(), channel)
+            Worker::new(storage.clone(), channel.clone())
                 .tap(|_| tracing::trace!("constructing view server worker"))
                 .await?
                 .tap(|_| tracing::debug!("constructed view server worker"));
@@ -144,7 +137,7 @@ impl ViewServer {
             error_slot,
             sync_height_rx,
             state_commitment_tree,
-            node,
+            channel,
         })
     }
 
@@ -202,14 +195,7 @@ impl ViewServer {
                 // 2. Broadcast the transaction to the network.
                 // Note that "synchronous" here means "wait for the tx to be accepted by
                 // the fullnode", not "wait for the tx to be included on chain.
-                let mut fullnode_client = self2.tendermint_proxy_client().await
-                            .map_err(|e| {
-                                tonic::Status::unavailable(format!(
-                                    "couldn't connect to fullnode: {:#?}",
-                                    e
-                                ))
-                            })?
-                        ;
+                let mut fullnode_client = TendermintProxyServiceClient::new(self2.channel.clone());
                 let node_rsp = fullnode_client
                     .broadcast_tx_sync(BroadcastTxSyncRequest {
                         params: transaction.encode_to_vec(),
@@ -290,22 +276,11 @@ impl ViewServer {
             }.boxed()
     }
 
-    #[instrument(level = "trace", skip(self))]
-    async fn tendermint_proxy_client(
-        &self,
-    ) -> anyhow::Result<TendermintProxyServiceClient<Channel>> {
-        TendermintProxyServiceClient::connect(self.node.to_string())
-            .tap(|_| tracing::debug!("connecting to tendermint proxy"))
-            .await
-            .tap_err(|error| tracing::error!(?error, "failed to connect to tendermint proxy"))
-            .map_err(anyhow::Error::from)
-    }
-
     /// Return the latest block height known by the fullnode or its peers, as
     /// well as whether the fullnode is caught up with that height.
     #[instrument(skip(self))]
     pub async fn latest_known_block_height(&self) -> anyhow::Result<(u64, bool)> {
-        let mut client = self.tendermint_proxy_client().await?;
+        let mut client = TendermintProxyServiceClient::new(self.channel.clone());
 
         let GetStatusResponse { sync_info, .. } = client
             .get_status(GetStatusRequest {})
@@ -441,11 +416,7 @@ impl ViewService for ViewServer {
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
 
         let client = if query_latest_state {
-            Some(
-                AuctionQueryServiceClient::connect(self.node.to_string())
-                    .await
-                    .map_err(|e| tonic::Status::internal(e.to_string()))?,
-            )
+            Some(AuctionQueryServiceClient::new(self.channel.clone()))
         } else {
             None
         };
