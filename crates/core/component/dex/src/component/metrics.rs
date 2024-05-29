@@ -30,6 +30,11 @@ pub fn register_metrics() {
         Unit::Seconds,
         "The time spent searching for paths while executing trades within the DEX"
     );
+    describe_counter!(
+        DEX_PATH_SEARCH_RELAX_PATH_DURATION,
+        Unit::Seconds,
+        "The time spent relaxing a path while routing trades within the DEX"
+    );
     describe_histogram!(
         DEX_ROUTE_FILL_DURATION,
         Unit::Seconds,
@@ -66,6 +71,8 @@ const GENERIC_DEX_BUCKETS: &[f64; 16] = &[
 ];
 
 pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
+pub const DEX_PATH_SEARCH_RELAX_PATH_DURATION: &str =
+    "penumbra_dex_path_search_relax_path_duration_seconds";
 pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
 pub const DEX_ARB_DURATION: &str = "penumbra_dex_arb_duration_seconds";
 pub const DEX_BATCH_DURATION: &str = "penumbra_dex_batch_duration_seconds";
@@ -88,6 +95,10 @@ impl PrometheusBuilderExt for metrics_exporter_prometheus::PrometheusBuilder {
         use metrics_exporter_prometheus::Matcher::Full;
         self.set_buckets_for_metric(
             Full(DEX_PATH_SEARCH_DURATION.to_owned()),
+            GENERIC_DEX_BUCKETS,
+        )?
+        .set_buckets_for_metric(
+            Full(DEX_PATH_SEARCH_RELAX_PATH_DURATION.to_owned()),
             GENERIC_DEX_BUCKETS,
         )?
         .set_buckets_for_metric(
