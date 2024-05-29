@@ -23,7 +23,7 @@ use {
     },
     penumbra_auction::component::rpc::Server as AuctionServer,
     penumbra_compact_block::component::rpc::Server as CompactBlockServer,
-    penumbra_dex::component::rpc::Server as DexServer,
+    penumbra_dex::component::rpc::{stub::SimulationsDisabled, Server as DexServer},
     penumbra_fee::component::rpc::Server as FeeServer,
     penumbra_governance::component::rpc::Server as GovernanceServer,
     penumbra_proto::{
@@ -129,6 +129,9 @@ pub fn router(
         grpc_server = grpc_server.add_service(we(SimulationServiceServer::new(DexServer::new(
             storage.clone(),
         ))));
+    } else {
+        grpc_server =
+            grpc_server.add_service(we(SimulationServiceServer::new(SimulationsDisabled)));
     }
 
     Ok(grpc_server)
