@@ -38,6 +38,8 @@ use crate::{
 
 use super::{chandelier::CandlestickRead, router::RouteAndFill, PositionRead, StateReadExt};
 
+pub mod stub;
+
 // TODO: Hide this and only expose a Router?
 pub struct Server {
     storage: Storage,
