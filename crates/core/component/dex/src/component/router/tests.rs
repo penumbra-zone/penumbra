@@ -5,6 +5,8 @@ use core::panic;
 use futures::StreamExt;
 use penumbra_asset::{asset, Value};
 use penumbra_num::{fixpoint::U128x128, Amount};
+use penumbra_test_subscriber::set_tracing_subscriber;
+use prop::strategy::ValueTree;
 use proptest::prelude::*;
 use rand_core::OsRng;
 use std::collections::HashMap;
@@ -2182,7 +2184,7 @@ fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Pos
     // with varying amounts of asset 1/asset 2
     let offered = asset::Cache::with_known_assets().get_unit(offered).unwrap();
     let desired = asset::Cache::with_known_assets().get_unit(desired).unwrap();
-    (any::<u64>(), any::<u64>())
+    (1_000_000..u64::MAX, 1_000_000..u64::MAX)
         .prop_map(move |(offered_amt, desired_amt)| {
             SellOrder {
                 offered: offered.value(offered_amt.into()),
@@ -2196,12 +2198,15 @@ fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Pos
 
 proptest! {
     #[test]
-    fn test_paths_dont_lose_money(sell_penumbra_for_gn_position in arbitrary_position("penumbra", "gn"),
-                                  sell_gm_for_gn_position in arbitrary_position("gm", "gn"),
-                                  sell_gn_for_penumbra_position in arbitrary_position("gn", "penumbra"),
-                                  input_amount in any::<u64>()
+    fn test_paths_dont_lose_money(input_amount in 1..u64::MAX,
+                                  num_paths_1 in 1..32usize,
+                                  num_paths_2 in 1..32usize,
+                                  num_paths_3 in 1..32usize,
 ) {
+        let guard = set_tracing_subscriber();
+        let mut runner = proptest::test_runner::TestRunner::default();
         Runtime::new().unwrap().block_on(async {
+
             let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
 
             let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
@@ -2214,17 +2219,28 @@ proptest! {
             let state = storage.latest_snapshot();
             let mut state = StateDelta::new(state);
 
-            state.open_position(sell_penumbra_for_gn_position).await.unwrap();
-            state.open_position(sell_gm_for_gn_position).await.unwrap();
-            state.open_position(sell_gn_for_penumbra_position).await.unwrap();
-
+            for _ in 0..num_paths_1 {
+                // Create a new arbitrary penumbra -> gn position
+                let sell_penumbra_for_gn_position: Position = arbitrary_position("penumbra", "gn").new_tree(&mut runner).unwrap().current();
+                state.open_position(sell_penumbra_for_gn_position).await.unwrap();
+            }
+            for _ in 0..num_paths_2 {
+                // Create a new arbitrary gm -> gn position
+                let sell_gm_for_gn_position: Position = arbitrary_position("gm", "gn").new_tree(&mut runner).unwrap().current();
+                state.open_position(sell_gm_for_gn_position).await.unwrap();
+            }
+            for _ in 0..num_paths_3 {
+                // Create a new arbitrary gn -> penumbra position
+                let sell_gn_for_penumbra_position: Position = arbitrary_position("gn", "penumbra").new_tree(&mut runner).unwrap().current();
+                state.open_position(sell_gn_for_penumbra_position).await.unwrap();
+            }
 
             let mut this = Arc::new(state);
 
             let input_gm = input_amount.into();
             let params = RoutingParams {
                 price_limit: None,
-                max_hops: 3,
+                max_hops: 6,
                 fixed_candidates: Arc::new(vec![gm.id(), gn.id(), pen.id()]),
             };
             let execution_circuit_breaker = ExecutionCircuitBreaker::default();
@@ -2237,12 +2253,17 @@ proptest! {
                 execution_circuit_breaker,
             )
             .await.unwrap();
+        println!("{:?}", se);
+            // The input and output should be non-zero:
+            assert!(se.input.amount > 0u32.into());
+            assert!(se.output.amount > 0u32.into());
 
             // There should never be a trace where we lose money, e.g. the `gn` hops in:
             // 2.02313gm => 2.013014gn => 6.441643penumbra => 2.013013gn
             for trace in se.traces.iter() {
                 let mut hmap = HashMap::new();
                 for hop in trace {
+                    println!("{:?} => ", hop);
                     // Every hop involving this asset_id should have higher value
                     // than any previously seen hop with this asset_id
                     let highest = hmap.get(&hop.asset_id);
@@ -2257,5 +2278,7 @@ proptest! {
             // TODO: this may be the issue described in #4283 and require an auto-closing position
             // that is completely filled
         });
+
+        drop(guard);
      }
 }
