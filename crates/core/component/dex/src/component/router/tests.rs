@@ -5,9 +5,15 @@ use core::panic;
 use futures::StreamExt;
 use penumbra_asset::{asset, Value};
 use penumbra_num::{fixpoint::U128x128, Amount};
+use proptest::prelude::*;
 use rand_core::OsRng;
+use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::runtime::Runtime;
 
+use crate::component::router::RouteAndFill as _;
+use crate::component::router::RoutingParams;
+use crate::component::ExecutionCircuitBreaker;
 use crate::lp::SellOrder;
 use crate::DexParameters;
 use crate::{
@@ -2169,4 +2175,87 @@ async fn path_compare_node_ids() -> anyhow::Result<()> {
     // and length, but path2's intermediate node is smaller than path1's.
     assert!(path2 < path1);
     Ok(())
+}
+
+fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Position> {
+    // Create a strategy that generates arbitrary asset 1 -> asset 2 positions
+    // with varying amounts of asset 1/asset 2
+    let offered = asset::Cache::with_known_assets().get_unit(offered).unwrap();
+    let desired = asset::Cache::with_known_assets().get_unit(desired).unwrap();
+    (any::<u64>(), any::<u64>())
+        .prop_map(move |(offered_amt, desired_amt)| {
+            SellOrder {
+                offered: offered.value(offered_amt.into()),
+                desired: desired.value(desired_amt.into()),
+                fee: 0u32.into(),
+            }
+            .into_position(OsRng)
+        })
+        .boxed()
+}
+
+proptest! {
+    #[test]
+    fn test_paths_dont_lose_money(sell_penumbra_for_gn_position in arbitrary_position("penumbra", "gn"),
+                                  sell_gm_for_gn_position in arbitrary_position("gm", "gn"),
+                                  sell_gn_for_penumbra_position in arbitrary_position("gn", "penumbra"),
+                                  input_amount in any::<u64>()
+) {
+        Runtime::new().unwrap().block_on(async {
+            let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+
+            let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+
+            let pen = asset::Cache::with_known_assets()
+                .get_unit("penumbra")
+                .unwrap();
+
+            let storage = TempStorage::new().await.unwrap().apply_minimal_genesis().await.unwrap();
+            let state = storage.latest_snapshot();
+            let mut state = StateDelta::new(state);
+
+            state.open_position(sell_penumbra_for_gn_position).await.unwrap();
+            state.open_position(sell_gm_for_gn_position).await.unwrap();
+            state.open_position(sell_gn_for_penumbra_position).await.unwrap();
+
+
+            let mut this = Arc::new(state);
+
+            let input_gm = input_amount.into();
+            let params = RoutingParams {
+                price_limit: None,
+                max_hops: 3,
+                fixed_candidates: Arc::new(vec![gm.id(), gn.id(), pen.id()]),
+            };
+            let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+
+            let se = this.route_and_fill(
+                gm.id(),
+                gn.id(),
+                input_gm,
+                params.clone(),
+                execution_circuit_breaker,
+            )
+            .await.unwrap();
+
+            // There should never be a trace where we lose money, e.g. the `gn` hops in:
+            // 2.02313gm => 2.013014gn => 6.441643penumbra => 2.013013gn
+            for trace in se.traces.iter() {
+                let mut hmap = HashMap::new();
+                for hop in trace {
+                    // Every hop involving this asset_id should have higher value
+                    // than any previously seen hop with this asset_id
+                    let highest = hmap.get(&hop.asset_id);
+
+                    if let Some(highest) = highest {
+                        assert!(hop.amount > *highest);
+                    }
+
+                    hmap.insert(hop.asset_id, hop.amount);
+                }
+            }
+            // TODO: this may be the issue described in #4283 and require an auto-closing position
+            // that is completely filled
+        });
+     }
 }
