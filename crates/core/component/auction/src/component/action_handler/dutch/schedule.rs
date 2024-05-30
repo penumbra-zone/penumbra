@@ -1,10 +1,13 @@
+use std::sync::Arc;
+
 use crate::auction::dutch::actions::schedule::MAX_AUCTION_AMOUNT_RESERVES;
 use crate::auction::dutch::DutchAuctionDescription;
 use crate::component::AuctionStoreRead;
 use anyhow::{ensure, Result};
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::ActionHandler;
+use penumbra_dex::component::StateReadExt;
 use penumbra_num::Amount;
 use penumbra_sct::component::clock::EpochRead;
 
@@ -103,6 +106,19 @@ impl ActionHandler for ActionDutchAuctionSchedule {
             "the block window ({block_window}) MUST be a multiple of the step count ({step_count})"
         );
 
+        Ok(())
+    }
+
+    async fn check_historical<S: StateRead + 'static>(
+        &self,
+        historical_state: Arc<S>,
+    ) -> Result<()> {
+        // Safety: This is safe to do in a historical check because the chain state
+        // it inspects cannot be modified by other actions in the same transaction.
+        ensure!(
+            historical_state.get_dex_params().await?.is_enabled,
+            "Dex MUST be enabled to schedule auctions"
+        );
         Ok(())
     }
 
