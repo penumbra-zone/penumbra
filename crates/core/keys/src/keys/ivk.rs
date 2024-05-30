@@ -150,12 +150,18 @@ impl IncomingViewingKeyVar {
 
         // Constraint: a = 4 => ivk_mod_r < q - 4 * mod_r
         let is_less_than_q_minus_4_mod_r = ivk_mod_r.is_cmp(
-            &FqVar::new_constant(cs.clone(), -Fq::from(MOD_R_QUOTIENT as u64) * Fq::from(r_modulus))?,
+            &FqVar::new_constant(
+                cs.clone(),
+                -Fq::from(MOD_R_QUOTIENT as u64) * Fq::from(r_modulus),
+            )?,
             core::cmp::Ordering::Less,
             false,
         )?;
         let overflows = a_var
-            .is_eq(&FqVar::new_constant(cs.clone(), &Fq::from(MOD_R_QUOTIENT as u64))?)?
+            .is_eq(&FqVar::new_constant(
+                cs.clone(),
+                &Fq::from(MOD_R_QUOTIENT as u64),
+            )?)?
             .and(&is_less_than_q_minus_4_mod_r.not())?;
         overflows.enforce_equal(&Boolean::FALSE)?;
 
