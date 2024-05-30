@@ -2191,7 +2191,7 @@ fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Pos
         1_000_000..u64::MAX,
     )
         .prop_map(move |(p, q, reserves_1, reserves_2)| {
-            Position::new(
+            let mut p = Position::new(
                 OsRng,
                 DirectedTradingPair {
                     start: offered.id(),
@@ -2204,7 +2204,10 @@ fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Pos
                     r1: reserves_1.into(),
                     r2: reserves_2.into(),
                 },
-            )
+            );
+            // randomly set the close on fill flag
+            p.close_on_fill = rand::random();
+            p
         })
         .boxed()
 }
@@ -2266,7 +2269,7 @@ proptest! {
                 execution_circuit_breaker,
             )
             .await.unwrap();
-        println!("{:?}", se);
+
             // The input and output should be non-zero:
             assert!(se.input.amount > 0u32.into());
             assert!(se.output.amount > 0u32.into());
@@ -2276,7 +2279,7 @@ proptest! {
             for trace in se.traces.iter() {
                 let mut hmap = HashMap::new();
                 for hop in trace {
-                    println!("{:?} => ", hop);
+                    print!("{:?} => ", hop);
                     // Every hop involving this asset_id should have higher value
                     // than any previously seen hop with this asset_id
                     let highest = hmap.get(&hop.asset_id);
@@ -2287,9 +2290,32 @@ proptest! {
 
                     hmap.insert(hop.asset_id, hop.amount);
                 }
+                println!("\n\n====\n");
             }
-            // TODO: this may be the issue described in #4283 and require an auto-closing position
-            // that is completely filled
+
+            // this may be the issue described in #4283 and require an auto-closing position
+            // that is completely filled. the `arbitrary_position` method will randomly set the
+            // close on fill flag for positions.
+
+            // ensure each frontier should exactly consume one position or else fill the entire trade
+            // (no position is executed against more than once)
+
+            // Fetch the cache by forking and flattening:
+            let this2 = Arc::get_mut(&mut this).unwrap().fork();
+            let (_s, mut cache) = this2.flatten();
+            let mut executed_positions = HashMap::new();
+            for event in cache.take_events() {
+                // We only care about position execution events
+                if event.kind == "penumbra.core.component.dex.v1.EventPositionExecution" {
+                    // Ensure that the position ID attribute hasn't been seen before
+                    for attribute in event.attributes.iter() {
+                        if attribute.key == "position_id" {
+                            assert!(!executed_positions.contains_key(&attribute.value));
+                            executed_positions.insert(attribute.value.clone(), ());
+                        }
+                    }
+                }
+            }
         });
 
         drop(guard);
