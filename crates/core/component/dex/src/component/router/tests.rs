@@ -2274,7 +2274,7 @@ proptest! {
                 execution_circuit_breaker,
             )
             .await.unwrap();
-        println!("{:?}", se);
+
             // The input and output should be non-zero:
             assert!(se.input.amount > 0u32.into());
             assert!(se.output.amount > 0u32.into());
