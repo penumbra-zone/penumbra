@@ -2185,18 +2185,31 @@ async fn path_compare_node_ids() -> anyhow::Result<()> {
 }
 
 fn arbitrary_position(offered: &str, desired: &str) -> impl Strategy<Value = Position> {
-    // Create a strategy that generates arbitrary asset 1 -> asset 2 positions
+    // Create a strategy that generates arbitrary asset 1 <-> asset 2 positions
     // with varying amounts of asset 1/asset 2
     let offered = asset::Cache::with_known_assets().get_unit(offered).unwrap();
     let desired = asset::Cache::with_known_assets().get_unit(desired).unwrap();
-    (1_000_000..u64::MAX, 1_000_000..u64::MAX)
-        .prop_map(move |(offered_amt, desired_amt)| {
-            SellOrder {
-                offered: offered.value(offered_amt.into()),
-                desired: desired.value(desired_amt.into()),
-                fee: 0u32.into(),
-            }
-            .into_position(OsRng)
+    (
+        1_000_000..u64::MAX,
+        1_000_000..u64::MAX,
+        1_000_000..u64::MAX,
+        1_000_000..u64::MAX,
+    )
+        .prop_map(move |(p, q, reserves_1, reserves_2)| {
+            Position::new(
+                OsRng,
+                DirectedTradingPair {
+                    start: offered.id(),
+                    end: desired.id(),
+                },
+                0u32.into(),
+                p.into(),
+                q.into(),
+                Reserves {
+                    r1: reserves_1.into(),
+                    r2: reserves_2.into(),
+                },
+            )
         })
         .boxed()
 }
