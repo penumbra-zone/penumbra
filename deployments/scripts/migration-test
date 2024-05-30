@@ -112,9 +112,8 @@ function perform_migration() {
     # Ensure tar changes are synced to disk. This shouldn't be necessary,
     # but this script will run in a lot of contexts, so better to be sure.
     sync
-    # N.B. the `--force` flag is necessary specifically for 0.75.x -> 0.76.x
     RUST_LOG="info,pd=debug,penumbra=debug" \
-        cargo run --quiet --release --bin pd -- migrate --force
+        cargo run --quiet --release --bin pd -- migrate
 }
 
 # Create a post-migration tarball of the migrated state, entailing:
