@@ -3,14 +3,15 @@
 //! but no state-breaking changes, so the migration is essentially a no-op,
 //! other than resetting the halt bit.
 use anyhow::Context;
-use cnidarium::Storage;
+use cnidarium::{StateDelta, Storage};
 use jmt::RootHash;
 use penumbra_app::app::StateReadExt as _;
+use penumbra_governance::StateWriteExt;
+use penumbra_sct::component::clock::EpochManager;
 use penumbra_sct::component::clock::EpochRead;
 use std::path::PathBuf;
 use tracing::instrument;
 
-use crate::migrate::reset_halt_bit;
 use crate::testnet::generate::TestnetConfig;
 
 /// Run the full migration, given an export path and a start time for genesis.
@@ -36,9 +37,16 @@ pub async fn migrate(
         .await
         .expect("chain state has a block height");
     let post_upgrade_height = pre_upgrade_height.wrapping_add(1);
-    reset_halt_bit::migrate(storage, pd_home.clone(), genesis_start.clone())
+
+    // Set halt bit to 0, so chain can start again.
+    let mut delta = StateDelta::new(initial_state);
+    delta.ready_to_start();
+    delta.put_block_height(0u64);
+    let _ = storage
+        .commit_in_place(delta)
         .await
         .context("failed to reset halt bit")?;
+    storage.release().await;
 
     // The migration is complete, now we need to generate a genesis file. To do this, we need
     // to lookup a validator view from the chain, and specify the post-upgrade app hash and
