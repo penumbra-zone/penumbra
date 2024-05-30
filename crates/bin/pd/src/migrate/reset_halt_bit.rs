@@ -14,6 +14,7 @@ pub async fn migrate(
     let mut delta = StateDelta::new(export_state);
     delta.ready_to_start();
     let _ = storage.commit_in_place(delta).await?;
+    storage.release().await;
     tracing::info!("migration completed: halt bit is turned off, chain is ready to start");
     Ok(())
 }

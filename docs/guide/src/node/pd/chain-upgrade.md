@@ -29,7 +29,7 @@ so that your node state is recoverable.
 1. Stop both `pd` and `cometbft`. Depending on how you run Penumbra, this could mean `sudo systemctl stop penumbra cometbft`.
 2. Download the latest version of `pd` and install it. Run `pd --version` and confirm you see `{{ #include ../../penumbra_version.md }}` before proceeding.
 3. Optionally, use `pd export` to create a snapshot of the `pd` state.
-4. Apply the migration with `pd migrate --force --home PD_HOME --comet-home COMETBFT_HOME`.  If using the default home locations (from `pd testnet join`), you can omit the paths and just run `pd migrate`.
+4. Apply the migration with `pd migrate --home PD_HOME --comet-home COMETBFT_HOME`.  If using the default home locations (from `pd testnet join`), you can omit the paths and just run `pd migrate`.
 
 Finally, restart the node, e.g. `sudo systemctl restart penumbra cometbft`. Check the logs, and you should see the chain progressing
 past the halt height `n`.

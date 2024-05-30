@@ -9,6 +9,7 @@ mod simple;
 mod testnet72;
 mod testnet74;
 mod testnet76;
+mod testnet77;
 
 use anyhow::{ensure, Context};
 use penumbra_governance::StateReadExt;
@@ -43,6 +44,9 @@ pub enum Migration {
     /// - Heal the auction component's VCB tally.
     /// - Update FMD parameters to new protobuf structure.
     Testnet76,
+    /// Testnet-77 migration:
+    /// - Reset the halt bit
+    Testnet77,
 }
 
 impl Migration {
@@ -87,6 +91,9 @@ impl Migration {
 
             Migration::Testnet76 => {
                 testnet76::migrate(storage, pd_home.clone(), genesis_start).await?
+            }
+            Migration::Testnet77 => {
+                testnet77::migrate(storage, pd_home.clone(), genesis_start).await?
             }
         };
 
