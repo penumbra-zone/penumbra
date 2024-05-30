@@ -44,9 +44,26 @@ pub fn register_metrics() {
 
 // We configure buckets for the DEX routing times manually, in order to ensure
 // Prometheus metrics are structured as a Histogram, rather than as a Summary.
-// These values are loosely based on the initial Summary output, and may need to be
-// updated over time.
-pub const DEX_BUCKETS: &[f64; 5] = &[0.00001, 0.0001, 0.001, 0.01, 0.1];
+// These values may need to be updated over time.
+// These values are logarithmically spaced from 5ms to 250ms.
+pub const DEX_BUCKETS: &[f64; 16] = &[
+    5.,
+    6.48985018,
+    8.42363108,
+    10.93362074,
+    14.19151211,
+    18.42015749,
+    23.90881249,
+    31.03292223,
+    40.2798032,
+    52.28197763,
+    67.86044041,
+    88.08081833,
+    114.32626298,
+    148.39206374,
+    192.6084524,
+    250.,
+];
 
 pub const DEX_PATH_SEARCH_DURATION: &str = "penumbra_dex_path_search_duration_seconds";
 pub const DEX_ROUTE_FILL_DURATION: &str = "penumbra_dex_route_fill_duration_seconds";
