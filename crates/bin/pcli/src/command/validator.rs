@@ -275,7 +275,7 @@ impl ValidatorCmd {
                 validator,
             }) => {
                 let identity_key = validator
-                    .unwrap_or(|| IdentityKey(fvk.spend_verification_key().clone().into()));
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
@@ -323,7 +323,7 @@ impl ValidatorCmd {
                 validator,
             }) => {
                 let identity_key = validator
-                    .unwrap_or(|| IdentityKey(fvk.spend_verification_key().clone().into()));
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
