@@ -1,3 +1,4 @@
+mod fee_pay;
 pub mod rpc;
 mod view;
 

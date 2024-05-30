@@ -45,8 +45,6 @@ pub trait StateReadExt: StateRead {
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
-/// This trait provides write access to common parts of the Penumbra
-/// state store.
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided fee parameters to the JMT.
@@ -70,3 +68,13 @@ pub trait StateWriteExt: StateWrite {
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
+
+#[async_trait]
+pub(super) trait FeeWriteInner: StateWrite {
+    fn accumulate_fee(&mut self, fee: Fee) {
+    }
+}
+
+impl<T: StateWrite + ?Sized> FeeWriteInner for T {
+
+}
