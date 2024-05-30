@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -7,6 +7,9 @@ use cnidarium::{StateRead, StateWrite};
 use cnidarium_component::Component;
 use penumbra_asset::asset;
 use penumbra_asset::{Value, STAKING_TOKEN_ASSET_ID};
+use penumbra_fee::component::StateWriteExt as _;
+use penumbra_fee::Fee;
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
@@ -52,6 +55,50 @@ impl Component for Dex {
         state: &mut Arc<S>,
         end_block: &abci::request::EndBlock,
     ) {
+        // F.0. Add all non-native fee payments as swap flows.
+        let base_fees_and_tips = {
+            let state_ref =
+                Arc::get_mut(state).expect("should have unique ref at start of Dex::end_block");
+
+            // Extract the accumulated base fees and tips from the fee component, leaving 0 in its place.
+            let base_fees_and_tips = state_ref.take_accumulated_base_fees_and_tips();
+
+            // For each nonnative fee asset, add it in as if it were a chain-submitted swap.
+            for (asset_id, (base_fee, tip)) in base_fees_and_tips.iter() {
+                if *asset_id == *STAKING_TOKEN_ASSET_ID {
+                    continue;
+                }
+                let pair = TradingPair::new(*asset_id, *STAKING_TOKEN_ASSET_ID);
+                // We want to swap all of the fees into the native token, the base/tip distinction
+                // just affects where the resulting fees go.
+                let total = *base_fee + *tip;
+                // DANGEROUS: need to be careful about which side of the pair is which,
+                // but the existing API is unsafe and fixing it would be a much larger refactor.
+                let flow = if pair.asset_1() == *asset_id {
+                    (total, Amount::zero())
+                } else {
+                    (Amount::zero(), total)
+                };
+                tracing::debug!(
+                    ?asset_id,
+                    ?base_fee,
+                    ?tip,
+                    ?total,
+                    ?flow,
+                    "inserting chain-submitted swap for alt fee token"
+                );
+
+                // Accumulate into the swap flows for this block.
+                state_ref
+                    .accumulate_swap_flow(&pair, flow.into())
+                    .await
+                    .expect("should be able to credit DEX VCB");
+            }
+
+            // Hold on to the list of base fees and tips so we can claim outputs correctly.
+            base_fees_and_tips
+        };
+
         // 1. Add all newly opened positions to the DEX.
         // This has already happened in the action handlers for each `PositionOpen` action.
 
@@ -63,9 +110,12 @@ impl Component for Dex {
             .expect("dex params are set")
             .max_execution_budget;
 
+        // Local cache of BSODs used for claiming fee swaps.
+        let mut bsods = BTreeMap::new();
+
         for (trading_pair, swap_flows) in state.swap_flows() {
             let batch_start = std::time::Instant::now();
-            state
+            let bsod = state
                 .handle_batch_swaps(
                     trading_pair,
                     swap_flows,
@@ -83,6 +133,57 @@ impl Component for Dex {
                 .expect("handling batch swaps is infaillible");
             metrics::histogram!(crate::component::metrics::DEX_BATCH_DURATION)
                 .record(batch_start.elapsed());
+
+            bsods.insert(trading_pair, bsod);
+        }
+
+        // F.1. Having performed all batch swaps, "claim" the base fees and tips.
+        // The VCB has already been debited through the BSOD.
+        {
+            let state_ref =
+                Arc::get_mut(state).expect("should have unique ref after finishing batch swaps");
+            for (asset_id, (base_fee, tip)) in base_fees_and_tips.iter() {
+                if *asset_id == *STAKING_TOKEN_ASSET_ID {
+                    // In this case, there was nothing to swap, so there's nothing
+                    // to claim and we just accumulate the fee we took back into the fee component.
+                    state_ref.raw_accumulate_base_fee(Fee::from_staking_token_amount(*base_fee));
+                    state_ref.raw_accumulate_tip(Fee::from_staking_token_amount(*tip));
+                    continue;
+                }
+                let pair = TradingPair::new(*asset_id, *STAKING_TOKEN_ASSET_ID);
+                let bsod = bsods
+                    .get(&pair)
+                    .expect("bsod should be present for chain-submitted swap");
+
+                let (base_input, tip_input) = if pair.asset_1() == *asset_id {
+                    ((*base_fee, 0u64.into()), (*tip, 0u64.into()))
+                } else {
+                    ((0u64.into(), *base_fee), (0u64.into(), *tip))
+                };
+
+                let base_output = bsod.pro_rata_outputs(base_input);
+                let tip_output = bsod.pro_rata_outputs(tip_input);
+                tracing::debug!(
+                    ?asset_id,
+                    ?base_input,
+                    ?tip_input,
+                    ?base_output,
+                    ?tip_output,
+                    "claiming chain-submitted swap for alt fee token"
+                );
+
+                // Obtain the base fee and tip amounts in the native token, discarding any unfilled amounts.
+                let (swapped_base, swapped_tip) = if pair.asset_1() == *asset_id {
+                    (base_output.0, tip_output.0)
+                } else {
+                    (tip_output.1, base_output.1)
+                };
+
+                // Finally, accumulate the swapped base fee and tip back into the fee component.
+                // (We already took all the fees out).
+                state_ref.raw_accumulate_base_fee(Fee::from_staking_token_amount(swapped_base));
+                state_ref.raw_accumulate_tip(Fee::from_staking_token_amount(swapped_tip));
+            }
         }
 
         // 3. Perform arbitrage to ensure all prices are consistent post-execution:

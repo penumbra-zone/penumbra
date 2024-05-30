@@ -17,6 +17,32 @@ impl ::prost::Name for Fee {
         ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
     }
 }
+/// Gas usage for a transaction.
+///
+/// Gas used is multiplied by `GasPrices` to determine a `Fee`.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Gas {
+    /// The amount of block space used.
+    #[prost(uint64, tag = "1")]
+    pub block_space: u64,
+    /// The amount of compact block space used.
+    #[prost(uint64, tag = "2")]
+    pub compact_block_space: u64,
+    /// The amount of verification cost used.
+    #[prost(uint64, tag = "3")]
+    pub verification: u64,
+    /// The amount of execution cost used.
+    #[prost(uint64, tag = "4")]
+    pub execution: u64,
+}
+impl ::prost::Name for Gas {
+    const NAME: &'static str = "Gas";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
+    }
+}
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GasPrices {
@@ -171,6 +197,51 @@ pub struct CurrentGasPricesResponse {
 }
 impl ::prost::Name for CurrentGasPricesResponse {
     const NAME: &'static str = "CurrentGasPricesResponse";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
+    }
+}
+/// Emitted during fee payment.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventPaidFee {
+    /// The fee paid.
+    #[prost(message, optional, tag = "1")]
+    pub fee: ::core::option::Option<Fee>,
+    /// The base fee that was required.
+    #[prost(message, optional, tag = "2")]
+    pub base_fee: ::core::option::Option<Fee>,
+    /// The tip that was paid to the proposer.
+    #[prost(message, optional, tag = "3")]
+    pub tip: ::core::option::Option<Fee>,
+    /// The gas used to compute the base fee.
+    #[prost(message, optional, tag = "4")]
+    pub gas_used: ::core::option::Option<Gas>,
+}
+impl ::prost::Name for EventPaidFee {
+    const NAME: &'static str = "EventPaidFee";
+    const PACKAGE: &'static str = "penumbra.core.component.fee.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)
+    }
+}
+/// Emitted as a summary of fees in the block.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventBlockFees {
+    /// The total fees, after swapping to the native token.
+    #[prost(message, optional, tag = "1")]
+    pub swapped_fee_total: ::core::option::Option<Fee>,
+    /// The total base fees, after swapping to the native token.
+    #[prost(message, optional, tag = "2")]
+    pub swapped_base_fee_total: ::core::option::Option<Fee>,
+    /// The total tips, after swapping to the native token.
+    #[prost(message, optional, tag = "3")]
+    pub swapped_tip_total: ::core::option::Option<Fee>,
+}
+impl ::prost::Name for EventBlockFees {
+    const NAME: &'static str = "EventBlockFees";
     const PACKAGE: &'static str = "penumbra.core.component.fee.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.fee.v1.{}", Self::NAME)

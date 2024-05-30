@@ -3,9 +3,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use penumbra_fee::component::FeePay as _;
 use penumbra_sct::{component::source::SourceContext, CommitmentSource};
 use penumbra_shielded_pool::component::ClueManager;
-use penumbra_transaction::Transaction;
+use penumbra_transaction::{gas::GasCost as _, Transaction};
 use tokio::task::JoinSet;
 use tracing::{instrument, Instrument};
 
@@ -29,7 +30,20 @@ impl AppActionHandler for Transaction {
     // We only instrument the top-level `check_stateless`, so we get one span for each transaction.
     #[instrument(skip(self, _context))]
     async fn check_stateless(&self, _context: ()) -> Result<()> {
+        // This check should be done first, and complete before all other
+        // stateless checks, like proof verification.  In addition to proving
+        // that value balances, the binding signature binds the proofs to the
+        // transaction, as the binding signature can only be created with
+        // knowledge of all of the openings to the commitments the transaction
+        // makes proofs against. (This is where the name binding signature comes
+        // from).
+        //
+        // This allows us to cheaply eliminate a large class of invalid
+        // transactions upfront -- past this point, we can be sure that the user
+        // who submitted the transaction actually formed the proofs, rather than
+        // replaying them from another transaction.
         valid_binding_signature(self)?;
+        // Other checks probably too cheap to be worth splitting into tasks.
         num_clues_equal_to_num_outputs(self)?;
         check_memo_exists_if_outputs_absent_if_not(self)?;
 
@@ -59,8 +73,9 @@ impl AppActionHandler for Transaction {
     async fn check_historical<S: StateRead + 'static>(&self, state: Arc<S>) -> Result<()> {
         let mut action_checks = JoinSet::new();
 
-        // SAFETY: Transaction parameters (chain id, expiry height, fee) against chain state
+        // SAFETY: Transaction parameters (chain id, expiry height) against chain state
         // that cannot change during transaction execution.
+        // The fee is _not_ checked here, but during execution.
         tx_parameters_historical_check(state.clone(), self).await?;
         // SAFETY: anchors are historical data and cannot change during transaction execution.
         claimed_anchor_is_valid(state.clone(), self).await?;
@@ -94,6 +109,12 @@ impl AppActionHandler for Transaction {
             id: Some(self.id().0),
         };
         state.put_current_source(Some(source));
+
+        // Check and record the transaction's fee payment,
+        // before doing the rest of execution.
+        let gas_used = self.gas_cost();
+        let fee = self.transaction_body.transaction_parameters.fee;
+        state.pay_fee(gas_used, fee).await?;
 
         for (i, action) in self.actions().enumerate() {
             let span = action.create_span(i);

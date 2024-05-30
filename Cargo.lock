@@ -4867,6 +4867,7 @@ dependencies = [
  "cnidarium-component",
  "decaf377 0.5.0",
  "decaf377-rdsa",
+ "im",
  "metrics",
  "penumbra-asset",
  "penumbra-num",

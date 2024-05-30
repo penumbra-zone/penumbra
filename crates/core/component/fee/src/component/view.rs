@@ -1,9 +1,11 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use cnidarium::{StateRead, StateWrite};
+use penumbra_asset::asset;
+use penumbra_num::Amount;
 use penumbra_proto::{StateReadProto, StateWriteProto};
 
-use crate::{params::FeeParameters, state_key, GasPrices};
+use crate::{params::FeeParameters, state_key, Fee, GasPrices};
 
 /// This trait provides read access to fee-related parts of the Penumbra
 /// state store.
@@ -41,12 +43,16 @@ pub trait StateReadExt: StateRead {
         self.object_get::<()>(state_key::gas_prices_changed())
             .is_some()
     }
+
+    /// The accumulated base fees and tips for this block, indexed by asset ID.
+    fn accumulated_base_fees_and_tips(&self) -> im::OrdMap<asset::Id, (Amount, Amount)> {
+        self.object_get(state_key::fee_accumulator())
+            .unwrap_or_default()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
 
-/// This trait provides write access to common parts of the Penumbra
-/// state store.
 #[async_trait]
 pub trait StateWriteExt: StateWrite {
     /// Writes the provided fee parameters to the JMT.
@@ -67,6 +73,38 @@ pub trait StateWriteExt: StateWrite {
         self.object_put(state_key::gas_prices_changed(), ());
     }
      */
+
+    /// Takes the accumulated base fees and tips for this block, resetting them to zero.
+    fn take_accumulated_base_fees_and_tips(&mut self) -> im::OrdMap<asset::Id, (Amount, Amount)> {
+        let old = self.accumulated_base_fees_and_tips();
+        let new = im::OrdMap::<asset::Id, (Amount, Amount)>::new();
+        self.object_put(state_key::fee_accumulator(), new);
+        old
+    }
+
+    fn raw_accumulate_base_fee(&mut self, base_fee: Fee) {
+        let old = self.accumulated_base_fees_and_tips();
+        let new = old.alter(
+            |maybe_amounts| match maybe_amounts {
+                Some((base, tip)) => Some((base + base_fee.amount(), tip)),
+                None => Some((base_fee.amount(), Amount::zero())),
+            },
+            base_fee.asset_id(),
+        );
+        self.object_put(state_key::fee_accumulator(), new);
+    }
+
+    fn raw_accumulate_tip(&mut self, tip_fee: Fee) {
+        let old = self.accumulated_base_fees_and_tips();
+        let new = old.alter(
+            |maybe_amounts| match maybe_amounts {
+                Some((base, tip)) => Some((base, tip + tip_fee.amount())),
+                None => Some((Amount::zero(), tip_fee.amount())),
+            },
+            tip_fee.asset_id(),
+        );
+        self.object_put(state_key::fee_accumulator(), new);
+    }
 }
 
 impl<T: StateWrite + ?Sized> StateWriteExt for T {}
