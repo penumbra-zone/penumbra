@@ -80,5 +80,58 @@ Then, build all the project binaries using `cargo`:
 cargo build --release
 ```
 
+### Linking Against RocksDB (Optional)
+
+Development builds can avoid the cost of recompiling RocksDB for storage libraries in the Cargo
+workspace. This manifests as a `librocksdb-sys(build)` message when building or testing crates
+in the monorepo.
+
+#### Building `librocksdb.a` from source
+
+First, clone the rocksdb repository:
+
+```sh
+# Clone the repository, and enter that directory.
+git clone git@github.com:facebook/rocksdb.git && cd rocksdb
+
+# Checkout the version of rocksdb used in `librocksdb-sys`.
+git checkout 6a43615
+
+# Add an environment variable pointing to this repository:
+ROCKSDB_LIB_DIR=`pwd`
+
+# Compile the static `librocksdb.a` library to link against:
+make static_lib
+```
+
+#### Building `libsnappy.a` from source
+
+next, clone the snappy repository and follow the
+[instructions][snappy-build] to build it:
+
+```
+# Clone the repository, and enter that directory.
+git clone git@github.com:google/snappy.git && cd snappy
+
+# Checkout the version of snappy used in `librocksdb-sys`.
+git checkout 2b63814
+
+# Initialize the submodules.
+git submodule update --init
+
+# Build snappy using cmake.
+mkdir build
+cd build && cmake .. && make
+
+# Add an environment variable pointing to the build/ directory.
+SNAPPY_LIB_DIR=`pwd`
+```
+
+### Building Penumbra
+
+Once you've built rocksdb and set the environment variable, the `librocksdb-sys` crate will search
+in that directory for the compiled `librocksdb.a` static library when it is rebuilt.
+
+[snappy-build]: https://github.com/google/snappy?tab=readme-ov-file#building
 [protoc-install]: https://grpc.io/docs/protoc-installation/
 [WSL]: https://learn.microsoft.com/en-us/windows/wsl/install
