@@ -13,6 +13,20 @@ message Fee {
   asset.v1.AssetId asset_id = 2;
 }
 
+// Gas usage for a transaction.
+//
+// Gas used is multiplied by `GasPrices` to determine a `Fee`.
+message Gas {
+  // The amount of block space used.
+  uint64 block_space = 1;
+  // The amount of compact block space used.
+  uint64 compact_block_space = 2;
+  // The amount of verification cost used.
+  uint64 verification = 3;
+  // The amount of execution cost used.
+  uint64 execution = 4;
+}
+
 message GasPrices {
   // The asset ID of the fee token these prices are for.
   //
@@ -81,4 +95,26 @@ message CurrentGasPricesResponse {
   GasPrices gas_prices = 1;
   // Other gas prices for other accepted tokens.
   repeated GasPrices alt_gas_prices = 2;
+}
+
+// Emitted during fee payment.
+message EventPaidFee {
+  // The fee paid.
+  Fee fee = 1;
+  // The base fee that was required.
+  Fee base_fee = 2;
+  // The tip that was paid to the proposer.
+  Fee tip = 3;
+  // The gas used to compute the base fee.
+  Gas gas_used = 4;
+}
+
+// Emitted as a summary of fees in the block.
+message EventBlockFees {
+  // The total fees, after swapping to the native token.
+  Fee swapped_fee_total = 1;
+  // The total base fees, after swapping to the native token.
+  Fee swapped_base_fee_total = 2;
+  // The total tips, after swapping to the native token.
+  Fee swapped_tip_total = 3;
 }

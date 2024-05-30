@@ -1,11 +1,9 @@
 use anyhow::{ensure, Result};
 use cnidarium::StateRead;
-use penumbra_fee::component::StateReadExt as _;
 use penumbra_sct::component::clock::EpochRead;
 use penumbra_sct::component::tree::VerificationExt;
 use penumbra_shielded_pool::component::StateReadExt as _;
 use penumbra_shielded_pool::fmd;
-use penumbra_transaction::gas::GasCost;
 use penumbra_transaction::{Transaction, TransactionParameters};
 
 use crate::app::StateReadExt;
@@ -17,8 +15,7 @@ pub async fn tx_parameters_historical_check<S: StateRead>(
     let TransactionParameters {
         chain_id,
         expiry_height,
-        // This is checked in `fee_greater_than_base_fee` against the whole
-        // transaction, for convenience.
+        // This is checked during execution.
         fee: _,
         // IMPORTANT: Adding a transaction parameter? Then you **must** add a SAFETY
         // argument here to justify why it is safe to validate against a historical
@@ -31,9 +28,6 @@ pub async fn tx_parameters_historical_check<S: StateRead>(
     // SAFETY: This is safe to do in a **historical** check because the chain's current
     // block height cannot change during transaction processing.
     expiry_height_is_valid(&state, expiry_height).await?;
-    // SAFETY: This is safe to do in a **historical** check as long as the current gas prices
-    // are static, or set in the previous block.
-    fee_greater_than_base_fee(&state, transaction).await?;
 
     Ok(())
 }
@@ -144,54 +138,4 @@ pub async fn claimed_anchor_is_valid<S: StateRead>(
     transaction: &Transaction,
 ) -> Result<()> {
     state.check_claimed_anchor(transaction.anchor).await
-}
-
-pub async fn fee_greater_than_base_fee<S: StateRead>(
-    state: S,
-    transaction: &Transaction,
-) -> Result<()> {
-    // Check whether the user is requesting to pay fees in the native token
-    // or in an alternative fee token.
-    let user_supplied_fee = transaction.transaction_body().transaction_parameters.fee;
-
-    let current_gas_prices =
-        if user_supplied_fee.asset_id() == *penumbra_asset::STAKING_TOKEN_ASSET_ID {
-            state
-                .get_gas_prices()
-                .await
-                .expect("gas prices must be present in state")
-        } else {
-            let alt_gas_prices = state
-                .get_alt_gas_prices()
-                .await
-                .expect("alt gas prices must be present in state");
-            alt_gas_prices
-                .into_iter()
-                .find(|prices| prices.asset_id == user_supplied_fee.asset_id())
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "fee token {} not recognized by the chain",
-                        user_supplied_fee.asset_id()
-                    )
-                })?
-        };
-
-    // Double check that the gas price assets match.
-    ensure!(
-        current_gas_prices.asset_id == user_supplied_fee.asset_id(),
-        "unexpected mismatch between fee and queried gas prices (expected: {}, found: {})",
-        user_supplied_fee.asset_id(),
-        current_gas_prices.asset_id,
-    );
-
-    let transaction_base_fee = current_gas_prices.fee(&transaction.gas_cost());
-
-    ensure!(
-        user_supplied_fee.amount() >= transaction_base_fee.amount(),
-        "fee must be greater than or equal to the transaction base price (supplied: {}, base: {})",
-        user_supplied_fee.amount(),
-        transaction_base_fee.amount(),
-    );
-
-    Ok(())
 }

@@ -25,6 +25,7 @@ cnidarium = {workspace = true, optional = true, default-features = true}
 cnidarium-component = {workspace = true, optional = true, default-features = true}
 decaf377 = {workspace = true, default-features = true}
 decaf377-rdsa = {workspace = true}
+im = {workspace = true}
 metrics = {workspace = true}
 penumbra-asset = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}

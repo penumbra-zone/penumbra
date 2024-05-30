@@ -14,12 +14,41 @@ use crate::Fee;
 /// Represents the different resources that a transaction can consume,
 /// for purposes of calculating multidimensional fees based on real
 /// transaction resource consumption.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "pb::Gas", into = "pb::Gas")]
 pub struct Gas {
     pub block_space: u64,
     pub compact_block_space: u64,
     pub verification: u64,
     pub execution: u64,
+}
+
+impl DomainType for Gas {
+    type Proto = pb::Gas;
+}
+
+impl From<Gas> for pb::Gas {
+    fn from(gas: Gas) -> Self {
+        pb::Gas {
+            block_space: gas.block_space,
+            compact_block_space: gas.compact_block_space,
+            verification: gas.verification,
+            execution: gas.execution,
+        }
+    }
+}
+
+impl TryFrom<pb::Gas> for Gas {
+    type Error = anyhow::Error;
+
+    fn try_from(proto: pb::Gas) -> Result<Self, Self::Error> {
+        Ok(Gas {
+            block_space: proto.block_space,
+            compact_block_space: proto.compact_block_space,
+            verification: proto.verification,
+            execution: proto.execution,
+        })
+    }
 }
 
 impl Gas {
