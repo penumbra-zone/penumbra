@@ -25,7 +25,6 @@ use ibc_types::lightclients::tendermint::client_state::ClientState as Tendermint
 use rand_core::OsRng;
 use regex::Regex;
 
-use crate::command::tx::auction::AuctionCmd;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
@@ -61,6 +60,7 @@ use penumbra_view::{SpendableNoteRecord, ViewClient};
 use penumbra_wallet::plan::{self, Planner};
 use proposal::ProposalCmd;
 
+use crate::command::tx::auction::AuctionCmd;
 use crate::App;
 
 mod auction;
@@ -480,12 +480,12 @@ impl TxCmd {
                     "You will receive outputs of {} and {}. Claiming now...",
                     Value {
                         amount: pro_rata_outputs.0,
-                        asset_id: swap_record.output_data.trading_pair.asset_1()
+                        asset_id: swap_record.output_data.trading_pair.asset_1(),
                     }
                     .format(&asset_cache),
                     Value {
                         amount: pro_rata_outputs.1,
-                        asset_id: swap_record.output_data.trading_pair.asset_2()
+                        asset_id: swap_record.output_data.trading_pair.asset_2(),
                     }
                     .format(&asset_cache),
                 );
@@ -1104,14 +1104,20 @@ impl TxCmd {
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::Close {
-                position_id,
+                position_ids,
                 source,
                 fee_tier,
             }) => {
-                let plan = Planner::new(OsRng)
+                let mut planner = Planner::new(OsRng);
+                planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into())
-                    .position_close(*position_id)
+                    .set_fee_tier((*fee_tier).into());
+
+                position_ids.iter().for_each(|position_id| {
+                    planner.position_close(*position_id);
+                });
+
+                let plan = planner
                     .plan(
                         app.view
                             .as_mut()
@@ -1119,6 +1125,7 @@ impl TxCmd {
                         AddressIndex::new(*source),
                     )
                     .await?;
+
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::CloseAll {
@@ -1229,37 +1236,43 @@ impl TxCmd {
             }
             TxCmd::Position(PositionCmd::Withdraw {
                 source,
-                position_id,
+                position_ids,
                 fee_tier,
             }) => {
                 let mut client = DexQueryServiceClient::new(app.pd_channel().await?);
 
-                // Fetch the information regarding the position from the view service.
-                let position = client
-                    .liquidity_position_by_id(LiquidityPositionByIdRequest {
-                        position_id: Some(PositionId::from(*position_id)),
-                    })
-                    .await?
-                    .into_inner();
-
-                let reserves = position
-                    .data
-                    .clone()
-                    .expect("missing position metadata")
-                    .reserves
-                    .expect("missing position reserves");
-                let pair = position
-                    .data
-                    .expect("missing position")
-                    .phi
-                    .expect("missing position trading function")
-                    .pair
-                    .expect("missing trading function pair");
-
-                let plan = Planner::new(OsRng)
+                let mut planner = Planner::new(OsRng);
+                planner
                     .set_gas_prices(gas_prices)
-                    .set_fee_tier((*fee_tier).into())
-                    .position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?)
+                    .set_fee_tier((*fee_tier).into());
+
+                for position_id in position_ids {
+                    // Fetch the information regarding the position from the view service.
+                    let position = client
+                        .liquidity_position_by_id(LiquidityPositionByIdRequest {
+                            position_id: Some(PositionId::from(*position_id)),
+                        })
+                        .await?
+                        .into_inner();
+
+                    let reserves = position
+                        .data
+                        .clone()
+                        .expect("missing position metadata")
+                        .reserves
+                        .expect("missing position reserves");
+                    let pair = position
+                        .data
+                        .expect("missing position")
+                        .phi
+                        .expect("missing position trading function")
+                        .pair
+                        .expect("missing trading function pair");
+
+                    planner.position_withdraw(*position_id, reserves.try_into()?, pair.try_into()?);
+                }
+
+                let plan = planner
                     .plan(
                         app.view
                             .as_mut()
@@ -1267,6 +1280,7 @@ impl TxCmd {
                         AddressIndex::new(*source),
                     )
                     .await?;
+
                 app.build_and_submit_transaction(plan).await?;
             }
             TxCmd::Position(PositionCmd::RewardClaim {}) => {
