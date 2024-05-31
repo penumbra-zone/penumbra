@@ -32,7 +32,7 @@ pub(crate) trait EvictionManager: StateWrite {
     ///
     /// To do this effectively, we maintain a liquidity index which orders LPs
     /// by ascending liquidity for each direction of a trading pair. This allow
-    /// us to easily fetch the worse M positions for each index, and only evict
+    /// us to easily fetch the worst M positions for each index, and only evict
     /// overlapping LPs.
     ///
     /// This approach sidestep the problem of adjudicating which position deserve
