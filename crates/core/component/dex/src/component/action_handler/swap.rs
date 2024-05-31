@@ -9,7 +9,7 @@ use penumbra_proto::StateWriteProto;
 use penumbra_sct::component::source::SourceContext;
 
 use crate::{
-    component::{position_manager::PositionManager as _, StateReadExt, StateWriteExt, SwapManager},
+    component::{InternalDexWrite, StateReadExt, SwapDataRead, SwapDataWrite, SwapManager},
     event,
     swap::{proof::SwapProofPublic, Swap},
 };

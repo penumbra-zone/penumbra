@@ -13,7 +13,7 @@ use crate::{
         chandelier::Chandelier,
         flow::SwapFlow,
         router::{FillRoute, PathSearch, RoutingParams},
-        ExecutionCircuitBreaker, PositionManager, StateWriteExt,
+        ExecutionCircuitBreaker, InternalDexWrite, PositionManager,
     },
     lp::position::MAX_RESERVE_AMOUNT,
     BatchSwapOutputData, SwapExecution, TradingPair,

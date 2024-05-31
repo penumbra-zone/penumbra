@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use cnidarium::StateWrite;
 #[cfg(feature = "component")]
-use penumbra_dex::component::{StateReadExt, SwapManager as _};
+use penumbra_dex::component::SwapDataRead;
 use penumbra_fee::component::StateReadExt as _;
 use penumbra_governance::StateReadExt as _;
 use penumbra_proto::DomainType;

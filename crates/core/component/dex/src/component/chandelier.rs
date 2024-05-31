@@ -271,7 +271,7 @@ mod tests {
     use crate::{
         component::{
             router::create_buy, tests::TempStorageExt as _, Dex, PositionManager as _,
-            StateReadExt as _, StateWriteExt as _,
+            SwapDataRead, SwapDataWrite,
         },
         DirectedUnitPair,
     };
