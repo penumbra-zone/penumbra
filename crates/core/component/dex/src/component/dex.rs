@@ -116,11 +116,11 @@ impl Component for Dex {
 
         // 4. Inspect trading pairs that saw new position opened during this block, and
         // evict their excess LPs if any are found.
-        Arc::get_mut(state)
+        let _ = Arc::get_mut(state)
             .expect("state should be uniquely referenced after batch swaps complete")
             .evict_positions()
             .await
-            .expect("MERGEBLOCK(erwan): remove this");
+            .map_err(|e| tracing::error!(?e, "error evicting positions, skipping"));
 
         // 5. Close all positions queued for closure at the end of the block.
         // It's important to do this after execution, to allow block-scoped JIT liquidity.
