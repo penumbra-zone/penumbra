@@ -11,6 +11,7 @@ mod arb;
 mod chandelier;
 pub(crate) mod circuit_breaker;
 mod dex;
+mod eviction_manager;
 mod flow;
 mod position_manager;
 mod swap_manager;
