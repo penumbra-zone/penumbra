@@ -82,7 +82,7 @@ impl SlidingWindow {
             );
         }
 
-        let new_clues_in_period = clue_count_delta.1.saturating_sub(clue_count_delta.1);
+        let new_clues_in_period = clue_count_delta.1.saturating_sub(clue_count_delta.0);
 
         let projected_clue_count = u64::from(self.window) * new_clues_in_period;
         let old_approximate_clue_count = match state {
