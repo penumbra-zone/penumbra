@@ -76,11 +76,6 @@ impl<T: StateRead + StateWrite> ClueManager for T {}
 
 #[async_trait]
 pub(crate) trait ClueManagerInternal: ClueManager {
-    fn init(&mut self) {
-        self.put_current_clue_count(0);
-        self.put_previous_clue_count(0);
-    }
-
     /// Flush the clue counts, returning the previous and current counts
     async fn flush_clue_count(&mut self) -> Result<(u64, u64)> {
         let previous = self.get_previous_clue_count().await?;
