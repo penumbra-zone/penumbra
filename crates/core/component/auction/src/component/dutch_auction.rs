@@ -458,13 +458,6 @@ pub(crate) trait DutchAuctionData: StateRead {
             })
             .boxed()
     }
-
-    async fn stream_dutch_state_by_trigger(
-        &self,
-        _trigger_height: u64,
-    ) -> Pin<Box<dyn futures::Stream<Item = DutchAuction> + Send + 'static>> {
-        todo!()
-    }
 }
 
 impl<T: StateRead + ?Sized> DutchAuctionData for T {}
