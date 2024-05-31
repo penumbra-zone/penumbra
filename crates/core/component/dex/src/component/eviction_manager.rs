@@ -6,7 +6,6 @@ use std::collections::BTreeSet;
 use crate::state_key::eviction_queue;
 use anyhow::Result;
 use cnidarium::StateWrite;
-use penumbra_proto::DomainType;
 use tracing::instrument;
 
 use crate::{component::PositionManager, DirectedTradingPair, TradingPair};
@@ -84,13 +83,19 @@ pub(crate) trait EvictionManager: StateWrite {
 
             let overhead_ab = stream_ab
                 .take(overhead_size as usize)
-                .and_then(|(_, raw_id)| async move { position::Id::decode(&*raw_id) })
+                .and_then(|(k, _)| async move {
+                    let raw_id = eviction_queue::inventory_index::parse_id_from_key(k)?;
+                    Ok(position::Id(raw_id))
+                })
                 .try_collect::<BTreeSet<position::Id>>()
                 .await?;
 
             let overhead_ba = stream_ba
                 .take(overhead_size as usize)
-                .and_then(|(_, raw_id)| async move { position::Id::decode(&*raw_id) })
+                .and_then(|(k, _)| async move {
+                    let raw_id = eviction_queue::inventory_index::parse_id_from_key(k)?;
+                    Ok(position::Id(raw_id))
+                })
                 .try_collect::<BTreeSet<position::Id>>()
                 .await?;
 
