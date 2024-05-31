@@ -17,6 +17,7 @@ use crate::{
     BatchSwapOutputData, DexParameters, DirectedTradingPair, SwapExecution, TradingPair,
 };
 
+use super::eviction_manager::EvictionManager;
 use super::{
     chandelier::Chandelier,
     router::{HandleBatchSwaps, RoutingParams},
@@ -113,7 +114,15 @@ impl Component for Dex {
             Err(e) => tracing::warn!(?e, "error processing arb, this is a bug"),
         }
 
-        // 4. Close all positions queued for closure at the end of the block.
+        // 4. Inspect trading pairs that saw new position opened during this block, and
+        // evict their excess LPs if any are found.
+        Arc::get_mut(state)
+            .expect("state should be uniquely referenced after batch swaps complete")
+            .evict_positions()
+            .await
+            .expect("MERGEBLOCK(erwan): remove this");
+
+        // 5. Close all positions queued for closure at the end of the block.
         // It's important to do this after execution, to allow block-scoped JIT liquidity.
         Arc::get_mut(state)
             .expect("state should be uniquely referenced after batch swaps complete")
