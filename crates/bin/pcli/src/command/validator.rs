@@ -64,6 +64,12 @@ pub enum VoteCmd {
         /// vote may be generated using the `pcli validator vote sign` command.
         #[clap(long, global = true, display_order = 500)]
         signature: Option<String>,
+        /// Vote on behalf of a particular validator.
+        ///
+        /// This must be specified when the custody backend does not match the validator identity
+        /// key, i.e. when using a separate governance key on another wallet.
+        #[clap(long, global = true, display_order = 600)]
+        validator: Option<IdentityKey>,
     },
     /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
     Sign {
@@ -76,6 +82,12 @@ pub enum VoteCmd {
         /// The file to write the signature to [default: stdout].
         #[clap(long, global = true, display_order = 500)]
         signature_file: Option<String>,
+        /// Vote on behalf of a particular validator.
+        ///
+        /// This must be specified when the custody backend does not match the validator identity
+        /// key, i.e. when using a separate governance key on another wallet.
+        #[clap(long, global = true, display_order = 600)]
+        validator: Option<IdentityKey>,
     },
 }
 
@@ -260,8 +272,10 @@ impl ValidatorCmd {
                 vote,
                 reason,
                 signature_file,
+                validator,
             }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
+                let identity_key = validator
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
@@ -306,8 +320,10 @@ impl ValidatorCmd {
                 vote,
                 reason,
                 signature,
+                validator,
             }) => {
-                let identity_key = IdentityKey(fvk.spend_verification_key().clone().into());
+                let identity_key = validator
+                    .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
 
                 let (proposal, vote): (u64, Vote) = (*vote).into();
