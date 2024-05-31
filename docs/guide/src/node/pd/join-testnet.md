@@ -41,7 +41,7 @@ docs to switch to the archive-url version:
 
 ```shell
 pd testnet join --external-address IP_ADDRESS:26656 --moniker MY_NODE_NAME \
-    --archive-url "https://snapshots.penumbra.zone/testnet/pd-migrated-state-75-76.tar.gz"
+    --archive-url "https://snapshots.penumbra.zone/testnet/pd-migrated-state-76-77.tar.gz"
 ```
 
 where `IP_ADDRESS` (like `1.2.3.4`) is the public IP address of the node you're running,
