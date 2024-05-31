@@ -10,11 +10,9 @@ pub mod state_key;
 
 /// How long users have to switch to updated parameters.
 pub const FMD_GRACE_PERIOD_BLOCKS_DEFAULT: u64 = 1 << 4;
-/// How often we update the params, in terms of the number of grace periods
-pub const FMD_UPDATE_FREQUENCY_GRACE_PERIOD: u64 = 4;
 
 pub fn should_update_fmd_params(fmd_grace_period_blocks: u64, height: u64) -> bool {
-    height % (fmd_grace_period_blocks * FMD_UPDATE_FREQUENCY_GRACE_PERIOD) == 0
+    height % fmd_grace_period_blocks == 0
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -62,7 +60,7 @@ impl Default for Parameters {
 /// A struct holding params for the sliding window algorithm
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SlidingWindow {
-    window_blocks: u32,
+    window: u32,
     targeted_detections_per_window: u32,
 }
 
@@ -75,7 +73,7 @@ impl SlidingWindow {
         clue_count_delta: (u64, u64),
     ) -> (Parameters, MetaParametersAlgorithmState) {
         // An edge case, which should act as a constant.
-        if self.window_blocks == 0 {
+        if self.window == 0 {
             return (
                 old.clone(),
                 MetaParametersAlgorithmState::SlidingWindow {
@@ -84,9 +82,9 @@ impl SlidingWindow {
             );
         }
 
-        let new_clues_in_block = clue_count_delta.1.saturating_sub(clue_count_delta.1);
+        let new_clues_in_period = clue_count_delta.1.saturating_sub(clue_count_delta.1);
 
-        let projected_clue_count = u64::from(self.window_blocks) * new_clues_in_block;
+        let projected_clue_count = u64::from(self.window) * new_clues_in_period;
         let old_approximate_clue_count = match state {
             MetaParametersAlgorithmState::SlidingWindow {
                 approximate_clue_count,
@@ -96,9 +94,9 @@ impl SlidingWindow {
         // ((w - 1) * old + new) / w, but using u64 for more precision, and saturating
         let approximate_clue_count: u32 = u32::try_from(
             (u64::from(old_approximate_clue_count)
-                .saturating_mul((self.window_blocks - 1).into())
+                .saturating_mul((self.window - 1).into())
                 .saturating_add(projected_clue_count))
-                / u64::from(self.window_blocks),
+                / u64::from(self.window),
         )
         .unwrap_or(u32::MAX);
 
@@ -159,7 +157,7 @@ impl TryFrom<pb::FmdMetaParameters> for MetaParameters {
             }
             pb::fmd_meta_parameters::Algorithm::SlidingWindow(x) => {
                 MetaParametersAlgorithm::SlidingWindow(SlidingWindow {
-                    window_blocks: x.window_blocks,
+                    window: x.window_update_periods,
                     targeted_detections_per_window: x.targeted_detections_per_window,
                 })
             }
@@ -178,11 +176,11 @@ impl From<MetaParameters> for pb::FmdMetaParameters {
                 pb::fmd_meta_parameters::Algorithm::FixedPrecisionBits(p.bits().into())
             }
             MetaParametersAlgorithm::SlidingWindow(SlidingWindow {
-                window_blocks,
+                window,
                 targeted_detections_per_window,
             }) => pb::fmd_meta_parameters::Algorithm::SlidingWindow(
                 pb::fmd_meta_parameters::AlgorithmSlidingWindow {
-                    window_blocks,
+                    window_update_periods: window,
                     targeted_detections_per_window,
                 },
             ),

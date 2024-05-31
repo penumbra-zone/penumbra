@@ -77,9 +77,11 @@ pub mod fmd_meta_parameters {
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct AlgorithmSlidingWindow {
-        /// The number of blocks in the window.
+        /// The window size, in terms of the number of update periods.
+        ///
+        /// The update period is 16 blocks, by default, but can change with governance.
         #[prost(uint32, tag = "1")]
-        pub window_blocks: u32,
+        pub window_update_periods: u32,
         /// The number of detections we aim to see per window.
         #[prost(uint32, tag = "2")]
         pub targeted_detections_per_window: u32,

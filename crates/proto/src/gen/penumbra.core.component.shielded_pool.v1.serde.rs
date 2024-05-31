@@ -828,15 +828,15 @@ impl serde::Serialize for fmd_meta_parameters::AlgorithmSlidingWindow {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.window_blocks != 0 {
+        if self.window_update_periods != 0 {
             len += 1;
         }
         if self.targeted_detections_per_window != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.shielded_pool.v1.FmdMetaParameters.AlgorithmSlidingWindow", len)?;
-        if self.window_blocks != 0 {
-            struct_ser.serialize_field("windowBlocks", &self.window_blocks)?;
+        if self.window_update_periods != 0 {
+            struct_ser.serialize_field("windowUpdatePeriods", &self.window_update_periods)?;
         }
         if self.targeted_detections_per_window != 0 {
             struct_ser.serialize_field("targetedDetectionsPerWindow", &self.targeted_detections_per_window)?;
@@ -851,15 +851,15 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "window_blocks",
-            "windowBlocks",
+            "window_update_periods",
+            "windowUpdatePeriods",
             "targeted_detections_per_window",
             "targetedDetectionsPerWindow",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            WindowBlocks,
+            WindowUpdatePeriods,
             TargetedDetectionsPerWindow,
             __SkipField__,
         }
@@ -883,7 +883,7 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                         E: serde::de::Error,
                     {
                         match value {
-                            "windowBlocks" | "window_blocks" => Ok(GeneratedField::WindowBlocks),
+                            "windowUpdatePeriods" | "window_update_periods" => Ok(GeneratedField::WindowUpdatePeriods),
                             "targetedDetectionsPerWindow" | "targeted_detections_per_window" => Ok(GeneratedField::TargetedDetectionsPerWindow),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -904,15 +904,15 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut window_blocks__ = None;
+                let mut window_update_periods__ = None;
                 let mut targeted_detections_per_window__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::WindowBlocks => {
-                            if window_blocks__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("windowBlocks"));
+                        GeneratedField::WindowUpdatePeriods => {
+                            if window_update_periods__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("windowUpdatePeriods"));
                             }
-                            window_blocks__ = 
+                            window_update_periods__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -930,7 +930,7 @@ impl<'de> serde::Deserialize<'de> for fmd_meta_parameters::AlgorithmSlidingWindo
                     }
                 }
                 Ok(fmd_meta_parameters::AlgorithmSlidingWindow {
-                    window_blocks: window_blocks__.unwrap_or_default(),
+                    window_update_periods: window_update_periods__.unwrap_or_default(),
                     targeted_detections_per_window: targeted_detections_per_window__.unwrap_or_default(),
                 })
             }

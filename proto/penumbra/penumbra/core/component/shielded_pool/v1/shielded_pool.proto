@@ -33,8 +33,10 @@ message GenesisContent {
 message FmdMetaParameters {
   // A sliding window algorithm for updating the parameters.
   message AlgorithmSlidingWindow {
-    // The number of blocks in the window.
-    uint32 window_blocks = 1;
+    // The window size, in terms of the number of update periods.
+    //
+    // The update period is 16 blocks, by default, but can change with governance.
+    uint32 window_update_periods = 1;
     // The number of detections we aim to see per window.
     uint32 targeted_detections_per_window = 2;
   }
