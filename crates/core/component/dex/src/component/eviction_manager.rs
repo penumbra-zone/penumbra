@@ -21,7 +21,7 @@ pub(crate) trait EvictionManager: StateWrite {
     /// # Mechanism
     ///
     /// The eviction mechanism functions by inspecting every trading pair which
-    /// had LP opened during the block. For each of them, it compute the "excess"
+    /// had LP opened during the block. For each of them, it computes the "excess"
     /// amount of positions `M`, defined as follow:
     /// `M = N - N_max` where N is the number of positions,
     ///                   and N_max is a chain parameter.
