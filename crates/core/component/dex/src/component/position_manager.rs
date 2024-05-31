@@ -274,6 +274,9 @@ pub trait PositionManager: StateWrite + PositionRead {
             position.phi.pair.asset_2(),
             routing_params.fixed_candidates,
         );
+        // Mark the trading pair as active so that we can inspect it
+        // at the end of the block and garbage collect excess LPs.
+        self.mark_trading_pair_as_active(position.phi.pair);
 
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
