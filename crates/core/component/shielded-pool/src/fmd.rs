@@ -101,7 +101,9 @@ impl SlidingWindow {
         .unwrap_or(u32::MAX);
 
         // 1 / this_number of transactions should be detected as false positives
-        let inverse_detection_ratio = approximate_clue_count / self.targeted_detections_per_window;
+        let inverse_detection_ratio = approximate_clue_count
+            .checked_div(self.targeted_detections_per_window)
+            .unwrap_or(0);
         // To receive the power of two *above* the targeted number of clues,
         // take the base 2 logarithm, round down, and use 1 for 0 clues
         let required_precision = if inverse_detection_ratio == 0 {
