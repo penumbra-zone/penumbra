@@ -2,7 +2,6 @@ use crate::component::StateReadExt;
 use crate::{component::position_manager::counter::PositionCounterRead, lp::position};
 use futures::{StreamExt as _, TryStreamExt};
 use std::collections::BTreeSet;
-use tokio::task::JoinSet;
 
 use crate::state_key::eviction_queue;
 use anyhow::Result;
@@ -65,7 +64,7 @@ pub(crate) trait EvictionManager: StateWrite {
     ///
     #[instrument(skip_all, err, level = "trace")]
     async fn evict_positions(&mut self) -> Result<()> {
-        let hot_pairs: Vec<TradingPair> = todo!();
+        let hot_pairs: BTreeSet<TradingPair> = self.get_active_trading_pairs_in_block();
         let max_positions_per_pair = self.get_dex_params().await?.max_positions_per_pair;
 
         for pair in hot_pairs.iter() {
@@ -80,8 +79,8 @@ pub(crate) trait EvictionManager: StateWrite {
             let key_ab = eviction_queue::inventory_index::by_trading_pair(&pair_ab);
             let key_ba = eviction_queue::inventory_index::by_trading_pair(&pair_ba);
 
-            let mut stream_ab = self.nonverifiable_prefix_raw(&key_ab).boxed();
-            let mut stream_ba = self.nonverifiable_prefix_raw(&key_ba).boxed();
+            let stream_ab = self.nonverifiable_prefix_raw(&key_ab).boxed();
+            let stream_ba = self.nonverifiable_prefix_raw(&key_ba).boxed();
 
             let overhead_ab = stream_ab
                 .take(overhead_size as usize)
@@ -101,7 +100,7 @@ pub(crate) trait EvictionManager: StateWrite {
                 self.close_position_by_id(id).await?;
             }
         }
-        todo!()
+        Ok(())
     }
 }
 

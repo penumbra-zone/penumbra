@@ -60,6 +60,14 @@ pub mod candlesticks {
     }
 }
 
+pub mod block_scoped {
+    pub mod active {
+        pub fn trading_pairs() -> &'static str {
+            "dex/block_scoped/active/trading_pairs"
+        }
+    }
+}
+
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
         "dex/output/{:020}/{}/{}",

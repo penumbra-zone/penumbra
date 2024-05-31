@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -10,6 +11,7 @@ use penumbra_proto::{StateReadProto, StateWriteProto};
 use tendermint::v0_37::abci;
 use tracing::instrument;
 
+use crate::state_key::block_scoped;
 use crate::{
     component::SwapDataRead, component::SwapDataWrite, event, genesis, state_key,
     BatchSwapOutputData, DexParameters, DirectedTradingPair, SwapExecution, TradingPair,
@@ -30,9 +32,7 @@ impl Component for Dex {
     #[instrument(name = "dex", skip(state, app_state))]
     async fn init_chain<S: StateWrite>(mut state: S, app_state: Option<&Self::AppState>) {
         match app_state {
-            None => {
-                // Checkpoint -- no-op
-            }
+            None => { /* no-op */ }
             Some(app_state) => {
                 state.put_dex_params(app_state.dex_params.clone());
             }
@@ -176,6 +176,13 @@ pub trait StateReadExt: StateRead {
     async fn arb_execution(&self, height: u64) -> Result<Option<SwapExecution>> {
         self.get(&state_key::arb_execution(height)).await
     }
+
+    /// Return a set of [`TradingPair`]s for which liquidity positions were opened
+    /// during this block.
+    fn get_active_trading_pairs_in_block(&self) -> BTreeSet<TradingPair> {
+        self.object_get(block_scoped::active::trading_pairs())
+            .unwrap_or_default()
+    }
 }
 
 impl<T: StateRead + ?Sized> StateReadExt for T {}
@@ -192,6 +199,8 @@ impl<T: StateWrite + ?Sized> StateWriteExt for T {}
 
 /// The maximum number of "hot" asset identifiers to track for this block.
 const RECENTLY_ACCESSED_ASSET_LIMIT: usize = 10;
+
+/// Provide write access to internal dex data.
 pub(crate) trait InternalDexWrite: StateWrite {
     /// Adds an asset ID to the list of recently accessed assets,
     /// making it a candidate for the current block's arbitrage routing.
@@ -219,6 +228,15 @@ pub(crate) trait InternalDexWrite: StateWrite {
 
         assets.insert(asset_id);
         self.object_put(state_key::recently_accessed_assets(), assets);
+    }
+
+    /// Mark a [`TradingPair`] as active during this block.
+    fn mark_trading_pair_as_active(&mut self, pair: TradingPair) {
+        let mut active_pairs = self.get_active_trading_pairs_in_block();
+
+        if active_pairs.insert(pair) {
+            self.object_put(block_scoped::active::trading_pairs(), active_pairs)
+        }
     }
 
     async fn set_output_data(
