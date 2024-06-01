@@ -25,7 +25,7 @@ pub trait Arbitrage: StateWrite + Sized {
         self: &mut Arc<Self>,
         arb_token: asset::Id,
         routing_params: RoutingParams,
-    ) -> Result<Value>
+    ) -> Result<Option<Value>>
     where
         Self: 'static,
     {
@@ -70,20 +70,14 @@ pub trait Arbitrage: StateWrite + Sized {
             // guarantees about forward progress over precise application of
             // price limits, it technically could occur.
             tracing::debug!("mis-estimation in route-and-fill led to unprofitable arb, discarding");
-            return Ok(Value {
-                amount: 0u64.into(),
-                asset_id: arb_token,
-            });
+            return Ok(None);
         };
 
         if arb_profit == 0u64.into() {
             // If we didn't make any profit, we don't need to do anything,
             // and we can just discard the state delta entirely.
             tracing::debug!("found 0-profit arb, discarding");
-            return Ok(Value {
-                amount: 0u64.into(),
-                asset_id: arb_token,
-            });
+            return Ok(None);
         } else {
             tracing::debug!(
                 ?filled_input,
@@ -132,10 +126,10 @@ pub trait Arbitrage: StateWrite + Sized {
         // Emit an ABCI event detailing the arb execution.
         self_mut.record_proto(event::arb_execution(height, se));
         metrics::histogram!(metrics::DEX_ARB_DURATION).record(arb_start.elapsed());
-        return Ok(Value {
+        return Ok(Some(Value {
             amount: arb_profit,
             asset_id: arb_token,
-        });
+        }));
     }
 }
 
