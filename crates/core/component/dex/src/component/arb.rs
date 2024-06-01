@@ -10,14 +10,11 @@ use penumbra_sct::component::clock::EpochRead;
 use tracing::instrument;
 
 use crate::{
-    component::{ExecutionCircuitBreaker, ValueCircuitBreaker},
+    component::{ExecutionCircuitBreaker, InternalDexWrite, ValueCircuitBreaker},
     event, SwapExecution,
 };
 
-use super::{
-    router::{RouteAndFill, RoutingParams},
-    StateWriteExt,
-};
+use super::router::{RouteAndFill, RoutingParams};
 
 #[async_trait]
 pub trait Arbitrage: StateWrite + Sized {

@@ -8,6 +8,8 @@ use penumbra_num::{fixpoint::U128x128, Amount};
 use rand_core::OsRng;
 use std::sync::Arc;
 
+use crate::component::SwapDataRead;
+use crate::component::SwapDataWrite;
 use crate::lp::SellOrder;
 use crate::DexParameters;
 use crate::{

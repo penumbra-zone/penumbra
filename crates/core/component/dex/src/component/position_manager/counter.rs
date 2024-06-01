@@ -8,7 +8,7 @@ use crate::TradingPair;
 use anyhow::Result;
 
 #[async_trait]
-pub(super) trait PositionCounterRead: StateRead {
+pub(crate) trait PositionCounterRead: StateRead {
     /// Returns the number of position for a [`TradingPair`].
     /// If there were no counter initialized for a given pair, this default to zero.
     async fn get_position_count(&self, trading_pair: &TradingPair) -> u32 {

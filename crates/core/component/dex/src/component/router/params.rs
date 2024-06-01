@@ -3,6 +3,8 @@ use std::sync::Arc;
 use penumbra_asset::asset;
 use penumbra_num::fixpoint::U128x128;
 
+use crate::DexParameters;
+
 #[derive(Debug, Clone)]
 pub struct RoutingParams {
     pub price_limit: Option<U128x128>,
@@ -34,6 +36,22 @@ impl RoutingParams {
             (Some(spill_price), None) => (Some(spill_price), false),
             (None, Some(price_limit)) => (Some(price_limit), true),
             (None, None) => (None, false),
+        }
+    }
+}
+
+impl From<DexParameters> for RoutingParams {
+    fn from(
+        DexParameters {
+            fixed_candidates,
+            max_hops,
+            ..
+        }: DexParameters,
+    ) -> Self {
+        Self {
+            fixed_candidates: Arc::new(fixed_candidates),
+            max_hops: max_hops as usize,
+            price_limit: None,
         }
     }
 }

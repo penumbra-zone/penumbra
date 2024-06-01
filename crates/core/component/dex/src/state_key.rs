@@ -60,6 +60,14 @@ pub mod candlesticks {
     }
 }
 
+pub mod block_scoped {
+    pub mod active {
+        pub fn trading_pairs() -> &'static str {
+            "dex/block_scoped/active/trading_pairs"
+        }
+    }
+}
+
 pub fn output_data(height: u64, trading_pair: TradingPair) -> String {
     format!(
         "dex/output/{:020}/{}/{}",
@@ -214,6 +222,7 @@ pub(crate) mod eviction_queue {
     pub(crate) mod inventory_index {
         use crate::lp::position;
         use crate::DirectedTradingPair;
+        use anyhow::ensure;
         use penumbra_num::Amount;
 
         pub(crate) fn by_trading_pair(pair: &DirectedTradingPair) -> [u8; 107] {
@@ -236,6 +245,12 @@ pub(crate) mod eviction_queue {
             full_key[123..155].copy_from_slice(&id.0);
 
             full_key
+        }
+
+        pub(crate) fn parse_id_from_key(key: Vec<u8>) -> anyhow::Result<[u8; 32]> {
+            ensure!(key.len() == 155, "key must be 155 bytes");
+            let k = &key[123..155];
+            Ok(k.try_into()?)
         }
     }
 }

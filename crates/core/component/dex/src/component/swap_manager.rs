@@ -1,37 +1,105 @@
+use std::collections::BTreeMap;
+
 use async_trait::async_trait;
-use cnidarium::StateWrite;
+use cnidarium::{StateRead, StateWrite};
+use penumbra_asset::Value;
 use penumbra_sct::{component::tree::SctManager, CommitmentSource};
 use penumbra_tct as tct;
 use tracing::instrument;
 
-use crate::{state_key, swap::SwapPayload};
+use crate::component::circuit_breaker::value::ValueCircuitBreaker;
+use crate::BatchSwapOutputData;
+use crate::SwapExecution;
+use crate::{
+    component::flow::SwapFlow, state_key, swap::SwapPayload, DirectedTradingPair, TradingPair,
+};
+use anyhow::Result;
+use penumbra_proto::StateWriteProto;
 
 /// Manages the addition of new notes to the chain state.
 #[async_trait]
-pub trait SwapManager: StateWrite {
+pub(crate) trait SwapManager: StateWrite {
     #[instrument(skip(self, swap), fields(commitment = ?swap.commitment))]
     async fn add_swap_payload(&mut self, swap: SwapPayload, source: CommitmentSource) {
-        tracing::debug!("adding swap payload");
+        tracing::trace!("adding swap payload");
 
-        // 0. Record an ABCI event for transaction indexing.
-        //self.record(event::state_payload(&payload));
-
-        // 1. Insert it into the SCT, recording its source
+        // Record the swap commitment and its metadata in the SCT
         let position = self.add_sct_commitment(swap.commitment, source.clone())
             .await
-            // TODO: why? can't we exceed the number of state commitments in a block?
+            // TODO(erwan): Tracked in #830: we should handle this gracefully
             .expect("inserting into the state commitment tree should not fail because we should budget commitments per block (currently unimplemented)");
 
-        // 3. Finally, record it to be inserted into the compact block:
+        // Record the payload in object-storage so that we can include it in this block's [`CompactBlock`].
         let mut payloads = self.pending_swap_payloads();
         payloads.push_back((position, swap, source));
         self.object_put(state_key::pending_payloads(), payloads);
     }
+}
 
+impl<T: StateWrite + ?Sized> SwapManager for T {}
+
+pub trait SwapDataRead: StateRead {
     fn pending_swap_payloads(&self) -> im::Vector<(tct::Position, SwapPayload, CommitmentSource)> {
         self.object_get(state_key::pending_payloads())
             .unwrap_or_default()
     }
+
+    /// Get the swap flow for the given trading pair accumulated in this block so far.
+    fn swap_flow(&self, pair: &TradingPair) -> SwapFlow {
+        self.swap_flows().get(pair).cloned().unwrap_or_default()
+    }
+
+    fn swap_flows(&self) -> BTreeMap<TradingPair, SwapFlow> {
+        self.object_get::<BTreeMap<TradingPair, SwapFlow>>(state_key::swap_flows())
+            .unwrap_or_default()
+    }
+
+    fn pending_batch_swap_outputs(&self) -> im::OrdMap<TradingPair, BatchSwapOutputData> {
+        self.object_get(state_key::pending_outputs())
+            .unwrap_or_default()
+    }
 }
 
-impl<T: StateWrite + ?Sized> SwapManager for T {}
+impl<T: StateRead + ?Sized> SwapDataRead for T {}
+
+pub(crate) trait SwapDataWrite: StateWrite {
+    async fn put_swap_flow(
+        &mut self,
+        trading_pair: &TradingPair,
+        swap_flow: SwapFlow,
+    ) -> Result<()> {
+        // Credit the DEX for the swap inflows.
+        //
+        // Note that we credit the DEX for _all_ inflows, since we don't know
+        // how much will eventually be filled.
+        self.dex_vcb_credit(Value {
+            amount: swap_flow.0,
+            asset_id: trading_pair.asset_1,
+        })
+        .await?;
+        self.dex_vcb_credit(Value {
+            amount: swap_flow.1,
+            asset_id: trading_pair.asset_2,
+        })
+        .await?;
+
+        // TODO: replace with IM struct later
+        let mut swap_flows = self.swap_flows();
+        swap_flows.insert(*trading_pair, swap_flow);
+        self.object_put(state_key::swap_flows(), swap_flows);
+
+        Ok(())
+    }
+
+    fn put_swap_execution_at_height(
+        &mut self,
+        height: u64,
+        pair: DirectedTradingPair,
+        swap_execution: SwapExecution,
+    ) {
+        let path = state_key::swap_execution(height, pair);
+        self.nonverifiable_put(path.as_bytes().to_vec(), swap_execution);
+    }
+}
+
+impl<T: StateWrite + ?Sized> SwapDataWrite for T {}

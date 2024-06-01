@@ -8,6 +8,7 @@ use penumbra_asset::{asset, Value};
 use penumbra_num::Amount;
 use rand_core::OsRng;
 
+use crate::component::{SwapDataRead, SwapDataWrite};
 use crate::lp::action::PositionOpen;
 use crate::lp::{position, SellOrder};
 use crate::DexParameters;
