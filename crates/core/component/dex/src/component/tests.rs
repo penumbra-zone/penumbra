@@ -953,9 +953,9 @@ async fn reproduce_arbitrage_loop_testnet_53() -> anyhow::Result<()> {
     .await??;
 
     tracing::info!(profit = ?arb_profit, "the arbitrage logic has concluded!");
-    // we should have made a profit of 0.01penumbra, with accuracy loss of 0.000002penumbra.
+    // we should have made a profit of 0.01penumbra, with precision loss of 0.000002penumbra.
     let profit: Value = "0.099998penumbra".parse().unwrap();
-    assert_eq!(arb_profit, profit);
+    assert_eq!(arb_profit, Some(profit));
 
     tracing::info!("fetching the `ArbExecution`");
     let arb_execution = state.arb_execution(0).await?.expect("arb was performed");
