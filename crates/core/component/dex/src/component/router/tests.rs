@@ -18,6 +18,7 @@ use crate::component::router::RoutingParams;
 use crate::component::ExecutionCircuitBreaker;
 use crate::component::SwapDataRead;
 use crate::component::SwapDataWrite;
+use crate::lp::BuyOrder;
 use crate::lp::SellOrder;
 use crate::DexParameters;
 use crate::{
@@ -2318,7 +2319,7 @@ proptest! {
                 if event.kind == "penumbra.core.component.dex.v1.EventPositionExecution" {
                     // Ensure that the position ID attribute hasn't been seen before
                     for attribute in event.attributes.iter() {
-                        if attribute.key == "position_id" {
+                        if attribute.key == "positionId" {
                             assert!(!executed_positions.contains_key(&attribute.value));
                             executed_positions.insert(attribute.value.clone(), ());
                         }
@@ -2329,4 +2330,174 @@ proptest! {
 
         drop(guard);
      }
+}
+
+#[tokio::test]
+/// tx lp order sell 183.070325gn@1.000501gm
+/// tx lp order sell 200gn@1.000501gm
+/// tx lp order sell 2.013014gn@1.00502gm
+/// tx lp order sell 2.013014gn@3.19999penumbra
+/// tx lp order buy 2.013014gn@3.19999penumbra
+///
+/// followed by
+///
+/// q dex simulate --into gn 1000gm
+///
+/// results in unexpected output:
+///
+/// 2.014023gm =>  2.013014gn =>  6.441625penumbra =>  2.013013gn  1.000502gm/1gn
+/// 2.014023gm =>  2.013014gn =>  6.441625penumbra =>  2.013013gn  1.000502gm/1gn
+/// 2.014023gm =>  2.013014gn =>  6.441625penumbra =>  2.013013gn  1.000502gm/1gn
+/// 2.014023gm =>  2.013014gn =>  6.441625penumbra =>  2.013013gn  1.000502gm/1gn
+/// 2.014023gm =>  2.013014gn =>  6.441625penumbra =>  2.013013gn  1.000502gm/1gn
+/// and so on...
+async fn test_4299_unexpected_arb() -> anyhow::Result<()> {
+    let guard = set_tracing_subscriber();
+
+    let gm = asset::Cache::with_known_assets().get_unit("gm").unwrap();
+    let gn = asset::Cache::with_known_assets().get_unit("gn").unwrap();
+    let pen = asset::Cache::with_known_assets()
+        .get_unit("penumbra")
+        .unwrap();
+
+    let storage = TempStorage::new()
+        .await
+        .unwrap()
+        .apply_minimal_genesis()
+        .await
+        .unwrap();
+    let state = storage.latest_snapshot();
+    let mut state = StateDelta::new(state);
+
+    // tx lp order sell 183.070325gn@1.000501gm
+    // Sell 183.070325gn at 1.000501gm each.
+    state
+        .open_position(SellOrder::parse_str("183.070325gn@1.000501gm")?.into_position(OsRng))
+        .await
+        .unwrap();
+
+    // tx lp order sell 200gn@1.000501gm
+    // Sell 200gn at 1.000501gm each.
+    state
+        .open_position(SellOrder::parse_str("200gn@1.000501gm")?.into_position(OsRng))
+        .await
+        .unwrap();
+
+    // tx lp order sell 2.013014gn@1.00502gm
+    // Sell 2.013014gn at 1.00502gm each.
+    state
+        .open_position(SellOrder::parse_str("2.013014gn@1.00502gm")?.into_position(OsRng))
+        .await
+        .unwrap();
+
+    // tx lp order sell 2.013014gn@3.19999penumbra
+    // Sell 2.013014gn at 3.19999penumbra each.
+    state
+        .open_position(SellOrder::parse_str("2.013014gn@3.19999penumbra")?.into_position(OsRng))
+        .await
+        .unwrap();
+
+    // tx lp order buy 2.013014gn@3.19999penumbra
+    // Buy 2.013014gn at 3.19999penumbra each.
+    state
+        .open_position(BuyOrder::parse_str("2.013014gn@3.19999penumbra")?.into_position(OsRng))
+        .await
+        .unwrap();
+
+    let mut this = Arc::new(state);
+
+    let input_amount = 1000000000u32;
+    let input_gm = input_amount.into();
+    let params = RoutingParams {
+        price_limit: None,
+        max_hops: 4,
+        fixed_candidates: Arc::new(vec![gm.id(), gn.id(), pen.id()]),
+    };
+    let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+
+    // Value { amount: 1000000000, asset_id: passet1r4kcf2m4r92jqmdks5c9yt7v2tgnht4aj3fml4qln56x72nm8qrsm9d598 }
+    // passet1nupu8yg2kua09ec8qxfsl60xhafp7mmpsjv9pgp50t20hm6pkygscjcqn2
+    // RoutingParams {
+    //    price_limit: None,
+    //    fixed_candidates: [
+    //      passet1984fctenw8m2fpl8a9wzguzp7j34d7vravryuhft808nyt9fdggqxmanqm,
+    //      passet14h46dmcyy6fl5vyz7xx933n8l7jy202ahrxg92kad6yfladsvcyqczcwda,
+    //      passet1r4kcf2m4r92jqmdks5c9yt7v2tgnht4aj3fml4qln56x72nm8qrsm9d598,
+    //      passet1nupu8yg2kua09ec8qxfsl60xhafp7mmpsjv9pgp50t20hm6pkygscjcqn2,
+    //      passet1e22384qr4kxlcrpc5vqycq9gpl299030yd3lvfmqdzuwsfnlay8slw8la5,
+    //      passet15e489q49rlsr9lk0ec76cclfh8d962lls5p072jrf42dsthhjqxq6xmlfn,
+    //      passet15d5pjadcgg0m6ywtam3qvxgj0pct70qafdnpsfylktrsk6gys5rsdr8cjr],
+    //      max_hops: 4 },
+    // ExecutionCircuitBreaker {
+    //      max_path_searches: 64,
+    //      current_path_searches: 0,
+    //      max_executions: 64, current_executions: 0 }
+    let se = this
+        .route_and_fill(
+            gm.id(),
+            gn.id(),
+            input_gm,
+            params.clone(),
+            execution_circuit_breaker,
+        )
+        .await
+        .unwrap();
+
+    // The input and output should be non-zero:
+    assert!(se.input.amount > 0u32.into());
+    assert!(se.output.amount > 0u32.into());
+
+    // The input and output should be non-zero:
+    assert!(se.input.amount > 0u32.into());
+    assert!(se.output.amount > 0u32.into());
+
+    // DISABLED because this can happen because of rounding...
+    // There should never be a trace where we lose money, e.g. the `gn` hops in:
+    // 2.02313gm => 2.013014gn => 6.441643penumbra => 2.013013gn
+    // for trace in se.traces.iter() {
+    //     let mut hmap = HashMap::new();
+    // for hop in trace {
+    //     print!("{:?} => ", hop);
+    //         // Every hop involving this asset_id should have higher value
+    //         // than any previously seen hop with this asset_id
+    //         let highest = hmap.get(&hop.asset_id);
+
+    //         if let Some(highest) = highest {
+    //             assert!(hop.amount > *highest);
+    //         }
+
+    //         hmap.insert(hop.asset_id, hop.amount);
+    //     }
+    //     println!("\n\n====\n");
+    // }
+
+    // this may be the issue described in #4283 and require an auto-closing position
+    // that is completely filled. the `arbitrary_position` method will randomly set the
+    // close on fill flag for positions.
+
+    // ensure each frontier should exactly consume one position or else fill the entire trade
+    // (no position is executed against more than once)
+
+    // Fetch the cache by forking and flattening:
+    let this2 = Arc::get_mut(&mut this).unwrap().fork();
+    let (_s, mut cache) = this2.flatten();
+    let mut executed_positions = HashMap::new();
+    for event in cache.take_events() {
+        // We only care about position execution events
+        if event.kind == "penumbra.core.component.dex.v1.EventPositionExecution" {
+            // Ensure that the position ID attribute hasn't been seen before
+            for attribute in event.attributes.iter() {
+                if attribute.key == "positionId" {
+                    assert!(!executed_positions.contains_key(&attribute.value));
+                    executed_positions.insert(attribute.value.clone(), ());
+                }
+            }
+        }
+    }
+
+    println!("executed positions: {:?}", executed_positions);
+
+    drop(guard);
+
+    Ok(())
 }
