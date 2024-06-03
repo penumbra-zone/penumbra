@@ -31,11 +31,39 @@ message GenesisContent {
 
 // The parameters which control how the FMD parameters evolve over time.
 message FmdMetaParameters {
+  // A sliding window algorithm for updating the parameters.
+  message AlgorithmSlidingWindow {
+    // The window size, in terms of the number of update periods.
+    //
+    // The update period is 16 blocks, by default, but can change with governance.
+    uint32 window_update_periods = 1;
+    // The number of detections we aim to see per window.
+    uint32 targeted_detections_per_window = 2;
+  }
+
   // How much time users have to transition to new parameters.
   uint64 fmd_grace_period_blocks = 1; 
   // The algorithm governing how the parameters change.
   oneof algorithm {
     uint32 fixed_precision_bits = 2;
+    AlgorithmSlidingWindow sliding_window = 3;
+  }
+}
+
+// Used to potentially store state for the FMD Meta Parameters algorithm.
+message FmdMetaParametersAlgorithmState {
+  // The state used for the fixed algorithm.
+  message FixedState {}
+
+  // The state used for the sliding window algorithm.
+  message SlidingWindowState {
+    // The number of clues previously observed, approximately.
+    uint32 approximate_clue_count = 1;
+  }
+
+  oneof state {
+    FixedState fixed = 1;
+    SlidingWindowState sliding_window = 2;
   }
 }
 
