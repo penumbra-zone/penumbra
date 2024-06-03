@@ -101,9 +101,9 @@ impl BankQuery for Server {
         for (asset_id, amount) in ibc_amounts {
             let denom_metadata = snapshot.denom_metadata_by_asset(&asset_id).await;
             if denom_metadata.is_none() {
-                return Err(tonic::Status::internal(
-                    "bad IBC ics20 value balance key in state".to_string(),
-                ));
+                // This is likely an NFT asset that is intentionally
+                // not registered, so it is fine to exclude from the output.
+                continue;
             }
             let denom_metadata = denom_metadata.expect("should not be an error");
 
