@@ -5184,6 +5184,7 @@ dependencies = [
  "bincode",
  "blake2b_simd 1.0.2",
  "bytes",
+ "chrono",
  "cnidarium",
  "cnidarium-component",
  "decaf377 0.5.0",

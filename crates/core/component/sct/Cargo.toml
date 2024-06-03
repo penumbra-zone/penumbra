@@ -43,3 +43,4 @@ serde = {workspace = true, features = ["derive"]}
 tendermint = {workspace = true}
 tonic = {workspace = true, optional = true}
 tracing = {workspace = true}
+chrono = { workspace = true, default-features = false, features = ["serde"] }

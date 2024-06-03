@@ -2,6 +2,7 @@ use cnidarium::Storage;
 use penumbra_proto::core::component::sct::v1::query_service_server::QueryService;
 use penumbra_proto::core::component::sct::v1::{
     AnchorByHeightRequest, AnchorByHeightResponse, EpochByHeightRequest, EpochByHeightResponse,
+    TimestampByHeightRequest, TimestampByHeightResponse,
 };
 use tonic::Status;
 use tracing::instrument;
@@ -53,6 +54,26 @@ impl QueryService for Server {
 
         Ok(tonic::Response::new(AnchorByHeightResponse {
             anchor: anchor.map(Into::into),
+        }))
+    }
+
+    #[instrument(skip(self, request))]
+    async fn timestamp_by_height(
+        &self,
+        request: tonic::Request<TimestampByHeightRequest>,
+    ) -> Result<tonic::Response<TimestampByHeightResponse>, Status> {
+        let state = self.storage.latest_snapshot();
+
+        let height = request.get_ref().height;
+        let block_time = state.get_block_timestamp().await.map_err(|e| {
+            tonic::Status::unknown(format!("could not get timestamp for height {height}: {e}"))
+        })?;
+
+        let timestamp = chrono::DateTime::parse_from_rfc3339(block_time.to_rfc3339().as_str())
+            .expect("timestamp should roundtrip to string");
+
+        Ok(tonic::Response::new(TimestampByHeightResponse {
+            timestamp,
         }))
     }
 }
