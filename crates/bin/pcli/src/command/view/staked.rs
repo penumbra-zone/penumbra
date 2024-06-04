@@ -65,17 +65,28 @@ impl StakedCmd {
                 continue;
             };
 
-            let info = validators
-                .iter()
-                .find(|v| v.validator.identity_key == dt.validator())
-                .expect("validator info exists in returned data");
-
             let delegation = Value {
                 amount: notes_by_address
                     .values()
                     .flat_map(|notes| notes.iter().map(|n| n.note.amount()))
                     .sum(),
                 asset_id: dt.id(),
+            };
+
+            let info = match validators
+                .iter()
+                .find(|v| v.validator.identity_key == dt.validator())
+            {
+                Some(info) => info,
+                None => {
+                    table.add_row(vec![
+                        "missing data".to_string(),
+                        "missing data".to_string(),
+                        "missing data".to_string(),
+                        delegation.format(&asset_cache),
+                    ]);
+                    continue;
+                }
             };
 
             let unbonded = Value {

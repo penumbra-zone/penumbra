@@ -435,9 +435,10 @@ impl<R: RngCore + CryptoRng> Planner<R> {
 
         // 1. Create a DelegatorVotePlan for each votable note.
         for (record, ik) in &voting_notes {
-            let validator_start_rate_data = start_rate_data
-                .get(&ik)
-                .ok_or_else(|| anyhow!("missing rate data for votable note delegated to {}", ik))?;
+            let Some(validator_start_rate_data) = start_rate_data.get(&ik) else {
+                tracing::debug!("missing rate data for votable note delegated to {}", ik);
+                continue;
+            };
 
             let voting_power_at_vote_start =
                 validator_start_rate_data.unbonded_amount(record.note.amount());
