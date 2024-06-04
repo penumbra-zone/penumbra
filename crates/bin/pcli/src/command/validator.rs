@@ -22,7 +22,7 @@ use penumbra_stake::{
 
 use crate::App;
 
-use super::tx::FeeTier;
+use penumbra_fee::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -73,7 +73,7 @@ pub enum VoteCmd {
         #[clap(long, global = true, display_order = 600)]
         validator: Option<IdentityKey>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
@@ -113,7 +113,7 @@ pub enum DefinitionCmd {
         #[clap(long)]
         signature: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Sign a validator definition offline for submission elsewhere.
