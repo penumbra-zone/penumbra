@@ -160,6 +160,7 @@ pub trait ConsensusStateWriteExt: StateWrite + Sized {
         );
 
         let current_height = HI::get_block_height(&self).await?;
+        let revision_number = HI::get_revision_number(&self).await?;
         let current_time: ibc_types::timestamp::Timestamp =
             HI::get_block_timestamp(&self).await?.into();
 
@@ -170,7 +171,7 @@ pub trait ConsensusStateWriteExt: StateWrite + Sized {
 
         self.put(
             state_key::client_processed_heights(&client_id, &height),
-            ibc_types::core::client::Height::new(0, current_height)?,
+            ibc_types::core::client::Height::new(revision_number, current_height)?,
         );
 
         // update verified heights
