@@ -152,8 +152,8 @@ fn validate_trust_threshold(trust_threshold: TrustThreshold) -> anyhow::Result<(
         anyhow::bail!("trust threshold must be greater than 1/3");
     }
 
-    if trust_threshold.numerator() >= trust_threshold.denominator() {
-        anyhow::bail!("trust threshold must be strictly less than 1");
+    if trust_threshold.numerator() > trust_threshold.denominator() {
+        anyhow::bail!("trust threshold must be less than or equal to 1");
     }
 
     Ok(())
