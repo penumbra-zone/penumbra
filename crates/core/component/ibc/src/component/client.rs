@@ -79,7 +79,10 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .expect("able to add header to client state")
-                        .with_frozen_height(verified_header.height()),
+                        .with_frozen_height(ibc_types::core::client::Height {
+                            revision_number: 0,
+                            revision_height: 1,
+                        }),
                     verified_consensus_state,
                 );
             }
@@ -106,7 +109,10 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .expect("able to add header to client state")
-                        .with_frozen_height(verified_header.height()),
+                        .with_frozen_height(ibc_types::core::client::Height {
+                            revision_number: 0,
+                            revision_height: 1,
+                        }),
                     verified_consensus_state,
                 );
             }
@@ -119,7 +125,10 @@ pub(crate) trait Ics2ClientExt: StateWrite {
                     trusted_client_state
                         .with_header(verified_header.clone())
                         .expect("able to add header to client state")
-                        .with_frozen_height(verified_header.height()),
+                        .with_frozen_height(ibc_types::core::client::Height {
+                            revision_number: 0,
+                            revision_height: 1,
+                        }),
                     verified_consensus_state,
                 );
             }
