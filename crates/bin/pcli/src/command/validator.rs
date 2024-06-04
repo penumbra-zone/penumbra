@@ -72,6 +72,9 @@ pub enum VoteCmd {
         /// key, i.e. when using a separate governance key on another wallet.
         #[clap(long, global = true, display_order = 600)]
         validator: Option<IdentityKey>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
     Sign {
@@ -165,17 +168,6 @@ impl ValidatorCmd {
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.config.full_viewing_key.clone();
 
-        let gas_prices = app
-            .view
-            .as_mut()
-            .context("view service must be initialized")?
-            .gas_prices(GasPricesRequest {})
-            .await?
-            .into_inner()
-            .gas_prices
-            .expect("gas prices must be available")
-            .try_into()?;
-
         match self {
             ValidatorCmd::Identity { base64 } => {
                 let ik = IdentityKey(fvk.spend_verification_key().clone().into());
@@ -247,6 +239,17 @@ impl ValidatorCmd {
                 signature,
                 fee_tier,
             }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
                 let new_validator = read_validator_toml(file)?;
 
                 // Sign the validator definition with the wallet's spend key, or instead attach the
@@ -340,7 +343,19 @@ impl ValidatorCmd {
                 reason,
                 signature,
                 validator,
+                fee_tier,
             }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
                 let identity_key = validator
                     .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
@@ -384,6 +399,8 @@ impl ValidatorCmd {
 
                 // Construct a new transaction and include the validator definition.
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .validator_vote(vote)
                     .plan(app.view(), source.into())
                     .await?;

@@ -13,7 +13,7 @@ use {
     penumbra_proto::{
         view::v1::{
             view_service_client::ViewServiceClient, view_service_server::ViewServiceServer,
-            StatusRequest, StatusResponse,
+            GasPricesRequest, StatusRequest, StatusResponse,
         },
         DomainType,
     },
@@ -133,8 +133,17 @@ async fn view_server_can_be_served_on_localhost() -> anyhow::Result<()> {
 
     // Create a plan spending that note, using the `Planner`.
     let plan = {
+        let gas_prices = view_client
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
+
         let mut planner = Planner::new(rand_core::OsRng);
         planner
+            .set_gas_prices(gas_prices)
             .spend(note.to_owned(), position)
             .output(note.value(), test_keys::ADDRESS_1.deref().clone())
             .plan(&mut view_client, AddressIndex::default())
