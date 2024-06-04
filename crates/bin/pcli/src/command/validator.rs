@@ -13,7 +13,7 @@ use serde_json::Value;
 use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
-use penumbra_proto::DomainType;
+use penumbra_proto::{view::v1::GasPricesRequest, DomainType};
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
@@ -21,6 +21,8 @@ use penumbra_stake::{
 };
 
 use crate::App;
+
+use super::tx::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -107,6 +109,9 @@ pub enum DefinitionCmd {
         /// definition may be generated using the `pcli validator definition sign` command.
         #[clap(long)]
         signature: Option<String>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, value_enum, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Sign a validator definition offline for submission elsewhere.
     Sign {
@@ -159,6 +164,17 @@ impl ValidatorCmd {
 
     pub async fn exec(&self, app: &mut App) -> Result<()> {
         let fvk = app.config.full_viewing_key.clone();
+
+        let gas_prices = app
+            .view
+            .as_mut()
+            .context("view service must be initialized")?
+            .gas_prices(GasPricesRequest {})
+            .await?
+            .into_inner()
+            .gas_prices
+            .expect("gas prices must be available")
+            .try_into()?;
 
         match self {
             ValidatorCmd::Identity { base64 } => {
@@ -229,6 +245,7 @@ impl ValidatorCmd {
                 file,
                 source,
                 signature,
+                fee_tier,
             }) => {
                 let new_validator = read_validator_toml(file)?;
 
@@ -259,6 +276,8 @@ impl ValidatorCmd {
 
                 let plan = Planner::new(OsRng)
                     .validator_definition(vd)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .plan(app.view(), source.into())
                     .await?;
 
