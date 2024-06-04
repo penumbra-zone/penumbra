@@ -328,7 +328,7 @@ async fn main() -> anyhow::Result<()> {
                     let randomizer = OsRng.gen::<u32>();
                     let chain_id =
                         chain_id.unwrap_or_else(|| env!("PD_LATEST_TESTNET_NAME").to_string());
-                    format!("{}-{}", chain_id, hex::encode(randomizer.to_le_bytes()))
+                    format!("{}-{}", chain_id, randomizer)
                 }
             };
 
