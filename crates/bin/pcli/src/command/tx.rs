@@ -28,6 +28,7 @@ use regex::Regex;
 use liquidity_position::PositionCmd;
 use penumbra_asset::{asset, asset::Metadata, Value, STAKING_TOKEN_ASSET_ID};
 use penumbra_dex::{lp::position, swap_claim::SwapClaimPlan};
+use penumbra_fee::FeeTier;
 use penumbra_governance::{proposal::ProposalToml, proposal_state::State as ProposalState, Vote};
 use penumbra_keys::{keys::AddressIndex, Address};
 use penumbra_num::Amount;
@@ -88,7 +89,7 @@ pub enum TxCmd {
         #[clap(long)]
         memo: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Deposit stake into a validator's delegation pool.
@@ -103,7 +104,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Withdraw stake from a validator's delegation pool.
@@ -115,14 +116,14 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Claim any undelegations that have finished unbonding.
     #[clap(display_order = 200)]
     UndelegateClaim {
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Swap tokens of one denomination for another using the DEX.
@@ -144,7 +145,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Vote on a governance proposal in your role as a delegator (see also: `pcli validator vote`).
@@ -157,7 +158,7 @@ pub enum TxCmd {
         #[clap(subcommand)]
         vote: VoteCmd,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Submit or withdraw a governance proposal.
@@ -172,7 +173,7 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 300)]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Manage liquidity positions.
@@ -223,45 +224,9 @@ pub enum TxCmd {
         #[clap(long, default_value = "0", display_order = 200)]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
-}
-
-// A fee tier enum suitable for use with clap.
-#[derive(Copy, Clone, clap::ValueEnum, Debug)]
-pub enum FeeTier {
-    Low,
-    Medium,
-    High,
-}
-
-impl Default for FeeTier {
-    fn default() -> Self {
-        Self::Low
-    }
-}
-
-// Convert from the internal fee tier enum to the clap-compatible enum.
-impl From<penumbra_fee::FeeTier> for FeeTier {
-    fn from(tier: penumbra_fee::FeeTier) -> Self {
-        match tier {
-            penumbra_fee::FeeTier::Low => Self::Low,
-            penumbra_fee::FeeTier::Medium => Self::Medium,
-            penumbra_fee::FeeTier::High => Self::High,
-        }
-    }
-}
-
-// Convert from the the clap-compatible fee tier enum to the internal fee tier enum.
-impl From<FeeTier> for penumbra_fee::FeeTier {
-    fn from(tier: FeeTier) -> Self {
-        match tier {
-            FeeTier::Low => Self::Low,
-            FeeTier::Medium => Self::Medium,
-            FeeTier::High => Self::High,
-        }
-    }
 }
 
 /// Vote on a governance proposal.

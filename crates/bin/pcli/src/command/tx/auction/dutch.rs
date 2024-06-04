@@ -50,7 +50,7 @@ pub enum DutchCmd {
         #[clap(long, display_order = 700)]
         yes: bool,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 1000)]
+        #[clap(short, long, default_value_t, display_order = 1000)]
         fee_tier: FeeTier,
         #[clap(long, hide = true)]
         // Use to produce a debug file for numerical analysis.
@@ -92,7 +92,7 @@ pub enum DutchCmd {
         #[clap(long, display_order = 800)]
         step_count: u64,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 1000)]
+        #[clap(short, long, default_value_t, display_order = 1000)]
         fee_tier: FeeTier,
     },
     /// Terminate a Dutch auction.
@@ -108,7 +108,7 @@ pub enum DutchCmd {
         #[clap(display_order = 200)]
         auction_id: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 300)]
+        #[clap(short, long, default_value_t, display_order = 300)]
         fee_tier: FeeTier,
     },
     /// Withdraw a Dutch auction, and claim its reserves.
@@ -124,7 +124,7 @@ pub enum DutchCmd {
         #[clap(display_order = 200)]
         auction_id: Option<String>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t, display_order = 600)]
+        #[clap(short, long, default_value_t, display_order = 600)]
         fee_tier: FeeTier,
     },
 }

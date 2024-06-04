@@ -30,7 +30,7 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "")]
         deposit_amount: String,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Withdraw a governance proposal that you previously submitted.
@@ -45,7 +45,7 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "0")]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Claim a governance proposal deposit for a proposal you submitted that has finished voting.
@@ -60,7 +60,7 @@ pub enum ProposalCmd {
         #[clap(long, default_value = "0")]
         source: u32,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
 }

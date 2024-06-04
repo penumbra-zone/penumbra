@@ -1,5 +1,7 @@
 use anyhow::Context;
 use penumbra_proto::{penumbra::core::component::fee::v1 as pb, DomainType};
+use std::fmt;
+use std::str::FromStr;
 
 use decaf377::Fr;
 use penumbra_asset::{asset, balance, Balance, Value, STAKING_TOKEN_ASSET_ID};
@@ -143,6 +145,29 @@ pub enum FeeTier {
 impl Default for FeeTier {
     fn default() -> Self {
         Self::Low
+    }
+}
+
+impl fmt::Display for FeeTier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            FeeTier::Low => "low".to_owned(),
+            FeeTier::Medium => "medium".to_owned(),
+            FeeTier::High => "high".to_owned(),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for FeeTier {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "low" => Ok(FeeTier::Low),
+            "medium" => Ok(FeeTier::Medium),
+            "high" => Ok(FeeTier::High),
+            _ => anyhow::bail!(format!("cannot parse '{}' as FeeTier", s)),
+        }
     }
 }
 
