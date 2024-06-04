@@ -629,7 +629,7 @@ async fn fill_route_constraint_stacked() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -738,7 +738,7 @@ async fn fill_route_constraint_1() -> anyhow::Result<()> {
 
     let spill_price = U128x128::from(Amount::from(1_000_000_000u64) * pusd.unit_amount());
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -829,7 +829,7 @@ async fn fill_route_unconstrained() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(pusd.unit_amount())).unwrap();
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -926,7 +926,7 @@ async fn fill_route_hit_spill_price() -> anyhow::Result<()> {
     let valuation_gm = (U128x128::from(one) * U128x128::from(gm.unit_amount())).unwrap();
     let spill_price = U128x128::ratio(valuation_gm, valuation_penumbra).unwrap();
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -1258,7 +1258,7 @@ async fn fill_dust_route() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -1323,7 +1323,7 @@ async fn fill_route_dust() {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 
@@ -1405,7 +1405,7 @@ async fn fill_route_with_dust_constraint() -> anyhow::Result<()> {
     let spill_price =
         (U128x128::from(1_000_000_000_000u64) * U128x128::from(penumbra.unit_amount())).unwrap();
 
-    let execution = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, delta_1, &route, Some(spill_price))
         .await
         .unwrap();
 

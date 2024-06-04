@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     pin::Pin,
 };
 
@@ -74,7 +74,7 @@ pub trait FillRoute: StateWrite + Sized {
         input: Value,
         hops: &[asset::Id],
         spill_price: Option<U128x128>,
-    ) -> Result<SwapExecution, FillError> {
+    ) -> Result<(SwapExecution, HashSet<position::Id>), FillError> {
         fill_route_inner(self, input, hops, spill_price, true).await
     }
 }
@@ -87,7 +87,8 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     hops: &[asset::Id],
     spill_price: Option<U128x128>,
     ensure_progress: bool,
-) -> Result<SwapExecution, FillError> {
+) -> Result<(SwapExecution, HashSet<position::Id>), FillError> {
+    tracing::debug!(?spill_price, ?ensure_progress, "filling route inner");
     let fill_start = std::time::Instant::now();
 
     // Build a transaction for this execution, so if we error out at any
@@ -121,7 +122,13 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     };
 
     let mut frontier = Frontier::load(&mut this, pairs).await?;
-    tracing::debug!(?frontier, "assembled initial frontier");
+    tracing::debug!(?frontier, positions = ?frontier.positions.len(), "assembled initial frontier");
+    tracing::debug!(positions = ?frontier.positions.iter().map(|p| p.id()).collect::<Vec<_>>(), ?route, "positions chosen for route");
+    let positions_set = frontier
+        .positions
+        .iter()
+        .map(|p| p.id())
+        .collect::<HashSet<_>>();
 
     // Tracks whether we've already filled at least once, so we can skip the spill price check
     // until we've consumed at least one position.
@@ -267,7 +274,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
     let fill_elapsed = fill_start.elapsed();
     metrics::histogram!(metrics::DEX_ROUTE_FILL_DURATION).record(fill_elapsed);
     // cleanup / finalization
-    Ok(swap_execution)
+    Ok((swap_execution, positions_set))
 }
 
 /// Breaksdown a route into a collection of `DirectedTradingPair`, this is mostly useful

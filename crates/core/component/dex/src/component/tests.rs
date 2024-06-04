@@ -122,7 +122,8 @@ async fn single_close_on_fill() -> anyhow::Result<()> {
     };
 
     let route_to_gn = vec![gn.id()];
-    let execution = FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
+    let (execution, _) =
+        FillRoute::fill_route(&mut state_test_1, delta_gm, &route_to_gn, None).await?;
 
     let unfilled = delta_gm
         .amount
@@ -167,7 +168,7 @@ async fn single_close_on_fill() -> anyhow::Result<()> {
         asset_id: gn.id(),
     };
 
-    let execution = state_test_1
+    let (execution, _) = state_test_1
         .fill_route(delta_gn, &route_to_gm, None)
         .await?;
 
@@ -203,7 +204,7 @@ async fn single_close_on_fill() -> anyhow::Result<()> {
             asset_id: gm.id(),
         };
         // We are splitting a single large fill for a `100_000gm` into, 100 fills for `1000gm`.
-        let execution = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
+        let (execution, _) = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
 
         let unfilled = delta_gm
             .amount
@@ -229,7 +230,7 @@ async fn single_close_on_fill() -> anyhow::Result<()> {
         amount: 84u64.into(),
         asset_id: gm.id(),
     };
-    let execution = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
+    let (execution, _) = state_tx.fill_route(delta_gm, &route_to_gn, None).await?;
     let unfilled = delta_gm
         .amount
         .checked_sub(&execution.input.amount)
@@ -290,7 +291,7 @@ async fn check_close_on_fill() -> anyhow::Result<()> {
     // Because we're just testing the DEX internals, we need to trigger fill_route manually.
     let input = "220gn".parse::<Value>().unwrap();
     let route = [gm.id()];
-    let execution = FillRoute::fill_route(&mut state_tx, input, &route, None).await?;
+    let (execution, _) = FillRoute::fill_route(&mut state_tx, input, &route, None).await?;
 
     let unfilled = input.amount.checked_sub(&execution.input.amount).unwrap();
 
@@ -397,7 +398,7 @@ async fn multiple_close_on_fills() -> anyhow::Result<()> {
     };
 
     let route_to_gn = vec![gn.id()];
-    let execution = state_test_1
+    let (execution, _) = state_test_1
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
 
@@ -430,7 +431,7 @@ async fn multiple_close_on_fills() -> anyhow::Result<()> {
         asset_id: gm.id(),
     };
 
-    let execution = state_test_2
+    let (execution, _) = state_test_2
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
 
@@ -463,7 +464,7 @@ async fn multiple_close_on_fills() -> anyhow::Result<()> {
         asset_id: gm.id(),
     };
 
-    let execution = state_test_3
+    let (execution, _) = state_test_3
         .fill_route(delta_gm, &route_to_gn, None)
         .await?;
 

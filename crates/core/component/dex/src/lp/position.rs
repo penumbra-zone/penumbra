@@ -217,7 +217,7 @@ impl Position {
 }
 
 /// A hash of a [`Position`].
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Serialize, Deserialize, Hash)]
 #[serde(try_from = "pb::PositionId", into = "pb::PositionId")]
 pub struct Id(pub [u8; 32]);
 

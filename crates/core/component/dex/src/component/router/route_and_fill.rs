@@ -171,6 +171,8 @@ pub trait RouteAndFill: StateWrite + Sized {
 
         let max_delta_1: Amount = MAX_RESERVE_AMOUNT.into();
 
+        let mut seen_position_sets = Vec::new();
+
         // Termination conditions:
         // 1. We have no more delta_1 remaining
         // 2. A path can no longer be found
@@ -215,8 +217,8 @@ pub trait RouteAndFill: StateWrite + Sized {
                 .fill_route(delta_1, &path, spill_price)
                 .await;
 
-            let execution = match execution {
-                Ok(execution) => execution,
+            let (execution, positions_executed) = match execution {
+                Ok((execution, positions_executed)) => (execution, positions_executed),
                 Err(FillError::ExecutionOverflow(position_id)) => {
                     // We have encountered an overflow during the execution of the route.
                     // To route around this, we will close the position and try to route and fill again.
@@ -235,6 +237,15 @@ pub trait RouteAndFill: StateWrite + Sized {
                     anyhow::bail!("error filling route: {:?}", e);
                 }
             };
+
+            println!("execution positions: {:?}", positions_executed);
+            // If we've seen this set of positions before, avoid executing against them again.
+            // Ideally this would be fed into path search but that's not feasible.
+            if seen_position_sets.contains(&positions_executed) {
+                tracing::debug!("repeated position set");
+                break;
+            }
+            seen_position_sets.push(positions_executed);
 
             // Immediately track the execution in the state.
             (total_output_2, total_unfilled_1) = {
