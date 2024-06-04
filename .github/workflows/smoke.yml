@@ -1,9 +1,9 @@
 name: Smoke Test
 on:
   pull_request:
-  push:
-    branches:
-      - main
+    # Don't run Rust tests if only docs changed.
+    paths-ignore:
+      - 'docs/**'
 
 jobs:
   smoke_test:
