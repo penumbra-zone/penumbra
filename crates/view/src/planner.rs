@@ -56,7 +56,7 @@ pub struct Planner<R: RngCore + CryptoRng> {
     /// The fee tier to apply to this transaction.
     fee_tier: FeeTier,
     /// The set of prices used for gas estimation.
-    gas_prices: GasPrices,
+    gas_prices: Option<GasPrices>,
     /// The transaction parameters to use for the transaction.
     transaction_parameters: TransactionParameters,
     /// A user-specified change address, if any.
@@ -105,7 +105,7 @@ impl<R: RngCore + CryptoRng> Planner<R> {
     /// Set the current gas prices for fee prediction.
     #[instrument(skip(self))]
     pub fn set_gas_prices(&mut self, gas_prices: GasPrices) -> &mut Self {
-        self.gas_prices = gas_prices;
+        self.gas_prices = Some(gas_prices);
         self
     }
 
@@ -544,7 +544,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
         // Compute an initial fee estimate based on the actions we have so far.
         self.action_list.refresh_fee_and_change(
             &mut self.rng,
-            &self.gas_prices,
+            &self
+                .gas_prices
+                .context("planner instances must call set_gas_prices prior to planning")?,
             &self.fee_tier,
             &change_address,
         );
@@ -597,7 +599,9 @@ impl<R: RngCore + CryptoRng> Planner<R> {
             // Refresh the fee estimate and change outputs.
             self.action_list.refresh_fee_and_change(
                 &mut self.rng,
-                &self.gas_prices,
+                &self
+                    .gas_prices
+                    .context("planner instances must call set_gas_prices prior to planning")?,
                 &self.fee_tier,
                 &change_address,
             );

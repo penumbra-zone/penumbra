@@ -13,7 +13,7 @@ use serde_json::Value;
 use penumbra_governance::{
     ValidatorVote, ValidatorVoteBody, ValidatorVoteReason, Vote, MAX_VALIDATOR_VOTE_REASON_LENGTH,
 };
-use penumbra_proto::DomainType;
+use penumbra_proto::{view::v1::GasPricesRequest, DomainType};
 use penumbra_stake::{
     validator,
     validator::{Validator, ValidatorToml},
@@ -21,6 +21,8 @@ use penumbra_stake::{
 };
 
 use crate::App;
+
+use penumbra_fee::FeeTier;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum ValidatorCmd {
@@ -70,6 +72,9 @@ pub enum VoteCmd {
         /// key, i.e. when using a separate governance key on another wallet.
         #[clap(long, global = true, display_order = 600)]
         validator: Option<IdentityKey>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Sign a vote on a proposal in your capacity as a validator, for submission elsewhere.
     Sign {
@@ -107,6 +112,9 @@ pub enum DefinitionCmd {
         /// definition may be generated using the `pcli validator definition sign` command.
         #[clap(long)]
         signature: Option<String>,
+        /// The selected fee tier to multiply the fee amount by.
+        #[clap(short, long, default_value_t)]
+        fee_tier: FeeTier,
     },
     /// Sign a validator definition offline for submission elsewhere.
     Sign {
@@ -229,7 +237,19 @@ impl ValidatorCmd {
                 file,
                 source,
                 signature,
+                fee_tier,
             }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
                 let new_validator = read_validator_toml(file)?;
 
                 // Sign the validator definition with the wallet's spend key, or instead attach the
@@ -259,6 +279,8 @@ impl ValidatorCmd {
 
                 let plan = Planner::new(OsRng)
                     .validator_definition(vd)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .plan(app.view(), source.into())
                     .await?;
 
@@ -321,7 +343,19 @@ impl ValidatorCmd {
                 reason,
                 signature,
                 validator,
+                fee_tier,
             }) => {
+                let gas_prices = app
+                    .view
+                    .as_mut()
+                    .context("view service must be initialized")?
+                    .gas_prices(GasPricesRequest {})
+                    .await?
+                    .into_inner()
+                    .gas_prices
+                    .expect("gas prices must be available")
+                    .try_into()?;
+
                 let identity_key = validator
                     .unwrap_or_else(|| IdentityKey(fvk.spend_verification_key().clone().into()));
                 let governance_key = app.config.governance_key();
@@ -365,6 +399,8 @@ impl ValidatorCmd {
 
                 // Construct a new transaction and include the validator definition.
                 let plan = Planner::new(OsRng)
+                    .set_gas_prices(gas_prices)
+                    .set_fee_tier((*fee_tier).into())
                     .validator_vote(vote)
                     .plan(app.view(), source.into())
                     .await?;
