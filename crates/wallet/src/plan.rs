@@ -91,6 +91,8 @@ where
 {
     const SWEEP_COUNT: usize = 8;
 
+    let gas_prices = view.gas_prices().await?;
+
     let all_notes = view
         .notes(NotesRequest {
             ..Default::default()
@@ -123,6 +125,7 @@ where
             // chunks, ignoring the biggest notes in the remainder.
             for group in records.chunks_exact(SWEEP_COUNT) {
                 let mut planner = Planner::new(&mut rng);
+                planner.set_gas_prices(gas_prices);
 
                 for record in group {
                     planner.spend(record.note.clone(), record.position);
