@@ -73,6 +73,7 @@ penumbra-ibc = {workspace = true, default-features = false}
 penumbra-keys = {workspace = true, default-features = false}
 penumbra-num = {workspace = true, default-features = false}
 penumbra-proof-setup = {workspace = true}
+penumbra-proof-params = { workspace = true, default-features = true }
 penumbra-proto = {workspace = true, features = ["rpc", "box-grpc"], default-features = true}
 penumbra-sct = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}

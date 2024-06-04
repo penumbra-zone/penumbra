@@ -297,7 +297,7 @@ impl InitCmd {
                 (
                     spend_key.full_viewing_key().clone(),
                     if self.encrypted {
-                        let password = ActualTerminal.get_confirmed_password().await?;
+                        let password = ActualTerminal::get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
                             penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key.into()),
@@ -315,10 +315,12 @@ impl InitCmd {
                 }),
                 false,
             ) => {
-                let config = threshold::dkg(*threshold, *num_participants, &ActualTerminal).await?;
+                let config =
+                    threshold::dkg(*threshold, *num_participants, &ActualTerminal::default())
+                        .await?;
                 let fvk = config.fvk().clone();
                 let custody_config = if self.encrypted {
-                    let password = ActualTerminal.get_confirmed_password().await?;
+                    let password = ActualTerminal::get_confirmed_password().await?;
                     CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                         &password,
                         penumbra_custody::encrypted::InnerConfig::Threshold(config),
@@ -358,14 +360,14 @@ impl InitCmd {
                     x @ CustodyConfig::ViewOnly => x,
                     x @ CustodyConfig::Encrypted(_) => x,
                     CustodyConfig::SoftKms(spend_key) => {
-                        let password = ActualTerminal.get_confirmed_password().await?;
+                        let password = ActualTerminal::get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
                             penumbra_custody::encrypted::InnerConfig::SoftKms(spend_key),
                         )?)
                     }
                     CustodyConfig::Threshold(c) => {
-                        let password = ActualTerminal.get_confirmed_password().await?;
+                        let password = ActualTerminal::get_confirmed_password().await?;
                         CustodyConfig::Encrypted(penumbra_custody::encrypted::Config::create(
                             &password,
                             penumbra_custody::encrypted::InnerConfig::Threshold(c),

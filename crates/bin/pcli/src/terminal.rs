@@ -1,9 +1,23 @@
 use std::io::{IsTerminal, Read, Write};
 
 use anyhow::Result;
+use decaf377::{Element, Fq};
+use decaf377_rdsa::{Domain, Signature, VerificationKey};
+use penumbra_asset::{asset::Cache, balance::Commitment};
 use penumbra_custody::threshold::{SigningRequest, Terminal};
+use penumbra_keys::{
+    symmetric::{OvkWrappedKey, WrappedMemoKey},
+    FullViewingKey, PayloadKey,
+};
+use penumbra_proof_params::GROTH16_PROOF_LENGTH_BYTES;
+use penumbra_sct::Nullifier;
+use penumbra_shielded_pool::{Note, NoteView};
+use penumbra_tct::structure::Hash;
+use penumbra_transaction::{view, ActionPlan, ActionView, TransactionPlan, TransactionView};
 use termion::{color, input::TermRead};
 use tonic::async_trait;
+
+use crate::transaction_view_ext::TransactionViewExt as _;
 
 async fn read_password(prompt: &str) -> Result<String> {
     fn get_possibly_empty_string(prompt: &str) -> Result<String> {
@@ -25,28 +39,185 @@ async fn read_password(prompt: &str) -> Result<String> {
     Ok(string)
 }
 
+fn pretty_print_transaction_plan(
+    fvk: Option<FullViewingKey>,
+    plan: &TransactionPlan,
+) -> anyhow::Result<()> {
+    use penumbra_shielded_pool::{output, spend};
+
+    fn dummy_sig<D: Domain>() -> Signature<D> {
+        Signature::from([0u8; 64])
+    }
+
+    fn dummy_pk<D: Domain>() -> VerificationKey<D> {
+        VerificationKey::try_from(Element::default().vartime_compress().0)
+            .expect("creating a dummy verification key should work")
+    }
+
+    fn dummy_commitment() -> Commitment {
+        Commitment(Element::default())
+    }
+
+    fn dummy_proof_spend() -> spend::SpendProof {
+        spend::SpendProof::try_from(
+            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkSpendProof {
+                inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
+            },
+        )
+        .expect("creating a dummy proof should work")
+    }
+
+    fn dummy_proof_output() -> output::OutputProof {
+        output::OutputProof::try_from(
+            penumbra_proto::penumbra::core::component::shielded_pool::v1::ZkOutputProof {
+                inner: vec![0u8; GROTH16_PROOF_LENGTH_BYTES],
+            },
+        )
+        .expect("creating a dummy proof should work")
+    }
+
+    fn dummy_spend() -> spend::Spend {
+        spend::Spend {
+            body: spend::Body {
+                balance_commitment: dummy_commitment(),
+                nullifier: Nullifier(Fq::default()),
+                rk: dummy_pk(),
+            },
+            auth_sig: dummy_sig(),
+            proof: dummy_proof_spend(),
+        }
+    }
+
+    fn dummy_output() -> output::Output {
+        output::Output {
+            body: output::Body {
+                note_payload: penumbra_shielded_pool::NotePayload {
+                    note_commitment: penumbra_shielded_pool::note::StateCommitment(Fq::default()),
+                    ephemeral_key: [0u8; 32]
+                        .as_slice()
+                        .try_into()
+                        .expect("can create dummy ephemeral key"),
+                    encrypted_note: penumbra_shielded_pool::NoteCiphertext([0u8; 176]),
+                },
+                balance_commitment: dummy_commitment(),
+                ovk_wrapped_key: OvkWrappedKey([0u8; 48]),
+                wrapped_memo_key: WrappedMemoKey([0u8; 48]),
+            },
+            proof: dummy_proof_output(),
+        }
+    }
+
+    fn convert_note(cache: &Cache, fvk: &FullViewingKey, note: &Note) -> NoteView {
+        NoteView {
+            value: note.value().view_with_cache(cache),
+            rseed: note.rseed(),
+            address: fvk.view_address(note.address()),
+        }
+    }
+
+    fn convert_action(
+        cache: &Cache,
+        fvk: &FullViewingKey,
+        action: &ActionPlan,
+    ) -> Option<ActionView> {
+        use view::action_view::SpendView;
+
+        match action {
+            ActionPlan::Output(x) => Some(ActionView::Output(
+                penumbra_shielded_pool::OutputView::Visible {
+                    output: dummy_output(),
+                    note: convert_note(cache, fvk, &x.output_note()),
+                    payload_key: PayloadKey::from([0u8; 32]),
+                },
+            )),
+            ActionPlan::Spend(x) => Some(ActionView::Spend(SpendView::Visible {
+                spend: dummy_spend(),
+                note: convert_note(cache, fvk, &x.note),
+            })),
+            ActionPlan::ValidatorDefinition(_) => None,
+            ActionPlan::Swap(_) => None,
+            ActionPlan::SwapClaim(_) => None,
+            ActionPlan::ProposalSubmit(_) => None,
+            ActionPlan::ProposalWithdraw(_) => None,
+            ActionPlan::DelegatorVote(_) => None,
+            ActionPlan::ValidatorVote(_) => None,
+            ActionPlan::ProposalDepositClaim(_) => None,
+            ActionPlan::PositionOpen(_) => None,
+            ActionPlan::PositionClose(_) => None,
+            ActionPlan::PositionWithdraw(_) => None,
+            ActionPlan::Delegate(_) => None,
+            ActionPlan::Undelegate(_) => None,
+            ActionPlan::UndelegateClaim(_) => None,
+            ActionPlan::Ics20Withdrawal(_) => None,
+            ActionPlan::CommunityPoolSpend(_) => None,
+            ActionPlan::CommunityPoolOutput(_) => None,
+            ActionPlan::CommunityPoolDeposit(_) => None,
+            ActionPlan::ActionDutchAuctionSchedule(_) => None,
+            ActionPlan::ActionDutchAuctionEnd(_) => None,
+            ActionPlan::ActionDutchAuctionWithdraw(_) => None,
+            ActionPlan::IbcAction(_) => todo!(),
+        }
+    }
+
+    // Regardless of if we have the FVK, we can print the raw plan
+    println!("{}", serde_json::to_string_pretty(plan)?);
+
+    // The rest of the printing requires the FVK
+    let fvk = match fvk {
+        None => {
+            return Ok(());
+        }
+        Some(x) => x,
+    };
+
+    let cache = Cache::with_known_assets();
+
+    let view = TransactionView {
+        anchor: penumbra_tct::Root(Hash::zero()),
+        binding_sig: dummy_sig(),
+        body_view: view::TransactionBodyView {
+            action_views: plan
+                .actions
+                .iter()
+                .filter_map(|x| convert_action(&cache, &fvk, x))
+                .collect(),
+            transaction_parameters: plan.transaction_parameters.clone(),
+            detection_data: None,
+            memo_view: None,
+        },
+    };
+
+    view.render_terminal();
+
+    Ok(())
+}
+
 /// For threshold custody, we need to implement this weird terminal abstraction.
 ///
 /// This actually does stuff to stdin and stdout.
-#[derive(Clone)]
-pub struct ActualTerminal;
+#[derive(Clone, Default)]
+pub struct ActualTerminal {
+    pub fvk: Option<FullViewingKey>,
+}
 
 #[async_trait]
 impl Terminal for ActualTerminal {
     async fn confirm_request(&self, signing_request: &SigningRequest) -> Result<bool> {
-        let (description, json) = match signing_request {
+        match signing_request {
             SigningRequest::TransactionPlan(plan) => {
-                ("transaction", serde_json::to_string_pretty(plan)?)
+                pretty_print_transaction_plan(self.fvk.clone(), plan)?;
+                println!("Do you approve this transaction?");
             }
             SigningRequest::ValidatorDefinition(def) => {
-                ("validator definition", serde_json::to_string_pretty(def)?)
+                println!("{}", serde_json::to_string_pretty(def)?);
+                println!("Do you approve this validator definition?");
             }
             SigningRequest::ValidatorVote(vote) => {
-                ("validator vote", serde_json::to_string_pretty(vote)?)
+                println!("{}", serde_json::to_string_pretty(vote)?);
+                println!("Do you approve this validator vote?");
             }
         };
-        println!("Do you approve this {description}?");
-        println!("{json}");
+
         println!("Press enter to continue");
         self.read_line_raw().await?;
         Ok(true)
@@ -122,7 +293,7 @@ impl Terminal for ActualTerminal {
 }
 
 impl ActualTerminal {
-    pub async fn get_confirmed_password(&self) -> Result<String> {
+    pub async fn get_confirmed_password() -> Result<String> {
         loop {
             let password = read_password("Enter Password: ").await?;
             let confirmed = read_password("Confirm Password: ").await?;
