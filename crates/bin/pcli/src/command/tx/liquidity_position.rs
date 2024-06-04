@@ -26,7 +26,7 @@ pub enum PositionCmd {
         #[clap(long)]
         trading_pair: Option<TradingPair>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Debits opened position NFTs and credits closed position NFTs.
@@ -37,7 +37,7 @@ pub enum PositionCmd {
         /// The list of [`position::Id`] of the positions to close.
         position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Debits all closed position NFTs associated with a specific account and credits withdrawn position NFTs and the final reserves.
@@ -49,7 +49,7 @@ pub enum PositionCmd {
         #[clap(long)]
         trading_pair: Option<TradingPair>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     /// Debits closed position NFTs and credits withdrawn position NFTs and the final reserves.
@@ -60,7 +60,7 @@ pub enum PositionCmd {
         /// The list of [`position::Id`] of the positions to withdraw.
         position_ids: Vec<position::Id>,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
 
@@ -102,7 +102,7 @@ pub enum OrderCmd {
         #[clap(long)]
         auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
     Sell {
@@ -119,7 +119,7 @@ pub enum OrderCmd {
         #[clap(long)]
         auto_close: bool,
         /// The selected fee tier to multiply the fee amount by.
-        #[clap(short, long, value_enum, default_value_t)]
+        #[clap(short, long, default_value_t)]
         fee_tier: FeeTier,
     },
 }
