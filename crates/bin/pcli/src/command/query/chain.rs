@@ -2,7 +2,6 @@ use anyhow::{anyhow, Context, Result};
 use comfy_table::{presets, Table};
 use futures::TryStreamExt;
 use penumbra_app::params::AppParameters;
-use penumbra_num::fixpoint::U128x128;
 use penumbra_proto::{
     core::app::v1::{
         query_service_client::QueryServiceClient as AppQueryServiceClient, AppParametersRequest,
@@ -17,9 +16,7 @@ use penumbra_proto::{
         tendermint_proxy_service_client::TendermintProxyServiceClient, GetStatusRequest,
     },
 };
-use penumbra_stake::{validator, BPS_SQUARED_SCALING_FACTOR};
-
-// TODO: remove this subcommand and merge into `pcli q`
+use penumbra_stake::validator;
 
 use crate::App;
 
@@ -57,78 +54,9 @@ impl ChainCmd {
             .ok_or_else(|| anyhow::anyhow!("empty AppParametersResponse message"))?
             .try_into()?;
 
-        fn scale_rate(rate_bps_sq: u64) -> U128x128 {
-            let rate_bps_sq = U128x128::from(rate_bps_sq);
-            (rate_bps_sq / *BPS_SQUARED_SCALING_FACTOR).expect("non zero denominator")
-        }
-
-        fn display_rate_percent(rate_bps_sq: u64) -> String {
-            let rate = scale_rate(rate_bps_sq);
-            let hundred = U128x128::from(100u128);
-            let rate_pct: U128x128 = (rate * hundred).expect("rate is around 1");
-            format!("{}%", rate_pct)
-        }
-
-        println!("Chain Parameters:");
-        let mut table = Table::new();
-        table.load_preset(presets::NOTHING);
-        table
-            .set_header(vec!["", ""])
-            .add_row(vec!["Chain ID", &params.chain_id])
-            .add_row(vec![
-                "Epoch Duration (# of blocks)",
-                &format!("{}", params.sct_params.epoch_duration),
-            ])
-            .add_row(vec![
-                "Unbonding delay (# of blocks)",
-                &format!("{}", params.stake_params.unbonding_delay),
-            ])
-            .add_row(vec![
-                "Minimum Validator Stake (upenumbra)",
-                &format!("{}", params.stake_params.min_validator_stake),
-            ])
-            .add_row(vec![
-                "Active Validator Limit",
-                &format!("{}", params.stake_params.active_validator_limit),
-            ])
-            .add_row(vec![
-                "Base Reward Rate",
-                &display_rate_percent(params.stake_params.base_reward_rate),
-            ])
-            .add_row(vec![
-                "Slashing Penalty (Misbehavior)",
-                &display_rate_percent(params.stake_params.slashing_penalty_misbehavior),
-            ])
-            .add_row(vec![
-                "Slashing Penalty (Downtime)",
-                &display_rate_percent(params.stake_params.slashing_penalty_downtime),
-            ])
-            .add_row(vec![
-                "Signed Blocks Window (blocks)",
-                &format!("{}", params.stake_params.signed_blocks_window_len),
-            ])
-            .add_row(vec![
-                "Missed Blocks Max",
-                &format!("{}", params.stake_params.missed_blocks_maximum),
-            ])
-            .add_row(vec![
-                "Proposal Deposit Amount (upenumbra)",
-                &format!("{}", params.governance_params.proposal_deposit_amount),
-            ])
-            .add_row(vec![
-                "IBC Enabled",
-                &format!("{}", params.ibc_params.ibc_enabled),
-            ])
-            .add_row(vec![
-                "Inbound ICS-20 Enabled",
-                &format!("{}", params.ibc_params.inbound_ics20_transfers_enabled),
-            ])
-            .add_row(vec![
-                "Outbound ICS-20 Enabled",
-                &format!("{}", params.ibc_params.outbound_ics20_transfers_enabled),
-            ]);
-
-        println!("{table}");
+        // Use serde-json to pretty print the params
+        let params_json = serde_json::to_string_pretty(&params)?;
+        println!("{}", params_json);
 
         Ok(())
     }
