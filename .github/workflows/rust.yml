@@ -1,5 +1,9 @@
 name: Rust CI
-on: pull_request
+on:
+  pull_request:
+    # Don't run Rust tests if only docs changed.
+    paths-ignore:
+      - 'docs/**'
 
 jobs:
   test:
