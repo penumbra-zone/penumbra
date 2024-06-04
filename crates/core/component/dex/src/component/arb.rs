@@ -60,6 +60,11 @@ pub trait Arbitrage: StateWrite + Sized {
             .checked_sub(&filled_input)
             .expect("filled input should always be <= flash loan amount");
 
+        // Record the duration of the arb execution now, since we've computed it
+        // and we might return early if it's zero-valued, but in that case we still
+        // want to record how long we spent looking for it.
+        metrics::histogram!(metrics::DEX_ARB_DURATION).record(arb_start.elapsed());
+
         // Because we're trading the arb token to itself, the total output is the
         // output from the route-and-fill, plus the unfilled input.
         let total_output = output + unfilled_input;
@@ -125,7 +130,6 @@ pub trait Arbitrage: StateWrite + Sized {
 
         // Emit an ABCI event detailing the arb execution.
         self_mut.record_proto(event::arb_execution(height, se));
-        metrics::histogram!(metrics::DEX_ARB_DURATION).record(arb_start.elapsed());
         return Ok(Some(Value {
             amount: arb_profit,
             asset_id: arb_token,
