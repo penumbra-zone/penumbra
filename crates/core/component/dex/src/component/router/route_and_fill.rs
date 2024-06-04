@@ -216,6 +216,7 @@ pub trait RouteAndFill: StateWrite + Sized {
                 .expect("expected state to have no other refs")
                 .fill_route(delta_1, &path, spill_price)
                 .await;
+            println!("execution: {:?}", execution);
 
             let (execution, positions_executed) = match execution {
                 Ok((execution, positions_executed)) => (execution, positions_executed),

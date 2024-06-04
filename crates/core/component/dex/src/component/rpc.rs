@@ -604,6 +604,8 @@ impl SimulationService for Server {
             Some(setting) => setting,
         };
 
+        tracing::debug!("routing strategy: {:?}", routing_strategy);
+
         let input: Value = request
             .input
             .ok_or_else(|| tonic::Status::invalid_argument("missing input parameter"))?
@@ -633,8 +635,17 @@ impl SimulationService for Server {
             }
         }
 
+        tracing::debug!("routing params: {:?}", routing_params);
+
         let mut state_tx = Arc::new(StateDelta::new(state));
         let execution_circuit_breaker = ExecutionCircuitBreaker::default();
+        tracing::debug!(
+            "route and fill args: {:?}, {:?}, {:?}, {:?}",
+            input,
+            output_id,
+            routing_params,
+            execution_circuit_breaker
+        );
         let swap_execution = state_tx
             .route_and_fill(
                 input.asset_id,

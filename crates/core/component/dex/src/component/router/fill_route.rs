@@ -175,6 +175,7 @@ async fn fill_route_inner<S: StateWrite + Sized>(
         } else {
             true
         };
+        tracing::debug!(?spill_price, actual_price = ?tx.actual_price(), "should_apply: {}", should_apply);
 
         if !should_apply {
             tracing::debug!(
@@ -677,6 +678,11 @@ impl<S: StateRead + StateWrite> Frontier<S> {
         self.fill_backward(&mut tx, constraining_index, exactly_consumed_reserves);
         // Work forwards along the path from the constraining position.
         self.fill_forward(&mut tx, constraining_index + 1, exactly_consumed_reserves);
+
+        tracing::debug!(
+            new_reserves = ?tx.new_reserves,
+            "filled constrained position, propagating changes along frontier"
+        );
 
         tx
     }

@@ -64,6 +64,14 @@ pub trait Arbitrage: StateWrite + Sized {
         // output from the route-and-fill, plus the unfilled input.
         let total_output = output + unfilled_input;
 
+        tracing::debug!(
+            ?filled_input,
+            ?output,
+            ?unfilled_input,
+            ?total_output,
+            "arb: finished route-and-fill"
+        );
+
         // Now "repay" the flash loan by subtracting it from the total output.
         let Some(arb_profit) = total_output.checked_sub(&flash_loan.amount) else {
             // This shouldn't happen, but because route-and-fill prioritizes

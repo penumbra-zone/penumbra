@@ -228,6 +228,7 @@ impl DexCmd {
             swap_execution.output.format(&cache),
         );
 
+        println!("Traces len: {}", swap_execution.traces.len());
         // Try to make a nice table of execution traces. To do this, first find
         // the max length of any subtrace:
         let max_trace_len = swap_execution

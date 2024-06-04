@@ -31,6 +31,9 @@ pub trait PathSearch: StateRead + Clone + 'static {
             price_limit,
         } = params;
 
+        // TODO: use seen_position_sets to avoid re-searching the same paths
+        // to prevent cycles between traces
+
         // Initialize some metrics for calculating time spent on path searching
         // vs route filling. We use vecs so we can count across iterations of the loop.
         let path_start = std::time::Instant::now();
