@@ -4,13 +4,20 @@ The delegation process bonds stake to a validator, converting stake `PEN` to
 delegation tokens `dPEN`. Delegations may be performed in any block, but only
 take effect in the next epoch.
 
+## Private Delegation
+
+**Note: The below describes the private delegation system designed for a future
+network upgrade. The system as described below requires flow encryption.
+Currently in Penumbra, the `Delegate`
+description reveals the delegation amount in the clear.**
+
 Delegations are accomplished by creating a transaction with a
 `Delegate` description.  This specifies a validator $v$,
 consumes $x$ `PEN` from the transaction's balance, produces a new shielded note
 with $$y = x / \psi_v(e)$$ `dPEN` associated to that validator, and includes an
 encryption $\operatorname{Enc}_D(y)$ of the delegation amount to the validators'
 shared decryption key $D$.  Here $e$ is the index of the next epoch, when the
-delegation will take effect. 
+delegation will take effect.
 
 In the last block of epoch $e-1$, the validators sum the encrypted bonding
 amounts $\operatorname{Enc}_D(y_v^{i})$ from all delegate descriptions for
