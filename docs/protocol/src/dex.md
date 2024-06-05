@@ -1,16 +1,15 @@
 # ZSwap
 
-Penumbra provides private, sealed-bid batch swaps using ZSwap.  ZSwap allows
-users to privately swap between any pair of assets.  Individual swaps do not
-reveal trade amounts.  Instead, all swaps in each block are executed in a single
-batch.  Only the total amount in each batch is revealed, and only after the
-batch has been finalized. This prevents front-running and provides better
-execution, but also provides long-term privacy for individual swaps.  Users can
-also provide liquidity by anonymously creating concentrated
-liquidity positions.  These positions reveal the amount of liquidity and the
-bounds in which it is concentrated, but are not otherwise linked to any
-identity, so that (with some care) users can privately approximate arbitrary
-trading functions without revealing their specific views about prices.
+Penumbra provides swaps wherein the user publically burns their input assets,
+and privately mints the output assets. In a future upgrade, Penumbra plans to add
+sealed-bid batch swaps, protecting the privacy of the input assets to the trade.
+ZSwap allows users to privately swap between any pair of assets. All swaps in
+each block are executed in a single batch. Users can also provide liquidity by
+anonymously creating concentrated liquidity positions.  These positions reveal
+the amount of liquidity and the bounds in which it is concentrated, but are not
+otherwise linked to any identity, so that (with some care) users can privately
+approximate arbitrary trading functions without revealing their specific views
+about prices.
 
 ## Frequent batch swaps
 
@@ -61,10 +60,10 @@ ZSwap addresses the first problem by executing all swaps in each block in a
 single batch, first aggregating the amounts in each swap and then executing it
 against the CFMM as a single trade.
 
-ZSwap addresses the second problem by having users encrypt their swap amounts
-using a [flow encryption][flow_enc] key controlled by the
+In a future upgrade, ZSwap will address the second problem by having users encrypt
+their swap amounts using a [flow encryption][flow_enc] key controlled by the
 validators, who aggregate the *encrypted* amounts and decrypt only the batch
-trade.  This prevents front-running prior to block inclusion, and provides
+trade.  This will prevent front-running prior to block inclusion, and provide
 privacy for individual trades (up to the size of the batch) afterwards.
 
 Users do not experience additional trading latency from the batch swap
@@ -73,7 +72,7 @@ minimum latency for finalized state updates.  A longer batch latency could help
 privacy for market-takers by increasing the number of swaps in each batch, but
 would impair other trading and impose a worse user experience.
 
-## Private, sealed-bid batch swaps
+## Batch swaps
 
 A key challenge in the design of any private swap mechanism is that
 zero-knowledge proofs only allow privacy for user-specific state, not for global
@@ -82,7 +81,7 @@ know][bwh].  While users can prove that their user-specific state was updated
 correctly without revealing it, they cannot do so for other users' state.
 
 Instead of solving this problem, ZSwap sidesteps the need for users to do so.
-At a high level, swaps work as follows: users privately burn funds of one kind
+At a high level, swaps work as follows: users publically burn funds of one kind
 in a coordinated way that allows the chain to compute a per-block clearing
 price, and mint or burn liquidity pool reserves.  Later, users privately mint
 funds of the other kind, proving that they previously burned funds and that the
@@ -92,7 +91,7 @@ required.  Users do not transact with each other.  Instead, the chain permits
 them to transmute one asset type to another, provably updating their private
 state without interacting with any other users' private state.
 
-This mechanism is described in more detail in the [Sealed-Bid Batch
+This mechanism is described in more detail in the [Batch
 Swaps](./dex/swap.md) section.
 
 ## Concentrated Liquidity
@@ -104,7 +103,7 @@ Uniswap v2 allocate liquidity inefficiently, spreading it uniformly over the
 entire range of possible prices for a trading pair.  Instead, allowing liquidity
 providers (LPs) to restrict their liquidity to a price range of their choosing
 provides a mechanism for market allocation of liquidity, concentrating it into
-the range of prices that the assets in the pair actually trade. 
+the range of prices that the assets in the pair actually trade.
 
 Liquidity providers create *positions* that tie a quantity of liquidity to a
 specific price range.  Within that price range, the position acts as a
@@ -156,5 +155,5 @@ Handling of concentrated liquidity is described in more detail in the
 [budish-cramton-shim]: https://faculty.chicagobooth.edu/eric.budish/research/HFT-FrequentBatchAuctions.pdf
 [staking-lending-competition]: https://arxiv.org/abs/2001.00919
 
-[^1]: on HFT, N.B. their footnote 5: 
+[^1]: on HFT, N.B. their footnote 5:
 > A point of clarification: our claim is *not* that markets are less liquid today than before the rise of electronic trading and HFT; the empirical record is clear that trading costs are lower today than in the pre-HFT era, though most of the benefits appear to have been realized in the late 1990s and early 2000s... Rather, our claim is that markets are less liquid today than they would be under an alternative market design that eliminated sniping.
