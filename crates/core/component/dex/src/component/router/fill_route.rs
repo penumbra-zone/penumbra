@@ -286,8 +286,10 @@ fn breakdown_route(route: &[asset::Id]) -> Result<Vec<DirectedTradingPair>, Fill
     }
 }
 
-type PositionsByPrice =
-    BTreeMap<DirectedTradingPair, Pin<Box<dyn Stream<Item = Result<position::Id>> + Send>>>;
+type PositionsByPrice = BTreeMap<
+    DirectedTradingPair,
+    Pin<Box<dyn Stream<Item = Result<(position::Id, position::Position)>> + Send>>,
+>;
 
 /// A frontier of least-priced positions along a route.
 struct Frontier<S> {
@@ -368,7 +370,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         for pair in &pairs {
             'next_position: loop {
-                let id = positions_by_price
+                let (id, position) = positions_by_price
                     .get_mut(pair)
                     .expect("positions_by_price should have an entry for each pair")
                     .as_mut()
@@ -379,14 +381,6 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
                 // Check that the position is not already part of the frontier.
                 if !position_ids.contains(&id) {
-                    // TODO: fold positions into position_by_id stream
-                    // so separate state lookup not necessary
-                    let position = state
-                        .position_by_id(&id)
-                        .await
-                        .expect("stream doesn't error")
-                        .ok_or(FillError::MissingFrontierPosition(id))?;
-
                     position_ids.insert(id);
                     positions.push(position);
 
@@ -508,7 +502,7 @@ impl<S: StateRead + StateWrite> Frontier<S> {
 
         loop {
             let pair = &self.pairs[index];
-            let next_position_id = match self
+            let (next_position_id, next_position) = match self
                 .positions_by_price
                 .get_mut(pair)
                 .expect("positions_by_price should have an entry for each pair")
@@ -525,20 +519,15 @@ impl<S: StateRead + StateWrite> Frontier<S> {
                 }
                 // Otherwise, we need to check that the position is not already
                 // part of the current frontier.
-                Some(position_id) if !self.position_ids.contains(&position_id) => position_id,
+                Some((position_id, lp)) if !self.position_ids.contains(&position_id) => {
+                    (position_id, lp)
+                }
                 // Otherwise, continue to the next position in the stream.
                 Some(position_id) => {
                     tracing::debug!(?position_id, "skipping position already in frontier");
                     continue;
                 }
             };
-
-            let next_position = self
-                .state
-                .position_by_id(&next_position_id)
-                .await
-                .expect("stream doesn't error")
-                .expect("indexed position should exist");
 
             tracing::debug!(
                 ?next_position_id,

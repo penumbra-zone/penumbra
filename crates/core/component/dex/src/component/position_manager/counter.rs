@@ -41,7 +41,6 @@ pub(crate) trait PositionCounter: StateWrite {
         &mut self,
         prev_state: &Option<Position>,
         new_state: &Position,
-        _id: &position::Id,
     ) -> Result<()> {
         use position::State::*;
         let trading_pair = new_state.phi.pair;

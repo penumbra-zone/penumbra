@@ -241,7 +241,7 @@ mod tests {
 
         let position = buy_1;
         state_tx
-            .update_position_by_price_index(&None, &position, &position.id())
+            .update_position_by_price_index(&position.id(), &None, &position)
             .expect("can update price index");
         state_tx.put(state_key::position_by_id(&id), position);
 

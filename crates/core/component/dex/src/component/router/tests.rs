@@ -446,8 +446,8 @@ async fn position_get_best_price() -> anyhow::Result<()> {
     let positions = state_tx
         .positions_by_price(&pair)
         .then(|result| async {
-            let id = result.unwrap();
-            state_tx.position_by_id(&id).await.unwrap().unwrap()
+            let (_, lp) = result.unwrap();
+            lp
         })
         .collect::<Vec<position::Position>>()
         .await;
@@ -463,8 +463,8 @@ async fn position_get_best_price() -> anyhow::Result<()> {
     let positions = state_tx
         .positions_by_price(&pair)
         .then(|result| async {
-            let id = result.unwrap();
-            state_tx.position_by_id(&id).await.unwrap().unwrap()
+            let (_, lp) = result.unwrap();
+            lp
         })
         .collect::<Vec<position::Position>>()
         .await;
@@ -505,7 +505,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     // that we make up a context here.
     let context = pair_1.into_directed_trading_pair();
 
-    let mut p_1 = state_tx
+    let (_, mut p_1) = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
         .await
         .unwrap()
@@ -514,7 +514,7 @@ async fn test_multiple_similar_position() -> anyhow::Result<()> {
     p_1.reserves = p_1.reserves.flip();
     state_tx.position_execution(p_1, context).await.unwrap();
 
-    let mut p_2 = state_tx
+    let (_, mut p_2) = state_tx
         .best_position(&pair_1.into_directed_trading_pair())
         .await
         .unwrap()

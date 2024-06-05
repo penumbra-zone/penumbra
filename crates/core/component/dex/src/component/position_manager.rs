@@ -62,14 +62,15 @@ pub trait PositionRead: StateRead {
     fn positions_by_price(
         &self,
         pair: &DirectedTradingPair,
-    ) -> Pin<Box<dyn Stream<Item = Result<position::Id>> + Send + 'static>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<(position::Id, position::Position)>> + Send + 'static>>
+    {
         let prefix = engine::price_index::prefix(pair);
         tracing::trace!(prefix = ?EscapedByteSlice(&prefix), "searching for positions by price");
-        self.nonverifiable_prefix_raw(&prefix)
+        self.nonverifiable_prefix(&prefix)
             .map(|entry| match entry {
-                Ok((k, _)) => {
+                Ok((k, lp)) => {
                     let raw_id = <&[u8; 32]>::try_from(&k[103..135])?.to_owned();
-                    Ok(position::Id(raw_id))
+                    Ok((position::Id(raw_id), lp))
                 }
                 Err(e) => Err(e),
             })
@@ -90,12 +91,9 @@ pub trait PositionRead: StateRead {
     async fn best_position(
         &self,
         pair: &DirectedTradingPair,
-    ) -> Result<Option<position::Position>> {
+    ) -> Result<Option<(position::Id, position::Position)>> {
         let mut positions_by_price = self.positions_by_price(pair);
-        match positions_by_price.next().await.transpose()? {
-            Some(id) => self.position_by_id(&id).await,
-            None => Ok(None),
-        }
+        positions_by_price.next().await.transpose()
     }
 
     /// Fetch the list of pending position closures.
@@ -205,7 +203,8 @@ pub trait PositionManager: StateWrite + PositionRead {
             new_state
         };
 
-        self.update_position(Some(prev_state), new_state).await?;
+        self.update_position(id, Some(prev_state), new_state)
+            .await?;
 
         Ok(())
     }
@@ -280,7 +279,7 @@ pub trait PositionManager: StateWrite + PositionRead {
 
         // Finally, record the new position state.
         self.record_proto(event::position_open(&position));
-        self.update_position(None, position).await?;
+        self.update_position(&id, None, position).await?;
 
         Ok(())
     }
@@ -374,7 +373,8 @@ pub trait PositionManager: StateWrite + PositionRead {
             .map_err(|e| tracing::warn!(?e, "failed to record position execution"))
             .ok();
 
-        self.update_position(Some(prev_state), new_state).await
+        self.update_position(&position_id, Some(prev_state), new_state)
+            .await
     }
 
     /// Withdraw from a closed position, incrementing its sequence number.
@@ -450,7 +450,8 @@ pub trait PositionManager: StateWrite + PositionRead {
             new_state
         };
 
-        self.update_position(Some(prev_state), new_state).await?;
+        self.update_position(&position_id, Some(prev_state), new_state)
+            .await?;
 
         Ok(reserves)
     }
@@ -462,15 +463,15 @@ impl<T: StateWrite + ?Sized + Chandelier> PositionManager for T {}
 trait Inner: StateWrite {
     /// Writes a position to the state, updating all necessary indexes.
     ///
-    /// This should be the SOLE ENTRYPOINT for writing positions to the state.
+    /// This should be the **SOLE ENTRYPOINT** for writing positions to the state.
     /// All other position changes exposed by the `PositionManager` should run through here.
     #[instrument(level = "debug", skip_all)]
     async fn update_position(
         &mut self,
+        id: &position::Id,
         prev_state: Option<Position>,
         new_state: Position,
     ) -> Result<Position> {
-        let id = new_state.id();
         tracing::debug!(?id, prev_position_state = ?prev_state.as_ref().map(|p| &p.state), new_position_state = ?new_state.state, "updating position state");
         tracing::trace!(?id, ?prev_state, ?new_state, "updating position state");
 
@@ -478,12 +479,12 @@ trait Inner: StateWrite {
         Self::guard_invalid_transitions(&prev_state, &new_state, &id)?;
 
         // Update the DEX engine indices:
-        self.update_position_by_price_index(&prev_state, &new_state, &id)?;
-        self.update_position_by_inventory_index(&prev_state, &new_state, &id)?;
-        self.update_asset_by_base_liquidity_index(&prev_state, &new_state, &id)
+        self.update_position_by_inventory_index(&id, &prev_state, &new_state)?;
+        self.update_asset_by_base_liquidity_index(&id, &prev_state, &new_state)
             .await?;
-        self.update_trading_pair_position_counter(&prev_state, &new_state, &id)
+        self.update_trading_pair_position_counter(&prev_state, &new_state)
             .await?;
+        self.update_position_by_price_index(&id, &prev_state, &new_state)?;
 
         self.put(state_key::position_by_id(&id), new_state.clone());
         Ok(new_state)

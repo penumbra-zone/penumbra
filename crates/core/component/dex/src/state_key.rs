@@ -19,6 +19,7 @@ pub fn positions(trading_pair: &TradingPair, position_id: &str) -> String {
 }
 
 /// Looks up a `Position` by its ID
+// This should only ever be called by `position_manager::Inner::update_position`.
 pub fn position_by_id(id: &position::Id) -> String {
     format!("dex/position/{id}")
 }

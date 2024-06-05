@@ -13,9 +13,9 @@ use position::State::*;
 pub(super) trait PositionByInventoryIndex: StateWrite {
     fn update_position_by_inventory_index(
         &mut self,
+        position_id: &position::Id,
         prev_state: &Option<Position>,
         new_state: &Position,
-        position_id: &position::Id,
     ) -> Result<()> {
         // Clear an existing record of the position, since changes to the
         // reserves or the position state might have invalidated it.
