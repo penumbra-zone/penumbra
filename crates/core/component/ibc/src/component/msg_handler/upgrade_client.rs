@@ -6,10 +6,12 @@ use ibc_types::{
         client::{events, msgs::MsgUpgradeClient},
         commitment::{MerkleProof, MerkleRoot},
     },
-    lightclients::tendermint::consensus_state::ConsensusState as TendermintConsensusState,
     lightclients::tendermint::{
-        client_state::ClientState as TendermintClientState, TENDERMINT_CLIENT_TYPE,
+        client_state::ClientState as TendermintClientState,
+        consensus_state::ConsensusState as TendermintConsensusState, TrustThreshold,
+        TENDERMINT_CLIENT_TYPE,
     },
+    timestamp::ZERO_DURATION,
 };
 
 use crate::component::{
@@ -42,9 +44,33 @@ impl MsgHandler for MsgUpgradeClient {
 
         let upgraded_client_state_tm = TendermintClientState::try_from(self.client_state.clone())
             .context("client state is not a Tendermint client state")?;
+
         let upgraded_consensus_state_tm =
             TendermintConsensusState::try_from(self.consensus_state.clone())
                 .context("consensus state is not a Tendermint consensus state")?;
+
+        // this part of the IBC spec is sketchy and undocumented.
+        // we're going to reset some of the upgraded client state fields to their default values before verifying
+        // the remote's inclusion of the client state; this is what ibc-go does.
+        //
+        // note that later on in this function, we only allow the fields that we didn't reset here to change across upgrades.
+        // this means that there's no danger of a relayer sending an updated state
+        // with a new trust level and lying to us here, causing us to reconfigure the client with a bogus trust level.
+        //
+        // relevant ibc-go code:
+        // https://github.com/cosmos/ibc-go/blob/main/modules/light-clients/07-tendermint/upgrade.go#L74
+        // https://github.com/cosmos/ibc-go/blob/2555a7c504a904064d659e4c1a3a74000887f73d/modules/core/02-client/keeper/keeper.go#L552-L564
+        let mut upgraded_client_state_tm_zeroed_fields = upgraded_client_state_tm.clone();
+        upgraded_client_state_tm_zeroed_fields.trusting_period = ZERO_DURATION;
+        upgraded_client_state_tm_zeroed_fields.trust_level = TrustThreshold::ZERO;
+        upgraded_client_state_tm_zeroed_fields
+            .allow_update
+            .after_expiry = false;
+        upgraded_client_state_tm_zeroed_fields
+            .allow_update
+            .after_misbehaviour = false;
+        upgraded_client_state_tm_zeroed_fields.frozen_height = None;
+        upgraded_client_state_tm_zeroed_fields.max_clock_drift = ZERO_DURATION;
 
         let proof_consensus_state: MerkleProof = self
             .proof_upgrade_consensus_state
@@ -63,7 +89,7 @@ impl MsgHandler for MsgUpgradeClient {
                 &proof_client_state,
                 &proof_consensus_state,
                 upgraded_consensus_state_tm.clone(),
-                upgraded_client_state_tm.clone(),
+                upgraded_client_state_tm_zeroed_fields.clone(),
             )
             .await?;
 
