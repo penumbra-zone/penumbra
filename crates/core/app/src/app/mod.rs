@@ -163,10 +163,7 @@ impl App {
             .try_begin_transaction()
             .expect("state Arc should not be referenced elsewhere");
         for (i, event) in events.into_iter().enumerate() {
-            let mut event_bytes = Vec::new();
-            tendermint_proto::Protobuf::<ProtoEvent>::encode(event, &mut event_bytes)
-                .expect("events are always valid and can be encoded");
-            state_tx.nonverifiable_put_raw(state_key::deferred_event(i), event_bytes);
+            state_tx.put_deferred_event(i, event);
         }
         state_tx.apply();
     }
@@ -239,15 +236,9 @@ impl App {
         // Before anything else, emit the deferred events (only present if right after genesis), and
         // delete each one to prevent it from being emitted again.
         for i in 0.. {
-            if let Some(event_bytes) = state_tx
-                .nonverifiable_get_raw(&state_key::deferred_event(i))
-                .await
-                .expect("can attempt to get deferred event")
-            {
-                let event = tendermint_proto::Protobuf::<ProtoEvent>::decode(&event_bytes[..])
-                    .expect("deferred event is always valid");
+            if let Some(event) = state_tx.deferred_event(i).await {
                 state_tx.record(event);
-                state_tx.nonverifiable_delete(state_key::deferred_event(i));
+                state_tx.delete_deferred_event(i);
             } else {
                 break;
             }
@@ -608,6 +599,18 @@ pub trait StateReadExt: StateRead {
         Ok(String::from_utf8_lossy(&raw_chain_id).to_string())
     }
 
+    async fn deferred_event(&self, i: usize) -> Option<Event> {
+        let event_bytes = self
+            .nonverifiable_get_raw(&state_key::deferred_event(i))
+            .await
+            .expect("can attempt to get deferred event");
+
+        event_bytes.map(|eb| {
+            tendermint_proto::Protobuf::<ProtoEvent>::decode(&eb[..])
+                .expect("deferred event is always valid")
+        })
+    }
+
     /// Checks a provided chain_id against the chain state.
     ///
     /// Passes through if the provided chain_id is empty or matches, and
@@ -772,6 +775,22 @@ pub trait StateWriteExt: StateWrite {
         self.put_shielded_pool_params(shielded_pool_params);
         self.put_stake_params(stake_params);
         self.put_dex_params(dex_params);
+    }
+
+    /// Stores an event to be emitted at the end of the genesis block.
+    /// Due to an ABCI limitation, we cannot emit events during InitChain.
+    /// By calling this, the event will be stored and emitted during `BeginBlock`
+    /// for the first post-genesis block.
+    fn put_deferred_event(&mut self, i: usize, event: Event) {
+        let mut event_bytes = Vec::new();
+        tendermint_proto::Protobuf::<ProtoEvent>::encode(event, &mut event_bytes)
+            .expect("events are always valid and can be encoded");
+        self.nonverifiable_put_raw(state_key::deferred_event(i), event_bytes);
+    }
+
+    /// Removes a deferred event from the state, to prevent re-processing.
+    fn delete_deferred_event(&mut self, i: usize) {
+        self.nonverifiable_delete(state_key::deferred_event(i));
     }
 }
 
