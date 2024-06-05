@@ -60,7 +60,7 @@
     - [`Spend`](./shielded_pool/action/spend.md)
     - [`Output`](./shielded_pool/action/output.md)
 - [Decentralized Exchange](./dex.md)
-  - [Sealed-Bid Batch Swaps](./dex/swap.md)
+  - [Batch Swaps](./dex/swap.md)
   - [Concentrated Liquidity](./dex/concentrated_liquidity.md)
   - [LPNFTs](./dex/lpnft.md)
   - [On-Chain Routing](./dex/routing.md)
