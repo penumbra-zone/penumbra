@@ -50,6 +50,7 @@ pub enum Migration {
     Testnet77,
     /// Testnet-78 migration:
     /// - Truncate various user-supplied `String` fields to a maximum length.
+    /// - Populate the DEX NV price idnexes with position data
     Testnet78,
 }
 
@@ -90,11 +91,12 @@ impl Migration {
             Migration::Testnet78 => {
                 testnet78::migrate(storage, pd_home.clone(), genesis_start).await?
             }
-            _ => unreachable!(),
+            // We keep historical migrations around for now, this will help inform an abstracted
+            // design. Feel free to remove it if it's causing you trouble.
+            _ => unimplemented!("the specified migration is unimplemented"),
         }
 
         if let Some(comet_home) = comet_home {
-            // TODO avoid this when refactoring to clean up migrations
             let genesis_path = pd_home.join("genesis.json");
             migrate_comet_data(comet_home, genesis_path).await?;
         }

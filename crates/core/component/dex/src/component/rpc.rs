@@ -382,18 +382,26 @@ impl QueryService for Server {
             start: pair.asset_2(),
             end: pair.asset_1(),
         };
-        let best_1_to_2_position = state.best_position(&pair12).await.map_err(|e| {
-            tonic::Status::internal(format!(
-                "error finding best position for {:?}: {:#}",
-                pair12, e
-            ))
-        })?;
-        let best_2_to_1_position = state.best_position(&pair12).await.map_err(|e| {
-            tonic::Status::internal(format!(
-                "error finding best position for {:?}: {:#}",
-                pair21, e
-            ))
-        })?;
+        let best_1_to_2_position = state
+            .best_position(&pair12)
+            .await
+            .map_err(|e| {
+                tonic::Status::internal(format!(
+                    "error finding best position for {:?}: {:#}",
+                    pair12, e
+                ))
+            })?
+            .map(|(_, p)| p);
+        let best_2_to_1_position = state
+            .best_position(&pair12)
+            .await
+            .map_err(|e| {
+                tonic::Status::internal(format!(
+                    "error finding best position for {:?}: {:#}",
+                    pair21, e
+                ))
+            })?
+            .map(|(_, p)| p);
 
         let approx_effective_price_1_to_2 = best_1_to_2_position
             .as_ref()
@@ -453,21 +461,9 @@ impl QueryService for Server {
         let s = state
             .positions_by_price(&pair)
             .take(limit)
-            .and_then(move |id| {
-                let state2 = state.clone();
-                async move {
-                    let position = state2.position_by_id(&id).await?.ok_or_else(|| {
-                        anyhow::anyhow!("indexed position not found in state: {}", id)
-                    })?;
-                    anyhow::Ok(position)
-                }
-            })
-            .map_ok(|position| {
-                let id = position.id();
-                LiquidityPositionsByPriceResponse {
-                    data: Some(position.into()),
-                    id: Some(id.into()),
-                }
+            .map_ok(|(id, position)| LiquidityPositionsByPriceResponse {
+                data: Some(position.into()),
+                id: Some(id.into()),
             })
             .map_err(|e: anyhow::Error| {
                 tonic::Status::internal(format!("error retrieving positions: {:#}", e))

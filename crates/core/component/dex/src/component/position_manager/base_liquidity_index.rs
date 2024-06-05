@@ -76,9 +76,9 @@ pub(crate) trait AssetByLiquidityIndex: StateWrite {
     ///     │     └──┘                                                      
     async fn update_asset_by_base_liquidity_index(
         &mut self,
+        id: &position::Id,
         prev_state: &Option<Position>,
         new_state: &Position,
-        id: &position::Id,
     ) -> Result<()> {
         // We need to reconstruct the position's previous contribution and compute
         // its new contribution to the index. We do this for each asset in the pair
