@@ -388,14 +388,24 @@ message EventValidatorMissedBlock {
 
 message EventDelegate {
   // The validator's identity key.
-  keys.v1.IdentityKey validator_identity = 1;
+  keys.v1.IdentityKey identity_key = 1;
   // The amount of stake delegated, in the staking token.
   num.v1.Amount amount = 3;
 }
 
 message EventUndelegate {
   // The validator's identity key.
-  keys.v1.IdentityKey validator_identity = 1;
+  keys.v1.IdentityKey identity_key = 1;
   // The amount of stake undelegated, in the staking token.
   num.v1.Amount amount = 3;
+}
+
+// Indicates a slashing penalty was applied to a validator's reward rates.
+message EventSlashingPenaltyApplied {
+  // The validator's identity key.
+  keys.v1.IdentityKey identity_key = 1;
+  // The epoch in which the penalty was applied.
+  uint64 epoch_index = 2;
+  // The penalty amount after slashing.
+  Penalty new_penalty = 3;
 }

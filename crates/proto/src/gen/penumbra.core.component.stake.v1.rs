@@ -944,9 +944,7 @@ impl ::prost::Name for EventValidatorMissedBlock {
 pub struct EventDelegate {
     /// The validator's identity key.
     #[prost(message, optional, tag = "1")]
-    pub validator_identity: ::core::option::Option<
-        super::super::super::keys::v1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
     /// The amount of stake delegated, in the staking token.
     #[prost(message, optional, tag = "3")]
     pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
@@ -963,15 +961,34 @@ impl ::prost::Name for EventDelegate {
 pub struct EventUndelegate {
     /// The validator's identity key.
     #[prost(message, optional, tag = "1")]
-    pub validator_identity: ::core::option::Option<
-        super::super::super::keys::v1::IdentityKey,
-    >,
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
     /// The amount of stake undelegated, in the staking token.
     #[prost(message, optional, tag = "3")]
     pub amount: ::core::option::Option<super::super::super::num::v1::Amount>,
 }
 impl ::prost::Name for EventUndelegate {
     const NAME: &'static str = "EventUndelegate";
+    const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)
+    }
+}
+/// Indicates a slashing penalty was applied to a validator's reward rates.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventSlashingPenaltyApplied {
+    /// The validator's identity key.
+    #[prost(message, optional, tag = "1")]
+    pub identity_key: ::core::option::Option<super::super::super::keys::v1::IdentityKey>,
+    /// The epoch in which the penalty was applied.
+    #[prost(uint64, tag = "2")]
+    pub epoch_index: u64,
+    /// The penalty amount after slashing.
+    #[prost(message, optional, tag = "3")]
+    pub new_penalty: ::core::option::Option<Penalty>,
+}
+impl ::prost::Name for EventSlashingPenaltyApplied {
+    const NAME: &'static str = "EventSlashingPenaltyApplied";
     const PACKAGE: &'static str = "penumbra.core.component.stake.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("penumbra.core.component.stake.v1.{}", Self::NAME)

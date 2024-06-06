@@ -1,7 +1,7 @@
 use crate::{
     rate,
     validator::{BondingState, State, Validator},
-    Delegate, IdentityKey, Undelegate,
+    Delegate, IdentityKey, Penalty, Undelegate,
 };
 use penumbra_num::Amount;
 use penumbra_proto::core::component::stake::v1 as pb;
@@ -61,14 +61,14 @@ pub fn validator_missed_block(identity_key: IdentityKey) -> pb::EventValidatorMi
 
 pub fn delegate(delegate: &Delegate) -> pb::EventDelegate {
     pb::EventDelegate {
-        validator_identity: Some(delegate.validator_identity.into()),
+        identity_key: Some(delegate.validator_identity.into()),
         amount: Some(delegate.unbonded_amount.into()),
     }
 }
 
 pub fn undelegate(undelegate: &Undelegate) -> pb::EventUndelegate {
     pb::EventUndelegate {
-        validator_identity: Some(undelegate.validator_identity.into()),
+        identity_key: Some(undelegate.validator_identity.into()),
         amount: Some(undelegate.unbonded_amount.into()),
     }
 }
@@ -84,5 +84,17 @@ pub fn tombstone_validator(
         identity_key: Some(identity_key.into()),
         address: evidence.validator.address.to_vec(),
         voting_power: evidence.validator.power.value(),
+    }
+}
+
+pub fn slashing_penalty_applied(
+    identity_key: IdentityKey,
+    epoch_index: u64,
+    new_penalty: Penalty,
+) -> pb::EventSlashingPenaltyApplied {
+    pb::EventSlashingPenaltyApplied {
+        identity_key: Some(identity_key.into()),
+        epoch_index,
+        new_penalty: Some(new_penalty.into()),
     }
 }

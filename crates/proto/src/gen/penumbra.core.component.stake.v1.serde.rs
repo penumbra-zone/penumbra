@@ -909,15 +909,15 @@ impl serde::Serialize for EventDelegate {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.validator_identity.is_some() {
+        if self.identity_key.is_some() {
             len += 1;
         }
         if self.amount.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventDelegate", len)?;
-        if let Some(v) = self.validator_identity.as_ref() {
-            struct_ser.serialize_field("validatorIdentity", v)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
         }
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
@@ -932,14 +932,14 @@ impl<'de> serde::Deserialize<'de> for EventDelegate {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "validator_identity",
-            "validatorIdentity",
+            "identity_key",
+            "identityKey",
             "amount",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ValidatorIdentity,
+            IdentityKey,
             Amount,
             __SkipField__,
         }
@@ -963,7 +963,7 @@ impl<'de> serde::Deserialize<'de> for EventDelegate {
                         E: serde::de::Error,
                     {
                         match value {
-                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             "amount" => Ok(GeneratedField::Amount),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -984,15 +984,15 @@ impl<'de> serde::Deserialize<'de> for EventDelegate {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut validator_identity__ = None;
+                let mut identity_key__ = None;
                 let mut amount__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ValidatorIdentity => {
-                            if validator_identity__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
                             }
-                            validator_identity__ = map_.next_value()?;
+                            identity_key__ = map_.next_value()?;
                         }
                         GeneratedField::Amount => {
                             if amount__.is_some() {
@@ -1006,7 +1006,7 @@ impl<'de> serde::Deserialize<'de> for EventDelegate {
                     }
                 }
                 Ok(EventDelegate {
-                    validator_identity: validator_identity__,
+                    identity_key: identity_key__,
                     amount: amount__,
                 })
             }
@@ -1126,6 +1126,141 @@ impl<'de> serde::Deserialize<'de> for EventRateDataChange {
             }
         }
         deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventRateDataChange", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for EventSlashingPenaltyApplied {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.identity_key.is_some() {
+            len += 1;
+        }
+        if self.epoch_index != 0 {
+            len += 1;
+        }
+        if self.new_penalty.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventSlashingPenaltyApplied", len)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
+        }
+        if self.epoch_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            struct_ser.serialize_field("epochIndex", ToString::to_string(&self.epoch_index).as_str())?;
+        }
+        if let Some(v) = self.new_penalty.as_ref() {
+            struct_ser.serialize_field("newPenalty", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for EventSlashingPenaltyApplied {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "identity_key",
+            "identityKey",
+            "epoch_index",
+            "epochIndex",
+            "new_penalty",
+            "newPenalty",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            IdentityKey,
+            EpochIndex,
+            NewPenalty,
+            __SkipField__,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
+                            "epochIndex" | "epoch_index" => Ok(GeneratedField::EpochIndex),
+                            "newPenalty" | "new_penalty" => Ok(GeneratedField::NewPenalty),
+                            _ => Ok(GeneratedField::__SkipField__),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = EventSlashingPenaltyApplied;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct penumbra.core.component.stake.v1.EventSlashingPenaltyApplied")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<EventSlashingPenaltyApplied, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut identity_key__ = None;
+                let mut epoch_index__ = None;
+                let mut new_penalty__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
+                            }
+                            identity_key__ = map_.next_value()?;
+                        }
+                        GeneratedField::EpochIndex => {
+                            if epoch_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("epochIndex"));
+                            }
+                            epoch_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::NewPenalty => {
+                            if new_penalty__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("newPenalty"));
+                            }
+                            new_penalty__ = map_.next_value()?;
+                        }
+                        GeneratedField::__SkipField__ => {
+                            let _ = map_.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+                Ok(EventSlashingPenaltyApplied {
+                    identity_key: identity_key__,
+                    epoch_index: epoch_index__.unwrap_or_default(),
+                    new_penalty: new_penalty__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("penumbra.core.component.stake.v1.EventSlashingPenaltyApplied", FIELDS, GeneratedVisitor)
     }
 }
 impl serde::Serialize for EventTombstoneValidator {
@@ -1315,15 +1450,15 @@ impl serde::Serialize for EventUndelegate {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.validator_identity.is_some() {
+        if self.identity_key.is_some() {
             len += 1;
         }
         if self.amount.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("penumbra.core.component.stake.v1.EventUndelegate", len)?;
-        if let Some(v) = self.validator_identity.as_ref() {
-            struct_ser.serialize_field("validatorIdentity", v)?;
+        if let Some(v) = self.identity_key.as_ref() {
+            struct_ser.serialize_field("identityKey", v)?;
         }
         if let Some(v) = self.amount.as_ref() {
             struct_ser.serialize_field("amount", v)?;
@@ -1338,14 +1473,14 @@ impl<'de> serde::Deserialize<'de> for EventUndelegate {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "validator_identity",
-            "validatorIdentity",
+            "identity_key",
+            "identityKey",
             "amount",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            ValidatorIdentity,
+            IdentityKey,
             Amount,
             __SkipField__,
         }
@@ -1369,7 +1504,7 @@ impl<'de> serde::Deserialize<'de> for EventUndelegate {
                         E: serde::de::Error,
                     {
                         match value {
-                            "validatorIdentity" | "validator_identity" => Ok(GeneratedField::ValidatorIdentity),
+                            "identityKey" | "identity_key" => Ok(GeneratedField::IdentityKey),
                             "amount" => Ok(GeneratedField::Amount),
                             _ => Ok(GeneratedField::__SkipField__),
                         }
@@ -1390,15 +1525,15 @@ impl<'de> serde::Deserialize<'de> for EventUndelegate {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut validator_identity__ = None;
+                let mut identity_key__ = None;
                 let mut amount__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::ValidatorIdentity => {
-                            if validator_identity__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("validatorIdentity"));
+                        GeneratedField::IdentityKey => {
+                            if identity_key__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("identityKey"));
                             }
-                            validator_identity__ = map_.next_value()?;
+                            identity_key__ = map_.next_value()?;
                         }
                         GeneratedField::Amount => {
                             if amount__.is_some() {
@@ -1412,7 +1547,7 @@ impl<'de> serde::Deserialize<'de> for EventUndelegate {
                     }
                 }
                 Ok(EventUndelegate {
-                    validator_identity: validator_identity__,
+                    identity_key: identity_key__,
                     amount: amount__,
                 })
             }
