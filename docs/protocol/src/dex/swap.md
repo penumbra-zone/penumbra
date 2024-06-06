@@ -29,7 +29,7 @@ The swap commitment commits to:
 * $(\Delta_1, \Delta_2)$, the input amounts of types $t_1$ and $t_2$ respectively,
 * the diversified transmission key $pk_d$, diversified basepoint $B_d$, and clue key $ck_d$ of the claim address,
 * $f$, the prepaid fee amount that will be used for the swap claim and its asset ID $t_f$,
-* the `rseed`, used for deriving the `rseed` values for each output note.
+* the `rseed`, used for deriving the `(rseed1, rseed2)` values used for each individual output note.
 
 The swap commitment is generated using rate-7 Poseidon hashing with domain separator $ds$ defined as the `Fq` element constructed using:
 
