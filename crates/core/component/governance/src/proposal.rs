@@ -139,9 +139,15 @@ impl TryFrom<pb::Proposal> for Proposal {
                 Payload::UpgradePlan(upgrade_plan) => ProposalPayload::UpgradePlan {
                     height: upgrade_plan.height,
                 },
-                Payload::FreezeIbcClient(freeze_ibc_client) => ProposalPayload::FreezeIbcClient {
-                    client_id: freeze_ibc_client.client_id,
-                },
+                Payload::FreezeIbcClient(freeze_ibc_client) => {
+                    // Validation: client ID has a max length of 128 chars
+                    if freeze_ibc_client.client_id.len() > 128 {
+                        anyhow::bail!("client ID must be less than 128 characters");
+                    }
+                    ProposalPayload::FreezeIbcClient {
+                        client_id: freeze_ibc_client.client_id,
+                    }
+                }
                 Payload::UnfreezeIbcClient(unfreeze_ibc_client) => {
                     ProposalPayload::UnfreezeIbcClient {
                         client_id: unfreeze_ibc_client.client_id,

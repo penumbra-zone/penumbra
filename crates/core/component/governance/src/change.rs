@@ -32,6 +32,11 @@ impl TryFrom<pb::EncodedParameter> for EncodedParameter {
             anyhow::bail!("value length must be less than or equal to 2048 characters");
         }
 
+        // - Component has max length of 64 chars
+        if value.component.len() > 64 {
+            anyhow::bail!("component length must be less than or equal to 64 characters");
+        }
+
         Ok(EncodedParameter {
             component: value.component,
             key: value.key,

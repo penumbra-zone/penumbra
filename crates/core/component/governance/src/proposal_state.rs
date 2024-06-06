@@ -292,6 +292,11 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn,
                 }) => Outcome::Failed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        // Max reason length is 1kb
+                        if reason.len() > 1024 {
+                            anyhow::bail!("withdrawn reason is too long")
+                        }
+
                         Withdrawn::WithReason { reason }
                     } else {
                         Withdrawn::No
@@ -301,6 +306,10 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<String> {
                     withdrawn,
                 }) => Outcome::Slashed {
                     withdrawn: if let Some(pb::proposal_outcome::Withdrawn { reason }) = withdrawn {
+                        // Max reason length is 1kb
+                        if reason.len() > 1024 {
+                            anyhow::bail!("withdrawn reason is too long")
+                        }
                         Withdrawn::WithReason { reason }
                     } else {
                         Withdrawn::No
@@ -360,14 +369,35 @@ impl TryFrom<pb::ProposalOutcome> for Outcome<()> {
                 }
                 pb::proposal_outcome::Outcome::Failed(pb::proposal_outcome::Failed {
                     withdrawn,
-                }) => Outcome::Failed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
-                },
+                }) => {
+                    // Max reason length is 1kb
+                    if withdrawn.is_some() {
+                        let reason = &withdrawn.as_ref().expect("reason is some").reason;
+                        if reason.len() > 1024 {
+                            anyhow::bail!("withdrawn reason is too long");
+                        }
+                    }
+                    Outcome::Failed {
+                        withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason))
+                            .try_into()?,
+                    }
+                }
                 pb::proposal_outcome::Outcome::Slashed(pb::proposal_outcome::Slashed {
                     withdrawn,
-                }) => Outcome::Slashed {
-                    withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason)).try_into()?,
-                },
+                }) => {
+                    // Max reason length is 1kb
+                    if withdrawn.is_some() {
+                        let reason = &withdrawn.as_ref().expect("reason is some").reason;
+                        if reason.len() > 1024 {
+                            anyhow::bail!("withdrawn reason is too long");
+                        }
+                    }
+
+                    Outcome::Slashed {
+                        withdrawn: <Withdrawn<String>>::from(withdrawn.map(|w| w.reason))
+                            .try_into()?,
+                    }
+                }
             },
         )
     }
