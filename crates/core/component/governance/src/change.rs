@@ -20,6 +20,18 @@ impl DomainType for EncodedParameter {
 impl TryFrom<pb::EncodedParameter> for EncodedParameter {
     type Error = anyhow::Error;
     fn try_from(value: pb::EncodedParameter) -> Result<Self, Self::Error> {
+        // TODO: what are max key/value lengths here?
+        // Validation:
+        // - Key has max length of 64 chars
+        if value.key.len() > 64 {
+            anyhow::bail!("key length must be less than or equal to 64 characters");
+        }
+
+        // - Value has max length of 2048 chars
+        if value.value.len() > 2048 {
+            anyhow::bail!("value length must be less than or equal to 2048 characters");
+        }
+
         Ok(EncodedParameter {
             component: value.component,
             key: value.key,
