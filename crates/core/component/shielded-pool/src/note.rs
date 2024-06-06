@@ -108,10 +108,20 @@ pub enum Error {
 
 impl Note {
     pub fn controlled_by(&self, fvk: &FullViewingKey) -> bool {
-        *self.transmission_key()
-            == fvk
-                .incoming()
-                .diversified_public(&self.diversified_generator())
+        if let Some(address_index) = fvk.address_index(&self.address()) {
+            // Get the expected clue key and check it matches what is on the provided note address.
+            let (expected_address, _) = fvk.incoming().payment_address(address_index);
+            let expected_ck_d = expected_address.clue_key();
+
+            let transmission_key_matches = *self.transmission_key()
+                == fvk
+                    .incoming()
+                    .diversified_public(&self.diversified_generator());
+
+            return transmission_key_matches && self.clue_key() == expected_ck_d;
+        } else {
+            false
+        }
     }
 
     /// Obtain a note corresponding to this allocation.
