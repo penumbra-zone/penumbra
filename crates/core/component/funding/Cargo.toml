@@ -31,6 +31,7 @@ penumbra-community-pool = {workspace = true, default-features = false}
 penumbra-distributions = {workspace = true, default-features = false}
 penumbra-proto = {workspace = true, default-features = false}
 penumbra-sct = {workspace = true, default-features = false}
+penumbra-num = {workspace = true, default-features = false}
 penumbra-shielded-pool = {workspace = true, default-features = false}
 penumbra-stake = {workspace = true, default-features = false}
 serde = {workspace = true, features = ["derive"]}

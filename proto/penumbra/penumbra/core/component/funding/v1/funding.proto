@@ -1,10 +1,25 @@
 syntax = "proto3";
 package penumbra.core.component.funding.v1;
 
+import "penumbra/core/num/v1/num.proto";
+
 // Funding component configuration data.
 message FundingParameters {}
 
 // Genesis data for the funding component.
 message GenesisContent {
   FundingParameters funding_params = 1;
+}
+
+// Indicates that a funding stream reward was paid.
+message EventFundingStreamReward {
+  // The recipient of the funding stream reward.
+  // This is a string value for future extensibility.
+  // Currently it will be either "community-pool"
+  // or an address.
+  string recipient = 1;
+  // The epoch for which the reward was paid.
+  uint64 epoch_index = 2;
+  // The amount of the reward, in staking tokens.
+  num.v1.Amount reward_amount = 3;
 }
