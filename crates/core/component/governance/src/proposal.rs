@@ -82,6 +82,17 @@ impl TryFrom<pb::Proposal> for Proposal {
     type Error = anyhow::Error;
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
+        // Validation:
+        // - Title has a max length of 70 chars
+        if inner.title.len() > 70 {
+            anyhow::bail!("proposal title field must be less than 70 characters");
+        }
+
+        // - Description has a max length of 280 chars
+        if inner.description.len() > 280 {
+            anyhow::bail!("proposal description must be less than 280 characters");
+        }
+
         use pb::proposal::Payload;
         Ok(Proposal {
             id: inner.id,
@@ -95,6 +106,11 @@ impl TryFrom<pb::Proposal> for Proposal {
                     commit: if signaling.commit.is_empty() {
                         None
                     } else {
+                        // Commit hash has max length of 64 chars:
+                        if signaling.commit.len() > 64 {
+                            anyhow::bail!("proposal commit hash must be less than 64 characters");
+                        }
+
                         Some(signaling.commit)
                     },
                 },
