@@ -29,11 +29,27 @@ impl From<Definition> for pb::ValidatorDefinition {
 impl TryFrom<pb::ValidatorDefinition> for Definition {
     type Error = anyhow::Error;
     fn try_from(v: pb::ValidatorDefinition) -> Result<Self, Self::Error> {
+        let validator = v
+            .validator
+            .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?;
+        // Validation:
+        // - Website has a max length of 70 chars
+        if validator.website.len() > 70 {
+            anyhow::bail!("validator website field must be less than 70 characters");
+        }
+
+        // - Name has a max length of 140 chars
+        if validator.name.len() > 140 {
+            anyhow::bail!("validator name must be less than 140 characters");
+        }
+
+        // - Description has a max length of 280 chars
+        if validator.description.len() > 280 {
+            anyhow::bail!("validator description must be less than 280 characters");
+        }
+
         Ok(Definition {
-            validator: v
-                .validator
-                .ok_or_else(|| anyhow::anyhow!("missing validator field in proto"))?
-                .try_into()?,
+            validator: validator.try_into()?,
             auth_sig: v.auth_sig.as_slice().try_into()?,
         })
     }

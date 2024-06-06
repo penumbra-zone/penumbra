@@ -572,6 +572,22 @@ impl Default for TestnetValidator {
 impl TryFrom<&TestnetValidator> for Validator {
     type Error = anyhow::Error;
     fn try_from(tv: &TestnetValidator) -> anyhow::Result<Validator> {
+        // Validation:
+        // - Website has a max length of 70 chars
+        if tv.website.len() > 70 {
+            anyhow::bail!("validator website field must be less than 70 characters");
+        }
+
+        // - Name has a max length of 140 chars
+        if tv.name.len() > 140 {
+            anyhow::bail!("validator name must be less than 140 characters");
+        }
+
+        // - Description has a max length of 280 chars
+        if tv.description.len() > 280 {
+            anyhow::bail!("validator description must be less than 280 characters");
+        }
+
         Ok(Validator {
             // Currently there's no way to set validator keys beyond
             // manually editing the genesis.json. Otherwise they

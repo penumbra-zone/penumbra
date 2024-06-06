@@ -133,6 +133,22 @@ impl TryFrom<ValidatorToml> for Validator {
     type Error = anyhow::Error;
 
     fn try_from(v: ValidatorToml) -> anyhow::Result<Self> {
+        // Validation:
+        // - Website has a max length of 70 chars
+        if v.website.len() > 70 {
+            anyhow::bail!("validator website field must be less than 70 characters");
+        }
+
+        // - Name has a max length of 140 chars
+        if v.name.len() > 140 {
+            anyhow::bail!("validator name must be less than 140 characters");
+        }
+
+        // - Description has a max length of 280 chars
+        if v.description.len() > 280 {
+            anyhow::bail!("validator description must be less than 280 characters");
+        }
+
         Ok(Validator {
             identity_key: v.identity_key,
             governance_key: v.governance_key,
@@ -224,6 +240,22 @@ impl From<Validator> for pb::Validator {
 impl TryFrom<pb::Validator> for Validator {
     type Error = anyhow::Error;
     fn try_from(v: pb::Validator) -> Result<Self, Self::Error> {
+        // Validation:
+        // - Website has a max length of 70 chars
+        if v.website.len() > 70 {
+            anyhow::bail!("validator website field must be less than 70 characters");
+        }
+
+        // - Name has a max length of 140 chars
+        if v.name.len() > 140 {
+            anyhow::bail!("validator name must be less than 140 characters");
+        }
+
+        // - Description has a max length of 280 chars
+        if v.description.len() > 280 {
+            anyhow::bail!("validator description must be less than 280 characters");
+        }
+
         Ok(Validator {
             identity_key: v
                 .identity_key
