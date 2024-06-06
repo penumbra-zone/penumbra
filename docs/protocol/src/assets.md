@@ -88,5 +88,5 @@ recording the amount of every possible asset type, almost all of whose
 coefficients are zero.
 
 [multi_asset]: https://github.com/zcash/zips/blob/626ea6ed78863290371a4e8bc74ccf8e92292099/drafts/zip-user-defined-assets.rst
-[ADR001]: https://docs.cosmos.network/master/architecture/adr-001-coin-source-tracing.html
+[ADR001]: https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md
 [IBC]: https://docs.cosmos.network/master/ibc/overview.html
