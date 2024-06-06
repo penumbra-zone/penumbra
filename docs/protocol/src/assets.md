@@ -55,7 +55,7 @@ Each asset ID $\mathsf a$ has an associated *value generator* $V_{\mathsf a} \in
 G}^{\mathsf v}(\mathsf a)$, where $H_{\mathbb G}^{\mathsf v} : \mathbb F_q
 \rightarrow \mathbb G$ is a hash-to-group function constructed by first applying
 rate-1 Poseidon hashing with domain separator
-`from_le_bytes(b"penumbra.value.generator")` and then the `decaf377` CDH
+`from_le_bytes(blake2b(b"penumbra.value.generator"))` and then the `decaf377` CDH
 map-to-group method.
 
 ## Homomorphic Balance Commitments
