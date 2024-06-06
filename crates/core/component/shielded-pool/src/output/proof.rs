@@ -94,7 +94,7 @@ fn check_circuit_satisfaction(
 /// Witnesses:
 /// * g_d (point)
 /// * pk_d (point)
-/// * v (u64 value plus asset ID (scalar))
+/// * v (u128 value plus asset ID (scalar))
 /// * vblind (Fr)
 /// * nblind (Fq)
 #[derive(Clone, Debug)]
