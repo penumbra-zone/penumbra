@@ -59,7 +59,7 @@ postgres:
   image:
     repository: docker.io/library/postgres
     pullPolicy: IfNotPresent
-    tag: "latest"
+    tag: "16-bookworm"
   # In order to support TLS for an external db connection, consider reusing a `kubernetes.io/tls`
   # Secret here, which will be mounted read-only and used for SSL. Requires an externally-provisioned LB.
   certificateSecretName: ""
