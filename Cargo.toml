@@ -11,6 +11,7 @@ members = [
   "crates/bin/pcli",
   "crates/bin/pclientd",
   "crates/bin/pd",
+  "crates/bin/pindexer",
   "crates/cnidarium",
   "crates/cnidarium-component",
   "crates/core/app",
@@ -51,6 +52,7 @@ members = [
   "crates/util/auto-https",
   "crates/util/tendermint-proxy",
   "crates/util/tower-trace",
+  "crates/util/cometindex",
   "crates/view",
   "crates/wallet",
   "tools/summonerd",
@@ -214,6 +216,7 @@ serde_json                       = { version = "1.0.96" }
 serde_unit_struct                = { version = "0.1" }
 serde_with                       = { version = "3.5.1" }
 sha2                             = { version = "0.10" }
+sqlx                             = { version = "0.7", features = ["postgres", "runtime-tokio", "tls-rustls"] }
 tap                              = "1.0.1"
 tempfile                         = { version = "3.3.0" }
 tendermint                       = { default-features = false, version = "0.34.0" }
