@@ -59,3 +59,11 @@ testnet_raw=# SELECT * FROM events JOIN blocks ON events.block_id = blocks.rowid
  99063 |     7534 |  4351 | penumbra.core.component.shielded_pool.v1.EventBroadcastClue |  7534 | 426939 | penumbra-testnet-deimos-8 | 2024-06-07 01:38:33.440578-04
 (21 rows)
 ```
+
+example invocations
+```
+cargo run --bin pindexer -- -s "postgresql://localhost:5432/testnet_raw?sslmode=disable" -d "postgresql://localhost:5432/testnet_compiled?sslmode=disable"
+```
+```
+cargo run --example fmd_clues -- -s "postgresql://localhost:5432/testnet_raw?sslmode=disable" -d "postgresql://localhost:5432/testnet_compiled?sslmode=disable"
+```
