@@ -1,8 +1,9 @@
 use anyhow::Result;
 use base64::Engine;
 use rand_core::OsRng;
+use std::str::FromStr;
 
-use penumbra_keys::{Address, FullViewingKey};
+use penumbra_keys::{keys::AddressIndex, Address, FullViewingKey};
 
 #[derive(Debug, clap::Parser)]
 pub struct AddressCmd {
@@ -18,6 +19,12 @@ pub struct AddressCmd {
     /// Use compat (bech32, not bech32m) address encoding, for compatibility with some IBC chains.
     #[clap(long)]
     compat: bool,
+    /// Print the current FVK
+    #[clap(long)]
+    fvk: bool,
+    /// Generate a payment address from a provided full viewing key
+    #[clap(long)]
+    from_fvk: Option<String>,
 }
 
 impl AddressCmd {
@@ -45,7 +52,22 @@ impl AddressCmd {
             } else if self.compat {
                 println!("{}", address.compat_encoding());
             } else {
-                println!("{}", address);
+                if self.fvk {
+                    eprintln!("🔥 CAUTION: POSSESSION OF THE FOLLOWING FULL VIEWING KEY WILL");
+                    eprintln!("🔥 PROVIDE VISIBILITY TO ALL ACTIVITY ON ITS ASSOCIATED ACCOUNTS.");
+                    eprintln!("🔥 DISTRIBUTE WITH CARE!");
+                    eprintln!("");
+                    println!("{}", fvk);
+                } else if let Some(fvk) = &self.from_fvk {
+                    let (address, _) = FullViewingKey::payment_address(
+                        &FullViewingKey::from_str(&fvk[..])?,
+                        AddressIndex::new(0),
+                    );
+
+                    println!("{}", address);
+                } else {
+                    println!("{}", address);
+                }
             };
         } else {
             //address or nothing provided
