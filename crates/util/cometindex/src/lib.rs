@@ -9,3 +9,5 @@ pub use index::{Index, PgTransaction};
 pub use indexer::Indexer;
 
 pub use async_trait::async_trait;
+
+pub use sqlx;
