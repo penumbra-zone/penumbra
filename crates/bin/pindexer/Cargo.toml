@@ -1,0 +1,18 @@
+[package]
+name = "pindexer"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cometindex = { path = "../../util/cometindex" } # why doesn't this work with workspace = 
+penumbra-shielded-pool = {workspace = true, default-features = false}
+penumbra-proto = {workspace = true, default-features = false}
+tokio = {workspace = true, features = ["full"]}
+anyhow = {workspace = true}

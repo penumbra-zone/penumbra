@@ -1,0 +1,24 @@
+[package]
+name = "cometindex"
+version = {workspace = true}
+authors = {workspace = true}
+edition = {workspace = true}
+description = "A library for building indexers for CometBFT events"
+repository = {workspace = true}
+homepage = {workspace = true}
+license = {workspace = true}
+publish = false
+
+[dependencies]
+tokio = {workspace = true, features = ["full"]}
+clap = {workspace = true, features = ["derive", "env"]}
+anyhow = {workspace = true}
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true}
+sqlx = {workspace = true, features = ["postgres", "json", "runtime-tokio", "tls-rustls"] }
+async-trait = {workspace = true}
+tendermint = {workspace = true}
+serde_json = {workspace = true}
+futures = {workspace = true}
+hex = {workspace = true}
+
