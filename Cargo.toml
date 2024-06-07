@@ -11,6 +11,7 @@ members = [
   "crates/bin/pcli",
   "crates/bin/pclientd",
   "crates/bin/pd",
+  "crates/bin/pindexer",
   "crates/cnidarium",
   "crates/cnidarium-component",
   "crates/core/app",

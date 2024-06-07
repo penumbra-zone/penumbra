@@ -77,8 +77,17 @@ impl Indexer {
 
         tracing::info!("New events since last watermark: {}", new_events_count.0);
 
+        let mut scanned_events = 0usize;
+        let mut relevant_events = 0usize;
+
         let mut es = read_events(&src_db, watermark);
         while let Some(event) = es.next().await.transpose()? {
+            if scanned_events % 1000 == 0 {
+                tracing::info!(scanned_events, relevant_events);
+            }
+
+            scanned_events += 1;
+
             // if not relevant then skip making a db tx for the dst db
             if !self
                 .indexes
@@ -87,11 +96,14 @@ impl Indexer {
             {
                 continue;
             }
+
+            relevant_events += 1;
+
             // Otherwise we have something to process. Make a dbtx
             let mut dbtx = dst_db.begin().await?;
             for index in &self.indexes {
                 if index.is_relevant(&event.as_ref().kind) {
-                    tracing::info!(?event, ?index, "relevant to index");
+                    tracing::debug!(?event, ?index, "relevant to index");
                     index.index_event(&mut dbtx, &event).await?;
                 }
             }
