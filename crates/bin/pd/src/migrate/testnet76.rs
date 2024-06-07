@@ -1,4 +1,5 @@
 //! Contains functions related to the migration script of Testnet74
+#![allow(dead_code)]
 
 use anyhow;
 use cnidarium::{Snapshot, StateDelta, Storage};

@@ -10,19 +10,24 @@ mod testnet72;
 mod testnet74;
 mod testnet76;
 mod testnet77;
+mod testnet78;
 
 use anyhow::{ensure, Context};
-use penumbra_governance::StateReadExt;
-use penumbra_sct::component::clock::EpochRead;
+use jmt::RootHash;
+use penumbra_app::app::StateReadExt as _;
+use penumbra_governance::{StateReadExt, StateWriteExt as _};
+use penumbra_sct::component::clock::{EpochManager as _, EpochRead};
 use std::path::{Path, PathBuf};
 use tracing::instrument;
 
-use cnidarium::Storage;
+use cnidarium::{StateDelta, Storage};
 use penumbra_app::SUBSTORE_PREFIXES;
 
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::fs::File;
+
+use crate::testnet::generate::TestnetConfig;
 
 /// The kind of migration that should be performed.
 #[derive(Debug)]
@@ -47,6 +52,9 @@ pub enum Migration {
     /// Testnet-77 migration:
     /// - Reset the halt bit
     Testnet77,
+    /// Testnet-78 migration:
+    /// - Truncate various user-supplied `String` fields to a maximum length.
+    Testnet78,
 }
 
 impl Migration {
@@ -72,36 +80,95 @@ impl Migration {
         );
         tracing::info!("started migration");
 
-        match self {
-            Migration::ReadyToStart => {
-                reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
-                return Ok(());
-            }
-            Migration::SimpleMigration => {
-                simple::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
+        // If this is `ReadyToStart`, we need to reset the halt bit and return early.
+        if let Migration::ReadyToStart = self {
+            reset_halt_bit::migrate(storage, pd_home, genesis_start).await?;
+            return Ok(());
+        }
 
-            Migration::Testnet72 => {
-                testnet72::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
+        // Collect various pieces of state pre-migration:
+        let initial_state = storage.latest_snapshot();
+        let root_hash = initial_state
+            .root_hash()
+            .await
+            .expect("chain state has a root hash");
+        let pre_upgrade_root_hash: RootHash = root_hash.into();
+        let pre_upgrade_height = initial_state
+            .get_block_height()
+            .await
+            .expect("chain state has a block height");
+        let post_upgrade_height = pre_upgrade_height.wrapping_add(1);
 
-            Migration::Testnet74 => {
-                testnet74::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
+        let migration_duration = match self {
+            Migration::SimpleMigration => simple::migrate(storage.clone()).await?,
 
-            Migration::Testnet76 => {
-                testnet76::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
-            Migration::Testnet77 => {
-                testnet77::migrate(storage, pd_home.clone(), genesis_start).await?
-            }
+            Migration::Testnet78 => testnet78::migrate(storage.clone()).await?,
+            _ => unreachable!(),
         };
+
+        // There are some common operations that need to take place post-migration.
+        // Get a new `StateDelta` post-migration:
+        let post_upgrade_state = storage.latest_snapshot();
+        let mut delta = StateDelta::new(post_upgrade_state);
+
+        // Set halt bit to 0, so chain can start again.
+        delta.ready_to_start();
+
+        // Set the block height to 0, as upgrades should start at block 0.
+        delta.put_block_height(0u64);
+        let chain_id = delta.get_chain_id().await?;
+        let post_upgrade_root_hash = storage
+            .commit_in_place(delta)
+            .await
+            .context("failed to reset halt bit")?;
+
+        storage.release().await;
+
+        // The migration is complete, now we need to generate a genesis file. To do this, we need
+        // to lookup a validator view from the chain, and specify the post-upgrade app hash and
+        // initial height.
+        let app_state = penumbra_app::genesis::Content {
+            chain_id,
+            ..Default::default()
+        };
+        let mut genesis = TestnetConfig::make_genesis(app_state.clone()).expect("can make genesis");
+        genesis.app_hash = post_upgrade_root_hash
+            .0
+            .to_vec()
+            .try_into()
+            .expect("infallible conversion");
+        genesis.initial_height = post_upgrade_height as i64;
+        genesis.genesis_time = genesis_start.unwrap_or_else(|| {
+            let now = tendermint::time::Time::now();
+            tracing::info!(%now, "no genesis time provided, detecting a testing setup");
+            now
+        });
+        let checkpoint = post_upgrade_root_hash.0.to_vec();
+        let genesis = TestnetConfig::make_checkpoint(genesis, Some(checkpoint));
+        let genesis_json = serde_json::to_string(&genesis).expect("can serialize genesis");
+        tracing::info!("genesis: {}", genesis_json);
+        let genesis_path = pd_home.join("genesis.json");
+        std::fs::write(genesis_path, genesis_json).expect("can write genesis");
+
+        let validator_state_path = pd_home.join("priv_validator_state.json");
+        let fresh_validator_state = crate::testnet::generate::TestnetValidator::initial_state();
+        std::fs::write(validator_state_path, fresh_validator_state)
+            .expect("can write validator state");
 
         if let Some(comet_home) = comet_home {
             // TODO avoid this when refactoring to clean up migrations
             let genesis_path = pd_home.join("genesis.json");
             migrate_comet_data(comet_home, genesis_path).await?;
         }
+
+        tracing::info!(
+            pre_upgrade_height,
+            post_upgrade_height,
+            ?pre_upgrade_root_hash,
+            ?post_upgrade_root_hash,
+            duration = migration_duration.as_secs(),
+            "successful migration!"
+        );
 
         Ok(())
     }

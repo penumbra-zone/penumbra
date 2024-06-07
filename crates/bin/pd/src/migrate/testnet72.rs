@@ -1,5 +1,5 @@
 //! Contains functions related to the migration script of Testnet72
-
+#![allow(dead_code)]
 use anyhow;
 use cnidarium::{Snapshot, StateDelta, StateRead, StateWrite, Storage};
 use futures::StreamExt as _;
