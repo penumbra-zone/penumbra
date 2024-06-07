@@ -30,6 +30,12 @@ spec:
     {{- if eq .Values.cometbft.config.indexer "psql" }}
     - metadata:
         name: db
+        labels:
+          {{- include "penumbra-node.labels" . | nindent 10 }}
+          "app.kubernetes.io/component": fullnode
+          {{- if .Values.part_of }}
+          "app.kubernetes.io/part-of": {{ .Values.part_of }}
+          {{- end }}
       spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
@@ -168,14 +174,14 @@ spec:
             - sh
             - -cex
             - |
-              cert_dir="/var/lib/postgresql/certs"
+              cert_dir="/var/lib/postgresql/data/certs"
               mkdir -p "$cert_dir"
               chmod "0750" "$cert_dir"
               cp -v /opt/postgres-certificates/server.crt /opt/postgres-certificates/server.key "$cert_dir"
               chown -R 999:999 "$cert_dir"
           volumeMounts:
             - name: db
-              mountPath: /var/lib/postgresql
+              mountPath: /var/lib/postgresql/data
             - name: db-certificates
               mountPath: /opt/postgres-certificates
       {{- end }}
@@ -277,9 +283,9 @@ spec:
           - -c
           - ssl=on
           - -c
-          - ssl_cert_file=/var/lib/postgresql/certs/server.crt
+          - ssl_cert_file=/var/lib/postgresql/data/certs/server.crt
           - -c
-          - ssl_key_file=/var/lib/postgresql/certs/server.key
+          - ssl_key_file=/var/lib/postgresql/data/certs/server.key
           {{- end }}
           {{- end }}
           ports:
@@ -311,6 +317,10 @@ spec:
             - name: POSTGRES_PASSWORD
               value: penumbra
           {{- end }}
+            # Set a custom PGDATA directory inside the mountpoint, so that other db config
+            # like certificates can persist in the volume, without polluting the data dir.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
             - name: ORDINAL_NUMBER
               valueFrom:
                 fieldRef:
@@ -330,7 +340,10 @@ spec:
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
             - name: db
-              mountPath: /var/lib/postgresql
+              # N.B. We mount `/var/lib/postgresql/data` specifically, rather than `/var/lib/postgresql`,
+              # in order to override the internal volume mount used by the Postgres container image.
+              # With the `/data` suffix, db will not persist.
+              mountPath: /var/lib/postgresql/data
       {{ end }}
 
       {{- with .Values.nodeSelector }}
