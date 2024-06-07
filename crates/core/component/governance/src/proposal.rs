@@ -82,15 +82,15 @@ impl TryFrom<pb::Proposal> for Proposal {
     type Error = anyhow::Error;
 
     fn try_from(inner: pb::Proposal) -> Result<Proposal, Self::Error> {
-        // Validation:
-        // - Title has a max length of 70 chars
-        if inner.title.len() > 70 {
-            anyhow::bail!("proposal title field must be less than 70 characters");
+        // Validation (matches limits from `impl AppActionHandler for ProposalSubmit`):
+        // - Title has a max length of 80 chars
+        if inner.title.len() > 80 {
+            anyhow::bail!("proposal title field must be less than 80 characters");
         }
 
-        // - Description has a max length of 280 chars
-        if inner.description.len() > 280 {
-            anyhow::bail!("proposal description must be less than 280 characters");
+        // - Description has a max length of 10_000 chars
+        if inner.description.len() > 10_000 {
+            anyhow::bail!("proposal description must be less than 10,000 characters");
         }
 
         use pb::proposal::Payload;
