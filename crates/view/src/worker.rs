@@ -217,10 +217,17 @@ impl Worker {
             }
         });
 
+        let mut expected_height = start_height;
+
         while let Some(block) = buffered_stream.recv().await {
             let block: CompactBlock = block?.try_into()?;
 
             let height = block.height;
+            if height < expected_height {
+                tracing::warn!("repeated block detected");
+                continue;
+            }
+            expected_height += 1;
 
             // Lock the SCT only while processing this block.
             let mut sct_guard = self.sct.write().await;
